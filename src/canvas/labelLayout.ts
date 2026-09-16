@@ -152,7 +152,10 @@ export function boardDesignator(name: string): string {
  * actually drawn: the canvas draws boardDesignator(entity.name).
  */
 export function labelLineCount(name: string): number {
-  const words = name.trim().split(/\s+/).filter((w) => w.length > 0)
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w.length > 0)
   if (words.length === 0) return 1
   let lines = 1
   let width = 0
@@ -320,11 +323,16 @@ function spokeSide(
   })
 }
 
-function fanCluster(c: Cluster, viewport: LayoutOptions['viewport'], out: Map<string, LabelPlacement>) {
+function fanCluster(
+  c: Cluster,
+  viewport: LayoutOptions['viewport'],
+  out: Map<string, LabelPlacement>,
+) {
   let right = c.members.filter((m) => m.sx >= c.cx)
   let left = c.members.filter((m) => m.sx < c.cx)
   if (viewport) {
-    const rightOver = right.length > 0 && c.cx + c.radius + TEXT_GAP + maxWidth(right) > viewport.w - EDGE_MARGIN
+    const rightOver =
+      right.length > 0 && c.cx + c.radius + TEXT_GAP + maxWidth(right) > viewport.w - EDGE_MARGIN
     const leftOver = left.length > 0 && c.cx - c.radius - TEXT_GAP - maxWidth(left) < EDGE_MARGIN
     if (rightOver && !leftOver) {
       left = [...left, ...right]
@@ -338,7 +346,10 @@ function fanCluster(c: Cluster, viewport: LayoutOptions['viewport'], out: Map<st
   spokeSide(left, -1, c, viewport, out)
 }
 
-export function layoutLabels(inputs: LabelInput[], opts: LayoutOptions = {}): Map<string, LabelPlacement> {
+export function layoutLabels(
+  inputs: LabelInput[],
+  opts: LayoutOptions = {},
+): Map<string, LabelPlacement> {
   const out = new Map<string, LabelPlacement>()
   // Measure what the canvas draws, not what the scenario stores: both layers
   // render boardDesignator(name), so clustering must use the same metric.

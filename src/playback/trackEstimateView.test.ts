@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { covarianceOf, estimateTrackHistory, trackEstimateFixture } from './__fixtures__/trackEstimateFixture'
+import {
+  covarianceOf,
+  estimateTrackHistory,
+  trackEstimateFixture,
+} from './__fixtures__/trackEstimateFixture'
 import { latestEstimatesAt, positionEllipse } from './trackEstimateView'
 import type { Covariance4 } from './trackTypes'
 
@@ -97,9 +101,13 @@ describe('latestEstimatesAt', () => {
     const other = { ...a0, id: 'trk-other', state: { ...a0.state, tS: 0.25 } }
     // 'trk-other' appears second in the array but first at a horizon of 0.4,
     // because the only earlier 'trk-est' entry also passes.
-    expect(latestEstimatesAt([a0, other, a1], 0.4).map((t) => t.id)).toEqual(['trk-est', 'trk-other'])
+    expect(latestEstimatesAt([a0, other, a1], 0.4).map((t) => t.id)).toEqual([
+      'trk-est',
+      'trk-other',
+    ])
     // At a horizon that drops the first 'trk-est' entry, order follows what is left.
-    expect(latestEstimatesAt([{ ...a0, state: { ...a0.state, tS: 9 } }, other], 1).map((t) => t.id))
-      .toEqual(['trk-other'])
+    expect(
+      latestEstimatesAt([{ ...a0, state: { ...a0.state, tS: 9 } }, other], 1).map((t) => t.id),
+    ).toEqual(['trk-other'])
   })
 })

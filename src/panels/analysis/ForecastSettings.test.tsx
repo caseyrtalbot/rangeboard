@@ -16,7 +16,12 @@ function render(): string {
 
 /** The fresh scenario runs Monte Carlo; these tests start from the envelope mode and switch explicitly. */
 function deterministicScenario(): Scenario {
-  return { ...emptyScenario(), runMode: 'deterministic', uncertainty: 'aleatory', targetHalfWidth: null }
+  return {
+    ...emptyScenario(),
+    runMode: 'deterministic',
+    uncertainty: 'aleatory',
+    targetHalfWidth: null,
+  }
 }
 
 function setMc(patch: Partial<McState>): void {
@@ -72,9 +77,7 @@ describe('ForecastSettings mode metadata', () => {
     const el = chip(render())
     expect(el).toContain('MC 100 · total · seed 4821')
     expect(el).toContain('Monte Carlo, 100 replicates, seed 4821, total uncertainty')
-    expect(render()).toContain(
-      '<span class="chip-meta">estimate · 100 replicates · total</span>',
-    )
+    expect(render()).toContain('<span class="chip-meta">estimate · 100 replicates · total</span>')
   })
 
   it('warns when the configuration changed since the replicates ran', () => {

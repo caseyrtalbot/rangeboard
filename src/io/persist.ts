@@ -1,10 +1,4 @@
-import type {
-  AarSummary,
-  FireDoctrine,
-  Scenario,
-  SpecModel,
-  UncertaintyMode,
-} from '../model/types'
+import type { AarSummary, FireDoctrine, Scenario, SpecModel, UncertaintyMode } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attritionReport'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
@@ -30,9 +24,18 @@ import type { TrialResultView } from '../analysis/trialResult'
 import type { AutosaveAdapter } from './autosave'
 import { createAutosave } from './autosave'
 import { SCENARIO_LEGACY_FIELDS, fillContainers } from './compat'
-import { parseLibraryData, validateScenarioReferences, validateScenarioShape } from './validateScenario'
+import {
+  parseLibraryData,
+  validateScenarioReferences,
+  validateScenarioShape,
+} from './validateScenario'
 import { MAX_IMAGE_CODE_UNITS, objectAt, validateImage } from './runtimeValidation'
-import { BASELINE_RECOVERY_PREFIX, BOARD_BASELINE, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
+import {
+  BASELINE_RECOVERY_PREFIX,
+  BOARD_BASELINE,
+  SCENARIO_KEY,
+  SCENARIO_RECOVERY_PREFIX,
+} from './storageKeys'
 import type { PinnedBaseline } from '../state/baseline'
 import { validateMcSummary } from '../state/baseline'
 
@@ -97,7 +100,11 @@ export function fillScenario(parsed: unknown): Scenario {
   const empty = emptyScenario()
   const roe =
     parsed.roe ??
-    (parsed.engageOn === 'detected' ? 'free' : parsed.engageOn === 'confirmed' ? 'tight' : empty.roe)
+    (parsed.engageOn === 'detected'
+      ? 'free'
+      : parsed.engageOn === 'confirmed'
+        ? 'tight'
+        : empty.roe)
   const deletedSeedIds = Array.isArray(parsed.deletedSeedIds) ? parsed.deletedSeedIds : []
   const reconciled = reconcileLibraryReport(parsed.library, empty.library, deletedSeedIds)
   for (const model of reconciled.library) {
@@ -129,13 +136,14 @@ export function fillScenario(parsed: unknown): Scenario {
  * the doctrinal sequence and takes the default enabled flag; a record with a
  * launchPolicy keeps its enabled flag as written.
  */
-function fillDoctrine(
-  empty: FireDoctrine,
-  saved: Partial<FireDoctrine> | undefined,
-): FireDoctrine {
+function fillDoctrine(empty: FireDoctrine, saved: Partial<FireDoctrine> | undefined): FireDoctrine {
   if (!saved) return { ...empty }
   const preLaunchPolicy = saved.launchPolicy == null
-  return { ...empty, ...saved, enabled: preLaunchPolicy ? empty.enabled : (saved.enabled ?? empty.enabled) }
+  return {
+    ...empty,
+    ...saved,
+    enabled: preLaunchPolicy ? empty.enabled : (saved.enabled ?? empty.enabled),
+  }
 }
 
 /**
@@ -200,14 +208,22 @@ export function parseBaselineSave(raw: string): BaselineSave {
   if (save.baseline === null) return { schemaVersion: 1, baseline: null }
   const b = objectAt(save.baseline, 'baseline')
   for (const key of ['pinnedAt', 'label', 'scenarioHash'] as const) {
-    if (typeof b[key] !== 'string' || !b[key]) throw new Error(`baseline.${key}: expected a nonempty string`)
+    if (typeof b[key] !== 'string' || !b[key])
+      throw new Error(`baseline.${key}: expected a nonempty string`)
   }
-  if (!Number.isFinite(Date.parse(b.pinnedAt as string))) throw new Error('baseline.pinnedAt: expected an ISO time')
-  return { schemaVersion: 1, baseline: {
-    pinnedAt: b.pinnedAt as string, label: b.label as string, scenarioHash: b.scenarioHash as string,
-    scenario: parseScenarioData(b.scenario), mc: validateMcSummary(b.mc, 'baseline.mc'),
-    overrides: baselineOverrides(b.overrides),
-  } }
+  if (!Number.isFinite(Date.parse(b.pinnedAt as string)))
+    throw new Error('baseline.pinnedAt: expected an ISO time')
+  return {
+    schemaVersion: 1,
+    baseline: {
+      pinnedAt: b.pinnedAt as string,
+      label: b.label as string,
+      scenarioHash: b.scenarioHash as string,
+      scenario: parseScenarioData(b.scenario),
+      mc: validateMcSummary(b.mc, 'baseline.mc'),
+      overrides: baselineOverrides(b.overrides),
+    },
+  }
 }
 
 /** The overrides a pinned ensemble applied; a baseline pinned before the record carries none. */
@@ -218,10 +234,17 @@ function baselineOverrides(value: unknown): Override[] {
     const path = `baseline.overrides[${i}]`
     const o = objectAt(entry, path)
     for (const key of ['modelId', 'field', 'reason', 'date'] as const) {
-      if (typeof o[key] !== 'string' || !o[key]) throw new Error(`${path}.${key}: expected a nonempty string`)
+      if (typeof o[key] !== 'string' || !o[key])
+        throw new Error(`${path}.${key}: expected a nonempty string`)
     }
     if (!Object.hasOwn(o, 'value')) throw new Error(`${path}.value: expected a value`)
-    return { modelId: o.modelId as string, field: o.field as string, value: o.value, reason: o.reason as string, date: o.date as string }
+    return {
+      modelId: o.modelId as string,
+      field: o.field as string,
+      value: o.value,
+      reason: o.reason as string,
+      date: o.date as string,
+    }
   })
 }
 
@@ -243,7 +266,8 @@ export const baselineAutosaveAdapter: AutosaveAdapter<BaselineSave> = {
   // The scenario stamp stays the scenario's; a baseline write clears only its own error.
   reportSaved: () => {
     const store = useStore.getState()
-    if (store.save.error?.startsWith(BASELINE_ERROR)) store.setSaveState(store.save.lastAutosaveAt, null)
+    if (store.save.error?.startsWith(BASELINE_ERROR))
+      store.setSaveState(store.save.lastAutosaveAt, null)
   },
   reportPaused: (message) => {
     const store = useStore.getState()
@@ -252,7 +276,10 @@ export const baselineAutosaveAdapter: AutosaveAdapter<BaselineSave> = {
   reportWriteFailure: (error) => {
     const store = useStore.getState()
     const reason = error instanceof Error ? error.message || error.name : 'storage error'
-    store.setSaveState(store.save.lastAutosaveAt, `${BASELINE_ERROR}: ${reason}. Pin again when storage is available.`)
+    store.setSaveState(
+      store.save.lastAutosaveAt,
+      `${BASELINE_ERROR}: ${reason}. Pin again when storage is available.`,
+    )
   },
 }
 
@@ -367,9 +394,15 @@ export function runExportObject(
   trial: TrialResultView | null = null,
 ): RunExport {
   if (trial) {
-    if (trial.manifest.runId !== run.id) throw new Error('Trial run id does not match the export package')
-    if (!run.completedAt || !Number.isFinite(run.durationS) || !Number.isFinite(run.observedThroughS) ||
-      run.durationS !== trial.durationS || run.observedThroughS < run.durationS) {
+    if (trial.manifest.runId !== run.id)
+      throw new Error('Trial run id does not match the export package')
+    if (
+      !run.completedAt ||
+      !Number.isFinite(run.durationS) ||
+      !Number.isFinite(run.observedThroughS) ||
+      run.durationS !== trial.durationS ||
+      run.observedThroughS < run.durationS
+    ) {
       throw new Error('Cannot export an incomplete trial run')
     }
   }
@@ -385,7 +418,9 @@ export function runExportObject(
     rangeboardRun: 1,
     packageBasis: {
       semantics: mc || sensitivity || trial ? 'mixed-result-groups' : 'planning-envelope',
-      dataBasisAppliesTo: mc ? ['mcSummary'] : ['assessments', 'attrition', 'requirements', 'summary'],
+      dataBasisAppliesTo: mc
+        ? ['mcSummary']
+        : ['assessments', 'attrition', 'requirements', 'summary'],
     },
     configuration: {
       analysisBasisSignature: analysisBasisSignature(scenario),
@@ -460,7 +495,11 @@ export function pickJsonFile(onLoad: (data: unknown) => void | Promise<void>): v
     file
       .text()
       .then((text) => onLoad(JSON.parse(text)))
-      .catch((error: unknown) => window.alert(`Could not import file: ${error instanceof Error ? error.message : 'unreadable JSON'}`))
+      .catch((error: unknown) =>
+        window.alert(
+          `Could not import file: ${error instanceof Error ? error.message : 'unreadable JSON'}`,
+        ),
+      )
   }
   input.click()
 }
@@ -482,7 +521,6 @@ export function importScenarioFile(): void {
     useStore.getState().loadScenario(s, { fit: 'always' })
   })
 }
-
 
 export function importLibraryFile(): void {
   pickJsonFile((data) => {
@@ -507,7 +545,12 @@ export function importUnderlayImage(): void {
     reader.onerror = () => window.alert('Could not read the image file.')
     reader.onload = () => {
       const dataUrl = reader.result as string
-      try { validateImage(dataUrl, 'underlay.dataUrl', true) } catch (error) { window.alert((error as Error).message); return }
+      try {
+        validateImage(dataUrl, 'underlay.dataUrl', true)
+      } catch (error) {
+        window.alert((error as Error).message)
+        return
+      }
       const img = new Image()
       img.onerror = () => window.alert('Could not decode the image file.')
       img.onload = () => {

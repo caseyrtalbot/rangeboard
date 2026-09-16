@@ -41,7 +41,9 @@ const SECTIONS: { kind: EntityKind; title: string }[] = [
 ]
 
 /** Subtype buckets rendered as muted subheads inside a section. */
-const SUBGROUPS: Partial<Record<EntityKind, { label: string; match: (m: SpecModel) => boolean }[]>> = {
+const SUBGROUPS: Partial<
+  Record<EntityKind, { label: string; match: (m: SpecModel) => boolean }[]>
+> = {
   sensor: [
     { label: 'Radar', match: (m) => m.sensor?.sensorType === 'radar' },
     { label: 'RF', match: (m) => m.sensor?.sensorType === 'rf' },
@@ -52,7 +54,10 @@ const SUBGROUPS: Partial<Record<EntityKind, { label: string; match: (m: SpecMode
     { label: 'Interceptor', match: (m) => m.effector?.effectorType === 'interceptor' },
     { label: 'Gun', match: (m) => m.effector?.effectorType === 'gun' },
     { label: 'Jammer', match: (m) => m.effector?.effectorType === 'jammer' },
-    { label: 'DE / HPM', match: (m) => m.effector?.effectorType === 'de' || m.effector?.effectorType === 'hpm' },
+    {
+      label: 'DE / HPM',
+      match: (m) => m.effector?.effectorType === 'de' || m.effector?.effectorType === 'hpm',
+    },
     { label: 'Net', match: (m) => m.effector?.effectorType === 'net' },
   ],
 }
@@ -63,10 +68,16 @@ function subtypeLabel(m: SpecModel): string {
 }
 
 /** Split a section's models into labeled buckets; unmatched models land in Other. */
-function bucketize(kind: EntityKind, models: SpecModel[]): { label: string | null; models: SpecModel[] }[] {
+function bucketize(
+  kind: EntityKind,
+  models: SpecModel[],
+): { label: string | null; models: SpecModel[] }[] {
   const groups = SUBGROUPS[kind]
   if (!groups) return [{ label: null, models }]
-  const buckets = groups.map((g) => ({ label: g.label as string | null, models: models.filter(g.match) }))
+  const buckets = groups.map((g) => ({
+    label: g.label as string | null,
+    models: models.filter(g.match),
+  }))
   const rest = models.filter((m) => !groups.some((g) => g.match(m)))
   if (rest.length) buckets.push({ label: 'Other', models: rest })
   return buckets.filter((b) => b.models.length > 0)
@@ -126,7 +137,12 @@ function TacticsSection(props: {
   if (q && tactics.length === 0) return null
   return (
     <div className="palette-section">
-      <SectionHeading title="Threat tactics" count={tactics.length} open={props.open} onToggle={props.onToggle} />
+      <SectionHeading
+        title="Threat tactics"
+        count={tactics.length}
+        open={props.open}
+        onToggle={props.onToggle}
+      />
       {props.open &&
         tactics.map((t) => (
           <button
@@ -259,12 +275,7 @@ export const Palette = memo(function Palette({
   }
 
   return (
-    <aside
-      className="palette"
-      style={{ width }}
-      hidden={!open}
-      aria-label="Model library"
-    >
+    <aside className="palette" style={{ width }} hidden={!open} aria-label="Model library">
       <div className="palette-header">
         <div className="panel-title">Library</div>
         <button
@@ -344,7 +355,9 @@ export const Palette = memo(function Palette({
           </div>
         )}
         {SECTIONS.map((section) => {
-          const models = library.filter((m) => m.kind === section.kind && modelMatches(m, section.title))
+          const models = library.filter(
+            (m) => m.kind === section.kind && modelMatches(m, section.title),
+          )
           const tactics = section.kind === 'uas' && (
             <TacticsSection
               query={q}
@@ -427,8 +440,12 @@ export const Palette = memo(function Palette({
         })}
       </div>
       <div className="palette-footer">
-        <button type="button" onClick={() => exportLibrary(library)}>Export library</button>
-        <button type="button" onClick={importLibraryFile}>Import library</button>
+        <button type="button" onClick={() => exportLibrary(library)}>
+          Export library
+        </button>
+        <button type="button" onClick={importLibraryFile}>
+          Import library
+        </button>
       </div>
       <div
         className="palette-resizer"

@@ -150,10 +150,12 @@ export const EXECUTE_DEFAULT_LAYERS: LayerVisibility = { ...LAYER_PRESETS.engage
 
 /** Exact layer match; an individually adjusted view has no active preset. */
 export function activeLayerPreset(layers: LayerVisibility): LayerPreset | null {
-  return (Object.keys(LAYER_PRESETS) as LayerPreset[]).find((name) => {
-    const preset = LAYER_PRESETS[name]
-    return (Object.keys(preset) as LayerKey[]).every((key) => layers[key] === preset[key])
-  }) ?? null
+  return (
+    (Object.keys(LAYER_PRESETS) as LayerPreset[]).find((name) => {
+      const preset = LAYER_PRESETS[name]
+      return (Object.keys(preset) as LayerKey[]).every((key) => layers[key] === preset[key])
+    }) ?? null
+  )
 }
 
 /** Effective visibility of one ring for one entity: the override, else the layer flag. */

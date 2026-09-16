@@ -1,7 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import {
-  formatYTick, lastFiniteIndex, seriesDurationS, seriesRange, seriesRows, snapScrubS,
+  formatYTick,
+  lastFiniteIndex,
+  seriesDurationS,
+  seriesRange,
+  seriesRows,
+  snapScrubS,
 } from './TimeSeries'
 // The drawn chart, not the lazy shell: renderToStaticMarkup resolves no Suspense boundary.
 import { SeriesTip, TimeSeries } from './TimeSeriesChart'
@@ -24,13 +29,14 @@ const b: Series = {
   values: [0, 0, 1, 1, 2],
   color: 'chart-2',
   kind: 'step',
-  band80: [[0, 0, 0.5, 0.5, 1.5], [0, 0, 1.5, 1.5, 2.5]],
+  band80: [
+    [0, 0, 0.5, 0.5, 1.5],
+    [0, 0, 1.5, 1.5, 2.5],
+  ],
 }
 
 describe('TimeSeries static markup', () => {
-  const html = renderToStaticMarkup(
-    <TimeSeries series={[a, b]} tS={12} width={312} height={120} />,
-  )
+  const html = renderToStaticMarkup(<TimeSeries series={[a, b]} tS={12} width={312} height={120} />)
 
   it('renders the frame and the legend with both series labels', () => {
     expect(html).toContain('class="chart"')
@@ -101,15 +107,29 @@ describe('TimeSeries helpers', () => {
 })
 
 describe('TimeSeries horizon markup', () => {
-  const late: Series = { ...a, id: 'late', label: 'Late series', values: Array.from({ length: 121 }, (_, i) => i * DT < 40 ? NaN : 999) }
-  const render = (horizonS?: number) => renderToStaticMarkup(
-    <TimeSeries series={[a, late]} tS={45} width={312} horizonS={horizonS} marks={[{ tS: 45, label: 'Future mark', color: 'accent' }]} />,
-  )
+  const late: Series = {
+    ...a,
+    id: 'late',
+    label: 'Late series',
+    values: Array.from({ length: 121 }, (_, i) => (i * DT < 40 ? NaN : 999)),
+  }
+  const render = (horizonS?: number) =>
+    renderToStaticMarkup(
+      <TimeSeries
+        series={[a, late]}
+        tS={45}
+        width={312}
+        horizonS={horizonS}
+        marks={[{ tS: 45, label: 'Future mark', color: 'accent' }]}
+      />,
+    )
 
   it('preserves unscoped markup with Infinity, including all-NaN legend entries', () => {
     expect(render(Infinity)).toBe(render())
     const emptySeries = [a, { ...late, values: [NaN] }]
-    expect(renderToStaticMarkup(<TimeSeries series={emptySeries} tS={0} width={312} />)).toContain('Late series')
+    expect(renderToStaticMarkup(<TimeSeries series={emptySeries} tS={0} width={312} />)).toContain(
+      'Late series',
+    )
   })
 
   it('excludes a series first finite at 40 seconds from the 30-second legend', () => {
@@ -130,9 +150,16 @@ describe('TimeSeries horizon markup', () => {
   })
 
   it('never reads a tooltip sample past the horizon, even when snapping rounds forward', () => {
-    const tip = (label: number, horizonS?: number) => renderToStaticMarkup(
-      <SeriesTip series={[late]} tokens={readTokens()} label={label} active horizonS={horizonS} />,
-    )
+    const tip = (label: number, horizonS?: number) =>
+      renderToStaticMarkup(
+        <SeriesTip
+          series={[late]}
+          tokens={readTokens()}
+          label={label}
+          active
+          horizonS={horizonS}
+        />,
+      )
     expect(tip(40)).toContain('999')
     expect(tip(40, 30)).toBe('')
     expect(tip(39.8, 39.9)).toBe('')

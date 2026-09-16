@@ -37,7 +37,6 @@ export interface KillChainRoute {
 /** C2-to-C2 interop hops a route may traverse (interop is mutual: both directions). */
 const MAX_C2_HOPS = 2
 
-
 /**
  * Kill-chain routing graph over active entities. Paths run sensor -> effector
  * direct, or sensor -> c2 (-> c2, up to MAX_C2_HOPS interop hops) -> effector;
@@ -48,7 +47,10 @@ const MAX_C2_HOPS = 2
  * Standalone effectors (own radar / operator-aimed) always get a zero-latency
  * route with no via.
  */
-export function killChainRoutes(scenario: Scenario, sensorIds: ReadonlySet<string>): Map<string, KillChainRoute> {
+export function killChainRoutes(
+  scenario: Scenario,
+  sensorIds: ReadonlySet<string>,
+): Map<string, KillChainRoute> {
   // Disabled entities drop out of the chain entirely.
   const active = scenario.entities.filter(entityActive)
   const byId = new Map(active.map((e) => [e.id, e]))
@@ -72,8 +74,7 @@ export function killChainRoutes(scenario: Scenario, sensorIds: ReadonlySet<strin
     const from = byId.get(c.fromId)
     const to = byId.get(c.toId)
     if (!from || !to) continue
-    const latencyS =
-      c.latencyS ?? (doctrine.enabled ? defaultLinkLatencyS(from.kind, to.kind) : 0)
+    const latencyS = c.latencyS ?? (doctrine.enabled ? defaultLinkLatencyS(from.kind, to.kind) : 0)
     const typed = c.confidence != null
     if (from.kind === 'c2' && to.kind === 'c2') {
       push(c2Adj, c.fromId, { toId: c.toId, latencyS, typed })
@@ -112,7 +113,13 @@ export function killChainRoutes(scenario: Scenario, sensorIds: ReadonlySet<strin
     }
     let s = best.get(effectorId)
     if (!s) {
-      s = { latencyS, viaC2Ids, fcSourceIds: new Set(), sourceSensorIds: new Set(), typed: pathTyped }
+      s = {
+        latencyS,
+        viaC2Ids,
+        fcSourceIds: new Set(),
+        sourceSensorIds: new Set(),
+        typed: pathTyped,
+      }
       best.set(effectorId, s)
     } else {
       if (latencyS < s.latencyS) {
@@ -125,9 +132,7 @@ export function killChainRoutes(scenario: Scenario, sensorIds: ReadonlySet<strin
     const fcMatch =
       sensor.specId != null &&
       (profile?.fcSources?.includes(sensor.specId) ||
-        profile?.pairs.some(
-          (p) => p.withSpecId === sensor.specId && p.role === 'fc-uplink',
-        ) ||
+        profile?.pairs.some((p) => p.withSpecId === sensor.specId && p.role === 'fc-uplink') ||
         profileFor(sensor.specId)?.pairs.some(
           (p) => p.withSpecId === effSpecId && p.role === 'fc-uplink',
         ))
@@ -193,7 +198,10 @@ export function killChainRoutes(scenario: Scenario, sensorIds: ReadonlySet<strin
 }
 
 /** Effector ids with a kill-chain route from the given sensors (incl. standalone). */
-export function connectedEffectorIds(scenario: Scenario, sensorIds: ReadonlySet<string>): Set<string> {
+export function connectedEffectorIds(
+  scenario: Scenario,
+  sensorIds: ReadonlySet<string>,
+): Set<string> {
   return new Set(killChainRoutes(scenario, sensorIds).keys())
 }
 

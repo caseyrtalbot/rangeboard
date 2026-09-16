@@ -96,25 +96,35 @@ describe('worker slot', () => {
     slot.cancel({ type: 'cancel', id: 'b' })
     vi.advanceTimersByTime(CANCEL_GRACE_MS + 1)
     expect(second.terminated).toBe(true)
-    expect(silent.onMessage).toHaveBeenCalledExactlyOnceWith({ type: 'error', id: 'b', text: CANCEL_TIMEOUT_MESSAGE })
+    expect(silent.onMessage).toHaveBeenCalledExactlyOnceWith({
+      type: 'error',
+      id: 'b',
+      text: CANCEL_TIMEOUT_MESSAGE,
+    })
   })
 
-  it.each(['construction', 'post'])('a synchronous %s failure is one terminal error and leaves nothing live', (kind) => {
-    ControlledWorker.constructionError = kind === 'construction' ? 'Worker blocked' : null
-    ControlledWorker.postError = kind === 'post' ? 'Cannot clone request' : null
-    const slot = createWorkerSlot()
-    const { spec, onMessage } = protocol('a')
-    expect(slot.start(spec)).toBe(true)
-    expect(onMessage).toHaveBeenCalledExactlyOnceWith({ type: 'error', id: 'a',
-      text: kind === 'construction' ? 'Worker blocked' : 'Cannot clone request' })
-    if (kind === 'post') expect(ControlledWorker.latest().terminated).toBe(true)
-    expect(slot.cancel({ type: 'cancel' })).toBe(false)
-    ControlledWorker.constructionError = null
-    ControlledWorker.postError = null
-    slot.start(spec)
-    ControlledWorker.latest().send({ type: 'done', id: 'a' })
-    expect(onMessage).toHaveBeenCalledTimes(2)
-  })
+  it.each(['construction', 'post'])(
+    'a synchronous %s failure is one terminal error and leaves nothing live',
+    (kind) => {
+      ControlledWorker.constructionError = kind === 'construction' ? 'Worker blocked' : null
+      ControlledWorker.postError = kind === 'post' ? 'Cannot clone request' : null
+      const slot = createWorkerSlot()
+      const { spec, onMessage } = protocol('a')
+      expect(slot.start(spec)).toBe(true)
+      expect(onMessage).toHaveBeenCalledExactlyOnceWith({
+        type: 'error',
+        id: 'a',
+        text: kind === 'construction' ? 'Worker blocked' : 'Cannot clone request',
+      })
+      if (kind === 'post') expect(ControlledWorker.latest().terminated).toBe(true)
+      expect(slot.cancel({ type: 'cancel' })).toBe(false)
+      ControlledWorker.constructionError = null
+      ControlledWorker.postError = null
+      slot.start(spec)
+      ControlledWorker.latest().send({ type: 'done', id: 'a' })
+      expect(onMessage).toHaveBeenCalledTimes(2)
+    },
+  )
 
   it('returns false without a Worker and starts nothing', () => {
     const slot = createWorkerSlot()

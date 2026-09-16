@@ -48,7 +48,12 @@ describe('sensitivityLoop parity on the JIATF-401 laydown', () => {
     // S4: every row carries the five responses; the headline fields alias leakers.
     for (const r of summary.rows) {
       expect(Object.keys(r.responses!)).toEqual([...SENSITIVITY_RESPONSES])
-      expect(r.responses!.leakers).toMatchObject({ lo: r.low, hi: r.high, swing: r.swing, se: r.se })
+      expect(r.responses!.leakers).toMatchObject({
+        lo: r.low,
+        hi: r.high,
+        swing: r.swing,
+        se: r.se,
+      })
       for (const key of SENSITIVITY_RESPONSES) {
         const stat = r.responses![key]
         expect(stat.swing).toBe(Math.abs(stat.hi - stat.lo))

@@ -27,7 +27,8 @@ function request(): McSweepRequest {
   }
 }
 
-const posted = (): McSweepMessage[] => context.postMessage.mock.calls.map((c) => c[0] as McSweepMessage)
+const posted = (): McSweepMessage[] =>
+  context.postMessage.mock.calls.map((c) => c[0] as McSweepMessage)
 
 beforeEach(async () => {
   vi.resetModules()
@@ -36,14 +37,24 @@ beforeEach(async () => {
   await import('./mc.worker')
 })
 
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
 
 it('completes a 2 x 2 sweep of 4 replicates and posts the loop summary with progress per cell', async () => {
   const req = request()
   await context.onmessage!({ data: req })
   const messages = posted()
-  expect(messages.map((m) => m.type)).toEqual(['sweep-progress', 'sweep-progress', 'sweep-progress', 'sweep-done'])
-  expect(messages.slice(0, 3)).toEqual([1, 2, 3].map((done) => ({ type: 'sweep-progress', runId: req.runId, done, total: 4 })))
+  expect(messages.map((m) => m.type)).toEqual([
+    'sweep-progress',
+    'sweep-progress',
+    'sweep-progress',
+    'sweep-done',
+  ])
+  expect(messages.slice(0, 3)).toEqual(
+    [1, 2, 3].map((done) => ({ type: 'sweep-progress', runId: req.runId, done, total: 4 })),
+  )
   const done = messages[3]
   if (done.type !== 'sweep-done') throw new Error(done.type)
   expect(done.runId).toBe(req.runId)
@@ -82,6 +93,8 @@ it('posts a sweep error for a refused request without a summary', async () => {
   req.factors = [{ id: 'raidSize', values: [1] }]
   await context.onmessage!({ data: req })
   expect(context.postMessage).toHaveBeenCalledExactlyOnceWith({
-    type: 'sweep-error', runId: req.runId, message: 'raidSize takes 2 to 6 values, not 1',
+    type: 'sweep-error',
+    runId: req.runId,
+    message: 'raidSize takes 2 to 6 values, not 1',
   })
 })

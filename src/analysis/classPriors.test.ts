@@ -18,11 +18,17 @@ import { FIELDS_BY_KIND, PF_SPREAD, spreadBasisFor, spreadFor } from './paramete
 const ROOT = new URL('../../', import.meta.url).pathname
 
 /** Every library JSON file with its class key as the generated prior files name it. */
-function libraryFiles(): Array<{ id: string; spec: string | null; attributes: Record<string, unknown>; fields: Record<string, { value: unknown }> }> {
+function libraryFiles(): Array<{
+  id: string
+  spec: string | null
+  attributes: Record<string, unknown>
+  fields: Record<string, { value: unknown }>
+}> {
   const out = []
   for (const dir of ['sensor', 'effector', 'uas', 'c2', 'asset', 'marker']) {
     for (const name of readdirSync(`${ROOT}data/library/${dir}`)) {
-      if (name.endsWith('.json')) out.push(JSON.parse(readFileSync(`${ROOT}data/library/${dir}/${name}`, 'utf8')))
+      if (name.endsWith('.json'))
+        out.push(JSON.parse(readFileSync(`${ROOT}data/library/${dir}/${name}`, 'utf8')))
     }
   }
   return out
@@ -101,7 +107,10 @@ describe('class priors', () => {
 
   it('every class with a prior is the class of at least three seed models', () => {
     for (const key of Object.keys(CLASS_PRIORS)) {
-      expect(SEED_LIBRARY.filter((m) => classOfModel(m) === key).length, key).toBeGreaterThanOrEqual(3)
+      expect(
+        SEED_LIBRARY.filter((m) => classOfModel(m) === key).length,
+        key,
+      ).toBeGreaterThanOrEqual(3)
     }
   })
 
@@ -120,7 +129,10 @@ describe('class priors', () => {
     expect(row!.spread).toBeUndefined()
     const prior = CLASS_PRIORS['sensor/radar/any/any'].fields.detectRangeM
     expect(spreadFor(a422, 'detectRangeM')).toEqual(PF_SPREAD.detectRangeM.spread)
-    expect(spreadFor(a422, 'detectRangeM', CLASS_PRIORS)).toEqual({ kind: 'lognormal', sigmaDb: 'sigmaDb' in prior && prior.sigmaDb })
+    expect(spreadFor(a422, 'detectRangeM', CLASS_PRIORS)).toEqual({
+      kind: 'lognormal',
+      sigmaDb: 'sigmaDb' in prior && prior.sigmaDb,
+    })
     expect(spreadBasisFor(a422, 'detectRangeM')).toBe('pf')
     expect(spreadBasisFor(a422, 'detectRangeM', CLASS_PRIORS)).toBe('class-prior')
     // A field with no prior in the class keeps the PF fallback under the table too.
@@ -142,7 +154,10 @@ describe('class priors', () => {
   })
 
   it('derive-priors --check passes against the committed files', () => {
-    const run = spawnSync('node', ['scripts/derive-priors.mjs', '--check'], { cwd: ROOT, encoding: 'utf8' })
+    const run = spawnSync('node', ['scripts/derive-priors.mjs', '--check'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    })
     expect(run.stderr).toBe('')
     expect(run.status).toBe(0)
   })

@@ -15,6 +15,8 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm test` | Run current-source Vitest tests under `src/` |
 | `npx vitest run --dir src src/playback/pk.test.ts` | Run one file; `-t 'fragment'` selects test names |
 | `npm run lint` | Run oxlint; do not add to existing fast-refresh warnings |
+| `npm run format` | Write Prettier layout for `.ts`, `.tsx` and `.mjs` sources |
+| `npm run format:check` | Reject sources that differ from Prettier (`prettier.config.mjs`) |
 | `npm run build` | TypeScript project build and Vite production bundle |
 | `npm run schema:generate` | Regenerate runtime descriptors after domain type changes |
 | `npm run schema:check` | Reject descriptors that differ from current types |
@@ -32,7 +34,7 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run engine:build` | Build the headless engine bundle `dist-engine/engine.js` from `src/engine/index.ts` |
 | `npm run engine -- <scenario.json> --replicates N --seed S --out run.json [--overrides overrides.json]` | Run a fixed replicate count over worker threads, an override set applied from the manifest, and write a run record |
 | `npm run test:engine` | Check the runner record equals the in-process summary at one seed |
-| `npm run check` | Complete documentation, evidence, type, library, schema, engine, test, lint and build gate |
+| `npm run check` | Complete documentation, evidence, type, library, schema, engine, test, lint, format and build gate |
 
 Run the complete gate for source changes and after integrating lanes. `npm run check`
 does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
@@ -314,8 +316,8 @@ These scripts are evidence of a dated run. Adapt and inspect them against curren
   through `parseAutosave` and `loadScenario` and verifies real-worker results, freshness,
   charts and export. The fixture fires four deterministic events with a routed KuRFS. Its
   spawn-in-ring and unvalidated-model findings limit it to integration checks; it is not
-  detection evidence. Measured results are in the
-  [wave record](field-te/WAVE_C2_C3_E1_COMPLETION.md).
+  detection evidence. Measured results remain in Git history as
+  `docs/field-te/WAVE_C2_C3_E1_COMPLETION.md`.
 - For native file input, image decoding, library import and recovery, use the
   [native import recipe](field-te/evidence/wave-c2-c3-e1-2026-09-05/native-import-recipe.md)
   and the [recovery harness](field-te/evidence/wave-c2-c3-e1-2026-09-05/wave-recovery.js.txt).

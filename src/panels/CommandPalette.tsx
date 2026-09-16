@@ -92,7 +92,6 @@ const ACTIONS: Command[] = [
       ) {
         useStore.getState().replaceScenario(emptyScenario())
       }
-
     },
   },
   {
@@ -101,7 +100,12 @@ const ACTIONS: Command[] = [
     label: 'Export scenario',
     run: () => exportScenario(useStore.getState().scenario),
   },
-  { id: 'import-scenario', category: 'Scenario', label: 'Import scenario', run: importScenarioFile },
+  {
+    id: 'import-scenario',
+    category: 'Scenario',
+    label: 'Import scenario',
+    run: importScenarioFile,
+  },
   {
     id: 'export-library',
     category: 'Library',

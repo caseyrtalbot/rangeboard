@@ -17,13 +17,15 @@ export interface BoundingBox {
 
 /** The box of `points`; throws with fewer than three points or a zero-area box. */
 export function boundingBoxOf(points: Vec2[]): BoundingBox {
-  if (points.length < 3) throw new Error(`Optimize bounds need at least 3 points, not ${points.length}`)
+  if (points.length < 3)
+    throw new Error(`Optimize bounds need at least 3 points, not ${points.length}`)
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
   for (const p of points) {
-    if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) throw new Error('Optimize bounds hold a non-finite point')
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y))
+      throw new Error('Optimize bounds hold a non-finite point')
     minX = Math.min(minX, p.x)
     minY = Math.min(minY, p.y)
     maxX = Math.max(maxX, p.x)
@@ -57,7 +59,7 @@ export function pointInPolygon(p: Vec2, points: Vec2[]): boolean {
     const b = points[j]
     if (distToSegment2(p, a, b) <= EDGE_TOLERANCE_M * EDGE_TOLERANCE_M) return true
     // Even-odd rule: count the edges a horizontal ray from p to +x crosses.
-    if ((a.y > p.y) !== (b.y > p.y)) {
+    if (a.y > p.y !== b.y > p.y) {
       const xAtY = a.x + ((p.y - a.y) * (b.x - a.x)) / (b.y - a.y)
       if (p.x < xAtY) inside = !inside
     }

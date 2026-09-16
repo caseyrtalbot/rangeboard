@@ -33,7 +33,6 @@ describe('seed system preset integrity', () => {
     }
   })
 
-
   it('every preset link is one the integration model supports', () => {
     // addSystemFromPreset writes these links straight into Connection records
     // without consulting evaluateIntegration, so a preset can otherwise draw a
@@ -45,7 +44,8 @@ describe('seed system preset integrity', () => {
         const to = byId.get(preset.components[b].specId)!
         const verdict = evaluateIntegration(from, to)
         if (!verdict) offenders.push(`${preset.id} [${a},${b}]: no basis ${from.id} -> ${to.id}`)
-        else if (!verdict.ok) offenders.push(`${preset.id} [${a},${b}]: denied ${from.id} -> ${to.id}`)
+        else if (!verdict.ok)
+          offenders.push(`${preset.id} [${a},${b}]: denied ${from.id} -> ${to.id}`)
       }
     }
     expect(offenders).toEqual([])

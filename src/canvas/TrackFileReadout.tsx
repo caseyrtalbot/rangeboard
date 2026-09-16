@@ -44,7 +44,7 @@ function ReadoutCard({
 }: { entity: Entity; scenario: Scenario } & Props) {
   const camera = useStore((s) => s.camera)
   const units = useStore((s) => s.ui.units)
-  const simTimeS = useStore(s => s.playback.simTimeS)
+  const simTimeS = useStore((s) => s.playback.simTimeS)
   const tObs = horizonS == null ? -Infinity : Math.min(horizonS, simTimeS)
   const horizon = useMemo(() => ({ scoped: true, horizonS: tObs }), [tObs])
   const select = useStore((s) => s.select)
@@ -53,9 +53,20 @@ function ReadoutCard({
   const model = modelFor(scenario, entity)
   const color = entityInk(entity, model)
   const readout = useMemo(() => {
-    const anchor = renderedTrialGeometry(scenario, trial, horizonS == null ? null : tObs, simTimeS).tracks.get(entity.id)
+    const anchor = renderedTrialGeometry(
+      scenario,
+      trial,
+      horizonS == null ? null : tObs,
+      simTimeS,
+    ).tracks.get(entity.id)
     return threatReadoutAt({
-      scenario, entity, trial, horizonS, tS: tObs, horizon, units,
+      scenario,
+      entity,
+      trial,
+      horizonS,
+      tS: tObs,
+      horizon,
+      units,
       anchor: anchor ? { position: anchor.pos } : undefined,
       trialSweep: trial && tObs !== -Infinity ? trialSweepAt(trial, tObs) : undefined,
     })
@@ -104,7 +115,9 @@ function ReadoutCard({
             </Fragment>
           ))}
         </div>
-        {readout.state && <div className="ro-v">{readout.rows.find(row => row.id === 'residual')?.value}</div>}
+        {readout.state && (
+          <div className="ro-v">{readout.rows.find((row) => row.id === 'residual')?.value}</div>
+        )}
         <div className="ro-foot">
           <span>{readout.sourceHorizon}</span>
           <button

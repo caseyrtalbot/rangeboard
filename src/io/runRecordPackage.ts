@@ -41,8 +41,15 @@ const UNCERTAINTY_MODES: readonly UncertaintyMode[] = ['aleatory', 'total']
 const FIDELITY_TIERS: readonly FidelityTier[] = ['analytic', 'datasheet', 'calibrated', 'fallback']
 const PRODUCERS: readonly RunManifest['producer'][] = ['browser', 'cli']
 const PHYSICS_SWITCHES: readonly PhysicsSwitch[] = [
-  'truthTracks', 'noFalseTracks', 'noOperatorQueue', 'singlePulseRadar',
-  'noFlightLimits', 'rfBandGate', 'eoirSpanRatio', 'legacyKineticPk', 'legacyBeamPk',
+  'truthTracks',
+  'noFalseTracks',
+  'noOperatorQueue',
+  'singlePulseRadar',
+  'noFlightLimits',
+  'rfBandGate',
+  'eoirSpanRatio',
+  'legacyKineticPk',
+  'legacyBeamPk',
 ]
 
 function text(value: unknown, path: string): string {
@@ -51,14 +58,16 @@ function text(value: unknown, path: string): string {
 }
 
 function number(value: unknown, path: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) invalid(path, 'expected a finite number')
+  if (typeof value !== 'number' || !Number.isFinite(value))
+    invalid(path, 'expected a finite number')
   return value
 }
 
 /** JSON has no NaN: a statistic written as null is NaN again, as `validateMcSummary` restores it. */
 function statistic(value: unknown, path: string): number {
   if (value === null) return NaN
-  if (typeof value !== 'number' || !Number.isFinite(value)) invalid(path, 'expected a finite number or null')
+  if (typeof value !== 'number' || !Number.isFinite(value))
+    invalid(path, 'expected a finite number or null')
   return value
 }
 
@@ -98,10 +107,12 @@ function parseRunManifest(value: unknown, path: string): RunManifest {
     buildRevision: m.buildRevision == null ? null : text(m.buildRevision, `${path}.buildRevision`),
     sweepStepS: number(m.sweepStepS, `${path}.sweepStepS`),
     dataPackageVersion: number(m.dataPackageVersion, `${path}.dataPackageVersion`),
-    overrides: arrayAt(m.overrides, `${path}.overrides`)
-      .map((entry, i) => parseOverride(entry, `${path}.overrides[${i}]`)),
-    physicsSwitches: arrayAt(m.physicsSwitches, `${path}.physicsSwitches`)
-      .map((entry, i) => oneOf(entry, PHYSICS_SWITCHES, `${path}.physicsSwitches[${i}]`)),
+    overrides: arrayAt(m.overrides, `${path}.overrides`).map((entry, i) =>
+      parseOverride(entry, `${path}.overrides[${i}]`),
+    ),
+    physicsSwitches: arrayAt(m.physicsSwitches, `${path}.physicsSwitches`).map((entry, i) =>
+      oneOf(entry, PHYSICS_SWITCHES, `${path}.physicsSwitches[${i}]`),
+    ),
     fidelityFloor: oneOf(m.fidelityFloor, FIDELITY_TIERS, `${path}.fidelityFloor`),
     producer: oneOf(m.producer, PRODUCERS, `${path}.producer`),
   }
@@ -109,16 +120,25 @@ function parseRunManifest(value: unknown, path: string): RunManifest {
 
 function parseDefined(value: unknown, path: string): Stat['defined'] {
   const d = objectAt(value, path)
-  return { p: statistic(d.p, `${path}.p`), lo: statistic(d.lo, `${path}.lo`), hi: statistic(d.hi, `${path}.hi`) }
+  return {
+    p: statistic(d.p, `${path}.p`),
+    lo: statistic(d.lo, `${path}.lo`),
+    hi: statistic(d.hi, `${path}.hi`),
+  }
 }
 
 function parseResponseStat(value: unknown, path: string): SensitivityResponseStat {
   const r = objectAt(value, path)
   const defined = objectAt(r.defined, `${path}.defined`)
   return {
-    lo: statistic(r.lo, `${path}.lo`), hi: statistic(r.hi, `${path}.hi`),
-    swing: statistic(r.swing, `${path}.swing`), se: statistic(r.se, `${path}.se`),
-    defined: { lo: parseDefined(defined.lo, `${path}.defined.lo`), hi: parseDefined(defined.hi, `${path}.defined.hi`) },
+    lo: statistic(r.lo, `${path}.lo`),
+    hi: statistic(r.hi, `${path}.hi`),
+    swing: statistic(r.swing, `${path}.swing`),
+    se: statistic(r.se, `${path}.se`),
+    defined: {
+      lo: parseDefined(defined.lo, `${path}.defined.lo`),
+      hi: parseDefined(defined.hi, `${path}.defined.hi`),
+    },
   }
 }
 
@@ -134,20 +154,28 @@ function parseSensitivity(value: unknown, path: string): SensitivitySummary | nu
     const p = `${path}.rows[${i}]`
     const r = objectAt(entry, p)
     const row: SensitivitySummary['rows'][number] = {
-      modelId: text(r.modelId, `${p}.modelId`), field: text(r.field, `${p}.field`), label: text(r.label, `${p}.label`),
-      low: statistic(r.low, `${p}.low`), high: statistic(r.high, `${p}.high`),
-      swing: statistic(r.swing, `${p}.swing`), se: statistic(r.se, `${p}.se`),
+      modelId: text(r.modelId, `${p}.modelId`),
+      field: text(r.field, `${p}.field`),
+      label: text(r.label, `${p}.label`),
+      low: statistic(r.low, `${p}.low`),
+      high: statistic(r.high, `${p}.high`),
+      swing: statistic(r.swing, `${p}.swing`),
+      se: statistic(r.se, `${p}.se`),
     }
     if (r.responses !== undefined) {
       const responses = objectAt(r.responses, `${p}.responses`)
-      row.responses = Object.fromEntries(SENSITIVITY_RESPONSES.map((response) =>
-        [response, parseResponseStat(responses[response], `${p}.responses.${response}`)],
-      )) as NonNullable<SensitivitySummary['rows'][number]['responses']>
+      row.responses = Object.fromEntries(
+        SENSITIVITY_RESPONSES.map((response) => [
+          response,
+          parseResponseStat(responses[response], `${p}.responses.${response}`),
+        ]),
+      ) as NonNullable<SensitivitySummary['rows'][number]['responses']>
     }
     return row
   })
   const summary: SensitivitySummary = {
-    stat: 'leakers', rows,
+    stat: 'leakers',
+    rows,
     nominal: statistic(s.nominal, `${path}.nominal`),
     replicates: number(s.replicates, `${path}.replicates`),
     seed: number(s.seed, `${path}.seed`),
@@ -173,7 +201,10 @@ function parseSensitivity(value: unknown, path: string): SensitivitySummary | nu
 export function parseRunRecordPackage(value: unknown): RunRecord {
   const outer = objectAt(value, 'runRecord')
   if (outer.rangeboardRun === 1) {
-    invalid('runRecord', 'this is a debrief export, which carries no run manifest; export a run from the run history instead')
+    invalid(
+      'runRecord',
+      'this is a debrief export, which carries no run manifest; export a run from the run history instead',
+    )
   }
   const raw = outer.rangeboardRunRecord === 1 ? objectAt(outer.record, 'runRecord.record') : outer
   return {

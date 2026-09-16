@@ -29,9 +29,12 @@ function scenarioAt(seed: number, replicates: number) {
 function record(id: string, seed: number, savedAt: string, withSensitivity: boolean): RunRecord {
   const scenario = scenarioAt(seed, 3)
   return {
-    id, savedAt, label: `RUN-${id}`,
+    id,
+    savedAt,
+    label: `RUN-${id}`,
     manifest: createRunManifest(scenario, `sim-${id}`, `basis-${id}`),
-    scenario, scenarioHash: `basis-${id}`,
+    scenario,
+    scenarioHash: `basis-${id}`,
     mc: runReplicates(scenario),
     sensitivity: withSensitivity ? runSensitivity(scenario) : null,
   }
@@ -75,18 +78,20 @@ describe('exportRunsSqlite', () => {
   })
 
   it('returns per-target rows for both runs through one join', async () => {
-    const joined = sqlite('-noheader',
+    const joined = sqlite(
+      '-noheader',
       `SELECT r.id, t.threat_id, t.ship_count
        FROM per_target t JOIN runs r ON r.id = t.run_id
        WHERE r.id IN ('run-a', 'run-b')
-       ORDER BY r.id, t.threat_id`)
+       ORDER BY r.id, t.threat_id`,
+    )
     const rows = joined.split('\n').filter(Boolean)
     const threats = Object.keys(records[0].mc.perThreat)
     expect(threats.length).toBeGreaterThan(0)
     // Both runs ran the same scenario threats, so the join returns two rows per threat.
     expect(rows).toHaveLength(threats.length * 2)
-    expect(rows.filter(row => row.startsWith('run-a|'))).toHaveLength(threats.length)
-    expect(rows.filter(row => row.startsWith('run-b|'))).toHaveLength(threats.length)
+    expect(rows.filter((row) => row.startsWith('run-a|'))).toHaveLength(threats.length)
+    expect(rows.filter((row) => row.startsWith('run-b|'))).toHaveLength(threats.length)
 
     const seeds = sqlite('-noheader', 'SELECT id, seed, replicates FROM runs ORDER BY id')
     expect(seeds).toBe('run-a|3|3\nrun-b|7|3')
@@ -95,16 +100,23 @@ describe('exportRunsSqlite', () => {
   it('carries the effector and sensitivity rows, and leaves sobol empty', () => {
     const effectors = Object.keys(records[0].mc.perEffector)
     expect(effectors.length).toBeGreaterThan(0)
-    expect(sqlite('-noheader', 'SELECT COUNT(*) FROM per_effector'))
-      .toBe(String(effectors.length * 2))
+    expect(sqlite('-noheader', 'SELECT COUNT(*) FROM per_effector')).toBe(
+      String(effectors.length * 2),
+    )
 
     // Only run-a carries a sensitivity summary; each of its rows writes one row per response.
     const rows = records[0].sensitivity!.rows
-    const expected = rows.reduce((sum, row) => sum + (row.responses ? Object.keys(row.responses).length : 1), 0)
+    const expected = rows.reduce(
+      (sum, row) => sum + (row.responses ? Object.keys(row.responses).length : 1),
+      0,
+    )
     expect(expected).toBeGreaterThan(0)
-    expect(sqlite('-noheader',
-      `SELECT COUNT(*) FROM sensitivity s JOIN runs r ON r.id = s.run_id WHERE r.id = 'run-a'`))
-      .toBe(String(expected))
+    expect(
+      sqlite(
+        '-noheader',
+        `SELECT COUNT(*) FROM sensitivity s JOIN runs r ON r.id = s.run_id WHERE r.id = 'run-a'`,
+      ),
+    ).toBe(String(expected))
     expect(sqlite('-noheader', `SELECT COUNT(*) FROM sensitivity WHERE run_id = 'run-b'`)).toBe('0')
 
     // No saved record carries Sobol indices today: the table exists and is empty by construction.
@@ -116,11 +128,15 @@ describe('exportRunsSqlite', () => {
     // SQLite has no NaN: both columns write NULL on every per-target row of the two runs.
     const rows = Number(sqlite('-noheader', 'SELECT COUNT(*) FROM per_target'))
     expect(rows).toBe(2)
-    expect(sqlite('-noheader',
-      'SELECT COUNT(*) FROM per_target WHERE killed_p025 IS NULL AND killed_p975 IS NULL'))
-      .toBe(String(rows))
+    expect(
+      sqlite(
+        '-noheader',
+        'SELECT COUNT(*) FROM per_target WHERE killed_p025 IS NULL AND killed_p975 IS NULL',
+      ),
+    ).toBe(String(rows))
     // The interval method is text beside the bounds, so a reader never guesses it.
-    expect(sqlite('-noheader', 'SELECT DISTINCT killed_interval FROM per_target').split('\n'))
-      .not.toContain('')
+    expect(
+      sqlite('-noheader', 'SELECT DISTINCT killed_interval FROM per_target').split('\n'),
+    ).not.toContain('')
   })
 })

@@ -6,7 +6,13 @@ import { LiveStrip } from './LiveStrip'
 
 function render(horizon: number, complete = false) {
   const { view } = installTrial()
-  useStore.setState(({ playback }) => ({ playback: { ...playback, phase: complete ? 'complete' : 'paused', completedAtMs: complete ? 1 : null } }))
+  useStore.setState(({ playback }) => ({
+    playback: {
+      ...playback,
+      phase: complete ? 'complete' : 'paused',
+      completedAtMs: complete ? 1 : null,
+    },
+  }))
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(<LiveStrip view={view} horizon={horizon} />)
 }

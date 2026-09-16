@@ -71,29 +71,28 @@ function DoctrineInfo() {
   return (
     <Info label="About the fire-control sequence">
       <p>
-        Detect, track, identify, target, engage, assess. A shot needs a stable radar or EO/IR
-        track from a sensor routed to the shooter, hostile identification, the declaration
-        dwell, the kill-chain hop latency, and the shooter's own target dwell. Only then is
-        the effector release-ready.
+        Detect, track, identify, target, engage, assess. A shot needs a stable radar or EO/IR track
+        from a sensor routed to the shooter, hostile identification, the declaration dwell, the
+        kill-chain hop latency, and the shooter's own target dwell. Only then is the effector
+        release-ready.
       </p>
       <p>
-        The launch point decides where in the envelope the authorized shot is released. Every
-        policy fires no later than the deadline that keeps the set re-engagement depth before
-        arrival, and every shot carries its predicted Pk at the effect point.
+        The launch point decides where in the envelope the authorized shot is released. Every policy
+        fires no later than the deadline that keeps the set re-engagement depth before arrival, and
+        every shot carries its predicted Pk at the effect point.
       </p>
       <p>
         With doctrine off, the ROE gate opens the engagement window and every ready effector
         volleys. Effector preparation and travel times still apply.
       </p>
       <p>
-        Track initiation, target dwell, BDA dwell and commit Pk are set per system by sensor
-        role and effector type, or by the model's own override.
+        Track initiation, target dwell, BDA dwell and commit Pk are set per system by sensor role
+        and effector type, or by the model's own override.
       </p>
       <p>All timing values are planning factors, not measured system performance.</p>
     </Info>
   )
 }
-
 
 /** The ROE control and the doctrine toggle in the header; the doctrine factors in the body. */
 function DoctrineControls() {

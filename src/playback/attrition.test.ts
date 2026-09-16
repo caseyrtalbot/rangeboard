@@ -348,8 +348,19 @@ describe('assignment-to-effect latency (engageTimeS)', () => {
     // falloff = 1 - 0.3 * 810/4000 = 0.93925 and kill = 0.5 * 0.93925.
     // No kill can exist before W + 120: the companion test below shows an
     // envelope that ends before W + 120 yields zero kills.
-    const { scenario, effIds: [effId] } = longScenario(
-      [interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 120, magazineSize: 4, salvoCooldownS: 1000 })],
+    const {
+      scenario,
+      effIds: [effId],
+    } = longScenario(
+      [
+        interceptor({
+          pk: 0.5,
+          maxRangeM: 4000,
+          engageTimeS: 120,
+          magazineSize: 4,
+          salvoCooldownS: 1000,
+        }),
+      ],
       990,
     )
     const r = resolveEngagements(scenario)
@@ -366,8 +377,19 @@ describe('assignment-to-effect latency (engageTimeS)', () => {
     // Same geometry but the path ends at x = 590: the envelope holds only
     // ~115 s < 120 s, so no assignment can take effect inside it. This is
     // the attrition-side twin of the sim.ts 'window-too-short' status.
-    const { scenario, effIds: [effId] } = longScenario(
-      [interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 120, magazineSize: 4, salvoCooldownS: 1000 })],
+    const {
+      scenario,
+      effIds: [effId],
+    } = longScenario(
+      [
+        interceptor({
+          pk: 0.5,
+          maxRangeM: 4000,
+          engageTimeS: 120,
+          magazineSize: 4,
+          salvoCooldownS: 1000,
+        }),
+      ],
       590,
     )
     const r = resolveEngagements(scenario)
@@ -386,7 +408,13 @@ describe('assignment-to-effect latency (engageTimeS)', () => {
     // envelope, so it must not fire even though the threat is engageable.
     const modelA = interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 0, salvoCooldownS: 1000 })
     const modelB = {
-      ...interceptor({ pk: 0.9, maxRangeM: 1000, engageTimeS: 120, magazineSize: 10, salvoCooldownS: 2 }),
+      ...interceptor({
+        pk: 0.9,
+        maxRangeM: 1000,
+        engageTimeS: 120,
+        magazineSize: 10,
+        salvoCooldownS: 2,
+      }),
       id: 'tst-int-b',
       name: 'test interceptor b',
     }
@@ -404,8 +432,17 @@ describe('assignment-to-effect latency (engageTimeS)', () => {
     // ~200 s window, 2 s cooldown, 30 s engage time, 2 rounds: assignments
     // at t = 5.5 and 7.5 empty the magazine; effects land at 35.5 and 37.5
     // (x = -2790 and -2710), each on the same lone ship.
-    const { scenario, effIds: [effId] } = longScenario([
-      interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 30, magazineSize: 2, salvoCooldownS: 2 }),
+    const {
+      scenario,
+      effIds: [effId],
+    } = longScenario([
+      interceptor({
+        pk: 0.5,
+        maxRangeM: 4000,
+        engageTimeS: 30,
+        magazineSize: 2,
+        salvoCooldownS: 2,
+      }),
     ])
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
@@ -427,10 +464,7 @@ describe('assignment-to-effect latency (engageTimeS)', () => {
     // Assignment-order bookkeeping would leave the kill undegraded.
     const jamModel = jammer({ pk: 0.5, maxRangeM: 4000, engageTimeS: 0, salvoCooldownS: 1000 })
     const { scenario, effIds } = longScenario(
-      [
-        interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 120, salvoCooldownS: 1000 }),
-        jamModel,
-      ],
+      [interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 120, salvoCooldownS: 1000 }), jamModel],
       4000,
       TARGET_MIXED,
     )
@@ -453,9 +487,7 @@ describe('jammer latency', () => {
     // Same numbers as the ew suite: one jam at t = 5.5, d = 990,
     // soft kill = 0.5 * (1 - 0.3 * 0.99) = 0.3515 against a GPS (drift)
     // target. Jammer expenditure counts in jamSalvos, not shotsFired.
-    const { scenario, effId } = singleThreatScenario(
-      jammer({ pk: 0.5, salvoCooldownS: 1000 }),
-    )
+    const { scenario, effId } = singleThreatScenario(jammer({ pk: 0.5, salvoCooldownS: 1000 }))
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
     expect(t.shotsFired).toBe(0)
@@ -503,8 +535,14 @@ describe('fire distribution: survival cutoff', () => {
     const uasB = ent('uas', TARGET.id, { x: -1210, y: 0 })
     scenario.entities = [sensor, eff, uasA, uasB]
     scenario.connections = [link(sensor.id, eff.id)]
-    const pathA = flight(uasA.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])
-    const pathB = flight(uasB.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])
+    const pathA = flight(uasA.id, [
+      { x: -1210, y: 0 },
+      { x: 3000, y: 0 },
+    ])
+    const pathB = flight(uasB.id, [
+      { x: -1210, y: 0 },
+      { x: 3000, y: 0 },
+    ])
     pathB.startDelayS = 60
     scenario.paths = [pathA, pathB]
 
@@ -539,9 +577,21 @@ describe('fire distribution: in-flight discounting', () => {
     // Both effects land at tEffect = 15.5 (x = -3590):
     // Pk ~ 0.5 * (1 - 0.3 * 3590/4000) = 0.365375 per ship (the wingman
     // sits ~20 m off the lane; its Pk differs only in the 6th decimal).
-    const modelA = interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 10, magazineSize: 1, salvoCooldownS: 1000 })
+    const modelA = interceptor({
+      pk: 0.5,
+      maxRangeM: 4000,
+      engageTimeS: 10,
+      magazineSize: 1,
+      salvoCooldownS: 1000,
+    })
     const modelB = {
-      ...interceptor({ pk: 0.5, maxRangeM: 4000, engageTimeS: 10, magazineSize: 1, salvoCooldownS: 1000 }),
+      ...interceptor({
+        pk: 0.5,
+        maxRangeM: 4000,
+        engageTimeS: 10,
+        magazineSize: 1,
+        salvoCooldownS: 1000,
+      }),
       id: 'tst-int-b2',
       name: 'test interceptor b2',
     }
@@ -581,7 +631,12 @@ describe('fire distribution: continue-jam saturation', () => {
     const uas = ent('uas', TARGET_MIXED.id, { x: -1210, y: 0 })
     scenario.entities = [sensor, eff, uas]
     scenario.connections = [link(sensor.id, eff.id)]
-    scenario.paths = [flight(uas.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])]
+    scenario.paths = [
+      flight(uas.id, [
+        { x: -1210, y: 0 },
+        { x: 3000, y: 0 },
+      ]),
+    ]
 
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
@@ -613,7 +668,12 @@ describe('expenditure split: kinetic vs jam', () => {
     const uas = ent('uas', TARGET_MIXED.id, { x: -1210, y: 0 })
     scenario.entities = [sensor, int, jam, uas]
     scenario.connections = [link(sensor.id, int.id), link(sensor.id, jam.id)]
-    scenario.paths = [flight(uas.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])]
+    scenario.paths = [
+      flight(uas.id, [
+        { x: -1210, y: 0 },
+        { x: 3000, y: 0 },
+      ]),
+    ]
 
     const r = resolveEngagements(scenario)
     expect(r.totals.shotsFired).toBe(1)
@@ -665,7 +725,11 @@ describe('kills credited against arrival at the defended asset', () => {
     // first 0.5 s sample inside is t = 43.0 (x = -2490).
     // Gate (tight ROE) is 5.5, the salvo is assigned there, and the intercept
     // lands at 125.5, long after the threat was overhead.
-    const { scenario, effIds: [effId], uasId } = longScenario([slowInterceptor()])
+    const {
+      scenario,
+      effIds: [effId],
+      uasId,
+    } = longScenario([slowInterceptor()])
     scenario.entities.push(asset({ x: -2000, y: 0 }))
 
     const a = assessAllThreats(scenario).find((x) => x.uasId === uasId)!
@@ -837,8 +901,17 @@ describe('expenditure channel split', () => {
     const jam = ent('effector', jamModel.id, { x: 0, y: 0 })
     const uas = ent('uas', TARGET_MIXED.id, { x: -1210, y: 0 })
     scenario.entities = [sensor, int, de, jam, uas]
-    scenario.connections = [link(sensor.id, int.id), link(sensor.id, de.id), link(sensor.id, jam.id)]
-    scenario.paths = [flight(uas.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])]
+    scenario.connections = [
+      link(sensor.id, int.id),
+      link(sensor.id, de.id),
+      link(sensor.id, jam.id),
+    ]
+    scenario.paths = [
+      flight(uas.id, [
+        { x: -1210, y: 0 },
+        { x: 3000, y: 0 },
+      ]),
+    ]
 
     const r = resolveEngagements(scenario)
     expect(r.totals.shotsFired).toBe(1)
@@ -883,8 +956,14 @@ describe('raid partition', () => {
     if (withAsset) scenario.entities.push(asset({ x: 2000, y: 0 }))
     scenario.connections = [link(sensor.id, eff.id)]
     scenario.paths = [
-      flight(a.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }]),
-      flight(b.id, [{ x: -1210, y: 5000 }, { x: 3000, y: 5000 }]),
+      flight(a.id, [
+        { x: -1210, y: 0 },
+        { x: 3000, y: 0 },
+      ]),
+      flight(b.id, [
+        { x: -1210, y: 5000 },
+        { x: 3000, y: 5000 },
+      ]),
     ]
     return { scenario, aId: a.id, bId: b.id }
   }
@@ -924,10 +1003,7 @@ describe('raid partition', () => {
     ).toBeCloseTo(r.totals.raidSize, 9)
     // Every row partitions its own ships the same way.
     for (const t of r.threats) {
-      expect(t.expectedKills + t.expectedLeakers + t.expectedNoArrival).toBeCloseTo(
-        t.shipCount,
-        9,
-      )
+      expect(t.expectedKills + t.expectedLeakers + t.expectedNoArrival).toBeCloseTo(t.shipCount, 9)
     }
   })
 
@@ -1154,7 +1230,9 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
       { x: 1000, y: 0 },
       { x: 8000, y: 0 },
     ]
-    const slower = resolveEngagements(build(false, { ...near, effector: { ...near.effector!, maxRangeM: 5000 } }, slow, 20))
+    const slower = resolveEngagements(
+      build(false, { ...near, effector: { ...near.effector!, maxRangeM: 5000 } }, slow, 20),
+    )
     expect(slower.events).toHaveLength(1)
     expect(slower.events[0].flightCapped).toBeUndefined()
     expect(slower.events[0].tEffectS).toBeCloseTo(10 + 24, 9)
@@ -1197,41 +1275,69 @@ describe('flyout kinematics (flyoutSpeedMps)', () => {
   })
 })
 
-
 describe('physical release metadata and playback', () => {
-  it.each([false, true])('keeps the round at a fixed-ID launcher until release (moving=%s)', (moving) => {
-    const scenario = legacyScenario()
-    const model = interceptor({ maxRangeM: 4600, engageTimeS: 3.25, flyoutSpeedMps: 200, magazineSize: 1, pk: 0.5 })
-    scenario.library = [...scenario.library, SENSOR, TARGET, model]
-    const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 }, { id: 'r3-sensor' })
-    const effector = ent('effector', model.id, { x: 0, y: 0 }, { id: 'r3-launcher' })
-    const uas = ent('uas', TARGET.id, { x: 2000, y: 0 }, { id: 'r3-threat' })
-    scenario.entities = [sensor, effector, uas]
-    scenario.connections = [{ id: 'r3-link', fromId: sensor.id, toId: effector.id, label: '' }]
-    scenario.paths = [{ ...flight(uas.id, [{ x: 2000, y: 0 }, { x: -1000, y: 0 }], 20), id: 'r3-path' }]
-    const assessments = assessAllThreats(scenario)
-    // Reuse the controlled eligibility window to isolate stationary kinematics;
-    // a zero-length path alone has no assessment duration in the full sweep.
-    if (!moving) scenario.paths[0].points = [{ x: 2000, y: 0 }, { x: 2000, y: 0 }]
-    const report = resolveEngagements(scenario, assessments)
-    expect(report.events).toHaveLength(1)
-    const ev = report.events[0]
-    const release = ev.tReleaseS!
-    expect(release).toBe(ev.tS + 3.25)
-    expect(ev.tEffectS).toBeGreaterThan(release)
-    if (!moving) expect(ev.tEffectS - release).toBeCloseTo(2000 / 140, 12)
-    const tl = buildTrackTimeline(scenario, assessments, report)
-    expect(shotsInFlightAt(tl, release - 0.001)).toEqual([])
-    expect(effectorStatesAt(tl, ev.tS).get(effector.id)).toBe('preparing')
-    expect(trackStatesAt(tl, ev.tS).get(uas.id)!.kineticSalvos).toBe(1)
-    expect(shotsInFlightAt(tl, release)[0].progress).toBe(0)
-    const middle = shotsInFlightAt(tl, (release + ev.tEffectS) / 2)[0]
-    expect(middle.progress).toBeCloseTo(0.5, 12)
-    expect(middle.from).toEqual(effector.pos)
-    expect(middle.to).toEqual(posAtTime(scenario.paths[0].points, 20, scenario.paths[0].startDelayS, ev.tEffectS).pos)
-    expect(shotsInFlightAt(tl, ev.tEffectS)).toEqual([])
-    expect(trackStatesAt(tl, ev.tEffectS).get(uas.id)!.expectedKills).toBe(report.threats[0].expectedKills)
-  })
+  it.each([false, true])(
+    'keeps the round at a fixed-ID launcher until release (moving=%s)',
+    (moving) => {
+      const scenario = legacyScenario()
+      const model = interceptor({
+        maxRangeM: 4600,
+        engageTimeS: 3.25,
+        flyoutSpeedMps: 200,
+        magazineSize: 1,
+        pk: 0.5,
+      })
+      scenario.library = [...scenario.library, SENSOR, TARGET, model]
+      const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 }, { id: 'r3-sensor' })
+      const effector = ent('effector', model.id, { x: 0, y: 0 }, { id: 'r3-launcher' })
+      const uas = ent('uas', TARGET.id, { x: 2000, y: 0 }, { id: 'r3-threat' })
+      scenario.entities = [sensor, effector, uas]
+      scenario.connections = [{ id: 'r3-link', fromId: sensor.id, toId: effector.id, label: '' }]
+      scenario.paths = [
+        {
+          ...flight(
+            uas.id,
+            [
+              { x: 2000, y: 0 },
+              { x: -1000, y: 0 },
+            ],
+            20,
+          ),
+          id: 'r3-path',
+        },
+      ]
+      const assessments = assessAllThreats(scenario)
+      // Reuse the controlled eligibility window to isolate stationary kinematics;
+      // a zero-length path alone has no assessment duration in the full sweep.
+      if (!moving)
+        scenario.paths[0].points = [
+          { x: 2000, y: 0 },
+          { x: 2000, y: 0 },
+        ]
+      const report = resolveEngagements(scenario, assessments)
+      expect(report.events).toHaveLength(1)
+      const ev = report.events[0]
+      const release = ev.tReleaseS!
+      expect(release).toBe(ev.tS + 3.25)
+      expect(ev.tEffectS).toBeGreaterThan(release)
+      if (!moving) expect(ev.tEffectS - release).toBeCloseTo(2000 / 140, 12)
+      const tl = buildTrackTimeline(scenario, assessments, report)
+      expect(shotsInFlightAt(tl, release - 0.001)).toEqual([])
+      expect(effectorStatesAt(tl, ev.tS).get(effector.id)).toBe('preparing')
+      expect(trackStatesAt(tl, ev.tS).get(uas.id)!.kineticSalvos).toBe(1)
+      expect(shotsInFlightAt(tl, release)[0].progress).toBe(0)
+      const middle = shotsInFlightAt(tl, (release + ev.tEffectS) / 2)[0]
+      expect(middle.progress).toBeCloseTo(0.5, 12)
+      expect(middle.from).toEqual(effector.pos)
+      expect(middle.to).toEqual(
+        posAtTime(scenario.paths[0].points, 20, scenario.paths[0].startDelayS, ev.tEffectS).pos,
+      )
+      expect(shotsInFlightAt(tl, ev.tEffectS)).toEqual([])
+      expect(trackStatesAt(tl, ev.tEffectS).get(uas.id)!.expectedKills).toBe(
+        report.threats[0].expectedKills,
+      )
+    },
+  )
 })
 
 /*
@@ -1284,8 +1390,22 @@ describe('optical dwell reservation', () => {
     scenario.entities = [sensor, laser, a, b]
     scenario.connections = [link(sensor.id, laser.id)]
     scenario.paths = [
-      flight(a.id, [{ x: 10000, y: 0 }, { x: 10100, y: 0 }], 1),
-      flight(b.id, [{ x: 10000, y: 100 }, { x: 10100, y: 100 }], 1),
+      flight(
+        a.id,
+        [
+          { x: 10000, y: 0 },
+          { x: 10100, y: 0 },
+        ],
+        1,
+      ),
+      flight(
+        b.id,
+        [
+          { x: 10000, y: 100 },
+          { x: 10100, y: 100 },
+        ],
+        1,
+      ),
     ]
     const report = resolveEngagements(scenario, assessAllThreats(scenario))
     const events = report.events.filter((e) => e.effectorId === laser.id)

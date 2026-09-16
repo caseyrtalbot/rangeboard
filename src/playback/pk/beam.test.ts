@@ -26,7 +26,10 @@ const UAS: UasSpec = {
   emissionsNote: '',
 }
 
-function effector(type: EffectorSpec['effectorType'], patch: Partial<EffectorSpec> = {}): EffectorSpec {
+function effector(
+  type: EffectorSpec['effectorType'],
+  patch: Partial<EffectorSpec> = {},
+): EffectorSpec {
   return {
     effectorType: type,
     minRangeM: 0,
@@ -62,7 +65,9 @@ describe('beamEffect', () => {
       rechargeS: 0.75,
     })
     expect(beamEffect(0.8, spec, UAS, 900, ENV, { legacyCooldownS: 5 })).toMatchObject({
-      mode: 'hpm-field', pk: 0.8, cooldownS: 0.75,
+      mode: 'hpm-field',
+      pk: 0.8,
+      cooldownS: 0.75,
     })
     expect(beamEffect(0.8, spec, UAS, 1100, ENV, { legacyCooldownS: 5 }).pk).toBe(0)
   })
@@ -76,13 +81,17 @@ describe('beamEffect', () => {
       apertureM: 0.3,
       jitterUrad: 10,
     })
-    expect(beamEffect(0.8, optical, UAS, rangeM, ENV, {
-      legacyCooldownS: 5,
-      fallback: true,
-    }).pk).toBe(expected)
-    expect(beamEffect(0.8, { ...optical, outputPowerKw: null }, UAS, rangeM, ENV, {
-      legacyCooldownS: 5,
-    }).pk).toBe(expected)
+    expect(
+      beamEffect(0.8, optical, UAS, rangeM, ENV, {
+        legacyCooldownS: 5,
+        fallback: true,
+      }).pk,
+    ).toBe(expected)
+    expect(
+      beamEffect(0.8, { ...optical, outputPowerKw: null }, UAS, rangeM, ENV, {
+        legacyCooldownS: 5,
+      }).pk,
+    ).toBe(expected)
     const rf = effector('hpm', { fieldStrengthVm: null })
     expect(beamEffect(0.8, rf, UAS, rangeM, ENV, { legacyCooldownS: 5 }).pk).toBe(expected)
   })

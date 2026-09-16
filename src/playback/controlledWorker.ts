@@ -24,20 +24,29 @@ export class ControlledWorker {
     if (ControlledWorker.postError != null) throw new Error(ControlledWorker.postError)
     this.request = request
   })
-  terminate = vi.fn(() => { this.terminated = true })
+  terminate = vi.fn(() => {
+    this.terminated = true
+  })
 
   constructor() {
-    if (ControlledWorker.constructionError != null) throw new Error(ControlledWorker.constructionError)
+    if (ControlledWorker.constructionError != null)
+      throw new Error(ControlledWorker.constructionError)
     ControlledWorker.instances.push(this)
   }
 
   /** Deliver one message as the worker would. */
-  send(data: unknown): void { this.onmessage?.({ data }) }
+  send(data: unknown): void {
+    this.onmessage?.({ data })
+  }
   /** Raise a native worker error. */
-  fail(message: string): void { this.onerror?.({ message }) }
+  fail(message: string): void {
+    this.onerror?.({ message })
+  }
 
   /** The worker constructed most recently. */
-  static latest(): ControlledWorker { return ControlledWorker.instances.at(-1)! }
+  static latest(): ControlledWorker {
+    return ControlledWorker.instances.at(-1)!
+  }
 
   /** Stub the global and clear every record and failure flag. */
   static install(): void {

@@ -130,7 +130,9 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
   const pdLow = thresholds.pdDetect
   const doctrine = effectiveDoctrine(scenario)
   const units = ui.units
-  const selectedUas = selectedUasId ? scenario.entities.find((e) => e.id === selectedUasId) : undefined
+  const selectedUas = selectedUasId
+    ? scenario.entities.find((e) => e.id === selectedUasId)
+    : undefined
   const target = selectedUas ? modelFor(scenario, selectedUas)?.uas : undefined
   // The engine range is a slant range to the threat altitude, so a ring on a
   // plan-view board is its ground projection. The mount height is the only
@@ -349,12 +351,20 @@ function stableRings(next: EntityRings[], prev: EntityRings[]): EntityRings[] {
 }
 
 // Both consumers share the expensive geometry; old scenarios can be collected.
-const ringCache = new WeakMap<Scenario, { view: RingView; selected: string | null; rings: EntityRings[] }>()
+const ringCache = new WeakMap<
+  Scenario,
+  { view: RingView; selected: string | null; rings: EntityRings[] }
+>()
 
 function sharedRings(scenario: Scenario, view: RingView, selected: string | null): EntityRings[] {
   const cached = ringCache.get(scenario)
-  if (cached && cached.selected === selected && cached.view.units === view.units &&
-    cached.view.layers === view.layers && cached.view.ringOverrides === view.ringOverrides) {
+  if (
+    cached &&
+    cached.selected === selected &&
+    cached.view.units === view.units &&
+    cached.view.layers === view.layers &&
+    cached.view.ringOverrides === view.ringOverrides
+  ) {
     return cached.rings
   }
   const rings = buildRings(scenario, view, selected)
@@ -413,7 +423,11 @@ type EntityEdges = Array<[Entity, RingEdge[]]>
 
 /** Radial edge distance only; sector spokes are not ring edges. Ties keep draw order. */
 export function hitRing(rings: EntityRings[], worldPt: Vec2, toleranceM: number): RingHit | null {
-  return hitEdges(rings.map((r) => [r.entity, ringEdges(r)]), worldPt, toleranceM)
+  return hitEdges(
+    rings.map((r) => [r.entity, ringEdges(r)]),
+    worldPt,
+    toleranceM,
+  )
 }
 
 function hitEdges(edges: EntityEdges, worldPt: Vec2, toleranceM: number): RingHit | null {
@@ -428,7 +442,10 @@ function hitEdges(edges: EntityEdges, worldPt: Vec2, toleranceM: number): RingHi
       if (!(distanceM <= toleranceM) || (closest && distanceM >= closest.distanceM)) continue
       const extra = e.key as keyof typeof EXTRA_RING_HINTS
       closest = {
-        entity, key: e.key, radiusM: e.radiusM, distanceM,
+        entity,
+        key: e.key,
+        radiusM: e.radiusM,
+        distanceM,
         name: EXTRA_RING_LABELS[extra] ?? RING_LABELS[e.key as RingKey],
         hint: EXTRA_RING_HINTS[extra] ?? RING_HINTS[e.key as RingKey],
       }

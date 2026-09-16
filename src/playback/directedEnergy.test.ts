@@ -67,8 +67,10 @@ describe('optical directed energy', () => {
 
   it('scales the calibrated fluence threshold by airframe class', () => {
     for (const [airframe, factor] of Object.entries(AIRFRAME_FLUENCE_FACTOR)) {
-      expect(fluenceThresholdJm2(target(airframe as UasSpec['airframe'])))
-        .toBeCloseTo(GROUP1_QUAD_FLUENCE_J_M2 * factor, 9)
+      expect(fluenceThresholdJm2(target(airframe as UasSpec['airframe']))).toBeCloseTo(
+        GROUP1_QUAD_FLUENCE_J_M2 * factor,
+        9,
+      )
     }
   })
 

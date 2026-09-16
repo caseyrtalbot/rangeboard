@@ -12,28 +12,47 @@ export const DASH = '—'
 
 /** Shared trial selection and bounded observation for every detail pane. */
 export function useDetailRun() {
-  const currentScenario = useStore(s => s.scenario)
-  const runId = useStore(s => s.playback.runId)
-  const setSimTime = useStore(s => s.setSimTime)
-  const units = useStore(s => s.ui.units)
+  const currentScenario = useStore((s) => s.scenario)
+  const runId = useStore((s) => s.playback.runId)
+  const setSimTime = useStore((s) => s.setSimTime)
+  const units = useStore((s) => s.ui.units)
   const trial = useTrialResult()
   const view = trialViewOf(trial)
   const scenario = view?.scenario ?? currentScenario
   const tObs = view ? trial.horizon : -Infinity
   const horizon = useMemo(() => ({ scoped: true, horizonS: tObs }), [tObs])
-  const sweep = useMemo(() => view ? trialSweepAt(view, tObs) : undefined, [view, tObs])
-  return { scenario, runId, setSimTime, units, view, sweep, series: trial.series,
-    assessments: view?.assessments ?? [], report: view?.attrition,
-    t: view ? tObs : 0, tObs, horizon, durationS: view?.durationS ?? scenarioDurationS(scenario),
-    untouched: !view, stateText: trialStateText(trial.selection, trial.snapshot?.observedThroughS) }
+  const sweep = useMemo(() => (view ? trialSweepAt(view, tObs) : undefined), [view, tObs])
+  return {
+    scenario,
+    runId,
+    setSimTime,
+    units,
+    view,
+    sweep,
+    series: trial.series,
+    assessments: view?.assessments ?? [],
+    report: view?.attrition,
+    t: view ? tObs : 0,
+    tObs,
+    horizon,
+    durationS: view?.durationS ?? scenarioDurationS(scenario),
+    untouched: !view,
+    stateText: trialStateText(trial.selection, trial.snapshot?.observedThroughS),
+  }
 }
 
 /** This entity's sampled component telemetry, absent before Play. */
 export function useComponentAt(run: ReturnType<typeof useDetailRun>, entityId: string) {
   const { view, tObs } = run
-  return useMemo(() => view ? trialSystemTelemetryAt(view, tObs)
-    .flatMap(group => group.components).find(component => component.entityId === entityId) : undefined,
-  [view, tObs, entityId])
+  return useMemo(
+    () =>
+      view
+        ? trialSystemTelemetryAt(view, tObs)
+            .flatMap((group) => group.components)
+            .find((component) => component.entityId === entityId)
+        : undefined,
+    [view, tObs, entityId],
+  )
 }
 
 /** One label and value line of a `.rows` block. */

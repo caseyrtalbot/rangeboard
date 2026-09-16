@@ -28,7 +28,9 @@ export function activeOverrides(overrides: readonly Override[], scenario: Scenar
     const mine = overrides.filter((o) => o.modelId === model.id)
     if (mine.length === 0) continue
     const order = Object.keys(specFields(model))
-    mine.sort((a, b) => rank(order, a.field) - rank(order, b.field) || a.field.localeCompare(b.field))
+    mine.sort(
+      (a, b) => rank(order, a.field) - rank(order, b.field) || a.field.localeCompare(b.field),
+    )
     out.push(...mine)
   }
   return out
@@ -74,6 +76,13 @@ export function applyOverrides(scenario: Scenario, overrides: readonly Override[
  * compares by this and not by the whole record.
  */
 export function sameAppliedOverrides(a: readonly Override[], b: readonly Override[]): boolean {
-  return a.length === b.length && a.every((o, i) =>
-    o.modelId === b[i].modelId && o.field === b[i].field && JSON.stringify(o.value) === JSON.stringify(b[i].value))
+  return (
+    a.length === b.length &&
+    a.every(
+      (o, i) =>
+        o.modelId === b[i].modelId &&
+        o.field === b[i].field &&
+        JSON.stringify(o.value) === JSON.stringify(b[i].value),
+    )
+  )
 }

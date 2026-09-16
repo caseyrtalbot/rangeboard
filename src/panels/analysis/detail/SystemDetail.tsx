@@ -29,9 +29,15 @@ export function SystemDetail({ entity }: { entity: Entity }) {
 
   const hopRows = useMemo<ReactNode[][]>(() => {
     void runId
-    const detecting = new Set(assessments.flatMap((a) => horizon.scoped
-      ? (a.sensorObservations ?? []).filter((observation) => observation.firstDetectS <= tObs).map((observation) => observation.sensorId)
-      : a.detectingSensorIds))
+    const detecting = new Set(
+      assessments.flatMap((a) =>
+        horizon.scoped
+          ? (a.sensorObservations ?? [])
+              .filter((observation) => observation.firstDetectS <= tObs)
+              .map((observation) => observation.sensorId)
+          : a.detectingSensorIds,
+      ),
+    )
     const sensorIds =
       horizon.scoped || detecting.size > 0
         ? detecting
@@ -63,7 +69,8 @@ export function SystemDetail({ entity }: { entity: Entity }) {
         .filter((ev) => ev.uasId === a.uasId && ev.killDelta > 0)
         .sort((x, y) => x.tEffectS - y.tEffectS)[0]
       const detect = !horizon.scoped || reached(a.firstDetectS, horizon) ? a.firstDetectS : null
-      const effectS = !horizon.scoped || reached(effect?.tEffectS, horizon) ? effect?.tEffectS ?? null : null
+      const effectS =
+        !horizon.scoped || reached(effect?.tEffectS, horizon) ? (effect?.tEffectS ?? null) : null
       const missing = horizon.scoped ? <span title={FORECAST_IN_ANALYZE}>{DASH}</span> : DASH
       return [
         entityName(scenario, a.uasId),
@@ -79,9 +86,16 @@ export function SystemDetail({ entity }: { entity: Entity }) {
     return threats
       .filter((a) => !horizon.scoped || reached(a.firstDetectS, horizon))
       .filter((a) => {
-        const routes = killChainRoutes(scenario, new Set(horizon.scoped
-          ? (a.sensorObservations ?? []).filter((observation) => observation.firstDetectS <= tObs).map((observation) => observation.sensorId)
-          : a.detectingSensorIds))
+        const routes = killChainRoutes(
+          scenario,
+          new Set(
+            horizon.scoped
+              ? (a.sensorObservations ?? [])
+                  .filter((observation) => observation.firstDetectS <= tObs)
+                  .map((observation) => observation.sensorId)
+              : a.detectingSensorIds,
+          ),
+        )
         return ![...routes.values()].some((r) => r.viaC2Ids.includes(entity.id))
       })
       .map((a) => ({ label: entityName(scenario, a.uasId), value: 'no route' }))
@@ -120,7 +134,9 @@ export function SystemDetail({ entity }: { entity: Entity }) {
         {uncovered.length > 0 ? (
           <Rows rows={uncovered} />
         ) : (
-          <p className="muted small">{untouched ? DASH : 'Every detected threat routes through this node.'}</p>
+          <p className="muted small">
+            {untouched ? DASH : 'Every detected threat routes through this node.'}
+          </p>
         )}
       </DetailSection>
     </div>

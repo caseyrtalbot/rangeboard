@@ -13,10 +13,7 @@ import { projectileBurstDurationS } from './ballistics'
 export const EPS = 1e-9
 
 /** Index of the interval containing t, or -1 (none, or intervals unknown). */
-export function intervalIndexAt(
-  intervals: Array<[number, number]> | undefined,
-  t: number,
-): number {
+export function intervalIndexAt(intervals: Array<[number, number]> | undefined, t: number): number {
   if (!intervals) return -1
   for (let i = 0; i < intervals.length; i++) {
     const [s0, s1] = intervals[i]
@@ -108,10 +105,11 @@ function phase3FlyoutProfile(
 
   if (spec.effectorType === 'gun') {
     if (
-      !nonNegative(spec.dispersionMils)
-      || !nonNegative(spec.fireControlErrorMils)
-      || !positive(spec.muzzleVelocityMps)
-    ) return null
+      !nonNegative(spec.dispersionMils) ||
+      !nonNegative(spec.fireControlErrorMils) ||
+      !positive(spec.muzzleVelocityMps)
+    )
+      return null
     const burstS = projectileBurstDurationS(spec)
     if (burstS == null) return null
     return {
@@ -127,9 +125,7 @@ function phase3FlyoutProfile(
 /** Distance flown by an interceptor under the Phase 3 boost/cruise profile. */
 export function interceptorDistanceM(spec: EffectorSpec, flightS: number): number | null {
   const profile = phase3FlyoutProfile(spec, { fallback: false })
-  return spec.effectorType === 'interceptor' && profile != null
-    ? profile.distanceAt(flightS)
-    : null
+  return spec.effectorType === 'interceptor' && profile != null ? profile.distanceAt(flightS) : null
 }
 
 /**
@@ -216,8 +212,7 @@ function seekerAcquisitionAfterEnd(
 
 /** Formation member positions of a threat at one sim time. */
 export function membersAtTime(ts: ThreatState, tS: number): Vec2[] {
-  const s = ts.sampleFlightAt?.(tS)
-    ?? posAtTime(ts.path!.points, ts.speedMps, ts.delayS, tS)
+  const s = ts.sampleFlightAt?.(tS) ?? posAtTime(ts.path!.points, ts.speedMps, ts.delayS, tS)
   return memberPositions(ts.entity, s.pos, s.headingDeg)
 }
 
@@ -375,10 +370,7 @@ export function interceptAt(
   const profile = phase3FlyoutProfile(es.spec, kineticOptions)
   if (profile != null) {
     const flightReleaseS = releaseS + profile.launchDelayS
-    const flightS = profileMeetTau(
-      profile,
-      (tauS) => sampleAt(flightReleaseS + tauS).slantM,
-    )
+    const flightS = profileMeetTau(profile, (tauS) => sampleAt(flightReleaseS + tauS).slantM)
     if (flightS == null) {
       const tEffectS = Number.isFinite(capS) && releaseS <= capS ? capS : releaseS
       return { ...sampleAt(tEffectS), tEffectS, capped: false, infeasible: true }
@@ -407,10 +399,7 @@ export function interceptAt(
   // solve the flyout against that same sampled trajectory, so timing, position
   // and feasibility all describe one trajectory.
   if (v > 0 && tofS != null && !closesOnSample(sampleAt, releaseS, tofS, v)) {
-    tofS = profileMeetTau(
-      constantSpeedProfile(v),
-      (tauS) => sampleAt(releaseS + tauS).slantM,
-    )
+    tofS = profileMeetTau(constantSpeedProfile(v), (tauS) => sampleAt(releaseS + tauS).slantM)
   }
   if (tofS == null) {
     // No meeting on a path that never ends: credit nothing, decline.
@@ -517,10 +506,7 @@ function interceptFromEstimateProfile(
     }
   }
   const flightReleaseS = releaseS + profile.launchDelayS
-  const flightS = profileMeetTau(
-    profile,
-    (tauS) => sampleAt(flightReleaseS + tauS).slantM,
-  )
+  const flightS = profileMeetTau(profile, (tauS) => sampleAt(flightReleaseS + tauS).slantM)
   if (flightS == null) {
     const tEffectS = Number.isFinite(capS) && releaseS <= capS ? capS : releaseS
     return { ...sampleAt(tEffectS), tEffectS, capped: false, infeasible: true }
@@ -562,25 +548,26 @@ export function interceptFor(
   }
   const releaseS = tS + es.engageTimeS
   const profile = phase3FlyoutProfile(es.spec, kineticOptions)
-  const ic = profile == null
-    ? interceptFromEstimate(
-      estimate,
-      es.entity.pos,
-      averageFlyoutMps(es.spec),
-      releaseS,
-      ts.altM - es.mountM,
-      capS,
-      stepS,
-    )
-    : interceptFromEstimateProfile(
-      estimate,
-      es.entity.pos,
-      releaseS,
-      ts.altM - es.mountM,
-      capS,
-      stepS,
-      profile,
-    )
+  const ic =
+    profile == null
+      ? interceptFromEstimate(
+          estimate,
+          es.entity.pos,
+          averageFlyoutMps(es.spec),
+          releaseS,
+          ts.altM - es.mountM,
+          capS,
+          stepS,
+        )
+      : interceptFromEstimateProfile(
+          estimate,
+          es.entity.pos,
+          releaseS,
+          ts.altM - es.mountM,
+          capS,
+          stepS,
+          profile,
+        )
   return { ...ic, interceptSource: 'estimate' }
 }
 

@@ -169,7 +169,10 @@ function editUas(spec: UasSpec, key: string, value: SpecEditValue): UasSpec {
     case 'group':
       return { ...spec, group: num(value) as UasSpec['group'] }
     case 'swerling':
-      return { ...spec, swerling: value === '' || value == null ? null : (num(value) as SwerlingCase) }
+      return {
+        ...spec,
+        swerling: value === '' || value == null ? null : (num(value) as SwerlingCase),
+      }
     case 'irSignature':
       return { ...spec, irSignature: (value || undefined) as IrSignature | undefined }
     case 'rcsM2':

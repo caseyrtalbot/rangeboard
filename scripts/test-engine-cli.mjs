@@ -17,13 +17,23 @@ const SEED = 4821
 let engine
 before(() => {
   execFileSync('npm', ['run', 'engine:build'], { cwd: ROOT, stdio: 'pipe' })
-  return import(pathToFileURL(resolve(ROOT, 'dist-engine/engine.js')).href).then((m) => { engine = m })
+  return import(pathToFileURL(resolve(ROOT, 'dist-engine/engine.js')).href).then((m) => {
+    engine = m
+  })
 })
 
 /** A calibrated Pk of 0.02 on the Coyote the fixture fires, in the persisted OverrideSet shape. */
-const OVERRIDES = { overrides: [
-  { modelId: 'lib-coyote', field: 'pk', value: 0.02, reason: 'calibrated', date: '2026-09-15T00:00:00.000Z' },
-] }
+const OVERRIDES = {
+  overrides: [
+    {
+      modelId: 'lib-coyote',
+      field: 'pk',
+      value: 0.02,
+      reason: 'calibrated',
+      date: '2026-09-15T00:00:00.000Z',
+    },
+  ],
+}
 
 function runCli(t, workers, overrides) {
   const dir = mkdtempSync(join(tmpdir(), 'rangeboard-engine-cli-'))
@@ -35,12 +45,28 @@ function runCli(t, workers, overrides) {
     writeFileSync(file, JSON.stringify(overrides))
     flags.push('--overrides', file)
   }
-  const result = spawnSync(process.execPath, [
-    'scripts/run-engine.mjs', FIXTURE,
-    '--replicates', String(REPLICATES), '--seed', String(SEED), '--workers', String(workers), '--out', out, ...flags,
-  ], { cwd: ROOT, encoding: 'utf8' })
+  const result = spawnSync(
+    process.execPath,
+    [
+      'scripts/run-engine.mjs',
+      FIXTURE,
+      '--replicates',
+      String(REPLICATES),
+      '--seed',
+      String(SEED),
+      '--workers',
+      String(workers),
+      '--out',
+      out,
+      ...flags,
+    ],
+    { cwd: ROOT, encoding: 'utf8' },
+  )
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, new RegExp(`replicates ${REPLICATES}  seed ${SEED}  workers ${workers}`))
+  assert.match(
+    result.stdout,
+    new RegExp(`replicates ${REPLICATES}  seed ${SEED}  workers ${workers}`),
+  )
   return JSON.parse(readFileSync(out, 'utf8'))
 }
 
@@ -52,7 +78,10 @@ function runCli(t, workers, overrides) {
 function expected(overrides = []) {
   const scenario = {
     ...engine.parseScenarioJson(readFileSync(FIXTURE, 'utf8')),
-    seed: SEED, replicates: REPLICATES, targetHalfWidth: null, runMode: 'monte-carlo',
+    seed: SEED,
+    replicates: REPLICATES,
+    targetHalfWidth: null,
+    runMode: 'monte-carlo',
   }
   const { elapsedMs: _e, ...mc } = engine.runReplicates(engine.applyOverrides(scenario, overrides))
   return { scenario, mc: JSON.parse(JSON.stringify(mc)) }
@@ -86,7 +115,10 @@ test('an override set is applied from the manifest and lowers the kills of the l
   const last = (xs) => xs[xs.length - 1]
   const library = expected().mc
   assert.ok(last(library.kills.mean) > 0)
-  assert.ok(last(mc.kills.mean) < last(library.kills.mean), `${last(mc.kills.mean)} < ${last(library.kills.mean)}`)
+  assert.ok(
+    last(mc.kills.mean) < last(library.kills.mean),
+    `${last(mc.kills.mean)} < ${last(library.kills.mean)}`,
+  )
 })
 
 test('one worker gives the same summary as three', (t) => {

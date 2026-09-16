@@ -34,13 +34,23 @@ export function AnalysisSection({
           aria-controls={contentId}
           onClick={() => setOpen((value) => !value)}
         >
-          <span className={`chevron${open ? ' open' : ''}`} aria-hidden="true">▸</span>
+          <span className={`chevron${open ? ' open' : ''}`} aria-hidden="true">
+            ▸
+          </span>
           <span className="section-title">{title}</span>
-          {!open && headline ? <span className="section-headline">{horizon.scoped ? FORECAST_IN_ANALYZE : headline}</span> : null}
+          {!open && headline ? (
+            <span className="section-headline">
+              {horizon.scoped ? FORECAST_IN_ANALYZE : headline}
+            </span>
+          ) : null}
         </button>
         {headerExtra ? <span className="section-extra">{headerExtra}</span> : null}
       </div>
-      {open ? <div className="section-content" id={contentId}>{children}</div> : null}
+      {open ? (
+        <div className="section-content" id={contentId}>
+          {children}
+        </div>
+      ) : null}
     </section>
   )
 }

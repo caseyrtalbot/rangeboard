@@ -178,7 +178,8 @@ function decode(runId: string, data: unknown): PoolMessage | null {
 }
 
 export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
-  const spawn = options.spawn ??
+  const spawn =
+    options.spawn ??
     (() => new Worker(new URL('./mc.worker.ts', import.meta.url), { type: 'module' }))
   let current: Run | null = null
 
@@ -213,7 +214,13 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
     run.cursor = end
     w.busy = true
     w.progress = 0
-    const request: McRangeRequest = { type: 'run-range', runId: run.id, scenario: run.scenario, start, end }
+    const request: McRangeRequest = {
+      type: 'run-range',
+      runId: run.id,
+      scenario: run.scenario,
+      start,
+      end,
+    }
     try {
       w.worker.postMessage(request)
     } catch (error) {

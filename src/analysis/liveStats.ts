@@ -272,20 +272,30 @@ export function trialKpisAt(view: TrialResultView, horizonS: number): TrialKpis 
   if (!timeline) {
     timeline = buildLiveTimeline(view.assessments, view.attrition)
     // Raw observation cannot borrow a not-yet-reached effect through the engine's EPS.
-    const counts = new Map(view.attrition.threats.map(row => [row.uasId, row.shipCount]))
-    const arrivals = view.assessments.filter(a => a.status !== 'no-path' && a.arrivalS != null)
+    const counts = new Map(view.attrition.threats.map((row) => [row.uasId, row.shipCount]))
+    const arrivals = view.assessments
+      .filter((a) => a.status !== 'no-path' && a.arrivalS != null)
       .sort((a, b) => a.arrivalS! - b.arrivalS!)
     let leakers = 0
-    timeline.arrivalLeakerPrefix = arrivals.map(a => {
-      const removed = view.attrition.events.filter(e => e.uasId === a.uasId && e.tEffectS <= a.arrivalS!)
+    timeline.arrivalLeakerPrefix = arrivals.map((a) => {
+      const removed = view.attrition.events
+        .filter((e) => e.uasId === a.uasId && e.tEffectS <= a.arrivalS!)
         .reduce((sum, e) => sum + e.killDelta, 0)
       leakers += (counts.get(a.uasId) ?? 1) - removed
       return leakers
     })
     trialTimelines.set(view, timeline)
   }
-  const observedThroughS = Math.min(Number.isNaN(horizonS) ? 0 : Math.max(0, horizonS), view.observedThroughS)
+  const observedThroughS = Math.min(
+    Number.isNaN(horizonS) ? 0 : Math.max(0, horizonS),
+    view.observedThroughS,
+  )
   const kpis = liveKpisAt(timeline, observedThroughS)
-  return { ...kpis, basis: 'simulated-trial', observedThroughS, kills: kpis.expectedKills,
-    reportedLeakers: view.hasActiveAsset ? kpis.leakerShips : null }
+  return {
+    ...kpis,
+    basis: 'simulated-trial',
+    observedThroughS,
+    kills: kpis.expectedKills,
+    reportedLeakers: view.hasActiveAsset ? kpis.leakerShips : null,
+  }
 }

@@ -40,11 +40,7 @@ const sens = createWorkerSlot()
 const pool = createWorkerPool()
 
 type McMessage =
-  | McWorkerMessage
-  | McSensitivityMessage
-  | McSweepMessage
-  | McMorrisMessage
-  | McSobolMessage
+  McWorkerMessage | McSensitivityMessage | McSweepMessage | McMorrisMessage | McSobolMessage
 
 /** The Monte Carlo protocol: messages are tagged by run id; `done` and `error` end the run. */
 function protocol<M extends McMessage>(
@@ -78,12 +74,14 @@ export function startMcRun(
   runId: string,
   onMessage: (m: McWorkerMessage) => void,
 ): boolean {
-  return run.start(protocol<McWorkerMessage>(
-    { type: 'run', runId, scenario },
-    ['progress', 'done', 'error'],
-    (message) => ({ type: 'error', runId, message }),
-    onMessage,
-  ))
+  return run.start(
+    protocol<McWorkerMessage>(
+      { type: 'run', runId, scenario },
+      ['progress', 'done', 'error'],
+      (message) => ({ type: 'error', runId, message }),
+      onMessage,
+    ),
+  )
 }
 
 /** Terminate the replicate worker if one is running. */
@@ -142,12 +140,14 @@ export function startSensitivity(
   onMessage: (m: McSensitivityMessage) => void,
 ): boolean {
   const request: McSensitivityRequest = { type: 'sensitivity', runId, scenario }
-  return sens.start(protocol<McSensitivityMessage>(
-    request,
-    ['sens-progress', 'sens-done', 'sens-error'],
-    (message) => ({ type: 'sens-error', runId, message }),
-    onMessage,
-  ))
+  return sens.start(
+    protocol<McSensitivityMessage>(
+      request,
+      ['sens-progress', 'sens-done', 'sens-error'],
+      (message) => ({ type: 'sens-error', runId, message }),
+      onMessage,
+    ),
+  )
 }
 
 /** Terminate the sensitivity worker if one is running. */
@@ -169,12 +169,14 @@ export function startSweep(
   request: McSweepRequest,
   onMessage: (m: McSweepMessage) => void,
 ): boolean {
-  return sens.start(protocol<McSweepMessage>(
-    request,
-    ['sweep-progress', 'sweep-done', 'sweep-error'],
-    (message) => ({ type: 'sweep-error', runId: request.runId, message }),
-    onMessage,
-  ))
+  return sens.start(
+    protocol<McSweepMessage>(
+      request,
+      ['sweep-progress', 'sweep-done', 'sweep-error'],
+      (message) => ({ type: 'sweep-error', runId: request.runId, message }),
+      onMessage,
+    ),
+  )
 }
 
 /**
@@ -186,12 +188,14 @@ export function startMorris(
   request: McMorrisRequest,
   onMessage: (m: McMorrisMessage) => void,
 ): boolean {
-  return sens.start(protocol<McMorrisMessage>(
-    request,
-    ['morris-progress', 'morris-done', 'morris-error'],
-    (message) => ({ type: 'morris-error', runId: request.runId, message }),
-    onMessage,
-  ))
+  return sens.start(
+    protocol<McMorrisMessage>(
+      request,
+      ['morris-progress', 'morris-done', 'morris-error'],
+      (message) => ({ type: 'morris-error', runId: request.runId, message }),
+      onMessage,
+    ),
+  )
 }
 
 /**
@@ -203,12 +207,14 @@ export function startSobol(
   request: McSobolRequest,
   onMessage: (m: McSobolMessage) => void,
 ): boolean {
-  return sens.start(protocol<McSobolMessage>(
-    request,
-    ['sobol-progress', 'sobol-done', 'sobol-error'],
-    (message) => ({ type: 'sobol-error', runId: request.runId, message }),
-    onMessage,
-  ))
+  return sens.start(
+    protocol<McSobolMessage>(
+      request,
+      ['sobol-progress', 'sobol-done', 'sobol-error'],
+      (message) => ({ type: 'sobol-error', runId: request.runId, message }),
+      onMessage,
+    ),
+  )
 }
 
 /** Terminate the sweep worker if one is running (the sensitivity slot). */

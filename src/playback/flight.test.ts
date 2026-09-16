@@ -38,8 +38,9 @@ function assertNullLimitParity(fixture: unknown): void {
     const delayS = effectivePathDelayS(scenario, path)
     const endS = Math.ceil(delayS + pathLength(path.points) / speed) + 1
     for (let tS = 0; tS <= endS; tS += 0.5) {
-      expect(limitedPosAtTime(path.points, speed, delayS, tS, noLimits, scenario.environment))
-        .toEqual(posAtTime(path.points, speed, delayS, tS))
+      expect(
+        limitedPosAtTime(path.points, speed, delayS, tS, noLimits, scenario.environment),
+      ).toEqual(posAtTime(path.points, speed, delayS, tS))
     }
   }
 }
@@ -67,25 +68,46 @@ describe('limitedPosAtTime', () => {
     const exitS = entryS + 1
     expect(turnRadiusM(speedMps, turnRateDegS)).toBeCloseTo(radiusM, 12)
 
-    const entry = limitedPosAtTime(points, speedMps, 0, entryS, uas({ maxTurnRateDegS: turnRateDegS }))
+    const entry = limitedPosAtTime(
+      points,
+      speedMps,
+      0,
+      entryS,
+      uas({ maxTurnRateDegS: turnRateDegS }),
+    )
     expect(entry.pos.x).toBeCloseTo(100 - radiusM, 9)
     expect(entry.pos.y).toBeCloseTo(0, 9)
     expect(entry.headingDeg).toBeCloseTo(90, 9)
 
-    const middle = limitedPosAtTime(points, speedMps, 0, entryS + 0.5, uas({ maxTurnRateDegS: turnRateDegS }))
+    const middle = limitedPosAtTime(
+      points,
+      speedMps,
+      0,
+      entryS + 0.5,
+      uas({ maxTurnRateDegS: turnRateDegS }),
+    )
     // Arc center (100-R, R), radial heading 0 -> 45 deg at half arc.
     expect(middle.pos.x).toBeCloseTo(100 - radiusM + radiusM / Math.sqrt(2), 9)
     expect(middle.pos.y).toBeCloseTo(radiusM - radiusM / Math.sqrt(2), 9)
     expect(middle.headingDeg).toBeCloseTo(135, 9)
 
-    const exit = limitedPosAtTime(points, speedMps, 0, exitS, uas({ maxTurnRateDegS: turnRateDegS }))
+    const exit = limitedPosAtTime(
+      points,
+      speedMps,
+      0,
+      exitS,
+      uas({ maxTurnRateDegS: turnRateDegS }),
+    )
     expect(exit.pos.x).toBeCloseTo(100, 9)
     expect(exit.pos.y).toBeCloseTo(radiusM, 9)
     expect(exit.headingDeg).toBeCloseTo(180, 9)
   })
 
   it('accelerates from rest to the path speed at the stated limit', () => {
-    const points = [{ x: 0, y: 0 }, { x: 100, y: 0 }]
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+    ]
     const spec = uas({ maxAccelMps2: 2 })
     // V = 10 m/s and a = 2 m/s2: acceleration lasts 5 s and covers 25 m.
     // At t=2, s=0.5*a*t2=4 m. At t=7, s=25+10*(7-5)=45 m.
@@ -95,7 +117,10 @@ describe('limitedPosAtTime', () => {
   })
 
   it('adds the meteorological wind vector to the ground track while airborne', () => {
-    const points = [{ x: 0, y: 0 }, { x: 1000, y: 0 }]
+    const points = [
+      { x: 0, y: 0 },
+      { x: 1000, y: 0 },
+    ]
     const spec = uas({ climbRateMps: 5 })
     const calm = limitedPosAtTime(points, 10, 0, 4, spec)
     const windy = limitedPosAtTime(points, 10, 0, 4, spec, {
@@ -112,7 +137,10 @@ describe('limitedPosAtTime', () => {
   })
 
   it('does not invent vertical motion from a scalar altitude and climb limit', () => {
-    const points = [{ x: 0, y: 0 }, { x: 100, y: 0 }]
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+    ]
     const sample = limitedPosAtTime(points, 10, 0, 4, uas({ climbRateMps: 5 }))
     expect(sample).toEqual(posAtTime(points, 10, 0, 4))
   })

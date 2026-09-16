@@ -31,7 +31,7 @@ Primary-source status does not establish independent experimental evidence. Curr
 
 `npx vitest run` over the sixteen named model/geometry/statistics test files: **320 tests passed in 16 files**, duration 3.82 s. [Exact output](../evidence/model-evidence-2026-09-05/focused-tests.txt). No test or equation was changed. This is mathematical/regression evidence only; it does not validate missing mechanisms or empirical uncertainty coverage.
 
-A concurrent `npx tsc --noEmit -p tsconfig.app.json` exited **2** while a temporary parity scratch test existed under `src/playback/`: node:fs/process type errors and a Scenario cast. [Exact output](../evidence/model-evidence-2026-09-05/typecheck.txt). The scratch file was removed and the integrated gates were rerun for the [wave record](../WAVE_C2_C3_E1_COMPLETION.md).
+A concurrent `npx tsc --noEmit -p tsconfig.app.json` exited **2** while a temporary parity scratch test existed under `src/playback/`: node:fs/process type errors and a Scenario cast. [Exact output](../evidence/model-evidence-2026-09-05/typecheck.txt). The scratch file was removed and the integrated gates were rerun for the then-current `docs/field-te/WAVE_C2_C3_E1_COMPLETION.md`.
 
 Local artifact QA verifies all Markdown relative targets and source #L pointers exist, seven original hashes match the capture catalog, the seed source hash still matches, all 27 historical artifacts remain byte-identical, and all eight dossiers carry their required sections. See [QA output](../evidence/model-evidence-2026-09-05/artifact-qa.txt).
 

@@ -4,9 +4,7 @@ import { hashU01, idHash, mulberry32 } from './prng'
 describe('mulberry32', () => {
   it('gives the same first values the stats.ts private copy gave for seed 1', () => {
     const r = mulberry32(1)
-    expect([r(), r(), r()]).toEqual([
-      0.6270739405881613, 0.002735721180215478, 0.5274470399599522,
-    ])
+    expect([r(), r(), r()]).toEqual([0.6270739405881613, 0.002735721180215478, 0.5274470399599522])
   })
 
   it('two generators with the same seed agree', () => {

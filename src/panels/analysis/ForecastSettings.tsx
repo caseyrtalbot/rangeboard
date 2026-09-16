@@ -60,7 +60,9 @@ function modeChip(
       const early = summary != null && summary.stopped.rule !== 'replicates'
       return {
         cls: 'chip mc',
-        text: early ? `MC ${summary.replicates} of ${run.targetHalfWidth == null ? run.replicates : run.stopCap} · seed ${run.seed}` : seeded,
+        text: early
+          ? `MC ${summary.replicates} of ${run.targetHalfWidth == null ? run.replicates : run.stopCap} · seed ${run.seed}`
+          : seeded,
         title: early
           ? `${basis}, stopped at ${summary.replicates} by ${STOP_BY[summary.stopped.rule]}, ${Math.round(
               summary.elapsedMs,
@@ -89,7 +91,9 @@ export function ForecastSettings() {
   const chip = chipOf(run, mc)
   return (
     <div aria-label="Forecast and analysis">
-      <span className={chip.cls} title={chip.title}>{chip.text}</span>
+      <span className={chip.cls} title={chip.title}>
+        {chip.text}
+      </span>
       <span className="chip-meta">{chip.meta}</span>
       <RunControl />
     </div>

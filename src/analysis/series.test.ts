@@ -135,8 +135,12 @@ function legacyScenario(): Scenario {
   const s = emptyScenario()
   s.doctrine = { ...s.doctrine!, enabled: false }
   s.physics = [
-    'singlePulseRadar', 'noFlightLimits', 'rfBandGate', 'eoirSpanRatio',
-    'legacyKineticPk', 'legacyBeamPk',
+    'singlePulseRadar',
+    'noFlightLimits',
+    'rfBandGate',
+    'eoirSpanRatio',
+    'legacyKineticPk',
+    'legacyBeamPk',
   ]
   return s
 }
@@ -155,7 +159,12 @@ function killScenario(): { scenario: Scenario; sensorId: string; effId: string; 
   const asset = ent('asset', null, { x: 2500, y: 0 })
   scenario.entities = [sensor, eff, uas, asset]
   scenario.connections = [link(sensor.id, eff.id, 2)]
-  scenario.paths = [flight(uas.id, [{ x: -1210, y: 0 }, { x: 3000, y: 0 }])]
+  scenario.paths = [
+    flight(uas.id, [
+      { x: -1210, y: 0 },
+      { x: 3000, y: 0 },
+    ]),
+  ]
   return { scenario, sensorId: sensor.id, effId: eff.id, uasId: uas.id }
 }
 
@@ -180,7 +189,12 @@ function pdScenario(): { scenario: Scenario; sensorId: string; uasId: string } {
   const sensor = ent('sensor', 'lib-giraffe1x', { x: 0, y: 0 })
   const uas = ent('uas', 'tst-mohajer', { x: -15000, y: 0 })
   scenario.entities = [sensor, uas]
-  scenario.paths = [flight(uas.id, [{ x: -15000, y: 0 }, { x: 0, y: 0 }])]
+  scenario.paths = [
+    flight(uas.id, [
+      { x: -15000, y: 0 },
+      { x: 0, y: 0 },
+    ]),
+  ]
   return { scenario, sensorId: sensor.id, uasId: uas.id }
 }
 
@@ -201,7 +215,12 @@ function slotScenario(count: number): { scenario: Scenario; ids: string[] } {
     const x0 = detected ? -3000 - 1000 * i : -3000
     const uas = ent('uas', 'tst-uas', { x: x0, y })
     threats.push(uas)
-    paths.push(flight(uas.id, [{ x: x0, y }, { x: 1000, y }]))
+    paths.push(
+      flight(uas.id, [
+        { x: x0, y },
+        { x: 1000, y },
+      ]),
+    )
   }
   // Entity order is the reverse of detection order, so the sort must do the work.
   scenario.entities = [sensor, ...threats.slice().reverse()]
@@ -227,7 +246,9 @@ function coastScenario(points: Vec2[]): { scenario: Scenario; sensorId: string; 
 function flightScenario(): ReturnType<typeof killScenario> {
   const out = killScenario()
   out.scenario.library = out.scenario.library.map((m) =>
-    m.id === 'tst-int' ? { ...m, effector: { ...m.effector!, engageTimeS: 4, flyoutSpeedMps: 200 } } : m,
+    m.id === 'tst-int'
+      ? { ...m, effector: { ...m.effector!, engageTimeS: 4, flyoutSpeedMps: 200 } }
+      : m,
   )
   return out
 }
@@ -262,9 +283,17 @@ describe('kpiSeries', () => {
     const { report } = engagementPicture(scenario)
     const byId = new Map(kpiSeries(scenario).map((s) => [s.id, s]))
     expect([...byId.keys()]).toEqual([
-      'kpi.detected', 'kpi.classified', 'kpi.targetable', 'kpi.engaged', 'kpi.kineticShots',
-      'kpi.deSalvos', 'kpi.jamSalvos', 'kpi.expectedKills', 'kpi.lateKills',
-      'kpi.arrivedTracks', 'kpi.leakerShips',
+      'kpi.detected',
+      'kpi.classified',
+      'kpi.targetable',
+      'kpi.engaged',
+      'kpi.kineticShots',
+      'kpi.deSalvos',
+      'kpi.jamSalvos',
+      'kpi.expectedKills',
+      'kpi.lateKills',
+      'kpi.arrivedTracks',
+      'kpi.leakerShips',
     ])
     const last = (id: string) => byId.get(id)!.values.at(-1)!
     expect(report.totals.expectedKills).toBeGreaterThan(0)
@@ -427,7 +456,10 @@ describe('trackSlots', () => {
     expect(slots.get(ids[3])).toBe(OTHER_TOKEN)
     const visible = new Set([ids[3], ids[2]])
     const filtered = [...slots].filter(([id]) => visible.has(id))
-    expect(filtered).toEqual([[ids[2], 'chart-3'], [ids[3], OTHER_TOKEN]])
+    expect(filtered).toEqual([
+      [ids[2], 'chart-3'],
+      [ids[3], OTHER_TOKEN],
+    ])
   })
 })
 
@@ -453,11 +485,16 @@ describe('trackLadderRows', () => {
     // Out past 3000 m at 6.67 s, turn at 11 s, back inside at 15.33 s: scans 7
     // to 15 miss, the fifth miss drops at 11, and 16 detects into a new interval.
     const { scenario, sensorId, uasId } = coastScenario([
-      { x: 0, y: -2600 }, { x: 0, y: -3260 }, { x: 0, y: -2600 },
+      { x: 0, y: -2600 },
+      { x: 0, y: -3260 },
+      { x: 0, y: -2600 },
     ])
     const { assessments } = engagementPicture(scenario)
     const obs = assessments[0].sensorObservations!.find((o) => o.sensorId === sensorId)!
-    expect(obs.intervals).toEqual([[0, 10.5], [16, 22.5]])
+    expect(obs.intervals).toEqual([
+      [0, 10.5],
+      [16, 22.5],
+    ])
     expect(obs.coastIntervals).toEqual([[7, 10.5]])
     expect(obs.trackInitAtS).toBe(2)
     const rows = trackLadderRows(scenario, sensorId)
@@ -465,7 +502,11 @@ describe('trackLadderRows', () => {
     expect(rows[0].id).toBe(uasId)
     // Inclusive DT intervals: [7, 10.5] covers [7, 11); the drop sits at 11.
     expect(triples(rows[0].spans)).toEqual([
-      ['init', 0, 2], ['track', 2, 7], ['coast', 7, 11], ['drop', 11, 11], ['track', 16, 23],
+      ['init', 0, 2],
+      ['track', 2, 7],
+      ['coast', 7, 11],
+      ['drop', 11, 11],
+      ['track', 16, 23],
     ])
     expectPartition(rows[0].spans)
   })
@@ -476,17 +517,25 @@ describe('trackLadderRows', () => {
     // detection is not extrapolated: the hold ends at 0.5, a new hold starts
     // at 2, and the ladder draws a drop marker at 1, not a coast.
     const { scenario, sensorId } = coastScenario([
-      { x: 0, y: -2990 }, { x: 0, y: -3050 }, { x: 0, y: -2600 },
+      { x: 0, y: -2990 },
+      { x: 0, y: -3050 },
+      { x: 0, y: -2600 },
     ])
     const obs = engagementPicture(scenario).assessments[0].sensorObservations!.find(
       (o) => o.sensorId === sensorId,
     )!
-    expect(obs.intervals).toEqual([[0, 0.5], [2, 9]])
+    expect(obs.intervals).toEqual([
+      [0, 0.5],
+      [2, 9],
+    ])
     expect(obs.coastIntervals).toEqual([])
     expect(obs.trackInitAtS).toBe(4)
     const spans = trackLadderRows(scenario, sensorId)[0].spans
     expect(triples(spans)).toEqual([
-      ['init', 0, 1], ['drop', 1, 1], ['init', 2, 4], ['track', 4, 9.5],
+      ['init', 0, 1],
+      ['drop', 1, 1],
+      ['init', 2, 4],
+      ['track', 4, 9.5],
     ])
     expectPartition(spans)
   })
@@ -496,16 +545,24 @@ describe('trackLadderRows', () => {
     // first hold ends at 0.5 with no coast. M-of-N initiates at 21 in the second
     // interval, so the gap between 1 and 18 draws nothing.
     const { scenario, sensorId } = coastScenario([
-      { x: 0, y: -2950 }, { x: 0, y: -3500 }, { x: 0, y: -2600 },
+      { x: 0, y: -2950 },
+      { x: 0, y: -3500 },
+      { x: 0, y: -2600 },
     ])
     const { assessments } = engagementPicture(scenario)
     const obs = assessments[0].sensorObservations!.find((o) => o.sensorId === sensorId)!
-    expect(obs.intervals).toEqual([[0, 0.5], [18, 24.5]])
+    expect(obs.intervals).toEqual([
+      [0, 0.5],
+      [18, 24.5],
+    ])
     expect(obs.coastIntervals).toEqual([])
     expect(obs.trackInitAtS).toBe(21)
     const spans = trackLadderRows(scenario, sensorId)[0].spans
     expect(triples(spans)).toEqual([
-      ['init', 0, 1], ['drop', 1, 1], ['init', 18, 21], ['track', 21, 25],
+      ['init', 0, 1],
+      ['drop', 1, 1],
+      ['init', 18, 21],
+      ['track', 21, 25],
     ])
     expectPartition(spans)
   })
@@ -516,7 +573,10 @@ describe('trackLadderRows', () => {
     const obs = assessments[0].sensorObservations!.find((o) => o.sensorId === sensorId)!
     const spans = trackLadderRows(scenario, sensorId)[0].spans
     expect(spans[0]).toEqual({
-      startS: 0, endS: obs.firstDetectS, color: PHASE_STYLE.searching.color, label: 'search',
+      startS: 0,
+      endS: obs.firstDetectS,
+      color: PHASE_STYLE.searching.color,
+      label: 'search',
     })
     expect(spans[1].label).toBe('init')
     expect(spans[1].endS).toBe(obs.trackInitAtS)
@@ -585,11 +645,11 @@ describe('salvosInFlightSeries', () => {
     const assigned = Math.ceil(ev.tS / DT)
     const rel = Math.ceil(ev.tReleaseS! / DT)
     const fx = Math.ceil(ev.tEffectS / DT)
-    expect(s.values.slice(assigned, rel).every(v => v === 0)).toBe(true)
+    expect(s.values.slice(assigned, rel).every((v) => v === 0)).toBe(true)
     // Existing magazine and salvo accounting still lands at assignment.
     const effector = effectorSeries(scenario, effId)
-    expect(effector.find(series => series.id === 'rounds')!.values[assigned]).toBe(9)
-    expect(effector.find(series => series.id === 'salvos')!.values[assigned]).toBe(1)
+    expect(effector.find((series) => series.id === 'rounds')!.values[assigned]).toBe(9)
+    expect(effector.find((series) => series.id === 'salvos')!.values[assigned]).toBe(1)
     expect(s.values[rel - 1]).toBe(0)
     expect(s.values[rel]).toBe(1)
     expect(s.values[fx - 1]).toBe(1)
@@ -637,30 +697,38 @@ describe('salvoMarks and releaseLadderRows', () => {
     expect(releaseLadderRows(scenario, 'no-such-effector')).toEqual([])
   })
 
-  it.each(['de', 'jammer'] as const)('labels %s channels without counting them as kinetic flight', (effectorType) => {
-    const { scenario, effId } = flightScenario()
-    scenario.library = scenario.library.map(model => model.id === 'tst-int'
-      ? { ...model, effector: { ...model.effector!, effectorType } } : model)
-    const event = engagementPicture(scenario).report.events[0]
-    expect(event).toBeDefined()
-    expect(event.tReleaseS).toBe(event.tEffectS)
-    expect(salvosInFlightSeries(scenario).values.every(value => value === 0)).toBe(true)
-    const spans = releaseLadderRows(scenario, effId)[0].spans
-    expect(spans[0].label).toBe('preparation')
-    expect(salvoMarks(scenario, effId)).toEqual([
-      { tS: event.tS, label: 'ASG', color: 'warn' },
-      { tS: event.tEffectS, label: 'REL/FX', color: event.channel === 'jam' ? 'ew' : 'danger' },
-    ])
-    expect(spans[1]).toMatchObject({
-      startS: event.tReleaseS, endS: event.tEffectS, label: effectorType === 'de' ? 'beam' : 'EW dwell',
-    })
-  })
+  it.each(['de', 'jammer'] as const)(
+    'labels %s channels without counting them as kinetic flight',
+    (effectorType) => {
+      const { scenario, effId } = flightScenario()
+      scenario.library = scenario.library.map((model) =>
+        model.id === 'tst-int'
+          ? { ...model, effector: { ...model.effector!, effectorType } }
+          : model,
+      )
+      const event = engagementPicture(scenario).report.events[0]
+      expect(event).toBeDefined()
+      expect(event.tReleaseS).toBe(event.tEffectS)
+      expect(salvosInFlightSeries(scenario).values.every((value) => value === 0)).toBe(true)
+      const spans = releaseLadderRows(scenario, effId)[0].spans
+      expect(spans[0].label).toBe('preparation')
+      expect(salvoMarks(scenario, effId)).toEqual([
+        { tS: event.tS, label: 'ASG', color: 'warn' },
+        { tS: event.tEffectS, label: 'REL/FX', color: event.channel === 'jam' ? 'ew' : 'danger' },
+      ])
+      expect(spans[1]).toMatchObject({
+        startS: event.tReleaseS,
+        endS: event.tEffectS,
+        label: effectorType === 'de' ? 'beam' : 'EW dwell',
+      })
+    },
+  )
 
   it('does not fabricate flight for an instantaneous kinetic effect', () => {
     const { scenario, effId } = killScenario()
     const event = engagementPicture(scenario).report.events[0]
     expect(event.tReleaseS).toBe(event.tEffectS)
-    expect(salvosInFlightSeries(scenario).values.every(value => value === 0)).toBe(true)
+    expect(salvosInFlightSeries(scenario).values.every((value) => value === 0)).toBe(true)
     expect(salvoMarks(scenario, effId)).toEqual([
       { tS: event.tEffectS, label: 'ASG/REL/FX', color: 'danger' },
     ])
@@ -680,7 +748,9 @@ describe('salvoMarks and releaseLadderRows', () => {
       { tS: event.tEffectS, label: 'FX', color: 'danger' },
     ])
     const assigned = Math.ceil(event.tS / DT)
-    expect(effectorSeries(scenario, effId).find(series => series.id === 'salvos')!.values[assigned]).toBe(2)
+    expect(
+      effectorSeries(scenario, effId).find((series) => series.id === 'salvos')!.values[assigned],
+    ).toBe(2)
   })
 
   it('reconstructs legacy release only with captured delay and discloses unavailable timing', () => {
@@ -688,10 +758,12 @@ describe('salvoMarks and releaseLadderRows', () => {
     const event = engagementPicture(scenario).report.events[0]
     const physicalReleaseS = event.tReleaseS!
     delete event.tReleaseS
-    expect(salvoMarks(scenario, effId).find(mark => mark.label === 'REL')?.tS).toBe(physicalReleaseS)
+    expect(salvoMarks(scenario, effId).find((mark) => mark.label === 'REL')?.tS).toBe(
+      physicalReleaseS,
+    )
     // Keep this cached legacy ledger while removing its captured effector spec.
-    scenario.library = scenario.library.filter(model => model.id !== 'tst-int')
-    expect(salvoMarks(scenario, effId).map(mark => mark.label)).toEqual(['ASG', 'FX'])
+    scenario.library = scenario.library.filter((model) => model.id !== 'tst-int')
+    expect(salvoMarks(scenario, effId).map((mark) => mark.label)).toEqual(['ASG', 'FX'])
     const unavailable = salvosInFlightSeries(scenario)
     expect(unavailable.values[Math.ceil(event.tS / DT)]).toBeNaN()
     expect(unavailable.values[Math.ceil(event.tEffectS / DT)]).toBe(0)
@@ -710,12 +782,14 @@ describe('phaseLadderRow', () => {
     const row = phaseLadderRow(scenario, uasId)
     expect(row.label).toBe('Phase')
     // The Giraffe holds the track from first detection to the end: one TRACKED span.
-    expect(row.spans).toEqual([{
-      startS: Math.ceil(firstDetectS / DT) * DT,
-      endS: scenarioDurationS(scenario),
-      color: PHASE_STYLE.tracked.color,
-      label: PHASE_STYLE.tracked.label,
-    }])
+    expect(row.spans).toEqual([
+      {
+        startS: Math.ceil(firstDetectS / DT) * DT,
+        endS: scenarioDurationS(scenario),
+        color: PHASE_STYLE.tracked.color,
+        label: PHASE_STYLE.tracked.label,
+      },
+    ])
     expect(phaseLadderRow(scenario, 'no-such-track').spans).toEqual([])
   })
 
@@ -741,7 +815,13 @@ describe('sensorSeries Pd per track', () => {
     const { scenario, sensorId } = pdScenario()
     const far = ent('uas', 'tst-mohajer', { x: -18000, y: 0 })
     scenario.entities = [...scenario.entities, far]
-    scenario.paths = [...scenario.paths, flight(far.id, [{ x: -18000, y: 0 }, { x: 0, y: 0 }])]
+    scenario.paths = [
+      ...scenario.paths,
+      flight(far.id, [
+        { x: -18000, y: 0 },
+        { x: 0, y: 0 },
+      ]),
+    ]
     const { assessments } = engagementPicture(scenario)
     const withPd = assessments.filter((a) =>
       a.sensorObservations?.some((o) => o.sensorId === sensorId && o.pdSeries),
@@ -756,8 +836,19 @@ describe('sensorSeries Pd per track', () => {
 
 describe('withBands', () => {
   const stat: Stat = {
-    mean: 1, sd: 1, se: 0.577, lo: 0, hi: 2, conf: 0.95, interval: 't',
-    p10: 0, p90: 2, p025: 0, p975: 2, n: 3, total: 3,
+    mean: 1,
+    sd: 1,
+    se: 0.577,
+    lo: 0,
+    hi: 2,
+    conf: 0.95,
+    interval: 't',
+    p10: 0,
+    p90: 2,
+    p025: 0,
+    p975: 2,
+    n: 3,
+    total: 3,
     defined: { p: 1, lo: 0.44, hi: 1 },
   }
   function band(n: number, base: number): BandSeries {
@@ -814,7 +905,10 @@ describe('withBands', () => {
       ['kpi.engaged', 50],
       ['tracksHeld', 40],
     ]
-    const out = withBands(ids.map(([id]) => series(id, n)), summaryOf(n))
+    const out = withBands(
+      ids.map(([id]) => series(id, n)),
+      summaryOf(n),
+    )
     ids.forEach(([id, base], i) => {
       expect(out[i].id).toBe(id)
       expect(out[i].values).toEqual(new Array(n).fill(base))
@@ -827,7 +921,10 @@ describe('withBands', () => {
     const n = 4
     const [withUas] = withBands([series('residual', n)], summaryOf(n), 'uas-1')
     expect(withUas.values).toEqual([60, 60, 60, 60])
-    expect(withUas.band80).toEqual([[59, 59, 59, 59], [61, 61, 61, 61]])
+    expect(withUas.band80).toEqual([
+      [59, 59, 59, 59],
+      [61, 61, 61, 61],
+    ])
     const [noUas] = withBands([series('residual', n)], summaryOf(n))
     expect(noUas.values.every(Number.isNaN)).toBe(true)
     expect(noUas.label).toContain('MC estimate unavailable')
@@ -852,7 +949,10 @@ describe('withBands', () => {
     summary.kills.p975.fill(NaN)
     const [out] = withBands([series('kpi.expectedKills', 4)], summary)
     expect(out.values).toEqual([10, 10, 10, 10])
-    expect(out.band80).toEqual([[9, 9, 9, 9], [11, 11, 11, 11]])
+    expect(out.band80).toEqual([
+      [9, 9, 9, 9],
+      [11, 11, 11, 11],
+    ])
     expect(out.band95).toBeUndefined()
     summary.kills.p10 = []
     expect(withBands([series('kpi.expectedKills', 4)], summary)[0].band80).toBeUndefined()
@@ -861,23 +961,32 @@ describe('withBands', () => {
   it('hides estimates when the mean is missing or no replicates exist', () => {
     const summary = summaryOf(4)
     summary.kills.mean = []
-    expect(withBands([series('kpi.expectedKills', 4)], summary)[0].values.every(Number.isNaN)).toBe(true)
+    expect(withBands([series('kpi.expectedKills', 4)], summary)[0].values.every(Number.isNaN)).toBe(
+      true,
+    )
     summary.replicates = 0
-    expect(withBands([series('kpi.detected', 4)], summary)[0].label).toContain('MC estimate unavailable')
+    expect(withBands([series('kpi.detected', 4)], summary)[0].label).toContain(
+      'MC estimate unavailable',
+    )
   })
 
   it('labels unsupported quantities and hides mismatched estimates', () => {
     const n = 5
     const other = series('meanPd', n)
-    expect(withBands([other], summaryOf(n))[0]).toMatchObject({ values: other.values, label: 'meanPd · planning envelope' })
+    expect(withBands([other], summaryOf(n))[0]).toMatchObject({
+      values: other.values,
+      label: 'meanPd · planning envelope',
+    })
     const short = series('kpi.detected', n)
     expect(withBands([short], summaryOf(n + 1))[0].values.every(Number.isNaN)).toBe(true)
     expect(withBands([short], summaryOf(n - 1))[0].label).toContain('MC estimate unavailable')
     const list = [series('kpi.detected', n)]
-    expect(withBands(list, null)[0]).toMatchObject({ values: list[0].values, label: 'kpi.detected · planning envelope' })
+    expect(withBands(list, null)[0]).toMatchObject({
+      values: list[0].values,
+      label: 'kpi.detected · planning envelope',
+    })
   })
 })
-
 
 describe('C2 leaker definedness', () => {
   it('does not turn a no-asset partition zero into a defined leaker chart', () => {

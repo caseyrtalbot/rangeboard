@@ -19,14 +19,25 @@ import {
 } from './selectors'
 import { useStore } from './store'
 
-
 /** Supply a real retained result for clock tests; async worker ownership lives in store.trial.test. */
 function prepareReadyTrial() {
   const st = useStore.getState()
   if (st.trial.status === 'ready') return
   const scenario = structuredClone(st.scenario)
-  const manifest = createTrialManifest(scenario, st.playback.runId, analysisBasisSignature(scenario))
-  useStore.setState({ trial: { ...IDLE_TRIAL, status: 'ready', scenario, manifest, result: runTrial(scenario, manifest) } })
+  const manifest = createTrialManifest(
+    scenario,
+    st.playback.runId,
+    analysisBasisSignature(scenario),
+  )
+  useStore.setState({
+    trial: {
+      ...IDLE_TRIAL,
+      status: 'ready',
+      scenario,
+      manifest,
+      result: runTrial(scenario, manifest),
+    },
+  })
 }
 
 function reset() {

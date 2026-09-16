@@ -6,39 +6,82 @@ import { MOUNT_HEIGHT_M, TRACK_INIT_M, TRACK_INIT_N } from './types'
 /** A radar model with the fields these rules read, and one source row. */
 function sensorModel(): SpecModel {
   return {
-    id: 'lib-probe', name: 'Probe radar', kind: 'sensor', description: '', color: '#fff',
+    id: 'lib-probe',
+    name: 'Probe radar',
+    kind: 'sensor',
+    description: '',
+    color: '#fff',
     builtin: false,
     sensor: {
-      sensorType: 'radar', detectRangeM: 10000, classifyRangeM: 5000, sectorDeg: 360,
-      elevationDeg: [0, 70], mountHeightM: 6, updateRateS: 2, trackInitM: 3, trackInitN: 5,
+      sensorType: 'radar',
+      detectRangeM: 10000,
+      classifyRangeM: 5000,
+      sectorDeg: 360,
+      elevationDeg: [0, 70],
+      mountHeightM: 6,
+      updateRateS: 2,
+      trackInitM: 3,
+      trackInitN: 5,
       rfBands: ['uhf-433', 'ism-2400'],
     },
     provenance: [
-      { field: 'detectRangeM', value: '10 km', source: 'a maker page', date: '2026-09-08', basis: 'datasheet' },
+      {
+        field: 'detectRangeM',
+        value: '10 km',
+        source: 'a maker page',
+        date: '2026-09-08',
+        basis: 'datasheet',
+      },
     ],
   }
 }
 
 function effectorModel(): SpecModel {
   return {
-    id: 'lib-probe-eff', name: 'Probe jammer', kind: 'effector', description: '', color: '#fff',
+    id: 'lib-probe-eff',
+    name: 'Probe jammer',
+    kind: 'effector',
+    description: '',
+    color: '#fff',
     builtin: false,
     effector: {
-      effectorType: 'jammer', minRangeM: 0, maxRangeM: 3000, engageTimeS: 5,
-      mountHeightM: 4, jamBands: ['gnss', 'ism-2400'], eirpW: 40,
+      effectorType: 'jammer',
+      minRangeM: 0,
+      maxRangeM: 3000,
+      engageTimeS: 5,
+      mountHeightM: 4,
+      jamBands: ['gnss', 'ism-2400'],
+      eirpW: 40,
     },
   }
 }
 
 function uasModel(): SpecModel {
   return {
-    id: 'lib-probe-uas', name: 'Probe UAS', kind: 'uas', description: '', color: '#fff',
+    id: 'lib-probe-uas',
+    name: 'Probe UAS',
+    kind: 'uas',
+    description: '',
+    color: '#fff',
     builtin: false,
     uas: {
-      group: 1, airframe: 'quad', cruiseSpeedMps: 15, maxSpeedMps: 25, enduranceMin: 30,
-      altBandFt: [100, 2000], navMode: 'gps', emissionsNote: '', rcsM2: 0.02,
+      group: 1,
+      airframe: 'quad',
+      cruiseSpeedMps: 15,
+      maxSpeedMps: 25,
+      enduranceMin: 30,
+      altBandFt: [100, 2000],
+      navMode: 'gps',
+      emissionsNote: '',
+      rcsM2: 0.02,
     },
-    threatProfile: { designator: 'THR-A', routeIntent: '', altitudeFt: 500, speedMps: 15, count: 2 },
+    threatProfile: {
+      designator: 'THR-A',
+      routeIntent: '',
+      altitudeFt: 500,
+      speedMps: 15,
+      count: 2,
+    },
   }
 }
 
@@ -89,7 +132,9 @@ describe('M-of-N track initiation', () => {
 
 describe('mount height', () => {
   it('parses the raw input, floors at zero and clears to the planning factor', () => {
-    expect(editSpecField(sensorModel(), 'sensor.mountHeightM', '12.5').sensor?.mountHeightM).toBe(12.5)
+    expect(editSpecField(sensorModel(), 'sensor.mountHeightM', '12.5').sensor?.mountHeightM).toBe(
+      12.5,
+    )
     expect(editSpecField(sensorModel(), 'sensor.mountHeightM', '-3').sensor?.mountHeightM).toBe(0)
     const cleared = editSpecField(sensorModel(), 'sensor.mountHeightM', '')
     expect(cleared.sensor?.mountHeightM).toBeNull()
@@ -98,15 +143,23 @@ describe('mount height', () => {
   })
 
   it('parses an effector launcher height through the same rule', () => {
-    expect(editSpecField(effectorModel(), 'effector.mountHeightM', '9').effector?.mountHeightM).toBe(9)
-    expect(editSpecField(effectorModel(), 'effector.mountHeightM', '').effector?.mountHeightM).toBeNull()
+    expect(
+      editSpecField(effectorModel(), 'effector.mountHeightM', '9').effector?.mountHeightM,
+    ).toBe(9)
+    expect(
+      editSpecField(effectorModel(), 'effector.mountHeightM', '').effector?.mountHeightM,
+    ).toBeNull()
   })
 })
 
 describe('clearing and clamping', () => {
   it('clears a measured sensor field to null and keeps a positive one', () => {
-    expect(editSpecField(sensorModel(), 'sensor.classifyRangeM', 0).sensor?.classifyRangeM).toBeNull()
-    expect(editSpecField(sensorModel(), 'sensor.classifyRangeM', 800).sensor?.classifyRangeM).toBe(800)
+    expect(
+      editSpecField(sensorModel(), 'sensor.classifyRangeM', 0).sensor?.classifyRangeM,
+    ).toBeNull()
+    expect(editSpecField(sensorModel(), 'sensor.classifyRangeM', 800).sensor?.classifyRangeM).toBe(
+      800,
+    )
     expect(editSpecField(sensorModel(), 'sensor.updateRateS', 0).sensor?.updateRateS).toBeNull()
   })
 
@@ -118,8 +171,12 @@ describe('clearing and clamping', () => {
   })
 
   it('rebuilds each end of the elevation tuple and the UAS altitude band', () => {
-    expect(editSpecField(sensorModel(), 'sensor.elevationMinDeg', -5).sensor?.elevationDeg).toEqual([-5, 70])
-    expect(editSpecField(sensorModel(), 'sensor.elevationMaxDeg', 85).sensor?.elevationDeg).toEqual([0, 85])
+    expect(editSpecField(sensorModel(), 'sensor.elevationMinDeg', -5).sensor?.elevationDeg).toEqual(
+      [-5, 70],
+    )
+    expect(editSpecField(sensorModel(), 'sensor.elevationMaxDeg', 85).sensor?.elevationDeg).toEqual(
+      [0, 85],
+    )
     expect(editSpecField(uasModel(), 'uas.altFloorFt', 300).uas?.altBandFt).toEqual([300, 2000])
     expect(editSpecField(uasModel(), 'uas.altCeilingFt', 900).uas?.altBandFt).toEqual([100, 900])
   })
@@ -147,7 +204,9 @@ describe('clearing and clamping', () => {
     expect(editSpecField(model, 'sensor.rfBands', ['uhf-433']).sensor?.rfBands).toEqual(['uhf-433'])
     const jammer = effectorModel()
     expect(editSpecField(jammer, 'effector.jamBands', [])).toBe(jammer)
-    expect(editSpecField(jammer, 'effector.jamBands', ['gnss']).effector?.jamBands).toEqual(['gnss'])
+    expect(editSpecField(jammer, 'effector.jamBands', ['gnss']).effector?.jamBands).toEqual([
+      'gnss',
+    ])
   })
 })
 

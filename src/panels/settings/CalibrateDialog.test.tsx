@@ -16,7 +16,13 @@ const interaction = vi.hoisted(() => ({
 vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
-    const p = props as { role?: string; type?: string; children?: unknown; disabled: boolean; onSubmit: (event: { preventDefault: () => void }) => void }
+    const p = props as {
+      role?: string
+      type?: string
+      children?: unknown
+      disabled: boolean
+      onSubmit: (event: { preventDefault: () => void }) => void
+    }
     if (type === 'form' && p.role === 'dialog') interaction.submit = p.onSubmit
     if (type === 'button' && p.type === 'submit' && p.children === 'Accept') interaction.accept = p
     return actual.jsxDEV(type, props, ...rest)
@@ -27,14 +33,35 @@ vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
 const scenario = emptyScenario()
 const coyote = scenario.library.find((m) => m.id === 'lib-coyote') as SpecModel
 const noop = () => {}
-const EMPTY_DRAFT: CalibrateDraft = { successes: '', trials: '', form: 'sample', times: '', n: '', mean: '', variance: '' }
+const EMPTY_DRAFT: CalibrateDraft = {
+  successes: '',
+  trials: '',
+  form: 'sample',
+  times: '',
+  n: '',
+  mean: '',
+  variance: '',
+}
 
-function renderForm(field: string, family: 'proportion' | 'time', value: number, draft: Partial<CalibrateDraft>) {
+function renderForm(
+  field: string,
+  family: 'proportion' | 'time',
+  value: number,
+  draft: Partial<CalibrateDraft>,
+) {
   interaction.submit = undefined
   interaction.accept = undefined
   return renderToStaticMarkup(
-    <CalibrateForm model={coyote} field={field} family={family} value={value} unit={family === 'proportion' ? 'fraction' : 's'}
-      draft={{ ...EMPTY_DRAFT, ...draft }} onDraft={noop} onClose={noop} />,
+    <CalibrateForm
+      model={coyote}
+      field={field}
+      family={family}
+      value={value}
+      unit={family === 'proportion' ? 'fraction' : 's'}
+      draft={{ ...EMPTY_DRAFT, ...draft }}
+      onDraft={noop}
+      onClose={noop}
+    />,
   )
 }
 
@@ -59,12 +86,16 @@ describe('CalibrateDialog', () => {
     expect(overrides).toHaveLength(1)
     expect(overrides[0]).toMatchObject({ modelId: 'lib-coyote', field: 'pk', value: 17.5 / 21 })
     expect(overrides[0].reason).toContain('posterior Beta(17.5, 3.5)')
-    const manifest = createTrialManifest(scenario, 'trial', 'basis', { overrides: activeOverrides(overrides, scenario) })
+    const manifest = createTrialManifest(scenario, 'trial', 'basis', {
+      overrides: activeOverrides(overrides, scenario),
+    })
     expect(manifest.overrides).toHaveLength(1)
   })
 
   it('keeps Accept disabled while the count is incomplete or inconsistent', () => {
-    expect(renderForm('pk', 'proportion', 0.85, { successes: '17' })).toContain('Type the observation to see the posterior.')
+    expect(renderForm('pk', 'proportion', 0.85, { successes: '17' })).toContain(
+      'Type the observation to see the posterior.',
+    )
     expect(interaction.accept?.disabled).toBe(true)
     renderForm('pk', 'proportion', 0.85, { successes: '21', trials: '20' })
     expect(interaction.accept?.disabled).toBe(true)
@@ -73,7 +104,10 @@ describe('CalibrateDialog', () => {
   })
 
   it('reduces pasted times to the summary and writes the posterior mu in seconds', () => {
-    const html = renderForm('engageTimeS', 'time', 60, { form: 'sample', times: '48, 50\n52 54\n56' })
+    const html = renderForm('engageTimeS', 'time', 60, {
+      form: 'sample',
+      times: '48, 50\n52 54\n56',
+    })
     // Prior from the PF triangular spread: beta0 = 19 (calibrate.test.ts). Times: n 5,
     // mean 52, variance 40 / 4 = 10. Posterior mu = (60 + 260) / 6 = 53.33, kappa 6,
     // alpha 3.5, beta = 19 + 40 / 2 + 5 * 64 / 12 = 65.67.
@@ -89,7 +123,12 @@ describe('CalibrateDialog', () => {
   })
 
   it('takes the summary form as n, mean and variance', () => {
-    const html = renderForm('engageTimeS', 'time', 60, { form: 'summary', n: '5', mean: '52', variance: '16' })
+    const html = renderForm('engageTimeS', 'time', 60, {
+      form: 'summary',
+      n: '5',
+      mean: '52',
+      variance: '16',
+    })
     expect(html).toContain('aria-label="Count"')
     expect(html).toContain('<td class="prose">beta</td><td>19</td><td>—</td><td>77.67</td>')
     expect(html).toContain('48.79 to 57.88')
@@ -107,7 +146,14 @@ describe('CalibrateDialog', () => {
     expect(html).not.toContain('role="dialog"')
     // The dialog itself starts empty.
     const dialog = renderToStaticMarkup(
-      <CalibrateDialog model={coyote} field="pk" family="proportion" value={0.85} unit="fraction" onClose={noop} />,
+      <CalibrateDialog
+        model={coyote}
+        field="pk"
+        family="proportion"
+        value={0.85}
+        unit="fraction"
+        onClose={noop}
+      />,
     )
     expect(dialog).toContain('role="dialog"')
     expect(dialog).toContain('Type the observation to see the posterior.')

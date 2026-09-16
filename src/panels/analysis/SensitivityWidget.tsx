@@ -54,7 +54,11 @@ export function SensitivityWidget({ scenario, morris, sobol }: SensitivityWidget
           <span className="insp-row-label">mu star · sigma</span>
         </div>
         {kept.map((f) => (
-          <div className="insp-row" key={`${f.field.modelId}:${f.field.field}`} data-morris-row={f.field.field}>
+          <div
+            className="insp-row"
+            key={`${f.field.modelId}:${f.field.field}`}
+            data-morris-row={f.field.field}
+          >
             <span className="insp-row-label">{labelOf(f.field)}</span>
             <span className="insp-row-value mono">
               {f.muStar.toFixed(2)} <small>sigma {f.sigma.toFixed(2)}</small>

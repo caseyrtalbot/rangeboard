@@ -154,7 +154,6 @@ export function writeViewCamera(camera: Camera): void {
   cameraTimer = setTimeout(flushViewWrites, CAMERA_WRITE_DELAY_MS)
 }
 
-
 /**
  * Run sequence the next startup issues. Written on a manual reset (the fresh
  * run's own number, so a reload shows the same run) and on the first start of

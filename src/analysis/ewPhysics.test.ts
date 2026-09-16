@@ -94,16 +94,19 @@ describe('effectiveJamRangeM', () => {
     // R_jam = R_link * sqrt(P_jam / P_signal) = 1000 * sqrt(4) = 2000 m.
     expect(jamToSignalRangeM(radioJammer, radioTarget)).toBeCloseTo(2000, 9)
     expect(effectiveJamRangeM(radioJammer, radioTarget)).toBeCloseTo(2000, 9)
-    expect(jamToSignalRangeM({ ...radioJammer, eirpW: undefined, ratedEirpW: 4 }, radioTarget))
-      .toBeCloseTo(2000, 9)
-    expect(effectiveJamRangeM(radioJammer, { ...radioTarget, jamResistDb: 6 }))
-      .toBeCloseTo(2000 / Math.sqrt(10 ** 0.6), 9)
+    expect(
+      jamToSignalRangeM({ ...radioJammer, eirpW: undefined, ratedEirpW: 4 }, radioTarget),
+    ).toBeCloseTo(2000, 9)
+    expect(effectiveJamRangeM(radioJammer, { ...radioTarget, jamResistDb: 6 })).toBeCloseTo(
+      2000 / Math.sqrt(10 ** 0.6),
+      9,
+    )
   })
 
   it('keeps the legacy power and resistance result exactly with null target power', () => {
     const spec = jammer({ eirpW: 25, ratedEirpW: 100 })
     const target = uas({ radiatedPowerW: null, controlLinkRangeM: 1000, jamResistDb: 6 })
-    const legacy = spec.maxRangeM * Math.sqrt((25 / 100) / Math.pow(10, 6 / 10))
+    const legacy = spec.maxRangeM * Math.sqrt(25 / 100 / Math.pow(10, 6 / 10))
     expect(jamToSignalRangeM(spec, target)).toBeNull()
     expect(effectiveJamRangeM(spec, target)).toBe(legacy)
     const actual = assessJam(spec, ORIGIN, 0, target, { x: 0, y: -legacy / 2 })
@@ -115,8 +118,12 @@ describe('effectiveJamRangeM', () => {
 describe('assessJam', () => {
   it('is ineffective with no band overlap and against jam-immune nav modes', () => {
     const linkOnly = jammer({ jamBands: ['ism-2400', 'ism-5800'] })
-    expect(assessJam(linkOnly, ORIGIN, 0, uas({ navMode: 'gps' }), { x: 0, y: -500 }).effective).toBe(false)
-    expect(assessJam(jammer(), ORIGIN, 0, uas({ navMode: 'fiber' }), { x: 0, y: -500 }).effective).toBe(false)
+    expect(
+      assessJam(linkOnly, ORIGIN, 0, uas({ navMode: 'gps' }), { x: 0, y: -500 }).effective,
+    ).toBe(false)
+    expect(
+      assessJam(jammer(), ORIGIN, 0, uas({ navMode: 'fiber' }), { x: 0, y: -500 }).effective,
+    ).toBe(false)
   })
 
   it('keeps the legacy falloff at full power on boresight with full coverage', () => {

@@ -147,7 +147,15 @@ function DestroyedStrike({ points, width }: { points: number[]; width: number })
  * letter per kind. An outline frame carries its letter in the entity color,
  * because the dark board shows through the unfilled frame.
  */
-function FriendFrame({ kind, color, filled }: { kind: Entity['kind']; color: string; filled: boolean }) {
+function FriendFrame({
+  kind,
+  color,
+  filled,
+}: {
+  kind: Entity['kind']
+  color: string
+  filled: boolean
+}) {
   return (
     <>
       <Path
@@ -276,7 +284,11 @@ function handlePoint(headingDeg: number): { x: number; y: number } {
 }
 
 /** Drag handle that points a directional sensor/effector. Child drag does not move the group. */
-function HeadingHandle({ entity, color, tickRef }: {
+function HeadingHandle({
+  entity,
+  color,
+  tickRef,
+}: {
   entity: Entity
   color: string
   tickRef: React.RefObject<Konva.Line | null>
@@ -430,37 +442,67 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
 
   return (
     <>
-      {(props.trialMembers ?? members.map((position, memberIdx) => ({ memberIdx, position, heading: headingDeg, jamState: null, outcome: 'active' as const }))).slice(1).map((m) => (
-        <Group key={`${entity.id}:${m.memberIdx}`} name={`member:${entity.id}:${m.memberIdx}`} x={m.position.x} y={m.position.y} scaleX={1 / k} scaleY={1 / k}
-          onClick={(e) => handleClick(e, entity)} onContextMenu={(e) => handleContextMenu(e, entity)} opacity={off ? 0.3 : 0.85}>
-          <Line points={MEMBER_HEADING_TICK} rotation={m.heading} stroke={m.outcome === 'hard-kill' ? GHOST : color} strokeWidth={1} listening={false} />
-          {m.outcome === 'hard-kill' ? (
-            <>
+      {(
+        props.trialMembers ??
+        members.map((position, memberIdx) => ({
+          memberIdx,
+          position,
+          heading: headingDeg,
+          jamState: null,
+          outcome: 'active' as const,
+        }))
+      )
+        .slice(1)
+        .map((m) => (
+          <Group
+            key={`${entity.id}:${m.memberIdx}`}
+            name={`member:${entity.id}:${m.memberIdx}`}
+            x={m.position.x}
+            y={m.position.y}
+            scaleX={1 / k}
+            scaleY={1 / k}
+            onClick={(e) => handleClick(e, entity)}
+            onContextMenu={(e) => handleContextMenu(e, entity)}
+            opacity={off ? 0.3 : 0.85}
+          >
+            <Line
+              points={MEMBER_HEADING_TICK}
+              rotation={m.heading}
+              stroke={m.outcome === 'hard-kill' ? GHOST : color}
+              strokeWidth={1}
+              listening={false}
+            />
+            {m.outcome === 'hard-kill' ? (
+              <>
+                <RegularPolygon
+                  sides={4}
+                  radius={7}
+                  stroke={GHOST}
+                  strokeWidth={1.4}
+                  dash={MEMBER_GHOST_DASH}
+                />
+                <DestroyedStrike points={STRIKE_MEMBER} width={1.8} />
+              </>
+            ) : (
               <RegularPolygon
                 sides={4}
                 radius={7}
-                stroke={GHOST}
-                strokeWidth={1.4}
-                dash={MEMBER_GHOST_DASH}
+                fill={m.outcome === 'mission-kill' ? undefined : color}
+                stroke={m.outcome === 'mission-kill' ? JAM_CYAN : EDGE}
+                strokeWidth={1}
+                // The member group carries an opacity, so a fill+stroke shape
+                // under it would take Konva's stage-sized buffer canvas path.
+                perfectDrawEnabled={false}
               />
-              <DestroyedStrike points={STRIKE_MEMBER} width={1.8} />
-            </>
-          ) : (
-            <RegularPolygon
-              sides={4}
-              radius={7}
-              fill={m.outcome === 'mission-kill' ? undefined : color}
-              stroke={m.outcome === 'mission-kill' ? JAM_CYAN : EDGE}
-              strokeWidth={1}
-              // The member group carries an opacity, so a fill+stroke shape
-              // under it would take Konva's stage-sized buffer canvas path.
-              perfectDrawEnabled={false}
-            />
-          )}
-          {m.jamState?.jammed && m.outcome !== 'hard-kill' && <Text text="J" x={-13} y={-5} fontSize={11} fill={JAM_CYAN} listening={false} />}
-          {m.outcome === 'mission-kill' && <Text text="MK" x={8} y={-5} fontSize={9} fill={JAM_CYAN} />}
-        </Group>
-      ))}
+            )}
+            {m.jamState?.jammed && m.outcome !== 'hard-kill' && (
+              <Text text="J" x={-13} y={-5} fontSize={11} fill={JAM_CYAN} listening={false} />
+            )}
+            {m.outcome === 'mission-kill' && (
+              <Text text="MK" x={8} y={-5} fontSize={9} fill={JAM_CYAN} />
+            )}
+          </Group>
+        ))}
       {main}
     </>
   )
@@ -471,16 +513,33 @@ function handleClick(e: KonvaEventObject<MouseEvent>, entity: Entity) {
   const { tool, connectFromId, pathEntityId, raidDraft } = store.ui
   // Which tool owns an entity click, and when it bubbles to the stage as a
   // draw point or raid axis, is decided in the router.
-  const action = routeInteraction({ kind: 'click-entity', entityKind: entity.kind, shiftKey: e.evt.shiftKey },
-    { ...IDLE_INTERACTION, tool, connectFrom: connectFromId != null, pathStarted: pathEntityId != null, raidDraft: raidDraft != null })
+  const action = routeInteraction(
+    { kind: 'click-entity', entityKind: entity.kind, shiftKey: e.evt.shiftKey },
+    {
+      ...IDLE_INTERACTION,
+      tool,
+      connectFrom: connectFromId != null,
+      pathStarted: pathEntityId != null,
+      raidDraft: raidDraft != null,
+    },
+  )
   if (action.type === 'continue') return
   e.cancelBubble = true
   switch (action.type) {
-    case 'begin-connect': store.beginConnect(entity.id); return
-    case 'complete-connect': store.completeConnect(entity.id); return
-    case 'begin-path': store.beginPath(entity.id); return
-    case 'select-entity': store.select({ entityIds: [entity.id] }, action.additive); return
-    default: return
+    case 'begin-connect':
+      store.beginConnect(entity.id)
+      return
+    case 'complete-connect':
+      store.completeConnect(entity.id)
+      return
+    case 'begin-path':
+      store.beginPath(entity.id)
+      return
+    case 'select-entity':
+      store.select({ entityIds: [entity.id] }, action.additive)
+      return
+    default:
+      return
   }
 }
 
@@ -493,7 +552,10 @@ function handleContextMenu(e: KonvaEventObject<MouseEvent>, entity: Entity) {
   if (!pointer) return
   const store = useStore.getState()
   const camera = store.camera
-  const world = { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
+  const world = {
+    x: (pointer.x - camera.x) / camera.scale,
+    y: (pointer.y - camera.y) / camera.scale,
+  }
   store.select({ entityIds: [entity.id] })
   store.openContextMenu(pointer, world, entity.id)
 }
@@ -529,7 +591,7 @@ const EntityBody = memo(function EntityBody({
 
   const tickRef = useRef<Konva.Line>(null)
   const off = !entityActive(entity)
-  const phase: TrackPhase = entity.kind === 'uas' ? state?.phase ?? 'undetected' : 'undetected'
+  const phase: TrackPhase = entity.kind === 'uas' ? (state?.phase ?? 'undetected') : 'undetected'
   const ghost = memberOutcome === 'hard-kill'
   const missionKill = memberOutcome === 'mission-kill'
   // A defeated track carries the destroyed strike, so it draws no ring.
@@ -575,14 +637,24 @@ const EntityBody = memo(function EntityBody({
           It alone sets the grab area, because every ring below is a cue. */}
       <Circle radius={hitR} fill="#000" opacity={0} />
       {selected && (
-        <Circle radius={SELECT_R} stroke="#ffffff" strokeWidth={1.3} dash={SELECT_DASH} listening={false} />
+        <Circle
+          radius={SELECT_R}
+          stroke="#ffffff"
+          strokeWidth={1.3}
+          dash={SELECT_DASH}
+          listening={false}
+        />
       )}
       {cardLinked && (
-        <Circle radius={32} stroke={EW_INK} strokeWidth={1.5} dash={CARD_LINK_DASH} listening={false} />
+        <Circle
+          radius={32}
+          stroke={EW_INK}
+          strokeWidth={1.5}
+          dash={CARD_LINK_DASH}
+          listening={false}
+        />
       )}
-      {connectFrom && (
-        <Circle radius={16} stroke="#a9b4bd" strokeWidth={2} listening={false} />
-      )}
+      {connectFrom && <Circle radius={16} stroke="#a9b4bd" strokeWidth={2} listening={false} />}
       {bracketed &&
         BRACKETS.map((points, i) => (
           <Line
@@ -595,13 +667,41 @@ const EntityBody = memo(function EntityBody({
           />
         ))}
       {ringColor && (
-        <Circle radius={RING_R} stroke={ringColor} strokeWidth={1.6} opacity={pulse} listening={false} />
+        <Circle
+          radius={RING_R}
+          stroke={ringColor}
+          strokeWidth={1.6}
+          opacity={pulse}
+          listening={false}
+        />
       )}
-      <Glyph entity={entity} headingDeg={headingDeg} color={missionKill ? JAM_CYAN : color} ghost={ghost} filled={effectorFilled} tickRef={tickRef} />
-      {missionKill && <Text text="MISSION KILL" x={18} y={-3} fontSize={9} fill={JAM_CYAN} listening={false} />}
+      <Glyph
+        entity={entity}
+        headingDeg={headingDeg}
+        color={missionKill ? JAM_CYAN : color}
+        ghost={ghost}
+        filled={effectorFilled}
+        tickRef={tickRef}
+      />
+      {missionKill && (
+        <Text text="MISSION KILL" x={18} y={-3} fontSize={9} fill={JAM_CYAN} listening={false} />
+      )}
       {off && <Line points={OFF_SLASH} stroke={DANGER_INK} strokeWidth={2} listening={false} />}
       {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
-        <Text fontFamily="JetBrains Mono" x={BRACKET_HALF + 2} y={state ? -28 : -16} width={140} text={state ? `${state.activeCount} active\n${state.hardKillCount} hard kill\n${state.missionKillCount} mission kill` : `x${entity.formation!.count}`} fontSize={11} fill={ghost ? GHOST : color} listening={false} />
+        <Text
+          fontFamily="JetBrains Mono"
+          x={BRACKET_HALF + 2}
+          y={state ? -28 : -16}
+          width={140}
+          text={
+            state
+              ? `${state.activeCount} active\n${state.hardKillCount} hard kill\n${state.missionKillCount} mission kill`
+              : `x${entity.formation!.count}`
+          }
+          fontSize={11}
+          fill={ghost ? GHOST : color}
+          listening={false}
+        />
       )}
       {jammed && (
         <>
@@ -646,13 +746,14 @@ const EntityBody = memo(function EntityBody({
         />
       )}
       {labelDrawn && (
-        <Text fontFamily="JetBrains Mono"
+        <Text
+          fontFamily="JetBrains Mono"
           x={-60}
           y={LABEL_ANCHOR_TOP}
           width={120}
           text={boardName}
           fontSize={11}
-          fill='#b7bdb2'
+          fill="#b7bdb2"
           align="center"
           listening={false}
         />

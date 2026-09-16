@@ -9,10 +9,15 @@ const slot = createWorkerSlot()
  * Transport-level twin of `sameManifest` (trialTypes.ts): the client must not import
  * the engine at runtime, so it carries its own value comparison for the array keys.
  */
-function sameManifestRecord(expected: Record<string, unknown>, received: Record<string, unknown>): boolean {
-  return Object.entries(expected).every(([key, value]) => Array.isArray(value)
-    ? JSON.stringify(value) === JSON.stringify(received[key])
-    : received[key] === value)
+function sameManifestRecord(
+  expected: Record<string, unknown>,
+  received: Record<string, unknown>,
+): boolean {
+  return Object.entries(expected).every(([key, value]) =>
+    Array.isArray(value)
+      ? JSON.stringify(value) === JSON.stringify(received[key])
+      : received[key] === value,
+  )
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -40,24 +45,42 @@ function protocol(
     basisSignature: request.basisSignature,
   }
   const manifest = { ...request.manifest }
-  const errorOf = (message: string): TrialWorkerMessage => ({ type: 'trial-error', ...identity, message })
+  const errorOf = (message: string): TrialWorkerMessage => ({
+    type: 'trial-error',
+    ...identity,
+    message,
+  })
   return {
     spawn: () => new Worker(new URL('./trial.worker.ts', import.meta.url), { type: 'module' }),
     request,
     decode: (data) => {
-      if (!record(data) || data.requestToken !== identity.requestToken ||
-        data.runId !== identity.runId || data.basisSignature !== identity.basisSignature) return null
+      if (
+        !record(data) ||
+        data.requestToken !== identity.requestToken ||
+        data.runId !== identity.runId ||
+        data.basisSignature !== identity.basisSignature
+      )
+        return null
       if (data.type === 'trial-error') {
-        return errorOf(typeof data.message === 'string' ? data.message : 'Invalid trial error response')
+        return errorOf(
+          typeof data.message === 'string' ? data.message : 'Invalid trial error response',
+        )
       }
       if (data.type !== 'trial-done') return null
       const result = data.result
-      if (!record(result) || !record(result.manifest) ||
+      if (
+        !record(result) ||
+        !record(result.manifest) ||
         !sameManifestRecord(manifest, result.manifest) ||
-        !Array.isArray(result.assessments) || !record(result.report) ||
-        !Array.isArray(result.report.events) || !Array.isArray(result.report.threats) ||
-        !Array.isArray(result.report.effectors) || !record(result.report.totals) ||
-        !Array.isArray(result.observations) || !Array.isArray(result.jamDecisions)) {
+        !Array.isArray(result.assessments) ||
+        !record(result.report) ||
+        !Array.isArray(result.report.events) ||
+        !Array.isArray(result.report.threats) ||
+        !Array.isArray(result.report.effectors) ||
+        !record(result.report.totals) ||
+        !Array.isArray(result.observations) ||
+        !Array.isArray(result.jamDecisions)
+      ) {
         return errorOf('Invalid trial result response')
       }
       return data as unknown as TrialWorkerMessage

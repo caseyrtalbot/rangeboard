@@ -56,15 +56,17 @@ export function HudLayer({ stageRef }: Props) {
   }, [stageRef])
 
   // Calculate screen position from world coordinates
-  const hintScreenPos = mouseWorld && scale > 0 ? {
-    x: mouseWorld.x * scale + camera.x + canvasOffset.x,
-    y: mouseWorld.y * scale + camera.y + canvasOffset.y,
-  } : null
+  const hintScreenPos =
+    mouseWorld && scale > 0
+      ? {
+          x: mouseWorld.x * scale + camera.x + canvasOffset.x,
+          y: mouseWorld.y * scale + camera.y + canvasOffset.y,
+        }
+      : null
 
   // Recheck stationary pointers when visibility, selection or the camera changes.
-  const ringHit = mouseWorld && !dismissed && scale > 0
-    ? ringModel.hitAt(mouseWorld, 6 / scale)
-    : null
+  const ringHit =
+    mouseWorld && !dismissed && scale > 0 ? ringModel.hitAt(mouseWorld, 6 / scale) : null
 
   const units = useStore((s) => s.ui.units)
   const tool = useStore((s) => s.ui.tool)
@@ -103,17 +105,29 @@ export function HudLayer({ stageRef }: Props) {
           role="tooltip"
           data-testid="ring-hint"
           style={{
-            position: 'fixed', left: hintScreenPos.x, top: hintScreenPos.y,
+            position: 'fixed',
+            left: hintScreenPos.x,
+            top: hintScreenPos.y,
             transform: `translate(${hintScreenPos.x > window.innerWidth / 2 ? 'calc(-100% - 12px)' : '12px'}, ${hintScreenPos.y > window.innerHeight / 2 ? 'calc(-100% - 12px)' : '12px'})`,
-            maxWidth: 280, padding: 'var(--space-2)', pointerEvents: 'none',
-            background: 'var(--surface-panel)', color: 'var(--text-primary)',
-            border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-control)',
-            fontFamily: 'var(--font-ui)', fontSize: 12, lineHeight: 1.4,
-            zIndex: 1000
+            maxWidth: 280,
+            padding: 'var(--space-2)',
+            pointerEvents: 'none',
+            background: 'var(--surface-panel)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-control)',
+            fontFamily: 'var(--font-ui)',
+            fontSize: 12,
+            lineHeight: 1.4,
+            zIndex: 1000,
           }}
         >
-          <div><strong>{ringHit.entity.name}</strong> · {ringHit.name}</div>
-          <div style={{ fontFamily: 'var(--font-mono)' }}>{formatDistance(ringHit.radiusM, units)}</div>
+          <div>
+            <strong>{ringHit.entity.name}</strong> · {ringHit.name}
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)' }}>
+            {formatDistance(ringHit.radiusM, units)}
+          </div>
           <div style={{ color: 'var(--text-secondary)' }}>{ringHit.hint}</div>
         </div>
       )}

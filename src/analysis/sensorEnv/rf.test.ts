@@ -76,7 +76,9 @@ describe('RF link environment adapter', () => {
     const expected = legacyRfRangeM(RF, RF.detectRangeM, urban)
     expect(expected).toBe(2400)
     expect(effectiveRfRangeM(RF, RF.detectRangeM, urban, UAS, true)).toBe(expected)
-    expect(effectiveRfRangeM({ ...RF, receiverSensitivityDbm: null }, 4000, urban, UAS)).toBe(expected)
+    expect(effectiveRfRangeM({ ...RF, receiverSensitivityDbm: null }, 4000, urban, UAS)).toBe(
+      expected,
+    )
     expect(effectiveRfRangeM(RF, 4000, urban, { ...UAS, radiatedPowerW: null })).toBe(expected)
     expect(rfLinkBudgetModeled(RF, UAS)).toBe(true)
     expect(rfLinkBudgetModeled(RF, UAS, true)).toBe(false)
@@ -110,7 +112,8 @@ describe('RF measurement accuracy', () => {
     const accuracy = rfMeasurementAccuracy(RF, 1, 2, 2000, 1000)
     expect(accuracy.azimuthAccuracyDeg).toBe(5)
     expect(accuracy.rangeAccuracyM).toBeCloseTo(crossBearingRangeSigmaM(2000, 1000, 5)!, 10)
-    expect(rfMeasurementAccuracy({ ...RF, geolocationMinNodes: 3 }, 1, 2, 2000, 1000).rangeAccuracyM)
-      .toBeNull()
+    expect(
+      rfMeasurementAccuracy({ ...RF, geolocationMinNodes: 3 }, 1, 2, 2000, 1000).rangeAccuracyM,
+    ).toBeNull()
   })
 })

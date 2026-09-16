@@ -332,7 +332,10 @@ describe('phase transitions and precedence', () => {
     // s1 holds [10, 30] and coasts [20, 24.5] inside it; s2 measures over [22, 23].
     const coast = assessment({
       firstDetectS: 10,
-      sensorObservations: [observation('s1', [[10, 30]], [[20, 24.5]]), observation('s2', [[22, 23]])],
+      sensorObservations: [
+        observation('s1', [[10, 30]], [[20, 24.5]]),
+        observation('s2', [[22, 23]]),
+      ],
     })
     const empty = reportOf([])
     expect(stateAt(coast, empty, 15).coasting).toBe(false)
@@ -424,7 +427,11 @@ describe('phase transitions and precedence', () => {
     expect(stateAt(arr, reportOf([]), 79.9).arrived).toBe(false)
     expect(stateAt(arr, reportOf([]), 80).arrived).toBe(true)
     expect(stateAt(arr, reportOf([]), 80).arrivalS).toBe(80)
-    const tl = buildTrackTimeline(emptyScenario(), [assessment({ status: 'no-path' })], reportOf([]))
+    const tl = buildTrackTimeline(
+      emptyScenario(),
+      [assessment({ status: 'no-path' })],
+      reportOf([]),
+    )
     expect(trackStatesAt(tl, 100).size).toBe(0)
   })
 })
@@ -435,7 +442,11 @@ describe('ghost cutoff', () => {
   it('needs residual strictly below SHIP_DEAD_BELOW', () => {
     expect(SHIP_DEAD_BELOW).toBe(0.05)
     // 3.8 of 4 ships lands residualFraction on exactly the cutoff.
-    const at = stateAt(assessment({}), reportOf([event({ tEffectS: 10, killDelta: 3.8 })], four), 10)
+    const at = stateAt(
+      assessment({}),
+      reportOf([event({ tEffectS: 10, killDelta: 3.8 })], four),
+      10,
+    )
     expect(at.residual).toBeCloseTo(0.2, 9)
     expect(at.residualFraction).toBeCloseTo(0.05, 9)
     expect(at.eliminated).toBe(false)
@@ -581,7 +592,15 @@ describe('jammedFraction', () => {
 
   it('starts a fresh hold on re-entry into a later interval', () => {
     const a = assessment({
-      effectorWindows: [{ effectorId: 'e1', intervals: [[5, 30], [50, 70]] }],
+      effectorWindows: [
+        {
+          effectorId: 'e1',
+          intervals: [
+            [5, 30],
+            [50, 70],
+          ],
+        },
+      ],
     })
     const report = reportOf(
       [
@@ -891,12 +910,35 @@ describe('shot geometry and effector state', () => {
   })
 
   it('prepares before release, then keeps simultaneous committed late and missed rounds visible', () => {
-    const { scenario, effId, uasId } = shotScenario(effectorModel('delay-int', 'interceptor', { magazineSize: 3 }))
-    const report = reportOf([
-      event({ effectorId: effId, uasId, tS: 1, tReleaseS: 3, tEffectS: 5, killDelta: 0.99 }),
-      event({ effectorId: effId, uasId, tS: 2, tReleaseS: 4, tEffectS: 8, pk: 0, killDelta: 0, lateEffect: true }),
-      event({ effectorId: effId, uasId, tS: 2, tReleaseS: 6, tEffectS: 8, pk: 0, killDelta: 0, lateEffect: true }),
-    ], [threatAtt(uasId, 1)])
+    const { scenario, effId, uasId } = shotScenario(
+      effectorModel('delay-int', 'interceptor', { magazineSize: 3 }),
+    )
+    const report = reportOf(
+      [
+        event({ effectorId: effId, uasId, tS: 1, tReleaseS: 3, tEffectS: 5, killDelta: 0.99 }),
+        event({
+          effectorId: effId,
+          uasId,
+          tS: 2,
+          tReleaseS: 4,
+          tEffectS: 8,
+          pk: 0,
+          killDelta: 0,
+          lateEffect: true,
+        }),
+        event({
+          effectorId: effId,
+          uasId,
+          tS: 2,
+          tReleaseS: 6,
+          tEffectS: 8,
+          pk: 0,
+          killDelta: 0,
+          lateEffect: true,
+        }),
+      ],
+      [threatAtt(uasId, 1)],
+    )
     const tl = buildTrackTimeline(scenario, [assessment({ uasId, arrivalS: 6 })], report)
     expect(shotsInFlightAt(tl, 2.9)).toHaveLength(0)
     expect(effectorStatesAt(tl, 2).get(effId)).toBe('preparing')
@@ -913,50 +955,86 @@ describe('shot geometry and effector state', () => {
 
   it('never invents kinetic travel for a zero-flight interval', () => {
     const { scenario, effId, uasId } = shotScenario(effectorModel('instant-int', 'interceptor'))
-    const tl = buildTrackTimeline(scenario, [assessment({ uasId })], reportOf([
-      event({ effectorId: effId, uasId, tS: 10, tReleaseS: 15, tEffectS: 15 }),
-    ]))
+    const tl = buildTrackTimeline(
+      scenario,
+      [assessment({ uasId })],
+      reportOf([event({ effectorId: effId, uasId, tS: 10, tReleaseS: 15, tEffectS: 15 })]),
+    )
     expect(effectorStatesAt(tl, 14).get(effId)).toBe('preparing')
     for (const t of [10, 14.9, 15, 15.1]) expect(shotsInFlightAt(tl, t)).toEqual([])
     expect(trackStatesAt(tl, 15).get(uasId)!.effectsLanded).toBe(1)
   })
 
-  it.each(['jammer', 'de', 'hpm'] as const)('starts %s beams at release with no travel progress', (type) => {
-    const { scenario, effId, uasId } = shotScenario(effectorModel(`delay-${type}`, type))
-    const ev = event({ effectorId: effId, uasId, tS: 10, tReleaseS: 15, tEffectS: 17,
-      effectorType: type, channelClass: type === 'jammer' ? 'ew' : 'directed-energy',
-      softShot: type === 'jammer', channel: type === 'jammer' ? 'jam' : 'kill' })
-    const tl = buildTrackTimeline(scenario, [assessment({ uasId })], reportOf([ev]))
-    expect(shotsInFlightAt(tl, 14.9)).toEqual([])
-    expect(trackStatesAt(tl, 14).get(uasId)!.jammedNow).toBe(false)
-    expect(effectorStatesAt(tl, 14).get(effId)).toBe('preparing')
-    expect(shotsInFlightAt(tl, 15)[0]).toMatchObject({ mode: 'beam', progress: 1 })
-    expect(shotsInFlightAt(tl, 16)[0].progress).toBe(1)
-    expect(shotsInFlightAt(tl, 17)).toEqual([])
-    const instant = buildTrackTimeline(scenario, [assessment({ uasId })], reportOf([{ ...ev, tEffectS: 15 }]))
-    expect(shotsInFlightAt(instant, 14.9)).toEqual([])
-    expect(shotsInFlightAt(instant, 15)[0].progress).toBe(1)
-    expect(shotsInFlightAt(instant, 15 + BEAM_DISPLAY_S)).toEqual([])
-  })
+  it.each(['jammer', 'de', 'hpm'] as const)(
+    'starts %s beams at release with no travel progress',
+    (type) => {
+      const { scenario, effId, uasId } = shotScenario(effectorModel(`delay-${type}`, type))
+      const ev = event({
+        effectorId: effId,
+        uasId,
+        tS: 10,
+        tReleaseS: 15,
+        tEffectS: 17,
+        effectorType: type,
+        channelClass: type === 'jammer' ? 'ew' : 'directed-energy',
+        softShot: type === 'jammer',
+        channel: type === 'jammer' ? 'jam' : 'kill',
+      })
+      const tl = buildTrackTimeline(scenario, [assessment({ uasId })], reportOf([ev]))
+      expect(shotsInFlightAt(tl, 14.9)).toEqual([])
+      expect(trackStatesAt(tl, 14).get(uasId)!.jammedNow).toBe(false)
+      expect(effectorStatesAt(tl, 14).get(effId)).toBe('preparing')
+      expect(shotsInFlightAt(tl, 15)[0]).toMatchObject({ mode: 'beam', progress: 1 })
+      expect(shotsInFlightAt(tl, 16)[0].progress).toBe(1)
+      expect(shotsInFlightAt(tl, 17)).toEqual([])
+      const instant = buildTrackTimeline(
+        scenario,
+        [assessment({ uasId })],
+        reportOf([{ ...ev, tEffectS: 15 }]),
+      )
+      expect(shotsInFlightAt(instant, 14.9)).toEqual([])
+      expect(shotsInFlightAt(instant, 15)[0].progress).toBe(1)
+      expect(shotsInFlightAt(instant, 15 + BEAM_DISPLAY_S)).toEqual([])
+    },
+  )
 
   it('uses recorded beam channels when the captured effector spec is missing', () => {
     const { scenario, effId, uasId } = shotScenario(effectorModel('missing-beam', 'de'))
-    const tl = buildTrackTimeline({ ...scenario, library: [] }, [assessment({ uasId })], reportOf([
-      event({ effectorId: effId, uasId, tS: 10, tReleaseS: 15, tEffectS: 15,
-        effectorType: 'de', channelClass: 'directed-energy' }),
-    ]))
+    const tl = buildTrackTimeline(
+      { ...scenario, library: [] },
+      [assessment({ uasId })],
+      reportOf([
+        event({
+          effectorId: effId,
+          uasId,
+          tS: 10,
+          tReleaseS: 15,
+          tEffectS: 15,
+          effectorType: 'de',
+          channelClass: 'directed-energy',
+        }),
+      ]),
+    )
     expect(shotsInFlightAt(tl, 14)).toEqual([])
     expect(shotsInFlightAt(tl, 15)[0]).toMatchObject({ mode: 'beam', progress: 1 })
     expect(effectorStatesAt(tl, 15).get(effId)).toBe('beam')
   })
 
   it('reconstructs legacy release only with the captured effector spec', () => {
-    const { scenario, effId, uasId } = shotScenario(effectorModel('legacy-int', 'interceptor', { engageTimeS: 5 }))
-    const report = reportOf([event({ effectorId: effId, uasId, tS: 10, tReleaseS: undefined, tEffectS: 20 })])
+    const { scenario, effId, uasId } = shotScenario(
+      effectorModel('legacy-int', 'interceptor', { engageTimeS: 5 }),
+    )
+    const report = reportOf([
+      event({ effectorId: effId, uasId, tS: 10, tReleaseS: undefined, tEffectS: 20 }),
+    ])
     const tl = buildTrackTimeline(scenario, [assessment({ uasId })], report)
     expect(shotsInFlightAt(tl, 14)).toEqual([])
     expect(shotsInFlightAt(tl, 15)[0]).toMatchObject({ tReleaseS: 15, progress: 0 })
-    const missing = buildTrackTimeline({ ...scenario, library: [] }, [assessment({ uasId })], report)
+    const missing = buildTrackTimeline(
+      { ...scenario, library: [] },
+      [assessment({ uasId })],
+      report,
+    )
     expect(effectorStatesAt(missing, 15).get(effId)).toBe('timing-unavailable')
     expect(shotsInFlightAt(missing, 15)).toEqual([])
     expect(trackStatesAt(missing, 20).get(uasId)!.effectsLanded).toBe(1)
@@ -1082,9 +1160,14 @@ describe('against the engine', () => {
     scenario.library = [...scenario.library, SENSOR, mixed, jammer]
     const sensor = ent('sensor', SENSOR.id, { x: 0, y: 0 })
     const eff = ent('effector', jammer.id, { x: 0, y: 0 })
-    const uas = ent('uas', mixed.id, { x: -1210, y: 0 }, {
-      formation: { count: 3, shape: 'line', spacingM: 40 },
-    })
+    const uas = ent(
+      'uas',
+      mixed.id,
+      { x: -1210, y: 0 },
+      {
+        formation: { count: 3, shape: 'line', spacingM: 40 },
+      },
+    )
     scenario.entities = [sensor, eff, uas]
     scenario.connections = [link(sensor.id, eff.id)]
     scenario.paths = [

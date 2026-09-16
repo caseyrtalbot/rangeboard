@@ -103,20 +103,46 @@ describe('pathExhaustionPoint', () => {
   it('marks where the endurance budget runs out', () => {
     // One-way, 6 km budget at 10 m/s: dies 6 km into a 10 km eastbound leg.
     const owa = quad({ airframe: 'fpv', combatRadiusM: 6000 })
-    const hit = pathExhaustionPoint([{ x: 0, y: 0 }, { x: 10000, y: 0 }], 10, owa, CALM)
+    const hit = pathExhaustionPoint(
+      [
+        { x: 0, y: 0 },
+        { x: 10000, y: 0 },
+      ],
+      10,
+      owa,
+      CALM,
+    )
     expect(hit).not.toBeNull()
     expect(hit!.pos.x).toBeCloseTo(6000)
   })
 
   it('returns null when the whole path is flyable', () => {
     const owa = quad({ airframe: 'fpv', combatRadiusM: 6000 })
-    expect(pathExhaustionPoint([{ x: 0, y: 0 }, { x: 3000, y: 0 }], 10, owa, CALM)).toBeNull()
+    expect(
+      pathExhaustionPoint(
+        [
+          { x: 0, y: 0 },
+          { x: 3000, y: 0 },
+        ],
+        10,
+        owa,
+        CALM,
+      ),
+    ).toBeNull()
   })
 
   it('a tailwind extends how far along the path the drone gets', () => {
     const owa = quad({ airframe: 'fpv', combatRadiusM: 6000 })
     const wind = { ...CALM, windSpeedMps: 5, windFromDeg: 270 }
-    const hit = pathExhaustionPoint([{ x: 0, y: 0 }, { x: 20000, y: 0 }], 10, owa, wind)
+    const hit = pathExhaustionPoint(
+      [
+        { x: 0, y: 0 },
+        { x: 20000, y: 0 },
+      ],
+      10,
+      owa,
+      wind,
+    )
     expect(hit!.pos.x).toBeCloseTo(9000) // 600 s budget at 15 m/s ground speed
   })
 })

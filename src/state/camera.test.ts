@@ -3,7 +3,10 @@ import { fitCameraTo } from './camera'
 
 it('fitCameraTo centers the points in the fallback 1000x700 viewport with a 15% margin', () => {
   expect(fitCameraTo([])).toBeNull()
-  const cam = fitCameraTo([{ x: 0, y: 0 }, { x: 2000, y: 0 }])
+  const cam = fitCameraTo([
+    { x: 0, y: 0 },
+    { x: 2000, y: 0 },
+  ])
   expect(cam).not.toBeNull()
   // Width 2000 m plus 15% is 2300 m across 1000 px; height clamps to 1 m and does not bind.
   expect(cam!.scale).toBeCloseTo(1000 / 2300, 9)

@@ -5,7 +5,15 @@ import { stepIndex } from './clock'
 
 /** Draw kinds, one integer per engine draw point. */
 export const DRAW_KIND = {
-  detect: 1, kill: 2, jam: 3, phase: 4, param: 5, noise: 7, classify: 8, falseAlarm: 9, latency: 10,
+  detect: 1,
+  kill: 2,
+  jam: 3,
+  phase: 4,
+  param: 5,
+  noise: 7,
+  classify: 8,
+  falseAlarm: 9,
+  latency: 10,
   fluence: 11,
 } as const
 
@@ -139,8 +147,7 @@ export function monteCarloPolicy(
     param: (modelId, field) => u(DRAW_KIND.param, modelId, h(field), 0, 0),
     noise: (sensorId, uasId, tS, axis) =>
       u(DRAW_KIND.noise, sensorId, h(uasId), axis, stepIndex(tS)),
-    classify: (sensorId, uasId, tS) =>
-      u(DRAW_KIND.classify, sensorId, h(uasId), 0, stepIndex(tS)),
+    classify: (sensorId, uasId, tS) => u(DRAW_KIND.classify, sensorId, h(uasId), 0, stepIndex(tS)),
     falseAlarm: (sensorId, tS, k) => u(DRAW_KIND.falseAlarm, sensorId, k, 0, stepIndex(tS)),
     latency: (c2Id, uasId, tS, decision) =>
       u(DRAW_KIND.latency, c2Id, h(uasId), decision, stepIndex(tS)),

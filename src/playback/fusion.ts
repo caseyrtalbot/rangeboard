@@ -160,11 +160,16 @@ export function fusedTrackId(c2Id: string, uasId: string | null): string {
  * One member returns itself as a fused track. Empty input returns null, as
  * does a set whose covariances cannot be inverted after regularization.
  */
-export function fuseTracks(members: readonly TrackEstimate[], c2Id: string, tS: number): FusedTrack | null {
+export function fuseTracks(
+  members: readonly TrackEstimate[],
+  c2Id: string,
+  tS: number,
+): FusedTrack | null {
   if (members.length === 0) return null
   const uasId = members.find((m) => m.uasId != null)?.uasId ?? null
   const sensorIds: string[] = []
-  for (const m of members) for (const sid of m.sensorIds) if (!sensorIds.includes(sid)) sensorIds.push(sid)
+  for (const m of members)
+    for (const sid of m.sensorIds) if (!sensorIds.includes(sid)) sensorIds.push(sid)
   const memberTrackIds = members.map((m) => m.id)
   let hits = 0
   let misses = Number.POSITIVE_INFINITY
@@ -197,7 +202,13 @@ export function fuseTracks(members: readonly TrackEstimate[], c2Id: string, tS: 
   }
   if (members.length === 1) {
     const m = members[0]
-    return { ...common, state: { ...m.state, tS }, covariance: [...m.covariance], quality: m.quality, source: m.source }
+    return {
+      ...common,
+      state: { ...m.state, tS },
+      covariance: [...m.covariance],
+      quality: m.quality,
+      source: m.source,
+    }
   }
   const Y = new Array<number>(16).fill(0)
   const y = new Array<number>(4).fill(0)
@@ -254,7 +265,8 @@ export function c2LinksFor(scenario: Scenario, sensorIds: ReadonlySet<string>): 
   for (const c of scenario.connections) {
     const from = active.get(c.fromId)
     const to = active.get(c.toId)
-    if (!from || !to || from.kind !== 'sensor' || to.kind !== 'c2' || !sensorIds.has(from.id)) continue
+    if (!from || !to || from.kind !== 'sensor' || to.kind !== 'c2' || !sensorIds.has(from.id))
+      continue
     const latencyS = c.latencyS ?? (doctrine.enabled ? defaultLinkLatencyS(from.kind, to.kind) : 0)
     links.push({ c2Id: to.id, sensorId: from.id, latencyS })
   }
@@ -268,7 +280,12 @@ export function c2LinksFor(scenario: Scenario, sensorIds: ReadonlySet<string>): 
  * bypasses the latency and the current entry is returned. Null when the
  * track is younger than the latency: no report has reached the node yet.
  */
-export function delayedMember(ring: readonly TrackEstimate[], latencyS: number, tS: number, stepS = DT): TrackEstimate | null {
+export function delayedMember(
+  ring: readonly TrackEstimate[],
+  latencyS: number,
+  tS: number,
+  stepS = DT,
+): TrackEstimate | null {
   const last = ring[ring.length - 1]
   if (!last) return null
   if (last.source === 'truth') return last
@@ -301,7 +318,10 @@ export interface FusionStage {
  * with `truthTracks` off, truth members are dropped when an estimate member
  * is present. Returns the input when nothing is dropped.
  */
-export function admitMembers(members: readonly TrackEstimate[], truthTracks: boolean): readonly TrackEstimate[] {
+export function admitMembers(
+  members: readonly TrackEstimate[],
+  truthTracks: boolean,
+): readonly TrackEstimate[] {
   if (truthTracks) return members
   if (!members.some((m) => m.source === 'estimate')) return members
   return members.filter((m) => m.source !== 'truth')
@@ -317,7 +337,11 @@ export function admitMembers(members: readonly TrackEstimate[], truthTracks: boo
  * link's latency. Without links every current estimate fuses at the
  * sensors. `truthTracks` is the physics switch; see the module comment.
  */
-export function createFusionStage(links: readonly C2Link[], truthTracks = false, stepS = DT): FusionStage {
+export function createFusionStage(
+  links: readonly C2Link[],
+  truthTracks = false,
+  stepS = DT,
+): FusionStage {
   const current = new Map<string, TrackEstimate>()
   const rings = new Map<string, TrackEstimate[]>()
   const ringDepth = new Map<string, number>()
@@ -374,7 +398,8 @@ export function createFusionStage(links: readonly C2Link[], truthTracks = false,
       }
       // Sensors with no C2 link fuse at the sensors and compete on quality.
       members.length = 0
-      for (const [sensorId, estimate] of current) if (!ringDepth.has(sensorId)) members.push(estimate)
+      for (const [sensorId, estimate] of current)
+        if (!ringDepth.has(sensorId)) members.push(estimate)
       if (members.length > 0) {
         const fused = fuseAdmitted(members, NO_C2, tS)
         if (fused && (!best || fused.quality > best.quality)) best = fused

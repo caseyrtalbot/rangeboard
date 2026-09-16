@@ -8,7 +8,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { PngDeps } from './exportPng'
 import { svgToPng } from './exportPng'
 
-const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="40" height="20" fill="#3987e5"/></svg>'
+const SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="40" height="20" fill="#3987e5"/></svg>'
 const PNG = 'data:image/png;base64,iVBORw0KGgo='
 
 interface Recorded {
@@ -21,11 +22,21 @@ interface Recorded {
 
 /** An image that loads as soon as its src is set, and a canvas that records what was drawn. */
 function fakes(toDataURL: () => string = () => PNG): Recorded {
-  const recorded: Recorded = { deps: null as unknown as PngDeps, src: null, size: null, drawn: [], fills: [] }
+  const recorded: Recorded = {
+    deps: null as unknown as PngDeps,
+    src: null,
+    size: null,
+    drawn: [],
+    fills: [],
+  }
   const context = {
     fillStyle: '',
-    fillRect: (...args: unknown[]) => { recorded.fills.push(`${(context as { fillStyle: string }).fillStyle}:${args.join(',')}`) },
-    drawImage: (...args: unknown[]) => { recorded.drawn.push(args) },
+    fillRect: (...args: unknown[]) => {
+      recorded.fills.push(`${(context as { fillStyle: string }).fillStyle}:${args.join(',')}`)
+    },
+    drawImage: (...args: unknown[]) => {
+      recorded.drawn.push(args)
+    },
   }
   const image: Record<string, unknown> = { onload: null, onerror: null }
   Object.defineProperty(image, 'src', {
@@ -35,7 +46,8 @@ function fakes(toDataURL: () => string = () => PNG): Recorded {
     },
   })
   const canvas = {
-    width: 0, height: 0,
+    width: 0,
+    height: 0,
     getContext: () => context,
     toDataURL,
   }
@@ -70,7 +82,9 @@ describe('svgToPng', () => {
   })
 
   it('rejects with the reason when the canvas cannot be read', async () => {
-    const recorded = fakes(() => { throw new Error('Tainted canvas') })
+    const recorded = fakes(() => {
+      throw new Error('Tainted canvas')
+    })
     await expect(svgToPng(SVG, 40, 20, {}, recorded.deps)).rejects.toThrow('Tainted canvas')
   })
 
@@ -78,7 +92,8 @@ describe('svgToPng', () => {
     const recorded = fakes()
     const deps: PngDeps = {
       ...recorded.deps,
-      createCanvas: () => ({ width: 0, height: 0, getContext: () => null }) as unknown as HTMLCanvasElement,
+      createCanvas: () =>
+        ({ width: 0, height: 0, getContext: () => null }) as unknown as HTMLCanvasElement,
     }
     await expect(svgToPng(SVG, 40, 20, {}, deps)).rejects.toThrow('no 2D canvas context')
   })
@@ -86,13 +101,17 @@ describe('svgToPng', () => {
   it('rejects when the image cannot decode the markup', async () => {
     const image: Record<string, unknown> = { onload: null, onerror: null }
     Object.defineProperty(image, 'src', {
-      set() { queueMicrotask(() => (image.onerror as (() => void) | null)?.()) },
+      set() {
+        queueMicrotask(() => (image.onerror as (() => void) | null)?.())
+      },
     })
     const deps: PngDeps = {
       createImage: () => image as unknown as HTMLImageElement,
       createCanvas: vi.fn(() => ({}) as unknown as HTMLCanvasElement),
     }
-    await expect(svgToPng('<svg>', 40, 20, {}, deps)).rejects.toThrow('Could not rasterize the chart.')
+    await expect(svgToPng('<svg>', 40, 20, {}, deps)).rejects.toThrow(
+      'Could not rasterize the chart.',
+    )
     expect(deps.createCanvas).not.toHaveBeenCalled()
   })
 })

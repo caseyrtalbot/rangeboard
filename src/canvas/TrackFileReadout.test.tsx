@@ -10,7 +10,9 @@ let trial: TrialResultView
 
 function render(horizonS: number | null = 3): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(<TrackFileReadout trial={trial} horizonS={horizonS} size={{ w: 1200, h: 800 }} />)
+  return renderToStaticMarkup(
+    <TrackFileReadout trial={trial} horizonS={horizonS} size={{ w: 1200, h: 800 }} />,
+  )
 }
 
 describe('TrackFileReadout', () => {
@@ -51,10 +53,16 @@ describe('TrackFileReadout', () => {
     expect(html).toContain('3 active')
   })
 
-
   it('uses the shared raw horizon in Execute without rounding a reached scan backward', () => {
     useStore.getState().setBoardPhase('execute')
-    useStore.setState({ playback: { ...useStore.getState().playback, startedAtMs: 1, simTimeS: 1.1, observedThroughS: 1.1 } })
+    useStore.setState({
+      playback: {
+        ...useStore.getState().playback,
+        startedAtMs: 1,
+        simTimeS: 1.1,
+        observedThroughS: 1.1,
+      },
+    })
     expect(render(1.1)).toContain('>TRACKED</span>')
   })
 

@@ -42,7 +42,11 @@ export type SpreadBasis = 'row' | 'class-prior' | 'pf' | 'fixed'
  * yet, so every existing result is unchanged; Phase 1 wires the table through
  * McSettings.
  */
-export function spreadFor(model: SpecModel, field: string, priors?: ClassPriorTable): Spread | null {
+export function spreadFor(
+  model: SpecModel,
+  field: string,
+  priors?: ClassPriorTable,
+): Spread | null {
   const row = model.provenance?.find((r) => r.field === field)
   if (row?.spread) return row.spread
   if (row && row.spread === null) return null
@@ -54,7 +58,11 @@ export function spreadFor(model: SpecModel, field: string, priors?: ClassPriorTa
 }
 
 /** The step of `spreadFor` that answered, for the Systems tab and the run record. */
-export function spreadBasisFor(model: SpecModel, field: string, priors?: ClassPriorTable): SpreadBasis {
+export function spreadBasisFor(
+  model: SpecModel,
+  field: string,
+  priors?: ClassPriorTable,
+): SpreadBasis {
   const row = model.provenance?.find((r) => r.field === field)
   if (row?.spread) return 'row'
   if (row && row.spread === null) return 'fixed'
@@ -135,4 +143,3 @@ export function uncertainFields(scenario: Scenario): UncertainField[] {
   }
   return out
 }
-

@@ -33,7 +33,10 @@ interface PairIndex {
   holds: Array<[number, number]>
   coasts: Array<[number, number]>
 }
-interface SweepIndex { pairs: PairIndex[]; recent: TrialSweep[] }
+interface SweepIndex {
+  pairs: PairIndex[]
+  recent: TrialSweep[]
+}
 const cache = new WeakMap<TrialResultView, SweepIndex>()
 
 function lastAt<T>(items: T[], t: number, timeOf: (item: T) => number): T | undefined {
@@ -48,7 +51,7 @@ function lastAt<T>(items: T[], t: number, timeOf: (item: T) => number): T | unde
 }
 
 function inInterval(intervals: Array<[number, number]>, t: number): boolean {
-  const interval = lastAt(intervals, t, iv => iv[0])
+  const interval = lastAt(intervals, t, (iv) => iv[0])
   return interval != null && t <= interval[1]
 }
 
@@ -68,12 +71,13 @@ function indexOf(view: TrialResultView): SweepIndex {
   for (const scan of view.observations) {
     const pair = get(scan.uasId, scan.sensorId)
     pair.scans.push(scan)
-    if (scan.members.some(m => m.detected)) pair.measurements.push(scan)
+    if (scan.members.some((m) => m.detected)) pair.measurements.push(scan)
   }
   for (const a of view.assessments) {
     for (const observation of a.sensorObservations ?? []) {
       const pair = get(a.uasId, observation.sensorId)
-      const sorted = (intervals: SensorObservation['intervals']) => [...intervals].sort((x, y) => x[0] - y[0])
+      const sorted = (intervals: SensorObservation['intervals']) =>
+        [...intervals].sort((x, y) => x[0] - y[0])
       pair.holds = sorted(observation.intervals)
       pair.coasts = sorted(observation.coastIntervals ?? [])
     }
@@ -90,35 +94,57 @@ function indexOf(view: TrialResultView): SweepIndex {
 export function trialSweepAt(view: TrialResultView, horizonS: number): TrialSweep {
   const t = Math.min(Number.isNaN(horizonS) ? 0 : Math.max(0, horizonS), view.observedThroughS)
   const index = indexOf(view)
-  const hit = index.recent.find(sweep => sweep.timeS === t)
+  const hit = index.recent.find((sweep) => sweep.timeS === t)
   if (hit) return hit
   const holdingSensorIds = new Set<string>()
   const hits = new Map<string, DetectionHit[]>()
   const sensors = index.pairs.map((pair): TrialSensorState => {
-    const scan = lastAt(pair.scans, t, s => s.tS)
-    const measurement = lastAt(pair.measurements, t, s => s.tS)
-    const member = measurement?.members.filter(m => m.detected).reduce((nearest, m) => m.slantM < nearest.slantM ? m : nearest)
-    const stateAtTime = measurement?.tS === t ? 'measured'
-      : inInterval(pair.coasts, t) ? 'coasting'
-        : inInterval(pair.holds, t) ? 'held-between-scans' : 'not-held'
+    const scan = lastAt(pair.scans, t, (s) => s.tS)
+    const measurement = lastAt(pair.measurements, t, (s) => s.tS)
+    const member = measurement?.members
+      .filter((m) => m.detected)
+      .reduce((nearest, m) => (m.slantM < nearest.slantM ? m : nearest))
+    const stateAtTime =
+      measurement?.tS === t
+        ? 'measured'
+        : inInterval(pair.coasts, t)
+          ? 'coasting'
+          : inInterval(pair.holds, t)
+            ? 'held-between-scans'
+            : 'not-held'
     if (stateAtTime !== 'not-held') {
       holdingSensorIds.add(pair.sensorId)
       if (measurement && member) {
         const list = hits.get(pair.threatId) ?? []
-        list.push({ sensorId: pair.sensorId, sensorType: measurement.sensorType, classified: measurement.members.some(m => m.classified),
-          resolved: measurement.resolved, slantM: member.slantM, pd: member.pd })
+        list.push({
+          sensorId: pair.sensorId,
+          sensorType: measurement.sensorType,
+          classified: measurement.members.some((m) => m.classified),
+          resolved: measurement.resolved,
+          slantM: member.slantM,
+          pd: member.pd,
+        })
         hits.set(pair.threatId, list)
       }
     }
     return {
-      threatId: pair.threatId, sensorId: pair.sensorId, stateAtTime,
+      threatId: pair.threatId,
+      sensorId: pair.sensorId,
+      stateAtTime,
       ...(measurement ? { lastMeasurementTimeS: measurement.tS } : {}),
-      ...(member ? { slantRangeM: member.slantM, ...(member.pd != null ? { pd: member.pd } : {}) } : {}),
+      ...(member
+        ? { slantRangeM: member.slantM, ...(member.pd != null ? { pd: member.pd } : {}) }
+        : {}),
       ...(scan?.tS === t ? { observation: scan } : {}),
     }
   })
-  const sweep = { timeS: t, sensors, holdingSensorIds, hits,
-    effectorStates: effectorStatesAt(trialShotTimelineOf(view.scenario, view.attrition), t) }
+  const sweep = {
+    timeS: t,
+    sensors,
+    holdingSensorIds,
+    hits,
+    effectorStates: effectorStatesAt(trialShotTimelineOf(view.scenario, view.attrition), t),
+  }
   index.recent.unshift(sweep)
   if (index.recent.length > 4) index.recent.pop()
   return sweep

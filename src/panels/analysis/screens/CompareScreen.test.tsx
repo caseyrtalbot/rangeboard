@@ -13,35 +13,85 @@ import { installTrial, unstartTrial } from '../trialTestState'
 import { CompareScreen, SavedRunCompareView } from './CompareScreen'
 
 const interaction = vi.hoisted(() => ({ buttons: new Map<string, () => void>() }))
-vi.mock('react/jsx-dev-runtime', async importOriginal => {
+vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
     const button = props as { children?: unknown; onClick?: () => void }
-    if (type === 'button' && typeof button.children === 'string' && button.onClick) interaction.buttons.set(button.children, button.onClick)
+    if (type === 'button' && typeof button.children === 'string' && button.onClick)
+      interaction.buttons.set(button.children, button.onClick)
     return actual.jsxDEV(type, props, ...rest)
   }
   return { ...actual, jsxDEV }
 })
 
 function stat(mean: number, lo: number, hi: number, n = 40): Stat {
-  return { mean, lo, hi, n, total: 40, sd: 1, se: 0.1, conf: 0.95, interval: 't',
-    p10: NaN, p90: NaN, p025: NaN, p975: NaN, defined: { p: n / 40, lo: 0.8, hi: 1 } }
+  return {
+    mean,
+    lo,
+    hi,
+    n,
+    total: 40,
+    sd: 1,
+    se: 0.1,
+    conf: 0.95,
+    interval: 't',
+    p10: NaN,
+    p90: NaN,
+    p025: NaN,
+    p975: NaN,
+    defined: { p: n / 40, lo: 0.8, hi: 1 },
+  }
 }
 function band(mean: number, lo: number, hi: number): BandSeries {
   const values = (value: number) => Array.from({ length: 60 / DT + 1 }, () => value)
-  return { mean: values(mean), lo: values(lo), hi: values(hi), p10: values(NaN), p90: values(NaN), p025: values(NaN), p975: values(NaN) }
+  return {
+    mean: values(mean),
+    lo: values(lo),
+    hi: values(hi),
+    p10: values(NaN),
+    p90: values(NaN),
+    p025: values(NaN),
+    p975: values(NaN),
+  }
 }
 function complete() {
   const fixture = installTrial(60)
-  const mc: McSummary = { seed: 7, replicates: 40, durationS: 60, kills: band(2.5, 2, 3), leakers: band(2, 1, 2.5),
-    detected: band(1, 0, 2), tracked: band(1, 0, 2), engaged: band(1, 0, 2), firstDetectS: stat(2, 1, 3),
-    firmTrackS: stat(3, 2, 4), minWarningS: stat(4, 2, 6),
-    perThreat: Object.fromEntries(fixture.view.attrition.threats.map(row => [row.uasId, {
-      shipCount: row.shipCount, killed: stat(1, 0, 2), leaked: stat(1, 0, 2), firstDetectS: stat(2, 1, 3), arrivalS: null, residual: band(1, 0, 2),
-    }])), perEffector: { gun: { salvos: stat(4, 3, 5), kills: stat(2, 1, 3) }, jammer: { salvos: stat(4, 2, 6), kills: stat(1, 0, 2) } },
-    elapsedMs: 1, stopped: { rule: 'replicates', at: 40 } }
-  useStore.setState({ playback: { ...useStore.getState().playback, phase: 'complete', completedAtMs: 2, simTimeS: 0 },
-    mc: { ...useStore.getState().mc, status: 'done', runId: fixture.manifest.runId, summary: mc } })
+  const mc: McSummary = {
+    seed: 7,
+    replicates: 40,
+    durationS: 60,
+    kills: band(2.5, 2, 3),
+    leakers: band(2, 1, 2.5),
+    detected: band(1, 0, 2),
+    tracked: band(1, 0, 2),
+    engaged: band(1, 0, 2),
+    firstDetectS: stat(2, 1, 3),
+    firmTrackS: stat(3, 2, 4),
+    minWarningS: stat(4, 2, 6),
+    perThreat: Object.fromEntries(
+      fixture.view.attrition.threats.map((row) => [
+        row.uasId,
+        {
+          shipCount: row.shipCount,
+          killed: stat(1, 0, 2),
+          leaked: stat(1, 0, 2),
+          firstDetectS: stat(2, 1, 3),
+          arrivalS: null,
+          residual: band(1, 0, 2),
+        },
+      ]),
+    ),
+    perEffector: {
+      gun: { salvos: stat(4, 3, 5), kills: stat(2, 1, 3) },
+      jammer: { salvos: stat(4, 2, 6), kills: stat(1, 0, 2) },
+    },
+    elapsedMs: 1,
+    stopped: { rule: 'replicates', at: 40 },
+  }
+  useStore.setState({
+    playback: { ...useStore.getState().playback, phase: 'complete', completedAtMs: 2, simTimeS: 0 },
+    mc: { ...useStore.getState().mc, status: 'done', runId: fixture.manifest.runId, summary: mc },
+  })
   return mc
 }
 function render() {
@@ -60,31 +110,49 @@ describe('CompareScreen', () => {
     complete()
   })
 
-  it.each(['idle', 'cancelled', 'unstarted'] as const)('preserves the single pre-Play placeholder for %s', status => {
-    if (status === 'unstarted') unstartTrial()
-    else useStore.setState({ trial: status === 'idle' ? IDLE_TRIAL : { ...useStore.getState().trial, status } })
-    expect(render()).toBe('<p class="muted small">No trial yet. Press Play in Execute to run one.</p>')
-  })
+  it.each(['idle', 'cancelled', 'unstarted'] as const)(
+    'preserves the single pre-Play placeholder for %s',
+    (status) => {
+      if (status === 'unstarted') unstartTrial()
+      else
+        useStore.setState({
+          trial: status === 'idle' ? IDLE_TRIAL : { ...useStore.getState().trial, status },
+        })
+      expect(render()).toBe(
+        '<p class="muted small">No trial yet. Press Play in Execute to run one.</p>',
+      )
+    },
+  )
 
-  it.each(['idle', 'stale', 'running', 'wrong-run'] as const)('shows only the launch line with no current ensemble (%s)', status => {
-    const run = vi.fn()
-    useStore.setState({ runMonteCarlo: run, mc: { ...useStore.getState().mc,
-      status: status === 'wrong-run' ? 'done' : status, runId: status === 'wrong-run' ? 'another-run' : useStore.getState().playback.runId } })
-    const html = render()
-    expect(html).toContain('Run Monte Carlo')
-    expect(html).not.toContain('<section')
-    expect(html).not.toContain('<table')
-    expect(html).not.toContain('No pinned baseline')
-    if (status !== 'running') {
-      interaction.buttons.get('Run Monte Carlo')!()
-      expect(run).toHaveBeenCalledOnce()
-    }
-    else expect(html).toContain('disabled=""')
-  })
+  it.each(['idle', 'stale', 'running', 'wrong-run'] as const)(
+    'shows only the launch line with no current ensemble (%s)',
+    (status) => {
+      const run = vi.fn()
+      useStore.setState({
+        runMonteCarlo: run,
+        mc: {
+          ...useStore.getState().mc,
+          status: status === 'wrong-run' ? 'done' : status,
+          runId: status === 'wrong-run' ? 'another-run' : useStore.getState().playback.runId,
+        },
+      })
+      const html = render()
+      expect(html).toContain('Run Monte Carlo')
+      expect(html).not.toContain('<section')
+      expect(html).not.toContain('<table')
+      expect(html).not.toContain('No pinned baseline')
+      if (status !== 'running') {
+        interaction.buttons.get('Run Monte Carlo')!()
+        expect(run).toHaveBeenCalledOnce()
+      } else expect(html).toContain('disabled=""')
+    },
+  )
 
   it('renders the chart and five comparable quantities from a completed trial, including after rewind', () => {
     const html = render()
-    expect(html).toContain('Monte Carlo · 40 replicates · Aleatory uncertainty · seed 7 · 95 % band')
+    expect(html).toContain(
+      'Monte Carlo · 40 replicates · Aleatory uncertainty · seed 7 · 95 % band',
+    )
     expect(html).toContain('role="img" aria-label="Kills before arrival, members of 9.')
     expect(html).toContain('class="tb tb-dense"')
     expect(row(html, 'Kills')).toContain('>3 /9 members</td>')
@@ -113,7 +181,12 @@ describe('CompareScreen', () => {
     expect(pinned.label).toContain(useStore.getState().scenario.name)
     // A different current ensemble against the pinned one: one more kill, one fewer salvo.
     const mc = useStore.getState().mc.summary!
-    useStore.setState({ mc: { ...useStore.getState().mc, summary: { ...mc, kills: band(3.5, 3, 4), perEffector: { gun: mc.perEffector.gun } } } })
+    useStore.setState({
+      mc: {
+        ...useStore.getState().mc,
+        summary: { ...mc, kills: band(3.5, 3, 4), perEffector: { gun: mc.perEffector.gun } },
+      },
+    })
     html = render()
     expect(html).toContain(`Baseline · ${pinned.label}`)
     expect(html).not.toContain('pinned ')
@@ -157,7 +230,12 @@ describe('CompareScreen', () => {
 
   it('keeps unavailable means, bands and conditional time sample counts explicit', () => {
     const mc = complete()
-    useStore.setState({ mc: { ...useStore.getState().mc, summary: { ...mc, kills: band(NaN, NaN, NaN), firstDetectS: stat(2, 1, 3, 4) } } })
+    useStore.setState({
+      mc: {
+        ...useStore.getState().mc,
+        summary: { ...mc, kills: band(NaN, NaN, NaN), firstDetectS: stat(2, 1, 3, 4) },
+      },
+    })
     const html = render()
     expect(row(html, 'Kills')).toContain('Unavailable')
     expect(row(html, 'Kills')).not.toContain('inside')
@@ -167,11 +245,14 @@ describe('CompareScreen', () => {
 
   it('renders disagreement findings with one action per row', () => {
     const mc = complete()
-    useStore.setState({ mc: { ...useStore.getState().mc, summary: { ...mc, kills: band(1, 0, 2) } } })
+    useStore.setState({
+      mc: { ...useStore.getState().mc, summary: { ...mc, kills: band(1, 0, 2) } },
+    })
     const html = render()
     expect(html).toContain('simulated trial 3/9 members; ensemble 95 % mean band 0 to 2/9 members')
     const findings = html.split('class="validity-finding"').slice(1)
-    for (const finding of findings) expect(finding.slice(0, finding.indexOf('</section>')).match(/<button/g)).toHaveLength(1)
+    for (const finding of findings)
+      expect(finding.slice(0, finding.indexOf('</section>')).match(/<button/g)).toHaveLength(1)
     interaction.buttons.get('Review tracks in Prepare')!()
     expect(useStore.getState().ui.boardPhase).toBe('prepare')
   })
@@ -184,51 +265,117 @@ describe('CompareScreen', () => {
 })
 
 function entity(id: string, name: string, kind: Entity['kind']): Entity {
-  return { id, name, kind, specId: null, pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '' }
+  return {
+    id,
+    name,
+    kind,
+    specId: null,
+    pos: { x: 0, y: 0 },
+    headingDeg: 0,
+    color: null,
+    notes: '',
+  }
 }
 const savedScenario: Scenario = {
-  ...emptyScenario(), name: 'Camp Able',
-  entities: [entity('asset-1', 'HQ', 'asset'), entity('uas-1', 'Raid A', 'uas'), entity('gun-1', 'Gun 1', 'effector')],
+  ...emptyScenario(),
+  name: 'Camp Able',
+  entities: [
+    entity('asset-1', 'HQ', 'asset'),
+    entity('uas-1', 'Raid A', 'uas'),
+    entity('gun-1', 'Gun 1', 'effector'),
+  ],
 }
 
 /** One saved record with hand-chosen ensemble means; `ships` sets the count denominator. */
 function saved(id: string, ships: number, mc: Partial<McSummary>): RunRecord {
   return {
-    id, savedAt: '2026-09-15T12:00:00.000Z', label: `Camp Able · ${id}`,
+    id,
+    savedAt: '2026-09-15T12:00:00.000Z',
+    label: `Camp Able · ${id}`,
     manifest: createRunManifest(savedScenario, `sim-${id}`, `basis-${id}`),
-    scenario: savedScenario, scenarioHash: `basis-${id}`, sensitivity: null,
+    scenario: savedScenario,
+    scenarioHash: `basis-${id}`,
+    sensitivity: null,
     mc: {
-      seed: 7, replicates: 40, durationS: 60, kills: band(0, 0, 0), leakers: band(0, 0, 0),
-      detected: band(0, 0, 0), tracked: band(0, 0, 0), engaged: band(0, 0, 0),
-      firstDetectS: stat(0, 0, 0), firmTrackS: stat(0, 0, 0), minWarningS: stat(0, 0, 0),
-      perThreat: { 'uas-1': { shipCount: ships, killed: stat(1, 0, 2), leaked: stat(1, 0, 2),
-        firstDetectS: stat(2, 1, 3), arrivalS: null, residual: band(1, 0, 2) } },
+      seed: 7,
+      replicates: 40,
+      durationS: 60,
+      kills: band(0, 0, 0),
+      leakers: band(0, 0, 0),
+      detected: band(0, 0, 0),
+      tracked: band(0, 0, 0),
+      engaged: band(0, 0, 0),
+      firstDetectS: stat(0, 0, 0),
+      firmTrackS: stat(0, 0, 0),
+      minWarningS: stat(0, 0, 0),
+      perThreat: {
+        'uas-1': {
+          shipCount: ships,
+          killed: stat(1, 0, 2),
+          leaked: stat(1, 0, 2),
+          firstDetectS: stat(2, 1, 3),
+          arrivalS: null,
+          residual: band(1, 0, 2),
+        },
+      },
       perEffector: { 'gun-1': { salvos: stat(4, 3, 5), kills: stat(2, 1, 3) } },
-      elapsedMs: 1, stopped: { rule: 'replicates', at: 40 }, ...mc,
+      elapsedMs: 1,
+      stopped: { rule: 'replicates', at: 40 },
+      ...mc,
     },
   }
 }
-const runA = saved('run-a', 9, { kills: band(2.5, 2, 3), leakers: band(2, 1, 2.5),
-  firstDetectS: stat(2, 1, 3), minWarningS: stat(4, 2, 6), perEffector: { 'gun-1': { salvos: stat(4, 3, 5), kills: stat(2, 1, 3) } } })
-const runB = saved('run-b', 6, { kills: band(1.5, 1, 2), leakers: band(3, 2, 4),
-  firstDetectS: stat(3, 2, 4), minWarningS: stat(5, 3, 7), perEffector: { 'gun-1': { salvos: stat(6, 5, 7), kills: stat(3, 2, 4) } } })
-const listed = (record: RunRecord): RunSummary => ({ id: record.id, label: record.label, savedAt: record.savedAt,
-  seed: record.mc.seed, replicates: record.mc.replicates, scenarioName: record.scenario.name, bytes: 1024 })
+const runA = saved('run-a', 9, {
+  kills: band(2.5, 2, 3),
+  leakers: band(2, 1, 2.5),
+  firstDetectS: stat(2, 1, 3),
+  minWarningS: stat(4, 2, 6),
+  perEffector: { 'gun-1': { salvos: stat(4, 3, 5), kills: stat(2, 1, 3) } },
+})
+const runB = saved('run-b', 6, {
+  kills: band(1.5, 1, 2),
+  leakers: band(3, 2, 4),
+  firstDetectS: stat(3, 2, 4),
+  minWarningS: stat(5, 3, 7),
+  perEffector: { 'gun-1': { salvos: stat(6, 5, 7), kills: stat(3, 2, 4) } },
+})
+const listed = (record: RunRecord): RunSummary => ({
+  id: record.id,
+  label: record.label,
+  savedAt: record.savedAt,
+  seed: record.mc.seed,
+  replicates: record.mc.replicates,
+  scenarioName: record.scenario.name,
+  bytes: 1024,
+})
 
 function savedView(props: Partial<SavedRunCompareViewProps> = {}) {
-  return renderToStaticMarkup(<SavedRunCompareView
-    runs={[listed(runA), listed(runB)]} a={runA} b={runB} error={null} onPick={() => {}} {...props} />)
+  return renderToStaticMarkup(
+    <SavedRunCompareView
+      runs={[listed(runA), listed(runB)]}
+      a={runA}
+      b={runB}
+      error={null}
+      onPick={() => {}}
+      {...props}
+    />,
+  )
 }
 type SavedRunCompareViewProps = Parameters<typeof SavedRunCompareView>[0]
 
 describe('SavedRunCompareView', () => {
   it('asks for two saved runs before it compares any', () => {
-    expect(savedView({ runs: [], a: null, b: null })).toContain('0 saved runs. Save two runs on Outcome')
-    expect(savedView({ runs: [listed(runA)], a: runA, b: null })).toContain('1 saved run. Save two runs on Outcome')
+    expect(savedView({ runs: [], a: null, b: null })).toContain(
+      '0 saved runs. Save two runs on Outcome',
+    )
+    expect(savedView({ runs: [listed(runA)], a: runA, b: null })).toContain(
+      '1 saved run. Save two runs on Outcome',
+    )
     expect(savedView({ runs: [listed(runA)], a: runA, b: null })).not.toContain('<table')
     expect(savedView({ b: null })).toContain('Choose two saved runs to see the delta table.')
-    expect(savedView({ error: 'Run history is unavailable: this browser provides no IndexedDB.' }))
-      .toContain('this browser provides no IndexedDB')
+    expect(
+      savedView({ error: 'Run history is unavailable: this browser provides no IndexedDB.' }),
+    ).toContain('this browser provides no IndexedDB')
   })
 
   it('lists every saved run in both pickers with the chosen one selected', () => {
@@ -244,10 +391,16 @@ describe('SavedRunCompareView', () => {
   it('differences the five quantities, each side with its own interval', () => {
     const html = savedView()
     expect(html).toContain('aria-label="Saved run A against saved run B"')
-    expect(html).toContain('Each cell holds the ensemble mean and, under it, the 95 % interval on that mean.')
+    expect(html).toContain(
+      'Each cell holds the ensemble mean and, under it, the 95 % interval on that mean.',
+    )
     // Kills 2.5 of 9 against 1.5 of 6: the means differ by 1 member.
-    expect(row(html, 'Kills')).toContain('>2.5 /9 members<small style="display:block">2 to 3 /9 members</small>')
-    expect(row(html, 'Kills')).toContain('>1.5 /6 members<small style="display:block">1 to 2 /6 members</small>')
+    expect(row(html, 'Kills')).toContain(
+      '>2.5 /9 members<small style="display:block">2 to 3 /9 members</small>',
+    )
+    expect(row(html, 'Kills')).toContain(
+      '>1.5 /6 members<small style="display:block">1 to 2 /6 members</small>',
+    )
     expect(row(html, 'Kills')).toContain('>+1 members</td>')
     // Leakers 2 against 3, first detect 2 s against 3 s, min warning 4 s against 5 s.
     expect(row(html, 'Leakers')).toContain('>-1 members</td>')
@@ -261,15 +414,25 @@ describe('SavedRunCompareView', () => {
 
   it('states each record basis, the differing populations and the delta rule', () => {
     const html = savedView()
-    expect(html).toContain('A · Camp Able · run-a · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 9 members')
-    expect(html).toContain('B · Camp Able · run-b · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 6 members')
+    expect(html).toContain(
+      'A · Camp Able · run-a · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 9 members',
+    )
+    expect(html).toContain(
+      'B · Camp Able · run-b · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 6 members',
+    )
     expect(html).toContain('Populations differ, 9 against 6 members; count deltas are in members.')
     expect(html).toContain('no interval is claimed on a difference of two independent runs')
     expect(savedView({ b: runA })).toContain('Both sides are the same record; every delta is zero.')
   })
 
   it('leaves leakage and warning unavailable on a record with no defended asset', () => {
-    const noAsset = { ...runB, scenario: { ...savedScenario, entities: savedScenario.entities.filter(e => e.kind !== 'asset') } }
+    const noAsset = {
+      ...runB,
+      scenario: {
+        ...savedScenario,
+        entities: savedScenario.entities.filter((e) => e.kind !== 'asset'),
+      },
+    }
     const html = savedView({ b: noAsset })
     expect(row(html, 'Leakers')).toContain('Unavailable')
     expect(row(html, 'Leakers')).toContain('>—</td>')

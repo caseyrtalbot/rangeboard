@@ -142,9 +142,22 @@ export const RANGE_TYPE_BY_FIELD = {
   c2: {},
 }
 
-export const GRADES = ['VERIFIED', 'CORROBORATED', 'REPORTED', 'MANUFACTURER_CLAIM', 'INFERRED', 'UNKNOWN']
+export const GRADES = [
+  'VERIFIED',
+  'CORROBORATED',
+  'REPORTED',
+  'MANUFACTURER_CLAIM',
+  'INFERRED',
+  'UNKNOWN',
+]
 export const LAYERS = ['L1', 'L2', 'L3']
-export const RANGE_TYPES = ['detection', 'instrumented', 'track', 'classification', 'effective-engagement']
+export const RANGE_TYPES = [
+  'detection',
+  'instrumented',
+  'track',
+  'classification',
+  'effective-engagement',
+]
 export const ESTIMATORS = ['class-median', 'planning-factor', 'analyst']
 export const BASES = ['datasheet', 'reference', 'pf']
 export const KIND_DIRS = ['sensor', 'effector', 'c2', 'uas', 'asset', 'marker']
@@ -172,7 +185,14 @@ export function readLibraryFiles(root = ROOT) {
 /** The runtime SpecModel one library file compiles into. */
 function toModel(entry) {
   const f = entry.data
-  const model = { id: f.id, name: f.name, kind: f.kind, description: f.description, color: f.color, builtin: f.builtin }
+  const model = {
+    id: f.id,
+    name: f.name,
+    kind: f.kind,
+    description: f.description,
+    color: f.color,
+    builtin: f.builtin,
+  }
   if (f.spec) {
     const spec = {}
     // Attributes first (type, role, mode) so the block reads like a placard.
@@ -180,7 +200,10 @@ function toModel(entry) {
     for (const [key, field] of Object.entries(f.fields)) {
       const unit = UNIT_BY_FIELD[key]
       if (!unit) throw new Error(`${entry.file}: no unit table entry for '${key}'`)
-      if (field.unit !== unit) throw new Error(`${entry.file}: '${key}' unit '${field.unit}' is not the table unit '${unit}'`)
+      if (field.unit !== unit)
+        throw new Error(
+          `${entry.file}: '${key}' unit '${field.unit}' is not the table unit '${unit}'`,
+        )
       spec[key] = field.value
     }
     model[f.spec] = spec
@@ -191,7 +214,10 @@ function toModel(entry) {
       const field = f.fields?.[key]
       const attr = f.attributeProvenance?.[key]
       const src = field ?? attr
-      if (!src) throw new Error(`${entry.file}: provenanceOrder names '${key}', which has no field or attribute lineage`)
+      if (!src)
+        throw new Error(
+          `${entry.file}: provenanceOrder names '${key}', which has no field or attribute lineage`,
+        )
       if (!src.basis) throw new Error(`${entry.file}: '${key}' is in provenanceOrder with no basis`)
       const row = {
         field: key,

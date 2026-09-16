@@ -24,7 +24,10 @@ function addThreat(
   const path: FlightPath = {
     id: `p-${id}`,
     entityId: id,
-    points: [{ x: 0, y: 0 }, { x: 100, y: 0 }],
+    points: [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+    ],
     speedMps: 10,
     startDelayS: 0,
   }
@@ -104,7 +107,10 @@ function threatAtt(uasId: string, shipCount: number): ThreatAttrition {
   }
 }
 
-function reportOf(events: EngagementEvent[] = [], threats: ThreatAttrition[] = []): AttritionReport {
+function reportOf(
+  events: EngagementEvent[] = [],
+  threats: ThreatAttrition[] = [],
+): AttritionReport {
   return {
     threats,
     effectors: [],
@@ -161,7 +167,14 @@ describe('first effect time', () => {
     // interceptor removes 0.5 ships at T+30. The first EFFECT is T+30.
     const report = reportOf(
       [
-        event({ tS: 10, tEffectS: 12, channel: 'jam', softShot: true, channelClass: 'ew', effectorType: 'jammer' }),
+        event({
+          tS: 10,
+          tEffectS: 12,
+          channel: 'jam',
+          softShot: true,
+          channelClass: 'ew',
+          effectorType: 'jammer',
+        }),
         event({ tS: 25, tEffectS: 30, killDelta: 0.5 }),
       ],
       [threatAtt('1', 1)],
@@ -174,7 +187,16 @@ describe('first effect time', () => {
   it('is null when every salvo was a zero-mass jam dwell', () => {
     const scenario = oneThreatScenario()
     const report = reportOf(
-      [event({ tS: 10, tEffectS: 12, channel: 'jam', softShot: true, channelClass: 'ew', effectorType: 'jammer' })],
+      [
+        event({
+          tS: 10,
+          tEffectS: 12,
+          channel: 'jam',
+          softShot: true,
+          channelClass: 'ew',
+          effectorType: 'jammer',
+        }),
+      ],
       [threatAtt('1', 1)],
     )
     const [group] = threatPictureAt(scenario, [assessment('1')], report, 60, new Map())
@@ -189,8 +211,12 @@ describe('an expected-dead track is not a target', () => {
 
   it('drops targetableNow at the ghost cutoff while the window is still open', () => {
     const scenario = oneThreatScenario()
-    const a = assessment('1', { windowS: [8, 60], effectorWindows: [{ effectorId: 'e1', intervals: [[8, 60]] }] })
-    const at = (tS: number) => threatPictureAt(scenario, [a], deadReport(), tS, new Map())[0].members[0]
+    const a = assessment('1', {
+      windowS: [8, 60],
+      effectorWindows: [{ effectorId: 'e1', intervals: [[8, 60]] }],
+    })
+    const at = (tS: number) =>
+      threatPictureAt(scenario, [a], deadReport(), tS, new Map())[0].members[0]
     expect(at(19.9).targetableNow).toBe(true)
     // residual 0.03 of 1 ship is below SHIP_DEAD_BELOW: a ghost.
     expect(at(20).targetableNow).toBe(false)
@@ -199,7 +225,10 @@ describe('an expected-dead track is not a target', () => {
 
   it('keeps targetAcquired when the track was acquired while it still flew', () => {
     const scenario = oneThreatScenario()
-    const a = assessment('1', { windowS: [8, 60], effectorWindows: [{ effectorId: 'e1', intervals: [[8, 60]] }] })
+    const a = assessment('1', {
+      windowS: [8, 60],
+      effectorWindows: [{ effectorId: 'e1', intervals: [[8, 60]] }],
+    })
     const row = threatPictureAt(scenario, [a], deadReport(), 50, new Map())[0].members[0]
     expect(row.targetAcquired).toBe(true)
     expect(row.targetableNow).toBe(false)
@@ -207,7 +236,10 @@ describe('an expected-dead track is not a target', () => {
 
   it('never acquires a track whose window opens after it is already dead', () => {
     const scenario = oneThreatScenario()
-    const a = assessment('1', { windowS: [40, 60], effectorWindows: [{ effectorId: 'e1', intervals: [[40, 60]] }] })
+    const a = assessment('1', {
+      windowS: [40, 60],
+      effectorWindows: [{ effectorId: 'e1', intervals: [[40, 60]] }],
+    })
     const row = threatPictureAt(scenario, [a], deadReport(), 50, new Map())[0].members[0]
     expect(row.targetAcquired).toBe(false)
     expect(row.targetableNow).toBe(false)
@@ -215,7 +247,10 @@ describe('an expected-dead track is not a target', () => {
 
   it('leaves a damaged but living formation targetable', () => {
     const scenario = oneThreatScenario()
-    const a = assessment('1', { windowS: [8, 60], effectorWindows: [{ effectorId: 'e1', intervals: [[8, 60]] }] })
+    const a = assessment('1', {
+      windowS: [8, 60],
+      effectorWindows: [{ effectorId: 'e1', intervals: [[8, 60]] }],
+    })
     const report = reportOf([event({ tS: 15, tEffectS: 20, killDelta: 1.5 })], [threatAtt('1', 2)])
     const row = threatPictureAt(scenario, [a], report, 50, new Map())[0].members[0]
     expect(row.targetableNow).toBe(true)

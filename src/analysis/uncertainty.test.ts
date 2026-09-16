@@ -158,10 +158,22 @@ describe('spreadFor', () => {
     const m: SpecModel = {
       ...RADAR,
       provenance: [
-        { field: 'detectRangeM', value: '5000', source: 'x', date: '2026-09-04', basis: 'pf',
-          spread: rowSpread },
-        { field: 'trackInitS', value: '2', source: 'x', date: '2026-09-04', basis: 'pf',
-          spread: null },
+        {
+          field: 'detectRangeM',
+          value: '5000',
+          source: 'x',
+          date: '2026-09-04',
+          basis: 'pf',
+          spread: rowSpread,
+        },
+        {
+          field: 'trackInitS',
+          value: '2',
+          source: 'x',
+          date: '2026-09-04',
+          basis: 'pf',
+          spread: null,
+        },
       ],
     }
     expect(spreadFor(m, 'detectRangeM')).toBe(rowSpread)
@@ -191,8 +203,14 @@ describe('uncertainFields', () => {
     const fixed: SpecModel = {
       ...RADAR,
       provenance: [
-        { field: 'trackInitS', value: '2', source: 'x', date: '2026-09-04', basis: 'pf',
-          spread: null },
+        {
+          field: 'trackInitS',
+          value: '2',
+          source: 'x',
+          date: '2026-09-04',
+          basis: 'pf',
+          spread: null,
+        },
       ],
     }
     const s = { ...scenario([fixed]), doctrine: { ...DEFAULT_FIRE_DOCTRINE, enabled: false } }
@@ -231,7 +249,8 @@ describe('sampleScenario', () => {
     expect(out.connections).not.toBe(s.connections)
     expect(out.doctrine).not.toBe(s.doctrine)
     expect(out.library.map((m) => m.sensor ?? m.effector ?? m.uas)).toEqual(
-      s.library.map((m) => m.sensor ?? m.effector ?? m.uas))
+      s.library.map((m) => m.sensor ?? m.effector ?? m.uas),
+    )
     // An absent latency stays absent; a stated one keeps its value.
     expect(out.connections[0].latencyS).toBeUndefined()
     expect(out.connections[1].latencyS).toBe(6)
@@ -241,16 +260,44 @@ describe('sampleScenario', () => {
   it('samples a c2 decision median and a sensor accuracy field at their own nominals; a null nominal draws nothing', () => {
     const spread = { kind: 'lognormal' as const, sigmaDb: 3 }
     const c2: SpecModel = {
-      id: 'tst-c2', name: 'test c2', kind: 'c2', description: '', color: '#fff', builtin: false,
+      id: 'tst-c2',
+      name: 'test c2',
+      kind: 'c2',
+      description: '',
+      color: '#fff',
+      builtin: false,
       c2: { decisionLatencyS: 10, decisionLatencySigmaDb: 3, operatorTrackCapacity: 6 },
-      provenance: [{ field: 'decisionLatencyS', value: '10 s', basis: 'pf', source: 'test', date: '2026-09-10', spread }],
+      provenance: [
+        {
+          field: 'decisionLatencyS',
+          value: '10 s',
+          basis: 'pf',
+          source: 'test',
+          date: '2026-09-10',
+          spread,
+        },
+      ],
     }
     const radar: SpecModel = {
       ...RADAR,
       sensor: { ...RADAR.sensor!, rangeAccuracyM: 20, azimuthAccuracyDeg: null },
       provenance: [
-        { field: 'rangeAccuracyM', value: '20 m', basis: 'pf', source: 'test', date: '2026-09-10', spread },
-        { field: 'azimuthAccuracyDeg', value: 'null', basis: 'pf', source: 'test', date: '2026-09-10', spread },
+        {
+          field: 'rangeAccuracyM',
+          value: '20 m',
+          basis: 'pf',
+          source: 'test',
+          date: '2026-09-10',
+          spread,
+        },
+        {
+          field: 'azimuthAccuracyDeg',
+          value: 'null',
+          basis: 'pf',
+          source: 'test',
+          date: '2026-09-10',
+          spread,
+        },
       ],
     }
     const s = scenario([radar, INTERCEPTOR, UAS, c2])
@@ -267,8 +314,7 @@ describe('sampleScenario', () => {
   it('samples one field and keeps the rest nominal', () => {
     const s = scenario([RADAR, INTERCEPTOR, UAS])
     const out = sampleScenario(s, (m, f) => (m === UAS.id && f === 'rcsM2' ? 0.9 : null))
-    expect(out.library[2].uas?.rcsM2).toBeCloseTo(
-      sampleSpread(0.2, PF_SPREAD.rcsM2.spread, 0.9), 9)
+    expect(out.library[2].uas?.rcsM2).toBeCloseTo(sampleSpread(0.2, PF_SPREAD.rcsM2.spread, 0.9), 9)
     expect(out.library[0].sensor).toEqual(RADAR.sensor)
     expect(out.library[1].effector).toEqual(INTERCEPTOR.effector)
     expect(out.connections[0].latencyS).toBeUndefined()
@@ -291,23 +337,37 @@ describe('sampleScenario', () => {
     const doctrine = DEFAULT_FIRE_DOCTRINE
     const u = 0.9
     expect(radar.sensor?.detectRangeM).toBeCloseTo(
-      sampleSpread(5000, PF_SPREAD.detectRangeM.spread, u), 9)
+      sampleSpread(5000, PF_SPREAD.detectRangeM.spread, u),
+      9,
+    )
     expect(radar.sensor?.trackInitS).toBeCloseTo(
-      sampleSpread(trackInitSFor(RADAR.sensor!, doctrine), PF_SPREAD.trackInitS.spread, u), 9)
+      sampleSpread(trackInitSFor(RADAR.sensor!, doctrine), PF_SPREAD.trackInitS.spread, u),
+      9,
+    )
     expect(fx.effector?.pk).toBeCloseTo(sampleSpread(0.7, PF_SPREAD.pk.spread, u), 9)
     expect(fx.effector?.engageTimeS).toBeCloseTo(
-      sampleSpread(4, PF_SPREAD.engageTimeS.spread, u), 9)
+      sampleSpread(4, PF_SPREAD.engageTimeS.spread, u),
+      9,
+    )
     expect(fx.effector?.targetS).toBeCloseTo(
-      sampleSpread(targetSFor(INTERCEPTOR.effector!, doctrine), PF_SPREAD.targetS.spread, u), 9)
+      sampleSpread(targetSFor(INTERCEPTOR.effector!, doctrine), PF_SPREAD.targetS.spread, u),
+      9,
+    )
     expect(fx.effector?.bdaS).toBeCloseTo(sampleSpread(8, PF_SPREAD.bdaS.spread, u), 9)
     // Group 3 tier is 0.2 m2 when the spec states no RCS.
     expect(uas.uas?.rcsM2).toBeCloseTo(sampleSpread(0.2, PF_SPREAD.rcsM2.spread, u), 9)
     expect(out.connections[0].latencyS).toBeCloseTo(
-      sampleSpread(defaultLinkLatencyS('sensor', 'c2'), PF_SPREAD.latencyS.spread, u), 9)
+      sampleSpread(defaultLinkLatencyS('sensor', 'c2'), PF_SPREAD.latencyS.spread, u),
+      9,
+    )
     expect(out.connections[1].latencyS).toBeCloseTo(
-      sampleSpread(6, PF_SPREAD.latencyS.spread, u), 9)
+      sampleSpread(6, PF_SPREAD.latencyS.spread, u),
+      9,
+    )
     expect(out.doctrine?.declareHostileS).toBeCloseTo(
-      sampleSpread(doctrine.declareHostileS, PF_SPREAD.declareHostileS.spread, u), 9)
+      sampleSpread(doctrine.declareHostileS, PF_SPREAD.declareHostileS.spread, u),
+      9,
+    )
 
     // Every other field is unchanged.
     const strip = (o: unknown, keys: string[]) => {
@@ -321,7 +381,8 @@ describe('sampleScenario', () => {
     expect(strip(uas.uas, sampled)).toEqual(strip(UAS.uas, sampled))
     expect(strip(out.doctrine, ['declareHostileS'])).toEqual(strip(s.doctrine, ['declareHostileS']))
     expect(strip(out, ['library', 'connections', 'doctrine'])).toEqual(
-      strip(s, ['library', 'connections', 'doctrine']))
+      strip(s, ['library', 'connections', 'doctrine']),
+    )
   })
 })
 
@@ -419,7 +480,9 @@ describe('support and convergence', () => {
       // A stated latency still samples with doctrine off.
       const stated = sampleScenario(s, (m, f) => (m === 'k2' && f === 'latencyS' ? u : null))
       expect(stated.connections[1].latencyS).toBeCloseTo(
-        sampleSpread(6, PF_SPREAD.latencyS.spread, u), 9)
+        sampleSpread(6, PF_SPREAD.latencyS.spread, u),
+        9,
+      )
     }
   })
 })

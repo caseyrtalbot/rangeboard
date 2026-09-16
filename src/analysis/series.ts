@@ -48,7 +48,6 @@ import type { LiveKpis } from './liveStats'
 import { FT_TO_M } from './sensorEnv'
 import { threatPictureAt } from './threatAggregation'
 
-
 /** Phase index by `PHASE_STYLE` key order: undetected 0 through ghost 6. */
 const PHASE_INDEX: Record<TrackPhase, number> = Object.fromEntries(
   Object.keys(PHASE_STYLE).map((k, i) => [k, i]),
@@ -137,7 +136,8 @@ export function kpiSeries(scenario: Scenario): Series[] {
   for (let i = 0; i < n; i += 1) {
     const k = liveKpisAt(tl, i * DT)
     KPI_SPECS.forEach((spec, j) => {
-      values[j][i] = spec.key === 'leakerShips' && report.totals.reportedLeakers == null ? NaN : k[spec.key]
+      values[j][i] =
+        spec.key === 'leakerShips' && report.totals.reportedLeakers == null ? NaN : k[spec.key]
     })
   }
   return KPI_SPECS.map((spec, j) => ({
@@ -451,7 +451,7 @@ function observationSpans(
   }
   for (const [a, b] of coasts) spans.push(trackSpan('coast', a, b))
   // Stable: a drop at the same time as a following span draws first.
-  return spans.sort((x, y) => x.startS - y.startS || (x.endS - x.startS) - (y.endS - y.startS))
+  return spans.sort((x, y) => x.startS - y.startS || x.endS - x.startS - (y.endS - y.startS))
 }
 
 /**
@@ -545,13 +545,20 @@ export function salvosInFlightSeries(scenario: Scenario): Series {
   const n = sampleCount(scenario)
   const inFlight = new Array<number>(n).fill(0)
   const flights = report.events.filter(engagementIsKinetic).map((ev) => ({
-    assignmentS: ev.tS, releaseS: engagementReleaseS(ev, scenario), effectS: ev.tEffectS,
+    assignmentS: ev.tS,
+    releaseS: engagementReleaseS(ev, scenario),
+    effectS: ev.tEffectS,
   }))
   for (let i = 0; i < n; i += 1) {
     const t = i * DT
     // Missing legacy release makes the count unknown during the possible flight interval.
-    inFlight[i] = flights.some(flight => flight.releaseS == null && flight.assignmentS <= t && t < flight.effectS)
-      ? NaN : flights.filter(flight => flight.releaseS != null && flight.releaseS <= t && t < flight.effectS).length
+    inFlight[i] = flights.some(
+      (flight) => flight.releaseS == null && flight.assignmentS <= t && t < flight.effectS,
+    )
+      ? NaN
+      : flights.filter(
+          (flight) => flight.releaseS != null && flight.releaseS <= t && t < flight.effectS,
+        ).length
   }
   return {
     id: 'salvosInFlight',
@@ -621,11 +628,17 @@ export function salvoMarks(scenario: Scenario, effectorId: string): ChartMark[] 
     group.push(mark)
     byTime.set(mark.tS, group)
   }
-  return [...byTime].map(([tS, group]) => ({
-    tS,
-    label: ['ASG', 'REL', 'FX'].filter(label => group.some(mark => mark.label === label)).join('/'),
-    color: ['danger', 'ew', 'accent', 'warn'].find(color => group.some(mark => mark.color === color))!,
-  })).sort((a, b) => a.tS - b.tS)
+  return [...byTime]
+    .map(([tS, group]) => ({
+      tS,
+      label: ['ASG', 'REL', 'FX']
+        .filter((label) => group.some((mark) => mark.label === label))
+        .join('/'),
+      color: ['danger', 'ew', 'accent', 'warn'].find((color) =>
+        group.some((mark) => mark.color === color),
+      )!,
+    }))
+    .sort((a, b) => a.tS - b.tS)
 }
 
 /**
@@ -644,7 +657,12 @@ export function releaseLadderRows(scenario: Scenario, effectorId: string): Ladde
     }
     const releaseS = engagementReleaseS(ev, scenario)
     if (releaseS == null) {
-      row.spans.push({ startS: ev.tS, endS: ev.tEffectS, color: 'warn', label: 'launch timing unavailable' })
+      row.spans.push({
+        startS: ev.tS,
+        endS: ev.tEffectS,
+        color: 'warn',
+        label: 'launch timing unavailable',
+      })
       continue
     }
     if (releaseS > ev.tS) {
@@ -654,8 +672,13 @@ export function releaseLadderRows(scenario: Scenario, effectorId: string): Ladde
       startS: releaseS,
       endS: ev.tEffectS,
       color: slots.get(ev.uasId) ?? OTHER_TOKEN,
-      label: engagementIsKinetic(ev) ? (releaseS < ev.tEffectS ? 'flight' : 'effect')
-        : ev.channelClass === 'ew' ? 'EW dwell' : 'beam',
+      label: engagementIsKinetic(ev)
+        ? releaseS < ev.tEffectS
+          ? 'flight'
+          : 'effect'
+        : ev.channelClass === 'ew'
+          ? 'EW dwell'
+          : 'beam',
     })
   }
   return [...rows.values()]
@@ -723,20 +746,34 @@ function bandFor(summary: McSummary, id: string, uasId?: string): BandSeries | n
  * engine reports NaN quantiles under BAND80_MIN_N and BAND95_MIN_N replicates.
  */
 export function withBands(series: Series[], summary: McSummary | null, uasId?: string): Series[] {
-  const covered = new Set(['kpi.expectedKills', 'kpi.leakerShips', 'kpi.detected', 'kpi.engaged', 'tracksHeld', 'residual'])
+  const covered = new Set([
+    'kpi.expectedKills',
+    'kpi.leakerShips',
+    'kpi.detected',
+    'kpi.engaged',
+    'tracksHeld',
+    'residual',
+  ])
   return series.map((s) => {
     if (!summary || !covered.has(s.id)) return { ...s, label: `${s.label} · planning envelope` }
     const band = bandFor(summary, s.id, uasId)
     const onGrid = (values: number[]) =>
       values.length === s.values.length && values.every(Number.isFinite)
     if (!band || summary.replicates < 1 || !onGrid(band.mean)) {
-      return { ...s, label: `${s.label} · MC estimate unavailable`, values: s.values.map(() => NaN), band80: undefined, band95: undefined }
+      return {
+        ...s,
+        label: `${s.label} · MC estimate unavailable`,
+        values: s.values.map(() => NaN),
+        band80: undefined,
+        band95: undefined,
+      }
     }
     // Leakers have no defined display value without a defended asset. The engine's
     // partition zero must not manufacture a chart of perfect defence in that case.
-    const mask = (values: number[]) => s.id === 'kpi.leakerShips'
-      ? values.map((value, i) => Number.isFinite(s.values[i]) ? value : NaN)
-      : values
+    const mask = (values: number[]) =>
+      s.id === 'kpi.leakerShips'
+        ? values.map((value, i) => (Number.isFinite(s.values[i]) ? value : NaN))
+        : values
     const bandOf = (lo: number[], hi: number[]): [number[], number[]] | undefined =>
       onGrid(lo) && onGrid(hi) ? [mask(lo), mask(hi)] : undefined
     return {

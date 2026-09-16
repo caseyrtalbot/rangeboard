@@ -19,13 +19,15 @@ import type { EffectorSpec, UasSpec } from '../model/types'
  */
 
 /** Planning susceptibility ladder from the RS103 severity levels. */
-export const HPM_EFFECT_THRESHOLD_VM: Readonly<Record<UasSpec['airframe'], number>> = Object.freeze({
-  fpv: 10,
-  quad: 20,
-  vtol: 50,
-  'fixed-wing': 50,
-  'one-way-attack': 200,
-})
+export const HPM_EFFECT_THRESHOLD_VM: Readonly<Record<UasSpec['airframe'], number>> = Object.freeze(
+  {
+    fpv: 10,
+    quad: 20,
+    vtol: 50,
+    'fixed-wing': 50,
+    'one-way-attack': 200,
+  },
+)
 
 export interface HpmFieldAssessment {
   effective: boolean
@@ -38,17 +40,17 @@ export interface HpmFieldAssessment {
 /** True when the RF-field law has every field it needs. */
 export function hpmFieldModelApplies(spec: EffectorSpec, fallback = false): boolean {
   return (
-    !fallback
-    && spec.effectorType === 'hpm'
-    && spec.fieldStrengthVm != null
-    && Number.isFinite(spec.fieldStrengthVm)
-    && spec.fieldStrengthVm > 0
-    && spec.fieldStrengthRangeM != null
-    && Number.isFinite(spec.fieldStrengthRangeM)
-    && spec.fieldStrengthRangeM > 0
-    && spec.beamwidthDeg != null
-    && Number.isFinite(spec.beamwidthDeg)
-    && spec.beamwidthDeg > 0
+    !fallback &&
+    spec.effectorType === 'hpm' &&
+    spec.fieldStrengthVm != null &&
+    Number.isFinite(spec.fieldStrengthVm) &&
+    spec.fieldStrengthVm > 0 &&
+    spec.fieldStrengthRangeM != null &&
+    Number.isFinite(spec.fieldStrengthRangeM) &&
+    spec.fieldStrengthRangeM > 0 &&
+    spec.beamwidthDeg != null &&
+    Number.isFinite(spec.beamwidthDeg) &&
+    spec.beamwidthDeg > 0
   )
 }
 
@@ -90,10 +92,11 @@ export function assessHpmField(
 /** HPM cooldown: recharge replaces the legacy salvo cooldown when stated. */
 export function hpmRechargeS(spec: EffectorSpec, legacyCooldownS: number): number {
   if (
-    spec.effectorType === 'hpm'
-    && spec.rechargeS != null
-    && Number.isFinite(spec.rechargeS)
-    && spec.rechargeS >= 0
-  ) return spec.rechargeS
+    spec.effectorType === 'hpm' &&
+    spec.rechargeS != null &&
+    Number.isFinite(spec.rechargeS) &&
+    spec.rechargeS >= 0
+  )
+    return spec.rechargeS
   return legacyCooldownS
 }

@@ -566,9 +566,14 @@ describe('case 5: raid partition with formation ships', () => {
     const t1 = scenario.entities.find((e) => e.id === uasId)!
     const formation1: FormationSpec = { count: 3, shape: 'line', spacingM: 50 }
     t1.formation = formation1
-    const t2 = ent('uas', FIXED_WING.id, { x: -1000, y: 1500 }, {
-      formation: { count: 2, shape: 'line', spacingM: 50 },
-    })
+    const t2 = ent(
+      'uas',
+      FIXED_WING.id,
+      { x: -1000, y: 1500 },
+      {
+        formation: { count: 2, shape: 'line', spacingM: 50 },
+      },
+    )
     scenario.entities.push(t2)
     scenario.paths.push(
       flight(

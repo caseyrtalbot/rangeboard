@@ -300,7 +300,8 @@ describe('classify draw', () => {
     expect(deterministicPolicy(T).classify('s', 'u', 3)).toBe(0.5)
     expect(DRAW_KIND.classify).toBe(8)
     const p = monteCarloPolicy(7, 3, T)
-    const key = (tS: number) => hashU01(7, 3, DRAW_KIND.classify, idHash('s'), idHash('u'), 0, stepIndex(tS))
+    const key = (tS: number) =>
+      hashU01(7, 3, DRAW_KIND.classify, idHash('s'), idHash('u'), 0, stepIndex(tS))
     expect(p.classify('s', 'u', 2.5)).toBe(key(2.5))
     expect(p.classify('s', 'u', 2.5)).not.toBe(p.classify('s', 'u', 3))
     expect(p.classify('s', 'u', 2.5)).not.toBe(p.noise!('s', 'u', 2.5, 0))

@@ -92,7 +92,13 @@ const OPTIMIZE_KIND = 12
 const PART = { lhsShuffle: 0, lhsJitter: 1, uniform: 2 } as const
 
 /** The keyed uniform of one design draw. */
-function draw(seed: number, evaluation: number, part: number, coordinate: number, attempt: number): number {
+function draw(
+  seed: number,
+  evaluation: number,
+  part: number,
+  coordinate: number,
+  attempt: number,
+): number {
   return hashU01(seed, evaluation, OPTIMIZE_KIND, part, coordinate, attempt, 0)
 }
 
@@ -162,7 +168,9 @@ export function evaluateLaydown(
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...base.requirements }
   const samples: number[] = []
   for (let i = 0; i < budget.replicates; i += 1) {
-    samples.push(endOfRunResponses(base, monteCarloPolicy(budget.seed, i, thresholds))[objective.response])
+    samples.push(
+      endOfRunResponses(base, monteCarloPolicy(budget.seed, i, thresholds))[objective.response],
+    )
   }
   return statOf(samples, kind, runSettings(base).confidence)
 }
@@ -314,7 +322,8 @@ export function rankCandidates(trace: OptimizeEvaluation[], sign: number): Optim
     seen.add(key)
     distinct.push(e)
   }
-  const f = (e: OptimizeEvaluation) => (Number.isFinite(e.objective.mean) ? sign * e.objective.mean : Infinity)
+  const f = (e: OptimizeEvaluation) =>
+    Number.isFinite(e.objective.mean) ? sign * e.objective.mean : Infinity
   // A stable sort: ties keep trace order.
   distinct.sort((a, b) => f(a) - f(b))
   return distinct.slice(0, CANDIDATE_CAP).map((e) => ({
@@ -396,12 +405,15 @@ export function* optimizeLoop(
     const placed = placeLaydown(base, laydown)
     const samples: number[] = []
     for (let i = 0; i < budget.replicates; i += 1) {
-      samples.push(endOfRunResponses(placed, monteCarloPolicy(budget.seed, i, thresholds))[objective.response])
+      samples.push(
+        endOfRunResponses(placed, monteCarloPolicy(budget.seed, i, thresholds))[objective.response],
+      )
       // No checkpoint after the last replicate: the evaluation is recorded first.
       if (i === budget.replicates - 1) break
       const stop = yield cp
       if (stop) {
-        if (trace.length === 0) throw new Error('Optimization stopped before the starting laydown was evaluated')
+        if (trace.length === 0)
+          throw new Error('Optimization stopped before the starting laydown was evaluated')
         return result()
       }
     }

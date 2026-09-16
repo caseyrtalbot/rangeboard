@@ -5,12 +5,33 @@ import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import { MODEL_TAGS, modelsForEntity, modelsUsed, type ModelId } from './fidelity'
 
 const IDS: ModelId[] = [
-  'radar-pd', 'radar-dwell', 'radar-scan', 'eoir-range', 'eoir-dri', 'acoustic-range',
-  'rf-detect', 'rf-link', 'jam', 'environment', 'threat-flight', 'horizon',
-  'track-init', 'doctrine', 'kinetic-pk', 'interceptor-miss', 'gun-burst',
-  'de-dwell', 'hpm-field', 'flyout',
-  'draw-policy', 'parameter-spread',
-  'tracker', 'fusion', 'classification', 'operator', 'false-tracks',
+  'radar-pd',
+  'radar-dwell',
+  'radar-scan',
+  'eoir-range',
+  'eoir-dri',
+  'acoustic-range',
+  'rf-detect',
+  'rf-link',
+  'jam',
+  'environment',
+  'threat-flight',
+  'horizon',
+  'track-init',
+  'doctrine',
+  'kinetic-pk',
+  'interceptor-miss',
+  'gun-burst',
+  'de-dwell',
+  'hpm-field',
+  'flyout',
+  'draw-policy',
+  'parameter-spread',
+  'tracker',
+  'fusion',
+  'classification',
+  'operator',
+  'false-tracks',
 ]
 
 describe('MODEL_TAGS', () => {
@@ -307,7 +328,10 @@ describe('modelsForEntity', () => {
     expect(sensorIds).not.toContain('fusion')
     expect(sensorIds).not.toContain('operator')
     expect(modelsForEntity(s, 'c1').map((t) => t.id)).toEqual([
-      'doctrine', 'fusion', 'classification', 'operator',
+      'doctrine',
+      'fusion',
+      'classification',
+      'operator',
     ])
   })
 

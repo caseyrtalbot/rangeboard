@@ -171,7 +171,7 @@ function operatorDelayS(
   const c2Id = firstC2Of(route)
   if (!c2Id) return NO_CHARGE
   const gateS = doctrineOn
-    ? a.effectorGates?.find((g) => g.effectorId === effectorId)?.gateS ?? null
+    ? (a.effectorGates?.find((g) => g.effectorId === effectorId)?.gateS ?? null)
     : a.engageGateS
   if (gateS == null) return NO_CHARGE
   const declare = queue.delayS(c2Id, a.uasId, gateS, 0)
@@ -202,8 +202,7 @@ export function resolveEngagements(
 ): AttritionReport {
   // A missing policy is the deterministic expected-value run.
   const draw =
-    policy ??
-    deterministicPolicy({ ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements })
+    policy ?? deterministicPolicy({ ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements })
   const assessments = (precomputed ?? assessAllThreats(scenario, draw)).filter(
     (a) => a.status !== 'no-path',
   )
@@ -478,13 +477,13 @@ export function resolveEngagements(
 
     if (es.rounds != null) {
       const burstRounds =
-        es.spec.effectorType === 'gun'
-        && !legacyKineticPk
-        && es.spec.dispersionMils != null
-        && es.spec.fireControlErrorMils != null
-        && es.spec.rateOfFireRpm != null
-        && es.spec.muzzleVelocityMps != null
-          ? projectileCount(es.spec) ?? 1
+        es.spec.effectorType === 'gun' &&
+        !legacyKineticPk &&
+        es.spec.dispersionMils != null &&
+        es.spec.fireControlErrorMils != null &&
+        es.spec.rateOfFireRpm != null &&
+        es.spec.muzzleVelocityMps != null
+          ? (projectileCount(es.spec) ?? 1)
           : 1
       es.rounds -= burstRounds
     }
@@ -499,19 +498,20 @@ export function resolveEngagements(
       clock.requestFineStep(es.entity.id, t + releaseDelayS, tEffect, 0.1)
     }
     if (
-      es.spec.effectorType === 'gun'
-      && !legacyKineticPk
-      && es.spec.dispersionMils != null
-      && es.spec.burstRounds != null
-      && es.spec.rateOfFireRpm != null
-      && es.spec.burstRounds > 0
-      && es.spec.rateOfFireRpm > 0
-    ) clock.requestFineStep(
-      es.entity.id,
-      t,
-      t + (60 * Math.max(1, Math.round(es.spec.burstRounds))) / es.spec.rateOfFireRpm,
-      0.1,
+      es.spec.effectorType === 'gun' &&
+      !legacyKineticPk &&
+      es.spec.dispersionMils != null &&
+      es.spec.burstRounds != null &&
+      es.spec.rateOfFireRpm != null &&
+      es.spec.burstRounds > 0 &&
+      es.spec.rateOfFireRpm > 0
     )
+      clock.requestFineStep(
+        es.entity.id,
+        t,
+        t + (60 * Math.max(1, Math.round(es.spec.burstRounds))) / es.spec.rateOfFireRpm,
+        0.1,
+      )
   }
 
   // The fused track a shooter holds on each threat at t (sim.ts fusedTracks,
@@ -765,8 +765,7 @@ export function resolveEngagements(
     const arrived = ts.a.arrivalS != null
     // Jam degrade is read at arrival, else at CPA, else at the last dwell.
     const jamRefS = ts.a.arrivalS ?? ts.a.cpaS ?? ts.lastJamEffectS
-    const jammed =
-      jamRefS == null ? 0 : ts.ships.reduce((s, v) => s + jammedAt(ts, v, jamRefS), 0)
+    const jammed = jamRefS == null ? 0 : ts.ships.reduce((s, v) => s + jammedAt(ts, v, jamRefS), 0)
     let killedBy: string | null = null
     let best = 0
     for (const [id, v] of ts.killContrib) {

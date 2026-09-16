@@ -53,7 +53,10 @@ export function familyFor(model: SpecModel, field: string): CalibrationFamily | 
 // ---------- proportion ----------
 
 /** Conjugate beta update: a + successes, b + failures. */
-export function proportionPosterior(prior: BetaParams, observed: ProportionObservation): BetaParams {
+export function proportionPosterior(
+  prior: BetaParams,
+  observed: ProportionObservation,
+): BetaParams {
   return { a: prior.a + observed.successes, b: prior.b + observed.trials - observed.successes }
 }
 
@@ -71,14 +74,25 @@ export function betaInterval(p: BetaParams, conf = 0.95): CredibleInterval {
 /** A typed count is valid when trials is a positive integer and successes an integer within it. */
 export function validProportion(observed: ProportionObservation): boolean {
   const { successes, trials } = observed
-  return Number.isInteger(trials) && trials > 0 && Number.isInteger(successes) && successes >= 0 && successes <= trials
+  return (
+    Number.isInteger(trials) &&
+    trials > 0 &&
+    Number.isInteger(successes) &&
+    successes >= 0 &&
+    successes <= trials
+  )
 }
 
 // ---------- time ----------
 
 /** A sample reduced to its count, mean and unbiased variance; a summary passes through. */
-export function timeSummary(observed: TimeObservation): { n: number; meanS: number; varianceS2: number } {
-  if (observed.form === 'summary') return { n: observed.n, meanS: observed.meanS, varianceS2: observed.varianceS2 }
+export function timeSummary(observed: TimeObservation): {
+  n: number
+  meanS: number
+  varianceS2: number
+} {
+  if (observed.form === 'summary')
+    return { n: observed.n, meanS: observed.meanS, varianceS2: observed.varianceS2 }
   const n = observed.timesS.length
   if (n === 0) return { n: 0, meanS: NaN, varianceS2: NaN }
   const meanS = observed.timesS.reduce((s, v) => s + v, 0) / n
@@ -88,9 +102,16 @@ export function timeSummary(observed: TimeObservation): { n: number; meanS: numb
 
 /** A time observation is valid with at least one finite time, or a positive count with a finite mean and variance. */
 export function validTime(observed: TimeObservation): boolean {
-  if (observed.form === 'sample') return observed.timesS.length > 0 && observed.timesS.every(Number.isFinite)
+  if (observed.form === 'sample')
+    return observed.timesS.length > 0 && observed.timesS.every(Number.isFinite)
   const { n, meanS, varianceS2 } = observed
-  return Number.isInteger(n) && n > 0 && Number.isFinite(meanS) && Number.isFinite(varianceS2) && varianceS2 >= 0
+  return (
+    Number.isInteger(n) &&
+    n > 0 &&
+    Number.isFinite(meanS) &&
+    Number.isFinite(varianceS2) &&
+    varianceS2 >= 0
+  )
 }
 
 /**
@@ -109,7 +130,7 @@ export function spreadVariance(spread: Spread | null, nominal: number): number |
     return (a * a + b * b + c * c - a * b - a * c - b * c) / 18
   }
   if (spread.kind === 'lognormal') {
-    const s2 = (spread.sigmaDb * Math.LN10 / 10) ** 2
+    const s2 = ((spread.sigmaDb * Math.LN10) / 10) ** 2
     return nominal * nominal * (Math.exp(s2) - 1) * Math.exp(s2)
   }
   return null
@@ -131,7 +152,11 @@ export const WEAK_TIME_CV = 0.5
  * predictive t has two degrees of freedom and no finite variance, so its scale
  * is the quantity matched. Without a spread the width falls back to WEAK_TIME_CV.
  */
-export function defaultTimePrior(model: SpecModel, field: string, nominal: number): NormalGammaParams {
+export function defaultTimePrior(
+  model: SpecModel,
+  field: string,
+  nominal: number,
+): NormalGammaParams {
   const kappa = 1
   const alpha = 1
   const fromSpread = spreadVariance(spreadFor(model, field), nominal)
@@ -140,7 +165,10 @@ export function defaultTimePrior(model: SpecModel, field: string, nominal: numbe
 }
 
 /** Conjugate normal-gamma update in the standard (mu, kappa, alpha, beta) form. */
-export function timePosterior(prior: NormalGammaParams, observed: TimeObservation): NormalGammaParams {
+export function timePosterior(
+  prior: NormalGammaParams,
+  observed: TimeObservation,
+): NormalGammaParams {
   const { n, meanS, varianceS2 } = timeSummary(observed)
   const kappa = prior.kappa + n
   const mu = (prior.kappa * prior.mu + n * meanS) / kappa
@@ -177,7 +205,14 @@ export function calibrateProportion(
   observed: ProportionObservation,
   prior: BetaParams = JEFFREYS_PRIOR,
 ): ProportionCalibrationRecord {
-  return { kind: 'proportion', field, prior, observed, posterior: proportionPosterior(prior, observed), accepted: { accepted: false } }
+  return {
+    kind: 'proportion',
+    field,
+    prior,
+    observed,
+    posterior: proportionPosterior(prior, observed),
+    accepted: { accepted: false },
+  }
 }
 
 /** An unaccepted time record from a prior and an observation. */
@@ -186,7 +221,14 @@ export function calibrateTime(
   observed: TimeObservation,
   prior: NormalGammaParams,
 ): TimeCalibrationRecord {
-  return { kind: 'time', field, prior, observed, posterior: timePosterior(prior, observed), accepted: { accepted: false } }
+  return {
+    kind: 'time',
+    field,
+    prior,
+    observed,
+    posterior: timePosterior(prior, observed),
+    accepted: { accepted: false },
+  }
 }
 
 /** The point value an accepted record writes: the beta mean or the posterior mu. */
@@ -196,7 +238,9 @@ export function acceptedValue(record: CalibrationRecord): number {
 
 /** The interval shown beside the point value. */
 export function acceptedInterval(record: CalibrationRecord, conf = 0.95): CredibleInterval {
-  return record.kind === 'proportion' ? betaInterval(record.posterior, conf) : meanCredibleInterval(record.posterior, conf)
+  return record.kind === 'proportion'
+    ? betaInterval(record.posterior, conf)
+    : meanCredibleInterval(record.posterior, conf)
 }
 
 const f = (v: number, digits = 4): string => Number(v.toPrecision(digits)).toString()
@@ -211,7 +255,8 @@ function normalGammaText(p: NormalGammaParams): string {
 
 /** The observation as one clause of the reason text. */
 export function observationText(record: CalibrationRecord): string {
-  if (record.kind === 'proportion') return `${record.observed.successes} of ${record.observed.trials}`
+  if (record.kind === 'proportion')
+    return `${record.observed.successes} of ${record.observed.trials}`
   const { n, meanS, varianceS2 } = timeSummary(record.observed)
   const how = record.observed.form === 'sample' ? 'times' : 'summary'
   return `${how} n ${n}, mean ${f(meanS)} s, variance ${f(varianceS2)} s2`
@@ -226,11 +271,15 @@ export function overrideReason(record: CalibrationRecord): string {
   const { lo, hi, conf } = acceptedInterval(record)
   const pct = Math.round(conf * 100)
   if (record.kind === 'proportion') {
-    return `Calibrated from counts: prior ${betaText(record.prior)}, observed ${observationText(record)}, ` +
+    return (
+      `Calibrated from counts: prior ${betaText(record.prior)}, observed ${observationText(record)}, ` +
       `posterior ${betaText(record.posterior)}, mean ${f(value)} [${f(lo)}, ${f(hi)}] ${pct} % credible`
+    )
   }
-  return `Calibrated from times: prior ${normalGammaText(record.prior)}, observed ${observationText(record)}, ` +
+  return (
+    `Calibrated from times: prior ${normalGammaText(record.prior)}, observed ${observationText(record)}, ` +
     `posterior ${normalGammaText(record.posterior)}, mean ${f(value)} s [${f(lo)}, ${f(hi)}] ${pct} % credible`
+  )
 }
 
 /**
@@ -240,6 +289,8 @@ export function overrideReason(record: CalibrationRecord): string {
  */
 export function acceptCalibration(record: CalibrationRecord): CalibrationRecord {
   const reason = overrideReason(record)
-  useOverrides.getState().setOverride(record.field.modelId, record.field.field, acceptedValue(record), reason)
+  useOverrides
+    .getState()
+    .setOverride(record.field.modelId, record.field.field, acceptedValue(record), reason)
   return { ...record, accepted: { accepted: true, at: new Date().toISOString(), reason } }
 }

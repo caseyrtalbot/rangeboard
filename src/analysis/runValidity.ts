@@ -77,38 +77,76 @@ function disagreementFinding(
   trial: TrialComparison,
   spawn: RunValidityFinding | null,
 ): RunValidityFinding | null {
-  const first = (rows: ThreatAssessment[]) => rows.filter(a => a.firstDetectS != null && Number.isFinite(a.firstDetectS))
-    .sort((a, b) => a.firstDetectS! - b.firstDetectS!)[0]
+  const first = (rows: ThreatAssessment[]) =>
+    rows
+      .filter((a) => a.firstDetectS != null && Number.isFinite(a.firstDetectS))
+      .sort((a, b) => a.firstDetectS! - b.firstDetectS!)[0]
   const predicted = first(forecast)
   const realized = first(trial.assessments)
   // Another technology may detect first; use the first radar's own retained hit.
-  const radarHit = trial.assessments.flatMap(a => [
-    ...(a.sensorObservations ?? []).map(o => ({ sensorId: o.sensorId, uasId: a.uasId, tS: o.firstDetectS })),
-    { sensorId: a.firstDetectSensorId, uasId: a.uasId, tS: a.firstDetectS },
-  ]).filter(hit => {
-    const entity = scenario.entities.find(e => e.id === hit.sensorId)
-    return hit.tS != null && Number.isFinite(hit.tS) && entity && modelFor(scenario, entity)?.sensor?.sensorType === 'radar'
-  }).sort((a, b) => a.tS! - b.tS!)[0]
-  const sensor = scenario.entities.find(e => e.id === radarHit?.sensorId)
-  const target = scenario.entities.find(e => e.id === radarHit?.uasId)
+  const radarHit = trial.assessments
+    .flatMap((a) => [
+      ...(a.sensorObservations ?? []).map((o) => ({
+        sensorId: o.sensorId,
+        uasId: a.uasId,
+        tS: o.firstDetectS,
+      })),
+      { sensorId: a.firstDetectSensorId, uasId: a.uasId, tS: a.firstDetectS },
+    ])
+    .filter((hit) => {
+      const entity = scenario.entities.find((e) => e.id === hit.sensorId)
+      return (
+        hit.tS != null &&
+        Number.isFinite(hit.tS) &&
+        entity &&
+        modelFor(scenario, entity)?.sensor?.sensorType === 'radar'
+      )
+    })
+    .sort((a, b) => a.tS! - b.tS!)[0]
+  const sensor = scenario.entities.find((e) => e.id === radarHit?.sensorId)
+  const target = scenario.entities.find((e) => e.id === radarHit?.uasId)
   const spec = sensor && modelFor(scenario, sensor)?.sensor
-  const period = spec ? scanPeriodS(spec, radarPdModeled(spec, target && modelFor(scenario, target)?.uas)) : null
+  const period = spec
+    ? scanPeriodS(spec, radarPdModeled(spec, target && modelFor(scenario, target)?.uas))
+    : null
   const messages: string[] = []
-  if (predicted && realized && period != null && Math.abs(predicted.firstDetectS! - realized.firstDetectS!) > period) {
-    messages.push(`First detect: deterministic forecast T+${predicted.firstDetectS} s; simulated trial T+${realized.firstDetectS} s. Difference exceeds one ${period} s scan period of ${sensor!.name}.`)
+  if (
+    predicted &&
+    realized &&
+    period != null &&
+    Math.abs(predicted.firstDetectS! - realized.firstDetectS!) > period
+  ) {
+    messages.push(
+      `First detect: deterministic forecast T+${predicted.firstDetectS} s; simulated trial T+${realized.firstDetectS} s. Difference exceeds one ${period} s scan period of ${sensor!.name}.`,
+    )
   }
   const i = Math.floor(trial.mc.durationS / DT)
   const lo = trial.mc.kills.lo[i]
   const hi = trial.mc.kills.hi[i]
-  if (trial.mc.replicates >= 2 && Number.isFinite(trial.kills) && Number.isFinite(lo) && Number.isFinite(hi) &&
-    (trial.kills < lo || trial.kills > hi)) {
-    const population = Object.values(trial.mc.perThreat).reduce((sum, row) => sum + row.shipCount, 0)
-    messages.push(`Kills before arrival: simulated trial ${trial.kills}/${population} members; ensemble 95 % mean band ${lo} to ${hi}/${population} members through T+${trial.mc.durationS} s.`)
+  if (
+    trial.mc.replicates >= 2 &&
+    Number.isFinite(trial.kills) &&
+    Number.isFinite(lo) &&
+    Number.isFinite(hi) &&
+    (trial.kills < lo || trial.kills > hi)
+  ) {
+    const population = Object.values(trial.mc.perThreat).reduce(
+      (sum, row) => sum + row.shipCount,
+      0,
+    )
+    messages.push(
+      `Kills before arrival: simulated trial ${trial.kills}/${population} members; ensemble 95 % mean band ${lo} to ${hi}/${population} members through T+${trial.mc.durationS} s.`,
+    )
   }
   if (!messages.length) return null
   if (spawn) messages.push(`Possible cause: spawn-in-ring. ${spawn.message}`)
-  return { id: 'forecast-trial-disagreement', severity: 'limiting',
-    uasIds: spawn?.uasIds ?? (realized ? [realized.uasId] : []), gates: [], message: messages.join(' ') }
+  return {
+    id: 'forecast-trial-disagreement',
+    severity: 'limiting',
+    uasIds: spawn?.uasIds ?? (realized ? [realized.uasId] : []),
+    gates: [],
+    message: messages.join(' '),
+  }
 }
 
 /** Every gate. Used by findings that affect the whole kill chain. */
@@ -187,8 +225,7 @@ export function assessRunValidity(
       severity: 'limiting',
       uasIds: [],
       gates: ['detect', 'track'],
-      message:
-        'No defended asset is placed. Warning time, arrival and leakage are not measurable.',
+      message: 'No defended asset is placed. Warning time, arrival and leakage are not measurable.',
     })
   }
 

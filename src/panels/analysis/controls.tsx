@@ -63,5 +63,7 @@ export function trialViewOf(trial: ReturnType<typeof useTrialResult>) {
 export function trialStateText(selection: TrialSelection, horizonS?: number): string {
   if (selection.status === 'preparing') return 'Preparing trial'
   if (selection.status === 'error') return selection.message
-  return horizonS == null ? 'Simulated trial · ready' : `Simulated trial · T+${formatTime(horizonS)} observed`
+  return horizonS == null
+    ? 'Simulated trial · ready'
+    : `Simulated trial · T+${formatTime(horizonS)} observed`
 }

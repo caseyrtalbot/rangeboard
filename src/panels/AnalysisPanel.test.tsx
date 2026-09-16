@@ -46,15 +46,25 @@ describe('AnalysisPanel screens', () => {
     }
   })
 
-  it.each(trialScreens)('shows only one placeholder before Play in $screen, even with an ensemble', props => {
-    const { scenario } = installTrial()
-    unstartTrial()
-    const state = useStore.getState()
-    useStore.setState({ mc: { ...state.mc, status: 'done', runId: state.playback.runId, summary: runReplicates({ ...scenario, replicates: 2 }) } })
-    expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${noTrial}</div>`)
-    useStore.getState().resetRun()
-    expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${noTrial}</div>`)
-  })
+  it.each(trialScreens)(
+    'shows only one placeholder before Play in $screen, even with an ensemble',
+    (props) => {
+      const { scenario } = installTrial()
+      unstartTrial()
+      const state = useStore.getState()
+      useStore.setState({
+        mc: {
+          ...state.mc,
+          status: 'done',
+          runId: state.playback.runId,
+          summary: runReplicates({ ...scenario, replicates: 2 }),
+        },
+      })
+      expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${noTrial}</div>`)
+      useStore.getState().resetRun()
+      expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${noTrial}</div>`)
+    },
+  )
 
   it('mounts each trial screen once with its own basis and no widget', () => {
     installTrial(3)
@@ -75,8 +85,13 @@ describe('AnalysisPanel screens', () => {
     const summary = runReplicates({ ...scenario, replicates: 2 })
     const state = useStore.getState()
     useStore.setState({ mc: { ...state.mc, status: 'done', runId: state.playback.runId, summary } })
-    for (const props of [{ phase: 'prepare', screen: 'fragility' }, { phase: 'analyze', screen: 'compare' }] as const) {
-      expect(render(props)).toContain(`Monte Carlo · 2 replicates · Aleatory uncertainty · seed ${summary.seed}`)
+    for (const props of [
+      { phase: 'prepare', screen: 'fragility' },
+      { phase: 'analyze', screen: 'compare' },
+    ] as const) {
+      expect(render(props)).toContain(
+        `Monte Carlo · 2 replicates · Aleatory uncertainty · seed ${summary.seed}`,
+      )
       expect(render(props)).toContain('full run')
     }
     useStore.setState({ mc: { ...useStore.getState().mc, status: 'stale' } })

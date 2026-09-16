@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "format": "prettier --write --cache \"**/*.{ts,tsx,mjs}\"",
+    "format:check": "prettier --check --cache \"**/*.{ts,tsx,mjs}\"",
     "preview": "vite preview",
     "test": "vitest run --dir src",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
@@ -30,7 +32,7 @@
     "evidence:report": "node scripts/check-evidence.mjs",
     "check:evidence": "node scripts/check-evidence.mjs --enforce",
     "test:evidence": "node --test scripts/test-evidence.mjs scripts/test-evidence-capture.mjs",
-    "check": "npm run docs:check && npm run check:evidence && npm run test:docs && npm run test:evidence && npm run test:bundle && npm run test:engine && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
+    "check": "npm run docs:check && npm run check:evidence && npm run test:docs && npm run test:evidence && npm run test:bundle && npm run test:engine && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run format:check && npm run build"
   },
   "dependencies": {
     "konva": "^10.3.1",
@@ -50,6 +52,7 @@
     "markdownlint-rule-relative-links": "5.1.2",
     "oxlint": "^1.75.0",
     "playwright": "^1.62.1",
+    "prettier": "3.9.6",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
     "vitest": "^4.1.11"

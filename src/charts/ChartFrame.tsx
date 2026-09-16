@@ -36,9 +36,20 @@ interface ChartFrameProps {
  * above and the legend under it. With `width` the plot is a fixed pixel box; without it
  * the plot sits in a Recharts `ResponsiveContainer` at 100 percent width.
  */
-export function ChartFrame({ width, height, yLabel, legend, children, horizonS = Infinity }: ChartFrameProps) {
-  const horizonLabel = horizonS === -Infinity ? 'No outcomes observed yet'
-    : Number.isFinite(horizonS) ? `Shown through T+${formatTime(horizonS)}` : undefined
+export function ChartFrame({
+  width,
+  height,
+  yLabel,
+  legend,
+  children,
+  horizonS = Infinity,
+}: ChartFrameProps) {
+  const horizonLabel =
+    horizonS === -Infinity
+      ? 'No outcomes observed yet'
+      : Number.isFinite(horizonS)
+        ? `Shown through T+${formatTime(horizonS)}`
+        : undefined
   const tokens = useMemo(() => readTokens(), [])
   return (
     <ChartTokensContext.Provider value={tokens}>
@@ -54,7 +65,11 @@ export function ChartFrame({ width, height, yLabel, legend, children, horizonS =
           )}
         </div>
         {legend && legend.length > 0 ? (
-          <div className="chart-legend" role={horizonLabel ? 'list' : undefined} aria-label={horizonLabel}>
+          <div
+            className="chart-legend"
+            role={horizonLabel ? 'list' : undefined}
+            aria-label={horizonLabel}
+          >
             {legend.map((l) => (
               <span key={l.id} role={horizonLabel ? 'listitem' : undefined}>
                 <i style={{ background: resolveColor(l.color, tokens) }} />
@@ -63,7 +78,15 @@ export function ChartFrame({ width, height, yLabel, legend, children, horizonS =
             ))}
           </div>
         ) : horizonLabel ? (
-          <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)' }}>
+          <span
+            style={{
+              position: 'absolute',
+              width: 1,
+              height: 1,
+              overflow: 'hidden',
+              clipPath: 'inset(50%)',
+            }}
+          >
             {horizonLabel}
           </span>
         ) : null}

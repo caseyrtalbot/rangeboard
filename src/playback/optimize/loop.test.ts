@@ -12,7 +12,12 @@ import {
   startingLaydown,
 } from './loop'
 import { pointInPolygon } from './polygon'
-import { EFFECTOR_ID, placementRequest, RANGE_POINTS, START_POS } from './__fixtures__/placementFixture'
+import {
+  EFFECTOR_ID,
+  placementRequest,
+  RANGE_POINTS,
+  START_POS,
+} from './__fixtures__/placementFixture'
 
 const inside = (e: OptimizeEvaluation) => pointInPolygon(e.positions[EFFECTOR_ID], RANGE_POINTS)
 
@@ -51,7 +56,9 @@ describe('optimizeLoop', () => {
   }, 60000)
 
   it('common random numbers: the start evaluated twice gives an identical Stat', () => {
-    const request = placementRequest({ budget: { evaluations: 1, replicates: 40, seed: DEFAULT_SEED } })
+    const request = placementRequest({
+      budget: { evaluations: 1, replicates: 40, seed: DEFAULT_SEED },
+    })
     const kind = responseKind('leakers', 1)
     const laydown = startingLaydown(request)
     const a = evaluateLaydown(request.scenario, laydown, request.objective, request.budget, kind)
@@ -61,7 +68,11 @@ describe('optimizeLoop', () => {
     expect(runOptimize(request).trace[0].objective).toEqual(a)
     // Placement alone moves the draw: the same seed on the path gives another Stat.
     const onPath = evaluateLaydown(
-      request.scenario, { [EFFECTOR_ID]: { x: -3000, y: 0 } }, request.objective, request.budget, kind,
+      request.scenario,
+      { [EFFECTOR_ID]: { x: -3000, y: 0 } },
+      request.objective,
+      request.budget,
+      kind,
     )
     expect(onPath.mean).not.toBe(a.mean)
   })
@@ -78,8 +89,12 @@ describe('optimizeLoop', () => {
   it('keeps every evaluation and candidate inside a concave polygon', () => {
     // An L-shaped range: the box minus its upper-right quadrant.
     const points = [
-      { x: -7000, y: -3000 }, { x: 1000, y: -3000 }, { x: 1000, y: 1500 },
-      { x: -3000, y: 1500 }, { x: -3000, y: 6000 }, { x: -7000, y: 6000 },
+      { x: -7000, y: -3000 },
+      { x: 1000, y: -3000 },
+      { x: 1000, y: 1500 },
+      { x: -3000, y: 1500 },
+      { x: -3000, y: 6000 },
+      { x: -7000, y: 6000 },
     ]
     const request = placementRequest({
       scenario: placementRequest().scenario,
@@ -90,20 +105,27 @@ describe('optimizeLoop', () => {
     const result = runOptimize(request)
     expect(result.trace).toHaveLength(20)
     expect(pointInPolygon(result.trace[0].positions[EFFECTOR_ID], points)).toBe(false)
-    for (const e of result.trace.slice(1)) expect(pointInPolygon(e.positions[EFFECTOR_ID], points)).toBe(true)
+    for (const e of result.trace.slice(1))
+      expect(pointInPolygon(e.positions[EFFECTOR_ID], points)).toBe(true)
     // The seed rows are a Latin hypercube over the box: SEED_EVALUATIONS
     // distinct points after the start, then the EI proposals.
-    const seeds = result.trace.slice(1, 1 + SEED_EVALUATIONS).map((e) => JSON.stringify(e.positions))
+    const seeds = result.trace
+      .slice(1, 1 + SEED_EVALUATIONS)
+      .map((e) => JSON.stringify(e.positions))
     expect(new Set(seeds).size).toBe(SEED_EVALUATIONS)
   })
 
   it('ranks distinct candidates best first, capped at five, and follows a maximize direction', () => {
     const budget = { evaluations: 16, replicates: 8, seed: 11 }
-    const result = runOptimize(placementRequest({ budget, objective: { response: 'kills', direction: 'maximize' } }))
+    const result = runOptimize(
+      placementRequest({ budget, objective: { response: 'kills', direction: 'maximize' } }),
+    )
     expect(result.candidates.length).toBe(CANDIDATE_CAP)
     const means = result.candidates.map((c) => c.objective.mean)
     for (let i = 1; i < means.length; i += 1) expect(means[i]).toBeLessThanOrEqual(means[i - 1])
-    expect(new Set(result.candidates.map((c) => JSON.stringify(c.positions))).size).toBe(CANDIDATE_CAP)
+    expect(new Set(result.candidates.map((c) => JSON.stringify(c.positions))).size).toBe(
+      CANDIDATE_CAP,
+    )
     // Kills count over the raid's one ship: the best evaluation reads a Wilson interval on k of 8.
     expect(result.candidates[0].objective.interval).toMatch(/wilson|rule-of-three/)
     expect(result.candidates[0].objective.n).toBe(8)
@@ -142,22 +164,42 @@ describe('optimizeLoop', () => {
   })
 
   it('a stop before the start finished throws; an unknown movable id throws', () => {
-    const loop = optimizeLoop(placementRequest({ budget: { evaluations: 2, replicates: 4, seed: 1 } }))
+    const loop = optimizeLoop(
+      placementRequest({ budget: { evaluations: 2, replicates: 4, seed: 1 } }),
+    )
     loop.next()
     expect(() => loop.next('cancelled')).toThrow(/before the starting laydown/)
     expect(() => runOptimize(placementRequest({ movableIds: ['nobody'] }))).toThrow(/nobody/)
-    expect(() => runOptimize(placementRequest({ bounds: { boundaryId: null, points: RANGE_POINTS.slice(0, 2) } })))
-      .toThrow(/at least 3 points/)
+    expect(() =>
+      runOptimize(
+        placementRequest({ bounds: { boundaryId: null, points: RANGE_POINTS.slice(0, 2) } }),
+      ),
+    ).toThrow(/at least 3 points/)
   })
 })
 
 describe('rankCandidates', () => {
   const stat = (mean: number) => ({
-    mean, sd: 0, se: 0, lo: mean, hi: mean, conf: 0.95, interval: 't' as const,
-    p10: NaN, p90: NaN, p025: NaN, p975: NaN, n: 1, total: 1, defined: { p: 1, lo: 1, hi: 1 },
+    mean,
+    sd: 0,
+    se: 0,
+    lo: mean,
+    hi: mean,
+    conf: 0.95,
+    interval: 't' as const,
+    p10: NaN,
+    p90: NaN,
+    p025: NaN,
+    p975: NaN,
+    n: 1,
+    total: 1,
+    defined: { p: 1, lo: 1, hi: 1 },
   })
   const at = (index: number, x: number, mean: number): OptimizeEvaluation => ({
-    index, positions: { e: { x, y: 0 } }, objective: stat(mean), incumbent: false,
+    index,
+    positions: { e: { x, y: 0 } },
+    objective: stat(mean),
+    incumbent: false,
   })
 
   it('drops repeats, puts a NaN mean last and keeps trace order on ties', () => {

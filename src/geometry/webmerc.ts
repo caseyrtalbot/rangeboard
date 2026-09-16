@@ -33,7 +33,11 @@ function anchorK(lat0: number): number {
 }
 
 /** World meters of a lon/lat point relative to the anchor. */
-export function lonLatToWorld(ref: GeoPoint, lonDeg: number, latDeg: number): { x: number; y: number } {
+export function lonLatToWorld(
+  ref: GeoPoint,
+  lonDeg: number,
+  latDeg: number,
+): { x: number; y: number } {
   const k = anchorK(ref.lat)
   return {
     x: (mercX(lonDeg) - mercX(ref.lon)) * k,

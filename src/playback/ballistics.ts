@@ -51,8 +51,7 @@ export function lastProjectileEffectS(
   spec: EffectorSpec,
 ): number | null {
   const burstS = projectileBurstDurationS(spec)
-  const tofS = spec.muzzleVelocityMps == null
-    ? null
-    : projectileFlightTimeS(slantM, spec.muzzleVelocityMps)
+  const tofS =
+    spec.muzzleVelocityMps == null ? null : projectileFlightTimeS(slantM, spec.muzzleVelocityMps)
   return burstS == null || tofS == null ? null : commitS + burstS + tofS
 }

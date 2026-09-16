@@ -32,9 +32,7 @@ const EXPENDITURE_CHANNEL: Record<EffectorSpec['effectorType'], ExpenditureChann
  * isHardKill (what it destroys). A DE or HPM burst is a hard kill that fires no
  * round, so it must not join the kinetic count.
  */
-export function expenditureChannel(
-  effectorType: EffectorSpec['effectorType'],
-): ExpenditureChannel {
+export function expenditureChannel(effectorType: EffectorSpec['effectorType']): ExpenditureChannel {
   return EXPENDITURE_CHANNEL[effectorType]
 }
 
@@ -89,14 +87,7 @@ export function beamEffect(
   })
   if (options.fallback) return legacy()
   if (spec.effectorType === 'de') {
-    const dwell = opticalDwellAt(
-      spec,
-      uas,
-      slantM,
-      env,
-      options.fluenceSpread,
-      options.fluenceDraw,
-    )
+    const dwell = opticalDwellAt(spec, uas, slantM, env, options.fluenceSpread, options.fluenceDraw)
     if (!dwell) return legacy()
     return {
       mode: 'de-dwell',

@@ -108,7 +108,9 @@ describe('spawnInRingViolations', () => {
     const uasId = placeThreatAt('lib-fpv7', { x: 1000, y: 0 }) // 2.4 / 5.8 GHz link
     expect(spawnInRingViolations(scenario())).toEqual([{ uasId, sensorId: sensor.id }])
     const model = scenario().library.find((m) => m.id === sensor.specId)!
-    useStore.getState().updateModel(model.id, { sensor: { ...model.sensor!, rfBands: ['uhf-433'] } })
+    useStore
+      .getState()
+      .updateModel(model.id, { sensor: { ...model.sensor!, rfBands: ['uhf-433'] } })
     expect(spawnInRingViolations(scenario())).toEqual([])
   })
 
@@ -150,10 +152,14 @@ describe('spawnInRingViolations on the captured fixture', () => {
       import: 'default',
       query: '?raw',
     })
-    const s = fillScenario(JSON.parse(fixtures['./__fixtures__/detection-outside-rings.json']) as Scenario)
+    const s = fillScenario(
+      JSON.parse(fixtures['./__fixtures__/detection-outside-rings.json']) as Scenario,
+    )
     expect(spawnInRingViolations(s)).toEqual([])
     const assessments = assessAllThreats(s)
-    expect(assessRunValidity(s, assessments).findings.map((f) => f.id)).not.toContain('spawn-in-ring')
+    expect(assessRunValidity(s, assessments).findings.map((f) => f.id)).not.toContain(
+      'spawn-in-ring',
+    )
     const [track] = assessments
     expect(track.status).toBe('engageable')
     expect(track.firstDetectS).toBeGreaterThan(100)

@@ -11,12 +11,7 @@ import { INTEGRATION_PROFILES } from './integrationData'
  */
 
 export type LinkMedium =
-  | 'cable'
-  | 'fiber'
-  | 'mesh-radio'
-  | 'proprietary-rf'
-  | 'serial'
-  | 'operator-manual'
+  'cable' | 'fiber' | 'mesh-radio' | 'proprietary-rf' | 'serial' | 'operator-manual'
 
 export type IntegrationConfidence = 'documented' | 'probable' | 'inferred'
 
@@ -323,11 +318,13 @@ export function integrationSummary(
   const denied = new Map<string, { specId: string; name: string; reason: string }>()
   const deny = (withSpecId: string, reason: string) => {
     const name = names.get(withSpecId)
-    if (name && !denied.has(withSpecId)) denied.set(withSpecId, { specId: withSpecId, name, reason })
+    if (name && !denied.has(withSpecId))
+      denied.set(withSpecId, { specId: withSpecId, name, reason })
   }
   for (const d of profile.denied ?? []) deny(d.withSpecId, d.reason)
   for (const other of INTEGRATION_PROFILES) {
-    for (const d of other.denied ?? []) if (d.withSpecId === profile.specId) deny(other.specId, d.reason)
+    for (const d of other.denied ?? [])
+      if (d.withSpecId === profile.specId) deny(other.specId, d.reason)
   }
   for (const id of denied.keys()) partners.delete(id)
 
@@ -340,7 +337,8 @@ export function integrationSummary(
   if (profile.guidance === 'fc-uplink' && profile.fcSources?.length) {
     parts.push(`Needs a fire-control track from ${nameList(profile.fcSources)}.`)
   }
-  if (profile.requiredC2?.length) parts.push(`Engages only through ${nameList(profile.requiredC2)}.`)
+  if (profile.requiredC2?.length)
+    parts.push(`Engages only through ${nameList(profile.requiredC2)}.`)
   if (profile.guidance === 'operator') parts.push('Operator-aimed; no network integration.')
   if (profile.standalone) parts.push('Can complete its role with no connections.')
 

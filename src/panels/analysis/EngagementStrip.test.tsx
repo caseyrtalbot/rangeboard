@@ -9,9 +9,17 @@ import { useStore } from '../../state/store'
 import { censorLane, EngagementStrip } from './EngagementStrip'
 
 const lane: Parameters<typeof censorLane>[0] = {
-  key: 'threat', label: 'Threat 1', entityIds: ['threat'], groupKey: null,
-  detS: 0, suspectedAtS: 0, hostileAtS: 0, winS: [20, 500],
-  shotS: 20, arrS: 475, severity: 'severe',
+  key: 'threat',
+  label: 'Threat 1',
+  entityIds: ['threat'],
+  groupKey: null,
+  detS: 0,
+  suspectedAtS: 0,
+  hostileAtS: 0,
+  winS: [20, 500],
+  shotS: 20,
+  arrS: 475,
+  severity: 'severe',
 }
 
 function render(embedded = true) {
@@ -26,7 +34,10 @@ describe('censorLane', () => {
 
   it('clips the captured lane at 30 seconds without mutating it', () => {
     expect(censorLane(lane, { scoped: true, horizonS: 30 })).toEqual({
-      ...lane, winS: [20, 30], arrS: null, severity: null,
+      ...lane,
+      winS: [20, 30],
+      arrS: null,
+      severity: null,
     })
     expect(lane.winS).toEqual([20, 500])
     expect(lane.arrS).toBe(475)
@@ -34,21 +45,32 @@ describe('censorLane', () => {
 
   it('retains only lane identity at the empty horizon', () => {
     expect(censorLane(lane, EMPTY_HORIZON)).toEqual({
-      ...lane, detS: null, suspectedAtS: null, hostileAtS: null,
-      winS: null, shotS: null, arrS: null, severity: null,
+      ...lane,
+      detS: null,
+      suspectedAtS: null,
+      hostileAtS: null,
+      winS: null,
+      shotS: null,
+      arrS: null,
+      severity: null,
     })
   })
 
   it('drops unreached window and classification times and includes an arrival at the boundary', () => {
-    expect(censorLane({ ...lane, suspectedAtS: 10, hostileAtS: 20 }, { scoped: true, horizonS: 5 }))
-      .toMatchObject({ detS: 0, suspectedAtS: null, hostileAtS: null, winS: null, shotS: null })
-    expect(censorLane(lane, { scoped: true, horizonS: 475 }))
-      .toMatchObject({ arrS: 475, severity: 'severe' })
+    expect(
+      censorLane({ ...lane, suspectedAtS: 10, hostileAtS: 20 }, { scoped: true, horizonS: 5 }),
+    ).toMatchObject({ detS: 0, suspectedAtS: null, hostileAtS: null, winS: null, shotS: null })
+    expect(censorLane(lane, { scoped: true, horizonS: 475 })).toMatchObject({
+      arrS: 475,
+      severity: 'severe',
+    })
   })
 })
 
 const STATE_TEXT = {
-  preparing: 'Preparing trial', error: 'Trial preparation failed', cancelled: 'Trial cancelled',
+  preparing: 'Preparing trial',
+  error: 'Trial preparation failed',
+  cancelled: 'Trial cancelled',
 }
 
 describe('EngagementStrip execution scope', () => {
@@ -92,30 +114,59 @@ describe('EngagementStrip execution scope', () => {
     expect(render()).not.toContain('<path')
   })
 
-  it.each(['preparing', 'error', 'cancelled'] as const)('renders no forecast lanes when %s', status => {
-    const trial = useStore.getState().trial
-    useStore.setState({ trial: { ...trial, status, error: status === 'error' ? 'Trial preparation failed' : null } })
-    const html = render()
-    expect(html).toContain(STATE_TEXT[status])
-    expect(html).not.toContain('engstrip-name-text')
-    expect(html).not.toContain('shape-rendering=')
-  })
+  it.each(['preparing', 'error', 'cancelled'] as const)(
+    'renders no forecast lanes when %s',
+    (status) => {
+      const trial = useStore.getState().trial
+      useStore.setState({
+        trial: { ...trial, status, error: status === 'error' ? 'Trial preparation failed' : null },
+      })
+      const html = render()
+      expect(html).toContain(STATE_TEXT[status])
+      expect(html).not.toContain('engstrip-name-text')
+      expect(html).not.toContain('shape-rendering=')
+    },
+  )
 
   it('censors members before grouping so an observed arrival survives unreached group arrivals', () => {
     const fixture = installTrial(3)
     const ids = Array.from({ length: 15 }, (_, i) => `raid-${i}`)
-    const base = fixture.scenario.entities.find(entity => entity.id === 'flyby')!
-    const scenario = { ...fixture.scenario,
-      entities: [...fixture.scenario.entities.filter(entity => entity.kind !== 'uas'),
-        ...ids.map((id, i) => ({ ...base, id, name: `Raid ${i + 1}` }))],
-      paths: ids.map(id => ({ ...fixture.scenario.paths[0], id: `path-${id}`, entityId: id })),
+    const base = fixture.scenario.entities.find((entity) => entity.id === 'flyby')!
+    const scenario = {
+      ...fixture.scenario,
+      entities: [
+        ...fixture.scenario.entities.filter((entity) => entity.kind !== 'uas'),
+        ...ids.map((id, i) => ({ ...base, id, name: `Raid ${i + 1}` })),
+      ],
+      paths: ids.map((id) => ({ ...fixture.scenario.paths[0], id: `path-${id}`, entityId: id })),
     }
-    const manifest = createTrialManifest(scenario, fixture.manifest.runId, analysisBasisSignature(scenario))
+    const manifest = createTrialManifest(
+      scenario,
+      fixture.manifest.runId,
+      analysisBasisSignature(scenario),
+    )
     const assessments = ids.map((id, i) => trialAssessment(id, { arrivalS: i === 0 ? 2 : 10 }))
-    const result = { ...fixture.result, manifest, assessments, observations: [], jamDecisions: [],
-      report: { ...fixture.result.report, events: [], threats: ids.map(id => ({ ...fixture.result.report.threats[0], uasId: id, shipCount: 1, firstShotS: null })) },
+    const result = {
+      ...fixture.result,
+      manifest,
+      assessments,
+      observations: [],
+      jamDecisions: [],
+      report: {
+        ...fixture.result.report,
+        events: [],
+        threats: ids.map((id) => ({
+          ...fixture.result.report.threats[0],
+          uasId: id,
+          shipCount: 1,
+          firstShotS: null,
+        })),
+      },
     }
-    useStore.setState({ scenario, trial: { ...useStore.getState().trial, scenario, manifest, result } })
+    useStore.setState({
+      scenario,
+      trial: { ...useStore.getState().trial, scenario, manifest, result },
+    })
     const html = render()
     expect(html).toContain('Raid ×15')
     expect(html.match(/<path /g)).toHaveLength(1)

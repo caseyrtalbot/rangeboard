@@ -78,9 +78,11 @@ export function expectedCount(value: number): string {
  * a confident 0.0% reads as a perfect defence. The partition term
  * expectedLeakers is 0 for the same run, which is why no surface prints it.
  */
-export function residualHeadline(
-  totals: Pick<AttritionTotals, 'reportedLeakers' | 'raidSize'>,
-): { value: string; sub: string; bad: boolean } {
+export function residualHeadline(totals: Pick<AttritionTotals, 'reportedLeakers' | 'raidSize'>): {
+  value: string
+  sub: string
+  bad: boolean
+} {
   const leakers = totals.reportedLeakers
   if (leakers == null) {
     return { value: '—', sub: 'no defended asset placed', bad: false }
@@ -94,9 +96,7 @@ export function residualHeadline(
 }
 
 /** Collapsed-section residual headline. Same measurability rule as the tile. */
-export function residualSectionHeadline(
-  totals: Pick<AttritionTotals, 'reportedLeakers'>,
-): string {
+export function residualSectionHeadline(totals: Pick<AttritionTotals, 'reportedLeakers'>): string {
   return totals.reportedLeakers == null
     ? 'residual not measurable'
     : `${totals.reportedLeakers.toFixed(2)} expected residual`
@@ -124,9 +124,6 @@ export function environmentHeadline(env: EnvironmentSpec, units: DisplayUnits = 
  * carries UNDEFEATED ships (the leaker bucket plus the never-arrived bucket),
  * so the word is never "leakers": that would claim an arrival.
  */
-export function aarHeadline(
-  aar: Pick<AarSummary, 'expectedKills' | 'expectedLeakers'>,
-): string {
+export function aarHeadline(aar: Pick<AarSummary, 'expectedKills' | 'expectedLeakers'>): string {
   return `${expectedCount(aar.expectedKills)} expected kills · ${expectedCount(aar.expectedLeakers)} expected survivors`
 }
-

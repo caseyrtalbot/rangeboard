@@ -1,6 +1,17 @@
-import type { EnvironmentSpec, Precipitation, SensorRole, SensorSpec, UasSpec } from '../../model/types'
+import type {
+  EnvironmentSpec,
+  Precipitation,
+  SensorRole,
+  SensorSpec,
+  UasSpec,
+} from '../../model/types'
 import { defaultSensorRole } from '../../model/types'
-import { EO_REF_SPAN_M, IR_SIGNATURE_FACTOR, irSignatureFor, spanMFor } from '../../model/signatureFactors'
+import {
+  EO_REF_SPAN_M,
+  IR_SIGNATURE_FACTOR,
+  irSignatureFor,
+  spanMFor,
+} from '../../model/signatureFactors'
 import { sensorEnvFactor, targetScaled } from './common'
 
 /**
@@ -94,18 +105,26 @@ export function eoIfovRadFor(spec: SensorSpec): number | null {
   const pitchUm = spec.pixelPitchUm
   const focalMm = spec.focalLengthMm
   if (
-    pitchUm != null && Number.isFinite(pitchUm) && pitchUm > 0 &&
-    focalMm != null && Number.isFinite(focalMm) && focalMm > 0
+    pitchUm != null &&
+    Number.isFinite(pitchUm) &&
+    pitchUm > 0 &&
+    focalMm != null &&
+    Number.isFinite(focalMm) &&
+    focalMm > 0
   ) {
     return (pitchUm / focalMm) * 1e-3
   }
   const fovDeg = spec.fovDeg
   const pixels = spec.detectorPixelsH
   if (
-    fovDeg != null && Number.isFinite(fovDeg) && fovDeg > 0 &&
-    pixels != null && Number.isFinite(pixels) && pixels > 0
+    fovDeg != null &&
+    Number.isFinite(fovDeg) &&
+    fovDeg > 0 &&
+    pixels != null &&
+    Number.isFinite(pixels) &&
+    pixels > 0
   ) {
-    return (fovDeg * Math.PI / 180) / pixels
+    return (fovDeg * Math.PI) / 180 / pixels
   }
   return null
 }
@@ -136,11 +155,7 @@ export function eoExtinctionPerM(spec: SensorSpec, env: EnvironmentSpec): number
 }
 
 /** Beer-Lambert one-way contrast transmission exp(-sigma * range). */
-export function eoTransmissionAt(
-  spec: SensorSpec,
-  env: EnvironmentSpec,
-  rangeM: number,
-): number {
+export function eoTransmissionAt(spec: SensorSpec, env: EnvironmentSpec, rangeM: number): number {
   return Math.exp(-eoExtinctionPerM(spec, env) * Math.max(0, rangeM))
 }
 
@@ -200,10 +215,8 @@ export function eoIrDriRangesM(
   }
   const numeratorM = spanMFor(target) * bandFactor * sensorEnvFactor('eo-ir', env)
   const extinctionPerM = eoExtinctionPerM(spec, env)
-  const rangeFor = (task: EoirTask): number => attenuatedRangeM(
-    numeratorM / (2 * JOHNSON_CYCLES[task] * ifovRad),
-    extinctionPerM,
-  )
+  const rangeFor = (task: EoirTask): number =>
+    attenuatedRangeM(numeratorM / (2 * JOHNSON_CYCLES[task] * ifovRad), extinctionPerM)
   return {
     detectM: rangeFor('detect'),
     recognizeM: rangeFor('recognize'),

@@ -71,7 +71,12 @@ describe('classifyByMatrix', () => {
 })
 
 describe('matrixFor', () => {
-  const base: SensorSpec = { sensorType: 'eo-ir', detectRangeM: 5000, classifyRangeM: 3000, sectorDeg: 360 }
+  const base: SensorSpec = {
+    sensorType: 'eo-ir',
+    detectRangeM: 5000,
+    classifyRangeM: 3000,
+    sectorDeg: 360,
+  }
   it('reads spec.classification, null when absent or null', () => {
     expect(matrixFor(base)).toBeNull()
     expect(matrixFor({ ...base, classification: null })).toBeNull()

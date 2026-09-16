@@ -59,9 +59,7 @@ function reportOf(
   raidSize = 0,
   totals: Partial<AttritionReport['totals']> = {},
 ): AttritionReport {
-  const expectedKills = events
-    .filter((e) => !e.lateEffect)
-    .reduce((sum, e) => sum + e.killDelta, 0)
+  const expectedKills = events.filter((e) => !e.lateEffect).reduce((sum, e) => sum + e.killDelta, 0)
   return {
     threats,
     effectors: [],
@@ -334,10 +332,7 @@ describe('live values converge to the run-final AttritionTotals', () => {
     { expectedHardKills: 0.8, expectedSoftKills: 0.9 },
   )
   const tl = buildLiveTimeline(
-    [
-      assessment({ uasId: 'u1', arrivalS: 100 }),
-      assessment({ uasId: 'u2', arrivalS: 60 }),
-    ],
+    [assessment({ uasId: 'u1', arrivalS: 100 }), assessment({ uasId: 'u2', arrivalS: 60 })],
     report,
   )
 
@@ -554,14 +549,20 @@ describe('leakerShips converges to AttritionTotals.expectedLeakers', () => {
       {
         id: 'ls-p1',
         entityId: a.id,
-        points: [{ x: -1210, y: 0 }, { x: 3000, y: 0 }],
+        points: [
+          { x: -1210, y: 0 },
+          { x: 3000, y: 0 },
+        ],
         speedMps: 40,
         startDelayS: 0,
       },
       {
         id: 'ls-p2',
         entityId: b.id,
-        points: [{ x: -1210, y: 5000 }, { x: 3000, y: 5000 }],
+        points: [
+          { x: -1210, y: 5000 },
+          { x: 3000, y: 5000 },
+        ],
         speedMps: 40,
         startDelayS: 0,
       },

@@ -24,10 +24,7 @@ export function RangeSetupMenu({ onSelectTool }: { onSelectTool?: () => void }) 
         Range setup <span className="tb-caret">▾</span>
       </button>
       {open && (
-        <RangeSetupMenuPanel
-          onRequestClose={() => setOpen(false)}
-          onSelectTool={onSelectTool}
-        />
+        <RangeSetupMenuPanel onRequestClose={() => setOpen(false)} onSelectTool={onSelectTool} />
       )}
     </div>
   )

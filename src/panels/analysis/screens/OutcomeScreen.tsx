@@ -14,7 +14,10 @@ import { selectRunComplete } from '../../../state/selectors'
 import { selectTrialHorizon } from '../../../state/trialSelectors'
 import { State } from '../../../ui/kit'
 import {
-  DebriefRecord, RunValidityBanner, TrialEventLedger, TrialManifestRecord,
+  DebriefRecord,
+  RunValidityBanner,
+  TrialEventLedger,
+  TrialManifestRecord,
 } from '../DebriefRecord'
 import type { RunHistorySave } from '../RunHistory'
 import { RunHistory } from '../RunHistory'
@@ -35,10 +38,21 @@ const columns: Array<{ key: SortColumn; label: string; title: string }> = [
   { key: 'salvos', label: 'Slv', title: 'Assigned salvos' },
   { key: 'result', label: 'Result', title: 'Track result at the completed horizon' },
 ]
-const machineStyle: CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: 'var(--type-dense-size)' }
+const machineStyle: CSSProperties = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--type-dense-size)',
+}
 // Seven columns in a 350 px panel: the track name and the result word take the slack.
-const columnWidth: Record<SortColumn, string> = { track: '23%', detect: '10%', identify: '10%', engage: '10%', effect: '10%', salvos: '8%', result: '29%' }
-const timeText = (value: number | null) => value == null ? '—' : formatTime(value)
+const columnWidth: Record<SortColumn, string> = {
+  track: '23%',
+  detect: '10%',
+  identify: '10%',
+  engage: '10%',
+  effect: '10%',
+  salvos: '8%',
+  result: '29%',
+}
+const timeText = (value: number | null) => (value == null ? '—' : formatTime(value))
 
 /**
  * The operator floor stamp of one trial: decisions whose raw operator wait fell
@@ -54,37 +68,76 @@ function flooredText(totals: TrialResultView['attrition']['totals']): string | n
 }
 
 function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS: number }) {
-  const [sort, setSort] = useState<{ column: SortColumn; descending: boolean }>({ column: 'track', descending: false })
+  const [sort, setSort] = useState<{ column: SortColumn; descending: boolean }>({
+    column: 'track',
+    descending: false,
+  })
   const sorted = [...rows].sort((a, b) => {
     const left = a[sort.column]
     const right = b[sort.column]
     // Missing milestones remain last in either direction.
-    if (left == null || right == null) return left == null ? right == null ? 0 : 1 : -1
-    const order = typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right))
+    if (left == null || right == null) return left == null ? (right == null ? 0 : 1) : -1
+    const order =
+      typeof left === 'number' && typeof right === 'number'
+        ? left - right
+        : String(left).localeCompare(String(right))
     return (sort.descending ? -order : order) || a.track.localeCompare(b.track)
   })
   return (
-    <table className="tb tb-dense" aria-label={`Per-threat outcomes through T+${formatTime(durationS)}; times in minutes:seconds`}>
-      <thead><tr>{columns.map(column => (
-        <th key={column.key} scope="col" style={{ width: columnWidth[column.key] }}
-          aria-sort={sort.column === column.key ? sort.descending ? 'descending' : 'ascending' : 'none'}>
-          <button type="button" title={column.title} style={machineStyle} onClick={() => setSort({
-            column: column.key, descending: sort.column === column.key && !sort.descending,
-          })}>{column.label}</button>
-        </th>
-      ))}</tr></thead>
-      <tbody>{sorted.map(row => (
-        <tr key={row.id}>
-          <td title={row.track}>{row.track}</td>
-          {[row.detect, row.identify, row.engage, row.effect].map((value, index) => (
-            <td key={index}>{timeText(value)}</td>
+    <table
+      className="tb tb-dense"
+      aria-label={`Per-threat outcomes through T+${formatTime(durationS)}; times in minutes:seconds`}
+    >
+      <thead>
+        <tr>
+          {columns.map((column) => (
+            <th
+              key={column.key}
+              scope="col"
+              style={{ width: columnWidth[column.key] }}
+              aria-sort={
+                sort.column === column.key ? (sort.descending ? 'descending' : 'ascending') : 'none'
+              }
+            >
+              <button
+                type="button"
+                title={column.title}
+                style={machineStyle}
+                onClick={() =>
+                  setSort({
+                    column: column.key,
+                    descending: sort.column === column.key && !sort.descending,
+                  })
+                }
+              >
+                {column.label}
+              </button>
+            </th>
           ))}
-          <td>{row.salvos}</td>
-          <td title={row.states.join(', ')}>{row.states.map(word => (
-            <State key={word} tone={word === 'leaked' ? 'critical' : word === 'active' ? 'warning' : 'inactive'} style={machineStyle}>{word}</State>
-          ))}</td>
         </tr>
-      ))}</tbody>
+      </thead>
+      <tbody>
+        {sorted.map((row) => (
+          <tr key={row.id}>
+            <td title={row.track}>{row.track}</td>
+            {[row.detect, row.identify, row.engage, row.effect].map((value, index) => (
+              <td key={index}>{timeText(value)}</td>
+            ))}
+            <td>{row.salvos}</td>
+            <td title={row.states.join(', ')}>
+              {row.states.map((word) => (
+                <State
+                  key={word}
+                  tone={word === 'leaked' ? 'critical' : word === 'active' ? 'warning' : 'inactive'}
+                  style={machineStyle}
+                >
+                  {word}
+                </State>
+              ))}
+            </td>
+          </tr>
+        ))}
+      </tbody>
     </table>
   )
 }
@@ -98,7 +151,12 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
     // it runs the values the trial ran, the manifest's overrides included.
     const forecast = trialForecast(view)
     const validity = view.validity ?? assessRunValidity(view.scenario, forecast.assessments)
-    const aar = buildAarSummary(view.scenario, forecast.assessments, forecast.report, forecast.impacts)
+    const aar = buildAarSummary(
+      view.scenario,
+      forecast.assessments,
+      forecast.report,
+      forecast.impacts,
+    )
     return { kpis, rows, systems, forecast, validity, aar }
   }, [view])
   const { kpis, rows, systems, forecast, validity, aar } = data
@@ -109,16 +167,28 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
     return defined.length ? `T+${formatTime(Math.min(...defined))}` : '—'
   }
   const horizon = <small style={{ display: 'block' }}>by T+{formatTime(view.durationS)}</small>
-  const count = (value: number | null) => <>{value ?? '—'}<small>/{population} members</small></>
+  const count = (value: number | null) => (
+    <>
+      {value ?? '—'}
+      <small>/{population} members</small>
+    </>
+  )
   const tiles: Array<[string, ReactNode]> = [
     ['Defeated before arrival', count(kpis.kills)],
     ['Arrived undefeated', count(kpis.reportedLeakers)],
     ['Late kills', count(kpis.lateKills)],
-    ['First detect', first(rows.map(row => row.detect))],
-    ['First effect', first(rows.map(row => row.effect))],
-    ['Salvos', <>{kpis.kineticShots + kpis.deSalvos + kpis.jamSalvos}<small style={{ display: 'block' }}>
-      {kpis.kineticShots} kinetic · {kpis.jamSalvos} EW{kpis.deSalvos > 0 && <> · {kpis.deSalvos} DE</>}
-    </small></>],
+    ['First detect', first(rows.map((row) => row.detect))],
+    ['First effect', first(rows.map((row) => row.effect))],
+    [
+      'Salvos',
+      <>
+        {kpis.kineticShots + kpis.deSalvos + kpis.jamSalvos}
+        <small style={{ display: 'block' }}>
+          {kpis.kineticShots} kinetic · {kpis.jamSalvos} EW
+          {kpis.deSalvos > 0 && <> · {kpis.deSalvos} DE</>}
+        </small>
+      </>,
+    ],
   ]
   const validityText = VALIDITY_TEXT[validity.validity]
   const floored = flooredText(view.attrition.totals)
@@ -128,11 +198,16 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
         {tiles.map(([label, value]) => (
           <div className="tile" key={label}>
             <span className="tl">{label}</span>
-            <div className="tv" style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{value}{horizon}</div>
+            <div className="tv" style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
+              {value}
+              {horizon}
+            </div>
           </div>
         ))}
       </div>
-      {!view.hasActiveAsset && <p className="muted small">No defended asset · arrival and leakage unavailable.</p>}
+      {!view.hasActiveAsset && (
+        <p className="muted small">No defended asset · arrival and leakage unavailable.</p>
+      )}
       {floored && <p className="muted small">{floored}</p>}
       <OutcomeTable rows={rows} durationS={view.durationS} />
       <section aria-label="Records">
@@ -146,13 +221,28 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
           <SystemStatus groups={systems} expanded endOfRun />
         </details>
         <details className="analysis-disclosure">
-          <summary>Validity · {view.validity ? 'Trial' : 'Forecast requirements'} · <State tone={validityText.tone}>{validityText.pill}</State> · {validity.findings.length} findings</summary>
-          {!view.validity && <p className="muted small">Forecast · requirement validity. No trial validity assessment was captured.</p>}
+          <summary>
+            Validity · {view.validity ? 'Trial' : 'Forecast requirements'} ·{' '}
+            <State tone={validityText.tone}>{validityText.pill}</State> · {validity.findings.length}{' '}
+            findings
+          </summary>
+          {!view.validity && (
+            <p className="muted small">
+              Forecast · requirement validity. No trial validity assessment was captured.
+            </p>
+          )}
           <RunValidityBanner assessment={validity} />
         </details>
       </section>
-      <DebriefRecord scenario={view.scenario} assessments={forecast.assessments} report={forecast.report}
-        aar={aar} durationS={view.durationS} showTrialRecords={false} showValidity={false} />
+      <DebriefRecord
+        scenario={view.scenario}
+        assessments={forecast.assessments}
+        report={forecast.report}
+        aar={aar}
+        durationS={view.durationS}
+        showTrialRecords={false}
+        showValidity={false}
+      />
     </>
   )
 }
@@ -163,23 +253,28 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
  * finished on the same basis. The record is built here, never in the store.
  */
 function useRunHistorySave(): RunHistorySave {
-  const scenario = useStore(state => state.scenario)
-  const mc = useStore(state => state.mc)
-  const playbackRunId = useStore(state => state.playback.runId)
+  const scenario = useStore((state) => state.scenario)
+  const mc = useStore((state) => state.mc)
+  const playbackRunId = useStore((state) => state.playback.runId)
   const signature = useMemo(() => analysisBasisSignature(scenario), [scenario])
   const summary = mc.status === 'done' ? mc.summary : null
   const enabled = summary != null && mc.basisSignature === signature
-  const reason = enabled ? 'Save this ensemble to the run history'
-    : mc.status === 'running' ? 'The ensemble is still running'
-    : summary == null ? 'No finished ensemble to save'
-    : 'The scenario changed after the ensemble ran'
+  const reason = enabled
+    ? 'Save this ensemble to the run history'
+    : mc.status === 'running'
+      ? 'The ensemble is still running'
+      : summary == null
+        ? 'No finished ensemble to save'
+        : 'The scenario changed after the ensemble ran'
   return {
     enabled,
     reason,
     run: () => {
       if (!summary) return Promise.reject(new Error('No finished ensemble to save.'))
-      const sensitivity = mc.sensitivity.status === 'done' && mc.sensitivity.basisSignature === signature
-        ? mc.sensitivity.summary : null
+      const sensitivity =
+        mc.sensitivity.status === 'done' && mc.sensitivity.basisSignature === signature
+          ? mc.sensitivity.summary
+          : null
       // The record names the overrides the run applied at launch, as the trial manifest does.
       return saveRun(runRecordOf(scenario, mc, playbackRunId, signature, sensitivity))
     },
@@ -190,22 +285,42 @@ export function OutcomeScreen() {
   const trial = useTrialResult()
   const { selection, snapshot } = trial
   const complete = useStore(selectRunComplete)
-  const horizon = useStore(state => selectTrialHorizon(state, state.playback.observedThroughS))
+  const horizon = useStore((state) => selectTrialHorizon(state, state.playback.observedThroughS))
   const save = useRunHistorySave()
-  if (selection.status === 'idle' || selection.status === 'cancelled' || (selection.status === 'ready' && !snapshot)) {
+  if (
+    selection.status === 'idle' ||
+    selection.status === 'cancelled' ||
+    (selection.status === 'ready' && !snapshot)
+  ) {
     // The history does not depend on a trial, so it stays below the placeholder.
-    return <><p className="muted small">No trial yet. Press Play in Execute to run one.</p><RunHistory save={save} /></>
+    return (
+      <>
+        <p className="muted small">No trial yet. Press Play in Execute to run one.</p>
+        <RunHistory save={save} />
+      </>
+    )
   }
-  const view = selection.status === 'ready' && snapshot
-    ? trialResultOf(selection.scenario, selection.result.manifest, selection.result) : null
+  const view =
+    selection.status === 'ready' && snapshot
+      ? trialResultOf(selection.scenario, selection.result.manifest, selection.result)
+      : null
   return (
     <section className="analysis-primary" aria-label="Outcome">
       <h3>Outcome</h3>
-      <p className="analysis-scope">{view
-        ? `simulated trial · one draw · seed ${view.manifest.seed} · T+${formatTime(horizon)} of ${formatTime(view.durationS)} observed`
-        : trialStateText(selection)}</p>
-      {view && complete && horizon >= view.durationS ? <CompletedOutcome key={view.manifest.runId} view={view} />
-        : <p className="muted small">{view ? 'Trial in progress. Complete playback in Execute to see the outcome.' : 'Outcome is waiting for a trial.'}</p>}
+      <p className="analysis-scope">
+        {view
+          ? `simulated trial · one draw · seed ${view.manifest.seed} · T+${formatTime(horizon)} of ${formatTime(view.durationS)} observed`
+          : trialStateText(selection)}
+      </p>
+      {view && complete && horizon >= view.durationS ? (
+        <CompletedOutcome key={view.manifest.runId} view={view} />
+      ) : (
+        <p className="muted small">
+          {view
+            ? 'Trial in progress. Complete playback in Execute to see the outcome.'
+            : 'Outcome is waiting for a trial.'}
+        </p>
+      )}
       <RunHistory save={save} />
     </section>
   )

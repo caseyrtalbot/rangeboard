@@ -38,10 +38,15 @@ function ownerEntry(dir, captures, entry, manifestName = 'manifest.json') {
     if (seen.has(key)) return undefined
     seen.add(key)
     const target = pointerTarget(current.dir, current.entry.sameAs)
-    const next = target.dir === current.dir
-      ? current.captures
-      : loadManifest(join(target.dir, manifestName)).captures
-    current = { dir: target.dir, captures: next, entry: next.find(item => item.tag === target.tag) }
+    const next =
+      target.dir === current.dir
+        ? current.captures
+        : loadManifest(join(target.dir, manifestName)).captures
+    current = {
+      dir: target.dir,
+      captures: next,
+      entry: next.find((item) => item.tag === target.tag),
+    }
   }
   return current.entry ? { dir: current.dir, entry: current.entry } : undefined
 }
@@ -56,15 +61,17 @@ function siblingPointer(dir, digest, manifestName) {
   const parent = dirname(resolve(dir))
   const self = basename(resolve(dir))
   const folders = readdirSync(parent, { withFileTypes: true })
-    .filter(item => item.isDirectory() && item.name !== self)
-    .map(item => item.name)
+    .filter((item) => item.isDirectory() && item.name !== self)
+    .map((item) => item.name)
     .sort()
   for (const folder of folders) {
     const siblingDir = join(parent, folder)
     if (!existsSync(join(siblingDir, manifestName))) continue
     const captures = loadManifest(join(siblingDir, manifestName)).captures
-    const match = captures.find(item => item.sha256 === digest
-      && existsSync(storedPath(siblingDir, captures, item, manifestName)))
+    const match = captures.find(
+      (item) =>
+        item.sha256 === digest && existsSync(storedPath(siblingDir, captures, item, manifestName)),
+    )
     if (match) return `../${folder}/${match.tag}`
   }
   return undefined
@@ -72,14 +79,18 @@ function siblingPointer(dir, digest, manifestName) {
 
 function findEntry(dir, tag, manifestName) {
   const captures = loadManifest(join(dir, manifestName)).captures
-  const entry = captures.find(item => item.tag === tag)
+  const entry = captures.find((item) => item.tag === tag)
   if (!entry) throw new Error(`No capture recorded for tag "${tag}" in ${dir}`)
   return { captures, entry }
 }
 
 /** Serialize once, then store the bytes at most once per distinct hash. */
 export function writeCapture(dir, tag, value, options = {}) {
-  const { limitBytes = LARGE_CAPTURE_BYTES, manifest: manifestName = 'manifest.json', siblings = true } = options
+  const {
+    limitBytes = LARGE_CAPTURE_BYTES,
+    manifest: manifestName = 'manifest.json',
+    siblings = true,
+  } = options
   mkdirSync(dir, { recursive: true })
   const text = serializeCapture(value)
   const bytes = Buffer.byteLength(text)
@@ -87,13 +98,18 @@ export function writeCapture(dir, tag, value, options = {}) {
   const manifestPath = join(dir, manifestName)
   const manifest = loadManifest(manifestPath)
   const captures = manifest.captures
-  const index = captures.findIndex(item => item.tag === tag)
+  const index = captures.findIndex((item) => item.tag === tag)
   const staleFile = index === -1 ? undefined : captures[index].file
 
   // A byte-identical capture records a pointer instead of a second copy; this folder wins over a sibling.
-  const duplicate = captures.find(item => item.tag !== tag && item.sha256 === digest
-    && existsSync(storedPath(dir, captures, item, manifestName)))
-  const sameAs = duplicate?.tag ?? (siblings ? siblingPointer(dir, digest, manifestName) : undefined)
+  const duplicate = captures.find(
+    (item) =>
+      item.tag !== tag &&
+      item.sha256 === digest &&
+      existsSync(storedPath(dir, captures, item, manifestName)),
+  )
+  const sameAs =
+    duplicate?.tag ?? (siblings ? siblingPointer(dir, digest, manifestName) : undefined)
   let entry
   if (sameAs) {
     entry = { tag, sha256: digest, bytes, sameAs }
@@ -110,7 +126,7 @@ export function writeCapture(dir, tag, value, options = {}) {
   else captures[index] = entry
 
   // Drop a file this tag no longer owns, such as after a .json to .json.gz switch.
-  if (staleFile && staleFile !== entry.file && !captures.some(item => item.file === staleFile)) {
+  if (staleFile && staleFile !== entry.file && !captures.some((item) => item.file === staleFile)) {
     rmSync(join(dir, staleFile), { force: true })
   }
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)

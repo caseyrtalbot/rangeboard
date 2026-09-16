@@ -233,9 +233,7 @@ describe('tactic raid builder: commitRaid', () => {
       },
     })
     useStore.getState().addEntityFromModel(radarId, { x: 0, y: -50000 })
-    const sensor = useStore
-      .getState()
-      .scenario.entities.find((e) => e.kind === 'sensor')!
+    const sensor = useStore.getState().scenario.entities.find((e) => e.kind === 'sensor')!
     useStore.getState().armRaidDraft('RUS-TAC-02')
     useStore.getState().commitRaid(null)
     const ships = useStore.getState().scenario.entities.filter((e) => e.kind === 'uas')
@@ -357,7 +355,10 @@ describe('tactic raid builder: pure functions', () => {
     expect(raidDraftFor(scenario, 'NO-SUCH-TACTIC')).toBeNull()
     const draft = raidDraftFor(scenario, 'GEN-WAVE')!
     expect(draft).toEqual({
-      tacticId: 'GEN-WAVE', platformSpecId: null, targetEntityId: assetId, shipCount: 8,
+      tacticId: 'GEN-WAVE',
+      platformSpecId: null,
+      targetEntityId: assetId,
+      shipCount: 8,
     })
     expect(buildRaid(scenario, draft, null)).toBeNull()
   })

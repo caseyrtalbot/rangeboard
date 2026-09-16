@@ -79,29 +79,44 @@ export function installScenario(
   switch (install.op) {
     case 'edit': {
       if (install.next === st.scenario) return st
-      return respond(st, install.next, {
-        past: pushSnapshot(st.past, st.scenario),
-        future: [],
-        selection: st.selection,
-      }, overrides)
+      return respond(
+        st,
+        install.next,
+        {
+          past: pushSnapshot(st.past, st.scenario),
+          future: [],
+          selection: st.selection,
+        },
+        overrides,
+      )
     }
     case 'undo': {
       if (st.past.length === 0) return st
       const restored = withObservedLens(st.past[st.past.length - 1], st.scenario)
-      return respond(st, restored, {
-        past: st.past.slice(0, -1),
-        future: [st.scenario, ...st.future],
-        selection: pruneSelection(st.selection, restored),
-      }, overrides)
+      return respond(
+        st,
+        restored,
+        {
+          past: st.past.slice(0, -1),
+          future: [st.scenario, ...st.future],
+          selection: pruneSelection(st.selection, restored),
+        },
+        overrides,
+      )
     }
     case 'redo': {
       if (st.future.length === 0) return st
       const restored = withObservedLens(st.future[0], st.scenario)
-      return respond(st, restored, {
-        past: pushSnapshot(st.past, st.scenario),
-        future: st.future.slice(1),
-        selection: pruneSelection(st.selection, restored),
-      }, overrides)
+      return respond(
+        st,
+        restored,
+        {
+          past: pushSnapshot(st.past, st.scenario),
+          future: st.future.slice(1),
+          selection: pruneSelection(st.selection, restored),
+        },
+        overrides,
+      )
     }
     case 'replace': {
       cancelAnalysis('mc')
@@ -153,9 +168,10 @@ export function runsForOverridesChange(st: RunSlices, overrides: readonly Overri
   const mc = mcForScenarioChange(st.mc, st.scenario, overrides)
   const trial = trialForScenarioChange(st.trial, st.scenario, overrides)
   if (mc === st.mc && trial === st.trial) return st
-  const playback = trial !== st.trial && st.playback.basisSignature != null
-    ? freshPlayback(st.playback.runSeq, st.playback.speedMult, 'configuration-changed')
-    : st.playback
+  const playback =
+    trial !== st.trial && st.playback.basisSignature != null
+      ? freshPlayback(st.playback.runSeq, st.playback.speedMult, 'configuration-changed')
+      : st.playback
   return { ...st, playback, mc, trial }
 }
 
@@ -197,10 +213,7 @@ export function pruneSelection(sel: Selection, s: Scenario): Selection {
  * only a manual reset issues a new one.
  */
 function playbackForScenarioChange(playback: PlaybackState, next: Scenario): PlaybackState {
-  if (
-    playback.basisSignature == null ||
-    playback.basisSignature === analysisBasisSignature(next)
-  ) {
+  if (playback.basisSignature == null || playback.basisSignature === analysisBasisSignature(next)) {
     return playback
   }
   return freshPlayback(playback.runSeq, playback.speedMult, 'configuration-changed')
@@ -215,11 +228,18 @@ function playbackForScenarioChange(playback: PlaybackState, next: Scenario): Pla
  */
 function mcForScenarioChange(mc: McState, next: Scenario, overrides: readonly Override[]): McState {
   const live = (status: McState['status']): boolean => status === 'running' || status === 'done'
-  if (!live(mc.status) && !live(mc.sensitivity.status) && !live(mc.sweep.status) && !live(mc.optimize.status)) return mc
+  if (
+    !live(mc.status) &&
+    !live(mc.sensitivity.status) &&
+    !live(mc.sweep.status) &&
+    !live(mc.optimize.status)
+  )
+    return mc
   const signature = analysisBasisSignature(next)
   const active = activeOverrides(overrides, next)
   const stale = (run: AnalysisRunState<unknown>): boolean =>
-    live(run.status) && (run.basisSignature !== signature || !sameAppliedOverrides(run.overrides, active))
+    live(run.status) &&
+    (run.basisSignature !== signature || !sameAppliedOverrides(run.overrides, active))
   const mcStale = stale(mc)
   const sensStale = stale(mc.sensitivity)
   const sweepStale = stale(mc.sweep)
@@ -239,10 +259,17 @@ function mcForScenarioChange(mc: McState, next: Scenario, overrides: readonly Ov
 }
 
 /** Use the same material-input definition as playback and ensemble analysis, plus the manifest's overrides. */
-function trialForScenarioChange(trial: TrialState, next: Scenario, overrides: readonly Override[]): TrialState {
+function trialForScenarioChange(
+  trial: TrialState,
+  next: Scenario,
+  overrides: readonly Override[],
+): TrialState {
   const manifest = trial.manifest
-  if (manifest == null || (manifest.basisSignature === analysisBasisSignature(next) &&
-    sameAppliedOverrides(manifest.overrides, activeOverrides(overrides, next)))) {
+  if (
+    manifest == null ||
+    (manifest.basisSignature === analysisBasisSignature(next) &&
+      sameAppliedOverrides(manifest.overrides, activeOverrides(overrides, next)))
+  ) {
     return trial
   }
   cancelAnalysis('trial')

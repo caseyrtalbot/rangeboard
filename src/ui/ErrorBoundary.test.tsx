@@ -11,6 +11,7 @@ function button(node: ReactNode, label: string): (() => void) | undefined {
     const found = button(child.props.children, label)
     if (found) return found
   }
+  return undefined
 }
 
 function failedBoundary(onExport = vi.fn()) {
@@ -18,9 +19,10 @@ function failedBoundary(onExport = vi.fn()) {
   Object.assign(boundary.state, ErrorBoundary.getDerivedStateFromError())
   // Node has no DOM renderer; browser verification exercises React's catch lifecycle.
   vi.spyOn(boundary, 'setState').mockImplementation((update) => {
-    Object.assign(boundary.state, typeof update === 'function'
-      ? update(boundary.state, boundary.props)
-      : update)
+    Object.assign(
+      boundary.state,
+      typeof update === 'function' ? update(boundary.state, boundary.props) : update,
+    )
   })
   return boundary
 }
@@ -59,7 +61,9 @@ describe('ErrorBoundary', () => {
   })
 
   it('keeps a failed export actionable and clears its notice after a successful retry', () => {
-    const exportRecord = vi.fn().mockImplementationOnce(() => { throw new Error('Download unavailable') })
+    const exportRecord = vi.fn().mockImplementationOnce(() => {
+      throw new Error('Download unavailable')
+    })
     const boundary = failedBoundary(exportRecord)
     button(boundary.render(), 'Export')!()
     expect(renderToStaticMarkup(boundary.render())).toContain('Download unavailable')

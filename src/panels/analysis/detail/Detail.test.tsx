@@ -83,32 +83,43 @@ describe('DetailPane', () => {
     store.patchScenario({ connections })
     // Fixed draw identities keep sampled assertions repeatable.
     const scenario = useStore.getState().scenario
-    const ids = new Map(scenario.entities.map(e => [e.id, e.kind]))
-    store.patchScenario({ entities: scenario.entities.map(e => ({ ...e, id: ids.get(e.id)! })),
-      paths: scenario.paths.map(p => ({ ...p, entityId: ids.get(p.entityId)! })),
-      connections: scenario.connections.map(c => ({ ...c, fromId: ids.get(c.fromId)!, toId: ids.get(c.toId)! })) })
-    useStore.setState({ playback: { ...useStore.getState().playback, runId: 'detail-fixed-trial' } })
+    const ids = new Map(scenario.entities.map((e) => [e.id, e.kind]))
+    store.patchScenario({
+      entities: scenario.entities.map((e) => ({ ...e, id: ids.get(e.id)! })),
+      paths: scenario.paths.map((p) => ({ ...p, entityId: ids.get(p.entityId)! })),
+      connections: scenario.connections.map((c) => ({
+        ...c,
+        fromId: ids.get(c.fromId)!,
+        toId: ids.get(c.toId)!,
+      })),
+    })
+    useStore.setState({
+      playback: { ...useStore.getState().playback, runId: 'detail-fixed-trial' },
+    })
     captureTrial()
     store.startRun()
     store.pauseRun()
   })
 
-  it.each(['asset', 'marker'] as const)('renders nothing for a %s and for an unknown id', (kind) => {
-    const asset: Entity = {
-      id: 'ent-asset',
-      name: 'Asset 1',
-      kind,
-      specId: 'lib-asset',
-      pos: { x: 0, y: 0 },
-      headingDeg: 0,
-      color: null,
-      notes: '',
-    }
-    const store = useStore.getState()
-    store.patchScenario({ entities: [...store.scenario.entities, asset] })
-    expect(render('ent-asset')).toBe('')
-    expect(render('ent-missing')).toBe('')
-  })
+  it.each(['asset', 'marker'] as const)(
+    'renders nothing for a %s and for an unknown id',
+    (kind) => {
+      const asset: Entity = {
+        id: 'ent-asset',
+        name: 'Asset 1',
+        kind,
+        specId: 'lib-asset',
+        pos: { x: 0, y: 0 },
+        headingDeg: 0,
+        color: null,
+        notes: '',
+      }
+      const store = useStore.getState()
+      store.patchScenario({ entities: [...store.scenario.entities, asset] })
+      expect(render('ent-asset')).toBe('')
+      expect(render('ent-missing')).toBe('')
+    },
+  )
 
   it('renders the sensor pane with one gate row per threat', () => {
     const sensor = entityOf('sensor')
@@ -117,7 +128,9 @@ describe('DetailPane', () => {
     expect(html).toContain('aria-label="Back to the lens stack"')
     expect(html).toContain('‹ Back')
     expect(html).toContain(sensor.name)
-    expect(html).toContain('<span class="state inactive"><i class="state-square" aria-hidden="true"></i>SEARCH<')
+    expect(html).toContain(
+      '<span class="state inactive"><i class="state-square" aria-hidden="true"></i>SEARCH<',
+    )
     expect(html).toContain('surveillance')
     expectSections(html, [
       ['pd', 'Pd per track'],
@@ -140,7 +153,9 @@ describe('DetailPane', () => {
     const effector = entityOf('effector')
     const html = render(effector.id)
     expect(html).toContain('data-detail="effector"')
-    expect(html).toContain('<span class="state inactive"><i class="state-square" aria-hidden="true"></i>READY<')
+    expect(html).toContain(
+      '<span class="state inactive"><i class="state-square" aria-hidden="true"></i>READY<',
+    )
     expect(html).toContain('interceptor')
     expectSections(html, [
       ['pk', 'Pk per track'],
@@ -203,7 +218,12 @@ describe('DetailPane', () => {
 
   it('does not substitute a full-run route diagnosis for reached trial status', () => {
     const store = useStore.getState()
-    store.patchScenario({ connections: store.scenario.connections.map(c => ({ ...c, confidence: 'documented' as const })) })
+    store.patchScenario({
+      connections: store.scenario.connections.map((c) => ({
+        ...c,
+        confidence: 'documented' as const,
+      })),
+    })
     captureTrial()
     const file = section(render(entityOf('uas').id), 'file')
     expect(file).toContain('Engage status</span><span class="rv num">—')
@@ -229,7 +249,8 @@ describe('DetailPane', () => {
   })
 
   it.each(['uas', 'sensor', 'effector', 'c2'] as const)(
-    'caps %s telemetry at 30 seconds after a forward scrub', (kind) => {
+    'caps %s telemetry at 30 seconds after a forward scrub',
+    (kind) => {
       const store = useStore.getState()
       store.setBoardPhase('execute')
       store.startRun()
@@ -238,8 +259,14 @@ describe('DetailPane', () => {
       const at30 = render(entityOf(kind).id)
       store.scrubTo(100)
       const preview = render(entityOf(kind).id)
-      const telemetry = kind === 'uas' ? ['file'] : kind === 'sensor' ? ['load', 'gates']
-        : kind === 'effector' ? ['doctrine', 'capacity'] : ['hops', 'timing', 'coverage']
+      const telemetry =
+        kind === 'uas'
+          ? ['file']
+          : kind === 'sensor'
+            ? ['load', 'gates']
+            : kind === 'effector'
+              ? ['doctrine', 'capacity']
+              : ['hops', 'timing', 'coverage']
       for (const key of telemetry) {
         expect(section(preview, key)).toBe(section(at30, key))
         for (const match of section(preview, key).matchAll(/(?:T\+)?(\d+):(\d{2})/g)) {
@@ -256,7 +283,8 @@ describe('DetailPane', () => {
   )
 
   it.each(['uas', 'sensor', 'effector', 'c2'] as const)(
-    'shows untouched %s telemetry at EMPTY_HORIZON before first Play', (kind) => {
+    'shows untouched %s telemetry at EMPTY_HORIZON before first Play',
+    (kind) => {
       const store = useStore.getState()
       store.setBoardPhase('execute')
       unstartTrial()
@@ -325,14 +353,23 @@ describe('DetailPane', () => {
     store.advanceRun(30)
     store.pauseRun()
     store.scrubTo(100)
-    const events = report.events.filter((event) => event.effectorId === effector.id && event.tS <= 30)
+    const events = report.events.filter(
+      (event) => event.effectorId === effector.id && event.tS <= 30,
+    )
     const capacity = section(render(effector.id), 'capacity')
-    expect(capacity).toContain(`Kinetic shots</span><span class="rv num">${events.filter((event) => event.channelClass === 'kinetic').length}`)
+    expect(capacity).toContain(
+      `Kinetic shots</span><span class="rv num">${events.filter((event) => event.channelClass === 'kinetic').length}`,
+    )
     const component = trialSystemTelemetryAt(view, 30)
-      .flatMap((group) => group.components).find((candidate) => candidate.entityId === sensor.id)!
+      .flatMap((group) => group.components)
+      .find((candidate) => candidate.entityId === sensor.id)!
     const load = section(render(sensor.id), 'load')
-    expect(load).toContain(`Held track files</span><span class="rv num">${trialSeriesOf(view, 30).sensors[sensor.id].find(s => s.id === 'scanLoad')!.values[60]}`)
-    expect(load).toContain(`Hold clock (union)</span><span class="rv num">${formatTime(component.holdSeconds)}`)
+    expect(load).toContain(
+      `Held track files</span><span class="rv num">${trialSeriesOf(view, 30).sensors[sensor.id].find((s) => s.id === 'scanLoad')!.values[60]}`,
+    )
+    expect(load).toContain(
+      `Hold clock (union)</span><span class="rv num">${formatTime(component.holdSeconds)}`,
+    )
   })
 
   it('keeps Prepare and Analyze detail output identical for every pane', () => {
@@ -344,14 +381,16 @@ describe('DetailPane', () => {
     }
   })
 
-
   it('does not populate sensor track lists or C2 routes from future detections', () => {
     const store = useStore.getState()
     const sensor = entityOf('sensor')
     const c2 = entityOf('c2')
-    store.patchScenario({ entities: store.scenario.entities.map((entity) => entity.id === sensor.id
-      ? { ...entity, pos: { x: 0, y: 3000 } } : entity),
-      paths: store.scenario.paths.map(path => ({ ...path, startDelayS: 60 })) })
+    store.patchScenario({
+      entities: store.scenario.entities.map((entity) =>
+        entity.id === sensor.id ? { ...entity, pos: { x: 0, y: 3000 } } : entity,
+      ),
+      paths: store.scenario.paths.map((path) => ({ ...path, startDelayS: 60 })),
+    })
     const { assessments } = captureTrial()
     expect(assessments[0].sensorObservations?.[0].firstDetectS).toBeGreaterThan(30)
     store.setBoardPhase('execute')
@@ -364,7 +403,9 @@ describe('DetailPane', () => {
     expect(section(sensorHtml, 'slant')).toContain('No track observed.')
     expect(section(render(c2.id), 'hops')).toContain('No route through this node.')
     expect(section(render(entityOf('uas').id), 'file')).not.toContain('T+2:')
-    expect(section(render(entityOf('uas').id), 'pd')).toContain('No radar Pd model observed this track.')
+    expect(section(render(entityOf('uas').id), 'pd')).toContain(
+      'No radar Pd model observed this track.',
+    )
     store.setBoardPhase('analyze')
     expect(section(render(sensor.id), 'ladder')).toContain('No track observed.')
     expect(section(render(c2.id), 'hops')).toContain('No route through this node.')
@@ -372,7 +413,6 @@ describe('DetailPane', () => {
     expect(section(render(sensor.id), 'ladder')).not.toContain('No track observed.')
     expect(bodyRows(section(render(c2.id), 'hops'))).toBe(1)
   })
-
 })
 
 it('shows realized mixed-member effects at the observed boundary, never forecast E[k]', () => {

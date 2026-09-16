@@ -1,7 +1,7 @@
 # Slice 3.0 stamps browser check, 2026-09-10
 
 Dated capture for slice 3.0 (stamps) of the
-[calibration implementation plan](../../../IMPLEMENTATION_PLAN.md). It records the two
+then-current `docs/IMPLEMENTATION_PLAN.md`. It records the two
 visible stamps in a real browser. Measurements describe the lane branch `calib/p3-stamps`,
 not the current tree.
 

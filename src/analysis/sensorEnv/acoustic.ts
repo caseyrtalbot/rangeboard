@@ -51,7 +51,11 @@ export function acousticSolveM(refRangeM: number, deltaDb: number): number {
 }
 
 /** Acoustic target term: the solved range over the quoted range. 1 for a planning basis or no target. */
-export function acousticRangeFactor(spec: SensorSpec, quotedM: number, target: UasSpec | undefined): number {
+export function acousticRangeFactor(
+  spec: SensorSpec,
+  quotedM: number,
+  target: UasSpec | undefined,
+): number {
   if (!target || !targetScaled(spec) || !(quotedM > 0)) return 1
   return acousticSolveM(quotedM, acousticDbFor(target) - refAcousticDbFor(spec)) / quotedM
 }

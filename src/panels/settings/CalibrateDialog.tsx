@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import type { CalibrationRecord, NormalGammaParams, SpecModel, TimeObservation } from '../../model/types'
+import type {
+  CalibrationRecord,
+  NormalGammaParams,
+  SpecModel,
+  TimeObservation,
+} from '../../model/types'
 import { JEFFREYS_PRIOR } from '../../model/types'
 import type { CalibrationFamily } from '../../analysis/calibrate'
 import {
@@ -31,17 +36,34 @@ export interface CalibrateDraft {
   variance: string
 }
 
-const EMPTY_DRAFT: CalibrateDraft = { successes: '', trials: '', form: 'sample', times: '', n: '', mean: '', variance: '' }
+const EMPTY_DRAFT: CalibrateDraft = {
+  successes: '',
+  trials: '',
+  form: 'sample',
+  times: '',
+  n: '',
+  mean: '',
+  variance: '',
+}
 
-const fmt = (v: number, digits = 4): string => (Number.isFinite(v) ? Number(v.toPrecision(digits)).toString() : '—')
+const fmt = (v: number, digits = 4): string =>
+  Number.isFinite(v) ? Number(v.toPrecision(digits)).toString() : '—'
 
 /** The time observation a draft describes; `validTime` decides whether it is usable. */
 function timeObservation(draft: CalibrateDraft): TimeObservation {
   if (draft.form === 'sample') {
-    const timesS = draft.times.split(/[\s,;]+/).filter((t) => t !== '').map(Number)
+    const timesS = draft.times
+      .split(/[\s,;]+/)
+      .filter((t) => t !== '')
+      .map(Number)
     return { form: 'sample', timesS }
   }
-  return { form: 'summary', n: Number(draft.n), meanS: Number(draft.mean), varianceS2: Number(draft.variance) }
+  return {
+    form: 'summary',
+    n: Number(draft.n),
+    meanS: Number(draft.mean),
+    varianceS2: Number(draft.variance),
+  }
 }
 
 /**
@@ -62,30 +84,55 @@ function recordFor(
     return validProportion(observed) ? calibrateProportion(target, observed) : null
   }
   const observed = timeObservation(draft)
-  return validTime(observed) ? calibrateTime(target, observed, defaultTimePrior(model, field, value)) : null
+  return validTime(observed)
+    ? calibrateTime(target, observed, defaultTimePrior(model, field, value))
+    : null
 }
 
 /** Prior, observation and posterior as three columns of the same rows. */
 function Comparison({ record, unit }: { record: CalibrationRecord; unit: string }) {
   const interval = acceptedInterval(record)
   const point = acceptedValue(record)
-  const rows: Array<[string, string, string, string]> = record.kind === 'proportion'
-    ? [
-        ['Beta a', fmt(record.prior.a), '—', fmt(record.posterior.a)],
-        ['Beta b', fmt(record.prior.b), '—', fmt(record.posterior.b)],
-        ['Count', '—', observationText(record), '—'],
-        ['Mean', fmt(betaMean(record.prior)), fmt(record.observed.successes / record.observed.trials), fmt(point)],
-        ['95 % interval', intervalText(betaInterval(record.prior)), '—', intervalText(interval)],
-      ]
-    : timeRows(record.prior, record.posterior, timeSummary(record.observed), point, interval, unit)
+  const rows: Array<[string, string, string, string]> =
+    record.kind === 'proportion'
+      ? [
+          ['Beta a', fmt(record.prior.a), '—', fmt(record.posterior.a)],
+          ['Beta b', fmt(record.prior.b), '—', fmt(record.posterior.b)],
+          ['Count', '—', observationText(record), '—'],
+          [
+            'Mean',
+            fmt(betaMean(record.prior)),
+            fmt(record.observed.successes / record.observed.trials),
+            fmt(point),
+          ],
+          ['95 % interval', intervalText(betaInterval(record.prior)), '—', intervalText(interval)],
+        ]
+      : timeRows(
+          record.prior,
+          record.posterior,
+          timeSummary(record.observed),
+          point,
+          interval,
+          unit,
+        )
   return (
     <table className="tb tb-dense" aria-label="Prior, observation and posterior">
       <thead>
-        <tr><th></th><th>Prior</th><th>Observed</th><th>Posterior</th></tr>
+        <tr>
+          <th></th>
+          <th>Prior</th>
+          <th>Observed</th>
+          <th>Posterior</th>
+        </tr>
       </thead>
       <tbody>
         {rows.map(([label, prior, observed, posterior]) => (
-          <tr key={label}><td className="prose">{label}</td><td>{prior}</td><td>{observed}</td><td>{posterior}</td></tr>
+          <tr key={label}>
+            <td className="prose">{label}</td>
+            <td>{prior}</td>
+            <td>{observed}</td>
+            <td>{posterior}</td>
+          </tr>
         ))}
       </tbody>
     </table>
@@ -112,7 +159,12 @@ function timeRows(
     ['n', '—', String(observed.n), '—'],
     [`Mean (${unit})`, fmt(prior.mu), fmt(observed.meanS), fmt(point)],
     [`Variance (${unit}2)`, '—', fmt(observed.varianceS2), '—'],
-    ['95 % interval on mean', intervalText(meanCredibleInterval(prior)), '—', intervalText(interval)],
+    [
+      '95 % interval on mean',
+      intervalText(meanCredibleInterval(prior)),
+      '—',
+      intervalText(interval),
+    ],
   ]
 }
 
@@ -162,37 +214,76 @@ export function CalibrateForm({
       {family === 'proportion' ? (
         <div className="field-row">
           <Field label="Successes">
-            <input type="number" step={1} min={0} value={draft.successes} aria-label="Successes"
-              onChange={(e) => set({ successes: e.target.value })} />
+            <input
+              type="number"
+              step={1}
+              min={0}
+              value={draft.successes}
+              aria-label="Successes"
+              onChange={(e) => set({ successes: e.target.value })}
+            />
           </Field>
           <Field label="Trials">
-            <input type="number" step={1} min={1} value={draft.trials} aria-label="Trials"
-              onChange={(e) => set({ trials: e.target.value })} />
+            <input
+              type="number"
+              step={1}
+              min={1}
+              value={draft.trials}
+              aria-label="Trials"
+              onChange={(e) => set({ trials: e.target.value })}
+            />
           </Field>
         </div>
       ) : (
         <>
-          <Seg label="Observation form" value={draft.form}
-            options={[{ v: 'sample', label: 'Times' }, { v: 'summary', label: 'Summary' }]}
-            onChange={(form) => set({ form })} />
+          <Seg
+            label="Observation form"
+            value={draft.form}
+            options={[
+              { v: 'sample', label: 'Times' },
+              { v: 'summary', label: 'Summary' },
+            ]}
+            onChange={(form) => set({ form })}
+          />
           {draft.form === 'sample' ? (
             <Field label={`Observed times (${unit}), one per line or comma separated`}>
-              <textarea rows={3} value={draft.times} aria-label="Observed times"
-                onChange={(e) => set({ times: e.target.value })} />
+              <textarea
+                rows={3}
+                value={draft.times}
+                aria-label="Observed times"
+                onChange={(e) => set({ times: e.target.value })}
+              />
             </Field>
           ) : (
             <div className="field-row">
               <Field label="n">
-                <input type="number" step={1} min={1} value={draft.n} aria-label="Count"
-                  onChange={(e) => set({ n: e.target.value })} />
+                <input
+                  type="number"
+                  step={1}
+                  min={1}
+                  value={draft.n}
+                  aria-label="Count"
+                  onChange={(e) => set({ n: e.target.value })}
+                />
               </Field>
               <Field label="Mean" unit={unit}>
-                <input type="number" step="any" value={draft.mean} aria-label="Mean"
-                  onChange={(e) => set({ mean: e.target.value })} />
+                <input
+                  type="number"
+                  step="any"
+                  value={draft.mean}
+                  aria-label="Mean"
+                  onChange={(e) => set({ mean: e.target.value })}
+                />
               </Field>
               <Field label="Variance" unit={`${unit}2`}>
-                <input type="number" step="any" min={0} value={draft.variance} aria-label="Variance"
-                  onChange={(e) => set({ variance: e.target.value })} />
+                <input
+                  type="number"
+                  step="any"
+                  min={0}
+                  value={draft.variance}
+                  aria-label="Variance"
+                  onChange={(e) => set({ variance: e.target.value })}
+                />
               </Field>
             </div>
           )}
@@ -204,11 +295,19 @@ export function CalibrateForm({
         <p className="muted small">Type the observation to see the posterior.</p>
       )}
       <div className="inspector-actions">
-        <button type="button" onClick={onClose} aria-label={`Cancel calibration of ${field} on ${model.name}`}>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={`Cancel calibration of ${field} on ${model.name}`}
+        >
           Cancel
         </button>
-        <button type="submit" className="primary" disabled={!record}
-          aria-label={`Accept calibration of ${field} on ${model.name}`}>
+        <button
+          type="submit"
+          className="primary"
+          disabled={!record}
+          aria-label={`Accept calibration of ${field} on ${model.name}`}
+        >
           Accept
         </button>
       </div>

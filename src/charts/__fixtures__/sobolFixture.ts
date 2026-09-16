@@ -21,26 +21,42 @@ const CONFIDENCE = 0.95
 
 /** A bootstrap interval at the fixture's resample count and confidence. */
 const ci = (value: number, lo: number, hi: number): BootstrapInterval => ({
-  value, lo, hi, bootstrap: BOOTSTRAP, confidence: CONFIDENCE,
+  value,
+  lo,
+  hi,
+  bootstrap: BOOTSTRAP,
+  confidence: CONFIDENCE,
 })
 
 const detectRangeM: UncertainField = {
-  modelId: 'lib-rps42', field: 'detectRangeM', spread: { kind: 'lognormal', sigmaDb: 3 },
+  modelId: 'lib-rps42',
+  field: 'detectRangeM',
+  spread: { kind: 'lognormal', sigmaDb: 3 },
 }
 const pk: UncertainField = {
-  modelId: 'lib-coyote', field: 'pk', spread: { kind: 'beta', successes: 17, trials: 20, pseudo: true },
+  modelId: 'lib-coyote',
+  field: 'pk',
+  spread: { kind: 'beta', successes: 17, trials: 20, pseudo: true },
 }
 const engageTimeS: UncertainField = {
-  modelId: 'lib-coyote', field: 'engageTimeS', spread: { kind: 'triangular', lo: -0.2, hi: 0.3 },
+  modelId: 'lib-coyote',
+  field: 'engageTimeS',
+  spread: { kind: 'triangular', lo: -0.2, hi: 0.3 },
 }
 const rcsM2: UncertainField = {
-  modelId: 'lib-mavic3', field: 'rcsM2', spread: { kind: 'lognormal', sigmaDb: 6 },
+  modelId: 'lib-mavic3',
+  field: 'rcsM2',
+  spread: { kind: 'lognormal', sigmaDb: 6 },
 }
 const trackInitS: UncertainField = {
-  modelId: 'lib-kurfs', field: 'trackInitS', spread: { kind: 'triangular', lo: -0.3, hi: 0.5 },
+  modelId: 'lib-kurfs',
+  field: 'trackInitS',
+  spread: { kind: 'triangular', lo: -0.3, hi: 0.5 },
 }
 const targetS: UncertainField = {
-  modelId: 'lib-coyote', field: 'targetS', spread: { kind: 'triangular', lo: -0.3, hi: 0.5 },
+  modelId: 'lib-coyote',
+  field: 'targetS',
+  spread: { kind: 'triangular', lo: -0.3, hi: 0.5 },
 }
 
 /** The four fields Morris kept, base 256, so 256 * (4 + 2) = 1536 engine runs. */
@@ -49,9 +65,9 @@ export const SOBOL_FIXTURE: SobolResult = {
   base: 256,
   evaluations: 1536,
   fields: [
-    { field: pk, firstOrder: ci(0.24, 0.19, 0.30), total: ci(0.31, 0.25, 0.38) },
+    { field: pk, firstOrder: ci(0.24, 0.19, 0.3), total: ci(0.31, 0.25, 0.38) },
     { field: engageTimeS, firstOrder: ci(0.04, -0.012, 0.09), total: ci(0.09, 0.05, 0.14) },
-    { field: detectRangeM, firstOrder: ci(0.30, 0.24, 0.36), total: ci(0.42, 0.35, 0.49) },
+    { field: detectRangeM, firstOrder: ci(0.3, 0.24, 0.36), total: ci(0.42, 0.35, 0.49) },
     { field: rcsM2, firstOrder: ci(0.11, 0.06, 0.16), total: ci(0.18, 0.13, 0.24) },
   ],
   ranking: [2, 0, 3, 1],

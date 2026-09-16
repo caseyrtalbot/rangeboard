@@ -65,7 +65,8 @@ describe('BoardPreparation', () => {
     const before = useStore.getState()
     const html = render()
     const detection = `First detection not assessed: ${threats.map((threat) => threat.name).join(', ')} ${threats.length === 1 ? 'starts' : 'start'} inside detection coverage.`
-    const missingAsset = 'No defended asset is placed. Warning time, arrival and leakage are not measurable.'
+    const missingAsset =
+      'No defended asset is placed. Warning time, arrival and leakage are not measurable.'
     const caveat = 'Point values from the threshold envelope.'
 
     expect(html).toContain(detection)

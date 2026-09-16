@@ -12,9 +12,11 @@ import { mixedTrial, trialEvent } from '../../playback/__fixtures__/trialFixture
 import { trialSweepAt } from '../../playback/trialSweepAt'
 import { threatReadoutAt, trialTelemetryAt, trialOutcomeRows } from './threatReadout'
 
-vi.mock('../../playback/detection', async importOriginal => ({
-  ...await importOriginal<typeof import('../../playback/detection')>(),
-  detectionsAt: () => { throw new Error('No deterministic detection fallback') },
+vi.mock('../../playback/detection', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../playback/detection')>()),
+  detectionsAt: () => {
+    throw new Error('No deterministic detection fallback')
+  },
 }))
 
 function fixture() {
@@ -27,8 +29,12 @@ describe('trial threat readout', () => {
     const input = fixture()
     const readout = threatReadoutAt({ ...input, tS: 3 })
     expect(readout.phase).not.toBe('ghost')
-    expect(readout.rows.find(row => row.id === 'residual')?.value).toBe('3 active · 1 hard kill · 1 mission kill · 5 members')
-    expect(readout.rows.find(row => row.id === 'effects')?.value).toBe('3 landed · 1 hard kill · 1 mission kill')
+    expect(readout.rows.find((row) => row.id === 'residual')?.value).toBe(
+      '3 active · 1 hard kill · 1 mission kill · 5 members',
+    )
+    expect(readout.rows.find((row) => row.id === 'effects')?.value).toBe(
+      '3 landed · 1 hard kill · 1 mission kill',
+    )
     expect(readout.ghostLine).toContain('1 hard-killed members frozen')
     expect(JSON.stringify(readout)).not.toContain('E[k]')
   })
@@ -36,25 +42,37 @@ describe('trial threat readout', () => {
   it('rejects a future sweep and caps effects, classification, arrivals and warning at R2 horizon', () => {
     const input = fixture()
     input.trial.assessments[0].warningS = 3.9
-    const readout = threatReadoutAt({ ...input, tS: 50, horizonS: 50, horizon: { scoped: true, horizonS: 1 },
-      trialSweep: trialSweepAt(input.trial, 50) })
+    const readout = threatReadoutAt({
+      ...input,
+      tS: 50,
+      horizonS: 50,
+      horizon: { scoped: true, horizonS: 1 },
+      trialSweep: trialSweepAt(input.trial, 50),
+    })
     expect(readout.state?.effectsLanded).toBe(0)
     expect(readout.state?.holdingSensorIds).toEqual([])
     expect(readout.state?.classification).toBe('unknown')
     expect(readout.firstDetectText).toBe('—')
     expect(readout.warningText).toBe('—')
-    expect(readout.rows.find(row => row.id === 'arrival')?.value).toBe('—')
+    expect(readout.rows.find((row) => row.id === 'arrival')?.value).toBe('—')
     expect(readout.cursorText).toBe('T+0:01')
-    expect(readout.planningRows.map(row => row.label)).toEqual(['Planned CPA', 'Planned arrival'])
+    expect(readout.planningRows.map((row) => row.label)).toEqual(['Planned CPA', 'Planned arrival'])
     const reached = threatReadoutAt({ ...input, tS: 5 })
     expect(reached.firstDetectText).toContain('radar')
     expect(reached.warningText).toBe('0:03')
-    expect(reached.rows.find(row => row.id === 'arrival')?.value).toContain('3 undefeated members')
+    expect(reached.rows.find((row) => row.id === 'arrival')?.value).toContain(
+      '3 undefeated members',
+    )
   })
 
   it('does not reconstruct a pathless detection or use legacy caller inputs', () => {
     const input = fixture()
-    const readout = threatReadoutAt({ ...input, trial: null, tS: 50, assessments: input.trial.assessments })
+    const readout = threatReadoutAt({
+      ...input,
+      trial: null,
+      tS: 50,
+      assessments: input.trial.assessments,
+    })
     expect(readout.state).toBeUndefined()
     expect(readout.phase).toBe('undetected')
     expect(readout.warningText).toBe('—')
@@ -64,12 +82,12 @@ describe('trial threat readout', () => {
     expect(parked.state?.shipCount).toBe(2)
   })
 
-  it.each([null, 0])('preserves the untouched R2 gate with horizonS=%s', horizonS => {
+  it.each([null, 0])('preserves the untouched R2 gate with horizonS=%s', (horizonS) => {
     const readout = threatReadoutAt({ ...fixture(), horizonS, tS: 100, horizon: EMPTY_HORIZON })
     expect(readout.state).toBeUndefined()
     expect(readout.cursorText).toBe('—')
     expect(readout.firstDetectText).toBe('—')
-    expect(readout.rows.find(row => row.id === 'hold')?.value).toBe('0 sensors')
+    expect(readout.rows.find((row) => row.id === 'hold')?.value).toBe('0 sensors')
   })
 
   it('keeps an EW channel separate from sampled jam and counts only released incoming rounds', () => {
@@ -89,20 +107,22 @@ function forecastFixture(softShot = false, killDelta = 0.999) {
   const { assessments, report: baseReport } = engagementPicture(scenario)
   const report = {
     ...baseReport,
-    events: [{
-      tS: 5,
-      tEffectS: 10,
-      effectorId: 'fixture-effector',
-      uasId: entity.id,
-      shipIdx: 0,
-      channel: 'kill' as const,
-      softShot,
-      effectorType: softShot ? 'jammer' as const : 'interceptor' as const,
-      channelClass: softShot ? 'ew' as const : 'kinetic' as const,
-      lateEffect: false,
-      pk: killDelta,
-      killDelta,
-    }],
+    events: [
+      {
+        tS: 5,
+        tEffectS: 10,
+        effectorId: 'fixture-effector',
+        uasId: entity.id,
+        shipIdx: 0,
+        channel: 'kill' as const,
+        softShot,
+        effectorType: softShot ? ('jammer' as const) : ('interceptor' as const),
+        channelClass: softShot ? ('ew' as const) : ('kinetic' as const),
+        lateEffect: false,
+        pk: killDelta,
+        killDelta,
+      },
+    ],
   }
   const timeline = buildTrackTimeline(scenario, assessments, report)
   return { scenario, entity, assessments, report, timeline }
@@ -123,13 +143,17 @@ describe('forecast threat-picture wording (retained)', () => {
     (mode) => {
       const { scenario, assessments, report } = forecastFixture()
       const groups = threatPictureAt(scenario, assessments, report, 10, new Map())
-      const html = renderToStaticMarkup(createElement(ThreatPicture, { groups, mode, membersOpen: true }))
+      const html = renderToStaticMarkup(
+        createElement(ThreatPicture, { groups, mode, membersOpen: true }),
+      )
 
       expect(html).toContain('EXPECTED DEFEAT')
       expect(html).not.toContain('DEFEATED')
       expect(html).not.toContain('>EFFECT<')
       expect(html).toContain('Expected FX 0:10')
-      expect(html).toContain('title="1.00 expected kills · 0.00 expected surviving ships · 1 salvos"')
+      expect(html).toContain(
+        'title="1.00 expected kills · 0.00 expected surviving ships · 1 salvos"',
+      )
       expect(html).toContain('0.1%')
     },
   )
@@ -137,56 +161,98 @@ describe('forecast threat-picture wording (retained)', () => {
   it('labels partial live effects as expected', () => {
     const { scenario, assessments, report } = forecastFixture(false, 0.75)
     const groups = threatPictureAt(scenario, assessments, report, 10, new Map())
-    const html = renderToStaticMarkup(createElement(ThreatPicture, {
-      groups, mode: 'live', membersOpen: true,
-    }))
+    const html = renderToStaticMarkup(
+      createElement(ThreatPicture, {
+        groups,
+        mode: 'live',
+        membersOpen: true,
+      }),
+    )
 
     expect(html).toContain('EXPECTED EFFECT')
     expect(html).not.toContain('EFFECT OBS')
     expect(html).not.toContain('EXPECTED DEFEAT')
     expect(html).toContain('title="0.75 expected kills · 0.25 expected surviving ships · 1 salvos"')
   })
-
 })
-
 
 describe('trial outcome rows', () => {
   it('uses assessment milestones and realized defeats, excluding pathless entities', () => {
     const { view } = mixedTrial()
     const rows = trialOutcomeRows(view)
-    expect(rows.map(row => row.id)).toEqual(['swarm', 'moving', 'flyby'])
-    expect(rows[0]).toMatchObject({ detect: 1.1, identify: 6.1, engage: 1.2, effect: 2, salvos: 7, states: ['leaked'] })
-    expect(rows[1]).toMatchObject({ detect: null, identify: null, engage: 0, effect: 2, salvos: 1, states: ['active'] })
-    expect(rows[2]).toMatchObject({ detect: null, identify: null, engage: null, effect: null, salvos: 0, states: ['active'] })
+    expect(rows.map((row) => row.id)).toEqual(['swarm', 'moving', 'flyby'])
+    expect(rows[0]).toMatchObject({
+      detect: 1.1,
+      identify: 6.1,
+      engage: 1.2,
+      effect: 2,
+      salvos: 7,
+      states: ['leaked'],
+    })
+    expect(rows[1]).toMatchObject({
+      detect: null,
+      identify: null,
+      engage: 0,
+      effect: 2,
+      salvos: 1,
+      states: ['active'],
+    })
+    expect(rows[2]).toMatchObject({
+      detect: null,
+      identify: null,
+      engage: null,
+      effect: null,
+      salvos: 0,
+      states: ['active'],
+    })
   })
 
-  it.each([false, true])('distinguishes a fully defeated formation with softShot %s', softShot => {
-    const { view } = mixedTrial()
-    const events = [0, 1, 2].map(shipIdx => trialEvent({ uasId: 'moving', shipIdx, softShot }))
-    const trial = { ...view, attrition: { ...view.attrition, events } }
-    expect(trialOutcomeRows(trial).find(row => row.id === 'moving')?.states)
-      .toEqual([softShot ? 'defeated (mission)' : 'defeated (hard)'])
-  })
+  it.each([false, true])(
+    'distinguishes a fully defeated formation with softShot %s',
+    (softShot) => {
+      const { view } = mixedTrial()
+      const events = [0, 1, 2].map((shipIdx) => trialEvent({ uasId: 'moving', shipIdx, softShot }))
+      const trial = { ...view, attrition: { ...view.attrition, events } }
+      expect(trialOutcomeRows(trial).find((row) => row.id === 'moving')?.states).toEqual([
+        softShot ? 'defeated (mission)' : 'defeated (hard)',
+      ])
+    },
+  )
 
   it('preserves both defeat types when a whole formation has mixed outcomes', () => {
     const { view } = mixedTrial()
-    const events = [0, 1, 2].map(shipIdx => trialEvent({ uasId: 'moving', shipIdx, softShot: shipIdx === 1 }))
+    const events = [0, 1, 2].map((shipIdx) =>
+      trialEvent({ uasId: 'moving', shipIdx, softShot: shipIdx === 1 }),
+    )
     const trial = { ...view, attrition: { ...view.attrition, events } }
-    expect(trialOutcomeRows(trial).find(row => row.id === 'moving')?.states)
-      .toEqual(['defeated (hard)', 'defeated (mission)'])
+    expect(trialOutcomeRows(trial).find((row) => row.id === 'moving')?.states).toEqual([
+      'defeated (hard)',
+      'defeated (mission)',
+    ])
   })
 
   it('keeps leakage credit when every remaining member is defeated after arrival', () => {
     const { view } = mixedTrial()
-    const events = [...view.attrition.events, trialEvent({ shipIdx: 0, tS: 7, tEffectS: 10, lateEffect: true })]
+    const events = [
+      ...view.attrition.events,
+      trialEvent({ shipIdx: 0, tS: 7, tEffectS: 10, lateEffect: true }),
+    ]
     const trial = { ...view, attrition: { ...view.attrition, events } }
-    expect(trialOutcomeRows(trial).find(row => row.id === 'swarm')?.states).toEqual(['leaked'])
+    expect(trialOutcomeRows(trial).find((row) => row.id === 'swarm')?.states).toEqual(['leaked'])
   })
 
   it('shows no path for a retained path that the assessment cannot model', () => {
     const { view } = mixedTrial()
-    const trial = { ...view, scenario: { ...view.scenario, paths: [...view.scenario.paths,
-      { ...view.scenario.paths[0], id: 'invalid-path', entityId: 'parked', points: [] }] } }
-    expect(trialOutcomeRows(trial).find(row => row.id === 'parked')?.states).toEqual(['no path'])
+    const trial = {
+      ...view,
+      scenario: {
+        ...view.scenario,
+        paths: [
+          ...view.scenario.paths,
+          { ...view.scenario.paths[0], id: 'invalid-path', entityId: 'parked', points: [] },
+        ],
+      },
+    }
+    expect(trialOutcomeRows(trial).find((row) => row.id === 'parked')?.states).toEqual(['no path'])
   })
 })

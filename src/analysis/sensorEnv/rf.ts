@@ -78,12 +78,12 @@ export function rfUrbanMarginDb(env: EnvironmentSpec): number {
  */
 export function rfLinkBudgetModeled(spec: SensorSpec, uas: UasSpec, fallback = false): boolean {
   return (
-    !fallback
-    && spec.sensorType === 'rf'
-    && spec.receiverSensitivityDbm != null
-    && Number.isFinite(spec.receiverSensitivityDbm)
-    && uas.radiatedPowerW != null
-    && Number.isFinite(uas.radiatedPowerW)
+    !fallback &&
+    spec.sensorType === 'rf' &&
+    spec.receiverSensitivityDbm != null &&
+    Number.isFinite(spec.receiverSensitivityDbm) &&
+    uas.radiatedPowerW != null &&
+    Number.isFinite(uas.radiatedPowerW)
   )
 }
 
@@ -188,13 +188,12 @@ export function rfMeasurementAccuracy(
 ): RfMeasurementAccuracy {
   const azimuthAccuracyDeg = rfDirectionFindingAccuracyDeg(spec, snrOverReference)
   const minNodes = spec.geolocationMinNodes
-  const geolocates = (
-    minNodes != null
-    && Number.isFinite(minNodes)
-    && minNodes >= 2
-    && sameModelHearingNodes >= Math.ceil(minNodes)
-    && azimuthAccuracyDeg != null
-  )
+  const geolocates =
+    minNodes != null &&
+    Number.isFinite(minNodes) &&
+    minNodes >= 2 &&
+    sameModelHearingNodes >= Math.ceil(minNodes) &&
+    azimuthAccuracyDeg != null
   return {
     azimuthAccuracyDeg,
     rangeAccuracyM: geolocates

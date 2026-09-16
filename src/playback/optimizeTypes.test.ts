@@ -7,8 +7,20 @@ import { DEFAULT_OPTIMIZE_EVALUATIONS, DEFAULT_OPTIMIZE_REPLICATES } from './opt
 import type { OptimizeEvaluation, OptimizeRequest, OptimizeResult } from './optimizeTypes'
 
 const stat: Stat = {
-  mean: 2, sd: 1, se: 0.5, lo: 1, hi: 3, conf: 0.95, interval: 't',
-  p10: 1, p90: 3, p025: 0.5, p975: 3.5, n: 4, total: 4, defined: { p: 1, lo: 1, hi: 1 },
+  mean: 2,
+  sd: 1,
+  se: 0.5,
+  lo: 1,
+  hi: 3,
+  conf: 0.95,
+  interval: 't',
+  p10: 1,
+  p90: 3,
+  p025: 0.5,
+  p975: 3.5,
+  n: 4,
+  total: 4,
+  defined: { p: 1, lo: 1, hi: 1 },
 }
 
 it('the optimize request and result literals type-check', () => {
@@ -18,10 +30,26 @@ it('the optimize request and result literals type-check', () => {
     scenario: emptyScenario(),
     objective: { response: 'leakers', direction: 'minimize' },
     movableIds: ['e1'],
-    bounds: { boundaryId: null, points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }] },
-    budget: { evaluations: DEFAULT_OPTIMIZE_EVALUATIONS, replicates: DEFAULT_OPTIMIZE_REPLICATES, seed: DEFAULT_SEED },
+    bounds: {
+      boundaryId: null,
+      points: [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+        { x: 100, y: 100 },
+      ],
+    },
+    budget: {
+      evaluations: DEFAULT_OPTIMIZE_EVALUATIONS,
+      replicates: DEFAULT_OPTIMIZE_REPLICATES,
+      seed: DEFAULT_SEED,
+    },
   }
-  const start: OptimizeEvaluation = { index: 0, positions: { e1: { x: 10, y: 10 } }, objective: stat, incumbent: true }
+  const start: OptimizeEvaluation = {
+    index: 0,
+    positions: { e1: { x: 10, y: 10 } },
+    objective: stat,
+    incumbent: true,
+  }
   const result: OptimizeResult = {
     method: 'gp-ei',
     objective: request.objective,
@@ -43,7 +71,11 @@ it('both calibration record families type-check', () => {
     prior: JEFFREYS_PRIOR,
     observed: { successes: 16, trials: 20 },
     posterior: { a: 16.5, b: 4.5 },
-    accepted: { accepted: true, at: '2026-09-15T00:00:00.000Z', reason: 'Beta(16.5, 4.5) from 16 of 20' },
+    accepted: {
+      accepted: true,
+      at: '2026-09-15T00:00:00.000Z',
+      reason: 'Beta(16.5, 4.5) from 16 of 20',
+    },
   }
   const time: CalibrationRecord = {
     kind: 'time',

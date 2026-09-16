@@ -106,6 +106,12 @@ export interface OptimizeResult {
 
 /** Messages of an optimize run; `done` and `total` count evaluations. */
 export type OptimizeWorkerMessage =
-  | { type: 'optimize-progress'; runId: string; done: number; total: number; best: OptimizeEvaluation | null }
+  | {
+      type: 'optimize-progress'
+      runId: string
+      done: number
+      total: number
+      best: OptimizeEvaluation | null
+    }
   | { type: 'optimize-done'; runId: string; result: OptimizeResult }
   | { type: 'optimize-error'; runId: string; message: string }

@@ -9,7 +9,11 @@ import { physicsSwitches, runSettings } from './types'
 import type { FidelityTier, Override, PhysicsSwitch } from './libraryField'
 import { DATA_PACKAGE_VERSION } from './libraryField'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
-import { TRIAL_BUILD_REVISION, TRIAL_DRAW_POLICY_VERSION, TRIAL_ENGINE_REVISION } from '../playback/trialTypes'
+import {
+  TRIAL_BUILD_REVISION,
+  TRIAL_DRAW_POLICY_VERSION,
+  TRIAL_ENGINE_REVISION,
+} from '../playback/trialTypes'
 
 /** Everything that fixed the run's inputs beyond the scenario itself. */
 export interface RunManifest {
@@ -47,8 +51,17 @@ export interface RunRecord {
   sensitivity: SensitivitySummary | null
 }
 
-export type RunManifestOptions = Partial<Pick<RunManifest,
-  'sweepStepS' | 'dataPackageVersion' | 'overrides' | 'physicsSwitches' | 'fidelityFloor' | 'producer'>>
+export type RunManifestOptions = Partial<
+  Pick<
+    RunManifest,
+    | 'sweepStepS'
+    | 'dataPackageVersion'
+    | 'overrides'
+    | 'physicsSwitches'
+    | 'fidelityFloor'
+    | 'producer'
+  >
+>
 
 /** Pure builder: run settings from the scenario, engine tags from trialTypes, defaults for the rest. */
 export function createRunManifest(

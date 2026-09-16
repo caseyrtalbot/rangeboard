@@ -65,7 +65,13 @@ export function TrackLayer({ tracks, horizonS }: Props) {
                 listening={false}
               />
             )}
-            <Group x={track.state.x} y={track.state.y} scaleX={1 / k} scaleY={1 / k} listening={false}>
+            <Group
+              x={track.state.x}
+              y={track.state.y}
+              scaleX={1 / k}
+              scaleY={1 / k}
+              listening={false}
+            >
               <Line points={MARKER_H} stroke={ink} strokeWidth={1} listening={false} />
               <Line points={MARKER_V} stroke={ink} strokeWidth={1} listening={false} />
             </Group>

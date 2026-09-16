@@ -119,7 +119,7 @@ export function pdFromSnr(snr: number, pfa: number, swerling: SwerlingCase): num
   if (swerling === 3) {
     const vt = -Math.log(q)
     const d = 1 + s / 2
-    return Math.exp(-vt / d) * (s * (1 + vt / d) + 2) / (s + 2)
+    return (Math.exp(-vt / d) * (s * (1 + vt / d) + 2)) / (s + 2)
   }
   return marcumQ1(Math.sqrt(2 * s), Math.sqrt(-2 * Math.log(q)))
 }
@@ -156,11 +156,7 @@ export function snrForPd(pd: number, pfa: number, swerling: SwerlingCase): numbe
 }
 
 /** Required per-pulse SNR for one Pd under this calibration's dwell model. */
-function snrForCalibratedPd(
-  cal: RadarCalibration,
-  pd: number,
-  swerling: SwerlingCase,
-): number {
+function snrForCalibratedPd(cal: RadarCalibration, pd: number, swerling: SwerlingCase): number {
   const pulses = cal.pulsesPerDwell
   return pulses != null
     ? shnidmanSnrForPd(pd, cal.pfa, pulses, swerling)
@@ -168,11 +164,7 @@ function snrForCalibratedPd(
 }
 
 /** Pd from one per-pulse SNR under this calibration's dwell model. */
-function pdFromCalibratedSnr(
-  cal: RadarCalibration,
-  snr: number,
-  swerling: SwerlingCase,
-): number {
+function pdFromCalibratedSnr(cal: RadarCalibration, snr: number, swerling: SwerlingCase): number {
   const pulses = cal.pulsesPerDwell
   return pulses != null
     ? shnidmanPdFromSnr(snr, cal.pfa, pulses, swerling)
@@ -195,7 +187,12 @@ function snr0Of(cal: RadarCalibration): number {
  * returns 0 (a placard of zero range sees nothing). rcs0M2 <= 0 reads as
  * equal to rcsM2.
  */
-export function snrAtRange(cal: RadarCalibration, rcsM2: number, rangeM: number, envRangeFactor: number): number {
+export function snrAtRange(
+  cal: RadarCalibration,
+  rcsM2: number,
+  rangeM: number,
+  envRangeFactor: number,
+): number {
   if (!(cal.r0M > 0)) return 0
   if (!(rangeM > 0)) return Infinity
   const rcsRatio = cal.rcs0M2 > 0 && rcsM2 > 0 ? rcsM2 / cal.rcs0M2 : 1

@@ -27,12 +27,30 @@ describe('sweepLoop', () => {
     const spec = grid()
     const progress: number[][] = []
     const summary = runSweep(spec, (done, total) => progress.push([done, total]))
-    expect(progress).toEqual([[1, 4], [2, 4], [3, 4], [4, 4]])
-    expect(summary).toMatchObject({ replicatesPerCell: 4, seed: 4821, responses: ['leakers'], elapsedMs: 0 })
+    expect(progress).toEqual([
+      [1, 4],
+      [2, 4],
+      [3, 4],
+      [4, 4],
+    ])
+    expect(summary).toMatchObject({
+      replicatesPerCell: 4,
+      seed: 4821,
+      responses: ['leakers'],
+      elapsedMs: 0,
+    })
     expect('stopped' in summary).toBe(false)
-    expect(summary.cells.map((c) => c.index)).toEqual([[0, 0], [0, 1], [1, 0], [1, 1]])
+    expect(summary.cells.map((c) => c.index)).toEqual([
+      [0, 0],
+      [0, 1],
+      [1, 0],
+      [1, 1],
+    ])
     expect(summary.cells.map((c) => c.values)).toEqual([
-      [300, 'clear-day'], [300, 'fog-day'], [3000, 'clear-day'], [3000, 'fog-day'],
+      [300, 'clear-day'],
+      [300, 'fog-day'],
+      [3000, 'clear-day'],
+      [3000, 'fog-day'],
     ])
     // Each cell is the replicate loop on the same scenario edited by hand.
     for (const cell of summary.cells) {
@@ -41,15 +59,24 @@ describe('sweepLoop', () => {
       s = applySweepValue(s, 'environmentPreset', cell.values[1])
       const mc = runReplicates(s)
       expect(cell.summary).toEqual({
-        kills: mc.kills, leakers: mc.leakers, firstDetectS: mc.firstDetectS,
-        minWarningS: mc.minWarningS, perEffector: mc.perEffector, replicates: 4,
+        kills: mc.kills,
+        leakers: mc.leakers,
+        firstDetectS: mc.firstDetectS,
+        minWarningS: mc.minWarningS,
+        perEffector: mc.perEffector,
+        replicates: 4,
       })
       expect(cell.summary.replicates).toBe(4)
       expect(cell.summary.firstDetectS.total).toBe(4)
     }
-    expect(Object.keys(summary.cells[0].summary)).toEqual(
-      ['kills', 'leakers', 'firstDetectS', 'minWarningS', 'perEffector', 'replicates'],
-    )
+    expect(Object.keys(summary.cells[0].summary)).toEqual([
+      'kills',
+      'leakers',
+      'firstDetectS',
+      'minWarningS',
+      'perEffector',
+      'replicates',
+    ])
   }, 15_000)
 
   it('a one-factor sweep at the scenario value reproduces the plain replicate run', () => {
@@ -72,8 +99,9 @@ describe('sweepLoop', () => {
   it('a stop lands between cells and keeps the cells done under `stopped`', () => {
     const spec = grid()
     const full = runSweep(spec)
-    expect(JSON.stringify(runSweep(spec, undefined, { retainedNumbers: Infinity, timeMs: Infinity })))
-      .toBe(JSON.stringify(full))
+    expect(
+      JSON.stringify(runSweep(spec, undefined, { retainedNumbers: Infinity, timeMs: Infinity })),
+    ).toBe(JSON.stringify(full))
     const cut = runSweep(spec, undefined, { retainedNumbers: Infinity, timeMs: 0 })
     expect(cut.stopped).toEqual({ rule: 'budget', at: 1 })
     expect(cut.cells).toEqual(full.cells.slice(0, 1))
@@ -97,15 +125,24 @@ describe('sweepLoop', () => {
   it('refuses a cell whose summary alone is over the budget, and bad grids', () => {
     const spec = grid()
     const need = summaryNumbers(spec.scenario)
-    expect(() => runSweep(spec, undefined, { retainedNumbers: need - 1, timeMs: Infinity })).toThrow(/over the budget/)
+    expect(() =>
+      runSweep(spec, undefined, { retainedNumbers: need - 1, timeMs: Infinity }),
+    ).toThrow(/over the budget/)
     // A raid-size cell holds more threats than the base: the guard runs per cell.
     const raid: Spec = { ...spec, factors: [{ id: 'raidSize', values: [1, 4] }] }
     const loop = sweepLoop(raid, undefined, { retainedNumbers: need, timeMs: Infinity })
     expect(loop.next().done).toBe(false)
     expect(() => loop.next()).toThrow(/over the budget/)
-    const drain = (s: Spec) => { const l = sweepLoop(s); l.next() }
-    expect(() => drain({ ...spec, factors: [{ id: 'raidSize', values: [1] }] })).toThrow(/2 to 6 values/)
-    expect(() => drain({ ...spec, factors: [{ id: 'raidSize', values: [1, 2, 3, 4, 5, 6, 7] }] })).toThrow(/2 to 6 values/)
+    const drain = (s: Spec) => {
+      const l = sweepLoop(s)
+      l.next()
+    }
+    expect(() => drain({ ...spec, factors: [{ id: 'raidSize', values: [1] }] })).toThrow(
+      /2 to 6 values/,
+    )
+    expect(() =>
+      drain({ ...spec, factors: [{ id: 'raidSize', values: [1, 2, 3, 4, 5, 6, 7] }] }),
+    ).toThrow(/2 to 6 values/)
     expect(() => drain({ ...spec, replicatesPerCell: 0 })).toThrow(/1 or more/)
   })
 })

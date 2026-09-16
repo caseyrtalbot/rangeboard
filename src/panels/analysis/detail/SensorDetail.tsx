@@ -8,11 +8,7 @@ import {
   trackInitSFor,
 } from '../../../analysis/doctrineFactors'
 import { modelsForEntity } from '../../../analysis/fidelity'
-import {
-  radarCalibration,
-  refRcsM2For,
-  targetScaled,
-} from '../../../analysis/sensorEnv'
+import { radarCalibration, refRcsM2For, targetScaled } from '../../../analysis/sensorEnv'
 import { boardDesignator } from '../../../canvas/labelLayout'
 import { Ladder } from '../../../charts/Ladder'
 import { TimeSeries } from '../../../charts/TimeSeries'
@@ -50,8 +46,11 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   const color = entityInk(entity, model)
 
   const fullSeries = run.series?.sensors[entity.id] ?? []
-  const series = fullSeries.filter(s => s.values.some(Number.isFinite))
-  const ladderRows = (run.series?.sensorLadders[entity.id] ?? []).map(row => ({ ...row, label: boardDesignator(row.label) }))
+  const series = fullSeries.filter((s) => s.values.some(Number.isFinite))
+  const ladderRows = (run.series?.sensorLadders[entity.id] ?? []).map((row) => ({
+    ...row,
+    label: boardDesignator(row.label),
+  }))
   const bareLadderRows = ladderRows.map(bareSpans)
   const pd = useMemo(() => series.filter((s) => s.id.startsWith('pd.')), [series])
   const slant = useMemo<Series[]>(
@@ -63,12 +62,16 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   )
 
   const threats = useMemo(() => assessments.filter((a) => a.status !== 'no-path'), [assessments])
-  const gateRows: ReactNode[][] = threats.map(a => {
-    const sample = run.sweep?.sensors.find(s => s.sensorId === entity.id && s.threatId === a.uasId)
-    return [scenario.entities.find(e => e.id === a.uasId)?.name ?? a.uasId,
+  const gateRows: ReactNode[][] = threats.map((a) => {
+    const sample = run.sweep?.sensors.find(
+      (s) => s.sensorId === entity.id && s.threatId === a.uasId,
+    )
+    return [
+      scenario.entities.find((e) => e.id === a.uasId)?.name ?? a.uasId,
       sample?.stateAtTime ?? DASH,
       sample?.lastMeasurementTimeS != null ? `T+${formatTime(sample.lastMeasurementTimeS)}` : DASH,
-      sample?.pd != null ? sample.pd.toFixed(2) : DASH]
+      sample?.pd != null ? sample.pd.toFixed(2) : DASH,
+    ]
   })
 
   const pill = component
@@ -103,8 +106,19 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   const scan = scanRate != null || rolePeriod != null
   const initM = trackInitMFor(spec)
   const initN = trackInitNFor(spec)
-  const legend: LegendEntry[] = [...new Map(ladderRows.flatMap(row => row.spans.map(span => [span.label,
-    { label: span.label ?? 'Held track file', color: span.color ?? 'warn' }] as const))).values()]
+  const legend: LegendEntry[] = [
+    ...new Map(
+      ladderRows.flatMap((row) =>
+        row.spans.map(
+          (span) =>
+            [
+              span.label,
+              { label: span.label ?? 'Held track file', color: span.color ?? 'warn' },
+            ] as const,
+        ),
+      ),
+    ).values(),
+  ]
   const ladderMeta = scan
     ? `M ${initM} · N ${initN} · drop ${trackDropMissesFor(spec)}`
     : `hold ${trackInitSFor(spec, doctrine)} s`
@@ -132,7 +146,10 @@ export function SensorDetail({ entity }: { entity: Entity }) {
             value: 'role table',
             unit: ` · ${trackInitSFor(spec, doctrine)} s hold`,
           },
-    { label: 'Hold clock (union)', value: component && !untouched ? formatTime(component.holdSeconds) : DASH },
+    {
+      label: 'Hold clock (union)',
+      value: component && !untouched ? formatTime(component.holdSeconds) : DASH,
+    },
     {
       label: 'Track seconds (sum)',
       value: component && !untouched ? `${Math.round(component.trackSeconds)}` : DASH,
@@ -180,7 +197,14 @@ export function SensorDetail({ entity }: { entity: Entity }) {
         meta={pd.length > 0 ? `Swerling ${cal.swerling0} · Pfa ${pfaText(cal.pfa)}` : null}
       >
         {pd.length > 0 ? (
-          <TimeSeries series={pd} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pd" />
+          <TimeSeries
+            series={pd}
+            tS={t}
+            horizonS={horizon.scoped ? horizon.horizonS : undefined}
+            onScrub={setSimTime}
+            yDomain={[0, 1]}
+            yLabel="Pd"
+          />
         ) : (
           <p className="muted small">No Pd model for this sensor.</p>
         )}
@@ -191,7 +215,13 @@ export function SensorDetail({ entity }: { entity: Entity }) {
         meta={`mount ${mountHeightOf(spec)} m`}
       >
         {slant.length > 0 ? (
-          <TimeSeries series={slant} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} yLabel="km" />
+          <TimeSeries
+            series={slant}
+            tS={t}
+            horizonS={horizon.scoped ? horizon.horizonS : undefined}
+            onScrub={setSimTime}
+            yLabel="km"
+          />
         ) : (
           <p className="muted small">No track observed.</p>
         )}
@@ -199,7 +229,13 @@ export function SensorDetail({ entity }: { entity: Entity }) {
       <DetailSection id="ladder" title="Track ladder" meta={ladderMeta}>
         {ladderRows.length > 0 ? (
           <>
-            <Ladder rows={bareLadderRows} durationS={durationS} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} />
+            <Ladder
+              rows={bareLadderRows}
+              durationS={durationS}
+              tS={t}
+              horizonS={horizon.scoped ? horizon.horizonS : undefined}
+              onScrub={setSimTime}
+            />
             <Legend entries={legend} />
           </>
         ) : (

@@ -1,5 +1,21 @@
-import type { EffectorSpec, Entity, FlightPath, Scenario, SensorSpec, SensorType, UasSpec, Vec2 } from '../model/types'
-import { defaultSensorRole, effectiveDoctrine, entityActive, mountHeightOf, physicsSwitches, runSettings } from '../model/types'
+import type {
+  EffectorSpec,
+  Entity,
+  FlightPath,
+  Scenario,
+  SensorSpec,
+  SensorType,
+  UasSpec,
+  Vec2,
+} from '../model/types'
+import {
+  defaultSensorRole,
+  effectiveDoctrine,
+  entityActive,
+  mountHeightOf,
+  physicsSwitches,
+  runSettings,
+} from '../model/types'
 import { profileFor } from '../model/integration'
 import { dist, formationOffsets, pointInWedge } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
@@ -279,7 +295,11 @@ export function assessThreat(
   // matrix decides the hostile rung's classified input in place of the
   // sweep's classified flag (classification.ts). One declaration attempt per
   // sensor, at the first step it holds the track (not coasting) inside a band.
-  const matrixSensors: Array<{ sensor: Entity; matrix: NonNullable<SensorSpec['classification']>; dAltM: number }> = []
+  const matrixSensors: Array<{
+    sensor: Entity
+    matrix: NonNullable<SensorSpec['classification']>
+    dAltM: number
+  }> = []
   for (const sensor of activeSensors) {
     const spec = modelFor(scenario, sensor)?.sensor
     if (!spec) continue
@@ -351,9 +371,16 @@ export function assessThreat(
           const estimate: TrackEstimate | undefined = fusion.current.get(sensor.id)
           if (!estimate || estimate.coasting) continue
           const rangeM = slantRangeM(dist(sensor.pos, pos), dAltM)
-          const decision = classifyByMatrix(matrix, rangeM, draw, { sensorId: sensor.id, uasId, tS: t })
+          const decision = classifyByMatrix(matrix, rangeM, draw, {
+            sensorId: sensor.id,
+            uasId,
+            tS: t,
+          })
           if (!decision) continue
-          decl = { declaredHostile: decision.declaredHostile, declareAtS: t + decision.timeToDeclareS }
+          decl = {
+            declaredHostile: decision.declaredHostile,
+            declareAtS: t + decision.timeToDeclareS,
+          }
           declarations.set(sensor.id, decl)
         }
         if (decl.declaredHostile && t + stepS / 2 >= decl.declareAtS) fcClassified = true
@@ -496,7 +523,8 @@ export function assessThreat(
     if (qualityAtS == null) continue
     const stableAt = Math.max(firmAt, qualityAtS)
     firmBySensor.set(obs.sensorId, stableAt)
-    if (base.stableTrackAtS == null || stableAt < base.stableTrackAtS) base.stableTrackAtS = stableAt
+    if (base.stableTrackAtS == null || stableAt < base.stableTrackAtS)
+      base.stableTrackAtS = stableAt
   }
 
   const routes = killChainRoutes(scenario, detectingSensors)
@@ -614,10 +642,7 @@ export function assessThreat(
   ) {
     // A firm track with no hostile ID falls through to not-confirmed instead.
     base.status = 'no-stable-track'
-  } else if (
-    (roe === 'tight' || doctrine.enabled) &&
-    base.classificationAtS.hostileAtS == null
-  ) {
+  } else if ((roe === 'tight' || doctrine.enabled) && base.classificationAtS.hostileAtS == null) {
     base.status = 'not-confirmed'
   } else {
     base.status = anyUsable ? 'engageable' : fcBlockedUsable ? 'no-fc-uplink' : 'window-too-short'
@@ -634,7 +659,11 @@ export function assessThreat(
  * steps the tracker on that step, so no fused entry carries the firm time
  * and the next entry stands in for it.
  */
-function fcQualityAtS(fusedTracks: readonly FusedTrack[], fromS: number, stepS: number): number | null {
+function fcQualityAtS(
+  fusedTracks: readonly FusedTrack[],
+  fromS: number,
+  stepS: number,
+): number | null {
   let first = true
   for (const f of fusedTracks) {
     if (f.fusedAtS < fromS - stepS / 2) continue
@@ -670,9 +699,14 @@ function distToSegment(p: Vec2, a: Vec2, b: Vec2): number {
  * bound. The sweep hits on slant range, which is never below ground range,
  * so a member farther than this on the ground is never detected.
  */
-function sensorReachM(spec: SensorSpec, scenario: Scenario, uasSpec: UasSpec | undefined): number | null {
+function sensorReachM(
+  spec: SensorSpec,
+  scenario: Scenario,
+  uasSpec: UasSpec | undefined,
+): number | null {
   const physics = physicsSwitches(scenario)
-  if (radarPdCurve(spec, scenario.environment, uasSpec, physics.includes('singlePulseRadar'))) return instrumentedM(spec)
+  if (radarPdCurve(spec, scenario.environment, uasSpec, physics.includes('singlePulseRadar')))
+    return instrumentedM(spec)
   return effectiveDetectRangeM(spec, scenario.environment, uasSpec, undefined, physics)
 }
 
@@ -683,14 +717,21 @@ function sensorReachM(spec: SensorSpec, scenario: Scenario, uasSpec: UasSpec | u
  * track by at most wind speed times the flight time. Zero when the legacy
  * switch or an unlimited spec keeps the track on the segments.
  */
-function flightDeviationM(scenario: Scenario, path: FlightPath, uasSpec: UasSpec | undefined): number {
-  if (!uasSpec || !hasFlightLimits(uasSpec) || physicsSwitches(scenario).includes('noFlightLimits')) return 0
+function flightDeviationM(
+  scenario: Scenario,
+  path: FlightPath,
+  uasSpec: UasSpec | undefined,
+): number {
+  if (!uasSpec || !hasFlightLimits(uasSpec) || physicsSwitches(scenario).includes('noFlightLimits'))
+    return 0
   const speed = pathSpeed(scenario, path)
-  const turnM = uasSpec.maxTurnRateDegS != null && uasSpec.maxTurnRateDegS > 0
-    ? turnRadiusM(speed, uasSpec.maxTurnRateDegS)
-    : 0
+  const turnM =
+    uasSpec.maxTurnRateDegS != null && uasSpec.maxTurnRateDegS > 0
+      ? turnRadiusM(speed, uasSpec.maxTurnRateDegS)
+      : 0
   const env = scenario.environment
-  const windM = env.apply && env.windSpeedMps > 0 ? env.windSpeedMps * pathDurationS(scenario, path) : 0
+  const windM =
+    env.apply && env.windSpeedMps > 0 ? env.windSpeedMps * pathDurationS(scenario, path) : 0
   return turnM + windM
 }
 
@@ -712,7 +753,9 @@ function threatEntityInputs(scenario: Scenario, uas: Entity): Entity[] {
   const f = uas.formation
   const spreadM =
     (f && f.count > 1
-      ? Math.max(...formationOffsets(f.shape, f.count, f.spacingM, 0).map((o) => Math.hypot(o.x, o.y)))
+      ? Math.max(
+          ...formationOffsets(f.shape, f.count, f.spacingM, 0).map((o) => Math.hypot(o.x, o.y)),
+        )
       : 0) + flightDeviationM(scenario, path, uasSpec)
   const out: Entity[] = [uas]
   for (const e of scenario.entities) {

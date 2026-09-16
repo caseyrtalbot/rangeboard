@@ -19,7 +19,8 @@ self.onmessage = (event: MessageEvent<TrialRequest>) => {
     message = { type: 'trial-done', ...identity, result: runTrial(scenario, manifest) }
   } catch (error) {
     message = {
-      type: 'trial-error', ...identity,
+      type: 'trial-error',
+      ...identity,
       message: error instanceof Error ? error.message : String(error),
     }
   }

@@ -17,29 +17,59 @@ import { assessAllThreats, assessThreat } from './sim'
  */
 
 const RADAR: SpecModel = {
-  id: 'tst-radar', name: 'test radar', kind: 'sensor', description: '', color: '#fff', builtin: false,
+  id: 'tst-radar',
+  name: 'test radar',
+  kind: 'sensor',
+  description: '',
+  color: '#fff',
+  builtin: false,
   sensor: {
-    sensorType: 'radar', role: 'surveillance', rangeBasis: 'planning',
-    detectRangeM: 50000, classifyRangeM: null, sectorDeg: 360,
+    sensorType: 'radar',
+    role: 'surveillance',
+    rangeBasis: 'planning',
+    detectRangeM: 50000,
+    classifyRangeM: null,
+    sectorDeg: 360,
   },
 }
 
 const TARGET: SpecModel = {
-  id: 'tst-uas', name: 'test uas', kind: 'uas', description: '', color: '#fff', builtin: false,
+  id: 'tst-uas',
+  name: 'test uas',
+  kind: 'uas',
+  description: '',
+  color: '#fff',
+  builtin: false,
   uas: {
-    group: 4, airframe: 'fixed-wing', cruiseSpeedMps: 40, maxSpeedMps: 60, enduranceMin: 60,
-    altBandFt: [0, 5000], navMode: 'rf-manual', emissionsNote: '',
+    group: 4,
+    airframe: 'fixed-wing',
+    cruiseSpeedMps: 40,
+    maxSpeedMps: 60,
+    enduranceMin: 60,
+    altBandFt: [0, 5000],
+    navMode: 'rf-manual',
+    emissionsNote: '',
   },
 }
 
 const INTERCEPTOR: SpecModel = {
-  id: 'tst-int', name: 'test interceptor', kind: 'effector', description: '', color: '#fff', builtin: false,
+  id: 'tst-int',
+  name: 'test interceptor',
+  kind: 'effector',
+  description: '',
+  color: '#fff',
+  builtin: false,
   effector: { effectorType: 'interceptor', minRangeM: 0, maxRangeM: 1000, engageTimeS: 0 },
 }
 
 function c2Model(c2: C2Spec | null): SpecModel {
   return {
-    id: 'tst-c2', name: 'test c2', kind: 'c2', description: '', color: '#fff', builtin: false,
+    id: 'tst-c2',
+    name: 'test c2',
+    kind: 'c2',
+    description: '',
+    color: '#fff',
+    builtin: false,
     ...(c2 ? { c2 } : {}),
   }
 }
@@ -48,7 +78,14 @@ const FIXTURE_ALT_FT = MOUNT_HEIGHT_M / FT_TO_M
 
 function ent(id: string, kind: Entity['kind'], specId: string, pos: Vec2): Entity {
   return {
-    id, name: id, kind, specId, pos, headingDeg: 0, color: null, notes: '',
+    id,
+    name: id,
+    kind,
+    specId,
+    pos,
+    headingDeg: 0,
+    color: null,
+    notes: '',
     ...(kind === 'uas' ? { altitudeFt: FIXTURE_ALT_FT } : {}),
   }
 }
@@ -58,8 +95,15 @@ function build(c2: C2Spec | null, doctrine: boolean): Scenario {
   const scenario = emptyScenario()
   scenario.roe = 'tight'
   scenario.doctrine = {
-    enabled: doctrine, trackFirmS: 5, declareHostileS: 10, targetS: 5, bdaS: 10, pkCommit: 0.35,
-    opportunities: 2, launchPolicy: 'max-range', launchRangeFraction: 2 / 3,
+    enabled: doctrine,
+    trackFirmS: 5,
+    declareHostileS: 10,
+    targetS: 5,
+    bdaS: 10,
+    pkCommit: 0.35,
+    opportunities: 2,
+    launchPolicy: 'max-range',
+    launchRangeFraction: 2 / 3,
   }
   scenario.library = [...scenario.library, RADAR, TARGET, INTERCEPTOR, c2Model(c2)]
   scenario.entities = [
@@ -72,7 +116,18 @@ function build(c2: C2Spec | null, doctrine: boolean): Scenario {
     { id: 'l1', fromId: 'radar', toId: 'c2', label: '' },
     { id: 'l2', fromId: 'c2', toId: 'int', label: '' },
   ]
-  scenario.paths = [{ id: 'p', entityId: 'uas', points: [{ x: -1210, y: 0 }, { x: 3000, y: 0 }], speedMps: 40, startDelayS: 0 }]
+  scenario.paths = [
+    {
+      id: 'p',
+      entityId: 'uas',
+      points: [
+        { x: -1210, y: 0 },
+        { x: 3000, y: 0 },
+      ],
+      speedMps: 40,
+      startDelayS: 0,
+    },
+  ]
   return scenario
 }
 
@@ -84,7 +139,10 @@ describe('operator queue at the gates (attrition.ts)', () => {
     // ROE tight: the gate is hostile ID at the first sample inside the ring (t = 5.5), no link latency.
     expect(assessThreat(base, 'uas').engageGateS).toBe(5.5)
     expect(firstShot(base)).toBe(5.5)
-    const withC2 = build({ decisionLatencyS: 5, decisionLatencySigmaDb: null, operatorTrackCapacity: 10 }, false)
+    const withC2 = build(
+      { decisionLatencyS: 5, decisionLatencySigmaDb: null, operatorTrackCapacity: 10 },
+      false,
+    )
     expect(assessAllThreats(withC2)).toEqual(assessAllThreats(base))
     expect(firstShot(withC2)).toBe(5.5)
   })
@@ -102,14 +160,20 @@ describe('operator queue at the gates (attrition.ts)', () => {
 
   it('overload adds (load / capacity - 1) medians per decision', () => {
     // One real track at the c2 with capacity 0.5: factor 2, so each 5 s decision adds 5 s; two decisions add 10 s.
-    const withC2 = build({ decisionLatencyS: 5, decisionLatencySigmaDb: null, operatorTrackCapacity: 0.5 }, false)
+    const withC2 = build(
+      { decisionLatencyS: 5, decisionLatencySigmaDb: null, operatorTrackCapacity: 0.5 },
+      false,
+    )
     expect(firstShot(withC2)).toBeCloseTo(15.5, 9)
   })
 
   it('the noOperatorQueue switch restores the baseline timeline', () => {
     for (const doctrine of [false, true]) {
       const base = build(null, doctrine)
-      const withC2 = build({ decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 1 }, doctrine)
+      const withC2 = build(
+        { decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 1 },
+        doctrine,
+      )
       withC2.physics = ['noOperatorQueue']
       expect(resolveEngagements(withC2)).toEqual(resolveEngagements(base))
     }
@@ -121,7 +185,10 @@ describe('operator queue at the gates (attrition.ts)', () => {
     // catches that decision. Seed 4821: replicate 2 floors both decisions and
     // the shot stays at the unfloored gate, replicate 1 floors one of two, and
     // replicate 0 floors neither, so both waits are charged.
-    const s = build({ decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 10 }, false)
+    const s = build(
+      { decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 10 },
+      false,
+    )
     const run = (i: number) =>
       resolveEngagements(s, undefined, monteCarloPolicy(4821, i, DEFAULT_REQUIREMENT_THRESHOLDS))
 
@@ -143,7 +210,9 @@ describe('operator queue at the gates (attrition.ts)', () => {
   it('the deterministic median draw and an inactive queue count nothing floored', () => {
     // The deterministic policy draws the median: the raw excess is exactly 0,
     // which is not a floor, so the stamp stays silent on the Play timeline.
-    const median = resolveEngagements(build({ decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 10 }, false))
+    const median = resolveEngagements(
+      build({ decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 10 }, false),
+    )
     expect(median.totals.operatorDecisions).toBe(2)
     expect(median.totals.operatorFlooredDecisions).toBe(0)
 
@@ -153,18 +222,35 @@ describe('operator queue at the gates (attrition.ts)', () => {
     expect(inactive.totals.operatorFlooredDecisions).toBe(0)
 
     // The switch is the same inactive queue on a laydown that states a median.
-    const off = build({ decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 10 }, false)
+    const off = build(
+      { decisionLatencyS: 5, decisionLatencySigmaDb: 3, operatorTrackCapacity: 10 },
+      false,
+    )
     off.physics = ['noOperatorQueue']
-    const switched = resolveEngagements(off, undefined, monteCarloPolicy(4821, 2, DEFAULT_REQUIREMENT_THRESHOLDS))
+    const switched = resolveEngagements(
+      off,
+      undefined,
+      monteCarloPolicy(4821, 2, DEFAULT_REQUIREMENT_THRESHOLDS),
+    )
     expect(switched.totals.operatorDecisions).toBe(0)
     expect(switched.totals.operatorFlooredDecisions).toBe(0)
   })
 
   it('a C2 on the route that states no median counts no decision, even when another C2 activates the queue', () => {
     const scenario = build(null, false)
-    scenario.library = [...scenario.library, { ...c2Model({ decisionLatencyS: 5 }), id: 'tst-c2-other', name: 'other c2' }]
-    scenario.entities = [...scenario.entities, ent('c2-other', 'c2', 'tst-c2-other', { x: 500, y: 0 })]
-    const report = resolveEngagements(scenario, undefined, monteCarloPolicy(7, 0, DEFAULT_REQUIREMENT_THRESHOLDS))
+    scenario.library = [
+      ...scenario.library,
+      { ...c2Model({ decisionLatencyS: 5 }), id: 'tst-c2-other', name: 'other c2' },
+    ]
+    scenario.entities = [
+      ...scenario.entities,
+      ent('c2-other', 'c2', 'tst-c2-other', { x: 500, y: 0 }),
+    ]
+    const report = resolveEngagements(
+      scenario,
+      undefined,
+      monteCarloPolicy(7, 0, DEFAULT_REQUIREMENT_THRESHOLDS),
+    )
     expect(report.totals.operatorDecisions).toBe(0)
     expect(report.totals.operatorFlooredDecisions).toBe(0)
   })

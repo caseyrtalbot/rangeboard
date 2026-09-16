@@ -25,7 +25,12 @@ function readHook() {
 
 it('keeps unavailable and unstarted states empty, then shares the raw observation bound', () => {
   const { scenario, manifest, result } = mixedTrial()
-  const playback = { ...freshPlayback(1), runId: manifest.runId, simTimeS: 50, observedThroughS: 1.99 }
+  const playback = {
+    ...freshPlayback(1),
+    runId: manifest.runId,
+    simTimeS: 50,
+    observedThroughS: 1.99,
+  }
   useStore.setState({ scenario, playback, trial: IDLE_TRIAL })
   expect(readHook()).toMatchObject({ selection: { status: 'idle' }, horizon: 0 })
   useStore.setState({ trial: { ...IDLE_TRIAL, status: 'preparing', scenario, manifest } })

@@ -40,7 +40,10 @@ describe('mergePartials', () => {
       const hi = range(scenario, 10, 20)
       expect(lo.indices).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
       expect(hi.indices).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19])
-      for (const parts of [[lo, hi], [hi, lo]]) {
+      for (const parts of [
+        [lo, hi],
+        [hi, lo],
+      ]) {
         const merged = mergePartials(parts)
         expect(merged.indices).toEqual(range(scenario, 0, 20).indices)
         const summary = finishSummary(scenario, merged, whole.stopped, 0)
@@ -58,8 +61,9 @@ describe('mergePartials', () => {
     const { elapsedMs: _a, ...wholeRows } = whole
     const { elapsedMs: _b, ...mergedRows } = merged
     expect(mergedRows).toEqual(wholeRows)
-    expect(timeless(finishSummary(scenario, merged, { rule: 'replicates', at: 20 }, 0)))
-      .toEqual(timeless(finishSummary(scenario, whole, { rule: 'replicates', at: 20 }, 0)))
+    expect(timeless(finishSummary(scenario, merged, { rule: 'replicates', at: 20 }, 0))).toEqual(
+      timeless(finishSummary(scenario, whole, { rule: 'replicates', at: 20 }, 0)),
+    )
   })
 
   it('a partial survives structuredClone and a merge of one partial is itself', () => {
@@ -85,8 +89,9 @@ describe('mergePartials', () => {
 
   it('a duplicate index throws, as does an empty list', () => {
     const scenario = base('aleatory')
-    expect(() => mergePartials([range(scenario, 0, 5), range(scenario, 4, 8)]))
-      .toThrow(/replicate 4 is present twice/)
+    expect(() => mergePartials([range(scenario, 0, 5), range(scenario, 4, 8)])).toThrow(
+      /replicate 4 is present twice/,
+    )
     expect(() => mergePartials([])).toThrow(/at least one partial/)
   })
 })
@@ -96,7 +101,9 @@ describe('contiguousPrefix', () => {
     const scenario = base('aleatory')
     const whole = range(scenario, 0, 20)
     expect(contiguousPrefix(whole)).toBe(whole)
-    expect(contiguousPrefix(mergePartials([range(scenario, 0, 0)]))).toEqual(mergePartials([range(scenario, 0, 0)]))
+    expect(contiguousPrefix(mergePartials([range(scenario, 0, 0)]))).toEqual(
+      mergePartials([range(scenario, 0, 0)]),
+    )
     // A pool that stops at 7 with a chunk in flight at 12 keeps 0..6 only.
     const gapped = mergePartials([range(scenario, 0, 7), range(scenario, 12, 15)])
     const prefix = contiguousPrefix(gapped)
@@ -106,8 +113,9 @@ describe('contiguousPrefix', () => {
     expect(prefixRows).toEqual(sevenRows)
     // The summary of the prefix is the summary of the sequential run of 0..6.
     const stopped = { rule: 'halfWidth' as const, at: 7 }
-    expect(timeless(finishSummary(scenario, prefix, stopped, 0)))
-      .toEqual(timeless(finishSummary(scenario, range(scenario, 0, 7), stopped, 0)))
+    expect(timeless(finishSummary(scenario, prefix, stopped, 0))).toEqual(
+      timeless(finishSummary(scenario, range(scenario, 0, 7), stopped, 0)),
+    )
   })
 
   it('a partial that starts past zero has an empty prefix', () => {

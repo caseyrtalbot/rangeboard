@@ -7,9 +7,19 @@
 
 /** KPI names the outcome summary can show. */
 export type KpiKey =
-  | 'detect' | 'trackNow' | 'idClass' | 'engaged' | 'killEk' | 'leakEn'
-  | 'lateEk' | 'salvos' | 'targetNow' | 'firstDetect' | 'firstEffect'
-  | 'detectToEffect' | 'minWarning'
+  | 'detect'
+  | 'trackNow'
+  | 'idClass'
+  | 'engaged'
+  | 'killEk'
+  | 'leakEn'
+  | 'lateEk'
+  | 'salvos'
+  | 'targetNow'
+  | 'firstDetect'
+  | 'firstEffect'
+  | 'detectToEffect'
+  | 'minWarning'
 
 /** Every KPI key in display order. */
 export const KPI_KEYS: readonly KpiKey[] = [
@@ -42,12 +52,18 @@ export const KPI_LABELS: Record<KpiKey, { label: string; hint: string }> = {
     label: 'Track now',
     hint: 'Threats held by one or more enabled sensors at the cursor time.',
   },
-  idClass: { label: 'ID / class', hint: 'Threats promoted to hostile by the classification ladder.' },
+  idClass: {
+    label: 'ID / class',
+    hint: 'Threats promoted to hostile by the classification ladder.',
+  },
   targetNow: {
     label: 'Target now',
     hint: 'Threats inside a usable ROE-gated effector window now, ghost tracks excluded.',
   },
-  engaged: { label: 'Engaged', hint: 'Threats with at least one salvo of any channel assigned by now.' },
+  engaged: {
+    label: 'Engaged',
+    hint: 'Threats with at least one salvo of any channel assigned by now.',
+  },
   salvos: {
     label: 'Salvos',
     hint: 'Salvos by cost: kinetic rounds, then d for directed-energy bursts, then j for EW salvos.',
@@ -85,6 +101,9 @@ export const TRIAL_KPI_LABELS: typeof KPI_LABELS = {
   ...KPI_LABELS,
   killEk: { label: 'Pre-arrival defeats', hint: 'Trial members defeated at or before arrival.' },
   lateEk: { label: 'Late defeats', hint: 'Trial members defeated after arrival.' },
-  leakEn: { label: 'Arrived undefeated', hint: 'Trial members that arrived undefeated. Late defeats never reduce this count.' },
+  leakEn: {
+    label: 'Arrived undefeated',
+    hint: 'Trial members that arrived undefeated. Late defeats never reduce this count.',
+  },
   firstEffect: { label: 'First effect', hint: 'The first effect that removed a trial member.' },
 }

@@ -110,7 +110,9 @@ function ThreatMember({ row, mode }: { row: Row; mode: Mode }) {
           {mode === 'live'
             ? liveState(row)
             : row.effectMet
-              ? ('basis' in row ? 'DEFEATED' : 'EXPECTED DEFEAT')
+              ? 'basis' in row
+                ? 'DEFEATED'
+                : 'EXPECTED DEFEAT'
               : row.engaged
                 ? 'ENGAGED'
                 : (row.status ?? 'unseen').replaceAll('-', ' ').toUpperCase()}
@@ -132,7 +134,9 @@ function ThreatMember({ row, mode }: { row: Row; mode: Mode }) {
       <div className="threat-data-detail">
         {mode === 'live' ? `${continuity} · ` : ''}
         {memberTimeline(row, mode)} · {row.salvos} salvos · {SURVIVAL_LABELS.survives}{' '}
-        {'basis' in row ? `${row.survivors}/${row.shipCount} members` : `${survivesPct(row.residualPct)}%`}
+        {'basis' in row
+          ? `${row.survivors}/${row.shipCount} members`
+          : `${survivesPct(row.residualPct)}%`}
       </div>
     </div>
   )
@@ -159,7 +163,9 @@ function ThreatGroupCard({
         <span className="threat-data-title" title={group.label}>
           {group.label}
         </span>
-        <span className="threat-data-count">{group.tracks} trk · {group.ships} ships</span>
+        <span className="threat-data-count">
+          {group.tracks} trk · {group.ships} ships
+        </span>
       </button>
       <Ladder
         c={{
@@ -176,14 +182,23 @@ function ThreatGroupCard({
       />
       <div
         className="tg-f"
-        title={'basis' in group ? `${kills} trial defeats · ${survivors} active members · ${group.salvos} salvos` : `${kills.toFixed(2)} expected kills · ${survivors.toFixed(2)} expected surviving ships · ${group.salvos} salvos`}
+        title={
+          'basis' in group
+            ? `${kills} trial defeats · ${survivors} active members · ${group.salvos} salvos`
+            : `${kills.toFixed(2)} expected kills · ${survivors.toFixed(2)} expected surviving ships · ${group.salvos} salvos`
+        }
       >
         <span className="bar">
           <i className="defeat" style={{ flex: Math.max(kills, 0.001) }} />
           <i className="residual" style={{ flex: Math.max(survivors, 0.001) }} />
         </span>
         <span className="tg-s">
-          {SURVIVAL_LABELS.survives} <b className="num">{'basis' in group ? `${survivors}/${group.ships} members` : `${survivesPct(group.residualPct)}%`}</b>
+          {SURVIVAL_LABELS.survives}{' '}
+          <b className="num">
+            {'basis' in group
+              ? `${survivors}/${group.ships} members`
+              : `${survivesPct(group.residualPct)}%`}
+          </b>
         </span>
       </div>
       {open && (
@@ -193,7 +208,8 @@ function ThreatGroupCard({
           ))}
           {visible < group.members.length && (
             <button className="load-more" onClick={() => setVisible((count) => count + PAGE_SIZE)}>
-              Show next {Math.min(PAGE_SIZE, group.members.length - visible)} · {group.members.length - visible} remaining
+              Show next {Math.min(PAGE_SIZE, group.members.length - visible)} ·{' '}
+              {group.members.length - visible} remaining
             </button>
           )}
         </div>
@@ -220,11 +236,17 @@ export function ThreatPicture({
   if (tracks === 0) return <p className="muted small">No threats with flight paths.</p>
   return (
     <div className="threat-picture">
-      <p className="muted small">{groups.some(group => 'basis' in group) ? 'Simulated trial counts · reached member outcomes, including late effects.' : 'Expected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.'}</p>
+      <p className="muted small">
+        {groups.some((group) => 'basis' in group)
+          ? 'Simulated trial counts · reached member outcomes, including late effects.'
+          : 'Expected effect state uses expected surviving mass, including late effects. Requirement verdicts are in Requirement gates.'}
+      </p>
       {tracks > PAGE_SIZE && (
         <div className="scale-note">
           <strong>{tracks} tracks retained</strong>
-          <span>Grouped by tactic, wave, and platform. Expand any group for paged track records.</span>
+          <span>
+            Grouped by tactic, wave, and platform. Expand any group for paged track records.
+          </span>
         </div>
       )}
       {groups.map((group) => (

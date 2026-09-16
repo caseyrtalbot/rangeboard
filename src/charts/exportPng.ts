@@ -20,8 +20,16 @@ const domDeps: PngDeps = {
 
 /** The paint the kit sets through custom properties, baked into the clone. */
 const PAINT = [
-  'fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-dasharray',
-  'stroke-opacity', 'font-family', 'font-size', 'font-weight', 'opacity',
+  'fill',
+  'fill-opacity',
+  'stroke',
+  'stroke-width',
+  'stroke-dasharray',
+  'stroke-opacity',
+  'font-family',
+  'font-size',
+  'font-weight',
+  'opacity',
 ] as const
 
 /** Both trees are structurally identical, so one parallel walk pairs the nodes. */
@@ -105,7 +113,8 @@ export function chartPng(container: Element | null, options: PngOptions = {}): P
   const svg = container?.querySelector('svg') as SVGSVGElement | null
   if (!svg) return Promise.reject(new Error('No chart is mounted to export.'))
   const { width, height } = sizeOf(svg)
-  if (width <= 0 || height <= 0) return Promise.reject(new Error('The chart has no rendered size to export.'))
+  if (width <= 0 || height <= 0)
+    return Promise.reject(new Error('The chart has no rendered size to export.'))
   return svgToPng(svgMarkup(svg, width, height), width, height, options)
 }
 

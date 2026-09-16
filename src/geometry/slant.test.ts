@@ -13,7 +13,11 @@ describe('slantRangeM and groundRangeM', () => {
   })
 
   it('round trips ground to slant to ground', () => {
-    for (const [g, h] of [[500, 30], [11907, 4267], [40000, 100]]) {
+    for (const [g, h] of [
+      [500, 30],
+      [11907, 4267],
+      [40000, 100],
+    ]) {
       expect(groundRangeM(slantRangeM(g, h), h)).toBeCloseTo(g, 6)
     }
   })

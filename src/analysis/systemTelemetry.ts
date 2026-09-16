@@ -11,14 +11,7 @@ import { killChainRoutes } from '../playback/killChain'
 import { expectedDeadTimes } from './threatAggregation'
 
 type ComponentTelemetryState =
-  | 'disabled'
-  | 'searching'
-  | 'tracking'
-  | 'ready'
-  | 'routing'
-  | 'target'
-  | 'cooldown'
-  | 'depleted'
+  'disabled' | 'searching' | 'tracking' | 'ready' | 'routing' | 'target' | 'cooldown' | 'depleted'
 
 export interface ComponentTelemetry {
   entityId: string
@@ -191,7 +184,10 @@ function matchedPreset(scenario: Scenario, entities: Entity[]) {
   const specs = entities.map((entity) => entity.specId ?? '').sort()
   return scenario.systemPresets.find((preset) => {
     const presetSpecs = preset.components.map((component) => component.specId).sort()
-    return presetSpecs.length === specs.length && presetSpecs.every((spec, index) => spec === specs[index])
+    return (
+      presetSpecs.length === specs.length &&
+      presetSpecs.every((spec, index) => spec === specs[index])
+    )
   })
 }
 
@@ -231,7 +227,8 @@ export function systemTelemetryAt(
         sensorSeen.set(observation.sensorId, seen)
         sensorSeconds.set(
           observation.sensorId,
-          (sensorSeconds.get(observation.sensorId) ?? 0) + observedSeconds(observation.intervals, tS),
+          (sensorSeconds.get(observation.sensorId) ?? 0) +
+            observedSeconds(observation.intervals, tS),
         )
         // Kept per sensor across every track so union hold can merge them.
         const spans = sensorIntervals.get(observation.sensorId) ?? []
@@ -269,10 +266,7 @@ export function systemTelemetryAt(
   }
   for (const assessment of assessments) {
     if (assessment.firstDetectS == null || assessment.firstDetectS > tS) continue
-    const routes = c2TrackRoutes(
-      scenario,
-      new Set(observationsByTime(assessment, tS)),
-    )
+    const routes = c2TrackRoutes(scenario, new Set(observationsByTime(assessment, tS)))
     for (const [c2Id, downstream] of routes) {
       const seen = c2Seen.get(c2Id) ?? new Set<string>()
       seen.add(assessment.uasId)
@@ -400,7 +394,7 @@ export function systemTelemetryAt(
       name:
         id === 'independent'
           ? 'Independent components'
-          : preset?.name ?? `Integrated system ${integratedIndex}`,
+          : (preset?.name ?? `Integrated system ${integratedIndex}`),
       activeComponents: rows.filter((row) => row.active).length,
       componentCount: rows.length,
       tracksNow: trackIdsNow.size,
@@ -424,29 +418,53 @@ export interface TrialComponentTelemetry extends Omit<ComponentTelemetry, 'expec
   sensorStates: TrialSensorState[]
 }
 
-export interface TrialSystemTelemetry extends Omit<SystemTelemetryGroup, 'expectedKills' | 'components'> {
+export interface TrialSystemTelemetry extends Omit<
+  SystemTelemetryGroup,
+  'expectedKills' | 'components'
+> {
   basis: 'simulated-trial'
   observedThroughS: number
   kills: number
   components: TrialComponentTelemetry[]
 }
 
-export function trialSystemTelemetryAt(view: TrialResultView, horizonS: number): TrialSystemTelemetry[] {
+export function trialSystemTelemetryAt(
+  view: TrialResultView,
+  horizonS: number,
+): TrialSystemTelemetry[] {
   const sweep = trialSweepAt(view, horizonS)
   // Exact retained interval starts, with forecast capacity/accounting arithmetic unchanged.
-  const assessments = view.assessments.map(a => ({ ...a, effectorWindows: a.effectorWindows.map(w => ({
-    ...w, intervals: w.intervals.filter(([start, end]) => start <= sweep.timeS && sweep.timeS <= end),
-  })) }))
-  return systemTelemetryAt(view.scenario, assessments, view.attrition, sweep.timeS, sweep.hits).map(group => {
-    const { expectedKills, components, ...base } = group
-    return { ...base, basis: 'simulated-trial', observedThroughS: sweep.timeS, kills: expectedKills,
-      components: components.map(component => {
-        const { expectedKills, ...rest } = component
-        const sensorStates = sweep.sensors.filter(s => s.sensorId === component.entityId)
-        return { ...rest, basis: 'simulated-trial', observedThroughS: sweep.timeS, kills: expectedKills, sensorStates,
-          measuredTracks: sensorStates.filter(s => s.stateAtTime === 'measured').length,
-          heldBetweenScans: sensorStates.filter(s => s.stateAtTime === 'held-between-scans').length,
-          coastingTracks: sensorStates.filter(s => s.stateAtTime === 'coasting').length }
-      }) }
-  })
+  const assessments = view.assessments.map((a) => ({
+    ...a,
+    effectorWindows: a.effectorWindows.map((w) => ({
+      ...w,
+      intervals: w.intervals.filter(([start, end]) => start <= sweep.timeS && sweep.timeS <= end),
+    })),
+  }))
+  return systemTelemetryAt(view.scenario, assessments, view.attrition, sweep.timeS, sweep.hits).map(
+    (group) => {
+      const { expectedKills, components, ...base } = group
+      return {
+        ...base,
+        basis: 'simulated-trial',
+        observedThroughS: sweep.timeS,
+        kills: expectedKills,
+        components: components.map((component) => {
+          const { expectedKills, ...rest } = component
+          const sensorStates = sweep.sensors.filter((s) => s.sensorId === component.entityId)
+          return {
+            ...rest,
+            basis: 'simulated-trial',
+            observedThroughS: sweep.timeS,
+            kills: expectedKills,
+            sensorStates,
+            measuredTracks: sensorStates.filter((s) => s.stateAtTime === 'measured').length,
+            heldBetweenScans: sensorStates.filter((s) => s.stateAtTime === 'held-between-scans')
+              .length,
+            coastingTracks: sensorStates.filter((s) => s.stateAtTime === 'coasting').length,
+          }
+        }),
+      }
+    },
+  )
 }

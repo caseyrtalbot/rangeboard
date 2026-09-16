@@ -36,14 +36,26 @@ it('combines projectile angular error with track error in meters', () => {
 
 it('uses the explicit fallback unchanged and compounds projectile intercepts by burst', () => {
   const uas = {
-    group: 1, airframe: 'quad', spanM: 0.4,
-    cruiseSpeedMps: 15, maxSpeedMps: 20, enduranceMin: 30,
-    altBandFt: [0, 400], navMode: 'gps', emissionsNote: '',
+    group: 1,
+    airframe: 'quad',
+    spanM: 0.4,
+    cruiseSpeedMps: 15,
+    maxSpeedMps: 20,
+    enduranceMin: 30,
+    altBandFt: [0, 400],
+    navMode: 'gps',
+    emissionsNote: '',
   } as UasSpec
   const gun = {
-    effectorType: 'gun', minRangeM: 0, maxRangeM: 3000, engageTimeS: 0,
-    dispersionMils: 1, fireControlErrorMils: 1, burstRounds: 20,
-    rateOfFireRpm: 1200, muzzleVelocityMps: 1050,
+    effectorType: 'gun',
+    minRangeM: 0,
+    maxRangeM: 3000,
+    engageTimeS: 0,
+    dispersionMils: 1,
+    fireControlErrorMils: 1,
+    burstRounds: 20,
+    rateOfFireRpm: 1200,
+    muzzleVelocityMps: 1050,
   } as EffectorSpec
   const context = { basePk: 0.8, uas, slantM: 1000, predictionSigmaM: 0, fallback: false }
   const sigma = Math.sqrt(2)

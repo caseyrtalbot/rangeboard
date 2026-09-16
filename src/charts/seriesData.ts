@@ -12,8 +12,12 @@ import type { Series } from './types'
 export type SeriesRow = Record<string, number | [number, number] | null | undefined>
 
 function visibleSamples(length: number, horizonS?: number): number {
-  return visibleCount(length, 0, DT, horizonS == null || horizonS === Infinity
-    ? FULL_RUN : { scoped: true, horizonS })
+  return visibleCount(
+    length,
+    0,
+    DT,
+    horizonS == null || horizonS === Infinity ? FULL_RUN : { scoped: true, horizonS },
+  )
 }
 
 /** Duration in seconds of the longest series: (maxLen - 1) * DT. */
@@ -36,7 +40,10 @@ export function seriesRows(series: Series[], horizonS?: number): SeriesRow[] {
     for (const s of series) {
       const v = s.values[i]
       row[s.id] = i >= count ? undefined : finite(v) ? v : null
-      for (const [k, band] of [['95', s.band95], ['80', s.band80]] as const) {
+      for (const [k, band] of [
+        ['95', s.band95],
+        ['80', s.band80],
+      ] as const) {
         if (!band) continue
         const lo = band[0][i]
         const hi = band[1][i]
@@ -52,7 +59,11 @@ export function seriesRows(series: Series[], horizonS?: number): SeriesRow[] {
  * Y domain: the given one, else 0 (or the data minimum when negative) to the data maximum
  * plus 8 percent headroom, bands included. An empty or flat-at-zero set spans [0, 1].
  */
-export function seriesRange(series: Series[], yDomain?: [number, number], horizonS?: number): [number, number] {
+export function seriesRange(
+  series: Series[],
+  yDomain?: [number, number],
+  horizonS?: number,
+): [number, number] {
   if (yDomain) return yDomain
   let lo = 0
   let hi = -Infinity
@@ -81,7 +92,8 @@ export function lastFiniteIndex(values: number[]): number {
 
 /** Index of the last finite sample at or before the horizon, or -1. */
 export function lastVisibleIndex(values: number[], horizonS?: number): number {
-  for (let i = visibleSamples(values.length, horizonS) - 1; i >= 0; i--) if (finite(values[i])) return i
+  for (let i = visibleSamples(values.length, horizonS) - 1; i >= 0; i--)
+    if (finite(values[i])) return i
   return -1
 }
 

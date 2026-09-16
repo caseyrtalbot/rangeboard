@@ -12,7 +12,11 @@ function valueGraph(entry: string): Map<string, string> {
     if (modules.has(file)) return
     const source = readFileSync(file, 'utf8')
     const { outputText } = ts.transpileModule(source, {
-      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ESNext, removeComments: true },
+      compilerOptions: {
+        module: ts.ModuleKind.ESNext,
+        target: ts.ScriptTarget.ESNext,
+        removeComments: true,
+      },
       fileName: file,
     })
     modules.set(file, outputText)
@@ -27,19 +31,24 @@ function valueGraph(entry: string): Map<string, string> {
   return modules
 }
 
-it.each(['mc.worker.ts', 'trial.worker.ts', 'optimize.worker.ts'])('keeps %s independent of stores, React, panels and browser persistence', (entry) => {
-  const modules = valueGraph(`src/playback/${entry}`)
-  expect(modules.size).toBeGreaterThan(1)
-  for (const [file, source] of modules) {
-    expect(relative('.', file)).not.toMatch(/^src\/(state|io|panels|canvas)\//)
-    expect(source, relative('.', file)).not.toMatch(/\b(localStorage|sessionStorage)\b/)
-  }
-})
+it.each(['mc.worker.ts', 'trial.worker.ts', 'optimize.worker.ts'])(
+  'keeps %s independent of stores, React, panels and browser persistence',
+  (entry) => {
+    const modules = valueGraph(`src/playback/${entry}`)
+    expect(modules.size).toBeGreaterThan(1)
+    for (const [file, source] of modules) {
+      expect(relative('.', file)).not.toMatch(/^src\/(state|io|panels|canvas)\//)
+      expect(source, relative('.', file)).not.toMatch(/\b(localStorage|sessionStorage)\b/)
+    }
+  },
+)
 
 it('keeps trial transport independent of the engine and store at runtime', () => {
   const modules = valueGraph('src/playback/trialClient.ts')
-  expect([...modules.keys()].map(file => relative('.', file)).sort())
-    .toEqual(['src/playback/trialClient.ts', 'src/playback/workerSlot.ts'])
+  expect([...modules.keys()].map((file) => relative('.', file)).sort()).toEqual([
+    'src/playback/trialClient.ts',
+    'src/playback/workerSlot.ts',
+  ])
 })
 
 it('keeps store runtime imports outside trial execution and existing numerical result modules', () => {
@@ -67,5 +76,5 @@ it.each(['src/state/store.ts', 'src/state/scenarioInstall.ts'])(
 
 it('keeps view-state persistence free of runtime store imports', () => {
   const modules = valueGraph('src/io/viewState.ts')
-  expect([...modules.keys()].map(file => relative('.', file))).not.toContain('src/state/store.ts')
+  expect([...modules.keys()].map((file) => relative('.', file))).not.toContain('src/state/store.ts')
 })

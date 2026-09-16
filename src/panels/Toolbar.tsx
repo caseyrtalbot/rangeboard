@@ -24,15 +24,22 @@ const PHASES: { id: BoardPhase; label: string }[] = [
   { id: 'analyze', label: 'Analyze' },
 ]
 
-const SettingsPanel = lazy(() => import('./SettingsPanel').then((module) => ({ default: module.SettingsPanel })))
+const SettingsPanel = lazy(() =>
+  import('./SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
+)
 
 function SettingsButton() {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button type="button" title="Settings (all scenario, run and view settings)"
-        aria-haspopup="dialog" aria-expanded={open} aria-controls="settings-panel"
-        onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        title="Settings (all scenario, run and view settings)"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="settings-panel"
+        onClick={() => setOpen(true)}
+      >
         <span aria-hidden="true">⚙</span> Settings
       </button>
       {open && (
@@ -54,8 +61,16 @@ const BOARD_TOOLS = [
 const BOUNDARY_TYPES: BoundaryType[] = ['range', 'restricted', 'asset', 'corridor']
 
 const ROE_PILLS: Record<Roe, { label: string; tone: StateTone; hint: string }> = {
-  free: { label: 'ROE Free', tone: 'nominal', hint: 'ROE free: engage declared tracks (doctrine on) or on first detection (doctrine off)' },
-  tight: { label: 'ROE Tight', tone: 'inactive', hint: 'ROE tight: engage tracks declared hostile' },
+  free: {
+    label: 'ROE Free',
+    tone: 'nominal',
+    hint: 'ROE free: engage declared tracks (doctrine on) or on first detection (doctrine off)',
+  },
+  tight: {
+    label: 'ROE Tight',
+    tone: 'inactive',
+    hint: 'ROE tight: engage tracks declared hostile',
+  },
   hold: { label: 'ROE Hold', tone: 'warning', hint: 'ROE hold: no engagements' },
 }
 
@@ -72,21 +87,40 @@ function RoeMenu() {
   const { open, setOpen, toggle } = usePopover(wrapRef, buttonRef)
   return (
     <div className="tb-menu-wrap" ref={wrapRef}>
-      <button ref={buttonRef} type="button" title="ROE · click to change"
-        aria-haspopup="dialog" aria-expanded={open} aria-controls="roe-menu-panel"
-        onClick={toggle}>
+      <button
+        ref={buttonRef}
+        type="button"
+        title="ROE · click to change"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="roe-menu-panel"
+        onClick={toggle}
+      >
         <State tone={ROE_PILLS[roe].tone}>{ROE_PILLS[roe].label}</State>
       </button>
       {open && (
-        <div id="roe-menu-panel" className="tb-menu-panel tb-menu-right roe-menu-panel"
-          role="dialog" aria-label="Rules of engagement">
+        <div
+          id="roe-menu-panel"
+          className="tb-menu-panel tb-menu-right roe-menu-panel"
+          role="dialog"
+          aria-label="Rules of engagement"
+        >
           <div className="tb-menu-head">ROE</div>
-          <Seg value={roe} options={ROE_OPTIONS} label="ROE" onChange={(next) => {
-            useStore.getState().patchScenario({ roe: next })
-            setOpen(false)
-            buttonRef.current?.focus()
-          }} />
-          {ROE_OPTIONS.map(({ v }) => <p key={v} className="roe-hint">{ROE_PILLS[v].hint}</p>)}
+          <Seg
+            value={roe}
+            options={ROE_OPTIONS}
+            label="ROE"
+            onChange={(next) => {
+              useStore.getState().patchScenario({ roe: next })
+              setOpen(false)
+              buttonRef.current?.focus()
+            }}
+          />
+          {ROE_OPTIONS.map(({ v }) => (
+            <p key={v} className="roe-hint">
+              {ROE_PILLS[v].hint}
+            </p>
+          ))}
         </div>
       )}
     </div>
@@ -277,7 +311,9 @@ export const Toolbar = memo(function Toolbar({
       </nav>
 
       <div className="toolbar-right">
-        <span className="board-run-context"><span className="num">{formatRunLabel(runSeq)}</span> · {runPhase}</span>
+        <span className="board-run-context">
+          <span className="num">{formatRunLabel(runSeq)}</span> · {runPhase}
+        </span>
 
         <SettingsButton />
         <StorageMenu />
@@ -313,12 +349,26 @@ export const Toolbar = memo(function Toolbar({
         </div>
 
         {/* The one drawer control. The filled column marks the drawer as open. */}
-        <button id="drawer-toggle" type="button" className="tb-menu tb-drawer-toggle"
-          aria-controls="board-workspace-panel" aria-expanded={drawerOpen} aria-label="Workspace drawer"
-          title={`${drawerOpen ? 'Close' : 'Open'} drawer (])`} onClick={onToggleDrawer}>
+        <button
+          id="drawer-toggle"
+          type="button"
+          className="tb-menu tb-drawer-toggle"
+          aria-controls="board-workspace-panel"
+          aria-expanded={drawerOpen}
+          aria-label="Workspace drawer"
+          title={`${drawerOpen ? 'Close' : 'Open'} drawer (])`}
+          onClick={onToggleDrawer}
+        >
           <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
             <rect x="0.5" y="0.5" width="13" height="11" fill="none" stroke="currentColor" />
-            <rect x="8.5" y="0.5" width="5" height="11" fill={drawerOpen ? 'currentColor' : 'none'} stroke="currentColor" />
+            <rect
+              x="8.5"
+              y="0.5"
+              width="5"
+              height="11"
+              fill={drawerOpen ? 'currentColor' : 'none'}
+              stroke="currentColor"
+            />
           </svg>
         </button>
       </div>
@@ -327,7 +377,11 @@ export const Toolbar = memo(function Toolbar({
 })
 
 /** Canvas-local Board controls, placed over the canvas by App. Memoized: App passes one stable handler. */
-export const BoardTools = memo(function BoardTools({ onSelectTool }: { onSelectTool?: () => void }) {
+export const BoardTools = memo(function BoardTools({
+  onSelectTool,
+}: {
+  onSelectTool?: () => void
+}) {
   const tool = useStore((s) => s.ui.tool)
   const boundaryType = useStore((s) => s.ui.boundaryType)
   const canUndo = useStore((s) => s.past.length > 0)

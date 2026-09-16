@@ -17,7 +17,6 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [VERIFICATION.md](VERIFICATION.md) | Commands, tests, parity and browser procedures |
 | [WORKFLOW.md](WORKFLOW.md) | Bounded work, documentation maintenance, handoffs and orchestration |
 | [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Implemented visual rules, tokens and shared components |
-| [HANDOFF.md](HANDOFF.md) | Position, tasking ahead and landmines; rewritten in place, never a journal |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
 Run `npm run docs:check`; follow the [workflow](WORKFLOW.md#documentation-maintenance) when
@@ -38,8 +37,9 @@ Proposals preserve design decisions as issued; the records below them show what 
 
 ### Completion and integration records
 
-- [Calibration implementation plan, Phases 0 to 4 complete 2026-09-15](IMPLEMENTATION_PLAN.md)
-- [Phase 3 integration code review, 2026-09-11](CodeReview.md)
+Cancelled plans, the central handoff and wave completion write-ups were removed on
+2026-09-16 and remain in Git history.
+
 - [Phase 3 review fixes CR-01 to CR-04, 2026-09-14](field-te/evidence/cr-fixes-2026-09-14/README.md)
 - [Calibration Phase 0 gate evidence, 2026-09-10](field-te/evidence/p0-gate-2026-09-10/README.md)
 - [Calibration Phase 1 gate evidence, 2026-09-10](field-te/evidence/p1-gate-2026-09-10/README.md)
@@ -61,13 +61,6 @@ Proposals preserve design decisions as issued; the records below them show what 
 - [Calibration Phase 3 brief as issued 2026-09-10, lane 3.5 kinetic effectors](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.5.md)
 - [Calibration Phase 3 brief as issued 2026-09-10, lane 3.6 beam effectors](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.6.md)
 - [Calibration Phase 3 brief as issued 2026-09-10, lane 3.7 Physics tab](field-te/evidence/p3-lanes-2026-09-10/briefs/lane-3.7.md)
-- [C1: analysis identity and result invalidation](field-te/C1_COMPLETION.md)
-- [C4: authoritative T&E record transitions](field-te/C4_COMPLETION.md)
-- [C2/C3/E1 wave completion](field-te/WAVE_C2_C3_E1_COMPLETION.md)
-- [C2 measure inventory](field-te/wave-c2-c3-e1/C2_MATRIX.md)
-- [C2 result consistency](field-te/wave-c2-c3-e1/C2_RESULT.md)
-- [C3: runtime validation and recovery](field-te/wave-c2-c3-e1/C3_RESULT.md)
-- [Independent integration review](field-te/wave-c2-c3-e1/INDEPENDENT_REVIEW.md)
 
 ### Model evidence dossiers
 
@@ -127,7 +120,6 @@ Source titles, thresholds, citations and unknowns retain their original meaning.
 - [MASTER-FORMS — Checklists, Templates, Print Artifacts & Deliverables](te-compilation/MASTER-FORMS.md)
 - [MASTER-SEEDDATA: RangeBoard T&E Operations module](te-compilation/MASTER-SEEDDATA.md)
 - [Extraction brief: RangeBoard T&E Operations module](te-compilation/_BRIEF.md)
-- [RangeBoard T&E Operations module: product plan and implementation plan (module removed 2026-09-09)](te-plan.md)
 
 ### Inventory research
 

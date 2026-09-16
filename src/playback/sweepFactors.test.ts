@@ -22,8 +22,11 @@ describe('applySweepValue', () => {
     const s = laydown()
     const before = JSON.stringify(s)
     for (const [factor, value] of [
-      ['threatAltitudeFt', 1000], ['threatSpeedMps', 25], ['approachAzimuthDeg', 90],
-      ['raidSize', 3], ['environmentPreset', 'rain-day'],
+      ['threatAltitudeFt', 1000],
+      ['threatSpeedMps', 25],
+      ['approachAzimuthDeg', 90],
+      ['raidSize', 3],
+      ['environmentPreset', 'rain-day'],
     ] as const) {
       expect(applySweepValue(s, factor, value)).not.toBe(s)
     }
@@ -61,13 +64,19 @@ describe('applySweepValue', () => {
       const r = dist(asset.pos, old.points[i])
       expect(dist(asset.pos, path.points[i])).toBeCloseTo(r, 6)
       // A point on the center has no bearing and stays put.
-      if (r > 0) expect(bearingDeg(asset.pos, path.points[i])).toBeCloseTo((bearingDeg(asset.pos, old.points[i]) + 90) % 360, 9)
+      if (r > 0)
+        expect(bearingDeg(asset.pos, path.points[i])).toBeCloseTo(
+          (bearingDeg(asset.pos, old.points[i]) + 90) % 360,
+          9,
+        )
     }
     const uas = next.entities.find((e) => e.kind === 'uas')!
     expect(uas.pos.x).toBeCloseTo(18000, 6)
     expect(uas.pos.y).toBeCloseTo(0, 6)
     // Nothing but the threats moves; the same azimuth is a no-op.
-    expect(next.entities.filter((e) => e.kind !== 'uas')).toEqual(s.entities.filter((e) => e.kind !== 'uas'))
+    expect(next.entities.filter((e) => e.kind !== 'uas')).toEqual(
+      s.entities.filter((e) => e.kind !== 'uas'),
+    )
     expect(applySweepValue(s, 'approachAzimuthDeg', 0)).toBe(s)
   })
 
@@ -82,7 +91,10 @@ describe('applySweepValue', () => {
     expect(approachCenter(s)).toEqual(centroid)
     const next = applySweepValue(s, 'approachAzimuthDeg', 180)
     expect(approachAzimuthDeg(next)).toBeCloseTo(180, 9)
-    expect(dist(centroid, next.paths[0].points[0])).toBeCloseTo(dist(centroid, s.paths[0].points[0]), 6)
+    expect(dist(centroid, next.paths[0].points[0])).toBeCloseTo(
+      dist(centroid, s.paths[0].points[0]),
+      6,
+    )
   })
 
   it('raidSize truncates the first wave or repeats its members with fresh ids', () => {
@@ -117,9 +129,16 @@ describe('applySweepValue', () => {
     const s = laydown()
     for (const preset of SWEEP_ENVIRONMENT_PRESETS) {
       const next = applySweepValue(s, 'environmentPreset', preset.id)
-      expect(next.environment).toEqual({ ...s.environment, ...preset.set, visibilityM: null, apply: true })
+      expect(next.environment).toEqual({
+        ...s.environment,
+        ...preset.set,
+        visibilityM: null,
+        apply: true,
+      })
       expect(VISIBILITY_BY_PRECIP[next.environment.precipitation!]).toBeGreaterThan(0)
     }
-    expect(() => applySweepValue(s, 'environmentPreset', 'monsoon')).toThrow(/Unknown environment preset/)
+    expect(() => applySweepValue(s, 'environmentPreset', 'monsoon')).toThrow(
+      /Unknown environment preset/,
+    )
   })
 })

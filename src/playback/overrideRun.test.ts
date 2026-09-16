@@ -15,7 +15,11 @@ function laydown() {
 
 /** A calibrated Pk of 0.02 on the effector the scenario fires. */
 const LOW_PK: Override = {
-  modelId: 'lib-coyote', field: 'pk', value: 0.02, reason: 'calibrated', date: '2026-09-15T00:00:00.000Z',
+  modelId: 'lib-coyote',
+  field: 'pk',
+  value: 0.02,
+  reason: 'calibrated',
+  date: '2026-09-15T00:00:00.000Z',
 }
 
 const last = (xs: number[]) => xs[xs.length - 1]
@@ -36,7 +40,10 @@ describe('an override reaches the run', () => {
     const scenario = laydown()
     const signature = analysisBasisSignature(scenario)
     const library = runTrial(scenario, createTrialManifest(scenario, 'run-1', signature))
-    const overridden = runTrial(scenario, createTrialManifest(scenario, 'run-1', signature, { overrides: [LOW_PK] }))
+    const overridden = runTrial(
+      scenario,
+      createTrialManifest(scenario, 'run-1', signature, { overrides: [LOW_PK] }),
+    )
 
     expect(library.report.totals.expectedKills).toBeGreaterThan(0)
     expect(overridden.report.totals.expectedKills).toBeLessThan(library.report.totals.expectedKills)

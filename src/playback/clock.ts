@@ -66,7 +66,8 @@ export interface SweepClock {
 
 /** The clock of one sweep at `baseS` (the manifest step) from `originS`. */
 export function createSweepClock(baseS: number = DT, originS = 0): SweepClock {
-  if (!(baseS > 0) || !Number.isFinite(baseS)) throw new Error(`Sweep step must be positive: ${baseS}`)
+  if (!(baseS > 0) || !Number.isFinite(baseS))
+    throw new Error(`Sweep step must be positive: ${baseS}`)
   const requests: FineStepRequest[] = []
   const stepAt = (t: number): number => {
     let step = baseS
@@ -92,7 +93,8 @@ export function createSweepClock(baseS: number = DT, originS = 0): SweepClock {
     const onGrid = Math.abs(k - Math.round(k)) < STEP_EPS
     let candidate = onGrid ? t + baseS : originS + (Math.floor(k + STEP_EPS) + 1) * baseS
     for (const r of requests) {
-      if (r.fromS > t + STEP_EPS && r.fromS < candidate - STEP_EPS && r.toS > r.fromS) candidate = r.fromS
+      if (r.fromS > t + STEP_EPS && r.fromS < candidate - STEP_EPS && r.toS > r.fromS)
+        candidate = r.fromS
     }
     return candidate
   }

@@ -1,12 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../model/seed'
-import type {
-  AarSummary,
-  EngagePolicy,
-  Entity,
-  Scenario,
-  ScorecardSnap,
-} from '../model/types'
+import type { AarSummary, EngagePolicy, Entity, Scenario, ScorecardSnap } from '../model/types'
 import { runSettings } from '../model/types'
 import type { AttritionReport } from '../playback/attritionReport'
 import type { McSummary, SensitivitySummary, Stat } from '../playback/mcRun'
@@ -24,7 +18,6 @@ import { createAutosave } from './autosave'
 
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
 import { getRecoveryNotices } from './recovery'
-
 
 /** A save written before the roe field existed. */
 function legacySave(engageOn?: EngagePolicy): Scenario {
@@ -213,12 +206,29 @@ describe('AAR export payload', () => {
 describe('run export Monte Carlo basis', () => {
   function mcSummary(): McSummary {
     const stat: Stat = {
-      mean: 1, sd: 0, se: 0, lo: 1, hi: 1, conf: 0.95, interval: 't',
-      p10: 1, p90: 1, p025: 1, p975: 1, n: 5, total: 5,
+      mean: 1,
+      sd: 0,
+      se: 0,
+      lo: 1,
+      hi: 1,
+      conf: 0.95,
+      interval: 't',
+      p10: 1,
+      p90: 1,
+      p025: 1,
+      p975: 1,
+      n: 5,
+      total: 5,
       defined: { p: 1, lo: 0.57, hi: 1 },
     }
     const band = {
-      mean: [0, 1], lo: [0, 1], hi: [0, 1], p10: [0, 1], p90: [0, 1], p025: [0, 1], p975: [0, 1],
+      mean: [0, 1],
+      lo: [0, 1],
+      hi: [0, 1],
+      p10: [0, 1],
+      p90: [0, 1],
+      p025: [0, 1],
+      p975: [0, 1],
     }
     return {
       seed: 77,
@@ -257,14 +267,7 @@ describe('run export Monte Carlo basis', () => {
     const scenario = emptyScenario()
     scenario.runMode = 'monte-carlo'
     scenario.uncertainty = 'aleatory'
-    const out = runExportObject(
-      scenario,
-      runMeta(),
-      [],
-      emptyAttrition(),
-      sampleSummary(),
-      summary,
-    )
+    const out = runExportObject(scenario, runMeta(), [], emptyAttrition(), sampleSummary(), summary)
     expect(out.dataBasis.kind).toBe('monte-carlo')
     expect(out.dataBasis.semantics).toBe('estimate')
     expect(out.dataBasis.seed).toBe(77)
@@ -272,7 +275,12 @@ describe('run export Monte Carlo basis', () => {
     expect(out.dataBasis.stopped).toEqual({ rule: 'replicates', at: 5 })
     expect(out.mcSummary).toBe(summary)
     // The empty laydown under Monte Carlo: environment, fire doctrine, draw policy, classification.
-    expect(out.models.map((m) => m.id)).toEqual(['environment', 'doctrine', 'draw-policy', 'classification'])
+    expect(out.models.map((m) => m.id)).toEqual([
+      'environment',
+      'doctrine',
+      'draw-policy',
+      'classification',
+    ])
     expect(JSON.parse(JSON.stringify(out))).toEqual(out)
   })
 
@@ -320,7 +328,9 @@ describe('run export Monte Carlo basis', () => {
     scenario.runMode = 'monte-carlo'
     const sensitivity: SensitivitySummary = {
       stat: 'leakers',
-      rows: [{ modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1, high: 2, swing: 1, se: 0.1 }],
+      rows: [
+        { modelId: 'lib-coyote', field: 'pk', label: 'Coyote', low: 1, high: 2, swing: 1, se: 0.1 },
+      ],
       nominal: 1.5,
       replicates: 20,
       seed: 4821,
@@ -356,22 +366,42 @@ describe('requirement threshold load fill', () => {
     const s = emptyScenario()
     delete (s as { requirements?: unknown }).requirements
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
-    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.1, minWarningS: null, pdDetect: 0.5, pdTrackCumulative: 0.9 })
+    expect(out.requirements).toEqual({
+      maxResidualPerTrack: 0.1,
+      minWarningS: null,
+      pdDetect: 0.5,
+      pdTrackCumulative: 0.9,
+    })
     expect(out.schemaVersion).toBe(1)
   })
 
   it('keeps saved thresholds', () => {
     const s = emptyScenario()
-    s.requirements = { maxResidualPerTrack: 0.02, minWarningS: 120, pdDetect: 0.8, pdTrackCumulative: 0.95 }
+    s.requirements = {
+      maxResidualPerTrack: 0.02,
+      minWarningS: 120,
+      pdDetect: 0.8,
+      pdTrackCumulative: 0.95,
+    }
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
-    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.02, minWarningS: 120, pdDetect: 0.8, pdTrackCumulative: 0.95 })
+    expect(out.requirements).toEqual({
+      maxResidualPerTrack: 0.02,
+      minWarningS: 120,
+      pdDetect: 0.8,
+      pdTrackCumulative: 0.95,
+    })
   })
 
   it('fills only the missing threshold when a save carries one of them', () => {
     const s = emptyScenario()
     s.requirements = { minWarningS: 90 } as Scenario['requirements']
     const out = fillScenario(JSON.parse(JSON.stringify(s)) as Scenario)
-    expect(out.requirements).toEqual({ maxResidualPerTrack: 0.1, minWarningS: 90, pdDetect: 0.5, pdTrackCumulative: 0.9 })
+    expect(out.requirements).toEqual({
+      maxResidualPerTrack: 0.1,
+      minWarningS: 90,
+      pdDetect: 0.5,
+      pdTrackCumulative: 0.9,
+    })
   })
 })
 
@@ -466,7 +496,10 @@ describe('run export validity record', () => {
     scenario.paths.push({
       id: 'p1',
       entityId: 'u1',
-      points: [{ x: 2800, y: 0 }, { x: 22800, y: 0 }],
+      points: [
+        { x: 2800, y: 0 },
+        { x: 22800, y: 0 },
+      ],
       speedMps: 15,
       startDelayS: 0,
     })
@@ -544,10 +577,16 @@ describe('seed library and preset merge on load', () => {
     expect(filled.library).toHaveLength(seeds.library.length)
     expect(filled.systemPresets).toHaveLength(seeds.systemPresets.length)
     for (const seed of seeds.library) {
-      expect(filled.library.some((m) => m.id === seed.id), seed.id).toBe(true)
+      expect(
+        filled.library.some((m) => m.id === seed.id),
+        seed.id,
+      ).toBe(true)
     }
     for (const seed of seeds.systemPresets) {
-      expect(filled.systemPresets.some((p) => p.id === seed.id), seed.id).toBe(true)
+      expect(
+        filled.systemPresets.some((p) => p.id === seed.id),
+        seed.id,
+      ).toBe(true)
     }
   })
 
@@ -635,7 +674,14 @@ describe('nested object load fill', () => {
   it('a doctrine record saved before launch policies existed adopts the doctrinal sequence', () => {
     const s = emptyScenario() as unknown as Record<string, unknown>
     // A doctrine record with no launchPolicy takes the default enabled flag.
-    s.doctrine = { enabled: false, trackFirmS: 5, declareHostileS: 10, bdaS: 10, pkCommit: 0.35, opportunities: 2 }
+    s.doctrine = {
+      enabled: false,
+      trackFirmS: 5,
+      declareHostileS: 10,
+      bdaS: 10,
+      pkCommit: 0.35,
+      opportunities: 2,
+    }
     const filled = fillScenario(s as unknown as Scenario)
     expect(filled.doctrine?.enabled).toBe(true)
     expect(filled.doctrine?.launchPolicy).toBe('pk-commit')
@@ -716,8 +762,20 @@ describe('scenarioHasWork', () => {
   it('is false for an empty board and true once an entity, path, or boundary exists', () => {
     const s = emptyScenario()
     expect(scenarioHasWork(s)).toBe(false)
-    expect(scenarioHasWork({ ...s, boundaries: [{ id: 'b', name: 'b', type: 'range', points: [], closed: true, altBandFt: null }] })).toBe(true)
-    expect(scenarioHasWork({ ...s, paths: [{ id: 'p', entityId: 'e', points: [], speedMps: null, startDelayS: 0 }] })).toBe(true)
+    expect(
+      scenarioHasWork({
+        ...s,
+        boundaries: [
+          { id: 'b', name: 'b', type: 'range', points: [], closed: true, altBandFt: null },
+        ],
+      }),
+    ).toBe(true)
+    expect(
+      scenarioHasWork({
+        ...s,
+        paths: [{ id: 'p', entityId: 'e', points: [], speedMps: null, startDelayS: 0 }],
+      }),
+    ).toBe(true)
   })
 })
 
@@ -750,11 +808,20 @@ describe('seed provenance reaches an existing save', () => {
 
 describe('baseline save parsing', () => {
   const summary = runReplicates({ ...emptyScenario(), replicates: 1 })
-  const pinned = buildBaseline({ ...emptyScenario(), name: 'Ref' }, summary, 'hash', 'Reference', '2026-09-08T12:00:00.000Z')
-  const save = (baseline: unknown, schemaVersion: unknown = 1) => JSON.stringify({ schemaVersion, baseline })
+  const pinned = buildBaseline(
+    { ...emptyScenario(), name: 'Ref' },
+    summary,
+    'hash',
+    'Reference',
+    '2026-09-08T12:00:00.000Z',
+  )
+  const save = (baseline: unknown, schemaVersion: unknown = 1) =>
+    JSON.stringify({ schemaVersion, baseline })
 
   it('validates and fills the scenario and restores the summary', () => {
-    const parsed = parseBaselineSave(save({ ...pinned, scenario: { ...pinned.scenario, requirements: undefined } }))
+    const parsed = parseBaselineSave(
+      save({ ...pinned, scenario: { ...pinned.scenario, requirements: undefined } }),
+    )
     expect(parsed.baseline?.label).toBe('Reference')
     expect(parsed.baseline?.pinnedAt).toBe('2026-09-08T12:00:00.000Z')
     expect(parsed.baseline?.scenarioHash).toBe('hash')
@@ -764,20 +831,45 @@ describe('baseline save parsing', () => {
   })
 
   it('keeps the overrides the ensemble applied, and a pin without the record carries none', () => {
-    const applied = { modelId: 'lib-coyote', field: 'pk', value: 0.02, reason: 'calibrated', date: '2026-09-15T00:00:00.000Z' }
-    expect(parseBaselineSave(save({ ...pinned, overrides: [applied] })).baseline?.overrides).toEqual([applied])
+    const applied = {
+      modelId: 'lib-coyote',
+      field: 'pk',
+      value: 0.02,
+      reason: 'calibrated',
+      date: '2026-09-15T00:00:00.000Z',
+    }
+    expect(
+      parseBaselineSave(save({ ...pinned, overrides: [applied] })).baseline?.overrides,
+    ).toEqual([applied])
     const { overrides: _none, ...before } = pinned
     expect(parseBaselineSave(save(before)).baseline?.overrides).toEqual([])
-    expect(() => parseBaselineSave(save({ ...pinned, overrides: [{ ...applied, reason: '' }] })))
-      .toThrow('baseline.overrides[0].reason: expected a nonempty string')
+    expect(() =>
+      parseBaselineSave(save({ ...pinned, overrides: [{ ...applied, reason: '' }] })),
+    ).toThrow('baseline.overrides[0].reason: expected a nonempty string')
   })
 
   it.each([
     ['another schema version', save(pinned, 2), 'schemaVersion: expected 1'],
-    ['a missing label', save({ ...pinned, label: '' }), 'baseline.label: expected a nonempty string'],
-    ['an unparseable pin time', save({ ...pinned, pinnedAt: 'yesterday' }), 'baseline.pinnedAt: expected an ISO time'],
-    ['a malformed scenario', save({ ...pinned, scenario: { ...pinned.scenario, entities: null } }), 'entities'],
-    ['a malformed summary', save({ ...pinned, mc: { ...summary, seed: 'x' } }), 'baseline.mc.seed: expected a finite number'],
+    [
+      'a missing label',
+      save({ ...pinned, label: '' }),
+      'baseline.label: expected a nonempty string',
+    ],
+    [
+      'an unparseable pin time',
+      save({ ...pinned, pinnedAt: 'yesterday' }),
+      'baseline.pinnedAt: expected an ISO time',
+    ],
+    [
+      'a malformed scenario',
+      save({ ...pinned, scenario: { ...pinned.scenario, entities: null } }),
+      'entities',
+    ],
+    [
+      'a malformed summary',
+      save({ ...pinned, mc: { ...summary, seed: 'x' } }),
+      'baseline.mc.seed: expected a finite number',
+    ],
     ['no record', 'null', 'baselineSave: expected an object'],
   ])('rejects %s with a path', (_what, raw, message) => {
     expect(() => parseBaselineSave(raw)).toThrow(message)

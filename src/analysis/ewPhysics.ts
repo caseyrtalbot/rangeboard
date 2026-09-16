@@ -128,23 +128,25 @@ export function effectiveJamRangeM(spec: EffectorSpec, uas?: UasSpec): number {
 export function jamToSignalRangeM(spec: EffectorSpec, uas: UasSpec): number | null {
   const jammerPowerW = spec.eirpW ?? spec.ratedEirpW
   if (!(jammerPowerW != null && Number.isFinite(jammerPowerW) && jammerPowerW > 0)) return null
-  if (!(uas.radiatedPowerW != null
-    && Number.isFinite(uas.radiatedPowerW)
-    && uas.radiatedPowerW > 0)) return null
-  if (!(uas.controlLinkRangeM != null
-    && Number.isFinite(uas.controlLinkRangeM)
-    && uas.controlLinkRangeM > 0)) return null
+  if (!(
+    uas.radiatedPowerW != null &&
+    Number.isFinite(uas.radiatedPowerW) &&
+    uas.radiatedPowerW > 0
+  ))
+    return null
+  if (!(
+    uas.controlLinkRangeM != null &&
+    Number.isFinite(uas.controlLinkRangeM) &&
+    uas.controlLinkRangeM > 0
+  ))
+    return null
   const tx = new Set(jammerBands(spec))
   const covered = targetLinkBands(uas).filter((band) => tx.has(band))
   if (covered.length === 0) return null
   const resistDb = uas.jamResistDb ?? 0
   let rangeM = Number.POSITIVE_INFINITY
   for (const band of covered) {
-    const linkSignalDbm = receivedPowerDbm(
-      uas.radiatedPowerW,
-      uas.controlLinkRangeM,
-      band,
-    )
+    const linkSignalDbm = receivedPowerDbm(uas.radiatedPowerW, uas.controlLinkRangeM, band)
     const bandRangeM = linkBudgetRangeM(jammerPowerW, band, linkSignalDbm + resistDb)
     rangeM = Math.min(rangeM, bandRangeM)
   }
@@ -203,8 +205,7 @@ export function assessJam(
       JAM_EDGE_FACTOR + (1 - JAM_EDGE_FACTOR) * Math.cos((Math.PI / 2) * (offDeg / halfDeg))
   }
 
-  const powerFactor =
-    effectiveRangeM > 0 ? 1 - RANGE_FALLOFF * (rangeM / effectiveRangeM) : 0
+  const powerFactor = effectiveRangeM > 0 ? 1 - RANGE_FALLOFF * (rangeM / effectiveRangeM) : 0
   const factor = bandFactor * alignFactor * powerFactor
   return {
     effective: factor > 0,

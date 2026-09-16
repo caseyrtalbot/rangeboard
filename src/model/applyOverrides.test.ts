@@ -6,8 +6,13 @@ import { activeOverrides, applyOverrides } from './applyOverrides'
 const EFFECTOR = 'lib-coyote'
 const SENSOR = 'lib-giraffe1x'
 
-const override = (modelId: string, field: string, value: unknown): Override =>
-  ({ modelId, field, value, reason: 'test', date: '2026-09-15T00:00:00.000Z' })
+const override = (modelId: string, field: string, value: unknown): Override => ({
+  modelId,
+  field,
+  value,
+  reason: 'test',
+  date: '2026-09-15T00:00:00.000Z',
+})
 
 describe('applyOverrides', () => {
   it('writes the value over the library field on a copy and leaves the input untouched', () => {
@@ -23,15 +28,18 @@ describe('applyOverrides', () => {
     expect(after).not.toBe(before)
     expect(applied.entities).toBe(scenario.entities)
     // The other models are the same objects.
-    expect(applied.library.find((m) => m.id === SENSOR)).toBe(scenario.library.find((m) => m.id === SENSOR))
+    expect(applied.library.find((m) => m.id === SENSOR)).toBe(
+      scenario.library.find((m) => m.id === SENSOR),
+    )
   })
 
   it('drops the provenance row of the overridden field, as an edit does', () => {
     const scenario = emptyScenario()
     const before = scenario.library.find((m) => m.id === SENSOR)!
     expect(before.provenance?.some((r) => r.field === 'detectRangeM')).toBe(true)
-    const after = applyOverrides(scenario, [override(SENSOR, 'detectRangeM', 3200)]).library
-      .find((m) => m.id === SENSOR)!
+    const after = applyOverrides(scenario, [override(SENSOR, 'detectRangeM', 3200)]).library.find(
+      (m) => m.id === SENSOR,
+    )!
     expect(after.sensor!.detectRangeM).toBe(3200)
     expect(after.provenance?.some((r) => r.field === 'detectRangeM')).toBe(false)
     expect(after.provenance!.length).toBe(before.provenance!.length - 1)
@@ -46,7 +54,11 @@ describe('applyOverrides', () => {
   it('applies the manifest list activeOverrides records', () => {
     const scenario = emptyScenario()
     const recorded = activeOverrides(
-      [override(SENSOR, 'updateRateS', 2), override('lib-not-here', 'pk', 0.5), override(EFFECTOR, 'pk', 0.02)],
+      [
+        override(SENSOR, 'updateRateS', 2),
+        override('lib-not-here', 'pk', 0.5),
+        override(EFFECTOR, 'pk', 0.02),
+      ],
       scenario,
     )
     expect(recorded).toHaveLength(2)

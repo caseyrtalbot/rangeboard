@@ -3,13 +3,20 @@ import { describe, expect, it } from 'vitest'
 import { Ladder } from './Ladder'
 import type { LadderRow } from './types'
 
-const rows: LadderRow[] = [{ id: 'a', label: 'Track', spans: [
-  { startS: 10, endS: 50, color: 'chart-1', label: 'window ends at 0:50' },
-  { startS: 40, endS: 60, color: 'chart-2', label: 'later span' },
-] }]
-const render = (horizonS?: number) => renderToStaticMarkup(
-  <Ladder rows={rows} durationS={60} tS={45} width={392} horizonS={horizonS} />,
-)
+const rows: LadderRow[] = [
+  {
+    id: 'a',
+    label: 'Track',
+    spans: [
+      { startS: 10, endS: 50, color: 'chart-1', label: 'window ends at 0:50' },
+      { startS: 40, endS: 60, color: 'chart-2', label: 'later span' },
+    ],
+  },
+]
+const render = (horizonS?: number) =>
+  renderToStaticMarkup(
+    <Ladder rows={rows} durationS={60} tS={45} width={392} horizonS={horizonS} />,
+  )
 
 describe('Ladder horizon', () => {
   it('preserves unscoped markup with Infinity', () => {

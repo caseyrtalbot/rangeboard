@@ -254,7 +254,12 @@ describe('systemTelemetryAt', () => {
         uasId: 'threat',
         firstDetectS: 0,
         // Held 0 to 40, then again 100 to 120.
-        sensorObservations: [observation('sensor', [[0, 40], [100, 120]])],
+        sensorObservations: [
+          observation('sensor', [
+            [0, 40],
+            [100, 120],
+          ]),
+        ],
       }),
       assessment({
         uasId: 'threat2',

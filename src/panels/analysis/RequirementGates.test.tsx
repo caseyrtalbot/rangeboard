@@ -10,7 +10,12 @@ import { RequirementGates } from './RequirementGates'
 
 const scenario = parseAutosave(JSON.stringify(fixture))
 const { assessments, report } = engagementPicture(scenario)
-const gates = buildRequirementGateReport(scenario, assessments, report, assessRunValidity(scenario, assessments))
+const gates = buildRequirementGateReport(
+  scenario,
+  assessments,
+  report,
+  assessRunValidity(scenario, assessments),
+)
 
 describe('RequirementGates visibility', () => {
   it('defaults evidence mounts to the full report', () => {
@@ -20,9 +25,12 @@ describe('RequirementGates visibility', () => {
     expect(html).toContain(`${gates.met}/${gates.required}`)
   })
 
-  it.each([{ scoped: true, horizonS: 1 }, EMPTY_HORIZON])('omits verdict, failures and hover details at %j', (horizon) => {
-    const html = renderToStaticMarkup(<RequirementGates report={gates} horizon={horizon} />)
-    expect(html).toBe(`<p class="muted small">${FORECAST_IN_ANALYZE}</p>`)
-    expect(html).not.toContain('title=')
-  })
+  it.each([{ scoped: true, horizonS: 1 }, EMPTY_HORIZON])(
+    'omits verdict, failures and hover details at %j',
+    (horizon) => {
+      const html = renderToStaticMarkup(<RequirementGates report={gates} horizon={horizon} />)
+      expect(html).toBe(`<p class="muted small">${FORECAST_IN_ANALYZE}</p>`)
+      expect(html).not.toContain('title=')
+    },
+  )
 })

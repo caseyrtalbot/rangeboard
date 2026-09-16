@@ -9,11 +9,21 @@ const STATUS_LABEL: Record<RequirementGate['status'], string> = {
   'not-evaluated': 'NOT RUN',
 }
 
-function GateCard({ gate, runWideCaveats }: { gate: RequirementGate; runWideCaveats: Set<string> }) {
+function GateCard({
+  gate,
+  runWideCaveats,
+}: {
+  gate: RequirementGate
+  runWideCaveats: Set<string>
+}) {
   return (
     <div className={`requirement-gate gate-${gate.status}`}>
       <div className="gate-head">
-        <State tone={gate.status === 'pass' ? 'nominal' : gate.status === 'fail' ? 'critical' : 'inactive'}>
+        <State
+          tone={
+            gate.status === 'pass' ? 'nominal' : gate.status === 'fail' ? 'critical' : 'inactive'
+          }
+        >
           {STATUS_LABEL[gate.status]}
         </State>
         <strong>{gate.id === 'effect' ? SURVIVAL_LABELS.limit : gate.label}</strong>
@@ -21,18 +31,22 @@ function GateCard({ gate, runWideCaveats }: { gate: RequirementGate; runWideCave
           {gate.met}/{gate.required}
         </span>
       </div>
-      <div className="gate-metric" title={gate.detail}>{gate.metric}</div>
+      <div className="gate-metric" title={gate.detail}>
+        {gate.metric}
+      </div>
       {gate.status === 'not-evaluated' && gate.notEvaluatedReason && (
         <div className="gate-detail">{gate.notEvaluatedReason}</div>
       )}
       <details>
         <summary>Why</summary>
         <div className="gate-detail">{gate.detail}</div>
-        {gate.caveats.filter((caveat) => !runWideCaveats.has(caveat)).map((caveat) => (
-          <div className="gate-detail" key={caveat}>
-            CAVEAT: {caveat}
-          </div>
-        ))}
+        {gate.caveats
+          .filter((caveat) => !runWideCaveats.has(caveat))
+          .map((caveat) => (
+            <div className="gate-detail" key={caveat}>
+              CAVEAT: {caveat}
+            </div>
+          ))}
       </details>
       {gate.failures.length > 0 && (
         <details className="gate-failures">
@@ -51,7 +65,13 @@ function GateCard({ gate, runWideCaveats }: { gate: RequirementGate; runWideCave
   )
 }
 
-export function RequirementGates({ report, horizon = FULL_RUN }: { report: RequirementGateReport; horizon?: ExecutionHorizon }) {
+export function RequirementGates({
+  report,
+  horizon = FULL_RUN,
+}: {
+  report: RequirementGateReport
+  horizon?: ExecutionHorizon
+}) {
   if (horizon.scoped) return <p className="muted small">{FORECAST_IN_ANALYZE}</p>
   const runWideCaveats = new Set(
     (report.gates[0]?.caveats ?? []).filter((caveat) =>
@@ -79,7 +99,9 @@ export function RequirementGates({ report, horizon = FULL_RUN }: { report: Requi
         <details>
           <summary>{runWideCaveats.size} run-wide caveats</summary>
           {[...runWideCaveats].map((caveat) => (
-            <div className="gate-detail" key={caveat}>{caveat}</div>
+            <div className="gate-detail" key={caveat}>
+              {caveat}
+            </div>
           ))}
         </details>
       )}

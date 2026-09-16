@@ -40,7 +40,8 @@ export function ensureBundle() {
 
 function integer(value, name) {
   const n = Number(value)
-  if (!Number.isInteger(n) || n < 1) throw new Error(`--${name} must be a positive integer, got ${value}`)
+  if (!Number.isInteger(n) || n < 1)
+    throw new Error(`--${name} must be a positive integer, got ${value}`)
   return n
 }
 
@@ -48,7 +49,8 @@ function integer(value, name) {
 export function chunkRanges(replicates, workers) {
   const size = Math.max(1, Math.ceil(replicates / (workers * 4)))
   const ranges = []
-  for (let start = 0; start < replicates; start += size) ranges.push([start, Math.min(start + size, replicates)])
+  for (let start = 0; start < replicates; start += size)
+    ranges.push([start, Math.min(start + size, replicates)])
   return ranges
 }
 
@@ -83,7 +85,9 @@ function runPool(scenario, ranges, workers) {
         feed(thread)
       })
       thread.on('error', fail)
-      thread.on('exit', (code) => { if (code !== 0 && !failed) fail(new Error(`worker exited with code ${code}`)) })
+      thread.on('exit', (code) => {
+        if (code !== 0 && !failed) fail(new Error(`worker exited with code ${code}`))
+      })
       feed(thread)
     }
   })
@@ -133,7 +137,10 @@ export async function main(argv) {
   }
   ensureBundle()
   const engine = await import(pathToFileURL(ENGINE).href)
-  const scenario = applyRunFlags(engine.parseScenarioJson(readFileSync(resolve(positionals[0]), 'utf8')), values)
+  const scenario = applyRunFlags(
+    engine.parseScenarioJson(readFileSync(resolve(positionals[0]), 'utf8')),
+    values,
+  )
   const { replicates, seed } = engine.runSettings(scenario)
   const workers = values.workers ? integer(values.workers, 'workers') : availableParallelism()
   const runId = crypto.randomUUID()
@@ -141,7 +148,9 @@ export async function main(argv) {
   // The manifest records the overrides in force, as the browser's does; the run
   // applies them from the manifest by the one rule every browser path applies.
   const manifest = engine.createRunManifest(scenario, runId, basisSignature, {
-    overrides: values.overrides ? engine.activeOverrides(readOverrideSet(values.overrides), scenario) : [],
+    overrides: values.overrides
+      ? engine.activeOverrides(readOverrideSet(values.overrides), scenario)
+      : [],
     producer: 'cli',
   })
   const run = engine.applyOverrides(scenario, manifest.overrides)
@@ -191,7 +200,9 @@ export async function main(argv) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main(process.argv.slice(2)).then(
-    (code) => { process.exitCode = code },
+    (code) => {
+      process.exitCode = code
+    },
     (error) => {
       process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
       process.exitCode = 1

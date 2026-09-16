@@ -1,21 +1,39 @@
 import { describe, expect, it } from 'vitest'
 import { DT } from '../playback/clock'
-import { lastFiniteIndex, lastVisibleIndex, seriesDurationS, seriesRange, seriesRows } from './seriesData'
+import {
+  lastFiniteIndex,
+  lastVisibleIndex,
+  seriesDurationS,
+  seriesRange,
+  seriesRows,
+} from './seriesData'
 import type { Series } from './types'
 
-const values = Array.from({ length: 60 / DT + 1 }, (_, i) => i * DT <= 30 ? i * DT : 1000)
-const series: Series[] = [{
-  id: 'a', label: 'Observed', unit: null, color: 'chart-1', kind: 'line', values,
-  band80: [values.map((v) => -v), values.map((v) => v + 2)],
-  band95: [values.map((v) => -v - 1), values.map((v) => v + 3)],
-}]
+const values = Array.from({ length: 60 / DT + 1 }, (_, i) => (i * DT <= 30 ? i * DT : 1000))
+const series: Series[] = [
+  {
+    id: 'a',
+    label: 'Observed',
+    unit: null,
+    color: 'chart-1',
+    kind: 'line',
+    values,
+    band80: [values.map((v) => -v), values.map((v) => v + 2)],
+    band95: [values.map((v) => -v - 1), values.map((v) => v + 3)],
+  },
+]
 
 describe('series horizon', () => {
   it('preserves unscoped rows, bands, ranges and endpoint indices with Infinity', () => {
     expect(seriesRows(series, Infinity)).toEqual(seriesRows(series))
     expect(seriesRange(series, undefined, Infinity)).toEqual(seriesRange(series))
     expect(lastVisibleIndex(values, Infinity)).toBe(lastFiniteIndex(values))
-    expect(seriesRows(series)[61]).toEqual({ t: 30.5, a: 1000, 'a:80': [-1000, 1002], 'a:95': [-1001, 1003] })
+    expect(seriesRows(series)[61]).toEqual({
+      t: 30.5,
+      a: 1000,
+      'a:80': [-1000, 1002],
+      'a:95': [-1001, 1003],
+    })
   })
 
   it('keeps the full time grid but censors every future value and band', () => {

@@ -60,8 +60,12 @@ export function OutcomeSummary({
   const reportedLeakers = totals.reportedLeakers
   const hasActiveAsset = reportedLeakers != null
   const raid = totals.raidSize
-  const kills = mc ? bandMean(mc.kills, mc.kills.mean.length - 1, mc.replicates) : totals.expectedKills
-  const leakers = mc ? bandMean(mc.leakers, mc.leakers.mean.length - 1, mc.replicates) : reportedLeakers
+  const kills = mc
+    ? bandMean(mc.kills, mc.kills.mean.length - 1, mc.replicates)
+    : totals.expectedKills
+  const leakers = mc
+    ? bandMean(mc.leakers, mc.leakers.mean.length - 1, mc.replicates)
+    : reportedLeakers
   const defeatPct = raid > 0 && kills != null ? (kills / raid) * 100 : null
   const residual = residualHeadline(totals)
   const envelopeFirstDetect = assessments.reduce<number | null>(
@@ -84,7 +88,13 @@ export function OutcomeSummary({
     .map((assessment) => assessment.warningS)
     .filter((value): value is number => value != null)
   const firstDetect = mc ? statMean(mc.firstDetectS) : envelopeFirstDetect
-  const minWarning = !hasActiveAsset ? null : mc ? statMean(mc.minWarningS) : warnings.length > 0 ? Math.min(...warnings) : null
+  const minWarning = !hasActiveAsset
+    ? null
+    : mc
+      ? statMean(mc.minWarningS)
+      : warnings.length > 0
+        ? Math.min(...warnings)
+        : null
   const salvos = totalSalvos(totals)
   return (
     <div className="outcome-summary">
@@ -93,20 +103,36 @@ export function OutcomeSummary({
           label={forecastKillLabel(hasActiveAsset)}
           value={defeatPct == null ? '—' : `${defeatPct.toFixed(1)}%`}
           sub={
-            raid <= 0 ? 'no ships' : mc
-              ? countSub(mc.kills, mc.kills.mean.length - 1, mc.replicates, 100 / raid, '%')
-              : `planning envelope · ${expectedCount(totals.expectedKills)} of ${raid} ships`
+            raid <= 0
+              ? 'no ships'
+              : mc
+                ? countSub(mc.kills, mc.kills.mean.length - 1, mc.replicates, 100 / raid, '%')
+                : `planning envelope · ${expectedCount(totals.expectedKills)} of ${raid} ships`
           }
           cls="good"
-          title={hasActiveAsset ? KPI_LABELS.killEk.hint : 'Expected neutralization mass over the full run; no defended asset placed.'}
+          title={
+            hasActiveAsset
+              ? KPI_LABELS.killEk.hint
+              : 'Expected neutralization mass over the full run; no defended asset placed.'
+          }
         />
         <Metric
           label={mc ? SURVIVAL_LABELS.leakers : 'Residual survival'}
-          value={reportedLeakers == null ? '—' : leakers == null ? '—' : mc ? expectedCount(leakers) : residual.value}
+          value={
+            reportedLeakers == null
+              ? '—'
+              : leakers == null
+                ? '—'
+                : mc
+                  ? expectedCount(leakers)
+                  : residual.value
+          }
           sub={
-            reportedLeakers == null ? residual.sub : mc
-              ? `${countSub(mc.leakers, mc.leakers.mean.length - 1, mc.replicates)} · ships`
-              : `planning envelope · ${residual.sub}`
+            reportedLeakers == null
+              ? residual.sub
+              : mc
+                ? `${countSub(mc.leakers, mc.leakers.mean.length - 1, mc.replicates)} · ships`
+                : `planning envelope · ${residual.sub}`
           }
           cls={reportedLeakers != null && leakers != null && leakers > 0.05 ? 'bad' : ''}
           title="Expected ship mass that reached a defended asset. Not measurable when the laydown places no asset."
@@ -121,7 +147,9 @@ export function OutcomeSummary({
         <Metric
           label="First detect"
           value={firstDetect == null ? '—' : formatTime(firstDetect)}
-          sub={(mc && timeStatSub(mc.firstDetectS, 'detected')) ?? 'planning envelope · earliest track'}
+          sub={
+            (mc && timeStatSub(mc.firstDetectS, 'detected')) ?? 'planning envelope · earliest track'
+          }
         />
         <Metric
           label="First effect"
@@ -132,7 +160,12 @@ export function OutcomeSummary({
         <Metric
           label="Min warning"
           value={minWarning == null ? '—' : formatTime(minWarning)}
-          sub={!hasActiveAsset ? 'no defended asset placed' : (mc && timeStatSub(mc.minWarningS, 'warning')) ?? 'planning envelope · worst threat'}
+          sub={
+            !hasActiveAsset
+              ? 'no defended asset placed'
+              : ((mc && timeStatSub(mc.minWarningS, 'warning')) ??
+                'planning envelope · worst threat')
+          }
         />
         <Metric
           label="Salvos"
@@ -154,7 +187,10 @@ export function OutcomeSummary({
                 <span>{entity?.name ?? row.effectorId}</span>
                 <strong>{spent.length > 0 ? spent.join(' · ') : 'no salvos'}</strong>
                 <small>
-                  planning envelope · {total == null ? 'continuous capacity' : `${row.expectedRoundsRemaining ?? 0}/${total} remaining`}
+                  planning envelope ·{' '}
+                  {total == null
+                    ? 'continuous capacity'
+                    : `${row.expectedRoundsRemaining ?? 0}/${total} remaining`}
                 </small>
               </div>
             )

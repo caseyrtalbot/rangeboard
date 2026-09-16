@@ -65,7 +65,9 @@ describe('sobolIndices', () => {
   })
 
   it('sobolIndices rejects a response count that does not fit the design', () => {
-    expect(() => sobolIndices((rows) => rows.slice(1).map(() => 0), 2, 4, 1)).toThrow(/16 responses/)
+    expect(() => sobolIndices((rows) => rows.slice(1).map(() => 0), 2, 4, 1)).toThrow(
+      /16 responses/,
+    )
   })
 })
 
@@ -91,7 +93,13 @@ describe('sobolLoop', () => {
     const result = next.value
     expect(checkpoints).toBe(31)
     expect(progress).toHaveLength(32)
-    expect(result).toMatchObject({ method: 'saltelli', base: 8, evaluations: 32, response: 'firstDetectS', seed: 4821 })
+    expect(result).toMatchObject({
+      method: 'saltelli',
+      base: 8,
+      evaluations: 32,
+      response: 'firstDetectS',
+      seed: 4821,
+    })
     expect(result.fields.map((f) => f.field)).toEqual(kept)
     expect(result.ranking.slice().sort()).toEqual([0, 1])
     for (const f of result.fields) {

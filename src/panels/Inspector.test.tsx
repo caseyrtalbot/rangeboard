@@ -51,9 +51,7 @@ describe('Inspector provenance marks', () => {
     const html = render()
     const tag = /<span class="prov-mark" title="([^"]*)"/.exec(html)
     expect(tag).not.toBeNull()
-    expect(tag![1]).toMatch(
-      /^(datasheet|reference) · .+ · \d{4}-\d{2}-\d{2}( · spread .+)?$/,
-    )
+    expect(tag![1]).toMatch(/^(datasheet|reference) · .+ · \d{4}-\d{2}-\d{2}( · spread .+)?$/)
   })
 
   it('marks an unsourced field as a hollow planning factor', () => {
@@ -75,7 +73,9 @@ describe('Inspector effector and threat marks', () => {
     expect(wez).toContain('class="prov-mark" title="datasheet')
     const pk = html.slice(html.indexOf('Single-shot Pk'), html.indexOf('Magazine'))
     // A Pk with no row takes the PF table beta, so the title names its pseudo-counts.
-    expect(pk).toContain('<span class="prov-mark pf" title="planning factor · spread 17 of 20 (pseudo)"')
+    expect(pk).toContain(
+      '<span class="prov-mark pf" title="planning factor · spread 17 of 20 (pseudo)"',
+    )
   })
 
   it('tags the threat radar cross section row', () => {

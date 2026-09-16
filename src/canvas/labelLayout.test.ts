@@ -34,7 +34,14 @@ describe('layoutLabels', () => {
   })
 
   it('separates every label in a converged cluster', () => {
-    const names = ['RPS-42 Radar (RADA)', 'FS-LIDS C2', 'EnforceAir 2 (D-Fend)', 'Anvil Interceptor', 'FOB Perimeter Asset', 'Shahed-136 / Geran']
+    const names = [
+      'RPS-42 Radar (RADA)',
+      'FS-LIDS C2',
+      'EnforceAir 2 (D-Fend)',
+      'Anvil Interceptor',
+      'FOB Perimeter Asset',
+      'Shahed-136 / Geran',
+    ]
     const inputs: LabelInput[] = names.map((name, i) => ({
       id: `e${i}`,
       name,
@@ -62,11 +69,20 @@ describe('layoutLabels', () => {
   })
 
   it('merges vertically split rows so cross-cluster labels never overlap', () => {
-    const names = ['Anvil interceptor (Anduril)', 'RPS-42 radar panel (RADA MHR)', 'Coyote Block 2 interceptor']
+    const names = [
+      'Anvil interceptor (Anduril)',
+      'RPS-42 radar panel (RADA MHR)',
+      'Coyote Block 2 interceptor',
+    ]
     const inputs: LabelInput[] = []
     for (let r = 0; r < 2; r++)
       for (let c = 0; c < 6; c++)
-        inputs.push({ id: `r${r}c${c}`, name: `${names[c % 3]} ${r * 6 + c + 1}`, sx: 480 + (c % 3) * 22 + Math.floor(c / 3), sy: 435 + r * 31 })
+        inputs.push({
+          id: `r${r}c${c}`,
+          name: `${names[c % 3]} ${r * 6 + c + 1}`,
+          sx: 480 + (c % 3) * 22 + Math.floor(c / 3),
+          sy: 435 + r * 31,
+        })
     const out = layoutLabels(inputs)
     const rects = inputs.map((m) => spokeRect(out.get(m.id) as SpokePlacement))
     for (let i = 0; i < rects.length; i++) {

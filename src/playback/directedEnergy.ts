@@ -71,13 +71,15 @@ export const DEFAULT_FLUENCE_SPREAD: Spread = Object.freeze({
  * warhead-related aimpoint. GAO-23-106717 is the qualitative source for the
  * aimpoint/material ordering; it does not report these numeric multipliers.
  */
-export const AIRFRAME_FLUENCE_FACTOR: Readonly<Record<UasSpec['airframe'], number>> = Object.freeze({
-  fpv: 0.75,
-  quad: 1,
-  vtol: 1.5,
-  'fixed-wing': 2,
-  'one-way-attack': 3,
-})
+export const AIRFRAME_FLUENCE_FACTOR: Readonly<Record<UasSpec['airframe'], number>> = Object.freeze(
+  {
+    fpv: 0.75,
+    quad: 1,
+    vtol: 1.5,
+    'fixed-wing': 2,
+    'one-way-attack': 3,
+  },
+)
 
 /** Diffraction and pointing-jitter contributions to the spot at one range. */
 export interface OpticalSpot {
@@ -101,20 +103,20 @@ export interface OpticalDwell {
 /** True when every field the optical law needs is finite and physical. */
 export function opticalDwellModelApplies(spec: EffectorSpec, fallback = false): boolean {
   return (
-    !fallback
-    && spec.effectorType === 'de'
-    && spec.outputPowerKw != null
-    && Number.isFinite(spec.outputPowerKw)
-    && spec.outputPowerKw > 0
-    && spec.beamQualityM2 != null
-    && Number.isFinite(spec.beamQualityM2)
-    && spec.beamQualityM2 > 0
-    && spec.apertureM != null
-    && Number.isFinite(spec.apertureM)
-    && spec.apertureM > 0
-    && spec.jitterUrad != null
-    && Number.isFinite(spec.jitterUrad)
-    && spec.jitterUrad >= 0
+    !fallback &&
+    spec.effectorType === 'de' &&
+    spec.outputPowerKw != null &&
+    Number.isFinite(spec.outputPowerKw) &&
+    spec.outputPowerKw > 0 &&
+    spec.beamQualityM2 != null &&
+    Number.isFinite(spec.beamQualityM2) &&
+    spec.beamQualityM2 > 0 &&
+    spec.apertureM != null &&
+    Number.isFinite(spec.apertureM) &&
+    spec.apertureM > 0 &&
+    spec.jitterUrad != null &&
+    Number.isFinite(spec.jitterUrad) &&
+    spec.jitterUrad >= 0
   )
 }
 

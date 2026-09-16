@@ -35,8 +35,12 @@ export interface TrialManifest {
 }
 
 /** The manifest keys a caller may set; everything else comes from the scenario and engine tags. */
-export type TrialManifestExtras = Partial<Pick<TrialManifest,
-  'dataPackageVersion' | 'overrides' | 'physicsSwitches' | 'fidelityFloor' | 'producer'>>
+export type TrialManifestExtras = Partial<
+  Pick<
+    TrialManifest,
+    'dataPackageVersion' | 'overrides' | 'physicsSwitches' | 'fidelityFloor' | 'producer'
+  >
+>
 
 export function createTrialManifest(
   scenario: Scenario,
@@ -72,7 +76,11 @@ export function createTrialManifest(
  * clone from the worker or a fresh `createTrialManifest` never shares array identity.
  * `skip` names keys left out of the comparison (the selector ignores `buildRevision`).
  */
-export function sameManifest(a: TrialManifest, b: TrialManifest, skip: readonly (keyof TrialManifest)[] = []): boolean {
+export function sameManifest(
+  a: TrialManifest,
+  b: TrialManifest,
+  skip: readonly (keyof TrialManifest)[] = [],
+): boolean {
   for (const key of Object.keys(a) as (keyof TrialManifest)[]) {
     if (skip.includes(key)) continue
     const left = a[key]

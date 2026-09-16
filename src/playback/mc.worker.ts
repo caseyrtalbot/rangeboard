@@ -56,8 +56,10 @@ const yieldToEvents = (): Promise<void> => new Promise((resolve) => setTimeout(r
 
 /** Post progress at a checkpoint when its count is new and due. */
 function due(cp: Checkpoint, every: number, lastDone: number, sinceMs: number): boolean {
-  return cp.done !== lastDone &&
+  return (
+    cp.done !== lastDone &&
     (cp.done % every === 0 || cp.done === cp.total || sinceMs >= PROGRESS_MS)
+  )
 }
 
 /**
@@ -125,7 +127,11 @@ self.onmessage = async (e: MessageEvent<McRequest | PoolRequest>) => {
     const { factors, replicatesPerCell, responses } = e.data
     try {
       // The per-cell summary guard runs inside the loop with the worker budget.
-      const loop = sweepLoop({ scenario, factors, replicatesPerCell, responses }, undefined, DEFAULT_BUDGET)
+      const loop = sweepLoop(
+        { scenario, factors, replicatesPerCell, responses },
+        undefined,
+        DEFAULT_BUDGET,
+      )
       const summary = await drive(loop, 1, (cp) =>
         post({ type: 'sweep-progress', runId: id, done: cp.done, total: cp.total }),
       )

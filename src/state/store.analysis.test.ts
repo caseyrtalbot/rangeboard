@@ -35,11 +35,17 @@ vi.mock('../playback/mcClient', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../playback/mcClient')>()
   return {
     ...actual,
-    startPooledRun: vi.fn((scenario: Scenario, runId: string, deliver: (m: McWorkerMessage) => void,
-      onPool: (p: PoolProgress) => void) => {
-      pooled.onPool = onPool
-      return actual.startMcRun(scenario, runId, deliver)
-    }),
+    startPooledRun: vi.fn(
+      (
+        scenario: Scenario,
+        runId: string,
+        deliver: (m: McWorkerMessage) => void,
+        onPool: (p: PoolProgress) => void,
+      ) => {
+        pooled.onPool = onPool
+        return actual.startMcRun(scenario, runId, deliver)
+      },
+    ),
     cancelPooledRun: vi.fn(() => actual.cancelMcRun()),
     requestPooledCancel: vi.fn((runId: string) => actual.requestMcCancel(runId)),
   }
@@ -47,7 +53,12 @@ vi.mock('../playback/mcClient', async (importOriginal) => {
 
 /** One-at-a-time depth: the Morris and Sobol stages have their own block below. */
 function scenario(): Scenario {
-  return { ...structuredClone(probe) as unknown as Scenario, runMode: 'monte-carlo', replicates: 1, sensitivityDepth: 'quick' }
+  return {
+    ...(structuredClone(probe) as unknown as Scenario),
+    runMode: 'monte-carlo',
+    replicates: 1,
+    sensitivityDepth: 'quick',
+  }
 }
 const mcSummary = runReplicates(scenario())
 const sensSummary = { ...runSensitivity({ ...emptyScenario(), replicates: 1 }), rows: [] }
@@ -75,31 +86,62 @@ function editModel(patch: (m: SpecModel) => Partial<SpecModel>) {
   useStore.getState().updateModel(m.id, patch(m))
 }
 const edits: [string, () => void][] = [
-  ['altitude', () => {
-    const e = useStore.getState().scenario.entities.find((e) => e.kind === 'uas')!
-    useStore.getState().updateEntity(e.id, { altitudeFt: 50000 })
-  }],
-  ['defended radius', () => {
-    const e = useStore.getState().scenario.entities.find((e) => e.kind === 'asset')!
-    useStore.getState().updateEntity(e.id, { defendedRadiusM: 1200 })
-  }],
-  ['doctrine', () => {
-    const s = useStore.getState().scenario
-    useStore.getState().patchScenario({ doctrine: { ...s.doctrine!, declareHostileS: 80 } })
-  }],
-  ['requirements', () => {
-    const s = useStore.getState().scenario
-    useStore.getState().patchScenario({ requirements: { ...s.requirements, pdDetect: 0.99 } })
-  }],
-  ['effective spread', () => editModel((m) => ({ provenance: [
-    { field: 'pk', value: '0.5', source: 'test', date: '2026-09-04', basis: 'pf', spread: null },
-    ...(m.provenance ?? []).filter((r) => r.field !== 'pk'),
-  ] }))],
-  ['connection draw identity', () => {
-    const s = useStore.getState().scenario
-    useStore.getState().patchScenario({ connections: s.connections.map((c, i) =>
-      i === 0 ? { ...c, id: 'changed-draw-id' } : c) })
-  }],
+  [
+    'altitude',
+    () => {
+      const e = useStore.getState().scenario.entities.find((e) => e.kind === 'uas')!
+      useStore.getState().updateEntity(e.id, { altitudeFt: 50000 })
+    },
+  ],
+  [
+    'defended radius',
+    () => {
+      const e = useStore.getState().scenario.entities.find((e) => e.kind === 'asset')!
+      useStore.getState().updateEntity(e.id, { defendedRadiusM: 1200 })
+    },
+  ],
+  [
+    'doctrine',
+    () => {
+      const s = useStore.getState().scenario
+      useStore.getState().patchScenario({ doctrine: { ...s.doctrine!, declareHostileS: 80 } })
+    },
+  ],
+  [
+    'requirements',
+    () => {
+      const s = useStore.getState().scenario
+      useStore.getState().patchScenario({ requirements: { ...s.requirements, pdDetect: 0.99 } })
+    },
+  ],
+  [
+    'effective spread',
+    () =>
+      editModel((m) => ({
+        provenance: [
+          {
+            field: 'pk',
+            value: '0.5',
+            source: 'test',
+            date: '2026-09-04',
+            basis: 'pf',
+            spread: null,
+          },
+          ...(m.provenance ?? []).filter((r) => r.field !== 'pk'),
+        ],
+      })),
+  ],
+  [
+    'connection draw identity',
+    () => {
+      const s = useStore.getState().scenario
+      useStore
+        .getState()
+        .patchScenario({
+          connections: s.connections.map((c, i) => (i === 0 ? { ...c, id: 'changed-draw-id' } : c)),
+        })
+    },
+  ],
 ]
 
 describe('complete analysis basis and request ownership', () => {
@@ -127,22 +169,25 @@ describe('complete analysis basis and request ownership', () => {
     expectCurrent(false)
   })
 
-  it.each(['replace', 'reset', 'basis'] as const)('%s rejects canceled callbacks in both slots', (action) => {
-    const old = launch()
-    if (action === 'replace') useStore.getState().loadScenario(scenario())
-    if (action === 'reset') useStore.getState().resetRun('manual')
-    if (action === 'basis') edits[0][1]()
-    const snapshot = useStore.getState().mc
-    old.mc.send({ type: 'progress', runId: old.runId, done: 99, total: 99 })
-    old.mc.send({ type: 'done', runId: old.runId, summary: mcSummary })
-    old.mc.onerror?.({ message: 'late error' })
-    old.sens.send({ type: 'sens-progress', runId: old.runId, done: 99, total: 99 })
-    old.sens.send({ type: 'sens-done', runId: old.runId, summary: sensSummary })
-    old.sens.onerror?.({ message: 'late error' })
-    expect(useStore.getState().mc === snapshot).toBe(true)
-    expect(old.mc.terminated).toBe(true)
-    expect(old.sens.terminated).toBe(true)
-  })
+  it.each(['replace', 'reset', 'basis'] as const)(
+    '%s rejects canceled callbacks in both slots',
+    (action) => {
+      const old = launch()
+      if (action === 'replace') useStore.getState().loadScenario(scenario())
+      if (action === 'reset') useStore.getState().resetRun('manual')
+      if (action === 'basis') edits[0][1]()
+      const snapshot = useStore.getState().mc
+      old.mc.send({ type: 'progress', runId: old.runId, done: 99, total: 99 })
+      old.mc.send({ type: 'done', runId: old.runId, summary: mcSummary })
+      old.mc.onerror?.({ message: 'late error' })
+      old.sens.send({ type: 'sens-progress', runId: old.runId, done: 99, total: 99 })
+      old.sens.send({ type: 'sens-done', runId: old.runId, summary: sensSummary })
+      old.sens.onerror?.({ message: 'late error' })
+      expect(useStore.getState().mc === snapshot).toBe(true)
+      expect(old.mc.terminated).toBe(true)
+      expect(old.sens.terminated).toBe(true)
+    },
+  )
 
   it('repeated requests in the same playback run reject all replaced callbacks', () => {
     const old = launch()
@@ -175,7 +220,11 @@ describe('complete analysis basis and request ownership', () => {
     work.mc.send({ type: 'done', runId: work.runId, summary: { ...mcSummary, replicates: 99 } })
     work.sens.send({ type: 'sens-progress', runId: work.runId, done: 99, total: 99 })
     work.sens.onerror?.({ message: 'late' })
-    work.sens.send({ type: 'sens-done', runId: work.runId, summary: { ...sensSummary, nominal: 99 } })
+    work.sens.send({
+      type: 'sens-done',
+      runId: work.runId,
+      summary: { ...sensSummary, nominal: 99 },
+    })
     expect(useStore.getState().mc === snapshot).toBe(true)
   })
 
@@ -214,28 +263,41 @@ describe('complete analysis basis and request ownership', () => {
     expect(useStore.getState().mc.status).toBe('done')
     expect(work.sens.terminated).toBe(true)
     expect(useStore.getState().mc.sensitivity.status).toBe('error')
-    expect(useStore.getState().mc.sensitivity.error).toBe('Cancel timed out; the worker was stopped')
+    expect(useStore.getState().mc.sensitivity.error).toBe(
+      'Cancel timed out; the worker was stopped',
+    )
     // Nothing running: a cancel is a no-op.
     useStore.getState().cancelMonteCarlo()
     expect(work.mc.postMessage).toHaveBeenCalledTimes(2)
     vi.useRealTimers()
   })
 
-  it.each(['mc', 'sensitivity'] as const)('a synchronous construction error ends the %s request in an error state', (kind) => {
-    ControlledWorker.constructionError = 'Worker blocked'
-    if (kind === 'mc') useStore.getState().runMonteCarlo()
-    else useStore.getState().runSensitivity()
-    const { mc, playback, scenario: current } = useStore.getState()
-    const run = kind === 'mc' ? mc : mc.sensitivity
-    expect(run).toMatchObject({ status: 'error', error: 'Worker blocked', runId: playback.runId,
-      basisSignature: analysisBasisSignature(current) })
-    expect(ControlledWorker.instances).toHaveLength(0)
-    ControlledWorker.constructionError = null
-    if (kind === 'mc') useStore.getState().runMonteCarlo()
-    else useStore.getState().runSensitivity()
-    expect(run === (kind === 'mc' ? useStore.getState().mc : useStore.getState().mc.sensitivity)).toBe(false)
-    expect((kind === 'mc' ? useStore.getState().mc : useStore.getState().mc.sensitivity).status).toBe('running')
-  })
+  it.each(['mc', 'sensitivity'] as const)(
+    'a synchronous construction error ends the %s request in an error state',
+    (kind) => {
+      ControlledWorker.constructionError = 'Worker blocked'
+      if (kind === 'mc') useStore.getState().runMonteCarlo()
+      else useStore.getState().runSensitivity()
+      const { mc, playback, scenario: current } = useStore.getState()
+      const run = kind === 'mc' ? mc : mc.sensitivity
+      expect(run).toMatchObject({
+        status: 'error',
+        error: 'Worker blocked',
+        runId: playback.runId,
+        basisSignature: analysisBasisSignature(current),
+      })
+      expect(ControlledWorker.instances).toHaveLength(0)
+      ControlledWorker.constructionError = null
+      if (kind === 'mc') useStore.getState().runMonteCarlo()
+      else useStore.getState().runSensitivity()
+      expect(
+        run === (kind === 'mc' ? useStore.getState().mc : useStore.getState().mc.sensitivity),
+      ).toBe(false)
+      expect(
+        (kind === 'mc' ? useStore.getState().mc : useStore.getState().mc.sensitivity).status,
+      ).toBe('running')
+    },
+  )
 
   it('a replicate run and a trial requested together each own their slot and finish in either order', () => {
     useStore.getState().runMonteCarlo()
@@ -246,9 +308,19 @@ describe('complete analysis basis and request ownership', () => {
     expect(useStore.getState().trial).toMatchObject({ status: 'preparing', manifest: { runId } })
     expect(useStore.getState().playback.playing).toBe(false)
     expect(mc.terminated).toBe(false)
-    const request = trial.request as { requestToken: string; basisSignature: string; scenario: Scenario; manifest: TrialManifest }
-    trial.send({ type: 'trial-done', requestToken: request.requestToken, runId, basisSignature: request.basisSignature,
-      result: runTrial(request.scenario, request.manifest) })
+    const request = trial.request as {
+      requestToken: string
+      basisSignature: string
+      scenario: Scenario
+      manifest: TrialManifest
+    }
+    trial.send({
+      type: 'trial-done',
+      requestToken: request.requestToken,
+      runId,
+      basisSignature: request.basisSignature,
+      result: runTrial(request.scenario, request.manifest),
+    })
     expect(useStore.getState().trial.status).toBe('ready')
     expect(useStore.getState().mc.status).toBe('running')
     expect(mc.terminated).toBe(false)
@@ -277,25 +349,64 @@ describe('complete analysis basis and request ownership', () => {
 
   it('missing scenario defaults and explicit resolved entity/link defaults share one basis', () => {
     // An absent run field resolves to the compatibility default, not the fresh-scenario default.
-    const base: Scenario = { ...emptyScenario(), runMode: 'deterministic', uncertainty: 'aleatory', targetHalfWidth: null }
-    const missing = { ...base, doctrine: undefined, requirements: undefined,
-      roe: undefined, raid: undefined, seed: undefined, replicates: undefined,
-      runMode: undefined, uncertainty: undefined, targetHalfWidth: undefined,
-      environment: { ...base.environment, precipitation: undefined, light: undefined,
-        emBackground: undefined, visibilityM: undefined } } as unknown as Scenario
+    const base: Scenario = {
+      ...emptyScenario(),
+      runMode: 'deterministic',
+      uncertainty: 'aleatory',
+      targetHalfWidth: null,
+    }
+    const missing = {
+      ...base,
+      doctrine: undefined,
+      requirements: undefined,
+      roe: undefined,
+      raid: undefined,
+      seed: undefined,
+      replicates: undefined,
+      runMode: undefined,
+      uncertainty: undefined,
+      targetHalfWidth: undefined,
+      environment: {
+        ...base.environment,
+        precipitation: undefined,
+        light: undefined,
+        emBackground: undefined,
+        visibilityM: undefined,
+      },
+    } as unknown as Scenario
     expect(analysisBasisSignature(missing)).toBe(analysisBasisSignature(base))
     const old = scenario()
-    old.entities = old.entities.map((e) => ({ ...e, altitudeFt: undefined,
-      defendedRadiusM: undefined, enabled: undefined, formation: undefined }))
-    old.connections = old.connections.map((c) => ({ ...c, latencyS: undefined,
-      medium: undefined, confidence: undefined }))
-    const explicit = { ...old,
-      entities: old.entities.map((e) => ({ ...e, enabled: true, formation: null,
+    old.entities = old.entities.map((e) => ({
+      ...e,
+      altitudeFt: undefined,
+      defendedRadiusM: undefined,
+      enabled: undefined,
+      formation: undefined,
+    }))
+    old.connections = old.connections.map((c) => ({
+      ...c,
+      latencyS: undefined,
+      medium: undefined,
+      confidence: undefined,
+    }))
+    const explicit = {
+      ...old,
+      entities: old.entities.map((e) => ({
+        ...e,
+        enabled: true,
+        formation: null,
         altitudeFt: e.kind === 'uas' ? threatAltitudeFt(old, e) : null,
-        defendedRadiusM: e.kind === 'asset' ? defendedRadiusOf(e) : null })),
-      connections: old.connections.map((c) => ({ ...c, medium: null, confidence: null,
-        latencyS: defaultLinkLatencyS(old.entities.find((e) => e.id === c.fromId)!.kind,
-          old.entities.find((e) => e.id === c.toId)!.kind) })),
+        defendedRadiusM: e.kind === 'asset' ? defendedRadiusOf(e) : null,
+      })),
+      connections: old.connections.map((c) => ({
+        ...c,
+        medium: null,
+        confidence: null,
+        latencyS: defaultLinkLatencyS(
+          old.entities.find((e) => e.id === c.fromId)!.kind,
+          old.entities.find((e) => e.id === c.toId)!.kind,
+        ),
+      })),
     }
     expect(analysisBasisSignature(explicit)).toBe(analysisBasisSignature(old))
     useStore.getState().replaceScenario(old)
@@ -308,8 +419,18 @@ describe('complete analysis basis and request ownership', () => {
     editModel(() => ({ provenance: [] }))
     finish()
     const fallback = analysisBasisSignature(useStore.getState().scenario)
-    editModel(() => ({ provenance: [{ field: 'pk', value: '', source: 'PF', date: '',
-      basis: 'pf', spread: { ...PF_SPREAD.pk.spread } }] }))
+    editModel(() => ({
+      provenance: [
+        {
+          field: 'pk',
+          value: '',
+          source: 'PF',
+          date: '',
+          basis: 'pf',
+          spread: { ...PF_SPREAD.pk.spread },
+        },
+      ],
+    }))
     expect(analysisBasisSignature(useStore.getState().scenario)).toBe(fallback)
     expectCurrent(true)
     editModel((m) => ({ provenance: m.provenance!.map((r) => ({ ...r, spread: null })) }))
@@ -324,8 +445,14 @@ describe('complete analysis basis and request ownership', () => {
     const before = analysisBasisSignature(base)
     for (const group of ['requirements', 'doctrine'] as const) {
       for (const [field, value] of Object.entries(base[group]!)) {
-        const changed = typeof value === 'boolean' ? !value
-          : typeof value === 'number' ? value + 1 : value == null ? 10 : 'latest'
+        const changed =
+          typeof value === 'boolean'
+            ? !value
+            : typeof value === 'number'
+              ? value + 1
+              : value == null
+                ? 10
+                : 'latest'
         const next = { ...base, [group]: { ...base[group], [field]: changed } }
         expect(analysisBasisSignature(next) !== before, `${group}.${field}`).toBe(true)
       }
@@ -336,30 +463,132 @@ describe('complete analysis basis and request ownership', () => {
     const base = scenario()
     const sig = analysisBasisSignature(base)
     const variants: [string, (s: Scenario) => void][] = [
-      ['position', (s) => { s.entities[0].pos.x += 100 }],
-      ['heading', (s) => { s.entities[0].headingDeg += 45 }],
-      ['enabled', (s) => { s.entities[0].enabled = false }],
-      ['spec identity', (s) => { s.entities[0].specId = 'lib-kurfs' }],
-      ['entity draw identity', (s) => { s.entities[0].id += '-new' }],
-      ['entity ordering', (s) => { s.entities.reverse() }],
-      ['library ordering', (s) => { s.library.reverse() }],
-      ['path points', (s) => { s.paths[0].points[0].x += 100 }],
-      ['path speed', (s) => { s.paths[0].speedMps = 50 }],
-      ['path delay', (s) => { s.paths[0].startDelayS += 10 }],
-      ['raid delay', (s) => { s.raid = { waves: [
-        { entityIds: [s.paths[0].entityId], startDelayS: 10 }] } }],
-      ['environment', (s) => { s.environment.precipitation = 'rain' }],
-      ['roe', (s) => { s.roe = 'hold' }],
-      ['route endpoints', (s) => { s.connections[0].toId = s.connections[0].fromId }],
-      ['route typing', (s) => { s.connections[0].confidence = null }],
-      ['route latency', (s) => { s.connections[0].latencyS = 100 }],
-      ['sensor spec', (s) => { s.library.find((m) => m.sensor)!.sensor!.mountHeightM = 20 }],
-      ['effector spec', (s) => { s.library.find((m) => m.effector)!.effector!.flyoutSpeedMps = 100 }],
-      ['threat spec', (s) => { s.library.find((m) => m.uas)!.uas!.rcsM2 = 10 }],
-      ['profile intent', (s) => { s.library.find((m) => m.threatProfile)!
-        .threatProfile!.routeIntent = 'attack' }],
-      ['profile altitude', (s) => { s.library.find((m) => m.threatProfile)!
-        .threatProfile!.altitudeFt += 100 }],
+      [
+        'position',
+        (s) => {
+          s.entities[0].pos.x += 100
+        },
+      ],
+      [
+        'heading',
+        (s) => {
+          s.entities[0].headingDeg += 45
+        },
+      ],
+      [
+        'enabled',
+        (s) => {
+          s.entities[0].enabled = false
+        },
+      ],
+      [
+        'spec identity',
+        (s) => {
+          s.entities[0].specId = 'lib-kurfs'
+        },
+      ],
+      [
+        'entity draw identity',
+        (s) => {
+          s.entities[0].id += '-new'
+        },
+      ],
+      [
+        'entity ordering',
+        (s) => {
+          s.entities.reverse()
+        },
+      ],
+      [
+        'library ordering',
+        (s) => {
+          s.library.reverse()
+        },
+      ],
+      [
+        'path points',
+        (s) => {
+          s.paths[0].points[0].x += 100
+        },
+      ],
+      [
+        'path speed',
+        (s) => {
+          s.paths[0].speedMps = 50
+        },
+      ],
+      [
+        'path delay',
+        (s) => {
+          s.paths[0].startDelayS += 10
+        },
+      ],
+      [
+        'raid delay',
+        (s) => {
+          s.raid = { waves: [{ entityIds: [s.paths[0].entityId], startDelayS: 10 }] }
+        },
+      ],
+      [
+        'environment',
+        (s) => {
+          s.environment.precipitation = 'rain'
+        },
+      ],
+      [
+        'roe',
+        (s) => {
+          s.roe = 'hold'
+        },
+      ],
+      [
+        'route endpoints',
+        (s) => {
+          s.connections[0].toId = s.connections[0].fromId
+        },
+      ],
+      [
+        'route typing',
+        (s) => {
+          s.connections[0].confidence = null
+        },
+      ],
+      [
+        'route latency',
+        (s) => {
+          s.connections[0].latencyS = 100
+        },
+      ],
+      [
+        'sensor spec',
+        (s) => {
+          s.library.find((m) => m.sensor)!.sensor!.mountHeightM = 20
+        },
+      ],
+      [
+        'effector spec',
+        (s) => {
+          s.library.find((m) => m.effector)!.effector!.flyoutSpeedMps = 100
+        },
+      ],
+      [
+        'threat spec',
+        (s) => {
+          s.library.find((m) => m.uas)!.uas!.rcsM2 = 10
+        },
+      ],
+      [
+        'profile intent',
+        (s) => {
+          s.library.find((m) => m.threatProfile)!.threatProfile!.routeIntent = 'attack'
+        },
+      ],
+      [
+        'profile altitude',
+        (s) => {
+          s.library.find((m) => m.threatProfile)!.threatProfile!.altitudeFt += 100
+        },
+      ],
     ]
     for (const [name, edit] of variants) {
       const next = structuredClone(base)
@@ -371,8 +600,13 @@ describe('complete analysis basis and request ownership', () => {
   it('object property order is irrelevant while completed results remain current', () => {
     finish()
     const s = useStore.getState().scenario
-    useStore.getState().patchScenario({ environment:
-      Object.fromEntries(Object.entries(s.environment).reverse()) as Scenario['environment'] })
+    useStore
+      .getState()
+      .patchScenario({
+        environment: Object.fromEntries(
+          Object.entries(s.environment).reverse(),
+        ) as Scenario['environment'],
+      })
     expectCurrent(true)
   })
 
@@ -396,13 +630,23 @@ describe('complete analysis basis and request ownership', () => {
     useStore.getState().select({ entityIds: [] })
     useStore.getState().saveFrame('evidence')
     useStore.getState().addCard()
-    editModel((m) => ({ description: 'Updated description', provenance:
-      m.provenance?.map((r) => ({ ...r, source: 'Updated source', date: '2026-09-05' })) }))
+    editModel((m) => ({
+      description: 'Updated description',
+      provenance: m.provenance?.map((r) => ({
+        ...r,
+        source: 'Updated source',
+        date: '2026-09-05',
+      })),
+    }))
     expect(analysisBasisSignature(useStore.getState().scenario)).toBe(sig)
-    expect(useStore.getState().scenario.library.find((m) => m.id === 'lib-coyote')!
-      .provenance?.[0].source).toBe('Updated source')
+    expect(
+      useStore.getState().scenario.library.find((m) => m.id === 'lib-coyote')!.provenance?.[0]
+        .source,
+    ).toBe('Updated source')
     const model = useStore.getState().scenario.library.find((m) => m.id === 'lib-coyote')!
-    const tag = renderToStaticMarkup(createElement(PfTag, { model, field: model.provenance![0].field }))
+    const tag = renderToStaticMarkup(
+      createElement(PfTag, { model, field: model.provenance![0].field }),
+    )
     expect(tag).toContain('Updated source')
     expect(tag).toContain('2026-09-05')
     expectCurrent(true)
@@ -421,8 +665,14 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
     vi.unstubAllGlobals()
   })
 
-  const progress = (done: number): PoolProgress =>
-    ({ workers: 3, done, total: 1, stopRule: 'replicates', elapsedMs: 5, perWorkerDone: [done, 0, 0] })
+  const progress = (done: number): PoolProgress => ({
+    workers: 3,
+    done,
+    total: 1,
+    stopRule: 'replicates',
+    elapsedMs: 5,
+    perWorkerDone: [done, 0, 0],
+  })
 
   it('the Run button starts the pool and its sink writes mc.pool only while the run is live', () => {
     useStore.getState().runMonteCarlo()
@@ -448,8 +698,14 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
     const runId = useStore.getState().playback.runId
     pooled.onPool!(progress(1))
     ControlledWorker.latest().send({ type: 'error', runId, message: 'worker failed' })
-    expect(useStore.getState().mc).toMatchObject({ status: 'error', error: 'worker failed', pool: null })
-    useStore.getState().patchScenario({ targetHalfWidth: 0.1, stopFloor: 40, stopCap: 700, replicates: 10 })
+    expect(useStore.getState().mc).toMatchObject({
+      status: 'error',
+      error: 'worker failed',
+      pool: null,
+    })
+    useStore
+      .getState()
+      .patchScenario({ targetHalfWidth: 0.1, stopFloor: 40, stopCap: 700, replicates: 10 })
     useStore.getState().runMonteCarlo()
     expect(useStore.getState().mc.total).toBe(700)
   })
@@ -465,24 +721,45 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
   it('a full run drives Morris then Sobol on the kept fields and ends with the Sobol result', () => {
     const { morris, runId } = launchFull('kills')
     expect(morris.request).toMatchObject({ type: 'morris', runId, response: 'kills' })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({ status: 'running', runId, progress: 0, total: 0 })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({
+      status: 'running',
+      runId,
+      progress: 0,
+      total: 0,
+    })
     morris.send({ type: 'morris-progress', runId, done: 7, total: 70 })
     expect(useStore.getState().mc.sensitivity).toMatchObject({ progress: 7, total: 70 })
     morris.send({ type: 'morris-done', runId, result: MORRIS_FIXTURE })
     expect(morris.terminated).toBe(true)
     const sobol = ControlledWorker.latest()
     expect(sobol).not.toBe(morris)
-    expect(sobol.request).toMatchObject({ type: 'sobol', runId, response: 'leakers',
-      kept: MORRIS_FIXTURE.kept.map((i) => MORRIS_FIXTURE.fields[i].field) })
+    expect(sobol.request).toMatchObject({
+      type: 'sobol',
+      runId,
+      response: 'leakers',
+      kept: MORRIS_FIXTURE.kept.map((i) => MORRIS_FIXTURE.fields[i].field),
+    })
     const mid = useStore.getState().mc
     expect(mid.morris).toBe(MORRIS_FIXTURE)
-    expect(mid.sensitivity).toMatchObject({ status: 'running', runId, progress: 0, total: 0, summary: null })
+    expect(mid.sensitivity).toMatchObject({
+      status: 'running',
+      runId,
+      progress: 0,
+      total: 0,
+      summary: null,
+    })
     sobol.send({ type: 'sobol-progress', runId, done: 3, total: 1536 })
     expect(useStore.getState().mc.sensitivity).toMatchObject({ progress: 3, total: 1536 })
     sobol.send({ type: 'sobol-done', runId, result: SOBOL_FIXTURE })
     const { mc } = useStore.getState()
     expect(mc.sobol).toBe(SOBOL_FIXTURE)
-    expect(mc.sensitivity).toMatchObject({ status: 'done', progress: 1536, total: 1536, summary: null, error: null })
+    expect(mc.sensitivity).toMatchObject({
+      status: 'done',
+      progress: 1536,
+      total: 1536,
+      summary: null,
+      error: null,
+    })
     expect(sobol.terminated).toBe(true)
     // A replicate run keeps both results; the next sensitivity launch clears them.
     useStore.getState().runMonteCarlo()
@@ -509,11 +786,21 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
     morris.send({ type: 'morris-done', runId: 'other', result: MORRIS_FIXTURE })
     expect(useStore.getState().mc.morris).toBeNull()
     morris.send({ type: 'morris-error', runId, message: 'stopped early' })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({ status: 'error', error: 'stopped early' })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({
+      status: 'error',
+      error: 'stopped early',
+    })
     const next = launchFull()
     next.morris.send({ type: 'morris-done', runId: next.runId, result: MORRIS_FIXTURE })
-    ControlledWorker.latest().send({ type: 'sobol-error', runId: next.runId, message: 'Sobol cancelled' })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({ status: 'error', error: 'Sobol cancelled' })
+    ControlledWorker.latest().send({
+      type: 'sobol-error',
+      runId: next.runId,
+      message: 'Sobol cancelled',
+    })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({
+      status: 'error',
+      error: 'Sobol cancelled',
+    })
     expect(useStore.getState().mc.morris).toBe(MORRIS_FIXTURE)
   })
 
@@ -532,27 +819,68 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
 describe('the placement optimization', () => {
   const EFFECTOR = 'ent-mtnvzhmr-24'
   const RANGE: Boundary = {
-    id: 'bnd-range', name: 'Range', type: 'range', closed: true, altBandFt: null,
-    points: [{ x: -2000, y: -2000 }, { x: 2000, y: -2000 }, { x: 2000, y: 2000 }, { x: -2000, y: 2000 }],
+    id: 'bnd-range',
+    name: 'Range',
+    type: 'range',
+    closed: true,
+    altBandFt: null,
+    points: [
+      { x: -2000, y: -2000 },
+      { x: 2000, y: -2000 },
+      { x: 2000, y: 2000 },
+      { x: -2000, y: 2000 },
+    ],
   }
   const ranged = (): Scenario => ({ ...scenario(), boundaries: [RANGE] })
   const spec = {
     objective: { response: 'leakers', direction: 'minimize' } as const,
-    movableIds: [EFFECTOR], evaluations: 6, replicates: 10,
+    movableIds: [EFFECTOR],
+    evaluations: 6,
+    replicates: 10,
   }
-  const stat = (mean: number): Stat => ({ mean, sd: 1, se: 0.2, lo: mean - 0.4, hi: mean + 0.4,
-    conf: 0.95, interval: 't', p10: mean, p90: mean, p025: mean, p975: mean, n: 10, total: 10,
-    defined: { p: 1, lo: 0.9, hi: 1 } })
-  const evaluation = (index: number, mean: number, incumbent: boolean): OptimizeEvaluation =>
-    ({ index, positions: { [EFFECTOR]: { x: 100 * index, y: -100 * index } }, objective: stat(mean), incumbent })
+  const stat = (mean: number): Stat => ({
+    mean,
+    sd: 1,
+    se: 0.2,
+    lo: mean - 0.4,
+    hi: mean + 0.4,
+    conf: 0.95,
+    interval: 't',
+    p10: mean,
+    p90: mean,
+    p025: mean,
+    p975: mean,
+    n: 10,
+    total: 10,
+    defined: { p: 1, lo: 0.9, hi: 1 },
+  })
+  const evaluation = (index: number, mean: number, incumbent: boolean): OptimizeEvaluation => ({
+    index,
+    positions: { [EFFECTOR]: { x: 100 * index, y: -100 * index } },
+    objective: stat(mean),
+    incumbent,
+  })
   /** A cut run: four evaluations of the six the budget asked for. */
   function cutResult(): OptimizeResult {
-    const trace = [evaluation(0, 2.5, true), evaluation(1, 3.1, false), evaluation(2, 1.4, true), evaluation(3, 1.9, false)]
+    const trace = [
+      evaluation(0, 2.5, true),
+      evaluation(1, 3.1, false),
+      evaluation(2, 1.4, true),
+      evaluation(3, 1.9, false),
+    ]
     return {
-      method: 'gp-ei', objective: spec.objective, movableIds: [EFFECTOR],
+      method: 'gp-ei',
+      objective: spec.objective,
+      movableIds: [EFFECTOR],
       budget: { evaluations: 6, replicates: 10, seed: runSettings(ranged()).seed },
-      candidates: [trace[2], trace[3], trace[0]].map((e) => ({ positions: e.positions, objective: e.objective, evaluationIndex: e.index })),
-      trace, replicatesRun: 40, elapsedMs: 1234,
+      candidates: [trace[2], trace[3], trace[0]].map((e) => ({
+        positions: e.positions,
+        objective: e.objective,
+        evaluationIndex: e.index,
+      })),
+      trace,
+      replicatesRun: 40,
+      elapsedMs: 1234,
     }
   }
 
@@ -568,11 +896,20 @@ describe('the placement optimization', () => {
   it('publishes the pending run and sends the scenario, bounds and budget to its own worker', () => {
     useStore.getState().runOptimize(spec)
     const { mc, playback, scenario: current } = useStore.getState()
-    expect(mc.optimize).toMatchObject({ status: 'running', runId: playback.runId, progress: 0, total: 6,
-      summary: null, error: null, basisSignature: analysisBasisSignature(current) })
+    expect(mc.optimize).toMatchObject({
+      status: 'running',
+      runId: playback.runId,
+      progress: 0,
+      total: 6,
+      summary: null,
+      error: null,
+      basisSignature: analysisBasisSignature(current),
+    })
     expect(mc.optimizeBest).toBeNull()
     expect(ControlledWorker.latest().request).toMatchObject({
-      type: 'optimize', runId: playback.runId, movableIds: [EFFECTOR],
+      type: 'optimize',
+      runId: playback.runId,
+      movableIds: [EFFECTOR],
       objective: { response: 'leakers', direction: 'minimize' },
       // The bounds default to the scenario's first range boundary; the seed to its run seed.
       bounds: { boundaryId: RANGE.id, points: RANGE.points },
@@ -586,7 +923,11 @@ describe('the placement optimization', () => {
     const runId = useStore.getState().playback.runId
     const best = evaluation(2, 1.4, true)
     work.send({ type: 'optimize-progress', runId, done: 3, total: 6, best })
-    expect(useStore.getState().mc.optimize).toMatchObject({ progress: 3, total: 6, status: 'running' })
+    expect(useStore.getState().mc.optimize).toMatchObject({
+      progress: 3,
+      total: 6,
+      status: 'running',
+    })
     expect(useStore.getState().mc.optimizeBest).toEqual(best)
     // A message from another run belongs to no live request here.
     work.send({ type: 'optimize-progress', runId: 'other', done: 5, total: 6, best: null })
@@ -594,12 +935,21 @@ describe('the placement optimization', () => {
     const result = cutResult()
     work.send({ type: 'optimize-done', runId, result })
     // Four trace entries of the six the budget asked for: the run reads as cut.
-    expect(useStore.getState().mc.optimize).toMatchObject({ status: 'done', progress: 4, total: 6, error: null })
+    expect(useStore.getState().mc.optimize).toMatchObject({
+      status: 'done',
+      progress: 4,
+      total: 6,
+      error: null,
+    })
     expect(useStore.getState().mc.optimize.summary).toBe(result)
     expect(work.terminated).toBe(true)
     // Clearing drops the result and the incumbent.
     useStore.getState().clearOptimize()
-    expect(useStore.getState().mc.optimize).toMatchObject({ status: 'idle', summary: null, runId: null })
+    expect(useStore.getState().mc.optimize).toMatchObject({
+      status: 'idle',
+      summary: null,
+      runId: null,
+    })
     expect(useStore.getState().mc.optimizeBest).toBeNull()
   })
 
@@ -607,8 +957,12 @@ describe('the placement optimization', () => {
     vi.stubGlobal('Worker', undefined)
     useStore.getState().runOptimize(spec)
     const { mc, playback } = useStore.getState()
-    expect(mc.optimize).toMatchObject({ status: 'error', error: 'Web Worker unavailable',
-      runId: playback.runId, total: 6 })
+    expect(mc.optimize).toMatchObject({
+      status: 'error',
+      error: 'Web Worker unavailable',
+      runId: playback.runId,
+      total: 6,
+    })
   })
 
   it('requests nothing under deterministic mode, with no movable entity or with no range boundary', () => {

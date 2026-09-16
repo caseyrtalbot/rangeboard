@@ -63,7 +63,9 @@ function EnvironmentBody() {
             onChange={(emBackground) => updateEnvironment({ emBackground })}
           />
         </Field>
-        <Field label={`Visibility (m, blank = ${visibilityMFor({ ...environment, visibilityM: null })} from sky)`}>
+        <Field
+          label={`Visibility (m, blank = ${visibilityMFor({ ...environment, visibilityM: null })} from sky)`}
+        >
           <input
             type="number"
             min={0}

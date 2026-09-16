@@ -14,7 +14,5 @@ export interface TrialRequest extends TrialRequestIdentity {
   manifest: TrialManifest
 }
 
-export type TrialWorkerMessage = TrialRequestIdentity & (
-  | { type: 'trial-done'; result: TrialResult }
-  | { type: 'trial-error'; message: string }
-)
+export type TrialWorkerMessage = TrialRequestIdentity &
+  ({ type: 'trial-done'; result: TrialResult } | { type: 'trial-error'; message: string })

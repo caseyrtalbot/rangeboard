@@ -9,14 +9,25 @@ import { EngagementLayer } from './EngagementLayer'
 vi.mock('react-konva', () => ({
   Group: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
   Circle: () => <span>seeker</span>,
-  Line: ({ closed, dash }: { closed?: boolean; dash?: number[] }) => <span>{closed ? 'round' : dash ? 'beam' : 'guidance'}</span>,
+  Line: ({ closed, dash }: { closed?: boolean; dash?: number[] }) => (
+    <span>{closed ? 'round' : dash ? 'beam' : 'guidance'}</span>
+  ),
 }))
 
 const shot: ShotInFlight = {
-  effectorId: 'launcher', uasId: 'threat', shipIdx: 0,
-  tS: 10, tReleaseS: 15, tEffectS: 20, progress: 0,
-  channel: 'kill', softShot: false, pk: 0.5,
-  from: { x: 0, y: 0 }, to: { x: 1000, y: 0 }, mode: 'active',
+  effectorId: 'launcher',
+  uasId: 'threat',
+  shipIdx: 0,
+  tS: 10,
+  tReleaseS: 15,
+  tEffectS: 20,
+  progress: 0,
+  channel: 'kill',
+  softShot: false,
+  pk: 0.5,
+  from: { x: 0, y: 0 },
+  to: { x: 1000, y: 0 },
+  mode: 'active',
 }
 
 beforeEach(() => {

@@ -12,11 +12,7 @@ import { entityActive, newId } from '../model/types'
 
 /** The factors a sweep can vary. */
 export type SweepFactorId =
-  | 'threatAltitudeFt'
-  | 'threatSpeedMps'
-  | 'approachAzimuthDeg'
-  | 'raidSize'
-  | 'environmentPreset'
+  'threatAltitudeFt' | 'threatSpeedMps' | 'approachAzimuthDeg' | 'raidSize' | 'environmentPreset'
 
 /** One swept factor and its grid values (2 to 6; the UI caps the grid at 36 cells). */
 export interface SweepFactor {
@@ -40,12 +36,36 @@ export const SWEEP_ENVIRONMENT_PRESETS: ReadonlyArray<{
   label: string
   set: Pick<EnvironmentSpec, 'precipitation' | 'light' | 'emBackground'>
 }> = [
-  { id: 'clear-day', label: 'Clear day', set: { precipitation: 'clear', light: 'day', emBackground: 'rural' } },
-  { id: 'clear-night', label: 'Clear night', set: { precipitation: 'clear', light: 'night', emBackground: 'rural' } },
-  { id: 'rain-day', label: 'Rain, day', set: { precipitation: 'rain', light: 'day', emBackground: 'rural' } },
-  { id: 'fog-day', label: 'Fog, day', set: { precipitation: 'fog', light: 'day', emBackground: 'rural' } },
-  { id: 'urban-day', label: 'Urban clutter, day', set: { precipitation: 'clear', light: 'day', emBackground: 'urban' } },
-  { id: 'urban-night', label: 'Urban clutter, night', set: { precipitation: 'clear', light: 'night', emBackground: 'urban' } },
+  {
+    id: 'clear-day',
+    label: 'Clear day',
+    set: { precipitation: 'clear', light: 'day', emBackground: 'rural' },
+  },
+  {
+    id: 'clear-night',
+    label: 'Clear night',
+    set: { precipitation: 'clear', light: 'night', emBackground: 'rural' },
+  },
+  {
+    id: 'rain-day',
+    label: 'Rain, day',
+    set: { precipitation: 'rain', light: 'day', emBackground: 'rural' },
+  },
+  {
+    id: 'fog-day',
+    label: 'Fog, day',
+    set: { precipitation: 'fog', light: 'day', emBackground: 'rural' },
+  },
+  {
+    id: 'urban-day',
+    label: 'Urban clutter, day',
+    set: { precipitation: 'clear', light: 'day', emBackground: 'urban' },
+  },
+  {
+    id: 'urban-night',
+    label: 'Urban clutter, night',
+    set: { precipitation: 'clear', light: 'night', emBackground: 'urban' },
+  },
 ]
 
 /** Active UAS entities that fly a path, in entity order: the threats a replicate runs. */
@@ -87,9 +107,14 @@ function withSpeed(s: Scenario, speedMps: number): Scenario {
 export function approachCenter(s: Scenario): Vec2 {
   const asset = s.entities.find((e) => e.kind === 'asset' && entityActive(e))
   if (asset) return { ...asset.pos }
-  const laydown = s.entities.filter((e) => e.kind !== 'uas' && e.kind !== 'marker' && entityActive(e))
+  const laydown = s.entities.filter(
+    (e) => e.kind !== 'uas' && e.kind !== 'marker' && entityActive(e),
+  )
   if (laydown.length === 0) return { x: 0, y: 0 }
-  const sum = laydown.reduce((acc, e) => ({ x: acc.x + e.pos.x, y: acc.y + e.pos.y }), { x: 0, y: 0 })
+  const sum = laydown.reduce((acc, e) => ({ x: acc.x + e.pos.x, y: acc.y + e.pos.y }), {
+    x: 0,
+    y: 0,
+  })
   return { x: sum.x / laydown.length, y: sum.y / laydown.length }
 }
 
@@ -124,11 +149,17 @@ function withAzimuth(s: Scenario, azimuthDeg: number): Scenario {
     ...s,
     entities: s.entities.map((e) =>
       ids.has(e.id)
-        ? { ...e, pos: rotatePoint(e.pos, center, delta), headingDeg: ((e.headingDeg + delta) % 360 + 360) % 360 }
+        ? {
+            ...e,
+            pos: rotatePoint(e.pos, center, delta),
+            headingDeg: (((e.headingDeg + delta) % 360) + 360) % 360,
+          }
         : e,
     ),
     paths: s.paths.map((p) =>
-      ids.has(p.entityId) ? { ...p, points: p.points.map((q) => rotatePoint(q, center, delta)) } : p,
+      ids.has(p.entityId)
+        ? { ...p, points: p.points.map((q) => rotatePoint(q, center, delta)) }
+        : p,
     ),
   }
 }
@@ -141,13 +172,12 @@ function withAzimuth(s: Scenario, azimuthDeg: number): Scenario {
  * Repeated members keep the original geometry and formation.
  */
 function withRaidSize(s: Scenario, size: number): Scenario {
-  if (!Number.isInteger(size) || size < 1) throw new Error(`raidSize takes a whole number of 1 or more, not ${size}`)
+  if (!Number.isInteger(size) || size < 1)
+    throw new Error(`raidSize takes a whole number of 1 or more, not ${size}`)
   const threats = threatsWithPath(s)
   const threatIds = new Set(threats.map((e) => e.id))
   const wave = s.raid?.waves[0]
-  const members = wave
-    ? wave.entityIds.filter((id) => threatIds.has(id))
-    : threats.map((e) => e.id)
+  const members = wave ? wave.entityIds.filter((id) => threatIds.has(id)) : threats.map((e) => e.id)
   if (members.length === 0) return s
   if (size <= members.length) {
     const drop = new Set(members.slice(size))
@@ -156,7 +186,10 @@ function withRaidSize(s: Scenario, size: number): Scenario {
       entities: s.entities.filter((e) => !drop.has(e.id)),
       paths: s.paths.filter((p) => !drop.has(p.entityId)),
       raid: s.raid && {
-        waves: s.raid.waves.map((w) => ({ ...w, entityIds: w.entityIds.filter((id) => !drop.has(id)) })),
+        waves: s.raid.waves.map((w) => ({
+          ...w,
+          entityIds: w.entityIds.filter((id) => !drop.has(id)),
+        })),
       },
     }
   }
@@ -170,7 +203,12 @@ function withRaidSize(s: Scenario, size: number): Scenario {
     entities.push({ ...source, id, name: `${source.name} ${Math.floor(i / members.length) + 1}` })
     for (const p of s.paths) {
       if (p.entityId !== sourceId) continue
-      paths.push({ ...p, id: newId('pth'), entityId: id, points: p.points.map((q) => ({ ...q })) } satisfies FlightPath)
+      paths.push({
+        ...p,
+        id: newId('pth'),
+        entityId: id,
+        points: p.points.map((q) => ({ ...q })),
+      } satisfies FlightPath)
     }
     added.push(id)
   }
@@ -179,7 +217,9 @@ function withRaidSize(s: Scenario, size: number): Scenario {
     entities,
     paths,
     raid: s.raid && {
-      waves: s.raid.waves.map((w, i) => (i === 0 ? { ...w, entityIds: [...w.entityIds, ...added] } : w)),
+      waves: s.raid.waves.map((w, i) =>
+        i === 0 ? { ...w, entityIds: [...w.entityIds, ...added] } : w,
+      ),
     },
   }
 }

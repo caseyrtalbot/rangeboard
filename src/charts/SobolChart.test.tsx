@@ -6,7 +6,9 @@ import { SOBOL_FIXTURE } from './__fixtures__/sobolFixture'
 import { SobolChart } from './SobolChart'
 
 const labelOf = (f: UncertainField) => `${f.modelId} · ${f.field}`
-const html = renderToStaticMarkup(<SobolChart result={SOBOL_FIXTURE} labelOf={labelOf} width={312} />)
+const html = renderToStaticMarkup(
+  <SobolChart result={SOBOL_FIXTURE} labelOf={labelOf} width={312} />,
+)
 
 /** Row keys in draw order. */
 const drawnRows = (markup: string) =>
@@ -16,7 +18,8 @@ const drawnRows = (markup: string) =>
 const inScale: SobolResult = {
   ...SOBOL_FIXTURE,
   fields: SOBOL_FIXTURE.fields.map((f) => ({
-    ...f, firstOrder: { ...f.firstOrder, lo: Math.max(0, f.firstOrder.lo) },
+    ...f,
+    firstOrder: { ...f.firstOrder, lo: Math.max(0, f.firstOrder.lo) },
   })),
 }
 
@@ -77,15 +80,18 @@ describe('SobolChart bounds outside the scale', () => {
   it('clamps a bootstrap bound to the scale and counts it in the copy line', () => {
     // engageTimeS carries a first-order lower bound of -0.012; the whisker starts at the
     // gutter edge, x = GUTTER_W, and the sentence still reports the estimate.
-    const starts = [...html.matchAll(/<line x1="([\d.-]+)"[^>]*data-role="first-order-ci"/g)]
-      .map((m) => m[1])
+    const starts = [...html.matchAll(/<line x1="([\d.-]+)"[^>]*data-role="first-order-ci"/g)].map(
+      (m) => m[1],
+    )
     expect(starts).toHaveLength(4)
     expect(starts[3]).toBe('150')
     expect(html).toContain('· 1 bound clamped to [0, 1]')
   })
 
   it('says nothing about clamping when every bound is on the scale', () => {
-    const clean = renderToStaticMarkup(<SobolChart result={inScale} labelOf={labelOf} width={312} />)
+    const clean = renderToStaticMarkup(
+      <SobolChart result={inScale} labelOf={labelOf} width={312} />,
+    )
     expect(clean).not.toContain('clamped')
     expect(drawnRows(clean)).toEqual(drawnRows(html))
   })
@@ -94,8 +100,11 @@ describe('SobolChart bounds outside the scale', () => {
 describe('SobolChart gutter', () => {
   it('cuts a long label in the middle and keeps the field key whole', () => {
     const long = renderToStaticMarkup(
-      <SobolChart result={SOBOL_FIXTURE} width={312}
-        labelOf={(f) => `RPS-42 radar panel (RADA MHR) · ${f.field}`} />,
+      <SobolChart
+        result={SOBOL_FIXTURE}
+        width={312}
+        labelOf={(f) => `RPS-42 radar panel (RADA MHR) · ${f.field}`}
+      />,
     )
     expect(long).toContain('RPS-42 ra…· detectRangeM')
     expect(long).toContain('RPS-42 ra…RADA MHR) · pk')

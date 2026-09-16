@@ -13,8 +13,20 @@ function prepareReadyTrial() {
   const st = useStore.getState()
   if (st.trial.status === 'ready') return
   const scenario = structuredClone(st.scenario)
-  const manifest = createTrialManifest(scenario, st.playback.runId, analysisBasisSignature(scenario))
-  useStore.setState({ trial: { ...IDLE_TRIAL, status: 'ready', scenario, manifest, result: runTrial(scenario, manifest) } })
+  const manifest = createTrialManifest(
+    scenario,
+    st.playback.runId,
+    analysisBasisSignature(scenario),
+  )
+  useStore.setState({
+    trial: {
+      ...IDLE_TRIAL,
+      status: 'ready',
+      scenario,
+      manifest,
+      result: runTrial(scenario, manifest),
+    },
+  })
 }
 
 const command = (c: Parameters<ReturnType<typeof useStore.getState>['playbackCommand']>[0]) =>
@@ -35,7 +47,11 @@ describe('playback commands through the one store interface', () => {
     expect(started.basisSignature).toBe(useStore.getState().trial.manifest!.basisSignature)
     command({ type: 'publish', t: 4 })
     command({ type: 'publish', t: 9.5 })
-    expect(playback()).toMatchObject({ simTimeS: 9.5, observedThroughS: 9.5, startedAtMs: started.startedAtMs })
+    expect(playback()).toMatchObject({
+      simTimeS: 9.5,
+      observedThroughS: 9.5,
+      startedAtMs: started.startedAtMs,
+    })
   })
 
   it('publish past the duration completes once; later publications change nothing', () => {
@@ -43,7 +59,12 @@ describe('playback commands through the one store interface', () => {
     command({ type: 'play' })
     command({ type: 'publish', t: durationS + 3 })
     const sealed = playback()
-    expect(sealed).toMatchObject({ playing: false, phase: 'complete', simTimeS: durationS, observedThroughS: durationS })
+    expect(sealed).toMatchObject({
+      playing: false,
+      phase: 'complete',
+      simTimeS: durationS,
+      observedThroughS: durationS,
+    })
     expect(sealed.completedAtMs).not.toBeNull()
     command({ type: 'publish', t: durationS + 6 })
     command({ type: 'publish', t: 2 })
@@ -59,12 +80,25 @@ describe('playback commands through the one store interface', () => {
     command({ type: 'play' })
     command({ type: 'publish', t: 5 })
     command({ type: 'scrub', t: 40 })
-    expect(playback()).toMatchObject({ playing: false, phase: 'review', simTimeS: 40, observedThroughS: 5 })
+    expect(playback()).toMatchObject({
+      playing: false,
+      phase: 'review',
+      simTimeS: 40,
+      observedThroughS: 5,
+    })
     useStore.getState().saveFrame('later')
     command({ type: 'scrub', t: 1 })
     const frame = useStore.getState().scenario.frames[0]
-    command({ type: 'frame', frame: { ...frame, camera: { x: 12, y: -3, scale: 2 }, basemap: 'sat' } })
-    expect(playback()).toMatchObject({ playing: false, phase: 'review', simTimeS: 40, observedThroughS: 5 })
+    command({
+      type: 'frame',
+      frame: { ...frame, camera: { x: 12, y: -3, scale: 2 }, basemap: 'sat' },
+    })
+    expect(playback()).toMatchObject({
+      playing: false,
+      phase: 'review',
+      simTimeS: 40,
+      observedThroughS: 5,
+    })
     expect(useStore.getState().camera).toEqual({ x: 12, y: -3, scale: 2 })
     expect(useStore.getState().ui.basemap).toBe('sat')
     command({ type: 'play' })
@@ -85,7 +119,12 @@ describe('playback commands through the one store interface', () => {
     expect(playback()).toMatchObject({ playing: false, phase: 'paused', simTimeS: 6 })
     command({ type: 'scrub', t: 30 })
     command({ type: 'toggle' })
-    expect(playback()).toMatchObject({ playing: true, phase: 'running', simTimeS: 6, observedThroughS: 6 })
+    expect(playback()).toMatchObject({
+      playing: true,
+      phase: 'running',
+      simTimeS: 6,
+      observedThroughS: 6,
+    })
   })
 
   it('replay keeps identity, completion and observation; new run replaces them', () => {
@@ -96,19 +135,36 @@ describe('playback commands through the one store interface', () => {
     const trial = useStore.getState().trial
     command({ type: 'play' })
     expect(playback()).toMatchObject({
-      playing: true, phase: 'running', simTimeS: 0, runId: sealed.runId,
-      observedThroughS: durationS, completedAtMs: sealed.completedAtMs,
+      playing: true,
+      phase: 'running',
+      simTimeS: 0,
+      runId: sealed.runId,
+      observedThroughS: durationS,
+      completedAtMs: sealed.completedAtMs,
     })
-    expect(useStore.getState().trial).toMatchObject({ status: 'ready', manifest: trial.manifest, result: trial.result })
+    expect(useStore.getState().trial).toMatchObject({
+      status: 'ready',
+      manifest: trial.manifest,
+      result: trial.result,
+    })
     command({ type: 'newRun', reason: 'manual' })
-    expect(playback()).toMatchObject({ phase: 'ready', simTimeS: 0, observedThroughS: 0, startedAtMs: null, completedAtMs: null })
+    expect(playback()).toMatchObject({
+      phase: 'ready',
+      simTimeS: 0,
+      observedThroughS: 0,
+      startedAtMs: null,
+      completedAtMs: null,
+    })
     expect(playback().runId).not.toBe(sealed.runId)
     expect(playback().runSeq).toBe(sealed.runSeq + 1)
     expect(useStore.getState().trial).toBe(IDLE_TRIAL)
   })
 
   it('an observation record without a retained trial is reset before play prepares', () => {
-    useStore.setState(({ playback: p }) => ({ trial: IDLE_TRIAL, playback: { ...p, startedAtMs: 1, observedThroughS: 30, simTimeS: 30 } }))
+    useStore.setState(({ playback: p }) => ({
+      trial: IDLE_TRIAL,
+      playback: { ...p, startedAtMs: 1, observedThroughS: 30, simTimeS: 30 },
+    }))
     const before = playback().runId
     command({ type: 'play' })
     expect(playback().runId).not.toBe(before)
@@ -138,15 +194,28 @@ describe('resolvePlayback is store-free', () => {
     const c = { ...ctx(), playback: { ...freshPlayback(3), playing: true, startedAtMs: 5 } }
     const next = resolvePlayback({ type: 'publish', t: 1e6 }, c)
     // Nothing can be sealed, so the run stops and the frame loop with it.
-    expect(next).toMatchObject({ kind: 'apply', patch: { playback: { playing: false, phase: 'paused' } } })
-    expect(next.kind === 'apply' && next.patch.playback)
-      .toMatchObject({ completedAtMs: null, observedThroughS: 0, simTimeS: 0 })
+    expect(next).toMatchObject({
+      kind: 'apply',
+      patch: { playback: { playing: false, phase: 'paused' } },
+    })
+    expect(next.kind === 'apply' && next.patch.playback).toMatchObject({
+      completedAtMs: null,
+      observedThroughS: 0,
+      simTimeS: 0,
+    })
   })
 
   it('play without a trial asks for preparation and waits; a pending start does not re-prepare', () => {
     const waiting = resolvePlayback({ type: 'play' }, ctx())
-    expect(waiting).toMatchObject({ kind: 'apply', prepare: true, patch: { trial: { startWhenReady: true } } })
-    const preparing = resolvePlayback({ type: 'play' }, { ...ctx(), trial: { ...IDLE_TRIAL, status: 'preparing' } })
+    expect(waiting).toMatchObject({
+      kind: 'apply',
+      prepare: true,
+      patch: { trial: { startWhenReady: true } },
+    })
+    const preparing = resolvePlayback(
+      { type: 'play' },
+      { ...ctx(), trial: { ...IDLE_TRIAL, status: 'preparing' } },
+    )
     expect(preparing).toMatchObject({ kind: 'apply', prepare: false })
   })
 
@@ -157,9 +226,16 @@ describe('resolvePlayback is store-free', () => {
 
   it('a manual new run writes the next sequence and stamps the lens; other reasons write nothing', () => {
     const manual = resolvePlayback({ type: 'newRun', reason: 'manual' }, ctx())
-    expect(manual).toMatchObject({ kind: 'apply', writeRunSeq: 4, patch: { scenario: { observedPresetId: 'sensors' } } })
+    expect(manual).toMatchObject({
+      kind: 'apply',
+      writeRunSeq: 4,
+      patch: { scenario: { observedPresetId: 'sensors' } },
+    })
     const changed = resolvePlayback({ type: 'newRun', reason: 'configuration-changed' }, ctx())
-    expect(changed).toMatchObject({ kind: 'apply', patch: { playback: { runSeq: 3, resetReason: 'configuration-changed' } } })
+    expect(changed).toMatchObject({
+      kind: 'apply',
+      patch: { playback: { runSeq: 3, resetReason: 'configuration-changed' } },
+    })
     expect((changed as { writeRunSeq?: number }).writeRunSeq).toBeUndefined()
   })
 

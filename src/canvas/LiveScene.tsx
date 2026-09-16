@@ -108,22 +108,41 @@ function stableIds(next: Set<string>, prev: Set<string>): Set<string> {
 
 /** Shared rendered geometry for glyphs, labels, telemetry leaders and marquee. */
 // oxlint-disable-next-line react/only-export-components
-export function renderedTrialGeometry(scenario: Scenario, trial: TrialResultView | null, horizonS: number | null, geometryTimeS: number) {
+export function renderedTrialGeometry(
+  scenario: Scenario,
+  trial: TrialResultView | null,
+  horizonS: number | null,
+  geometryTimeS: number,
+) {
   const tracks = liveTracks(scenario, geometryTimeS)
   const members = new Map<string, TrialMemberState[]>()
   if (trial && horizonS != null) {
     for (const state of trialTrackStatesAt(trial, horizonS)) {
       const track = tracks.get(state.entity.id)
-      const positions = memberPositions(state.entity, track?.pos ?? state.entity.pos, track?.headingDeg ?? state.entity.headingDeg)
-      const rendered = state.members.map(member => member.outcome === 'hard-kill' ? member : {
-        ...member, position: positions[member.memberIdx], heading: track?.headingDeg ?? state.entity.headingDeg,
-      })
+      const positions = memberPositions(
+        state.entity,
+        track?.pos ?? state.entity.pos,
+        track?.headingDeg ?? state.entity.headingDeg,
+      )
+      const rendered = state.members.map((member) =>
+        member.outcome === 'hard-kill'
+          ? member
+          : {
+              ...member,
+              position: positions[member.memberIdx],
+              heading: track?.headingDeg ?? state.entity.headingDeg,
+            },
+      )
       members.set(state.entity.id, rendered)
-      const anchor = rendered.find(member => member.memberIdx === 0)
-      if (anchor) tracks.set(state.entity.id, {
-        entityId: state.entity.id, pos: anchor.position, headingDeg: anchor.heading,
-        flying: anchor.outcome !== 'hard-kill' && (track?.flying ?? false), done: track?.done ?? false,
-      })
+      const anchor = rendered.find((member) => member.memberIdx === 0)
+      if (anchor)
+        tracks.set(state.entity.id, {
+          entityId: state.entity.id,
+          pos: anchor.position,
+          headingDeg: anchor.heading,
+          flying: anchor.outcome !== 'hard-kill' && (track?.flying ?? false),
+          done: track?.done ?? false,
+        })
     }
   }
   return { tracks, members }
@@ -134,17 +153,36 @@ export function LiveScene(props: Props) {
   const { scenario, camera, size, mouseWorld, trial, horizonS, durationS } = props
   const { displayTimeS } = useFrameClock(durationS)
   const outcomeTimeS = horizonS == null ? null : Math.min(displayTimeS, horizonS)
-  const geometry = useMemo(() => renderedTrialGeometry(scenario, trial, outcomeTimeS, displayTimeS), [scenario, trial, outcomeTimeS, displayTimeS])
+  const geometry = useMemo(
+    () => renderedTrialGeometry(scenario, trial, outcomeTimeS, displayTimeS),
+    [scenario, trial, outcomeTimeS, displayTimeS],
+  )
   const prevTracks = useRef<Map<string, LiveTrack> | null>(null)
   const tracks = useMemo(
     // eslint-disable-next-line react/refs -- previous frame lends unchanged track identities
-    () => stableTracks(geometry.tracks, prevTracks.current), [geometry.tracks],
+    () => stableTracks(geometry.tracks, prevTracks.current),
+    [geometry.tracks],
   )
-  const shots = useMemo(() => trial && outcomeTimeS != null
-    ? shotsInFlightAt(trialShotTimelineOf(trial.scenario, trial.attrition), outcomeTimeS) : [], [trial, outcomeTimeS])
+  const shots = useMemo(
+    () =>
+      trial && outcomeTimeS != null
+        ? shotsInFlightAt(trialShotTimelineOf(trial.scenario, trial.attrition), outcomeTimeS)
+        : [],
+    [trial, outcomeTimeS],
+  )
   const sweep = trial && outcomeTimeS != null ? trialSweepAt(trial, outcomeTimeS) : null
-  const states = useMemo(() => new Map(trial && outcomeTimeS != null
-    ? trial.assessments.map(a => [a.uasId, trialTelemetryAt(trial, a.uasId, outcomeTimeS, sweep ?? undefined)]) : []), [trial, outcomeTimeS, sweep])
+  const states = useMemo(
+    () =>
+      new Map(
+        trial && outcomeTimeS != null
+          ? trial.assessments.map((a) => [
+              a.uasId,
+              trialTelemetryAt(trial, a.uasId, outcomeTimeS, sweep ?? undefined),
+            ])
+          : [],
+      ),
+    [trial, outcomeTimeS, sweep],
+  )
   const blink = blinkOn(displayTimeS)
 
   const prevSpokeIds = useRef<Set<string>>(new Set())
@@ -152,30 +190,33 @@ export function LiveScene(props: Props) {
   // The drawn designator is scenario work; only the screen position of a label
   // moves per frame, so layoutLabels is left with geometry alone.
   const labelText = useMemo(
-    () => scenario.entities.map((e) => ({ id: e.id, name: e.name, drawn: boardDesignator(e.name), pos: e.pos })),
+    () =>
+      scenario.entities.map((e) => ({
+        id: e.id,
+        name: e.name,
+        drawn: boardDesignator(e.name),
+        pos: e.pos,
+      })),
     [scenario.entities],
   )
-  const labelPlacements = useMemo(
-    () => {
-      const fresh = layoutLabels(
-        labelText.map((e) => {
-          const pos = tracks.get(e.id)?.pos ?? e.pos
-          return {
-            id: e.id,
-            name: e.name,
-            drawn: e.drawn,
-            sx: pos.x * camera.scale + camera.x,
-            sy: pos.y * camera.scale + camera.y,
-          }
-        }),
-        // eslint-disable-next-line react/refs -- last frame's spoke set feeds hysteresis; one frame stale by design
-        { sticky: prevSpokeIds.current, viewport: { w: size.w, h: size.h } },
-      )
-      // eslint-disable-next-line react/refs -- same one-frame hysteresis as the sticky set
-      return stablePlacements(fresh, prevPlacements.current)
-    },
-    [labelText, tracks, camera, size],
-  )
+  const labelPlacements = useMemo(() => {
+    const fresh = layoutLabels(
+      labelText.map((e) => {
+        const pos = tracks.get(e.id)?.pos ?? e.pos
+        return {
+          id: e.id,
+          name: e.name,
+          drawn: e.drawn,
+          sx: pos.x * camera.scale + camera.x,
+          sy: pos.y * camera.scale + camera.y,
+        }
+      }),
+      // eslint-disable-next-line react/refs -- last frame's spoke set feeds hysteresis; one frame stale by design
+      { sticky: prevSpokeIds.current, viewport: { w: size.w, h: size.h } },
+    )
+    // eslint-disable-next-line react/refs -- same one-frame hysteresis as the sticky set
+    return stablePlacements(fresh, prevPlacements.current)
+  }, [labelText, tracks, camera, size])
   // A moved label changes the placements but seldom the spoke set; the set
   // keeps its identity while its ids hold, so the entity groups do not
   // re-render for a callout that moved.
@@ -196,11 +237,23 @@ export function LiveScene(props: Props) {
 
   return (
     <>
-      <ThreatWezLayer tracks={tracks} trial={trial} horizonS={outcomeTimeS} displayTimeS={displayTimeS} />
+      <ThreatWezLayer
+        tracks={tracks}
+        trial={trial}
+        horizonS={outcomeTimeS}
+        displayTimeS={displayTimeS}
+      />
       <StaticPathLayer mouseWorld={mouseWorld} />
       <TrackLayer tracks={trial?.result.tracks} horizonS={outcomeTimeS} />
       <EngagementLayer shots={shots} displayTimeS={outcomeTimeS ?? 0} />
-      <EntityLayer tracks={tracks} members={geometry.members} states={states} sweep={sweep} spokeIds={spokeIds} blink={blink} />
+      <EntityLayer
+        tracks={tracks}
+        members={geometry.members}
+        states={states}
+        sweep={sweep}
+        spokeIds={spokeIds}
+        blink={blink}
+      />
       <StaticSystemHandleLayer />
       <CalloutLayer placements={labelPlacements} />
     </>

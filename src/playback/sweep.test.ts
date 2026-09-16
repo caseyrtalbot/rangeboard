@@ -35,17 +35,31 @@ const CAMERA: SensorSpec = {
   sectorDeg: 360,
 }
 
-function fixture(radar: Partial<SensorSpec>, withCamera = false): { scenario: Scenario; uas: Entity } {
+function fixture(
+  radar: Partial<SensorSpec>,
+  withCamera = false,
+): { scenario: Scenario; uas: Entity } {
   const scenario = emptyScenario()
   scenario.environment = { ...scenario.environment, apply: false }
   const common = { description: '', color: '#0f0', builtin: false, kind: 'sensor' as const }
-  scenario.library.push({ id: 'tst-radar', name: 'Radar', ...common, sensor: { ...RADAR, ...radar } })
+  scenario.library.push({
+    id: 'tst-radar',
+    name: 'Radar',
+    ...common,
+    sensor: { ...RADAR, ...radar },
+  })
   scenario.library.push({ id: 'tst-cam', name: 'Camera', ...common, sensor: CAMERA })
   const ent = { pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '' }
   scenario.entities.push({ id: 'radar', name: 'R', kind: 'sensor', specId: 'tst-radar', ...ent })
-  if (withCamera) scenario.entities.push({ id: 'cam', name: 'C', kind: 'sensor', specId: 'tst-cam', ...ent })
+  if (withCamera)
+    scenario.entities.push({ id: 'cam', name: 'C', kind: 'sensor', specId: 'tst-cam', ...ent })
   const uas: Entity = {
-    id: 'uas', name: 'T', kind: 'uas', specId: null, ...ent, altitudeFt: MOUNT_HEIGHT_M / FT_TO_M,
+    id: 'uas',
+    name: 'T',
+    kind: 'uas',
+    specId: null,
+    ...ent,
+    altitudeFt: MOUNT_HEIGHT_M / FT_TO_M,
   }
   scenario.entities.push(uas)
   return { scenario, uas }
@@ -141,7 +155,10 @@ describe('sweep run', () => {
     expect(scans(3).trackInitAtS).toBeNull()
     const obs = scans(4)
     expect(obs.trackInitAtS).toBe(4)
-    expect(obs.intervals).toEqual([[0, 0.5], [2, 4]])
+    expect(obs.intervals).toEqual([
+      [0, 0.5],
+      [2, 4],
+    ])
 
     const eased = fixture({ updateRateS: 1, trackInitM: 2 })
     const run = prepareSweepRun(eased.scenario, eased.uas, 0)

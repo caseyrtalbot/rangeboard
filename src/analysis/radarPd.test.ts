@@ -107,7 +107,9 @@ describe('calibrated range law', () => {
       const law = CAL.r0M * Math.pow(rcs / CAL.rcs0M2, 0.25)
       const r = rangeForPd(CAL, rcs, CAL.pd0, 1, CAL.swerling0)
       expect(Math.abs(r - law) / law).toBeLessThan(1e-9)
-      expect(rangeForPd(CAL, rcs, CAL.pd0, 0.7, CAL.swerling0)).toBe(CAL.r0M * 0.7 * Math.pow(rcs / CAL.rcs0M2, 0.25))
+      expect(rangeForPd(CAL, rcs, CAL.pd0, 0.7, CAL.swerling0)).toBe(
+        CAL.r0M * 0.7 * Math.pow(rcs / CAL.rcs0M2, 0.25),
+      )
     }
   })
 
@@ -168,7 +170,17 @@ describe('mOfN', () => {
 
 describe('swerlingFor', () => {
   const uas = (patch: Partial<UasSpec>): UasSpec =>
-    ({ group: 1, airframe: 'quad', cruiseSpeedMps: 15, maxSpeedMps: 20, enduranceMin: 30, altBandFt: [100, 400], navMode: 'gps', emissionsNote: '', ...patch }) as UasSpec
+    ({
+      group: 1,
+      airframe: 'quad',
+      cruiseSpeedMps: 15,
+      maxSpeedMps: 20,
+      enduranceMin: 30,
+      altBandFt: [100, 400],
+      navMode: 'gps',
+      emissionsNote: '',
+      ...patch,
+    }) as UasSpec
 
   it('takes the spec value first', () => {
     expect(swerlingFor(uas({ airframe: 'fixed-wing', swerling: 1 }))).toBe(1)

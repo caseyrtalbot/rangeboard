@@ -10,12 +10,23 @@ import type { ShotContext } from './shot'
 import { evaluateShot } from './shot'
 
 const INTERCEPTOR = {
-  effectorType: 'interceptor', minRangeM: 0, maxRangeM: 10000, engageTimeS: 5, flyoutSpeedMps: 100,
+  effectorType: 'interceptor',
+  minRangeM: 0,
+  maxRangeM: 10000,
+  engageTimeS: 5,
+  flyoutSpeedMps: 100,
 } as EffectorSpec
 /** The Iron Beam calibration optics (directedEnergy.ts) with a 12 km envelope. */
 const OPTICAL = {
-  effectorType: 'de', minRangeM: 0, maxRangeM: 12000, engageTimeS: 5, sectorDeg: 360,
-  outputPowerKw: 100, beamQualityM2: 2, apertureM: 0.3, jitterUrad: 10,
+  effectorType: 'de',
+  minRangeM: 0,
+  maxRangeM: 12000,
+  engageTimeS: 5,
+  sectorDeg: 360,
+  outputPowerKw: 100,
+  beamQualityM2: 2,
+  apertureM: 0.3,
+  jitterUrad: 10,
 } as EffectorSpec
 const QUAD = { navMode: 'gps', group: 1, airframe: 'quad' } as UasSpec
 
@@ -30,7 +41,10 @@ function states(
   uasSpec?: UasSpec,
 ): { ts: ThreatState; es: EffectorState } {
   const ts = {
-    a: { uasId: 'uas' }, altM: 4, uasSpec, windows: new Map([['eff', windows]]),
+    a: { uasId: 'uas' },
+    altM: 4,
+    uasSpec,
+    windows: new Map([['eff', windows]]),
   } as ThreatState
   const es = {
     entity: { id: 'eff', pos: { x: 0, y: 0 }, headingDeg: 0 },
@@ -69,9 +83,16 @@ describe('evaluateShot', () => {
     // Closing at 30 m/s from 7000 m at t = 10: release position 6850, tau =
     // 6850 / 100 = 68.5 s, point 4795 m at 83.5 s (see intercept.test.ts).
     const estimate: TrackEstimate = {
-      id: 'trk', uasId: 'u1', sensorIds: ['s1'], covariance: ZERO_COVARIANCE,
+      id: 'trk',
+      uasId: 'u1',
+      sensorIds: ['s1'],
+      covariance: ZERO_COVARIANCE,
       state: { x: 7000, y: 0, vx: -30, vy: 0, tS: 10 },
-      quality: 1, hits: 1, misses: 0, coasting: false, source: 'estimate',
+      quality: 1,
+      hits: 1,
+      misses: 0,
+      coasting: false,
+      source: 'estimate',
     }
     const shot = evaluateShot({ ...ctx(), estimate }, es, ts, 0)
     expect(shot.rejected).toBeUndefined()
@@ -110,11 +131,19 @@ describe('evaluateShot', () => {
 
   it('applies the effect containment mode of each firing pass', () => {
     // Release at 15 s is past the 12 s cap: no cap, the effect lands at 115 s.
-    const gap = states(INTERCEPTOR, [[0, 12], [300, 400]])
-    expect(evaluateShot(ctx('any'), gap.es, gap.ts, 0)).toEqual({ rejected: 'effect-outside-window' })
+    const gap = states(INTERCEPTOR, [
+      [0, 12],
+      [300, 400],
+    ])
+    expect(evaluateShot(ctx('any'), gap.es, gap.ts, 0)).toEqual({
+      rejected: 'effect-outside-window',
+    })
     // The volley pass takes any interval containing the effect; the doctrine
     // pass needs the interval containing t, whose end is its deadline.
-    const later = states(INTERCEPTOR, [[0, 12], [100, 200]])
+    const later = states(INTERCEPTOR, [
+      [0, 12],
+      [100, 200],
+    ])
     const any = evaluateShot(ctx('any'), later.es, later.ts, 0)
     expect(any.rejected).toBeUndefined()
     if (!any.rejected) expect(any.interval).toEqual([0, 12])
@@ -136,7 +165,11 @@ describe('evaluateShot', () => {
 
   it('rejects a jammer whose link physics do not close, and scales jam Pk by the factor', () => {
     const jammer = {
-      effectorType: 'jammer', minRangeM: 0, maxRangeM: 10000, engageTimeS: 5, jamBands: ['ism-2400'],
+      effectorType: 'jammer',
+      minRangeM: 0,
+      maxRangeM: 10000,
+      engageTimeS: 5,
+      jamBands: ['ism-2400'],
     } as EffectorSpec
     const gps = { navMode: 'gps', group: 2, airframe: 'quad' } as UasSpec
     const miss = states(jammer, [[0, 200]], gps)
@@ -154,18 +187,26 @@ describe('evaluateShot', () => {
   it('uses the optical dwell as effect timing and preserves the independent fluence draw', () => {
     const { ts, es } = states(OPTICAL, [[0, 30]], QUAD)
     const draws: Array<[string, string, number, number]> = []
-    const shot = evaluateShot({
-      ...ctx(),
-      membersAt: () => [{ x: 10000, y: 0 }],
-      legacyBeamPk: false,
-      environment: {
-        ...defaultEnvironment(), apply: true, visibilityM: 20000, precipitation: 'clear',
+    const shot = evaluateShot(
+      {
+        ...ctx(),
+        membersAt: () => [{ x: 10000, y: 0 }],
+        legacyBeamPk: false,
+        environment: {
+          ...defaultEnvironment(),
+          apply: true,
+          visibilityM: 20000,
+          precipitation: 'clear',
+        },
+        beamFluenceDraw: (effectorId, uasId, shipIdx, tS) => {
+          draws.push([effectorId, uasId, shipIdx, tS])
+          return 0.5
+        },
       },
-      beamFluenceDraw: (effectorId, uasId, shipIdx, tS) => {
-        draws.push([effectorId, uasId, shipIdx, tS])
-        return 0.5
-      },
-    }, es, ts, 0)
+      es,
+      ts,
+      0,
+    )
     if (shot.rejected) throw new Error(shot.rejected)
     expect(draws).toEqual([['eff', ts.a.uasId, 0, 10]])
     expect(shot.dwellS).toBeCloseTo(2, 9)
@@ -192,7 +233,8 @@ describe('evaluateShot', () => {
   /** The dwell the beam model itself gives at the credited range. */
   const dwellAtRange = (ctx: ShotContext, es: EffectorState, slantM: number) =>
     beamEffect(es.pk, es.spec, QUAD, slantM, ctx.environment!, {
-      fallback: false, legacyCooldownS: es.cooldownS,
+      fallback: false,
+      legacyCooldownS: es.cooldownS,
     }).dwellS
 
   it('solves the optical dwell of an approaching target to a self-consistent effect point', () => {
@@ -205,7 +247,9 @@ describe('evaluateShot', () => {
     // model at the credited range, to 1e-4 s.
     expect(shot.intercept.pos.x).toBeCloseTo(10000 - 50 * d, 6)
     expect(Math.abs(shot.releaseDelayS + shot.dwellS - d)).toBeLessThan(1e-4)
-    expect(Math.abs(dwellAtRange(ctx5km, es, shot.intercept.slantM) - shot.dwellS)).toBeLessThan(1e-4)
+    expect(Math.abs(dwellAtRange(ctx5km, es, shot.intercept.slantM) - shot.dwellS)).toBeLessThan(
+      1e-4,
+    )
     // Tens of seconds of dwell at 7.4 km, never the 100 m near-instant effect.
     expect(shot.dwellS).toBeGreaterThan(40)
     expect(shot.dwellS).toBeLessThan(60)
@@ -224,15 +268,24 @@ describe('evaluateShot', () => {
     expect(d).toBeLessThan(160)
     expect(shot.intercept.pos.x).toBeCloseTo(10000 - 50 * d, 6)
     expect(Math.abs(shot.releaseDelayS + shot.dwellS - d)).toBeLessThan(1e-4)
-    expect(Math.abs(dwellAtRange(ctx1km, es, shot.intercept.slantM) - shot.dwellS)).toBeLessThan(1e-4)
+    expect(Math.abs(dwellAtRange(ctx1km, es, shot.intercept.slantM) - shot.dwellS)).toBeLessThan(
+      1e-4,
+    )
     const short = states(OPTICAL, [[0, 100]], QUAD)
     expect(evaluateShot(ctx1km, short.es, short.ts, 0)).toEqual({ rejected: 'no-dwell-solution' })
   })
 
   it('uses HPM field and recharge at the final target angle', () => {
     const hpm = {
-      effectorType: 'hpm', minRangeM: 0, maxRangeM: 10000, engageTimeS: 5, sectorDeg: 360,
-      fieldStrengthVm: 200, fieldStrengthRangeM: 1000, beamwidthDeg: 30, rechargeS: 3,
+      effectorType: 'hpm',
+      minRangeM: 0,
+      maxRangeM: 10000,
+      engageTimeS: 5,
+      sectorDeg: 360,
+      fieldStrengthVm: 200,
+      fieldStrengthRangeM: 1000,
+      beamwidthDeg: 30,
+      rechargeS: 3,
     } as EffectorSpec
     const quad = { navMode: 'gps', group: 1, airframe: 'quad' } as UasSpec
     const { ts, es } = states(hpm, [[0, 30]], quad)

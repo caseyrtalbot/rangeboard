@@ -111,7 +111,8 @@ function stableHits(
   let reused = 0
   for (const [id, list] of next) {
     const old = prev.get(id)
-    if (!old || old.length !== list.length || !list.every((hit, i) => sameHit(hit, old[i]))) continue
+    if (!old || old.length !== list.length || !list.every((hit, i) => sameHit(hit, old[i])))
+      continue
     next.set(id, old)
     reused++
   }

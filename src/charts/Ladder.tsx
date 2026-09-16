@@ -45,7 +45,15 @@ function gutterLabel(label: string): string {
  * its shell and measures its host like EngagementStrip does. Scrub maps the pointer x
  * through the same linear scale the spans use.
  */
-export function Ladder({ rows, durationS, tS, onScrub, width, rowHeight = 14, horizonS = Infinity }: LadderProps) {
+export function Ladder({
+  rows,
+  durationS,
+  tS,
+  onScrub,
+  width,
+  rowHeight = 14,
+  horizonS = Infinity,
+}: LadderProps) {
   const tokens = useMemo(() => readTokens(), [])
   const hostRef = useRef<HTMLDivElement>(null)
   const [measured, setMeasured] = useState(0)
@@ -107,8 +115,10 @@ export function Ladder({ rows, durationS, tS, onScrub, width, rowHeight = 14, ho
                 if (horizonS === -Infinity || sp.startS > horizonS) return null
                 const endS = Math.min(sp.endS, horizonS)
                 // Caller labels may contain the forecast end time.
-                const label = endS < sp.endS && sp.label
-                  ? `${formatTime(sp.startS)}–${formatTime(endS)}` : sp.label
+                const label =
+                  endS < sp.endS && sp.label
+                    ? `${formatTime(sp.startS)}–${formatTime(endS)}`
+                    : sp.label
                 const x0 = x(sp.startS)
                 const sw = Math.max(SPAN_MIN_W, x(endS) - x0)
                 return (

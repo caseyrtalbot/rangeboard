@@ -68,13 +68,24 @@ function sobolCopy(result: SobolResult, clamped: number): string {
 }
 
 /** The ranking as one sentence per row, for the hidden block and the aria label. */
-function rankingSentence(rank: number, label: string, row: { firstOrder: BootstrapInterval; total: BootstrapInterval }): string {
-  const say = (i: BootstrapInterval) => `${formatIndex(i.value)} (${formatIndex(i.lo)} to ${formatIndex(i.hi)})`
+function rankingSentence(
+  rank: number,
+  label: string,
+  row: { firstOrder: BootstrapInterval; total: BootstrapInterval },
+): string {
+  const say = (i: BootstrapInterval) =>
+    `${formatIndex(i.value)} (${formatIndex(i.lo)} to ${formatIndex(i.hi)})`
   return `${rank}. ${label}: total ${say(row.total)}, first-order ${say(row.firstOrder)}.`
 }
 
 /** ChartFrame's visually hidden block; the same inline rule, so no new class. */
-const HIDDEN = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)' } as const
+const HIDDEN = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clipPath: 'inset(50%)',
+} as const
 
 /**
  * Sobol indices as ranked horizontal bars: one row per field in `result.ranking` order,
@@ -106,7 +117,10 @@ export function SobolChart({ result, labelOf, width, rowHeight = 24 }: SobolChar
   }, [width])
 
   const rows = result.ranking.map((i) => result.fields[i]).filter((r) => r != null)
-  const clamped = rows.reduce((n, r) => n + (outOfScale(r.firstOrder) ? 1 : 0) + (outOfScale(r.total) ? 1 : 0), 0)
+  const clamped = rows.reduce(
+    (n, r) => n + (outOfScale(r.firstOrder) ? 1 : 0) + (outOfScale(r.total) ? 1 : 0),
+    0,
+  )
   const w = width ?? (measured > 0 ? measured : FALLBACK_W)
   const h = TOP + rows.length * rowHeight + 2
   const x0 = GUTTER_W
@@ -127,7 +141,14 @@ export function SobolChart({ result, labelOf, width, rowHeight = 24 }: SobolChar
     return (
       <>
         <rect x={x0} y={top} width={bw} height={BAR_H} rx={1} fill={fill} data-role={role} />
-        <line x1={lo} y1={mid} x2={hi} y2={mid} stroke={tokens.color('text')} data-role={`${role}-ci`} />
+        <line
+          x1={lo}
+          y1={mid}
+          x2={hi}
+          y2={mid}
+          stroke={tokens.color('text')}
+          data-role={`${role}-ci`}
+        />
         <line x1={lo} y1={mid - CAP_H} x2={lo} y2={mid + CAP_H} stroke={tokens.color('text')} />
         <line x1={hi} y1={mid - CAP_H} x2={hi} y2={mid + CAP_H} stroke={tokens.color('text')} />
         <text x={Math.max(x0 + bw, hi) + 4} y={mid} dominantBaseline="middle" style={font}>
@@ -150,7 +171,9 @@ export function SobolChart({ result, labelOf, width, rowHeight = 24 }: SobolChar
       >
         {TICKS.map((t) => (
           <g key={t}>
-            <text x={x(t)} y={9} textAnchor="middle" style={font}>{formatIndex(t)}</text>
+            <text x={x(t)} y={9} textAnchor="middle" style={font}>
+              {formatIndex(t)}
+            </text>
             <line
               x1={x(t)}
               y1={TOP - 3}
@@ -182,11 +205,19 @@ export function SobolChart({ result, labelOf, width, rowHeight = 24 }: SobolChar
         })}
       </svg>
       <div className="chart-legend">
-        <span><i style={{ background: totalColor }} />Total index</span>
-        <span><i style={{ background: firstColor }} />First-order index</span>
+        <span>
+          <i style={{ background: totalColor }} />
+          Total index
+        </span>
+        <span>
+          <i style={{ background: firstColor }} />
+          First-order index
+        </span>
       </div>
       <div style={HIDDEN}>
-        {sentences.map((s) => <p key={s}>{s}</p>)}
+        {sentences.map((s) => (
+          <p key={s}>{s}</p>
+        ))}
       </div>
     </div>
   )

@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "59c1412eb961d0a23dbc06dba27a5d16302cb6cb2a6040b25da048a1b28f771f",
+      "sha256": "f8709d56e5b38ae3239764806b5d7904929f6f667cd54c311993dee96ffd06f0",
       "reviewedAt": "2026-09-16",
-      "note": "Evidence slice 3: package.json gains check:evidence and inserts it plus test:evidence into the check chain. AGENTS.md names only npm run check for the complete local gate, which stays true."
+      "note": "Prettier 3.9.6 is a pinned devDependency; format and format:check scripts wrap .ts/.tsx/.mjs; format:check is in the check gate. AGENTS.md names npm run format for layout and still names npm run check as the complete gate."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "85367ad053859cdd97e2cbafcc7d487ed0ffe7250542a855fe3cec0a2a41c81f",
-      "reviewedAt": "2026-09-10",
-      "note": "Phase 0 gate: AGENTS.md gained the data package line; the redirect is unchanged."
+      "sha256": "326ccf5ce71336276dc31e064f9cbab65f9d8c2d4e5a8c856cac83fb428976ad",
+      "reviewedAt": "2026-09-16",
+      "note": "AGENTS.md now names Prettier for source layout; the Claude redirect is unchanged."
     },
     {
       "document": "README.md",
@@ -27,34 +27,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "6e8a3d60e409b9c3b8801305d5a3d5fc3bf3128f00d83b1c386dd3814e2a07ca",
+      "sha256": "3ac0743f2c122022e7a5196b9beeaca4864fef8a277ea00b22580869cf3e2b4d",
       "reviewedAt": "2026-09-16",
-      "note": "Evidence slice 3: the check chain gains check:evidence and test:evidence. README names only npm run check and the Node version, so no text change is needed."
+      "note": "package.json gained Prettier and format scripts; App.tsx and main.tsx were Prettier-rewrapped only. README still names npm run check and the Node version."
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "156d3f0d5336a4e2c87131ace0378877f29c37690e27d3b6405897cf2cca0522",
+      "sha256": "43538576223b0f959b99e7b4f8d52f12a189b20dcd6ce41603e13efb4eec5ca9",
       "reviewedAt": "2026-09-16",
-      "note": "Documentation sweep 2026-09-16: the completed calibration plan moves from current references to historical completion records; the playback realism proposal entry states that R0 to R5 were delivered."
+      "note": "Dropped the deleted HANDOFF.md current-reference row and dead historical links; cancelled plans remain in Git history. Index still lists the living current guides."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "20adb8f7ae44761dddd0cfb4b99e275728195a0fc53e82226007382ea7443298",
+      "sha256": "a27148a09db785ac59d0cce8d183b3cb84fc5d2df50beb688f37e8f19c1cd49e",
       "reviewedAt": "2026-09-16",
-      "note": "Reviewed explicit timeout headroom for the hosted runner's compute-heavy Monte Carlo tests; product behavior and source ownership remain unchanged."
+      "note": "src/ was Prettier-rewrapped with printWidth 100; product ownership, Board features and source entry points are unchanged."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "ec4824491d4f02b29b0965c114579c2c7e25f5f20bb917a626d8cba9ceb28165",
+      "sha256": "ac95e832a9dbe8f61987464b1e69ad4de65a1211dc2e9c8b011ad07d2d6b95f2",
       "reviewedAt": "2026-09-16",
-      "note": "Reviewed explicit timeout headroom for compute-heavy sampling, pooling, merge, sweep and override tests; assertions and analytical invariants remain unchanged."
+      "note": "Section 7 now names Prettier, generated-file exclusions and tsconfig strict/noImplicitOverride/noImplicitReturns. src/ layout change is formatter-only; architectural invariants are unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "850fc1d3fe2cda84be770b46914220996ecd3be373a74d2ded06b9cefa532015",
+      "sha256": "c83ab2cb42341564c41dc2421456e4e93b3fc5fe1a88924f5f1e6a1c3789d796",
       "reviewedAt": "2026-09-16",
-      "note": "Evidence slice 5: browser checks gain the lossless oxipng step for screenshots."
+      "note": "Commands table gains format and format:check; check includes the formatter. tsconfig.app.json enables strict flags that already passed. Wave completion path is Git history after the 2026-09-16 docs removal. scripts/ were Prettier-rewrapped."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "4d00eb150ee7ae4a2fdc25c88fbfcbf5a912d4db329d00ff4b7b7b05109bafd9",
+      "sha256": "b59ed6c4df2886d690c79a85fa0285bdfd2676e06cd4210f2cf5707fc8606187",
       "reviewedAt": "2026-09-16",
-      "note": "Documentation sweep 2026-09-16: completed work is recorded in the evidence index and commits; the plan is no longer a current reference."
-    },
-    {
-      "document": "docs/HANDOFF.md",
-      "inputs": [],
-      "sha256": "8c258e6dc5427345f49c8735d81d288e547ef9c67a645ca0f26534f5bcb222cd",
-      "reviewedAt": "2026-09-16",
-      "note": "Documentation sweep 2026-09-16: position updated for the pushed evidence storage merge, the historical plan and the evidence gate; tasking and landmines unchanged."
+      "note": "Session state is the task message after HANDOFF.md removal; source material no longer names te-plan.md. package.json and scripts/ gained Prettier; the quality workflow still runs npm run check."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -107,9 +100,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "775fede4d6a5bb3ed329e608244c52f0233f2b69bb68333a2355cb1cecd99624",
-      "reviewedAt": "2026-09-15",
-      "note": "Re-read src/index.css .toolbar after the grid track fix: the outer tracks share space evenly so the tabs stay centred, the right track never falls below its content and the scenario name shrinks first. The 40 px header text stays accurate."
+      "sha256": "63a3d76231540b002347c54f753eafbc23917ef223277de2023585c10f121db3",
+      "reviewedAt": "2026-09-16",
+      "note": "src/ui and src/charts were Prettier-rewrapped; tokens, kit components and footprintStyle rules are unchanged."
     }
   ],
   "historical": [

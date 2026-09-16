@@ -188,9 +188,11 @@ describe('suggestLinksFor', () => {
     expect(out.map((l) => l.toId)).toEqual([near.id])
     expect(out.map((l) => l.fromId)).toEqual([kurfs.id])
     far.pos = { x: 1200, y: 0 }
-    expect(suggestLinksFor(s, kurfs.id).map((l) => l.toId).sort()).toEqual(
-      [near.id, far.id].sort(),
-    )
+    expect(
+      suggestLinksFor(s, kurfs.id)
+        .map((l) => l.toId)
+        .sort(),
+    ).toEqual([near.id, far.id].sort())
   })
 
   it('keeps the kill-chain direction regardless of which entity is placed', () => {

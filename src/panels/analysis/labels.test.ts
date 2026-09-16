@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { forecastKillLabel, KPI_KEYS, KPI_LABELS, TRIAL_KPI_LABELS, SURVIVAL_LABELS } from './labels'
+import {
+  forecastKillLabel,
+  KPI_KEYS,
+  KPI_LABELS,
+  TRIAL_KPI_LABELS,
+  SURVIVAL_LABELS,
+} from './labels'
 
 describe('analysis labels', () => {
   it('names every KPI key with a label and a hint', () => {

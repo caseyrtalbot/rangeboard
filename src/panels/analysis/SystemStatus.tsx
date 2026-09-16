@@ -1,8 +1,18 @@
-import { FORECAST_IN_ANALYZE, FULL_RUN, reached, type ExecutionHorizon } from '../../analysis/horizon'
+import {
+  FORECAST_IN_ANALYZE,
+  FULL_RUN,
+  reached,
+  type ExecutionHorizon,
+} from '../../analysis/horizon'
 import { useState } from 'react'
 import { State } from '../../ui/kit'
 import type { StateTone } from '../../ui/kit'
-import type { ComponentTelemetry, SystemTelemetryGroup, TrialComponentTelemetry, TrialSystemTelemetry } from '../../analysis/systemTelemetry'
+import type {
+  ComponentTelemetry,
+  SystemTelemetryGroup,
+  TrialComponentTelemetry,
+  TrialSystemTelemetry,
+} from '../../analysis/systemTelemetry'
 import { formatTime } from '../../geometry/geo'
 
 type Component = ComponentTelemetry | TrialComponentTelemetry
@@ -82,7 +92,8 @@ function SystemCard({ group, defaultOpen }: { group: Group; defaultOpen: boolean
         <span className={`chevron${open ? ' open' : ''}`}>▸</span>
         <span className="system-name">{group.name}</span>
         <span className="system-live-summary">
-          {group.activeComponents}/{group.componentCount} online · {group.tracksNow} tracks · {group.salvosAssigned} salvos
+          {group.activeComponents}/{group.componentCount} online · {group.tracksNow} tracks ·{' '}
+          {group.salvosAssigned} salvos
         </span>
       </button>
       {open && (
@@ -127,19 +138,27 @@ export function SystemStatus({
   /** Time used by the caller to compute every group and component count. */
   sampledAtS?: number
 }) {
-  if (horizon.scoped && !reached(0, horizon)) return <p className="muted small">No system telemetry yet.</p>
+  if (horizon.scoped && !reached(0, horizon))
+    return <p className="muted small">No system telemetry yet.</p>
   // Group totals and hover details must come from the same reached sample.
-  if (horizon.scoped && !reached(sampledAtS, horizon)) return <p className="muted small">{FORECAST_IN_ANALYZE}</p>
-  if (groups.length === 0) return <p className="muted small">No sensors, C2, or effectors placed.</p>
+  if (horizon.scoped && !reached(sampledAtS, horizon))
+    return <p className="muted small">{FORECAST_IN_ANALYZE}</p>
+  if (groups.length === 0)
+    return <p className="muted small">No sensors, C2, or effectors placed.</p>
   return (
     <div className="system-telemetry-list">
       {endOfRun && (
         <p className="muted small telemetry-note">
-          State shows the final sampled instant, not the run outcome; cumulative counts cover the run.
+          State shows the final sampled instant, not the run outcome; cumulative counts cover the
+          run.
         </p>
       )}
       {groups.map((group, index) => (
-        <SystemCard key={group.id} group={group} defaultOpen={expanded && (groups.length <= 3 || index === 0)} />
+        <SystemCard
+          key={group.id}
+          group={group}
+          defaultOpen={expanded && (groups.length <= 3 || index === 0)}
+        />
       ))}
     </div>
   )

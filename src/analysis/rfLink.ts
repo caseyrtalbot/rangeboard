@@ -96,7 +96,8 @@ export function linkBudgetRangeM(
   if (!(radiatedPowerW > 0) || !Number.isFinite(radiatedPowerW)) return 0
   if (!Number.isFinite(receiverSensitivityDbm)) return 0
   if (!Number.isFinite(additionalLossDb) || additionalLossDb < 0) return 0
-  const allowableLossDb = wattsToDbw(radiatedPowerW) + 30 - receiverSensitivityDbm - additionalLossDb
+  const allowableLossDb =
+    wattsToDbw(radiatedPowerW) + 30 - receiverSensitivityDbm - additionalLossDb
   return (C_MPS / (4 * Math.PI * bandCenterHz(band))) * Math.pow(10, allowableLossDb / 20)
 }
 
@@ -110,7 +111,10 @@ export function snrRatio(relativeSnrDb: number): number {
  * ratio is SNR / reference SNR. Error scales as 1 / sqrt(ratio), while the
  * published seed accuracy is the best supported floor.
  */
-export function directionFindingAccuracyDeg(seedAccuracyDeg: number, snrOverReference: number): number | null {
+export function directionFindingAccuracyDeg(
+  seedAccuracyDeg: number,
+  snrOverReference: number,
+): number | null {
   if (!(seedAccuracyDeg > 0) || !Number.isFinite(seedAccuracyDeg)) return null
   if (!(snrOverReference > 0) || !Number.isFinite(snrOverReference)) return null
   return Math.max(seedAccuracyDeg, seedAccuracyDeg / Math.sqrt(snrOverReference))

@@ -74,7 +74,10 @@ export type PlaybackTransition =
 const NONE: PlaybackTransition = { kind: 'none' }
 
 /** Resolve one intent against the current playback context. */
-export function resolvePlayback(command: PlaybackCommand, ctx: PlaybackContext): PlaybackTransition {
+export function resolvePlayback(
+  command: PlaybackCommand,
+  ctx: PlaybackContext,
+): PlaybackTransition {
   switch (command.type) {
     case 'toggle':
       return resolvePlayback({ type: ctx.playback.playing ? 'pause' : 'play' }, ctx)
@@ -156,7 +159,10 @@ function observedLens(ctx: PlaybackContext): Pick<PlaybackPatch, 'scenario'> {
 }
 
 /** The stamps and the sequence write a run makes exactly once, on its first start. */
-function firstStart(ctx: PlaybackContext): { patch: Pick<PlaybackPatch, 'scenario'>; writeRunSeq?: number } {
+function firstStart(ctx: PlaybackContext): {
+  patch: Pick<PlaybackPatch, 'scenario'>
+  writeRunSeq?: number
+} {
   if (ctx.playback.startedAtMs != null) return { patch: {} }
   return { patch: observedLens(ctx), writeRunSeq: ctx.playback.runSeq + 1 }
 }
@@ -238,8 +244,10 @@ function play(ctx: PlaybackContext): PlaybackTransition {
         ...playback,
         playing: true,
         phase: 'running',
-        simTimeS: playback.phase === 'complete' ? 0 :
-          Math.min(playback.simTimeS, playback.observedThroughS),
+        simTimeS:
+          playback.phase === 'complete'
+            ? 0
+            : Math.min(playback.simTimeS, playback.observedThroughS),
         startedAtMs: playback.startedAtMs ?? ctx.nowMs,
         // Completion and achieved observation survive every replay.
         basisSignature: trial.manifest!.basisSignature,

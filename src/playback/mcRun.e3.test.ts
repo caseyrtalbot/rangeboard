@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
-import type { Connection, Entity, EntityKind, FlightPath, Scenario, SpecModel, Vec2 } from '../model/types'
+import type {
+  Connection,
+  Entity,
+  EntityKind,
+  FlightPath,
+  Scenario,
+  SpecModel,
+  Vec2,
+} from '../model/types'
 import { MOUNT_HEIGHT_M, newId } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { bandMean, countSub, statMean, timeStatSub } from '../panels/analysis/mc'
@@ -22,8 +30,12 @@ function laydown(): Scenario {
   const common = { headingDeg: 0, color: null, notes: '' }
   const s = emptyScenario()
   s.physics = [
-    'singlePulseRadar', 'noFlightLimits', 'rfBandGate', 'eoirSpanRatio',
-    'legacyKineticPk', 'legacyBeamPk',
+    'singlePulseRadar',
+    'noFlightLimits',
+    'rfBandGate',
+    'eoirSpanRatio',
+    'legacyKineticPk',
+    'legacyBeamPk',
   ]
   // The fresh scenario runs Monte Carlo under total uncertainty with a half-width
   // stop; every number here is pinned on the aleatory, fixed-n run.
@@ -146,7 +158,13 @@ function build(pk: number, from: Vec2 = { x: -1210, y: 0 }): { scenario: Scenari
   scenario.entities = [sensor, effector, uas, ent('asset', null, end)]
   const link: Connection = { id: 'e3-link', fromId: sensor.id, toId: effector.id, label: '' }
   scenario.connections = [link]
-  const path: FlightPath = { id: 'e3-path', entityId: uas.id, points: [from, end], speedMps: 40, startDelayS: 0 }
+  const path: FlightPath = {
+    id: 'e3-path',
+    entityId: uas.id,
+    points: [from, end],
+    speedMps: 40,
+    startDelayS: 0,
+  }
   scenario.paths = [path]
   return { scenario, uasId: uas.id }
 }
@@ -220,8 +238,9 @@ describe('stopping, rare outcomes and undefined times', () => {
     expect(canonical(stopped)).toBe(canonical({ ...fixed, stopped: stopped.stopped }))
     const leaked = stopped.perThreat[uasId].leaked
     expect(Math.abs(leaked.mean - q)).toBeLessThan(0.179)
-    expect(Math.abs(last(runReplicates({ ...scenario, replicates: 30 }).leakers.mean) - q))
-      .toBeLessThan(3 * 0.5 / Math.sqrt(30))
+    expect(
+      Math.abs(last(runReplicates({ ...scenario, replicates: 30 }).leakers.mean) - q),
+    ).toBeLessThan((3 * 0.5) / Math.sqrt(30))
   })
 
   it('a rare outcome at n 30 follows the count and the quantile band hides it', () => {
@@ -273,7 +292,8 @@ describe('stopping, rare outcomes and undefined times', () => {
     // pair is, at 40 both pairs are. Pd 1 and Pk 1 give a constant 1, so
     // every reported quantile equals the mean.
     const { scenario, uasId } = build(1 / (1 - FALLOFF_AT_MAX))
-    const at = (replicates: number) => runReplicates({ ...scenario, replicates }).perThreat[uasId].killed
+    const at = (replicates: number) =>
+      runReplicates({ ...scenario, replicates }).perThreat[uasId].killed
     const nine = at(9)
     for (const v of [nine.p10, nine.p90, nine.p025, nine.p975]) expect(Number.isNaN(v)).toBe(true)
     const ten = at(10)
@@ -294,10 +314,12 @@ describe('stopping, rare outcomes and undefined times', () => {
     expect(summary.firstDetectS.total).toBe(10)
     expect(statMean(summary.firstDetectS)).toBeNull()
     // wilson(0, 10): 0 to 3.8416 / 13.8416 = 0.2775, shown as whole percents.
-    expect(timeStatSub(summary.firstDetectS, 'detected'))
-      .toBe('MC estimate unavailable · detected in 0 of 10 · 0% to 28% (95% Wilson)')
-    expect(timeStatSub(summary.minWarningS, 'warning'))
-      .toBe('MC estimate unavailable · warning time in 0 of 10 · 0% to 28% (95% Wilson)')
+    expect(timeStatSub(summary.firstDetectS, 'detected')).toBe(
+      'MC estimate unavailable · detected in 0 of 10 · 0% to 28% (95% Wilson)',
+    )
+    expect(timeStatSub(summary.minWarningS, 'warning')).toBe(
+      'MC estimate unavailable · warning time in 0 of 10 · 0% to 28% (95% Wilson)',
+    )
     // One track, so the detected count is a 0/1 statistic: 0 of 10 reads the
     // rule-of-three bound 0 to 0.3, printed as the interval, not a half-width.
     const k = summary.detected.mean.length - 1
@@ -344,8 +366,9 @@ describe('bounded counts over more than one ship and the displayed-interval stop
     expect(t.residual.lo[0]).toBeCloseTo(2.7, 12)
     expect(t.residual.hi[0]).toBe(3)
     expect(last(summary.kills.hi)).toBeCloseTo(0.3, 12)
-    expect(countSub(summary.kills, summary.kills.mean.length - 1, 30))
-      .toBe('MC mean · 0 to 0.3 (95% mean CI) · n=30')
+    expect(countSub(summary.kills, summary.kills.mean.length - 1, 30)).toBe(
+      'MC mean · 0 to 0.3 (95% mean CI) · n=30',
+    )
     const salvos = summary.perEffector['e3-effector'].salvos
     expect(salvos.mean).toBe(0)
     expect(salvos.interval).toBe('t')

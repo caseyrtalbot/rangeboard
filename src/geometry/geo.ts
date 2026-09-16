@@ -27,7 +27,12 @@ export function angleDiffDeg(a: number, b: number): number {
 }
 
 /** True when p lies inside the azimuth wedge of a sector, range ignored: a ground-plane bearing test. */
-export function pointInWedge(center: Vec2, headingDeg: number, sectorDeg: number, p: Vec2): boolean {
+export function pointInWedge(
+  center: Vec2,
+  headingDeg: number,
+  sectorDeg: number,
+  p: Vec2,
+): boolean {
   return pointInSector(center, headingDeg, sectorDeg, Number.POSITIVE_INFINITY, p)
 }
 
@@ -184,12 +189,14 @@ const NM_M = 1852
 const MPS_PER_KT = 0.514444
 
 /** Aviation grid steps: nice nm fractions, with metric values at fine zoom. */
-const AVIATION_STEPS_M = [
-  25, 50, 100, 200, 500, 926, 1852, 3704, 9260, 18520, 46300, 92600, 185200,
-]
+const AVIATION_STEPS_M = [25, 50, 100, 200, 500, 926, 1852, 3704, 9260, 18520, 46300, 92600, 185200]
 
 /** Grid step in meters that keeps grid lines a readable distance apart on screen. */
-export function gridStepM(pxPerMeter: number, targetPx = 90, units: DisplayUnits = 'metric'): number {
+export function gridStepM(
+  pxPerMeter: number,
+  targetPx = 90,
+  units: DisplayUnits = 'metric',
+): number {
   const raw = targetPx / pxPerMeter
   if (units === 'aviation' && raw >= 25) {
     for (const step of AVIATION_STEPS_M) {
@@ -221,7 +228,8 @@ export function formatDistance(m: number, units: DisplayUnits = 'metric'): strin
  */
 export function formatAxis(m: number, units: DisplayUnits, plus: string, minus: string): string {
   const mag = Math.abs(m)
-  const value = units === 'aviation' ? `${(mag / NM_M).toFixed(2)} nm` : `${(mag / 1000).toFixed(2)} km`
+  const value =
+    units === 'aviation' ? `${(mag / NM_M).toFixed(2)} nm` : `${(mag / 1000).toFixed(2)} km`
   return `${m < 0 ? minus : plus} ${value}`
 }
 

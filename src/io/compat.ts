@@ -41,7 +41,11 @@ function legacyOmissions(owner: string, fields: LegacyFields): LegacyOmissions {
  * field by field over the empty one, so a field added to a container reaches an
  * older save. Fields filled any other way are left to their named filler.
  */
-export function fillContainers<T extends object>(parsed: T, empty: T, fields: LegacyFields): Partial<T> {
+export function fillContainers<T extends object>(
+  parsed: T,
+  empty: T,
+  fields: LegacyFields,
+): Partial<T> {
   const saved = parsed as Record<string, unknown>
   const defaults = empty as Record<string, unknown>
   const out: Record<string, unknown> = {}
@@ -72,4 +76,7 @@ export const SCENARIO_LEGACY_FIELDS: LegacyFields = {
 }
 
 /** The Board half of the validator's legacy-omission table. */
-export const boardLegacyOmissions: LegacyOmissions = legacyOmissions('Scenario', SCENARIO_LEGACY_FIELDS)
+export const boardLegacyOmissions: LegacyOmissions = legacyOmissions(
+  'Scenario',
+  SCENARIO_LEGACY_FIELDS,
+)

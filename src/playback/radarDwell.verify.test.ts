@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SwerlingCase } from '../model/types'
-import {
-  SHNIDMAN_TYPICAL_ERROR_DB,
-  shnidmanPdFromSnr,
-  shnidmanSnrForPd,
-} from './radarDwell'
+import { SHNIDMAN_TYPICAL_ERROR_DB, shnidmanPdFromSnr, shnidmanSnrForPd } from './radarDwell'
 
 /**
  * VALIDATION AGAINST SHNIDMAN'S PUBLISHED APPROXIMATION.
@@ -53,9 +49,10 @@ describe('Shnidman noncoherent integration (read 2026-09-10)', () => {
     for (const point of POINTS) {
       const required = shnidmanSnrForPd(point.pd, 1e-6, point.pulses, point.swerling)
       expect(Math.abs(db(required) - point.snrDb)).toBeLessThan(SHNIDMAN_TYPICAL_ERROR_DB)
-      expect(
-        shnidmanPdFromSnr(lin(point.snrDb), 1e-6, point.pulses, point.swerling),
-      ).toBeCloseTo(point.pd, 7)
+      expect(shnidmanPdFromSnr(lin(point.snrDb), 1e-6, point.pulses, point.swerling)).toBeCloseTo(
+        point.pd,
+        7,
+      )
     }
   })
 })

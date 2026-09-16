@@ -3,7 +3,12 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
-import { LARGE_CAPTURE_BYTES, compareCapture, readCapture, writeCapture } from './evidence/capture.mjs'
+import {
+  LARGE_CAPTURE_BYTES,
+  compareCapture,
+  readCapture,
+  writeCapture,
+} from './evidence/capture.mjs'
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'rangeboard-capture-test-'))
@@ -13,9 +18,12 @@ function fixture(t) {
   return { dir, manifest }
 }
 
-const bulky = replicate => ({ replicate, samples: Array.from({ length: 4000 }, (_, i) => i % 97) })
+const bulky = (replicate) => ({
+  replicate,
+  samples: Array.from({ length: 4000 }, (_, i) => i % 97),
+})
 
-test('a new capture writes its JSON file and one manifest entry', t => {
+test('a new capture writes its JSON file and one manifest entry', (t) => {
   const { dir, manifest } = fixture(t)
   const value = { assessments: [1, 2, 3], seed: 7 }
   const entry = writeCapture(dir, 'before', value)
@@ -25,7 +33,7 @@ test('a new capture writes its JSON file and one manifest entry', t => {
   assert.equal(LARGE_CAPTURE_BYTES, 524288)
 })
 
-test('an identical repeat records sameAs instead of a second file', t => {
+test('an identical repeat records sameAs instead of a second file', (t) => {
   const { dir, manifest } = fixture(t)
   const value = { assessments: [1, 2, 3], seed: 7 }
   writeCapture(dir, 'before', value)
@@ -36,7 +44,7 @@ test('an identical repeat records sameAs instead of a second file', t => {
   assert.deepEqual(readCapture(dir, 'after'), value)
 })
 
-test('a capture over the limit is gzipped and round-trips', t => {
+test('a capture over the limit is gzipped and round-trips', (t) => {
   const { dir } = fixture(t)
   const value = bulky(1)
   const entry = writeCapture(dir, 'total-mc', value, { limitBytes: 1024 })
@@ -46,7 +54,7 @@ test('a capture over the limit is gzipped and round-trips', t => {
   assert.deepEqual(readCapture(dir, 'total-mc'), value)
 })
 
-test('comparison hashes the new serialization, including through sameAs', t => {
+test('comparison hashes the new serialization, including through sameAs', (t) => {
   const { dir } = fixture(t)
   const value = bulky(2)
   writeCapture(dir, 'before', value, { limitBytes: 1024 })
@@ -59,10 +67,13 @@ test('comparison hashes the new serialization, including through sameAs', t => {
   const changed = compareCapture(dir, 'after', { ...value, replicate: 3 })
   assert.equal(changed.match, false)
   assert.notEqual(changed.expected, changed.actual)
-  assert.throws(() => compareCapture(dir, 'missing', value), /No capture recorded for tag "missing"/)
+  assert.throws(
+    () => compareCapture(dir, 'missing', value),
+    /No capture recorded for tag "missing"/,
+  )
 })
 
-test('re-capturing a tag replaces the entry and leaves no stale sibling', t => {
+test('re-capturing a tag replaces the entry and leaves no stale sibling', (t) => {
   const { dir, manifest } = fixture(t)
   writeCapture(dir, 'series', { points: [1] }, { limitBytes: 1024 })
   assert.ok(existsSync(join(dir, 'series.json')))
@@ -76,23 +87,33 @@ test('re-capturing a tag replaces the entry and leaves no stale sibling', t => {
   assert.deepEqual(readCapture(dir, 'series'), { points: [2] })
 })
 
-test('unrelated manifest keys survive a capture', t => {
+test('unrelated manifest keys survive a capture', (t) => {
   const { dir, manifest } = fixture(t)
   writeCapture(dir, 'seed', { a: 1 })
-  writeFileSync(join(dir, 'manifest.json'), `${JSON.stringify({
-    captured: '2026-09-16',
-    gates: { tests: { exitCode: 0 } },
-    captures: manifest().captures,
-  }, null, 2)}\n`)
+  writeFileSync(
+    join(dir, 'manifest.json'),
+    `${JSON.stringify(
+      {
+        captured: '2026-09-16',
+        gates: { tests: { exitCode: 0 } },
+        captures: manifest().captures,
+      },
+      null,
+      2,
+    )}\n`,
+  )
   writeCapture(dir, 'next', { b: 2 })
   const after = manifest()
   assert.equal(after.captured, '2026-09-16')
   assert.deepEqual(after.gates, { tests: { exitCode: 0 } })
-  assert.deepEqual(after.captures.map(item => item.tag), ['seed', 'next'])
+  assert.deepEqual(
+    after.captures.map((item) => item.tag),
+    ['seed', 'next'],
+  )
   assert.equal(readFileSync(join(dir, 'manifest.json'), 'utf8').endsWith('}\n'), true)
 })
 
-test('bytes already held by a sibling folder record a cross-folder sameAs', t => {
+test('bytes already held by a sibling folder record a cross-folder sameAs', (t) => {
   const { dir, manifest } = fixture(t)
   const earlier = join(dirname(dir), 'e2-radar-2026-09-05')
   const value = bulky(5)
@@ -110,11 +131,14 @@ test('bytes already held by a sibling folder record a cross-folder sameAs', t =>
   assert.equal(manifest().captures.length, 2)
 })
 
-test('siblings: false ignores other folders and writes the file', t => {
+test('siblings: false ignores other folders and writes the file', (t) => {
   const { dir } = fixture(t)
   const value = bulky(7)
   writeCapture(join(dirname(dir), 'earlier'), 'series', value, { limitBytes: 1024 })
-  const entry = writeCapture(dir, 'series', structuredClone(value), { limitBytes: 1024, siblings: false })
+  const entry = writeCapture(dir, 'series', structuredClone(value), {
+    limitBytes: 1024,
+    siblings: false,
+  })
   assert.equal(entry.file, 'series.json.gz')
   assert.equal(entry.sameAs, undefined)
   assert.ok(existsSync(join(dir, 'series.json.gz')))

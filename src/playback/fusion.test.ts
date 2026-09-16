@@ -142,7 +142,12 @@ describe('fuseTracks', () => {
 
 describe('delayedMember', () => {
   const ring = [0, 0.5, 1, 1.5, 2].map((tS, i) =>
-    estimate({ id: 'a:u', sensorId: 'a', state: { x: 10 * i, y: 0, vx: 20, vy: 0, tS }, hits: i + 1 }),
+    estimate({
+      id: 'a:u',
+      sensorId: 'a',
+      state: { x: 10 * i, y: 0, vx: 20, vy: 0, tS },
+      hits: i + 1,
+    }),
   )
 
   it('returns the entry latency ago carried to tS by the constant-velocity predict', () => {
@@ -161,7 +166,15 @@ describe('delayedMember', () => {
   })
 
   it('a truth entry bypasses the latency', () => {
-    const truth = [estimate({ id: 't:u', sensorId: 't', covariance: ZERO_COVARIANCE, quality: 1, source: 'truth' })]
+    const truth = [
+      estimate({
+        id: 't:u',
+        sensorId: 't',
+        covariance: ZERO_COVARIANCE,
+        quality: 1,
+        source: 'truth',
+      }),
+    ]
     expect(delayedMember(truth, 2, 4)).toBe(truth[0])
   })
 })
@@ -183,7 +196,8 @@ describe('createFusionStage', () => {
   it('with a link the report arrives after the latency and is carried forward; a drop restarts the ring', () => {
     const stage = createFusionStage([{ c2Id: 'c2', sensorId: 'a', latencyS: 1 }])
     expect(stage.viaC2).toBe(true)
-    const at = (i: number) => estimate({ id: 'a:u', sensorId: 'a', state: { x: 10 * i, y: 0, vx: 20, vy: 0, tS: i / 2 } })
+    const at = (i: number) =>
+      estimate({ id: 'a:u', sensorId: 'a', state: { x: 10 * i, y: 0, vx: 20, vy: 0, tS: i / 2 } })
     stage.begin()
     stage.observe(at(0))
     expect(stage.fuse(0)).toBeNull()
@@ -216,7 +230,15 @@ describe('createFusionStage', () => {
     )
     stage.begin()
     stage.observe(estimate({ id: 'a:u', sensorId: 'a' }))
-    stage.observe(estimate({ id: 't:u', sensorId: 't', covariance: ZERO_COVARIANCE, quality: 1, source: 'truth' }))
+    stage.observe(
+      estimate({
+        id: 't:u',
+        sensorId: 't',
+        covariance: ZERO_COVARIANCE,
+        quality: 1,
+        source: 'truth',
+      }),
+    )
     const fused = stage.fuse(4)!
     expect(fused.c2Id).toBe('near')
     expect(fused.source).toBe('truth')
@@ -225,8 +247,20 @@ describe('createFusionStage', () => {
 
   it('drops a truth member beside an estimate member when truthTracks is off; all-truth stands; on, truth dominates', () => {
     const est = estimate({ id: 'a:u', sensorId: 'a' })
-    const truth = estimate({ id: 't:u', sensorId: 't', covariance: ZERO_COVARIANCE, quality: 1, source: 'truth' })
-    const truth2 = estimate({ id: 'r:u', sensorId: 'r', covariance: ZERO_COVARIANCE, quality: 1, source: 'truth' })
+    const truth = estimate({
+      id: 't:u',
+      sensorId: 't',
+      covariance: ZERO_COVARIANCE,
+      quality: 1,
+      source: 'truth',
+    })
+    const truth2 = estimate({
+      id: 'r:u',
+      sensorId: 'r',
+      covariance: ZERO_COVARIANCE,
+      quality: 1,
+      source: 'truth',
+    })
     expect(admitMembers([est, truth], false)).toEqual([est])
     expect(admitMembers([est, truth], true)).toEqual([est, truth])
     expect(admitMembers([truth, truth2], false)).toEqual([truth, truth2])
@@ -258,7 +292,14 @@ describe('createFusionStage', () => {
   it('a sensor with no C2 link fuses at the sensors and wins the pick on quality', () => {
     const stage = createFusionStage([{ c2Id: 'c2', sensorId: 'a', latencyS: 0 }])
     stage.begin()
-    stage.observe(estimate({ id: 'a:u', sensorId: 'a', covariance: diag(400, 400, 25, 25), quality: quality(diag(400, 400, 25, 25)) }))
+    stage.observe(
+      estimate({
+        id: 'a:u',
+        sensorId: 'a',
+        covariance: diag(400, 400, 25, 25),
+        quality: quality(diag(400, 400, 25, 25)),
+      }),
+    )
     stage.observe(estimate({ id: 'b:u', sensorId: 'b' }))
     const fused = stage.fuse(4)!
     expect(fused.c2Id).toBe(NO_C2)

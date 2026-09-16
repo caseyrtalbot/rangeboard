@@ -158,7 +158,9 @@ function erf(x: number): number {
   const sign = x < 0 ? -1 : 1
   const ax = Math.abs(x)
   const t = 1 / (1 + 0.3275911 * ax)
-  const poly = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))))
+  const poly =
+    t *
+    (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))))
   return sign * (1 - poly * Math.exp(-ax * ax))
 }
 

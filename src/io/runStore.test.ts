@@ -13,9 +13,14 @@ const summary = runReplicates(scenario)
 /** Equal-length ids and labels keep the saved records the same size for the cap test. */
 function record(id: string, savedAt: string): RunRecord {
   return {
-    id, savedAt, label: `Run ${id}`,
+    id,
+    savedAt,
+    label: `Run ${id}`,
     manifest: createRunManifest(scenario, `sim-${id}`, 'basis'),
-    scenario, scenarioHash: 'basis', mc: summary, sensitivity: null,
+    scenario,
+    scenarioHash: 'basis',
+    mc: summary,
+    sensitivity: null,
   }
 }
 
@@ -23,11 +28,15 @@ let factory = createFakeIndexedDb()
 const options = () => ({ factory })
 
 describe('runStore', () => {
-  beforeEach(() => { factory = createFakeIndexedDb() })
+  beforeEach(() => {
+    factory = createFakeIndexedDb()
+  })
 
   it('round-trips a record through save, list and get, restoring NaN statistics', async () => {
     expect(Number.isNaN(summary.firstDetectS.mean)).toBe(true)
-    expect(await saveRun(record('run-a', '2026-09-10T10:00:00.000Z'), options())).toEqual({ evicted: [] })
+    expect(await saveRun(record('run-a', '2026-09-10T10:00:00.000Z'), options())).toEqual({
+      evicted: [],
+    })
     const listed = await listRuns(options())
     expect(listed).toHaveLength(1)
     expect(listed[0].label).toBe('Run run-a')
@@ -46,7 +55,7 @@ describe('runStore', () => {
   it('lists newest first', async () => {
     await saveRun(record('run-a', '2026-09-10T10:00:00.000Z'), options())
     await saveRun(record('run-b', '2026-09-10T11:00:00.000Z'), options())
-    expect((await listRuns(options())).map(run => run.id)).toEqual(['run-b', 'run-a'])
+    expect((await listRuns(options())).map((run) => run.id)).toEqual(['run-b', 'run-a'])
   })
 
   it('evicts oldest first until the new record fits the cap', async () => {
@@ -55,30 +64,35 @@ describe('runStore', () => {
     // Room for two records only: the third save evicts the oldest.
     const capBytes = bytes * 2
     await saveRun(record('run-b', '2026-09-10T11:00:00.000Z'), { factory, capBytes })
-    expect((await listRuns(options())).map(run => run.id)).toEqual(['run-b', 'run-a'])
+    expect((await listRuns(options())).map((run) => run.id)).toEqual(['run-b', 'run-a'])
     const third = await saveRun(record('run-c', '2026-09-10T12:00:00.000Z'), { factory, capBytes })
     expect(third).toEqual({ evicted: ['run-a'] })
-    expect((await listRuns(options())).map(run => run.id)).toEqual(['run-c', 'run-b'])
+    expect((await listRuns(options())).map((run) => run.id)).toEqual(['run-c', 'run-b'])
     expect(await getRun('run-a', options())).toBeNull()
   })
 
   it('refuses a record larger than the cap', async () => {
-    await expect(saveRun(record('run-a', '2026-09-10T10:00:00.000Z'), { factory, capBytes: 10 }))
-      .rejects.toThrow('the run store holds 10')
+    await expect(
+      saveRun(record('run-a', '2026-09-10T10:00:00.000Z'), { factory, capBytes: 10 }),
+    ).rejects.toThrow('the run store holds 10')
   })
 
   it('deletes one record and clears every record', async () => {
     await saveRun(record('run-a', '2026-09-10T10:00:00.000Z'), options())
     await saveRun(record('run-b', '2026-09-10T11:00:00.000Z'), options())
     await deleteRun('run-a', options())
-    expect((await listRuns(options())).map(run => run.id)).toEqual(['run-b'])
+    expect((await listRuns(options())).map((run) => run.id)).toEqual(['run-b'])
     await clearRuns(options())
     expect(await listRuns(options())).toEqual([])
   })
 
   it('reports a clear error without IndexedDB', async () => {
     expect(globalThis.indexedDB).toBeUndefined()
-    await expect(listRuns()).rejects.toThrow('Run history is unavailable: this browser provides no IndexedDB.')
-    await expect(saveRun(record('run-a', '2026-09-10T10:00:00.000Z'))).rejects.toThrow('provides no IndexedDB')
+    await expect(listRuns()).rejects.toThrow(
+      'Run history is unavailable: this browser provides no IndexedDB.',
+    )
+    await expect(saveRun(record('run-a', '2026-09-10T10:00:00.000Z'))).rejects.toThrow(
+      'provides no IndexedDB',
+    )
   })
 })

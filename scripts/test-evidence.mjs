@@ -3,7 +3,16 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { duplicateGroups, enforcementFailures, loadAllowlist, oversizedJson, parseArgs, report, scanEvidence, summarize } from './check-evidence.mjs'
+import {
+  duplicateGroups,
+  enforcementFailures,
+  loadAllowlist,
+  oversizedJson,
+  parseArgs,
+  report,
+  scanEvidence,
+  summarize,
+} from './check-evidence.mjs'
 
 const EVIDENCE = 'docs/field-te/evidence'
 
@@ -16,7 +25,7 @@ function fixture(t) {
   return { root, put, scan: () => scanEvidence(root, EVIDENCE) }
 }
 
-test('identical JSON groups, different JSON and identical text do not', t => {
+test('identical JSON groups, different JSON and identical text do not', (t) => {
   const { put, scan } = fixture(t)
   put('run-a/summary.json', '{"a":1}')
   put('run-b/summary.json', '{"a":1}')
@@ -25,7 +34,7 @@ test('identical JSON groups, different JSON and identical text do not', t => {
   put('run-b/notes.txt', 'same')
   const files = scan().files
   assert.equal(files.length, 5)
-  assert.ok(files.every(file => file.sha256.length === 64))
+  assert.ok(files.every((file) => file.sha256.length === 64))
   const groups = duplicateGroups(files)
   assert.equal(groups.length, 1)
   assert.deepEqual(groups[0].paths, [
@@ -36,26 +45,32 @@ test('identical JSON groups, different JSON and identical text do not', t => {
   assert.match(report(scan()), /run-b\/summary\.json/)
 })
 
-test('groups sort by bytes descending', t => {
+test('groups sort by bytes descending', (t) => {
   const { put, scan } = fixture(t)
   put('run-a/small.json', '{"a":1}')
   put('run-b/small.json', '{"a":1}')
   put('run-a/large.json', `{"a":"${'x'.repeat(200)}"}`)
   put('run-b/large.json', `{"a":"${'x'.repeat(200)}"}`)
   const groups = duplicateGroups(scan().files)
-  assert.deepEqual(groups.map(group => group.bytes), [208, 7])
+  assert.deepEqual(
+    groups.map((group) => group.bytes),
+    [208, 7],
+  )
 })
 
-test('oversized JSON starts one byte above the limit', t => {
+test('oversized JSON starts one byte above the limit', (t) => {
   const { put, scan } = fixture(t)
   put('run-a/at-limit.json', 'x'.repeat(1024))
   put('run-a/over-limit.json', 'x'.repeat(1025))
   put('run-a/huge.txt', 'x'.repeat(4096))
   const oversized = oversizedJson(scan().files, 1024)
-  assert.deepEqual(oversized.map(file => file.path), [`${EVIDENCE}/run-a/over-limit.json`])
+  assert.deepEqual(
+    oversized.map((file) => file.path),
+    [`${EVIDENCE}/run-a/over-limit.json`],
+  )
 })
 
-test('summary accounts for every byte and splits unique from duplicate JSON', t => {
+test('summary accounts for every byte and splits unique from duplicate JSON', (t) => {
   const { put, scan } = fixture(t)
   put('run-a/summary.json', '{"a":1}')
   put('run-b/summary.json', '{"a":1}')
@@ -70,10 +85,13 @@ test('summary accounts for every byte and splits unique from duplicate JSON', t 
   assert.equal(summary.jsonUniqueBytes, summary.jsonBytes - summary.jsonDuplicateBytes)
   assert.equal(summary.gzJsonBytes, 2)
   assert.equal(summary.pngBytes, 9)
-  assert.equal(oversizedJson(scan().files, 1).some(file => file.ext === '.json.gz'), false)
+  assert.equal(
+    oversizedJson(scan().files, 1).some((file) => file.ext === '.json.gz'),
+    false,
+  )
 })
 
-test('enforcement fails a duplicate group and an oversized file, and honours the allowlist', t => {
+test('enforcement fails a duplicate group and an oversized file, and honours the allowlist', (t) => {
   const { put, scan } = fixture(t)
   put('run-a/summary.json', '{"a":1}')
   put('run-b/summary.json', '{"a":1}')
@@ -89,7 +107,7 @@ test('enforcement fails a duplicate group and an oversized file, and honours the
   assert.deepEqual(allowed, [])
 })
 
-test('a gzip sidecar over the limit never fails', t => {
+test('a gzip sidecar over the limit never fails', (t) => {
   const { put, scan } = fixture(t)
   put('run-a/bundle.json.gz', 'x'.repeat(2048))
   assert.deepEqual(enforcementFailures(scan(), { limitBytes: 1024 }), [])
@@ -101,7 +119,7 @@ test('parseArgs reads --enforce and defaults to report mode', () => {
   assert.equal(parseArgs(['--limit', '64', '--enforce']).limitBytes, 64)
 })
 
-test('a missing allowlist file means nothing is exempt', t => {
+test('a missing allowlist file means nothing is exempt', (t) => {
   const { root } = fixture(t)
   assert.deepEqual(loadAllowlist(root, 'scripts/evidence/absent.json'), [])
 })

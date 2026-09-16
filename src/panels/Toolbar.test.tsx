@@ -24,7 +24,14 @@ describe('Board toolbar grouping', () => {
 
   it('keeps Board identity, scenario, file trigger and status in the top bar', () => {
     const html = render(
-      <Toolbar drawerOpen onToggleDrawer={() => {}} boardPhase="prepare" runSeq={1} runPhase="idle" onOpenPhase={() => {}} />,
+      <Toolbar
+        drawerOpen
+        onToggleDrawer={() => {}}
+        boardPhase="prepare"
+        runSeq={1}
+        runPhase="idle"
+        onOpenPhase={() => {}}
+      />,
     )
 
     expect(html).toContain('Rangeboard')
@@ -33,7 +40,9 @@ describe('Board toolbar grouping', () => {
     expect(html).toContain('aria-label="Status"')
     expect(html).toContain('title="Settings (all scenario, run and view settings)"')
     expect(html).toContain('title="ROE · click to change"')
-    expect(html).toContain('aria-controls="board-workspace-panel" aria-expanded="true" aria-label="Workspace drawer"')
+    expect(html).toContain(
+      'aria-controls="board-workspace-panel" aria-expanded="true" aria-label="Workspace drawer"',
+    )
     expect(html).not.toContain('aria-label="Board tools"')
     expect(html).not.toContain('aria-label="Theme"')
 
@@ -41,14 +50,25 @@ describe('Board toolbar grouping', () => {
     expect(html).toContain('role="tablist" aria-label="Lifecycle views"')
     expect(html).toContain('id="board-phase-prepare" role="tab" aria-selected="true"')
     expect(html).toContain('class="board-run-context"')
-    const order = ['Rangeboard', 'Lifecycle views', 'board-run-context', 'Workspace drawer'].map((mark) => html.indexOf(mark))
+    const order = ['Rangeboard', 'Lifecycle views', 'board-run-context', 'Workspace drawer'].map(
+      (mark) => html.indexOf(mark),
+    )
     expect(order.every((position) => position >= 0)).toBe(true)
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })
 
   it('orders canvas tools before range setup, view and history', () => {
     const html = render(<BoardTools />)
-    const labels = ['Select', 'Boundary', 'Connect', 'Path', 'Range setup', 'View', 'Declutter', 'History']
+    const labels = [
+      'Select',
+      'Boundary',
+      'Connect',
+      'Path',
+      'Range setup',
+      'View',
+      'Declutter',
+      'History',
+    ]
     const positions = labels.map((label) => html.indexOf(label))
 
     expect(html).toContain('class="board-tools" role="toolbar" aria-label="Board tools"')
@@ -86,7 +106,14 @@ describe('Board menu scope', () => {
     expect(html).toContain('aria-label="Basemap"')
     expect(html).toContain('aria-label="Units"')
     expect(renderedLayerToggles).toHaveLength(layerCount)
-    for (const rangeControl of ['Scenario scope', 'Location…', 'Image…', 'Calibrate scale', 'Move image', 'Opacity']) {
+    for (const rangeControl of [
+      'Scenario scope',
+      'Location…',
+      'Image…',
+      'Calibrate scale',
+      'Move image',
+      'Opacity',
+    ]) {
       expect(html).not.toContain(rangeControl)
     }
   })
@@ -118,7 +145,6 @@ describe('Board menu scope', () => {
   })
 })
 
-
 describe('Declutter selection', () => {
   it('recognizes every exact preset and rejects a custom combination', () => {
     for (const name of Object.keys(LAYER_PRESETS) as LayerPreset[]) {
@@ -140,12 +166,13 @@ describe('Declutter selection', () => {
   })
 })
 
-
 describe('Settings sections', () => {
   it('opens Scenario by default with the existing scenario forms', () => {
     const html = render(<SettingsPanel onRequestClose={() => {}} />)
     expect(html).toContain('role="dialog" aria-modal="true" aria-labelledby="settings-title"')
-    const positions = ['Fire doctrine', 'Environment', 'Requirement inputs'].map((label) => html.indexOf(`aria-label="${label}"`))
+    const positions = ['Fire doctrine', 'Environment', 'Requirement inputs'].map((label) =>
+      html.indexOf(`aria-label="${label}"`),
+    )
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(html).toContain('data-role="roe"')
@@ -154,7 +181,13 @@ describe('Settings sections', () => {
   it('opens Run directly with the canonical run controls', () => {
     const html = render(<SettingsPanel initialSection="run" onRequestClose={() => {}} />)
     // The Run tab replaced the popover, so the controls carry their plain-language names.
-    for (const control of ['Deterministic', 'Monte Carlo', 'What varies', 'Repeat key · seed', 'How many runs · replicates']) {
+    for (const control of [
+      'Deterministic',
+      'Monte Carlo',
+      'What varies',
+      'Repeat key · seed',
+      'How many runs · replicates',
+    ]) {
       expect(html).toContain(control)
     }
     expect(html).not.toContain('aria-label="Fire doctrine"')
@@ -162,7 +195,9 @@ describe('Settings sections', () => {
 
   it('opens View directly with shared display controls and no preset duplication', () => {
     const html = render(<SettingsPanel initialSection="view" onRequestClose={() => {}} />)
-    const positions = ['Theme', 'Units', 'Basemap', 'Sensor layers'].map((label) => html.indexOf(`aria-label="${label}"`))
+    const positions = ['Theme', 'Units', 'Basemap', 'Sensor layers'].map((label) =>
+      html.indexOf(`aria-label="${label}"`),
+    )
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(html).toContain('System')

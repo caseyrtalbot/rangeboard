@@ -2,7 +2,7 @@
 
 Capture date 2026-09-06. Commit `955ad6b` (branch `codex/board-workspace-ui`, one commit ahead of
 `main`). The numbers in this directory describe `955ad6b` only. Later waves add their own
-after-captures next to this file and record them in [the handoff](../../../HANDOFF.md).
+after-captures next to this file and record them in the then-current `docs/HANDOFF.md`.
 
 ## Harness
 

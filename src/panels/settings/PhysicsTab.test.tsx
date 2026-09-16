@@ -16,7 +16,14 @@ const interaction = vi.hoisted(() => ({
 vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
-    const p = props as { type?: string; 'aria-describedby'?: string; children?: unknown; disabled: boolean; onClick: () => void; onChange: (event: { currentTarget: { checked: boolean } }) => void }
+    const p = props as {
+      type?: string
+      'aria-describedby'?: string
+      children?: unknown
+      disabled: boolean
+      onClick: () => void
+      onChange: (event: { currentTarget: { checked: boolean } }) => void
+    }
     if (type === 'input' && p.type === 'checkbox' && p['aria-describedby']) {
       interaction.changes.set(p['aria-describedby'], p.onChange)
     }
@@ -25,7 +32,17 @@ vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   }
   return { ...actual, jsxDEV }
 })
-const order: PhysicsSwitch[] = ['truthTracks', 'noFalseTracks', 'noOperatorQueue', 'singlePulseRadar', 'noFlightLimits', 'rfBandGate', 'eoirSpanRatio', 'legacyKineticPk', 'legacyBeamPk']
+const order: PhysicsSwitch[] = [
+  'truthTracks',
+  'noFalseTracks',
+  'noOperatorQueue',
+  'singlePulseRadar',
+  'noFlightLimits',
+  'rfBandGate',
+  'eoirSpanRatio',
+  'legacyKineticPk',
+  'legacyBeamPk',
+]
 function render() {
   interaction.changes.clear()
   Object.assign(useStore.getInitialState(), useStore.getState())
@@ -76,7 +93,10 @@ describe('PhysicsTab', () => {
     toggle('noFalseTracks', true)
     toggle('truthTracks', true)
     const scenario = useStore.getState().scenario
-    for (const manifest of [createRunManifest(scenario, 'run', 'basis'), createTrialManifest(scenario, 'trial', 'basis')]) {
+    for (const manifest of [
+      createRunManifest(scenario, 'run', 'basis'),
+      createTrialManifest(scenario, 'trial', 'basis'),
+    ]) {
       expect(manifest.physicsSwitches).toEqual(['truthTracks', 'noFalseTracks'])
       expect(manifest.fidelityFloor).toBe('fallback')
     }
@@ -84,15 +104,21 @@ describe('PhysicsTab', () => {
     expect(interaction.reset?.disabled).toBe(false)
     interaction.reset!.onClick()
     expect(useStore.getState().scenario.physics).toEqual([])
-    expect(createRunManifest(useStore.getState().scenario, 'run', 'basis').fidelityFloor).toBe('datasheet')
+    expect(createRunManifest(useStore.getState().scenario, 'run', 'basis').fidelityFloor).toBe(
+      'datasheet',
+    )
     render()
     expect(interaction.reset?.disabled).toBe(true)
   })
 
   it('mounts Physics from the Settings section navigation', () => {
     Object.assign(useStore.getInitialState(), useStore.getState())
-    const html = renderToStaticMarkup(<SettingsPanel initialSection="physics" onRequestClose={() => {}} />)
-    expect(html).toContain('aria-pressed="true" aria-controls="settings-body" class="active">Physics')
+    const html = renderToStaticMarkup(
+      <SettingsPanel initialSection="physics" onRequestClose={() => {}} />,
+    )
+    expect(html).toContain(
+      'aria-pressed="true" aria-controls="settings-body" class="active">Physics',
+    )
     expect(html).toContain('Reset physics')
   })
 })

@@ -3,7 +3,12 @@ import type { PhysicsSwitch } from '../model/libraryField'
 import { rcsM2For, swerlingFor } from '../model/rcsFactors'
 import { rangeForPd } from './radarPd'
 import { probabilityOr, sensorEnvFactor } from './sensorEnv/common'
-import { capInstrumented, radarCalibration, radarPdModeled, rcsRangeFactor } from './sensorEnv/radar'
+import {
+  capInstrumented,
+  radarCalibration,
+  radarPdModeled,
+  rcsRangeFactor,
+} from './sensorEnv/radar'
 import { capVisibility, eoIrNeedsCue, eoIrRangeM, eoRangeFactor } from './sensorEnv/eoir'
 import { acousticRangeFactor } from './sensorEnv/acoustic'
 import { effectiveRfRangeM, rfCanHear, rfDetectable } from './sensorEnv/rf'

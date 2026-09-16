@@ -11,12 +11,20 @@ describe('State', () => {
   })
 
   it('draws the hollow square for a qualifying count and the circle for live', () => {
-    expect(renderToStaticMarkup(<State tone="inactive" hollow>3 pending</State>)).toContain(
-      'class="state-square hollow"',
-    )
-    expect(renderToStaticMarkup(<State tone="critical" live>LIVE</State>)).toContain(
-      'class="state-square live"',
-    )
+    expect(
+      renderToStaticMarkup(
+        <State tone="inactive" hollow>
+          3 pending
+        </State>,
+      ),
+    ).toContain('class="state-square hollow"')
+    expect(
+      renderToStaticMarkup(
+        <State tone="critical" live>
+          LIVE
+        </State>,
+      ),
+    ).toContain('class="state-square live"')
   })
 
   it('carries a title and a role for the one alert state', () => {
@@ -32,14 +40,18 @@ describe('State', () => {
 
 describe('ProvMark', () => {
   it('renders the sourced mark on the bare column class', () => {
-    expect(renderToStaticMarkup(<ProvMark kind="sourced" title="datasheet · maker · 2026-09-04" />)).toBe(
+    expect(
+      renderToStaticMarkup(<ProvMark kind="sourced" title="datasheet · maker · 2026-09-04" />),
+    ).toBe(
       '<span class="prov-mark" title="datasheet · maker · 2026-09-04" aria-label="datasheet · maker · 2026-09-04"></span>',
     )
   })
 
   it('adds one kind class for every other kind and keeps the column for absent', () => {
     for (const kind of ['pf', 'estimated', 'probable', 'inferred', 'absent'] as const) {
-      expect(renderToStaticMarkup(<ProvMark kind={kind} />)).toBe(`<span class="prov-mark ${kind}"></span>`)
+      expect(renderToStaticMarkup(<ProvMark kind={kind} />)).toBe(
+        `<span class="prov-mark ${kind}"></span>`,
+      )
     }
   })
 })

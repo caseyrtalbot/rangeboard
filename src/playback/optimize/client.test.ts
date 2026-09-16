@@ -6,17 +6,39 @@ import { cancelOptimize, startOptimize } from './client'
 import { placementRequest } from './__fixtures__/placementFixture'
 
 const stat = {
-  mean: 1, sd: 0, se: 0, lo: 0.925, hi: 1, conf: 0.95, interval: 'rule-of-three' as const,
-  p10: 1, p90: 1, p025: 1, p975: 1, n: 40, total: 40, defined: { p: 1, lo: 1, hi: 1 },
+  mean: 1,
+  sd: 0,
+  se: 0,
+  lo: 0.925,
+  hi: 1,
+  conf: 0.95,
+  interval: 'rule-of-three' as const,
+  p10: 1,
+  p90: 1,
+  p025: 1,
+  p975: 1,
+  n: 40,
+  total: 40,
+  defined: { p: 1, lo: 1, hi: 1 },
 }
-const start: OptimizeEvaluation = { index: 0, positions: { eff: { x: 0, y: 5000 } }, objective: stat, incumbent: true }
+const start: OptimizeEvaluation = {
+  index: 0,
+  positions: { eff: { x: 0, y: 5000 } },
+  objective: stat,
+  incumbent: true,
+}
 
 function result(runId: string): OptimizeResult {
   const request = placementRequest({ runId })
   return {
-    method: 'gp-ei', objective: request.objective, movableIds: request.movableIds, budget: request.budget,
+    method: 'gp-ei',
+    objective: request.objective,
+    movableIds: request.movableIds,
+    budget: request.budget,
     candidates: [{ positions: start.positions, objective: stat, evaluationIndex: 0 }],
-    trace: [start], replicatesRun: 40, elapsedMs: 3,
+    trace: [start],
+    replicatesRun: 40,
+    elapsedMs: 3,
   }
 }
 
@@ -40,11 +62,21 @@ describe('optimize worker client', () => {
   it('posts the request, delivers progress without release, and releases on done', () => {
     const { request, deliver, worker } = begin()
     expect(worker.postMessage).toHaveBeenCalledExactlyOnceWith(request)
-    const progress: OptimizeWorkerMessage = { type: 'optimize-progress', runId: request.runId, done: 1, total: 60, best: start }
+    const progress: OptimizeWorkerMessage = {
+      type: 'optimize-progress',
+      runId: request.runId,
+      done: 1,
+      total: 60,
+      best: start,
+    }
     worker.send(progress)
     expect(deliver).toHaveBeenCalledExactlyOnceWith(progress)
     expect(worker.terminate).not.toHaveBeenCalled()
-    const done: OptimizeWorkerMessage = { type: 'optimize-done', runId: request.runId, result: result(request.runId) }
+    const done: OptimizeWorkerMessage = {
+      type: 'optimize-done',
+      runId: request.runId,
+      result: result(request.runId),
+    }
     worker.send(done)
     expect(worker.terminate).toHaveBeenCalledOnce()
     expect(deliver).toHaveBeenLastCalledWith(done)
@@ -67,7 +99,11 @@ describe('optimize worker client', () => {
     old.worker.fail('late')
     expect(old.deliver).not.toHaveBeenCalled()
     fresh.worker.fail('boom')
-    expect(fresh.deliver).toHaveBeenCalledExactlyOnceWith({ type: 'optimize-error', runId: 'optimize-fixed-run', message: 'boom' })
+    expect(fresh.deliver).toHaveBeenCalledExactlyOnceWith({
+      type: 'optimize-error',
+      runId: 'optimize-fixed-run',
+      message: 'boom',
+    })
     expect(fresh.worker.terminate).toHaveBeenCalledOnce()
   })
 
@@ -79,7 +115,11 @@ describe('optimize worker client', () => {
     // A second cancel while one is in flight is refused.
     expect(cancelOptimize(request.runId)).toBe(false)
     vi.advanceTimersByTime(CANCEL_GRACE_MS)
-    expect(deliver).toHaveBeenCalledExactlyOnceWith({ type: 'optimize-error', runId: request.runId, message: CANCEL_TIMEOUT_MESSAGE })
+    expect(deliver).toHaveBeenCalledExactlyOnceWith({
+      type: 'optimize-error',
+      runId: request.runId,
+      message: CANCEL_TIMEOUT_MESSAGE,
+    })
     expect(worker.terminate).toHaveBeenCalledOnce()
     // Nothing live: a cancel by id reports false, a bare cancel is idempotent.
     expect(cancelOptimize(request.runId)).toBe(false)

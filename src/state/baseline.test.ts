@@ -22,14 +22,62 @@ describe('validateMcSummary', () => {
   })
 
   it.each([
-    ['a string mean', (r: Record<string, unknown>) => { (r.minWarningS as { mean: unknown }).mean = '4' }, 'mc.minWarningS.mean: expected a finite number or null'],
-    ['a missing series', (r: Record<string, unknown>) => { delete (r.leakers as Record<string, unknown>).p90 }, 'mc.leakers.p90: expected an array'],
-    ['a series of another length', (r: Record<string, unknown>) => { (r.tracked as { hi: number[] }).hi = [0] }, 'mc.tracked.hi: expected'],
-    ['an unknown interval method', (r: Record<string, unknown>) => { (r.firmTrackS as { interval: unknown }).interval = 'bootstrap' }, 'mc.firmTrackS.interval: expected one of'],
-    ['an unknown stop rule', (r: Record<string, unknown>) => { (r.stopped as { rule: unknown }).rule = 'crash' }, 'mc.stopped.rule: expected one of'],
-    ['a reserved threat id', (r: Record<string, unknown>) => { (r.perThreat as Record<string, unknown>)['constructor' as string] = {} }, 'mc.perThreat.constructor: reserved or empty ID'],
-    ['n above total', (r: Record<string, unknown>) => { (r.firstDetectS as { n: number }).n = 5 }, 'mc.firstDetectS.n: expected 0 <= n <= total'],
-    ['a null replicate count', (r: Record<string, unknown>) => { r.replicates = null }, 'mc.replicates: expected a finite number'],
+    [
+      'a string mean',
+      (r: Record<string, unknown>) => {
+        ;(r.minWarningS as { mean: unknown }).mean = '4'
+      },
+      'mc.minWarningS.mean: expected a finite number or null',
+    ],
+    [
+      'a missing series',
+      (r: Record<string, unknown>) => {
+        delete (r.leakers as Record<string, unknown>).p90
+      },
+      'mc.leakers.p90: expected an array',
+    ],
+    [
+      'a series of another length',
+      (r: Record<string, unknown>) => {
+        ;(r.tracked as { hi: number[] }).hi = [0]
+      },
+      'mc.tracked.hi: expected',
+    ],
+    [
+      'an unknown interval method',
+      (r: Record<string, unknown>) => {
+        ;(r.firmTrackS as { interval: unknown }).interval = 'bootstrap'
+      },
+      'mc.firmTrackS.interval: expected one of',
+    ],
+    [
+      'an unknown stop rule',
+      (r: Record<string, unknown>) => {
+        ;(r.stopped as { rule: unknown }).rule = 'crash'
+      },
+      'mc.stopped.rule: expected one of',
+    ],
+    [
+      'a reserved threat id',
+      (r: Record<string, unknown>) => {
+        ;(r.perThreat as Record<string, unknown>)['constructor' as string] = {}
+      },
+      'mc.perThreat.constructor: reserved or empty ID',
+    ],
+    [
+      'n above total',
+      (r: Record<string, unknown>) => {
+        ;(r.firstDetectS as { n: number }).n = 5
+      },
+      'mc.firstDetectS.n: expected 0 <= n <= total',
+    ],
+    [
+      'a null replicate count',
+      (r: Record<string, unknown>) => {
+        r.replicates = null
+      },
+      'mc.replicates: expected a finite number',
+    ],
   ])('rejects %s with its path', (_what, corrupt, message) => {
     const raw = persisted()
     corrupt(raw)
@@ -38,9 +86,18 @@ describe('validateMcSummary', () => {
 
   it('keeps a null arrival as null, not NaN', () => {
     const raw = persisted()
-    ;(raw.perThreat as Record<string, unknown>).t1 = { ...JSON.parse(JSON.stringify({
-      killed: summary.firstDetectS, leaked: summary.firstDetectS, firstDetectS: summary.firstDetectS, arrivalS: null, shipCount: 2, residual: summary.kills,
-    })) }
+    ;(raw.perThreat as Record<string, unknown>).t1 = {
+      ...JSON.parse(
+        JSON.stringify({
+          killed: summary.firstDetectS,
+          leaked: summary.firstDetectS,
+          firstDetectS: summary.firstDetectS,
+          arrivalS: null,
+          shipCount: 2,
+          residual: summary.kills,
+        }),
+      ),
+    }
     expect(validateMcSummary(raw).perThreat.t1.arrivalS).toBeNull()
   })
 })
@@ -52,18 +109,33 @@ describe('buildBaseline', () => {
     const baseline = buildBaseline(scenario, summary, 'hash', undefined, pinnedAt)
     expect(baseline.label).toBe(defaultBaselineLabel('Camp Able', pinnedAt))
     expect(baseline.label.startsWith('Camp Able · ')).toBe(true)
-    expect(buildBaseline(scenario, summary, 'hash', ' Reference ', pinnedAt).label).toBe('Reference')
+    expect(buildBaseline(scenario, summary, 'hash', ' Reference ', pinnedAt).label).toBe(
+      'Reference',
+    )
     expect(defaultBaselineLabel('  ', pinnedAt).startsWith('Untitled · ')).toBe(true)
   })
 })
 
 describe('store baseline actions', () => {
-  beforeEach(() => { Object.assign(useStore.getInitialState(), useStore.getState()) })
-  afterEach(() => { useStore.setState({ baseline: null, mc: IDLE_MC }) })
+  beforeEach(() => {
+    Object.assign(useStore.getInitialState(), useStore.getState())
+  })
+  afterEach(() => {
+    useStore.setState({ baseline: null, mc: IDLE_MC })
+  })
 
   function done(overrides: Partial<typeof IDLE_MC> = {}) {
     const st = useStore.getState()
-    useStore.setState({ mc: { ...IDLE_MC, status: 'done', runId: st.playback.runId, summary, basisSignature: analysisBasisSignature(st.scenario), ...overrides } })
+    useStore.setState({
+      mc: {
+        ...IDLE_MC,
+        status: 'done',
+        runId: st.playback.runId,
+        summary,
+        basisSignature: analysisBasisSignature(st.scenario),
+        ...overrides,
+      },
+    })
   }
 
   it('pins the current scenario and summary with the basis signature', () => {

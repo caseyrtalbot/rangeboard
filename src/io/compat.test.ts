@@ -26,7 +26,8 @@ describe('Board schema-1 compatibility ownership', () => {
       delete legacy[field]
       const out = filled(legacy)[field]
       // Reconciled fields take the current seeds, not the saved list.
-      if (fill === 'reconciled') expect((out as unknown[]).length, field).toBe((empty[field] as unknown[]).length)
+      if (fill === 'reconciled')
+        expect((out as unknown[]).length, field).toBe((empty[field] as unknown[]).length)
       else expect(out, field).toEqual(empty[field])
     }
   })

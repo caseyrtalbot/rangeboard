@@ -57,7 +57,12 @@ const SENSOR_MODEL: SpecModel = {
 }
 
 let seq = 0
-function ent(kind: Entity['kind'], specId: string | null, pos: Vec2, extra?: Partial<Entity>): Entity {
+function ent(
+  kind: Entity['kind'],
+  specId: string | null,
+  pos: Vec2,
+  extra?: Partial<Entity>,
+): Entity {
   seq += 1
   return {
     id: `${kind}-${seq}`,
@@ -415,7 +420,9 @@ describe('engagementPicture incremental assessments', () => {
   const fresh = (s: Scenario) => JSON.stringify(assessAllThreats(s))
   const moved = (s: Scenario, id: string): Scenario => ({
     ...s,
-    entities: s.entities.map((e) => (e.id === id ? { ...e, pos: { x: e.pos.x + 5, y: e.pos.y } } : e)),
+    entities: s.entities.map((e) =>
+      e.id === id ? { ...e, pos: { x: e.pos.x + 5, y: e.pos.y } } : e,
+    ),
   })
   const firstOf = (s: Scenario, test: (e: Entity) => boolean) => s.entities.find(test)!.id
 
@@ -447,14 +454,36 @@ describe('engagementPicture incremental assessments', () => {
     expect(picture.assessments.every((a, i) => a === prev.assessments[i])).toBe(true)
     // Every other kind of edit must match a fresh run byte for byte.
     const edits: Array<(s: Scenario) => Scenario> = [
-      (s) => moved(s, firstOf(s, (e) => e.kind === 'sensor' && e.name.startsWith('RPS-42'))),
-      (s) => moved(s, firstOf(s, (e) => e.kind === 'effector')),
-      (s) => moved(s, firstOf(s, (e) => e.kind === 'asset')),
-      (s) => moved(s, firstOf(s, (e) => e.kind === 'c2')),
-      (s) => moved(s, firstOf(s, (e) => e.kind === 'uas')),
+      (s) =>
+        moved(
+          s,
+          firstOf(s, (e) => e.kind === 'sensor' && e.name.startsWith('RPS-42')),
+        ),
+      (s) =>
+        moved(
+          s,
+          firstOf(s, (e) => e.kind === 'effector'),
+        ),
+      (s) =>
+        moved(
+          s,
+          firstOf(s, (e) => e.kind === 'asset'),
+        ),
+      (s) =>
+        moved(
+          s,
+          firstOf(s, (e) => e.kind === 'c2'),
+        ),
+      (s) =>
+        moved(
+          s,
+          firstOf(s, (e) => e.kind === 'uas'),
+        ),
       (s) => ({
         ...s,
-        entities: s.entities.map((e) => (e.kind === 'sensor' && e.name.startsWith('KuRFS') ? { ...e, enabled: false } : e)),
+        entities: s.entities.map((e) =>
+          e.kind === 'sensor' && e.name.startsWith('KuRFS') ? { ...e, enabled: false } : e,
+        ),
       }),
       (s) => ({ ...s, environment: { ...s.environment, apply: !s.environment.apply } }),
       (s) => ({ ...s, requirements: { ...s.requirements, pdDetect: 0.6 } }),
@@ -492,7 +521,9 @@ describe('engagementPicture incremental assessments', () => {
       color: null,
       notes: '',
     }
-    expect(assessThreatReusing({ ...base, entities: [...base.entities, marker] }, uas, first)).toBe(first)
+    expect(assessThreatReusing({ ...base, entities: [...base.entities, marker] }, uas, first)).toBe(
+      first,
+    )
     // Moving a dependency invalidates the reuse and the new memo matches a fresh run.
     const next = moved(base, asset.id)
     const second = assessThreatReusing(next, uas, first)

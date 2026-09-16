@@ -33,7 +33,9 @@ function ModelBasis({ entityId, model }: { entityId: string; model: SpecModel })
           <Section label="Linked instances" note={linked.length}>
             <p>Edits to this model affect all {linked.length} linked instances.</p>
             <ul aria-label="Linked instances">
-              {linked.map((item) => <li key={item.id}>{item.name || 'Unnamed entity'}</li>)}
+              {linked.map((item) => (
+                <li key={item.id}>{item.name || 'Unnamed entity'}</li>
+              ))}
             </ul>
           </Section>
         )}
@@ -41,12 +43,20 @@ function ModelBasis({ entityId, model }: { entityId: string; model: SpecModel })
           {tags.length > 0 ? (
             <div className="fid-tags">
               {tags.map((tag) => (
-                <span key={tag.id} className="fid-tag" data-tier={tag.tier} data-validation={tag.validation} title={tag.note}>
+                <span
+                  key={tag.id}
+                  className="fid-tag"
+                  data-tier={tag.tier}
+                  data-validation={tag.validation}
+                  title={tag.note}
+                >
                   {tag.label} · {tag.tier} · {tag.validation}
                 </span>
               ))}
             </div>
-          ) : <p>No engine model applies to this entity.</p>}
+          ) : (
+            <p>No engine model applies to this entity.</p>
+          )}
         </Section>
       </div>
       <LibraryEditor key={model.id} modelId={model.id} />
@@ -78,7 +88,9 @@ export function EntityWorkspace({
   return (
     <div className="entity-workspace">
       <div className="entity-workspace-header">
-        <button className="mini" onClick={onOverview}>‹ Overview</button>
+        <button className="mini" onClick={onOverview}>
+          ‹ Overview
+        </button>
         <div>
           <h3>{entity?.name || (entity ? 'Unnamed entity' : 'Entity unavailable')}</h3>
           <p>{entity ? `${entity.kind} · ${model?.name ?? 'No linked model'}` : entityId}</p>
@@ -102,7 +114,9 @@ export function EntityWorkspace({
               onSectionChange(SECTIONS[next].id)
               document.getElementById(`entity-section-${SECTIONS[next].id}`)?.focus()
             }}
-          >{item.label}</button>
+          >
+            {item.label}
+          </button>
         ))}
       </div>
       <div
@@ -114,17 +128,27 @@ export function EntityWorkspace({
       >
         {!entity ? (
           <div className="inspector-body insp">
-            <EmptyState title="Entity unavailable" body="This entity is no longer on the board. Return to Overview to choose another entity." />
+            <EmptyState
+              title="Entity unavailable"
+              body="This entity is no longer on the board. Return to Overview to choose another entity."
+            />
           </div>
         ) : section === 'configure' ? (
           <Inspector entityId={entity.id} />
-        ) : section === 'model' ? model ? (
-          <ModelBasis entityId={entity.id} model={model} />
-        ) : (
-          <div className="inspector-body insp">
-            <EmptyState title="No linked model" body="This entity has no available library model. Choose a model in Configure to inspect and edit its shared specification and sources." />
-            <button className="mini" onClick={() => onSectionChange('configure')}>Open Configure</button>
-          </div>
+        ) : section === 'model' ? (
+          model ? (
+            <ModelBasis entityId={entity.id} model={model} />
+          ) : (
+            <div className="inspector-body insp">
+              <EmptyState
+                title="No linked model"
+                body="This entity has no available library model. Choose a model in Configure to inspect and edit its shared specification and sources."
+              />
+              <button className="mini" onClick={() => onSectionChange('configure')}>
+                Open Configure
+              </button>
+            </div>
+          )
         ) : (
           <>
             <LiveStrip onOpenSettings={onOpenSettings} />
@@ -134,7 +158,10 @@ export function EntityWorkspace({
               </DetailOverviewContext.Provider>
             ) : (
               <div className="inspector-body insp">
-                <EmptyState title="No telemetry for this entity" body="This entity has no dedicated telemetry view. Its configuration and linked model remain available above." />
+                <EmptyState
+                  title="No telemetry for this entity"
+                  body="This entity has no dedicated telemetry view. Its configuration and linked model remain available above."
+                />
               </div>
             )}
           </>

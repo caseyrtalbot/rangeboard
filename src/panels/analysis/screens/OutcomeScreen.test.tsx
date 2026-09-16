@@ -17,29 +17,41 @@ const interaction = vi.hoisted(() => ({
   saved: [] as unknown[],
 }))
 vi.mock('../../../io/runStore', () => ({
-  saveRun: (record: unknown) => { interaction.saved.push(record); return Promise.resolve({ evicted: [] }) },
+  saveRun: (record: unknown) => {
+    interaction.saved.push(record)
+    return Promise.resolve({ evicted: [] })
+  },
   listRuns: () => Promise.resolve([]),
   getRun: () => Promise.resolve(null),
   deleteRun: () => Promise.resolve(),
 }))
 // Exercise header handlers and their next render in the repository's server-render harness.
-vi.mock('react', async importOriginal => {
+vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
-  return { ...actual, useState: (initial: unknown) => {
-    if (typeof initial === 'object' && initial != null && 'column' in initial) {
-      return [interaction.sort, (value: typeof interaction.sort) => { interaction.sort = value }]
-    }
-    return actual.useState(initial)
-  } }
+  return {
+    ...actual,
+    useState: (initial: unknown) => {
+      if (typeof initial === 'object' && initial != null && 'column' in initial) {
+        return [
+          interaction.sort,
+          (value: typeof interaction.sort) => {
+            interaction.sort = value
+          },
+        ]
+      }
+      return actual.useState(initial)
+    },
+  }
 })
-vi.mock('react/jsx-dev-runtime', async importOriginal => {
+vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
     const button = props as { children?: unknown; onClick?: () => void }
     if (type === 'button' && typeof button.children === 'string' && button.onClick) {
       interaction.buttons.set(button.children, button.onClick)
     }
-    if (typeof type === 'function' && type.name === 'RunHistory') interaction.save = (props as { save: typeof interaction.save }).save
+    if (typeof type === 'function' && type.name === 'RunHistory')
+      interaction.save = (props as { save: typeof interaction.save }).save
     return actual.jsxDEV(type, props, ...rest)
   }
   return { ...actual, jsxDEV }
@@ -52,8 +64,15 @@ function render() {
 
 function complete() {
   const fixture = installTrial(60)
-  useStore.setState({ playback: { ...useStore.getState().playback, phase: 'complete',
-    completedAtMs: 2, observedThroughS: fixture.view.durationS, simTimeS: 0 } })
+  useStore.setState({
+    playback: {
+      ...useStore.getState().playback,
+      phase: 'complete',
+      completedAtMs: 2,
+      observedThroughS: fixture.view.durationS,
+      simTimeS: 0,
+    },
+  })
   return fixture
 }
 
@@ -65,7 +84,7 @@ function tile(html: string, label: string) {
 
 function tracks(html: string) {
   const body = html.slice(html.indexOf('<tbody>'), html.indexOf('</tbody>'))
-  return [...body.matchAll(/<tr><td[^>]*>([^<]+)<\/td>/g)].map(match => match[1])
+  return [...body.matchAll(/<tr><td[^>]*>([^<]+)<\/td>/g)].map((match) => match[1])
 }
 
 describe('OutcomeScreen', () => {
@@ -75,14 +94,28 @@ describe('OutcomeScreen', () => {
     complete()
   })
 
-  it.each(['idle', 'cancelled', 'unstarted'] as const)('keeps the one-line pre-Play placeholder for %s', state => {
-    if (state === 'unstarted') unstartTrial()
-    else useStore.setState({ trial: state === 'idle' ? IDLE_TRIAL : { ...useStore.getState().trial, status: state } })
-    expect(render()).toBe('<p class="muted small">No trial yet. Press Play in Execute to run one.</p>')
-  })
+  it.each(['idle', 'cancelled', 'unstarted'] as const)(
+    'keeps the one-line pre-Play placeholder for %s',
+    (state) => {
+      if (state === 'unstarted') unstartTrial()
+      else
+        useStore.setState({
+          trial: state === 'idle' ? IDLE_TRIAL : { ...useStore.getState().trial, status: state },
+        })
+      expect(render()).toBe(
+        '<p class="muted small">No trial yet. Press Play in Execute to run one.</p>',
+      )
+    },
+  )
 
-  it.each(['preparing', 'error'] as const)('does not reveal results while %s', status => {
-    useStore.setState({ trial: { ...useStore.getState().trial, status, error: status === 'error' ? 'Trial failed' : null } })
+  it.each(['preparing', 'error'] as const)('does not reveal results while %s', (status) => {
+    useStore.setState({
+      trial: {
+        ...useStore.getState().trial,
+        status,
+        error: status === 'error' ? 'Trial failed' : null,
+      },
+    })
     const html = render()
     expect(html).toContain(status === 'preparing' ? 'Preparing trial' : 'Trial failed')
     expect(html).not.toContain('tiles c3')
@@ -107,7 +140,9 @@ describe('OutcomeScreen', () => {
   it('renders exactly six full-horizon tiles once after completion, even after rewind', () => {
     const { manifest, view } = complete()
     const html = render()
-    expect(html).toContain(`simulated trial · one draw · seed ${manifest.seed} · T+1:00 of 1:00 observed`)
+    expect(html).toContain(
+      `simulated trial · one draw · seed ${manifest.seed} · T+1:00 of 1:00 observed`,
+    )
     expect(html.match(/class="tiles c3"/g)).toHaveLength(1)
     expect(html.match(/class="tile"/g)).toHaveLength(6)
     expect(html).not.toContain('outcome-grid')
@@ -132,22 +167,35 @@ describe('OutcomeScreen', () => {
     ['FX', ['moving', 'swarm', 'flyby'], ['moving', 'swarm', 'flyby']],
     ['Slv', ['flyby', 'moving', 'swarm'], ['swarm', 'moving', 'flyby']],
     ['Result', ['flyby', 'moving', 'swarm'], ['swarm', 'flyby', 'moving']],
-  ])('sorts the rendered table through the %s header in both directions', (header, first, second) => {
-    const trial = useStore.getState().trial
-    const result = trial.result!
-    const assessments = result.assessments.map(a => a.uasId === 'moving' || a.uasId === 'flyby'
-      ? { ...a, firstDetectS: a.uasId === 'moving' ? 2 : 10,
-        classificationAtS: { ...a.classificationAtS, hostileAtS: a.uasId === 'moving' ? 11 : 2 } }
-      : a)
-    useStore.setState({ trial: { ...trial, result: { ...result, assessments } } })
-    render()
-    interaction.buttons.get(header as string)!()
-    const sorted = render()
-    expect(tracks(sorted)).toEqual(first)
-    expect(sorted).toContain('aria-sort="' + (header === 'Track' ? 'descending' : 'ascending') + '"')
-    interaction.buttons.get(header as string)!()
-    expect(tracks(render())).toEqual(second)
-  })
+  ])(
+    'sorts the rendered table through the %s header in both directions',
+    (header, first, second) => {
+      const trial = useStore.getState().trial
+      const result = trial.result!
+      const assessments = result.assessments.map((a) =>
+        a.uasId === 'moving' || a.uasId === 'flyby'
+          ? {
+              ...a,
+              firstDetectS: a.uasId === 'moving' ? 2 : 10,
+              classificationAtS: {
+                ...a.classificationAtS,
+                hostileAtS: a.uasId === 'moving' ? 11 : 2,
+              },
+            }
+          : a,
+      )
+      useStore.setState({ trial: { ...trial, result: { ...result, assessments } } })
+      render()
+      interaction.buttons.get(header as string)!()
+      const sorted = render()
+      expect(tracks(sorted)).toEqual(first)
+      expect(sorted).toContain(
+        'aria-sort="' + (header === 'Track' ? 'descending' : 'ascending') + '"',
+      )
+      interaction.buttons.get(header as string)!()
+      expect(tracks(render())).toEqual(second)
+    },
+  )
 
   it('keeps existing ledger, manifest, component and validity content in closed record rows', () => {
     const html = render()
@@ -169,11 +217,26 @@ describe('OutcomeScreen', () => {
 
   it('keeps missing detection/effect and no-asset leakage undefined', () => {
     const state = useStore.getState()
-    const scenario = { ...state.scenario, entities: state.scenario.entities.filter(entity => entity.kind !== 'asset') }
-    const manifest = createTrialManifest(scenario, state.playback.runId, analysisBasisSignature(scenario))
-    const result = { ...state.trial.result!, manifest,
-      assessments: state.trial.result!.assessments.map(a => ({ ...a, firstDetectS: null, arrivalS: null })),
-      report: { ...state.trial.result!.report, events: [] }, jamDecisions: [] }
+    const scenario = {
+      ...state.scenario,
+      entities: state.scenario.entities.filter((entity) => entity.kind !== 'asset'),
+    }
+    const manifest = createTrialManifest(
+      scenario,
+      state.playback.runId,
+      analysisBasisSignature(scenario),
+    )
+    const result = {
+      ...state.trial.result!,
+      manifest,
+      assessments: state.trial.result!.assessments.map((a) => ({
+        ...a,
+        firstDetectS: null,
+        arrivalS: null,
+      })),
+      report: { ...state.trial.result!.report, events: [] },
+      jamDecisions: [],
+    }
     useStore.setState({ scenario, trial: { ...state.trial, scenario, manifest, result } })
     const html = render()
     expect(tile(html, 'Arrived undefeated')).toContain('>—<small>/9 members</small>')
@@ -190,10 +253,24 @@ describe('Save to history', () => {
     complete()
     const scenario = useStore.getState().scenario
     const model = scenario.library[0]
-    const applied = { modelId: model.id, field: 'pk', value: 0.8333, reason: 'Calibrated from counts', date: '2026-09-15T00:00:00.000Z' }
+    const applied = {
+      modelId: model.id,
+      field: 'pk',
+      value: 0.8333,
+      reason: 'Calibrated from counts',
+      date: '2026-09-15T00:00:00.000Z',
+    }
     const signature = analysisBasisSignature(scenario)
-    useStore.setState({ mc: { ...useStore.getState().mc, status: 'done', runId: 'run-1', basisSignature: signature,
-      summary: {} as McSummary, overrides: [applied] } })
+    useStore.setState({
+      mc: {
+        ...useStore.getState().mc,
+        status: 'done',
+        runId: 'run-1',
+        basisSignature: signature,
+        summary: {} as McSummary,
+        overrides: [applied],
+      },
+    })
     interaction.saved.length = 0
     render()
     expect(interaction.save?.enabled).toBe(true)

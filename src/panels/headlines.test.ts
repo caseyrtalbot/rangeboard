@@ -122,7 +122,13 @@ describe('residualHeadline', () => {
 })
 
 describe('expectedCount', () => {
-  it.each([[0, '0.00'], [0.952, '0.95'], [9.12, '9.12'], [10, '10.0'], [12.34, '12.3']])('formats %s as %s', (value, text) => {
+  it.each([
+    [0, '0.00'],
+    [0.952, '0.95'],
+    [9.12, '9.12'],
+    [10, '10.0'],
+    [12.34, '12.3'],
+  ])('formats %s as %s', (value, text) => {
     expect(expectedCount(Number(value))).toBe(text)
   })
 })
@@ -139,4 +145,3 @@ describe('aarHeadline', () => {
     )
   })
 })
-

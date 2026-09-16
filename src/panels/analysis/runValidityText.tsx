@@ -28,14 +28,20 @@ export const VALIDITY_TEXT: Record<RunValidity, { pill: string; line: string; to
 }
 
 /** The state word and tone of each finding severity. */
-export const SEVERITY_PILL: Record<RunValidityFinding['severity'], { text: string; tone: StateTone }> = {
+export const SEVERITY_PILL: Record<
+  RunValidityFinding['severity'],
+  { text: string; tone: StateTone }
+> = {
   invalidating: { text: 'INVALIDATES', tone: 'critical' },
   limiting: { text: 'LIMITS', tone: 'warning' },
 }
 
 /** Selection exposes the existing threat editor without changing the laydown. */
 // oxlint-disable-next-line react/only-export-components -- The validity words and this action share one module.
-export function FindingThreatActions({ finding, entities }: {
+export function FindingThreatActions({
+  finding,
+  entities,
+}: {
   finding: RunValidityFinding
   entities: Entity[]
 }) {

@@ -35,11 +35,21 @@ function fixture(radar: Partial<SensorSpec>): { scenario: Scenario; uas: Entity 
   const scenario = emptyScenario()
   scenario.environment = { ...scenario.environment, apply: false }
   const common = { description: '', color: '#0f0', builtin: false, kind: 'sensor' as const }
-  scenario.library.push({ id: 'tst-radar', name: 'Radar', ...common, sensor: { ...RADAR, ...radar } })
+  scenario.library.push({
+    id: 'tst-radar',
+    name: 'Radar',
+    ...common,
+    sensor: { ...RADAR, ...radar },
+  })
   const ent = { pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '' }
   scenario.entities.push({ id: 'radar', name: 'R', kind: 'sensor', specId: 'tst-radar', ...ent })
   const uas: Entity = {
-    id: 'uas', name: 'T', kind: 'uas', specId: null, ...ent, altitudeFt: MOUNT_HEIGHT_M / FT_TO_M,
+    id: 'uas',
+    name: 'T',
+    kind: 'uas',
+    specId: null,
+    ...ent,
+    altitudeFt: MOUNT_HEIGHT_M / FT_TO_M,
   }
   scenario.entities.push(uas)
   return { scenario, uas }
@@ -77,7 +87,9 @@ function rfFixture(nodes: number): { scenario: Scenario; uas: Entity } {
 }
 
 /** The deterministic policy with a counter on the noise draw. */
-function spyPolicy(scenario: Scenario): DrawPolicy & { noiseCalls: Array<[string, string, number, number]> } {
+function spyPolicy(
+  scenario: Scenario,
+): DrawPolicy & { noiseCalls: Array<[string, string, number, number]> } {
   const base = deterministicPolicy(resolvedThresholds(scenario))
   const spy = {
     ...base,
@@ -192,9 +204,12 @@ describe('tracker estimate path', () => {
     const estimates = sweep(scenario, uas, policy, inside, 2)
     // Scans at 0, 1, 2; the odd steps carry and draw nothing.
     expect(policy.noiseCalls).toEqual([
-      ['radar', 'uas', 0, 0], ['radar', 'uas', 0, 1],
-      ['radar', 'uas', 1, 0], ['radar', 'uas', 1, 1],
-      ['radar', 'uas', 2, 0], ['radar', 'uas', 2, 1],
+      ['radar', 'uas', 0, 0],
+      ['radar', 'uas', 0, 1],
+      ['radar', 'uas', 1, 0],
+      ['radar', 'uas', 1, 1],
+      ['radar', 'uas', 2, 0],
+      ['radar', 'uas', 2, 1],
     ])
     expect(estimates.length).toBe(5)
     for (const e of estimates) {
@@ -260,13 +275,35 @@ describe('tracker estimate path', () => {
 
 describe('polarMeasurement', () => {
   it('puts the range sigma along the line of sight and the cross-range sigma across it', () => {
-    const east = polarMeasurement({ x: 0, y: 0 }, { x: 1000, y: 0 }, 1000, 10, Math.PI / 180, 1, 0, 's', 'u', 0)
+    const east = polarMeasurement(
+      { x: 0, y: 0 },
+      { x: 1000, y: 0 },
+      1000,
+      10,
+      Math.PI / 180,
+      1,
+      0,
+      's',
+      'u',
+      0,
+    )
     expect(east.sigmaXM).toBeCloseTo(10, 9)
     expect(east.sigmaYM).toBeCloseTo(1000 * (Math.PI / 180), 9)
     expect(east.rhoXY).toBeCloseTo(0, 12)
     expect(east.x).toBeCloseTo(1010, 9)
     expect(east.y).toBeCloseTo(0, 9)
-    const south = polarMeasurement({ x: 0, y: 0 }, { x: 0, y: 1000 }, 1000, 10, Math.PI / 180, 0, 1, 's', 'u', 0)
+    const south = polarMeasurement(
+      { x: 0, y: 0 },
+      { x: 0, y: 1000 },
+      1000,
+      10,
+      Math.PI / 180,
+      0,
+      1,
+      's',
+      'u',
+      0,
+    )
     expect(south.sigmaXM).toBeCloseTo(1000 * (Math.PI / 180), 9)
     expect(south.sigmaYM).toBeCloseTo(10, 9)
     // Cross-range along the +90 deg rotation of the line of sight: (-s, c) = (-1, 0).
@@ -276,7 +313,18 @@ describe('polarMeasurement', () => {
 
   it('a diagonal line of sight correlates x and y by (vr - vc) / (vr + vc)', () => {
     const r = 1000
-    const m = polarMeasurement({ x: 0, y: 0 }, { x: r, y: r }, r * Math.SQRT2, 10, 0.01, 0, 0, 's', 'u', 0)
+    const m = polarMeasurement(
+      { x: 0, y: 0 },
+      { x: r, y: r },
+      r * Math.SQRT2,
+      10,
+      0.01,
+      0,
+      0,
+      's',
+      'u',
+      0,
+    )
     const vr = 100
     const vc = (r * Math.SQRT2 * 0.01) ** 2
     expect(m.sigmaXM).toBeCloseTo(Math.sqrt((vr + vc) / 2), 9)
@@ -292,21 +340,41 @@ describe('runTrial tracks', () => {
     scenario.seed = 4821
     scenario.doctrine!.enabled = false
     const entity = (id: string, kind: Entity['kind'], specId: string, y: number): Entity => ({
-      id, kind, specId, name: id, pos: { x: 0, y }, headingDeg: 0, color: null, notes: '',
+      id,
+      kind,
+      specId,
+      name: id,
+      pos: { x: 0, y },
+      headingDeg: 0,
+      color: null,
+      notes: '',
     })
     scenario.entities = [
       entity('radar', 'sensor', 'lib-giraffe1x', 0),
       entity('c2', 'c2', 'lib-faadc2', 0),
       entity('effector', 'effector', 'lib-coyote', -1697),
-      { ...entity('uas', 'uas', 'lib-mohajer6', -5000), altitudeFt: 1000,
-        formation: { count: 3, shape: 'line', spacingM: 100 } },
+      {
+        ...entity('uas', 'uas', 'lib-mohajer6', -5000),
+        altitudeFt: 1000,
+        formation: { count: 3, shape: 'line', spacingM: 100 },
+      },
     ]
     scenario.connections = [
       { id: 'link-1', fromId: 'radar', toId: 'c2', label: '' },
       { id: 'link-2', fromId: 'c2', toId: 'effector', label: '' },
     ]
-    scenario.paths = [{ id: 'path', entityId: 'uas', points: [{ x: 0, y: -5000 }, { x: 0, y: -800 }],
-      speedMps: 30, startDelayS: 0 }]
+    scenario.paths = [
+      {
+        id: 'path',
+        entityId: 'uas',
+        points: [
+          { x: 0, y: -5000 },
+          { x: 0, y: -800 },
+        ],
+        speedMps: 30,
+        startDelayS: 0,
+      },
+    ]
     const giraffe = scenario.library.find((model) => model.id === 'lib-giraffe1x')!
     giraffe.sensor = { ...giraffe.sensor!, ...accuracy }
     return scenario
@@ -341,12 +409,15 @@ describe('runTrial tracks', () => {
     // Every emitted step is one the assessment held.
     const observations = result.assessments[0]?.sensorObservations ?? []
     expect(observations.length).toBeGreaterThan(0)
-    const held = new Set(observations.flatMap((o) =>
-      o.intervals.flatMap(([a, b]) => {
-        const out: number[] = []
-        for (let t = a; t <= b + 1e-9; t += DT) out.push(Math.round(t * 2) / 2)
-        return out
-      })))
+    const held = new Set(
+      observations.flatMap((o) =>
+        o.intervals.flatMap(([a, b]) => {
+          const out: number[] = []
+          for (let t = a; t <= b + 1e-9; t += DT) out.push(Math.round(t * 2) / 2)
+          return out
+        }),
+      ),
+    )
     for (const e of result.tracks!) expect(held.has(Math.round(e.state.tS * 2) / 2)).toBe(true)
   })
 
@@ -356,6 +427,8 @@ describe('runTrial tracks', () => {
     const result = runTrial(scenario, manifest)
     expectOnePerStep(result.tracks!)
     expect(result.tracks!.every((e) => e.source === 'estimate' && e.quality < 1)).toBe(true)
-    expect(runTrial(structuredClone(scenario), structuredClone(manifest)).tracks).toEqual(result.tracks)
+    expect(runTrial(structuredClone(scenario), structuredClone(manifest)).tracks).toEqual(
+      result.tracks,
+    )
   })
 })

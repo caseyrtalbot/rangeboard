@@ -30,7 +30,8 @@ interface Queue {
 
 function keyOf(row: Row, keyPath: string): IDBValidKey {
   const key = row[keyPath]
-  if (typeof key !== 'string' && typeof key !== 'number') throw new Error(`fake IndexedDB: ${keyPath} must be a string or a number`)
+  if (typeof key !== 'string' && typeof key !== 'number')
+    throw new Error(`fake IndexedDB: ${keyPath} must be a string or a number`)
   return key
 }
 
@@ -40,7 +41,12 @@ function compare(a: unknown, b: unknown): number {
   return String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0
 }
 
-function makeQueue(tx: { error: DOMException | null; oncomplete: Handler; onerror: Handler; onabort: Handler }): Queue {
+function makeQueue(tx: {
+  error: DOMException | null
+  oncomplete: Handler
+  onerror: Handler
+  onabort: Handler
+}): Queue {
   let pending = 0
   let settled = false
   let failed = false
@@ -58,7 +64,12 @@ function makeQueue(tx: { error: DOMException | null; oncomplete: Handler; onerro
   return {
     run<T>(work: () => T): IDBRequest<T> {
       pending += 1
-      const req: FakeRequest<T> = { result: undefined as T, error: null, onsuccess: null, onerror: null }
+      const req: FakeRequest<T> = {
+        result: undefined as T,
+        error: null,
+        onsuccess: null,
+        onerror: null,
+      }
       queueMicrotask(() => {
         try {
           req.result = work()
@@ -67,7 +78,9 @@ function makeQueue(tx: { error: DOMException | null; oncomplete: Handler; onerro
         } catch (error) {
           failed = true
           pending -= 1
-          req.error = new DOMException(error instanceof Error ? error.message : 'fake IndexedDB failure')
+          req.error = new DOMException(
+            error instanceof Error ? error.message : 'fake IndexedDB failure',
+          )
           tx.error = req.error
           req.onerror?.()
         }
@@ -91,13 +104,20 @@ function makeStore(data: StoreData, queue: Queue): IDBObjectStore {
     },
     get: (key: IDBValidKey) => queue.run(() => data.rows.get(key)),
     getAll: () => queue.run(() => [...data.rows.values()]),
-    put: (value: Row) => queue.run(() => {
-      const key = keyOf(value, data.keyPath)
-      data.rows.set(key, value)
-      return key
-    }),
-    delete: (key: IDBValidKey) => queue.run(() => { data.rows.delete(key) }),
-    clear: () => queue.run(() => { data.rows.clear() }),
+    put: (value: Row) =>
+      queue.run(() => {
+        const key = keyOf(value, data.keyPath)
+        data.rows.set(key, value)
+        return key
+      }),
+    delete: (key: IDBValidKey) =>
+      queue.run(() => {
+        data.rows.delete(key)
+      }),
+    clear: () =>
+      queue.run(() => {
+        data.rows.clear()
+      }),
   }
   return store as unknown as IDBObjectStore
 }
@@ -114,13 +134,22 @@ function makeDb(stores: Map<string, StoreData>): IDBDatabase {
       const data: StoreData = { keyPath: options.keyPath, rows: new Map(), indexes: new Set() }
       stores.set(name, data)
       // The upgrade transaction issues no request; its queue never has to complete.
-      return makeStore(data, { run: () => { throw new Error('fake IndexedDB: no request during an upgrade') } })
+      return makeStore(data, {
+        run: () => {
+          throw new Error('fake IndexedDB: no request during an upgrade')
+        },
+      })
     },
     transaction(name: string) {
       const data = stores.get(name)
       if (!data) throw new Error(`fake IndexedDB: no object store ${name}`)
-      const tx = { error: null as DOMException | null, oncomplete: null as Handler, onerror: null as Handler, onabort: null as Handler,
-        objectStore: (_name: string) => makeStore(data, queue) }
+      const tx = {
+        error: null as DOMException | null,
+        oncomplete: null as Handler,
+        onerror: null as Handler,
+        onabort: null as Handler,
+        objectStore: (_name: string) => makeStore(data, queue),
+      }
       const queue = makeQueue(tx)
       return tx
     },
@@ -140,7 +169,13 @@ export function createFakeIndexedDb(): IDBFactory {
       const fresh = !databases.has(name)
       const stores = databases.get(name) ?? new Map<string, StoreData>()
       if (fresh) databases.set(name, stores)
-      const req = { result: makeDb(stores), error: null, onsuccess: null as Handler, onerror: null as Handler, onupgradeneeded: null as Handler }
+      const req = {
+        result: makeDb(stores),
+        error: null,
+        onsuccess: null as Handler,
+        onerror: null as Handler,
+        onupgradeneeded: null as Handler,
+      }
       queueMicrotask(() => {
         if (fresh) req.onupgradeneeded?.()
         req.onsuccess?.()

@@ -25,7 +25,12 @@ import { deterministicPolicy, monteCarloPolicy } from './policy'
 import { parseAutosave } from '../io/persist'
 import jiatfFixture from './__fixtures__/detection-outside-rings.json'
 import layeredFixture from './__fixtures__/layered-acoustic-merops.json'
-import { assessAllThreats, assessThreat, assessThreatReusing, DEFAULT_DEFENDED_RADIUS_M } from './sim'
+import {
+  assessAllThreats,
+  assessThreat,
+  assessThreatReusing,
+  DEFAULT_DEFENDED_RADIUS_M,
+} from './sim'
 import { runTrial } from './trial'
 import { createTrialManifest } from './trialTypes'
 import { memberPositions, threatAltitudeFt } from './tracks'
@@ -315,7 +320,9 @@ describe('environment effects on sensors', () => {
     const st = useStore.getState()
     // Blighter A422: 2.73 km sourced at 0.01 m2. Shahed 0.2 m2 -> x2.11 -> 5.77 km.
     st.addEntityFromModel('lib-a422', { x: 0, y: 0 })
-    useStore.getState().updateEntity(useStore.getState().scenario.entities[0].id, { headingDeg: 90 })
+    useStore
+      .getState()
+      .updateEntity(useStore.getState().scenario.entities[0].id, { headingDeg: 90 })
     st.addEntityFromModel('lib-mavic3', { x: 3000, y: 0 }) // G1, outside 2.73 km
     st.addEntityFromModel('lib-shahed136', { x: 4000, y: 0 }) // G3, inside 5.77 km
     const [, g1, g3] = useStore.getState().scenario.entities
@@ -717,8 +724,13 @@ describe('classification ladder promotions', () => {
     expect(b.classificationAtS.suspectedAtS).not.toBeNull()
     expect(b.classificationAtS.hostileAtS).toBeNull()
     // A classify draw below 0.4 declares at the same time (the other draws stay deterministic).
-    const lucky: DrawPolicy = { ...deterministicPolicy(unsure.scenario.requirements), classify: () => 0.1 }
-    expect(assessThreat(unsure.scenario, unsure.uasId, lucky).classificationAtS.hostileAtS).toBe(attemptS + 10)
+    const lucky: DrawPolicy = {
+      ...deterministicPolicy(unsure.scenario.requirements),
+      classify: () => 0.1,
+    }
+    expect(assessThreat(unsure.scenario, unsure.uasId, lucky).classificationAtS.hostileAtS).toBe(
+      attemptS + 10,
+    )
   })
 
   it('the same classified hit from an early-warning sensor does not go hostile', () => {
@@ -842,10 +854,39 @@ describe('windows come only from effectors the detecting sensors can reach', () 
     const farId = newId('e-far')
     const common = { headingDeg: 0, color: null, notes: '' }
     s.entities.push(
-      { id: sensorId, name: 'S1', kind: 'sensor', specId: sensorModelId, pos: { x: 0, y: 0 }, ...common },
-      { id: nearId, name: 'E-near', kind: 'effector', specId: gunModelId, pos: { x: 0, y: 0 }, ...common },
-      { id: farId, name: 'E-far', kind: 'effector', specId: gunModelId, pos: { x: 20000, y: 0 }, ...common },
-      { id: uasId, name: 'T1', kind: 'uas', specId: uasModelId, pos: { x: -4000, y: 0 }, ...common, headingDeg: 90 },
+      {
+        id: sensorId,
+        name: 'S1',
+        kind: 'sensor',
+        specId: sensorModelId,
+        pos: { x: 0, y: 0 },
+        ...common,
+      },
+      {
+        id: nearId,
+        name: 'E-near',
+        kind: 'effector',
+        specId: gunModelId,
+        pos: { x: 0, y: 0 },
+        ...common,
+      },
+      {
+        id: farId,
+        name: 'E-far',
+        kind: 'effector',
+        specId: gunModelId,
+        pos: { x: 20000, y: 0 },
+        ...common,
+      },
+      {
+        id: uasId,
+        name: 'T1',
+        kind: 'uas',
+        specId: uasModelId,
+        pos: { x: -4000, y: 0 },
+        ...common,
+        headingDeg: 90,
+      },
     )
     s.paths.push({
       id: newId('p'),
@@ -916,9 +957,23 @@ describe('windows come only from effectors the detecting sensors can reach', () 
 describe('typed kill-chain routing', () => {
   const common = { headingDeg: 0, color: null, notes: '' }
 
-  function ent(s: Scenario, kind: EntityKind, specId: string | null, x: number, headingDeg = 0): string {
+  function ent(
+    s: Scenario,
+    kind: EntityKind,
+    specId: string | null,
+    x: number,
+    headingDeg = 0,
+  ): string {
     const id = newId('e')
-    s.entities.push({ id, name: specId ?? kind, kind, specId, pos: { x, y: 0 }, ...common, headingDeg })
+    s.entities.push({
+      id,
+      name: specId ?? kind,
+      kind,
+      specId,
+      pos: { x, y: 0 },
+      ...common,
+      headingDeg,
+    })
     return id
   }
 
@@ -1206,8 +1261,12 @@ function legacyScenario(): ReturnType<typeof emptyScenario> {
   const s = emptyScenario()
   s.doctrine = { ...s.doctrine!, enabled: false }
   s.physics = [
-    'singlePulseRadar', 'noFlightLimits', 'rfBandGate', 'eoirSpanRatio',
-    'legacyKineticPk', 'legacyBeamPk',
+    'singlePulseRadar',
+    'noFlightLimits',
+    'rfBandGate',
+    'eoirSpanRatio',
+    'legacyKineticPk',
+    'legacyBeamPk',
   ]
   return s
 }
@@ -1228,7 +1287,10 @@ describe('probability of detection', () => {
       .updateModel(giraffe.id, { sensor: { ...giraffe.sensor!, elevationDeg: null } })
     const st = useStore.getState()
     const sensor = st.scenario.entities.at(-1)!
-    return { sensorId: sensor.id, spec: st.scenario.library.find((m) => m.id === sensor.specId)!.sensor! }
+    return {
+      sensorId: sensor.id,
+      spec: st.scenario.library.find((m) => m.id === sensor.specId)!.sensor!,
+    }
   }
 
   /** Mohajer-6 (Group 4, 1 m2, fixed-wing, placed at 14,000 ft) standing at ground range x east. */
@@ -1449,7 +1511,10 @@ describe('scan-model track initiation, coast and drop', () => {
     })
     useStore.getState().addEntityFromModel(modelId, { x: 0, y: 0 })
     const sensorId = useStore.getState().scenario.entities.at(-1)!.id
-    return { sensorId, spec: useStore.getState().scenario.library.find((m) => m.id === modelId)!.sensor! }
+    return {
+      sensorId,
+      spec: useStore.getState().scenario.library.find((m) => m.id === modelId)!.sensor!,
+    }
   }
 
   /** Mavic 3 (quad, case 1) flying a short tangent north to south at ground range x, so Pd stays flat. */
@@ -1503,14 +1568,19 @@ describe('scan-model track initiation, coast and drop', () => {
     expect(obs.trackInitAtS).toBeNull()
     expect(a.stableTrackAtS).toBeNull()
     // The same geometry initiates as soon as the test lowers the TRACK threshold under 0.68.
-    const eased = { ...scenario, requirements: { ...scenario.requirements, pdTrackCumulative: 0.65 } }
+    const eased = {
+      ...scenario,
+      requirements: { ...scenario.requirements, pdTrackCumulative: 0.65 },
+    }
     expect(assessThreat(eased, uasId).sensorObservations![0].trackInitAtS).toBe(2)
   })
 
   it('a rate below DT counts one scan per step: initiation at the third step', () => {
     const { sensorId, spec } = placeScanRadar({ updateRateS: 0.1 })
     const { uasId, scenario } = flyTangent(rangeAtPd(spec, 0.85) - 1)
-    const obs = assessThreat(scenario, uasId).sensorObservations!.find((o) => o.sensorId === sensorId)!
+    const obs = assessThreat(scenario, uasId).sensorObservations!.find(
+      (o) => o.sensorId === sensorId,
+    )!
     expect(obs.firstDetectS).toBe(0)
     expect(obs.trackInitAtS).toBe(1)
   })
@@ -1798,7 +1868,7 @@ describe('one draw per scan', () => {
     })
     const a = assessThreat(scenario, uasId)
     expect(a.firstDetectS).toBe(49.5)
-    expect(((a.firstDetectS! - delayS) % 4 + 4) % 4).toBeLessThan(1e-6)
+    expect((((a.firstDetectS! - delayS) % 4) + 4) % 4).toBeLessThan(1e-6)
     const obs = a.sensorObservations!.find((o) => o.sensorId === sensorId)!
     expect(obs.pdSeriesStartS).toBe(delayS)
     // Between scans the board view (no steering: every step is a scan step)
@@ -1852,8 +1922,13 @@ describe('fusion and matrix wiring keep the declaration times of the no-matrix l
   const phase2Scenario = (fixture: unknown) => {
     const s = parseAutosave(JSON.stringify(fixture))
     s.physics = [
-      'truthTracks', 'singlePulseRadar', 'noFlightLimits', 'rfBandGate', 'eoirSpanRatio',
-      'legacyKineticPk', 'legacyBeamPk',
+      'truthTracks',
+      'singlePulseRadar',
+      'noFlightLimits',
+      'rfBandGate',
+      'eoirSpanRatio',
+      'legacyKineticPk',
+      'legacyBeamPk',
     ]
     return s
   }
@@ -1862,14 +1937,18 @@ describe('fusion and matrix wiring keep the declaration times of the no-matrix l
     const s = phase2Scenario(jiatfFixture)
     const det = assessAllThreats(s)
     expect(pick(det)).toEqual([['ent-mtnvzhmr-25', 'engageable', 250.5, null, 537.5, 509.5, 547.5]])
-    expect(det[0].effectorGates).toEqual([{ effectorId: 'ent-mtnvzhmr-24', gateS: 547.5, readyS: 556.5 }])
+    expect(det[0].effectorGates).toEqual([
+      { effectorId: 'ent-mtnvzhmr-24', gateS: 547.5, readyS: 556.5 },
+    ])
     const mc = assessAllThreats(s, monteCarloPolicy(4821, 0, s.requirements))
     expect(pick(mc)).toEqual([['ent-mtnvzhmr-25', 'engageable', 3, null, 537.5, 509.5, 547.5]])
     // The fused history is the truth at the C2 node, one entry per held step.
     const c2 = s.entities.find((e) => e.kind === 'c2')!
     const fused = det[0].fusedTracks!
     expect(fused.length).toBeGreaterThan(0)
-    expect(fused.every((f) => f.source === 'truth' && f.quality === 1 && f.c2Id === c2.id)).toBe(true)
+    expect(fused.every((f) => f.source === 'truth' && f.quality === 1 && f.c2Id === c2.id)).toBe(
+      true,
+    )
     expect(fused[0].fusedAtS).toBe(250.5)
   })
 
@@ -1887,7 +1966,9 @@ describe('fusion and matrix wiring keep the declaration times of the no-matrix l
         a.engageGateS,
       ])
     }
-    expect(gate(jiatfFixture, 'p2-gate-detection-outside-rings')).toEqual([['ent-mtnvzhmr-25', 509.5, 547.5, 547.5]])
+    expect(gate(jiatfFixture, 'p2-gate-detection-outside-rings')).toEqual([
+      ['ent-mtnvzhmr-25', 509.5, 547.5, 547.5],
+    ])
     expect(gate(layeredFixture, 'p2-gate-layered-acoustic-merops')).toEqual([
       ['ent-mt5bofdd-2q', 783.5, 793.5, 793.5],
       ['ent-mt5bofdd-2s', 903, 913, 913],
@@ -1938,7 +2019,14 @@ describe('assessment reuse under bounded, wind-drifted flight (CR-03)', () => {
   function placeSensorAt(pos: Vec2, patch: Partial<NonNullable<SpecModel['sensor']>>): string {
     const modelId = useStore.getState().addModel('sensor')
     useStore.getState().updateModel(modelId, {
-      sensor: { sensorType: 'acoustic', role: 'surveillance', classifyRangeM: null, sectorDeg: 360, detectRangeM: 100, ...patch },
+      sensor: {
+        sensorType: 'acoustic',
+        role: 'surveillance',
+        classifyRangeM: null,
+        sectorDeg: 360,
+        detectRangeM: 100,
+        ...patch,
+      },
     })
     useStore.getState().addEntityFromModel(modelId, pos)
     return useStore.getState().scenario.entities.at(-1)!.id
@@ -1971,7 +2059,13 @@ describe('assessment reuse under bounded, wind-drifted flight (CR-03)', () => {
   }
 
   it('moving a sensor that only the wind-drifted track reaches invalidates the memo', () => {
-    const uasId = placeLimitedThreat([{ x: 0, y: 0 }, { x: 0, y: -1000 }], { maxAccelMps2: 10 })
+    const uasId = placeLimitedThreat(
+      [
+        { x: 0, y: 0 },
+        { x: 0, y: -1000 },
+      ],
+      { maxAccelMps2: 10 },
+    )
     useStore.getState().updateEnvironment({ windSpeedMps: 10, windFromDeg: 270, apply: true })
     const sensorId = placeSensorAt({ x: 500, y: -495 }, { detectRangeM: 100 })
     const s = limited()
@@ -1989,7 +2083,11 @@ describe('assessment reuse under bounded, wind-drifted flight (CR-03)', () => {
   it('moving a sensor that only the bounded turn reaches invalidates the memo', () => {
     // 10 m/s at 0.1 rad/s: a 100 m fillet whose midpoint sits 29.3 m inside the corner.
     const uasId = placeLimitedThreat(
-      [{ x: 0, y: 0 }, { x: 0, y: -1000 }, { x: 1000, y: -1000 }],
+      [
+        { x: 0, y: 0 },
+        { x: 0, y: -1000 },
+        { x: 1000, y: -1000 },
+      ],
       { maxTurnRateDegS: 0.1 / (Math.PI / 180) },
     )
     const sensorId = placeSensorAt({ x: 40, y: -960 }, { detectRangeM: 20 })

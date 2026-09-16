@@ -83,7 +83,13 @@ export const RANGE_POINTS: Vec2[] = [
   { x: -7000, y: 6000 },
 ]
 
-function ent(id: string, kind: Entity['kind'], specId: string | null, pos: Vec2, extra: Partial<Entity> = {}): Entity {
+function ent(
+  id: string,
+  kind: Entity['kind'],
+  specId: string | null,
+  pos: Vec2,
+  extra: Partial<Entity> = {},
+): Entity {
   return { id, name: id, kind, specId, pos, headingDeg: 0, color: null, notes: '', ...extra }
 }
 
@@ -104,7 +110,9 @@ export function placementScenario(effectorPos: Vec2 = START_POS): Scenario {
     ent('asset', 'asset', null, { x: 0, y: 0 }, { defendedRadiusM: 200 }),
   ]
   s.connections = [{ id: 'c1', fromId: 'radar', toId: EFFECTOR_ID, label: '' }]
-  s.paths = [{ id: 'p1', entityId: 'uas', points: [from, { x: 0, y: 0 }], speedMps: 40, startDelayS: 0 }]
+  s.paths = [
+    { id: 'p1', entityId: 'uas', points: [from, { x: 0, y: 0 }], speedMps: 40, startDelayS: 0 },
+  ]
   return s
 }
 

@@ -64,10 +64,15 @@ function RunActions({
     window.requestAnimationFrame(() =>
       window.requestAnimationFrame(() => {
         try {
-          setCaptureError(downloadBoardFrame(`${scenario.name}-${label}-final`)
-            ? null : 'Could not capture the board canvas.')
+          setCaptureError(
+            downloadBoardFrame(`${scenario.name}-${label}-final`)
+              ? null
+              : 'Could not capture the board canvas.',
+          )
         } catch (error) {
-          setCaptureError(error instanceof Error ? error.message : 'Could not capture the board canvas.')
+          setCaptureError(
+            error instanceof Error ? error.message : 'Could not capture the board canvas.',
+          )
         }
       }),
     )
@@ -80,9 +85,14 @@ function RunActions({
         onClick={() => {
           const state = useStore.getState()
           const selection = selectTrialSelection(state)
-          const view = selection.status === 'ready' && selection.runId === runId && state.scenario === scenario &&
-            state.playback.startedAtMs != null && selectRunComplete(state)
-            ? trialResultOf(selection.scenario, selection.result.manifest, selection.result) : null
+          const view =
+            selection.status === 'ready' &&
+            selection.runId === runId &&
+            state.scenario === scenario &&
+            state.playback.startedAtMs != null &&
+            selectRunComplete(state)
+              ? trialResultOf(selection.scenario, selection.result.manifest, selection.result)
+              : null
           const trial = view && view.observedThroughS >= view.durationS ? view : null
           exportRunRecord(scenario, runMeta, assessments, report, aar, mc, sensitivity, trial)
         }}
@@ -91,7 +101,11 @@ function RunActions({
       </button>
       <button onClick={captureFinal}>Capture final PNG</button>
       <button onClick={() => resetAnalysisRun('manual')}>New clean run</button>
-      {captureError && <State tone="critical" role="status">{captureError}</State>}
+      {captureError && (
+        <State tone="critical" role="status">
+          {captureError}
+        </State>
+      )}
     </div>
   )
 }
@@ -153,36 +167,34 @@ export function DebriefRecord({
   const observedThroughS = useStore((state) => state.playback.observedThroughS)
   const runSeq = useStore((state) => state.playback.runSeq)
   const runId = useStore((state) => state.playback.runId)
-  const currentScenario = useStore(state => state.scenario)
+  const currentScenario = useStore((state) => state.scenario)
   const mcState = useStore((state) => state.mc)
   const mc = currentSummary(mcState, runId)
   const sensitivity = currentSensitivity(mcState, runId)
   const complete =
-    completedAtMs != null &&
-    startedAtMs != null &&
-    durationS > 0 &&
-    observedThroughS >= durationS
+    completedAtMs != null && startedAtMs != null && durationS > 0 && observedThroughS >= durationS
   const trial = useTrialResult()
   const selection = trial.selection
-  const view = complete && selection.status === 'ready' && selection.runId === runId &&
+  const view =
+    complete &&
+    selection.status === 'ready' &&
+    selection.runId === runId &&
     scenario === currentScenario
-    ? trialResultOf(selection.scenario, selection.result.manifest, selection.result) : null
+      ? trialResultOf(selection.scenario, selection.result.manifest, selection.result)
+      : null
   const completedTrial = view && view.observedThroughS >= view.durationS ? view : null
   // Forecast validity and gates share an assessment; neither adjudicates the trial.
-  const validity = useMemo(
-    () => assessRunValidity(scenario, assessments),
-    [scenario, assessments],
-  )
+  const validity = useMemo(() => assessRunValidity(scenario, assessments), [scenario, assessments])
   const requirements = useMemo(
     () => buildRequirementGateReport(scenario, assessments, report, validity),
     [scenario, assessments, report, validity],
   )
   const systems = useMemo(
-    () => completedTrial ? trialSystemTelemetryAt(completedTrial, completedTrial.durationS) : [],
+    () => (completedTrial ? trialSystemTelemetryAt(completedTrial, completedTrial.durationS) : []),
     [completedTrial],
   )
   const threats = useMemo(
-    () => completedTrial ? trialThreatPictureAt(completedTrial, completedTrial.durationS) : [],
+    () => (completedTrial ? trialThreatPictureAt(completedTrial, completedTrial.durationS) : []),
     [completedTrial],
   )
   if (!complete || completedAtMs == null || startedAtMs == null) return null
@@ -193,27 +205,34 @@ export function DebriefRecord({
         <strong>Evidence products</strong>
         <span>{formatRunLabel(runSeq)} · COMPLETE</span>
       </summary>
-      {showTrialRecords && (completedTrial ? (
-        <section aria-label="Completed simulated trial record">
-          <p className="debrief-kicker">Completed simulated trial record</p>
-          <details className="analysis-disclosure">
-            <summary>Trial manifest</summary>
-            <TrialManifestRecord view={completedTrial} />
-          </details>
-          <details className="analysis-disclosure">
-            <summary>Trial system and component record · {componentCount} components</summary>
-            <SystemStatus groups={systems} expanded endOfRun />
-          </details>
-          <details className="analysis-disclosure">
-            <summary>Trial threat record</summary>
-            <ThreatPicture groups={threats} mode="debrief" />
-          </details>
-          <details className="analysis-disclosure">
-            <summary>Trial engagement event ledger · {completedTrial.attrition.events.length} events</summary>
-            <TrialEventLedger view={completedTrial} />
-          </details>
-        </section>
-      ) : <p className="muted small">{trialStateText(selection)} · completed trial record unavailable</p>)}
+      {showTrialRecords &&
+        (completedTrial ? (
+          <section aria-label="Completed simulated trial record">
+            <p className="debrief-kicker">Completed simulated trial record</p>
+            <details className="analysis-disclosure">
+              <summary>Trial manifest</summary>
+              <TrialManifestRecord view={completedTrial} />
+            </details>
+            <details className="analysis-disclosure">
+              <summary>Trial system and component record · {componentCount} components</summary>
+              <SystemStatus groups={systems} expanded endOfRun />
+            </details>
+            <details className="analysis-disclosure">
+              <summary>Trial threat record</summary>
+              <ThreatPicture groups={threats} mode="debrief" />
+            </details>
+            <details className="analysis-disclosure">
+              <summary>
+                Trial engagement event ledger · {completedTrial.attrition.events.length} events
+              </summary>
+              <TrialEventLedger view={completedTrial} />
+            </details>
+          </section>
+        ) : (
+          <p className="muted small">
+            {trialStateText(selection)} · completed trial record unavailable
+          </p>
+        ))}
       <RunActions
         scenario={scenario}
         assessments={assessments}
@@ -224,8 +243,12 @@ export function DebriefRecord({
         sensitivity={sensitivity}
       />
       <details className="analysis-disclosure" aria-label="Forecast requirements">
-        <summary>Forecast · requirement record · {requirements.met}/{requirements.required} met</summary>
-        <p className="muted small">Deterministic planning envelope · these gates do not adjudicate the simulated trial.</p>
+        <summary>
+          Forecast · requirement record · {requirements.met}/{requirements.required} met
+        </summary>
+        <p className="muted small">
+          Deterministic planning envelope · these gates do not adjudicate the simulated trial.
+        </p>
         {showValidity && <RunValidityBanner assessment={validity} />}
         <RequirementGates report={requirements} />
       </details>
@@ -234,7 +257,13 @@ export function DebriefRecord({
 }
 
 /** Achieved observation for Analyze; the completed record supplies the final horizon. */
-export function TrialOutcomeSummary({ view, horizonS }: { view: TrialResultView; horizonS: number }) {
+export function TrialOutcomeSummary({
+  view,
+  horizonS,
+}: {
+  view: TrialResultView
+  horizonS: number
+}) {
   const snapshot = trialSnapshotAt(view, horizonS)
   const t = snapshot.observedThroughS
   const counts = snapshot.counts
@@ -242,7 +271,9 @@ export function TrialOutcomeSummary({ view, horizonS }: { view: TrialResultView;
     const reached = values.filter((value): value is number => value != null && value <= t)
     return reached.length ? formatTime(Math.min(...reached)) : '—'
   }
-  const warnings = view.assessments.filter(a => a.arrivalS != null && a.arrivalS <= t && a.warningS != null)
+  const warnings = view.assessments.filter(
+    (a) => a.arrivalS != null && a.arrivalS <= t && a.warningS != null,
+  )
   const metrics: Array<[string, string | number]> = [
     ['Pre-arrival hard kills', counts.preArrivalHardKills],
     ['Pre-arrival mission kills', counts.preArrivalSoftKills],
@@ -250,22 +281,42 @@ export function TrialOutcomeSummary({ view, horizonS }: { view: TrialResultView;
     ['Late mission kills', counts.lateSoftKills],
     ['Arrived undefeated', snapshot.reportedLeakers ?? '—'],
     ['Active at horizon', counts.activeAtHorizon],
-    ['First detect', first(view.assessments.map(a => a.firstDetectS))],
-    ['First effect', first(view.attrition.events.filter(e => e.killDelta === 1).map(e => e.tEffectS))],
-    ['Min warning', view.hasActiveAsset && warnings.length ? formatTime(Math.min(...warnings.map(a => a.warningS!))) : '—'],
+    ['First detect', first(view.assessments.map((a) => a.firstDetectS))],
+    [
+      'First effect',
+      first(view.attrition.events.filter((e) => e.killDelta === 1).map((e) => e.tEffectS)),
+    ],
+    [
+      'Min warning',
+      view.hasActiveAsset && warnings.length
+        ? formatTime(Math.min(...warnings.map((a) => a.warningS!)))
+        : '—',
+    ],
   ]
   return (
     <div className="trial-summary">
-      <p className="analysis-scope">Simulated trial · {snapshot.summary ? 'complete' : 'bounded observation'} · T+{formatTime(t)} observed</p>
+      <p className="analysis-scope">
+        Simulated trial · {snapshot.summary ? 'complete' : 'bounded observation'} · T+
+        {formatTime(t)} observed
+      </p>
       <div className="outcome-grid">
         {metrics.map(([label, value]) => (
           <div className="outcome-metric" key={label}>
-            <span>{label}</span><strong>{value}</strong>
-            <small>{value === '—' ? 'unavailable or not reached' : typeof value === 'number' ? 'trial count' : 'reached trial milestone'}</small>
+            <span>{label}</span>
+            <strong>{value}</strong>
+            <small>
+              {value === '—'
+                ? 'unavailable or not reached'
+                : typeof value === 'number'
+                  ? 'trial count'
+                  : 'reached trial milestone'}
+            </small>
           </div>
         ))}
       </div>
-      {!view.hasActiveAsset && <p className="muted small">No defended asset · arrival and warning measures unavailable.</p>}
+      {!view.hasActiveAsset && (
+        <p className="muted small">No defended asset · arrival and warning measures unavailable.</p>
+      )}
     </div>
   )
 }
@@ -274,9 +325,20 @@ export function TrialManifestRecord({ view }: { view: TrialResultView }) {
   return (
     <dl style={{ overflowWrap: 'anywhere' }}>
       {Object.entries(view.manifest).map(([key, value]) => (
-        <div key={key}><dt>{key}</dt><dd>{Array.isArray(value)
-          ? value.length === 0 ? 'none' : <code>{JSON.stringify(value)}</code>
-          : value ?? 'Build revision unavailable'}</dd></div>
+        <div key={key}>
+          <dt>{key}</dt>
+          <dd>
+            {Array.isArray(value) ? (
+              value.length === 0 ? (
+                'none'
+              ) : (
+                <code>{JSON.stringify(value)}</code>
+              )
+            ) : (
+              (value ?? 'Build revision unavailable')
+            )}
+          </dd>
+        </div>
       ))}
     </dl>
   )
@@ -284,24 +346,49 @@ export function TrialManifestRecord({ view }: { view: TrialResultView }) {
 
 export function TrialEventLedger({ view }: { view: TrialResultView }) {
   const [visible, setVisible] = useState(20)
-  const name = (id: string) => view.scenario.entities.find(entity => entity.id === id)?.name ?? id
+  const name = (id: string) => view.scenario.entities.find((entity) => entity.id === id)?.name ?? id
   return (
     <div className="event-ledger">
       {view.attrition.events.slice(0, visible).map((event, index) => {
-        const jam = event.channel === 'jam' ? view.jamDecisions.find(decision => decision.effectorId === event.effectorId &&
-          decision.uasId === event.uasId && decision.tEffectS === event.tEffectS) : null
+        const jam =
+          event.channel === 'jam'
+            ? view.jamDecisions.find(
+                (decision) =>
+                  decision.effectorId === event.effectorId &&
+                  decision.uasId === event.uasId &&
+                  decision.tEffectS === event.tEffectS,
+              )
+            : null
         return (
           <div className="event-row" key={index}>
-            <span className="event-time">{formatTime(event.tS)} → {formatTime(event.tEffectS)}</span>
-            <span className="event-route"><strong>{name(event.effectorId)}</strong><small>{name(event.uasId)} · ship {event.shipIdx + 1}</small></span>
-            <span className="event-effect">{event.killDelta} {event.softShot ? 'mission kills' : 'hard kills'}
-              <small>{jam ? `Jam ${jam.outcome === 1 ? 'succeeded' : 'failed'}` : event.lateEffect ? 'late effect' : 'pre-arrival effect'}</small>
+            <span className="event-time">
+              {formatTime(event.tS)} → {formatTime(event.tEffectS)}
+            </span>
+            <span className="event-route">
+              <strong>{name(event.effectorId)}</strong>
+              <small>
+                {name(event.uasId)} · ship {event.shipIdx + 1}
+              </small>
+            </span>
+            <span className="event-effect">
+              {event.killDelta} {event.softShot ? 'mission kills' : 'hard kills'}
+              <small>
+                {jam
+                  ? `Jam ${jam.outcome === 1 ? 'succeeded' : 'failed'}`
+                  : event.lateEffect
+                    ? 'late effect'
+                    : 'pre-arrival effect'}
+              </small>
             </span>
           </div>
         )
       })}
-      {view.attrition.events.length === 0 && <p className="muted small">No engagement events recorded.</p>}
-      {visible < view.attrition.events.length && <button onClick={() => setVisible(count => count + 20)}>Show next events</button>}
+      {view.attrition.events.length === 0 && (
+        <p className="muted small">No engagement events recorded.</p>
+      )}
+      {visible < view.attrition.events.length && (
+        <button onClick={() => setVisible((count) => count + 20)}>Show next events</button>
+      )}
     </div>
   )
 }

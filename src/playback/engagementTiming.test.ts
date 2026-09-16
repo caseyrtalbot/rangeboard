@@ -6,10 +6,36 @@ const event = { effectorId: 'launcher', tS: 10, tEffectS: 20 }
 
 function captured(delay: number | undefined) {
   const scenario = emptyScenario()
-  scenario.entities = [{ id: 'launcher', kind: 'effector', specId: 'custom-effector', name: '', pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '' }]
-  scenario.library = [{ id: 'custom-effector', kind: 'effector', name: '', description: '', color: '#fff', builtin: false,
-    effector: { effectorType: 'interceptor', minRangeM: 0, maxRangeM: 1000, engageTimeS: delay ?? 0 } }]
-  if (delay === undefined) delete (scenario.library[0].effector as { engageTimeS?: number }).engageTimeS
+  scenario.entities = [
+    {
+      id: 'launcher',
+      kind: 'effector',
+      specId: 'custom-effector',
+      name: '',
+      pos: { x: 0, y: 0 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
+    },
+  ]
+  scenario.library = [
+    {
+      id: 'custom-effector',
+      kind: 'effector',
+      name: '',
+      description: '',
+      color: '#fff',
+      builtin: false,
+      effector: {
+        effectorType: 'interceptor',
+        minRangeM: 0,
+        maxRangeM: 1000,
+        engageTimeS: delay ?? 0,
+      },
+    },
+  ]
+  if (delay === undefined)
+    delete (scenario.library[0].effector as { engageTimeS?: number }).engageTimeS
   return scenario
 }
 

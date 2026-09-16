@@ -48,7 +48,13 @@ function BoundaryShape({ boundary }: { boundary: Boundary }) {
       />
       {/* Counter-scaled group, so the label font size never changes and Konva
           never re-measures the text on a zoom step. */}
-      <Group x={boundary.points[0].x} y={boundary.points[0].y} scaleX={1 / k} scaleY={1 / k} listening={false}>
+      <Group
+        x={boundary.points[0].x}
+        y={boundary.points[0].y}
+        scaleX={1 / k}
+        scaleY={1 / k}
+        listening={false}
+      >
         <Text
           fontFamily="JetBrains Mono"
           text={label}

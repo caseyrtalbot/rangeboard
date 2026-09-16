@@ -14,7 +14,12 @@ export function reached(tS: number | null | undefined, h: ExecutionHorizon): boo
 }
 
 /** Number of leading samples reached on an increasing time grid (dtS > 0). */
-export function visibleCount(length: number, t0S: number, dtS: number, h: ExecutionHorizon): number {
+export function visibleCount(
+  length: number,
+  t0S: number,
+  dtS: number,
+  h: ExecutionHorizon,
+): number {
   if (length === 0 || !h.scoped) return length
   // Compare grid times directly, including at floating-point sample boundaries.
   let lo = 0

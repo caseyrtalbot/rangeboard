@@ -8,9 +8,7 @@ const rows: TornadoRow[] = [
   { id: 'c', label: 'engageTimeSeconds', low: 6.5, high: 6.5, tag: <b>PF</b> },
 ]
 
-const html = renderToStaticMarkup(
-  <Tornado rows={rows} nominal={6} unit="leakers" width={300} />,
-)
+const html = renderToStaticMarkup(<Tornado rows={rows} nominal={6} unit="leakers" width={300} />)
 
 describe('Tornado static markup', () => {
   it('renders the shell and the svg at the given width', () => {
@@ -55,9 +53,11 @@ describe('Tornado static markup', () => {
 
 describe('Tornado horizon', () => {
   it('preserves unscoped markup with Infinity', () => {
-    expect(renderToStaticMarkup(
-      <Tornado rows={rows} nominal={6} unit="leakers" width={300} horizonS={Infinity} />,
-    )).toBe(html)
+    expect(
+      renderToStaticMarkup(
+        <Tornado rows={rows} nominal={6} unit="leakers" width={300} horizonS={Infinity} />,
+      ),
+    ).toBe(html)
   })
 
   it.each([30, 0, -Infinity])('shows only the forecast placeholder at horizon %s', (horizonS) => {

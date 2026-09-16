@@ -192,7 +192,11 @@ describe('doctrine gate (sim.ts)', () => {
   })
 
   it('spec targetS overrides the TARGET_S type table', () => {
-    const { scenario, uasId } = build(RADAR, [interceptor('tst-int', { targetS: 1 })], [{ x: 0, y: 0 }])
+    const { scenario, uasId } = build(
+      RADAR,
+      [interceptor('tst-int', { targetS: 1 })],
+      [{ x: 0, y: 0 }],
+    )
     const a = assessThreat(scenario, uasId)
     expect(a.effectorGates?.[0].gateS).toBe(16)
     expect(a.effectorGates?.[0].readyS).toBe(19)

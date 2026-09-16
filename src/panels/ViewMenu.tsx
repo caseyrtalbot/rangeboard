@@ -24,35 +24,40 @@ function ringLayers(keys: readonly RingKey[]): { id: LayerKey; label: string; hi
   return keys.map((k) => ({ id: k, label: RING_LABELS[k], hint: RING_HINTS[k] }))
 }
 
-const LAYER_GROUPS: { title: string; layers: { id: LayerKey; label: string; hint?: string }[] }[] = [
-  { title: 'Sensor', layers: ringLayers(SENSOR_RING_KEYS) },
-  { title: 'Effector', layers: ringLayers(EFFECTOR_RING_KEYS) },
-  {
-    title: 'Areas',
-    layers: [
-      { id: 'defendedAreas', label: 'Defended areas', hint: 'Show the protected boundary around each asset' },
-      { id: 'threatWez', label: 'Threat WEZ', hint: 'Show threat weapon engagement zones' },
-    ],
-  },
-  {
-    title: 'Tracks',
-    layers: [
-      { id: 'flightPaths', label: 'Flight paths' },
-      { id: 'engagements', label: 'Engagements' },
-      { id: 'labels', label: 'Labels' },
-      { id: 'trackTelemetry', label: 'Track telemetry' },
-    ],
-  },
-  {
-    title: 'Reference',
-    layers: [
-      { id: 'grid', label: 'Grid' },
-      { id: 'boundaries', label: 'Boundaries' },
-      { id: 'connections', label: 'Connections' },
-      { id: 'rangeRings', label: 'Range rings' },
-    ],
-  },
-]
+const LAYER_GROUPS: { title: string; layers: { id: LayerKey; label: string; hint?: string }[] }[] =
+  [
+    { title: 'Sensor', layers: ringLayers(SENSOR_RING_KEYS) },
+    { title: 'Effector', layers: ringLayers(EFFECTOR_RING_KEYS) },
+    {
+      title: 'Areas',
+      layers: [
+        {
+          id: 'defendedAreas',
+          label: 'Defended areas',
+          hint: 'Show the protected boundary around each asset',
+        },
+        { id: 'threatWez', label: 'Threat WEZ', hint: 'Show threat weapon engagement zones' },
+      ],
+    },
+    {
+      title: 'Tracks',
+      layers: [
+        { id: 'flightPaths', label: 'Flight paths' },
+        { id: 'engagements', label: 'Engagements' },
+        { id: 'labels', label: 'Labels' },
+        { id: 'trackTelemetry', label: 'Track telemetry' },
+      ],
+    },
+    {
+      title: 'Reference',
+      layers: [
+        { id: 'grid', label: 'Grid' },
+        { id: 'boundaries', label: 'Boundaries' },
+        { id: 'connections', label: 'Connections' },
+        { id: 'rangeRings', label: 'Range rings' },
+      ],
+    },
+  ]
 
 const BASEMAPS: { id: BasemapMode; label: string }[] = [
   { id: 'canvas', label: 'Canvas' },
@@ -61,7 +66,11 @@ const BASEMAPS: { id: BasemapMode; label: string }[] = [
 ]
 
 const UNITS: { id: DisplayUnits; label: string; hint: string }[] = [
-  { id: 'aviation', label: 'kt nm', hint: 'Aviation units: knots and nautical miles. Altitude is always feet.' },
+  {
+    id: 'aviation',
+    label: 'kt nm',
+    hint: 'Aviation units: knots and nautical miles. Altitude is always feet.',
+  },
   { id: 'metric', label: 'm km', hint: 'Metric units: m/s and km. Altitude is always feet.' },
 ]
 
@@ -134,9 +143,14 @@ export function UnitsSettings() {
       <div className="tb-menu-head">Units</div>
       <div className="seg tb-menu-seg" role="group" aria-label="Units">
         {UNITS.map((unit) => (
-          <button key={unit.id} type="button" title={unit.hint}
-            aria-pressed={units === unit.id} className={units === unit.id ? 'active' : ''}
-            onClick={() => useStore.getState().setUnits(unit.id)}>
+          <button
+            key={unit.id}
+            type="button"
+            title={unit.hint}
+            aria-pressed={units === unit.id}
+            className={units === unit.id ? 'active' : ''}
+            onClick={() => useStore.getState().setUnits(unit.id)}
+          >
             {unit.label}
           </button>
         ))}
@@ -152,9 +166,13 @@ export function BasemapSettings() {
       <div className="tb-menu-head">Basemap</div>
       <div className="seg tb-menu-seg" role="group" aria-label="Basemap">
         {BASEMAPS.map((map) => (
-          <button key={map.id} type="button"
-            aria-pressed={basemap === map.id} className={basemap === map.id ? 'active' : ''}
-            onClick={() => useStore.getState().setBasemap(map.id)}>
+          <button
+            key={map.id}
+            type="button"
+            aria-pressed={basemap === map.id}
+            className={basemap === map.id ? 'active' : ''}
+            onClick={() => useStore.getState().setBasemap(map.id)}
+          >
             {map.label}
           </button>
         ))}
@@ -171,10 +189,17 @@ export function LayerSettings() {
         <div key={group.title} role="group" aria-label={`${group.title} layers`}>
           <div className="tb-menu-head">{group.title}</div>
           {group.layers.map((layer) => (
-            <button key={layer.id} type="button" className="tb-menu-item"
-              aria-pressed={layers[layer.id]} title={layer.hint}
-              onClick={() => useStore.getState().toggleLayer(layer.id)}>
-              <span className="tb-menu-tick" aria-hidden="true">{layers[layer.id] ? '✓' : ''}</span>
+            <button
+              key={layer.id}
+              type="button"
+              className="tb-menu-item"
+              aria-pressed={layers[layer.id]}
+              title={layer.hint}
+              onClick={() => useStore.getState().toggleLayer(layer.id)}
+            >
+              <span className="tb-menu-tick" aria-hidden="true">
+                {layers[layer.id] ? '✓' : ''}
+              </span>
               {layer.label}
             </button>
           ))}
@@ -186,8 +211,12 @@ export function LayerSettings() {
 
 export function ViewMenuPanel() {
   return (
-    <div id="view-menu-panel" className="tb-menu-panel view-menu-panel"
-      role="dialog" aria-label="View controls">
+    <div
+      id="view-menu-panel"
+      className="tb-menu-panel view-menu-panel"
+      role="dialog"
+      aria-label="View controls"
+    >
       <ThemeSettings />
       <UnitsSettings />
       <BasemapSettings />

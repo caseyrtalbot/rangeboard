@@ -7,33 +7,70 @@ import { State } from '../../ui/kit'
 import { selectTrialHorizon, selectTrialSelection } from '../../state/trialSelectors'
 
 /** One simulated-trial basis and one cursor bound for the whole Execute screen. */
-export function LiveStrip({ view: suppliedView, horizon: suppliedHorizon }: {
+export function LiveStrip({
+  view: suppliedView,
+  horizon: suppliedHorizon,
+}: {
   view?: TrialResultView
   horizon?: number
   /** Retained for the selected-object caller; actions now belong to NowScreen. */
   onOpenSettings?: () => void
 } = {}) {
   const selection = useStore(selectTrialSelection)
-  const started = useStore(state => state.playback.startedAtMs != null)
-  const cursor = useStore(state => suppliedHorizon ?? selectTrialHorizon(state, state.playback.simTimeS))
-  const view = useMemo(() => suppliedView ?? (selection.status === 'ready' && started
-    ? trialResultOf(selection.scenario, selection.result.manifest, selection.result) : undefined), [suppliedView, selection, started])
+  const started = useStore((state) => state.playback.startedAtMs != null)
+  const cursor = useStore(
+    (state) => suppliedHorizon ?? selectTrialHorizon(state, state.playback.simTimeS),
+  )
+  const view = useMemo(
+    () =>
+      suppliedView ??
+      (selection.status === 'ready' && started
+        ? trialResultOf(selection.scenario, selection.result.manifest, selection.result)
+        : undefined),
+    [suppliedView, selection, started],
+  )
   const horizon = suppliedHorizon ?? cursor
-  const phase = useStore(state => state.playback.phase)
-  const completed = useStore(state => state.playback.completedAtMs != null)
-  const counts = useMemo(() => view ? trialSnapshotAt(view, horizon).counts : undefined, [view, horizon])
-  if (!view || !counts) return <p className="muted small" role="status">{selection.status === 'error' ? selection.message
-    : selection.status === 'preparing' ? 'Preparing trial' : 'No trial yet. Press Play in Execute to run one.'}</p>
-  const defeated = counts.preArrivalHardKills + counts.preArrivalSoftKills + counts.lateHardKills + counts.lateSoftKills
-  const word = phase === 'complete' ? 'Complete' : completed ? 'Replay' : phase === 'running' ? 'Running' : 'Paused'
+  const phase = useStore((state) => state.playback.phase)
+  const completed = useStore((state) => state.playback.completedAtMs != null)
+  const counts = useMemo(
+    () => (view ? trialSnapshotAt(view, horizon).counts : undefined),
+    [view, horizon],
+  )
+  if (!view || !counts)
+    return (
+      <p className="muted small" role="status">
+        {selection.status === 'error'
+          ? selection.message
+          : selection.status === 'preparing'
+            ? 'Preparing trial'
+            : 'No trial yet. Press Play in Execute to run one.'}
+      </p>
+    )
+  const defeated =
+    counts.preArrivalHardKills +
+    counts.preArrivalSoftKills +
+    counts.lateHardKills +
+    counts.lateSoftKills
+  const word =
+    phase === 'complete'
+      ? 'Complete'
+      : completed
+        ? 'Replay'
+        : phase === 'running'
+          ? 'Running'
+          : 'Paused'
 
   return (
     <p className="analysis-scope" role="status">
       <State tone={phase === 'running' ? 'nominal' : 'inactive'}>{word}</State>
-      {' · Simulated trial · observed through T+'}{formatTime(horizon)} of {formatTime(view.durationS)}
-      {' · tracks '}{counts.detectedTracks}/{counts.totalTracks}
-      {' · engaged '}{counts.engagedTracks}/{counts.totalTracks} tracks
-      {' · defeated '}{defeated}/{counts.activeAtHorizon + defeated} members
+      {' · Simulated trial · observed through T+'}
+      {formatTime(horizon)} of {formatTime(view.durationS)}
+      {' · tracks '}
+      {counts.detectedTracks}/{counts.totalTracks}
+      {' · engaged '}
+      {counts.engagedTracks}/{counts.totalTracks} tracks
+      {' · defeated '}
+      {defeated}/{counts.activeAtHorizon + defeated} members
     </p>
   )
 }

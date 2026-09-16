@@ -16,7 +16,12 @@ function measurement(x: number, y: number, tS: number, sigma: number): TrackMeas
 }
 
 /** Run predict then update for n steps at period T with a fixed measurement noise. */
-function iterate(n: number, T: number, r: number, q: number): { state: TrackState; cov: Covariance4 } {
+function iterate(
+  n: number,
+  T: number,
+  r: number,
+  q: number,
+): { state: TrackState; cov: Covariance4 } {
   let { state, cov } = initFromMeasurement(measurement(0, 0, 0, r), INIT_SPEED_SIGMA_MPS)
   for (let k = 1; k <= n; k += 1) {
     ;({ state, cov } = predict(state, cov, T, q))
@@ -93,7 +98,9 @@ describe('kalman constant-velocity filter', () => {
     expect(m2).toBeGreaterThanOrEqual(0)
     for (let i = 0; i < 4; i += 1) {
       for (let j = i + 1; j < 4; j += 1) {
-        expect(cov[4 * i + j] * cov[4 * i + j]).toBeLessThanOrEqual(cov[4 * i + i] * cov[4 * j + j] * (1 + 1e-12))
+        expect(cov[4 * i + j] * cov[4 * i + j]).toBeLessThanOrEqual(
+          cov[4 * i + i] * cov[4 * j + j] * (1 + 1e-12),
+        )
       }
     }
   })
@@ -132,7 +139,16 @@ describe('kalman constant-velocity filter', () => {
   })
 
   it('initFromMeasurement carries the measurement noise and the initial speed sigma', () => {
-    const m: TrackMeasurement = { sensorId: 's', tS: 3, x: 1, y: 2, sigmaXM: 4, sigmaYM: 2, rhoXY: 0.5, uasId: 'u' }
+    const m: TrackMeasurement = {
+      sensorId: 's',
+      tS: 3,
+      x: 1,
+      y: 2,
+      sigmaXM: 4,
+      sigmaYM: 2,
+      rhoXY: 0.5,
+      uasId: 'u',
+    }
     const { state, cov } = initFromMeasurement(m, 7)
     expect(state).toEqual({ x: 1, y: 2, vx: 0, vy: 0, tS: 3 })
     expect(cov[0]).toBe(16)

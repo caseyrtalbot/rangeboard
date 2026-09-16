@@ -1,7 +1,7 @@
 # Phase 1 gate evidence, 2026-09-10
 
 Dated capture for the Phase 1 (real-mode statistics) gate of the
-[calibration implementation plan](../../../IMPLEMENTATION_PLAN.md). Measurements describe
+then-current `docs/IMPLEMENTATION_PLAN.md`. Measurements describe
 the tree at the gate commit on `main`, not the current tree.
 
 ## Files

@@ -167,22 +167,22 @@ function solveBeamTiming(
   const { t } = ctx
   const fluenceDraw = ctx.beamFluenceDraw?.(es.entity.id, ts.a.uasId, shipIdx, t)
   const environment = ctx.environment ?? NO_ENVIRONMENT
-  const atDelay = (delayS: number) => interceptFor(
-    ts,
-    { ...es, engageTimeS: delayS },
-    t,
-    shipIdx,
-    ctx.membersAt ?? membersAtTime,
-    interval[1],
-    ctx.estimate ?? null,
-    ctx.stepS ?? DT,
-    { fallback: true },
-  )
+  const atDelay = (delayS: number) =>
+    interceptFor(
+      ts,
+      { ...es, engageTimeS: delayS },
+      t,
+      shipIdx,
+      ctx.membersAt ?? membersAtTime,
+      interval[1],
+      ctx.estimate ?? null,
+      ctx.stepS ?? DT,
+      { fallback: true },
+    )
   const beamAt = (at: ReturnType<typeof interceptFor>): BeamEffect => {
-    const offBoresightDeg = Math.abs(angleDiffDeg(
-      es.entity.headingDeg,
-      bearingDeg(es.entity.pos, at.pos),
-    ))
+    const offBoresightDeg = Math.abs(
+      angleDiffDeg(es.entity.headingDeg, bearingDeg(es.entity.pos, at.pos)),
+    )
     return beamEffect(es.pk, es.spec, ts.uasSpec, at.slantM, environment, {
       fallback: ctx.legacyBeamPk ?? true,
       offBoresightDeg,
@@ -206,9 +206,10 @@ function solveBeamTiming(
   // Bracketing fallback. The residual is negative at d = 0 (the delay is at
   // least the settle); the first cell where it turns non-negative holds the
   // earliest root, the effect time the accumulating fluence reaches first.
-  const endS = ctx.effectContainment === 'same'
-    ? interval[1]
-    : intervals.reduce((acc, [, s1]) => Math.max(acc, s1), interval[1])
+  const endS =
+    ctx.effectContainment === 'same'
+      ? interval[1]
+      : intervals.reduce((acc, [, s1]) => Math.max(acc, s1), interval[1])
   const spanS = endS - t
   if (!(spanS > 0) || !Number.isFinite(spanS)) return null
   const residual = (delayS: number) => delayS - beamAt(atDelay(delayS)).effectDelayS

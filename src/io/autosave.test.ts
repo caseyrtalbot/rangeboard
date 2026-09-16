@@ -6,11 +6,21 @@ import type { BaselineSave } from './persist'
 import { baselineAutosaveAdapter, scenarioAutosaveAdapter } from './persist'
 import type { Autosave, AutosaveAdapter } from './autosave'
 import { createAutosave } from './autosave'
-import { BASELINE_RECOVERY_PREFIX, BOARD_BASELINE, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
+import {
+  BASELINE_RECOVERY_PREFIX,
+  BOARD_BASELINE,
+  SCENARIO_KEY,
+  SCENARIO_RECOVERY_PREFIX,
+} from './storageKeys'
 import { runReplicates } from '../playback/mcRun'
 import { buildBaseline } from '../state/baseline'
 import { IDLE_MC } from '../state/runState'
-import { allowAutosave, assertAutosaveAllowed, dismissRecoveryNotice, getRecoveryNotices } from './recovery'
+import {
+  allowAutosave,
+  assertAutosaveAllowed,
+  dismissRecoveryNotice,
+  getRecoveryNotices,
+} from './recovery'
 
 function storage(initial: Record<string, string> = {}, fail?: (key: string) => boolean) {
   const data = new Map(Object.entries(initial))
@@ -30,15 +40,26 @@ function browser() {
   const addEventListener = (key: string, callback: () => void) => events.set(key, callback)
   const removeEventListener = (key: string) => events.delete(key)
   vi.stubGlobal('window', {
-    alert: vi.fn(), addEventListener, removeEventListener,
-    setTimeout: (callback: () => void) => { timers.set(++nextTimer, callback); return nextTimer },
-    clearTimeout: (id?: number) => { if (id !== undefined) timers.delete(id) },
+    alert: vi.fn(),
+    addEventListener,
+    removeEventListener,
+    setTimeout: (callback: () => void) => {
+      timers.set(++nextTimer, callback)
+      return nextTimer
+    },
+    clearTimeout: (id?: number) => {
+      if (id !== undefined) timers.delete(id)
+    },
   })
   vi.stubGlobal('document', { visibilityState: 'hidden', addEventListener, removeEventListener })
   return {
     events,
     scheduled: () => timers.size,
-    runTimers: () => { const due = [...timers.values()]; timers.clear(); due.forEach(callback => callback()) },
+    runTimers: () => {
+      const due = [...timers.values()]
+      timers.clear()
+      due.forEach((callback) => callback())
+    },
   }
 }
 
@@ -78,8 +99,18 @@ const baseline: Lane<BaselineSave> = {
   adapter: baselineAutosaveAdapter,
   key: BOARD_BASELINE,
   prefix: BASELINE_RECOVERY_PREFIX,
-  raw: (label) => JSON.stringify({ schemaVersion: 1, baseline: buildBaseline(emptyScenario(), summary, 'hash', label) }),
-  corrupt: JSON.stringify({ schemaVersion: 1, baseline: { ...buildBaseline(emptyScenario(), summary, 'hash', 'bad'), mc: { ...summary, kills: null } } }),
+  raw: (label) =>
+    JSON.stringify({
+      schemaVersion: 1,
+      baseline: buildBaseline(emptyScenario(), summary, 'hash', label),
+    }),
+  corrupt: JSON.stringify({
+    schemaVersion: 1,
+    baseline: {
+      ...buildBaseline(emptyScenario(), summary, 'hash', 'bad'),
+      mc: { ...summary, kills: null },
+    },
+  }),
   edit: (label) => {
     const st = useStore.getState()
     useStore.setState({ mc: { ...IDLE_MC, status: 'done', runId: st.playback.runId, summary } })
@@ -108,16 +139,19 @@ function started<R>(lane: Lane<R>): Autosave<R> {
 }
 
 afterEach(() => {
-  running.splice(0).forEach(autosave => autosave.stop())
-  getRecoveryNotices().forEach(notice => dismissRecoveryNotice(notice.id))
-  allowAutosave(SCENARIO_KEY); allowAutosave(BOARD_BASELINE)
+  running.splice(0).forEach((autosave) => autosave.stop())
+  getRecoveryNotices().forEach((notice) => dismissRecoveryNotice(notice.id))
+  allowAutosave(SCENARIO_KEY)
+  allowAutosave(BOARD_BASELINE)
   useStore.setState({ baseline: null, mc: IDLE_MC, save: { lastAutosaveAt: null, error: null } })
-  vi.restoreAllMocks(); vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe('autosave lifecycle', () => {
   eachLane('restores the saved record once, and a new instance restores again', (lane) => {
-    storage({ [lane.key]: lane.raw('restored') }); browser()
+    storage({ [lane.key]: lane.raw('restored') })
+    browser()
     const first = createAutosave(lane.adapter)
     expect(first.restore()).not.toBeNull()
     expect(lane.held()).toBe('restored')
@@ -129,7 +163,9 @@ describe('autosave lifecycle', () => {
     const { data, setItem } = storage({ [lane.key]: lane.raw('original') })
     const timers = browser()
     started(lane)
-    lane.edit('first'); lane.edit('second'); lane.edit('last')
+    lane.edit('first')
+    lane.edit('second')
+    lane.edit('last')
     expect(lane.written(data.get(lane.key)!)).toBe('original')
     expect(timers.scheduled()).toBe(1)
     timers.runTimers()
@@ -153,7 +189,7 @@ describe('autosave lifecycle', () => {
 
   eachLane('keeps the previous record and reports a failed write', (lane) => {
     const original = lane.raw('original')
-    const { data } = storage({ [lane.key]: original }, key => key === lane.key)
+    const { data } = storage({ [lane.key]: original }, (key) => key === lane.key)
     const timers = browser()
     started(lane)
     lane.edit('cannot save')
@@ -171,11 +207,15 @@ describe('autosave lifecycle', () => {
     useStore.getState().clearBaseline()
     timers.runTimers()
     expect(JSON.parse(data.get(BOARD_BASELINE)!)).toEqual({ schemaVersion: 1, baseline: null })
-    expect(createAutosave(baselineAutosaveAdapter).read()).toEqual({ schemaVersion: 1, baseline: null })
+    expect(createAutosave(baselineAutosaveAdapter).read()).toEqual({
+      schemaVersion: 1,
+      baseline: null,
+    })
   })
 
   it('restores a baseline whose undefined statistics were saved as null, as NaN', () => {
-    storage({ [BOARD_BASELINE]: baseline.raw('nan') }); browser()
+    storage({ [BOARD_BASELINE]: baseline.raw('nan') })
+    browser()
     expect(baseline.raw('nan')).toContain('"mean":null')
     createAutosave(baselineAutosaveAdapter).restore()
     const restored = useStore.getState().baseline!
@@ -187,13 +227,19 @@ describe('autosave lifecycle', () => {
 
   it('keeps the scenario stamp and clears only a baseline write error after the next baseline write', () => {
     let failing = true
-    const { data } = storage({ [BOARD_BASELINE]: baseline.raw('saved') }, key => failing && key === BOARD_BASELINE)
+    const { data } = storage(
+      { [BOARD_BASELINE]: baseline.raw('saved') },
+      (key) => failing && key === BOARD_BASELINE,
+    )
     const timers = browser()
     useStore.getState().setSaveState(1234, null)
     started(baseline)
     baseline.edit('cannot save')
     timers.runTimers()
-    expect(useStore.getState().save).toEqual({ lastAutosaveAt: 1234, error: expect.stringContaining('Baseline not saved') })
+    expect(useStore.getState().save).toEqual({
+      lastAutosaveAt: 1234,
+      error: expect.stringContaining('Baseline not saved'),
+    })
     failing = false
     baseline.edit('saved now')
     timers.runTimers()
@@ -217,7 +263,7 @@ describe('autosave lifecycle', () => {
 describe('autosave read failures', () => {
   eachLane('retains an unreadable record and pauses autosave when recovery fails', (lane) => {
     for (const raw of ['', '{partial', lane.corrupt]) {
-      const { data } = storage({ [lane.key]: raw }, key => key.startsWith(lane.prefix))
+      const { data } = storage({ [lane.key]: raw }, (key) => key.startsWith(lane.prefix))
       browser()
       expect(createAutosave(lane.adapter).read()).toBeNull()
       expect(data.get(lane.key)).toBe(raw)
@@ -229,7 +275,7 @@ describe('autosave read failures', () => {
 
   eachLane('suppresses later writes after a failed recovery', (lane) => {
     const raw = lane.corrupt
-    const { data } = storage({ [lane.key]: raw }, key => key.startsWith(lane.prefix))
+    const { data } = storage({ [lane.key]: raw }, (key) => key.startsWith(lane.prefix))
     const timers = browser()
     started(lane)
     lane.edit('after recovery failure')
@@ -239,7 +285,11 @@ describe('autosave read failures', () => {
   })
 
   eachLane('fails closed after a denied read', (lane) => {
-    vi.stubGlobal('localStorage', { getItem: () => { throw new DOMException('Denied', 'SecurityError') } })
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new DOMException('Denied', 'SecurityError')
+      },
+    })
     browser()
     expect(createAutosave(lane.adapter).read()).toBeNull()
     expect(() => assertAutosaveAllowed(lane.key)).toThrow('could not be read')

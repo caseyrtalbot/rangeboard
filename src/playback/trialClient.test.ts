@@ -10,15 +10,30 @@ function request(requestToken = 'attempt-1'): TrialRequest {
   const scenario = emptyScenario()
   const runId = 'same-run'
   const basisSignature = 'same-basis'
-  return { type: 'prepare-trial', requestToken, runId, basisSignature, scenario,
-    manifest: createTrialManifest(scenario, runId, basisSignature) }
+  return {
+    type: 'prepare-trial',
+    requestToken,
+    runId,
+    basisSignature,
+    scenario,
+    manifest: createTrialManifest(scenario, runId, basisSignature),
+  }
 }
 
 function done(req: TrialRequest) {
-  return { type: 'trial-done', requestToken: req.requestToken, runId: req.runId,
+  return {
+    type: 'trial-done',
+    requestToken: req.requestToken,
+    runId: req.runId,
     basisSignature: req.basisSignature,
-    result: { manifest: { ...req.manifest }, assessments: [],
-      report: { events: [], threats: [], effectors: [], totals: {} }, observations: [], jamDecisions: [] } }
+    result: {
+      manifest: { ...req.manifest },
+      assessments: [],
+      report: { events: [], threats: [], effectors: [], totals: {} },
+      observations: [],
+      jamDecisions: [],
+    },
+  }
 }
 
 function start(req = request(), callback = vi.fn()) {
@@ -73,40 +88,68 @@ describe('single-trial worker ownership', () => {
     expect(fresh.callback).toHaveBeenCalledOnce()
   })
 
-  it.each(['requestToken', 'runId', 'basisSignature'] as const)('rejects wrong %s on every terminal message', (field) => {
-    const { req, callback, worker } = start()
-    worker.send({ ...done(req), [field]: 'wrong' })
-    worker.send({ ...done(req), type: 'trial-error', message: 'wrong', [field]: 'wrong' })
-    expect(callback).not.toHaveBeenCalled()
-    expect(worker.terminate).not.toHaveBeenCalled()
-    worker.send(done(req))
-    expect(callback).toHaveBeenCalledOnce()
-  })
-
-  it('ignores unrelated messages and rejects a prior attempt in the same run', () => {
-    const { req, callback, worker } = start(request('attempt-2'))
-    for (const data of [null, [], 'bad', {}, { ...done(req), type: 'done' }, done(request('attempt-1'))]) worker.send(data)
-    expect(callback).not.toHaveBeenCalled()
-    worker.send(done(req))
-    expect(callback).toHaveBeenCalledOnce()
-  })
-
-  it.each(['missing-result', 'manifest', 'assessments', 'report', 'observations', 'jamDecisions', 'error'])(
-    'terminates and reports matching malformed %s once', (kind) => {
+  it.each(['requestToken', 'runId', 'basisSignature'] as const)(
+    'rejects wrong %s on every terminal message',
+    (field) => {
       const { req, callback, worker } = start()
-      const queued = worker.onmessage!
-      const message = done(req)
-      const malformed = kind === 'missing-result' ? { ...message, result: null }
-        : kind === 'error' ? { ...message, type: 'trial-error', message: null }
-        : { ...message, result: { ...message.result,
-          [kind]: kind === 'manifest' ? { ...req.manifest, seed: req.manifest.seed + 1 } : null } }
-      worker.send(malformed)
-      expect(callback).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'trial-error', requestToken: req.requestToken }))
-      expect(worker.terminate).toHaveBeenCalledOnce()
-      queued({ data: message })
+      worker.send({ ...done(req), [field]: 'wrong' })
+      worker.send({ ...done(req), type: 'trial-error', message: 'wrong', [field]: 'wrong' })
+      expect(callback).not.toHaveBeenCalled()
+      expect(worker.terminate).not.toHaveBeenCalled()
+      worker.send(done(req))
       expect(callback).toHaveBeenCalledOnce()
     },
   )
+
+  it('ignores unrelated messages and rejects a prior attempt in the same run', () => {
+    const { req, callback, worker } = start(request('attempt-2'))
+    for (const data of [
+      null,
+      [],
+      'bad',
+      {},
+      { ...done(req), type: 'done' },
+      done(request('attempt-1')),
+    ])
+      worker.send(data)
+    expect(callback).not.toHaveBeenCalled()
+    worker.send(done(req))
+    expect(callback).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    'missing-result',
+    'manifest',
+    'assessments',
+    'report',
+    'observations',
+    'jamDecisions',
+    'error',
+  ])('terminates and reports matching malformed %s once', (kind) => {
+    const { req, callback, worker } = start()
+    const queued = worker.onmessage!
+    const message = done(req)
+    const malformed =
+      kind === 'missing-result'
+        ? { ...message, result: null }
+        : kind === 'error'
+          ? { ...message, type: 'trial-error', message: null }
+          : {
+              ...message,
+              result: {
+                ...message.result,
+                [kind]:
+                  kind === 'manifest' ? { ...req.manifest, seed: req.manifest.seed + 1 } : null,
+              },
+            }
+    worker.send(malformed)
+    expect(callback).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: 'trial-error', requestToken: req.requestToken }),
+    )
+    expect(worker.terminate).toHaveBeenCalledOnce()
+    queued({ data: message })
+    expect(callback).toHaveBeenCalledOnce()
+  })
 
   it.each(['reported', 'native', 'decode'])('releases the worker after a %s error', (kind) => {
     const { req, callback, worker } = start()
@@ -114,7 +157,9 @@ describe('single-trial worker ownership', () => {
     if (kind === 'reported') worker.send({ ...done(req), type: 'trial-error', message: 'failed' })
     if (kind === 'native') worker.onerror!({ message: 'failed' })
     if (kind === 'decode') worker.onmessageerror!()
-    expect(callback).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'trial-error' }))
+    expect(callback).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: 'trial-error' }),
+    )
     expect(worker.terminate).toHaveBeenCalledOnce()
     queued({ data: done(req) })
     expect(callback).toHaveBeenCalledOnce()
@@ -140,25 +185,35 @@ describe('single-trial worker ownership', () => {
     expect(callback).not.toHaveBeenCalled()
   })
 
-  it.each(['construction', 'post'])('reports %s failures without throwing or retaining a worker', (kind) => {
-    ControlledWorker.constructionError = kind === 'construction' ? 'Worker blocked' : null
-    ControlledWorker.postError = kind === 'post' ? 'Cannot clone request' : null
-    const callback = vi.fn()
-    expect(startTrial(request(), callback)).toBe(true)
-    expect(callback).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ type: 'trial-error' }))
-    if (kind === 'post') expect(ControlledWorker.instances[0].terminate).toHaveBeenCalledOnce()
-    cancelTrial()
-    expect(callback).toHaveBeenCalledOnce()
-    ControlledWorker.constructionError = null
-    ControlledWorker.postError = null
-    const fresh = start()
-    fresh.worker.send(done(fresh.req))
-    expect(fresh.callback).toHaveBeenCalledOnce()
-  })
+  it.each(['construction', 'post'])(
+    'reports %s failures without throwing or retaining a worker',
+    (kind) => {
+      ControlledWorker.constructionError = kind === 'construction' ? 'Worker blocked' : null
+      ControlledWorker.postError = kind === 'post' ? 'Cannot clone request' : null
+      const callback = vi.fn()
+      expect(startTrial(request(), callback)).toBe(true)
+      expect(callback).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ type: 'trial-error' }),
+      )
+      if (kind === 'post') expect(ControlledWorker.instances[0].terminate).toHaveBeenCalledOnce()
+      cancelTrial()
+      expect(callback).toHaveBeenCalledOnce()
+      ControlledWorker.constructionError = null
+      ControlledWorker.postError = null
+      const fresh = start()
+      fresh.worker.send(done(fresh.req))
+      expect(fresh.callback).toHaveBeenCalledOnce()
+    },
+  )
 
   it('allows a completion callback to start another trial without terminating the new worker', () => {
     let next: ReturnType<typeof start> | undefined
-    const first = start(request(), vi.fn(() => { next = start(request('attempt-2')) }))
+    const first = start(
+      request(),
+      vi.fn(() => {
+        next = start(request('attempt-2'))
+      }),
+    )
     first.worker.send(done(first.req))
     expect(next!.worker.terminate).not.toHaveBeenCalled()
     next!.worker.send(done(next!.req))
@@ -208,6 +263,8 @@ describe('single-trial worker ownership', () => {
       else cancelTrial()
     }
     expect(ControlledWorker.instances).toHaveLength(30)
-    expect(ControlledWorker.instances.every(worker => worker.terminate.mock.calls.length === 1)).toBe(true)
+    expect(
+      ControlledWorker.instances.every((worker) => worker.terminate.mock.calls.length === 1),
+    ).toBe(true)
   })
 })

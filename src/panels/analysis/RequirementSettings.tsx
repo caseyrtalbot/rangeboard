@@ -84,7 +84,6 @@ function ThresholdsBody() {
   )
 }
 
-
 /** Requirement threshold inputs for a scenario preparation surface. */
 export function RequirementSettings() {
   return <ThresholdsBody />

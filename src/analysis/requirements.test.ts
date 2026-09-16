@@ -31,7 +31,10 @@ function fixture() {
   const path: FlightPath = {
     id: 'p1',
     entityId: threat.id,
-    points: [{ x: 0, y: 0 }, { x: 1000, y: 0 }],
+    points: [
+      { x: 0, y: 0 },
+      { x: 1000, y: 0 },
+    ],
     speedMps: 10,
     startDelayS: 0,
   }
@@ -172,8 +175,9 @@ describe('non-compensating requirement gates', () => {
     scenario.roe = 'hold'
     const result = buildRequirementGateReport(scenario, [assessment], report)
     expect(result.overall).toBe('not-evaluated')
-    expect(result.gates.filter((gate) => ['target', 'engage', 'effect'].includes(gate.id)))
-      .toHaveLength(3)
+    expect(
+      result.gates.filter((gate) => ['target', 'engage', 'effect'].includes(gate.id)),
+    ).toHaveLength(3)
     expect(gateOf(result, 'effect').status).toBe('not-evaluated')
     expect(gateOf(result, 'effect').notEvaluatedReason).toBe(
       'ROE hold: the run assigns no engagements',
@@ -239,9 +243,7 @@ describe('Detect is a performance test, not a presence test', () => {
     const detect = gateOf(result, 'detect')
     expect(detect.status).toBe('not-evaluated')
     expect(detect.met).toBe(0)
-    expect(detect.notEvaluatedReason).toBe(
-      'every track is invalidated by a run validity finding',
-    )
+    expect(detect.notEvaluatedReason).toBe('every track is invalidated by a run validity finding')
     // The spawn caveat, then the two run-basis caveats of a deterministic run.
     expect(detect.caveats).toHaveLength(3)
     expect(detect.caveats[0]).toBe(
@@ -268,7 +270,9 @@ describe('Detect is a performance test, not a presence test', () => {
     const detect = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'detect')
     expect(detect.status).toBe('fail')
     expect(detect.failures[0].reason).toBe('0:40 warning, requirement 1:00')
-    expect(detect.detail).toBe('minimum warning 0:40 · requirement ≥1:00 warning (scenario setting)')
+    expect(detect.detail).toBe(
+      'minimum warning 0:40 · requirement ≥1:00 warning (scenario setting)',
+    )
   })
 
   it('passes a warning time at or above the scenario requirement', () => {
@@ -364,16 +368,20 @@ describe('gate populations exclude tracks with no flight path', () => {
   })
 })
 
-
 describe('C2 requirement basis', () => {
   it('keeps deterministic gate decisions and envelope caveats under MC settings', () => {
     const { scenario, assessment, report } = fixture()
     const det = buildRequirementGateReport(scenario, [assessment], report)
     scenario.runMode = 'monte-carlo'
-    const mc = buildRequirementGateReport(scenario, [assessment], report, { validity: 'valid', findings: [] })
+    const mc = buildRequirementGateReport(scenario, [assessment], report, {
+      validity: 'valid',
+      findings: [],
+    })
     expect(mc.basis).toBe('planning-envelope')
     expect(mc.overall).toBe(det.overall)
-    expect(mc.gates.every((gate) => gate.caveats.some((text) => text.includes('threshold envelope')))).toBe(true)
+    expect(
+      mc.gates.every((gate) => gate.caveats.some((text) => text.includes('threshold envelope'))),
+    ).toBe(true)
   })
 
   it('explains a fully typed route blocked by missing fire-control uplink', () => {
@@ -381,6 +389,8 @@ describe('C2 requirement basis', () => {
     assessment.status = 'no-fc-uplink'
     const target = gateOf(buildRequirementGateReport(scenario, [assessment], report), 'target')
     expect(target.status).toBe('fail')
-    expect(target.failures[0].reason).toContain('route has no fire-control sensor; geometry only, no shot')
+    expect(target.failures[0].reason).toContain(
+      'route has no fire-control sensor; geometry only, no shot',
+    )
   })
 })

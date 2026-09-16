@@ -74,11 +74,24 @@ export function Glyph({ kind, color, size }: { kind: EntityKind; color: string; 
         </>
       )}
       {frame === 'hostile' && (
-        <polygon points="5,0.5 9.5,5 5,9.5 0.5,5" fill={color} stroke={FRAME_EDGE} strokeWidth={1} />
+        <polygon
+          points="5,0.5 9.5,5 5,9.5 0.5,5"
+          fill={color}
+          stroke={FRAME_EDGE}
+          strokeWidth={1}
+        />
       )}
       {frame === 'neutral' && (
         <>
-          <rect x={1.6} y={1.6} width={6.8} height={6.8} fill="none" stroke={color} strokeWidth={1.2} />
+          <rect
+            x={1.6}
+            y={1.6}
+            width={6.8}
+            height={6.8}
+            fill="none"
+            stroke={color}
+            strokeWidth={1.2}
+          />
           <circle cx={5} cy={5} r={1.1} fill={color} />
         </>
       )}

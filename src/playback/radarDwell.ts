@@ -87,18 +87,16 @@ export function shnidmanSnrForPd(
   const p = probabilitySafe(pd, q)
   const n = pulseCountSafe(pulses)
   const eta =
-    Math.sqrt(-0.8 * Math.log(4 * q * (1 - q)))
-    + Math.sign(p - 0.5) * Math.sqrt(-0.8 * Math.log(4 * p * (1 - p)))
+    Math.sqrt(-0.8 * Math.log(4 * q * (1 - q))) +
+    Math.sign(p - 0.5) * Math.sqrt(-0.8 * Math.log(4 * p * (1 - p)))
   const alpha = n <= 40 ? 0 : 0.25
   const snr0 = eta * (eta + 2 * Math.sqrt(n / 2) + alpha - 0.25)
   const k = fluctuationK(swerling)
   const c1 = (((17.7006 * p - 18.4496) * p + 14.5339) * p - 3.525) / k
-  const c2 = (
-    Math.exp(27.31 * p - 25.14)
-    + (p - 0.8) * (0.7 * Math.log(1e-5 / q) + (2 * n - 20) / 80)
-  ) / k
+  const c2 =
+    (Math.exp(27.31 * p - 25.14) + (p - 0.8) * (0.7 * Math.log(1e-5 / q) + (2 * n - 20) / 80)) / k
   const correctionDb = p <= 0.872 ? c1 : c1 + c2
-  return Math.pow(10, correctionDb / 10) * snr0 / n
+  return (Math.pow(10, correctionDb / 10) * snr0) / n
 }
 
 /**

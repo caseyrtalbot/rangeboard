@@ -13,21 +13,40 @@ vi.mock('recharts', () => ({
   YAxis: ({ domain }: { domain: number[] }) => <g data-axis="y" data-domain={domain.join(',')} />,
   Area: () => <g data-role="band" />,
   Line: () => <g data-role="series" />,
-  ReferenceDot: ({ x, y }: { x: number, y: number }) => <circle cx={x} cy={y} />,
-  ReferenceLine: ({ x, label }: { x: number, label: { value: string } }) => <g data-rule={x}>{label.value}</g>,
+  ReferenceDot: ({ x, y }: { x: number; y: number }) => <circle cx={x} cy={y} />,
+  ReferenceLine: ({ x, label }: { x: number; label: { value: string } }) => (
+    <g data-rule={x}>{label.value}</g>
+  ),
   Tooltip: () => null,
   ResponsiveContainer: ({ children }: { children: ReactNode }) => children,
 }))
 
-const values = Array.from({ length: 121 }, (_, i) => i * DT <= 30 ? i * DT : 1000)
-const series: Series[] = [{
-  id: 'a', label: 'Observed', unit: null, color: 'chart-1', kind: 'line', values,
-  band80: [values, values],
-}]
-const render = (horizonS?: number) => renderToStaticMarkup(
-  <TimeSeriesPlot series={series} tS={50} width={312} height={120} horizonS={horizonS}
-    marks={[{ tS: 30, label: 'Reached mark', color: 'accent' }, { tS: 45, label: 'Future mark', color: 'accent' }]} />,
-)
+const values = Array.from({ length: 121 }, (_, i) => (i * DT <= 30 ? i * DT : 1000))
+const series: Series[] = [
+  {
+    id: 'a',
+    label: 'Observed',
+    unit: null,
+    color: 'chart-1',
+    kind: 'line',
+    values,
+    band80: [values, values],
+  },
+]
+const render = (horizonS?: number) =>
+  renderToStaticMarkup(
+    <TimeSeriesPlot
+      series={series}
+      tS={50}
+      width={312}
+      height={120}
+      horizonS={horizonS}
+      marks={[
+        { tS: 30, label: 'Reached mark', color: 'accent' },
+        { tS: 45, label: 'Future mark', color: 'accent' },
+      ]}
+    />,
+  )
 
 describe('TimeSeries plot horizon contract', () => {
   it('preserves the unscoped plot and endpoint at the full duration', () => {

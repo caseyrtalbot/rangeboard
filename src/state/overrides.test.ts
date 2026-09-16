@@ -43,7 +43,9 @@ describe('the overrides store', () => {
   })
 
   it('rejects a blank reason and records nothing', () => {
-    expect(() => useOverrides.getState().setOverride(SENSOR, 'pk', 0.5, '   ')).toThrow('An override needs a reason')
+    expect(() => useOverrides.getState().setOverride(SENSOR, 'pk', 0.5, '   ')).toThrow(
+      'An override needs a reason',
+    )
     expect(overrides()).toEqual([])
   })
 
@@ -69,7 +71,17 @@ describe('the overrides store', () => {
 
   it('adopts a restored set whole', () => {
     useOverrides.getState().setOverride(SENSOR, 'detectRangeM', 3000, 'a')
-    const saved = { overrides: [{ modelId: EFFECTOR, field: 'pk', value: 0.4, reason: 'range data', date: '2026-09-10T00:00:00.000Z' }] }
+    const saved = {
+      overrides: [
+        {
+          modelId: EFFECTOR,
+          field: 'pk',
+          value: 0.4,
+          reason: 'range data',
+          date: '2026-09-10T00:00:00.000Z',
+        },
+      ],
+    }
     useOverrides.getState().restoreOverrides(saved)
     expect(overrides()).toEqual(saved.overrides)
   })
@@ -98,9 +110,10 @@ describe('activeOverrides', () => {
 
     const first = order.indexOf(SENSOR) < order.indexOf(EFFECTOR) ? SENSOR : EFFECTOR
     const second = first === SENSOR ? EFFECTOR : SENSOR
-    const fields = first === SENSOR
-      ? ['detectRangeM', 'updateRateS', 'minRangeM', 'pk']
-      : ['minRangeM', 'pk', 'detectRangeM', 'updateRateS']
+    const fields =
+      first === SENSOR
+        ? ['detectRangeM', 'updateRateS', 'minRangeM', 'pk']
+        : ['minRangeM', 'pk', 'detectRangeM', 'updateRateS']
 
     const active = activeOverrides(overrides(), scenario)
     expect(active.map((o) => o.modelId)).toEqual([first, first, second, second])

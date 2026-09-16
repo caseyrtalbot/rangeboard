@@ -111,7 +111,6 @@ describe('paths', () => {
     expect(s.pos.x).toBeCloseTo(50)
     expect(s.pos.y).toBeCloseTo(0)
   })
-
 })
 
 describe('rotatePoint', () => {

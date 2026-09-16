@@ -1,12 +1,19 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { allowAutosave, assertAutosaveAllowed, blockAutosave } from './recovery'
-import { BASELINE_RECOVERY_PREFIX, BOARD_BASELINE, SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
+import {
+  BASELINE_RECOVERY_PREFIX,
+  BOARD_BASELINE,
+  SCENARIO_KEY,
+  SCENARIO_RECOVERY_PREFIX,
+} from './storageKeys'
 import { deleteRecoveryCopy, downloadRecoveryCopy, readStorageUsage } from './storageManagement'
 
 function storage(initial: Record<string, string>) {
   const data = new Map(Object.entries(initial))
   vi.stubGlobal('localStorage', {
-    get length() { return data.size },
+    get length() {
+      return data.size
+    },
     key: (i: number) => [...data.keys()][i] ?? null,
     getItem: (key: string) => data.get(key) ?? null,
     removeItem: (key: string) => data.delete(key),
@@ -14,37 +21,63 @@ function storage(initial: Record<string, string>) {
   return data
 }
 
-afterEach(() => { allowAutosave(SCENARIO_KEY); vi.restoreAllMocks(); vi.unstubAllGlobals() })
+afterEach(() => {
+  allowAutosave(SCENARIO_KEY)
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 describe('storage management', () => {
   it('accounts for every documented live key and every recovery namespace in UTF-16 bytes', () => {
     const key = `${SCENARIO_RECOVERY_PREFIX}123`
-    storage({ [SCENARIO_KEY]: '😀', [key]: '{bad', [`${SCENARIO_RECOVERY_PREFIX}456`]: '', [`${BASELINE_RECOVERY_PREFIX}789`]: 'x', unrelated: 'secret' })
+    storage({
+      [SCENARIO_KEY]: '😀',
+      [key]: '{bad',
+      [`${SCENARIO_RECOVERY_PREFIX}456`]: '',
+      [`${BASELINE_RECOVERY_PREFIX}789`]: 'x',
+      unrelated: 'secret',
+    })
     const result = readStorageUsage()
     expect(result.error).toBeNull()
-    expect(result.entries.find(entry => entry.key === SCENARIO_KEY)?.bytes).toBe(2 * (SCENARIO_KEY.length + 2))
-    expect(result.entries.find(entry => entry.key === key)).toEqual({ key, kind: 'recovery', bytes: 2 * (key.length + 4) })
-    expect(result.entries.find(entry => entry.key === BOARD_BASELINE)).toEqual({ key: BOARD_BASELINE, kind: 'live', bytes: 0 })
-    expect(result.entries.filter(entry => entry.kind === 'recovery')).toHaveLength(3)
-    expect(result.entries.some(entry => entry.key === BASELINE_RECOVERY_PREFIX)).toBe(false)
-    expect(result.entries.some(entry => entry.key === 'unrelated')).toBe(false)
+    expect(result.entries.find((entry) => entry.key === SCENARIO_KEY)?.bytes).toBe(
+      2 * (SCENARIO_KEY.length + 2),
+    )
+    expect(result.entries.find((entry) => entry.key === key)).toEqual({
+      key,
+      kind: 'recovery',
+      bytes: 2 * (key.length + 4),
+    })
+    expect(result.entries.find((entry) => entry.key === BOARD_BASELINE)).toEqual({
+      key: BOARD_BASELINE,
+      kind: 'live',
+      bytes: 0,
+    })
+    expect(result.entries.filter((entry) => entry.kind === 'recovery')).toHaveLength(3)
+    expect(result.entries.some((entry) => entry.key === BASELINE_RECOVERY_PREFIX)).toBe(false)
+    expect(result.entries.some((entry) => entry.key === 'unrelated')).toBe(false)
   })
 
-  it.each(['', '{not json\nΩ'])('downloads recovery text exactly, including empty/malformed saves', async raw => {
-    const key = `${BASELINE_RECOVERY_PREFIX}123`
-    const data = storage({ [key]: raw })
-    let blob: Blob | undefined
-    vi.spyOn(URL, 'createObjectURL').mockImplementation(value => { blob = value as Blob; return 'blob:test' })
-    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-    const anchor = { href: '', download: '', click: vi.fn() }
-    vi.stubGlobal('document', { createElement: () => anchor })
-    downloadRecoveryCopy(key)
-    expect(await blob!.text()).toBe(raw)
-    expect(anchor.download).toBe(`${key}.json`)
-    expect(anchor.click).toHaveBeenCalledOnce()
-    expect(revoke).toHaveBeenCalledWith('blob:test')
-    expect(data.get(key)).toBe(raw)
-  })
+  it.each(['', '{not json\nΩ'])(
+    'downloads recovery text exactly, including empty/malformed saves',
+    async (raw) => {
+      const key = `${BASELINE_RECOVERY_PREFIX}123`
+      const data = storage({ [key]: raw })
+      let blob: Blob | undefined
+      vi.spyOn(URL, 'createObjectURL').mockImplementation((value) => {
+        blob = value as Blob
+        return 'blob:test'
+      })
+      const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+      const anchor = { href: '', download: '', click: vi.fn() }
+      vi.stubGlobal('document', { createElement: () => anchor })
+      downloadRecoveryCopy(key)
+      expect(await blob!.text()).toBe(raw)
+      expect(anchor.download).toBe(`${key}.json`)
+      expect(anchor.click).toHaveBeenCalledOnce()
+      expect(revoke).toHaveBeenCalledWith('blob:test')
+      expect(data.get(key)).toBe(raw)
+    },
+  )
 
   it('deletes only the selected recovery copy and retains the autosave pause', () => {
     const key = `${SCENARIO_RECOVERY_PREFIX}123`
@@ -62,11 +95,20 @@ describe('storage management', () => {
 
   it('reports denied reads and deletions without throwing from the readout', () => {
     vi.stubGlobal('localStorage', {
-      get length() { throw new Error('Denied') },
-      getItem: () => { throw new Error('Denied') },
-      removeItem: () => { throw new Error('Denied') },
+      get length() {
+        throw new Error('Denied')
+      },
+      getItem: () => {
+        throw new Error('Denied')
+      },
+      removeItem: () => {
+        throw new Error('Denied')
+      },
     })
-    expect(readStorageUsage()).toEqual({ entries: [], error: expect.stringContaining('could not be read') })
+    expect(readStorageUsage()).toEqual({
+      entries: [],
+      error: expect.stringContaining('could not be read'),
+    })
     const key = `${SCENARIO_RECOVERY_PREFIX}123`
     expect(() => downloadRecoveryCopy(key)).toThrow('could not be read')
     expect(() => deleteRecoveryCopy(key)).toThrow('could not be deleted')

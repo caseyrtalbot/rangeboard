@@ -18,7 +18,11 @@ import {
 } from './projection'
 
 /** The observation fields the projections read; the rest never matter here. */
-function obs(sensorId: string, intervals: Array<[number, number]>, pd?: { startS: number; series: number[] }): SensorObservation {
+function obs(
+  sensorId: string,
+  intervals: Array<[number, number]>,
+  pd?: { startS: number; series: number[] },
+): SensorObservation {
   return {
     sensorId,
     intervals,
@@ -28,7 +32,11 @@ function obs(sensorId: string, intervals: Array<[number, number]>, pd?: { startS
 }
 
 function track(uasId: string, observations: SensorObservation[]): ThreatAssessment {
-  return { uasId, status: 'tracked', sensorObservations: observations } as unknown as ThreatAssessment
+  return {
+    uasId,
+    status: 'tracked',
+    sensorObservations: observations,
+  } as unknown as ThreatAssessment
 }
 
 const N = 9
@@ -75,20 +83,29 @@ describe('residualOnGrid', () => {
 
 describe('observation flags', () => {
   it('heldOnGrid is 1 inside each inclusive interval and clamps to the grid end', () => {
-    const o = obs('s1', [[DT, 2 * DT], [5 * DT, 50 * DT]])
+    const o = obs('s1', [
+      [DT, 2 * DT],
+      [5 * DT, 50 * DT],
+    ])
     expect(heldOnGrid(o, N)).toEqual([0, 1, 1, 0, 0, 1, 1, 1, 1])
   })
 
   it('pdOnGrid places the series from its start step and is null without a series', () => {
     expect(pdOnGrid(obs('s1', [[0, DT]]), N)).toBeNull()
-    const values = pdOnGrid(obs('s1', [[0, DT]], { startS: 2 * DT, series: [0.5, 0.75, 1, 1, 1, 1, 1, 1] }), N)!
+    const values = pdOnGrid(
+      obs('s1', [[0, DT]], { startS: 2 * DT, series: [0.5, 0.75, 1, 1, 1, 1, 1, 1] }),
+      N,
+    )!
     expect(values.slice(0, 5)).toEqual([NaN, NaN, 0.5, 0.75, 1])
     expect(values).toHaveLength(N)
   })
 })
 
 describe('held-track quantities', () => {
-  const a = track('a', [obs('s1', [[0, DT]], { startS: 0, series: [0.2, 0.9] }), obs('s2', [[3 * DT, 4 * DT]], { startS: 3 * DT, series: [0.6] })])
+  const a = track('a', [
+    obs('s1', [[0, DT]], { startS: 0, series: [0.2, 0.9] }),
+    obs('s2', [[3 * DT, 4 * DT]], { startS: 3 * DT, series: [0.6] }),
+  ])
   const b = track('b', [obs('s2', [[DT, 3 * DT]])])
   const c = track('c', [obs('s3', [[0, 8 * DT]])])
   const enabled = new Set(['s1', 's2'])

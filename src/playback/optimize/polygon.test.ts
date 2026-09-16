@@ -3,16 +3,39 @@ import { boundingBoxOf, pointInPolygon } from './polygon'
 
 // A unit-ish L shape: the 0..10 square minus its upper-right quadrant.
 const L = [
-  { x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 5 }, { x: 5, y: 5 }, { x: 5, y: 10 }, { x: 0, y: 10 },
+  { x: 0, y: 0 },
+  { x: 10, y: 0 },
+  { x: 10, y: 5 },
+  { x: 5, y: 5 },
+  { x: 5, y: 10 },
+  { x: 0, y: 10 },
 ]
 
 describe('boundingBoxOf', () => {
   it('reads the box and its diagonal, and rejects a degenerate polygon', () => {
     // 10 by 10: the diagonal is 10 sqrt 2.
-    expect(boundingBoxOf(L)).toEqual({ minX: 0, minY: 0, maxX: 10, maxY: 10, diagonalM: Math.hypot(10, 10) })
+    expect(boundingBoxOf(L)).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 10,
+      maxY: 10,
+      diagonalM: Math.hypot(10, 10),
+    })
     expect(() => boundingBoxOf(L.slice(0, 2))).toThrow(/at least 3 points/)
-    expect(() => boundingBoxOf([{ x: 0, y: 0 }, { x: 5, y: 0 }, { x: 10, y: 0 }])).toThrow(/no area/)
-    expect(() => boundingBoxOf([{ x: 0, y: 0 }, { x: NaN, y: 0 }, { x: 10, y: 5 }])).toThrow(/non-finite/)
+    expect(() =>
+      boundingBoxOf([
+        { x: 0, y: 0 },
+        { x: 5, y: 0 },
+        { x: 10, y: 0 },
+      ]),
+    ).toThrow(/no area/)
+    expect(() =>
+      boundingBoxOf([
+        { x: 0, y: 0 },
+        { x: NaN, y: 0 },
+        { x: 10, y: 5 },
+      ]),
+    ).toThrow(/non-finite/)
   })
 })
 

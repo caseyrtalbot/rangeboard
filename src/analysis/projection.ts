@@ -89,7 +89,10 @@ export function heldOnGrid(obs: SensorObservation, n: number): number[] {
 }
 
 /** The observations of `a` taken by a sensor in `enabledSensorIds`. */
-function enabledObservations(a: ThreatAssessment, enabledSensorIds: Set<string>): SensorObservation[] {
+function enabledObservations(
+  a: ThreatAssessment,
+  enabledSensorIds: Set<string>,
+): SensorObservation[] {
   return (a.sensorObservations ?? []).filter((obs) => enabledSensorIds.has(obs.sensorId))
 }
 

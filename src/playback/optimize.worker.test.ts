@@ -13,7 +13,8 @@ let context: {
   postMessage: ReturnType<typeof vi.fn>
 }
 
-const posted = (): OptimizeWorkerMessage[] => context.postMessage.mock.calls.map((c) => c[0] as OptimizeWorkerMessage)
+const posted = (): OptimizeWorkerMessage[] =>
+  context.postMessage.mock.calls.map((c) => c[0] as OptimizeWorkerMessage)
 
 beforeEach(async () => {
   vi.resetModules()
@@ -22,15 +23,24 @@ beforeEach(async () => {
   await import('./optimize.worker')
 })
 
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
 
 it('posts progress per evaluation then done with the loop result and a wall time', async () => {
   const req = placementRequest({ budget: { evaluations: 12, replicates: 8, seed: 21 } })
   await context.onmessage!({ data: req })
   const messages = posted()
   const progress = messages.filter((m) => m.type === 'optimize-progress')
-  expect(progress.map((m) => m.type === 'optimize-progress' && m.done)).toEqual(Array.from({ length: 12 }, (_, i) => i + 1))
-  expect(progress.every((m) => m.type === 'optimize-progress' && m.total === 12 && m.best?.incumbent === true)).toBe(true)
+  expect(progress.map((m) => m.type === 'optimize-progress' && m.done)).toEqual(
+    Array.from({ length: 12 }, (_, i) => i + 1),
+  )
+  expect(
+    progress.every(
+      (m) => m.type === 'optimize-progress' && m.total === 12 && m.best?.incumbent === true,
+    ),
+  ).toBe(true)
   const done = messages.at(-1)!
   if (done.type !== 'optimize-done') throw new Error(done.type)
   expect(done.runId).toBe(req.runId)
@@ -45,7 +55,8 @@ it('a cancel after the third evaluation ends the run with the trace so far', asy
   vi.spyOn(performance, 'now').mockImplementation(() => (now += 100))
   const req = placementRequest({ budget: { evaluations: 12, replicates: 8, seed: 21 } })
   context.postMessage.mockImplementation((m: OptimizeWorkerMessage) => {
-    if (m.type === 'optimize-progress' && m.done === 3) void context.onmessage!({ data: { type: 'cancel', runId: req.runId } })
+    if (m.type === 'optimize-progress' && m.done === 3)
+      void context.onmessage!({ data: { type: 'cancel', runId: req.runId } })
   })
   await context.onmessage!({ data: req })
   const messages = posted()
@@ -59,7 +70,8 @@ it('a cancel after the third evaluation ends the run with the trace so far', asy
 it('a cancel for another run id is ignored and a bad request posts an error', async () => {
   const req = placementRequest({ budget: { evaluations: 2, replicates: 2, seed: 1 } })
   context.postMessage.mockImplementation((m: OptimizeWorkerMessage) => {
-    if (m.type === 'optimize-progress' && m.done === 1) void context.onmessage!({ data: { type: 'cancel', runId: 'other' } })
+    if (m.type === 'optimize-progress' && m.done === 1)
+      void context.onmessage!({ data: { type: 'cancel', runId: 'other' } })
   })
   await context.onmessage!({ data: req })
   const done = posted().at(-1)!
@@ -67,5 +79,11 @@ it('a cancel for another run id is ignored and a bad request posts an error', as
   expect(done.result.trace).toHaveLength(2)
   context.postMessage.mockReset()
   await context.onmessage!({ data: placementRequest({ runId: 'bad', movableIds: ['nobody'] }) })
-  expect(posted()).toEqual([{ type: 'optimize-error', runId: 'bad', message: 'Optimize movable id nobody is not in the scenario' }])
+  expect(posted()).toEqual([
+    {
+      type: 'optimize-error',
+      runId: 'bad',
+      message: 'Optimize movable id nobody is not in the scenario',
+    },
+  ])
 })

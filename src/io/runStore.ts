@@ -84,11 +84,14 @@ async function withStore<T>(
   const db = await openDb(factoryOf(options))
   try {
     const tx = db.transaction(STORE_NAME, mode)
-    const done = mode === 'readonly' ? Promise.resolve() : new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve()
-      tx.onerror = () => reject(tx.error ?? new Error('Run store write failed.'))
-      tx.onabort = () => reject(tx.error ?? new Error('Run store write was aborted.'))
-    })
+    const done =
+      mode === 'readonly'
+        ? Promise.resolve()
+        : new Promise<void>((resolve, reject) => {
+            tx.oncomplete = () => resolve()
+            tx.onerror = () => reject(tx.error ?? new Error('Run store write failed.'))
+            tx.onabort = () => reject(tx.error ?? new Error('Run store write was aborted.'))
+          })
     const result = await work(tx.objectStore(STORE_NAME))
     await done
     return result
@@ -102,7 +105,10 @@ async function withStore<T>(
  * id replaces that record, so its own bytes never count against the new write.
  * Returns the evicted ids for the notice the history section shows.
  */
-export async function saveRun(record: RunRecord, options: RunStoreOptions = {}): Promise<{ evicted: string[] }> {
+export async function saveRun(
+  record: RunRecord,
+  options: RunStoreOptions = {},
+): Promise<{ evicted: string[] }> {
   const cap = options.capBytes ?? RUN_STORE_CAP_BYTES
   const json = JSON.stringify(record)
   const bytes = json.length
@@ -121,7 +127,7 @@ export async function saveRun(record: RunRecord, options: RunStoreOptions = {}):
   return withStore(options, 'readwrite', async (store) => {
     // The savedAt index reads oldest first, which is the eviction order.
     const existing = await request<StoredRun[]>(store.index(SAVED_AT).getAll())
-    let used = existing.reduce((sum, run) => run.id === stored.id ? sum : sum + run.bytes, 0)
+    let used = existing.reduce((sum, run) => (run.id === stored.id ? sum : sum + run.bytes), 0)
     const evicted: string[] = []
     for (const run of existing) {
       if (used + bytes <= cap) break
@@ -138,26 +144,39 @@ export async function saveRun(record: RunRecord, options: RunStoreOptions = {}):
 /** Every saved run, newest first. */
 export async function listRuns(options: RunStoreOptions = {}): Promise<RunSummary[]> {
   const rows = await withStore(options, 'readonly', (store) =>
-    request<StoredRun[]>(store.index(SAVED_AT).getAll()))
-  return rows.map((row) => ({
-    id: row.id, label: row.label, savedAt: row.savedAt, seed: row.seed,
-    replicates: row.replicates, scenarioName: row.scenarioName, bytes: row.bytes,
-  })).reverse()
+    request<StoredRun[]>(store.index(SAVED_AT).getAll()),
+  )
+  return rows
+    .map((row) => ({
+      id: row.id,
+      label: row.label,
+      savedAt: row.savedAt,
+      seed: row.seed,
+      replicates: row.replicates,
+      scenarioName: row.scenarioName,
+      bytes: row.bytes,
+    }))
+    .reverse()
 }
 
 /** One record, with its NaN statistics restored; null when the id is unknown. */
 export async function getRun(id: string, options: RunStoreOptions = {}): Promise<RunRecord | null> {
   const row = await withStore(options, 'readonly', (store) =>
-    request<StoredRun | undefined>(store.get(id)))
+    request<StoredRun | undefined>(store.get(id)),
+  )
   if (!row) return null
   const record = row.record as RunRecord
   return { ...record, mc: validateMcSummary(record.mc, 'run.mc') }
 }
 
 export async function deleteRun(id: string, options: RunStoreOptions = {}): Promise<void> {
-  await withStore(options, 'readwrite', async (store) => { store.delete(id) })
+  await withStore(options, 'readwrite', async (store) => {
+    store.delete(id)
+  })
 }
 
 export async function clearRuns(options: RunStoreOptions = {}): Promise<void> {
-  await withStore(options, 'readwrite', async (store) => { store.clear() })
+  await withStore(options, 'readwrite', async (store) => {
+    store.clear()
+  })
 }

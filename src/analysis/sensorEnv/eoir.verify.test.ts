@@ -89,9 +89,6 @@ describe('Spynel-S 6000 advertised D/R pair (SPS-Len-al1, read 2026-09-10)', () 
     // identification number, so this assertion does not label 750 m a
     // vendor value or compare it to an invented one.
     expect(dri.identifyM).toBeCloseTo(750.05, 1)
-    expect(eoPixelsOnTarget(1.8, dri.identifyM, ifov)).toBeCloseTo(
-      2 * JOHNSON_CYCLES.identify,
-      10,
-    )
+    expect(eoPixelsOnTarget(1.8, dri.identifyM, ifov)).toBeCloseTo(2 * JOHNSON_CYCLES.identify, 10)
   })
 })

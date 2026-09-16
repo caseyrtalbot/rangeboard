@@ -42,8 +42,18 @@ function env(patch: Partial<EnvironmentSpec>): EnvironmentSpec {
   return { ...defaultEnvironment(), ...patch }
 }
 
-const RADAR: SensorSpec = { sensorType: 'radar', detectRangeM: 10000, classifyRangeM: null, sectorDeg: 360 }
-const EO: SensorSpec = { sensorType: 'eo-ir', detectRangeM: 3000, classifyRangeM: 1500, sectorDeg: 360 }
+const RADAR: SensorSpec = {
+  sensorType: 'radar',
+  detectRangeM: 10000,
+  classifyRangeM: null,
+  sectorDeg: 360,
+}
+const EO: SensorSpec = {
+  sensorType: 'eo-ir',
+  detectRangeM: 3000,
+  classifyRangeM: 1500,
+  sectorDeg: 360,
+}
 
 describe('sensorEnvFactor', () => {
   it('is 1 on a clear day', () => {
@@ -237,7 +247,9 @@ describe('effectiveDetectRangeM', () => {
     }
     const big = uas({ group: 3, airframe: 'one-way-attack', spanM: 2.5 })
     expect(effectiveDetectRangeM(wisp, env({}), big)).toBe(16000)
-    expect(effectiveDetectRangeM({ ...wisp, instrumentedRangeM: null }, env({}), big)).toBeGreaterThan(16000)
+    expect(
+      effectiveDetectRangeM({ ...wisp, instrumentedRangeM: null }, env({}), big),
+    ).toBeGreaterThan(16000)
   })
 
   it('combines weather and RCS, then caps', () => {
@@ -284,7 +296,12 @@ const ACOUSTIC: SensorSpec = {
   classifyRangeM: null,
   sectorDeg: 360,
 }
-const RF: SensorSpec = { sensorType: 'rf', detectRangeM: 4000, classifyRangeM: 4000, sectorDeg: 360 }
+const RF: SensorSpec = {
+  sensorType: 'rf',
+  detectRangeM: 4000,
+  classifyRangeM: 4000,
+  sectorDeg: 360,
+}
 
 describe('EO/IR span and thermal scaling', () => {
   it('span tiers grow with group and the spec span wins', () => {
@@ -401,7 +418,9 @@ describe('RF band coverage and urban override', () => {
     expect(rfCanHear(RF, link)).toBe(true)
     expect(rfCanHear({ ...RF, rfBands: ['ism-2400'] }, link)).toBe(true)
     expect(rfCanHear({ ...RF, rfBands: ['uhf-433', 'ism-915'] }, link)).toBe(false)
-    expect(rfCanHear({ ...RF, rfBands: ['uhf-433'] }, { ...link, linkBands: ['uhf-433'] })).toBe(true)
+    expect(rfCanHear({ ...RF, rfBands: ['uhf-433'] }, { ...link, linkBands: ['uhf-433'] })).toBe(
+      true,
+    )
     // GNSS is received, never transmitted: it never counts as an emission.
     expect(rfCanHear({ ...RF, rfBands: ['gnss'] }, uas({ navMode: 'mixed' }))).toBe(false)
     expect(rfCanHear(RF, uas({ navMode: 'fiber' }))).toBe(false)
@@ -428,16 +447,21 @@ describe('range basis', () => {
     const planAc: SensorSpec = { ...ACOUSTIC, rangeBasis: 'planning' }
     expect(effectiveDetectRangeM(planAc, env({}), uas({ acousticDb: 105 }))).toBe(500)
     // Environment still applies to a planning figure.
-    expect(effectiveDetectRangeM(planRadar, env({ precipitation: 'rain' }), uas({ rcsM2: 1 }))).toBe(
-      7500,
-    )
+    expect(
+      effectiveDetectRangeM(planRadar, env({ precipitation: 'rain' }), uas({ rcsM2: 1 })),
+    ).toBe(7500)
   })
 })
 
 describe('cue rule and hold gate', () => {
   it('only narrow-field EO/IR roles need a cue', () => {
     expect(eoIrNeedsCue(EO)).toBe(true) // default role: classification
-    for (const role of ['classification', 'fire-control', 'tracking', 'target-acquisition'] as const) {
+    for (const role of [
+      'classification',
+      'fire-control',
+      'tracking',
+      'target-acquisition',
+    ] as const) {
       expect(eoIrNeedsCue({ ...EO, role })).toBe(true)
     }
     for (const role of ['surveillance', 'early-warning'] as const) {
@@ -478,7 +502,9 @@ describe('vertical geometry gates', () => {
     expect(sensorGeometryGate({ ...RADAR, maxAltitudeFt: null }, 4, HIGH_M, 5000)).toBe('ok')
     expect(sensorGeometryGate({ ...RADAR, maxAltitudeFt: 20000 }, 4, HIGH_M, 5000)).toBe('ok')
     // The ceiling is a coverage limit, so it gates acoustic sensors too.
-    expect(sensorGeometryGate({ ...ACOUSTIC, maxAltitudeFt: 10000 }, 4, HIGH_M, 500)).toBe('ceiling')
+    expect(sensorGeometryGate({ ...ACOUSTIC, maxAltitudeFt: 10000 }, 4, HIGH_M, 500)).toBe(
+      'ceiling',
+    )
   })
 
   it('a target beyond the 4/3 earth radio horizon is below-horizon', () => {
@@ -511,8 +537,9 @@ describe('vertical geometry gates', () => {
     // 1e-9 m below the phase center at 1 km: about -6e-11 deg, inside the tolerance.
     expect(sensorGeometryGate(limited, 4, 4 - 1e-9, 1000)).toBe('ok')
     // -0.01 deg at 1 km is 0.1745 m below: outside.
-    expect(sensorGeometryGate(limited, 4, 4 - 1000 * Math.tan((0.01 * Math.PI) / 180), 1000))
-      .toBe('elevation')
+    expect(sensorGeometryGate(limited, 4, 4 - 1000 * Math.tan((0.01 * Math.PI) / 180), 1000)).toBe(
+      'elevation',
+    )
     // The upper edge: 30 deg plus 1e-6 is inside the tolerance, 30.01 is not.
     const up = (deg: number) => 4 + 1000 * Math.tan((deg * Math.PI) / 180)
     expect(sensorGeometryGate(limited, 4, up(30 + 1e-6), 1000)).toBe('ok')
@@ -520,7 +547,12 @@ describe('vertical geometry gates', () => {
   })
 
   it('effectorGeometryGate is the ceiling alone', () => {
-    const eff = { effectorType: 'interceptor' as const, minRangeM: 0, maxRangeM: 10000, engageTimeS: 0 }
+    const eff = {
+      effectorType: 'interceptor' as const,
+      minRangeM: 0,
+      maxRangeM: 10000,
+      engageTimeS: 0,
+    }
     expect(effectorGeometryGate({ ...eff, maxAltitudeFt: 3000 }, HIGH_M)).toBe('ceiling')
     expect(effectorGeometryGate({ ...eff, maxAltitudeFt: 20000 }, HIGH_M)).toBe('ok')
     expect(effectorGeometryGate({ ...eff, maxAltitudeFt: null }, HIGH_M)).toBe('ok')
@@ -558,15 +590,20 @@ describe('radar Pd model', () => {
       pulsesPerDwell: null,
     })
     // A Pd or Pfa outside (0, 1) is not a probability: the planning factor stands in.
-    expect(radarCalibration({ ...RADAR, placardPd: 1, pfa: 0 })).toMatchObject({ pd0: 0.5, pfa: 1e-6 })
+    expect(radarCalibration({ ...RADAR, placardPd: 1, pfa: 0 })).toMatchObject({
+      pd0: 0.5,
+      pfa: 1e-6,
+    })
   })
 
   it('recalibrates per-pulse SNR so an integrated dwell preserves the placard point', () => {
     const integrated: SensorSpec = { ...RADAR, pulsesPerDwell: 100, dwellTimeS: 0.02 }
     const cal = radarCalibration(integrated)
     expect(cal.pulsesPerDwell).toBe(100)
-    expect(radarPdAt(integrated, clear, uas({ group: 1 }), integrated.detectRangeM))
-      .toBeCloseTo(cal.pd0, 10)
+    expect(radarPdAt(integrated, clear, uas({ group: 1 }), integrated.detectRangeM)).toBeCloseTo(
+      cal.pd0,
+      10,
+    )
     expect(rangeForPd(cal, cal.rcs0M2, cal.pd0, 1, cal.swerling0)).toBeCloseTo(cal.r0M, 9)
   })
 
@@ -575,8 +612,9 @@ describe('radar Pd model', () => {
     const target = uas({ group: 3, airframe: 'fixed-wing' })
     for (const rangeM of [1000, 5000, 10000, 20000, 1e9]) {
       const legacy = radarPdAt(RADAR, clear, target, rangeM)
-      expect(radarPdAt({ ...RADAR, pulsesPerDwell: null, dwellTimeS: null }, clear, target, rangeM))
-        .toBe(legacy)
+      expect(
+        radarPdAt({ ...RADAR, pulsesPerDwell: null, dwellTimeS: null }, clear, target, rangeM),
+      ).toBe(legacy)
       expect(radarPdAt(integrated, clear, target, rangeM, true)).toBe(legacy)
     }
   })
@@ -584,10 +622,22 @@ describe('radar Pd model', () => {
   it('with defaults, a Swerling 1 target returns the pre-slice fourth-root value to 1e-9 relative', () => {
     // Quad airframes resolve to Swerling 1, the placard case, so the SNR ratio is exactly 1.
     relClose(effectiveDetectRangeM(RADAR, clear), fourthRoot(undefined, 1))
-    relClose(effectiveDetectRangeM(RADAR, clear, uas({ group: 1 })), fourthRoot(uas({ group: 1 }), 1))
-    relClose(effectiveDetectRangeM(RADAR, clear, uas({ group: 3 })), fourthRoot(uas({ group: 3 }), 1))
-    relClose(effectiveDetectRangeM(RADAR, rain, uas({ group: 3 })), fourthRoot(uas({ group: 3 }), M_RAIN))
-    relClose(effectiveDetectRangeM(RADAR, clear, uas({ group: 3 }), 0.5), fourthRoot(uas({ group: 3 }), 1))
+    relClose(
+      effectiveDetectRangeM(RADAR, clear, uas({ group: 1 })),
+      fourthRoot(uas({ group: 1 }), 1),
+    )
+    relClose(
+      effectiveDetectRangeM(RADAR, clear, uas({ group: 3 })),
+      fourthRoot(uas({ group: 3 }), 1),
+    )
+    relClose(
+      effectiveDetectRangeM(RADAR, rain, uas({ group: 3 })),
+      fourthRoot(uas({ group: 3 }), M_RAIN),
+    )
+    relClose(
+      effectiveDetectRangeM(RADAR, clear, uas({ group: 3 }), 0.5),
+      fourthRoot(uas({ group: 3 }), 1),
+    )
   })
 
   it('the environment multiplier enters the SNR as the fourth power', () => {
@@ -598,7 +648,10 @@ describe('radar Pd model', () => {
       9,
     )
     // Rain at R reads the same Pd as clear air at R / m.
-    expect(radarPdAt(RADAR, rain, t, 9000)).toBeCloseTo(radarPdAt(RADAR, clear, t, 9000 / M_RAIN)!, 9)
+    expect(radarPdAt(RADAR, rain, t, 9000)).toBeCloseTo(
+      radarPdAt(RADAR, clear, t, 9000 / M_RAIN)!,
+      9,
+    )
   })
 
   it('radarPdAt is null without a Pd model, 0 beyond the instrumented range, and falls with range', () => {
@@ -625,7 +678,9 @@ describe('radar Pd model', () => {
     expect(effectiveDetectRangeM(RADAR, rain, t, 0.9)).toBe(
       rangeForPd(cal, rcsM2For(t), 0.9, M_RAIN, swerlingFor(t)),
     )
-    expect(effectiveDetectRangeM(RADAR, clear, t, 0.9)).toBeLessThan(effectiveDetectRangeM(RADAR, clear, t))
+    expect(effectiveDetectRangeM(RADAR, clear, t, 0.9)).toBeLessThan(
+      effectiveDetectRangeM(RADAR, clear, t),
+    )
     const capped: SensorSpec = { ...RADAR, instrumentedRangeM: 9000 }
     expect(effectiveDetectRangeM(capped, clear, t, 0.1)).toBe(9000)
     const plan: SensorSpec = { ...RADAR, rangeBasis: 'planning' }
@@ -648,7 +703,7 @@ describe('radar Pd model', () => {
     // R90 = 4000 * (100 * 2.96512 / 8.10265)^0.25 = 9,838.15 m.
     expect(swerlingFor(MOHAJER)).toBe(3)
     const [r50, r90] = pdContoursM(GIRAFFE, clear, MOHAJER, [0.5, 0.9])
-    expect(r50).toBeCloseTo(13147.30, 2)
+    expect(r50).toBeCloseTo(13147.3, 2)
     expect(r90).toBeCloseTo(9838.15, 2)
     expect(snrForPd(0.5, 1e-6, 3)).toBeCloseTo(15.6809, 4)
     expect(snrForPd(0.9, 1e-6, 3)).toBeCloseTo(53.6532, 4)
@@ -673,6 +728,9 @@ describe('radar Pd model', () => {
     const fw = uas({ group: 3, airframe: 'fixed-wing' })
     const ratio = effectiveDetectRangeM(RADAR, clear, fw) / fourthRoot(fw, 1)
     expect(ratio).toBeCloseTo(1.04822, 5)
-    expect(pdAtRange(radarCalibration(RADAR), rcsM2For(fw), fourthRoot(fw, 1), 1, 3)).toBeCloseTo(0.586, 3)
+    expect(pdAtRange(radarCalibration(RADAR), rcsM2For(fw), fourthRoot(fw, 1), 1, 3)).toBeCloseTo(
+      0.586,
+      3,
+    )
   })
 })

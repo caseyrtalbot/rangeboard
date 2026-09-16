@@ -15,41 +15,70 @@ import { SURVIVAL_LABELS } from '../labels'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
-import {
-  bareSpans,
-  DASH,
-  Legend,
-  PfTag,
-  Rows,
-  useDetailRun,
-} from './detailRows'
+import { bareSpans, DASH, Legend, PfTag, Rows, useDetailRun } from './detailRows'
 
 /** The threat pane: the track file at t, the phase ladder, Pd by sensor and survival. */
 export function ThreatDetail({ entity }: { entity: Entity }) {
   const run = useDetailRun()
-  const { scenario, setSimTime, units, view, sweep, report, t, durationS, horizon, tObs, untouched } = run
+  const {
+    scenario,
+    setSimTime,
+    units,
+    view,
+    sweep,
+    report,
+    t,
+    durationS,
+    horizon,
+    tObs,
+    untouched,
+  } = run
   const model = modelFor(scenario, entity)
   const uasSpec = model?.uas
   const color = entityInk(entity, model)
 
-  const readout = useMemo(() => threatReadoutAt({ scenario, entity, trial: view,
-    horizonS: untouched ? null : tObs, tS: tObs, horizon, units, trialSweep: sweep }),
-  [scenario, entity, view, tObs, horizon, units, sweep, untouched])
+  const readout = useMemo(
+    () =>
+      threatReadoutAt({
+        scenario,
+        entity,
+        trial: view,
+        horizonS: untouched ? null : tObs,
+        tS: tObs,
+        horizon,
+        units,
+        trialSweep: sweep,
+      }),
+    [scenario, entity, view, tObs, horizon, units, sweep, untouched],
+  )
   const state = readout.state
 
   const series = run.series?.threats[entity.id] ?? []
-  const phaseRow = run.series?.phase.find(row => row.id === entity.id)
+  const phaseRow = run.series?.phase.find((row) => row.id === entity.id)
   const barePhaseRows = phaseRow ? [bareSpans(phaseRow)] : []
-  const pd = series.filter(s => s.id.startsWith('pd.') && s.values.some(Number.isFinite))
-  const residual = series.find(s => s.id === 'residual')
+  const pd = series.filter((s) => s.id.startsWith('pd.') && s.values.some(Number.isFinite))
+  const residual = series.find((s) => s.id === 'residual')
   const shipCount = Math.max(1, entity.formation?.count ?? 1)
   const survival = residual ? { ...residual, label: SURVIVAL_LABELS.survives } : null
-  const survivalMarks: ChartMark[] = (run.series?.marks[entity.id] ?? []).filter(mark => mark.label === 'ARR' || mark.label === 'CPA')
-  const effect = report?.events.find(e => e.uasId === entity.id && e.killDelta === 1 && e.tEffectS <= tObs)
+  const survivalMarks: ChartMark[] = (run.series?.marks[entity.id] ?? []).filter(
+    (mark) => mark.label === 'ARR' || mark.label === 'CPA',
+  )
+  const effect = report?.events.find(
+    (e) => e.uasId === entity.id && e.killDelta === 1 && e.tEffectS <= tObs,
+  )
   if (effect) survivalMarks.push({ tS: effect.tEffectS, label: 'FX', color: 'danger' })
 
-  const phaseLegend: LegendEntry[] = [...new Map((phaseRow?.spans ?? []).map(span => [span.label,
-    { label: span.label ?? 'Track-file phase', color: span.color ?? color }] as const)).values()]
+  const phaseLegend: LegendEntry[] = [
+    ...new Map(
+      (phaseRow?.spans ?? []).map(
+        (span) =>
+          [
+            span.label,
+            { label: span.label ?? 'Track-file phase', color: span.color ?? color },
+          ] as const,
+      ),
+    ).values(),
+  ]
 
   const fileRows = useMemo<DetailRow[]>(() => {
     const holdIds = state?.holdingSensorIds ?? []
@@ -57,7 +86,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     let slantText = DASH
     let bearingText = DASH
     if (sensor) {
-      const measured = state?.sensors.find(s => s.sensorId === sensor.id)
+      const measured = state?.sensors.find((s) => s.sensorId === sensor.id)
       slantText = measured?.slantRangeM != null ? (measured.slantRangeM / 1000).toFixed(1) : DASH
       bearingText = `${Math.round(bearingDeg(sensor.pos, readout.position))}`
     }
@@ -65,16 +94,22 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       label: row.label,
       value: row.value,
       tag:
-        row.id === 'altitude' && entity.altitudeFt == null
-          ? <PfTag model={model} field="altitudeFt" absent />
-          : null,
+        row.id === 'altitude' && entity.altitudeFt == null ? (
+          <PfTag model={model} field="altitudeFt" absent />
+        ) : null,
     }))
     rows.push(
       { label: 'Slant range', value: slantText, unit: sensor ? ' km' : undefined },
       { label: 'Bearing', value: bearingText, unit: sensor ? ' °' : undefined },
-      { label: horizon.scoped ? 'Engage status' : 'Engage status (full run)', value: readout.engageText },
+      {
+        label: horizon.scoped ? 'Engage status' : 'Engage status (full run)',
+        value: readout.engageText,
+      },
       { label: horizon.scoped ? 'Warning' : 'Warning (full path)', value: readout.warningText },
-      { label: horizon.scoped ? 'First detect' : 'First detect (full path)', value: readout.firstDetectText },
+      {
+        label: horizon.scoped ? 'First detect' : 'First detect (full path)',
+        value: readout.firstDetectText,
+      },
     )
     if (uasSpec) {
       rows.push(
@@ -121,7 +156,11 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       <DetailSection
         id="file"
         title="Track file"
-        meta={horizon.scoped ? `${readout.cursorText} observed` : `${readout.cursorText} cursor · full-path/full-run fields marked`}
+        meta={
+          horizon.scoped
+            ? `${readout.cursorText} observed`
+            : `${readout.cursorText} cursor · full-path/full-run fields marked`
+        }
       >
         {readout.ghostLine ? <p className="detail-ghost">{readout.ghostLine}</p> : null}
         <Rows rows={fileRows} />
@@ -132,29 +171,43 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
         </DetailSection>
       ) : null}
       <DetailSection id="phase" title="Phase" meta="Simulated trial">
-        <Ladder rows={barePhaseRows} durationS={durationS} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} />
+        <Ladder
+          rows={barePhaseRows}
+          durationS={durationS}
+          tS={t}
+          horizonS={horizon.scoped ? horizon.horizonS : undefined}
+          onScrub={setSimTime}
+        />
         {phaseLegend.length > 0 ? <Legend entries={phaseLegend} /> : null}
       </DetailSection>
       <DetailSection
         id="pd"
         title="Pd by sensor"
-        meta={pd.length > 0 ? `${pd.length} sensor${pd.length === 1 ? '' : 's'} · sampled measurements` : null}
+        meta={
+          pd.length > 0
+            ? `${pd.length} sensor${pd.length === 1 ? '' : 's'} · sampled measurements`
+            : null
+        }
       >
         {pd.length > 0 ? (
-          <TimeSeries series={pd} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pd" />
+          <TimeSeries
+            series={pd}
+            tS={t}
+            horizonS={horizon.scoped ? horizon.horizonS : undefined}
+            onScrub={setSimTime}
+            yDomain={[0, 1]}
+            yLabel="Pd"
+          />
         ) : (
           <p className="muted small">No radar Pd model observed this track.</p>
         )}
       </DetailSection>
-      <DetailSection
-        id="survival"
-        title="Survival"
-        meta="Simulated trial counts"
-      >
+      <DetailSection id="survival" title="Survival" meta="Simulated trial counts">
         {survival ? (
           <TimeSeries
             series={[survival]}
-            tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined}
+            tS={t}
+            horizonS={horizon.scoped ? horizon.horizonS : undefined}
             onScrub={setSimTime}
             yDomain={[0, shipCount]}
             yLabel="members"

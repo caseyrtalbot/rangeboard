@@ -20,7 +20,8 @@ const DASH = '—'
 const NA = 'not available'
 const NO_ASSET = 'no defended asset placed'
 
-export type TrialOutcomeWord = 'defeated (hard)' | 'defeated (mission)' | 'leaked' | 'active' | 'no path'
+export type TrialOutcomeWord =
+  'defeated (hard)' | 'defeated (mission)' | 'leaked' | 'active' | 'no path'
 
 export interface TrialOutcomeRow {
   id: string
@@ -41,27 +42,44 @@ export function trialOutcomeRows(view: TrialResultView): TrialOutcomeRow[] {
     const reached = values.filter((value): value is number => value != null && value <= t)
     return reached.length ? Math.min(...reached) : null
   }
-  return view.assessments.flatMap(assessment => {
-    const entity = view.scenario.entities.find(candidate => candidate.id === assessment.uasId)
-    if (!entity || !view.scenario.paths.some(path => path.entityId === entity.id)) return []
-    const events = view.attrition.events.filter(event => event.uasId === entity.id && event.tS <= t)
+  return view.assessments.flatMap((assessment) => {
+    const entity = view.scenario.entities.find((candidate) => candidate.id === assessment.uasId)
+    if (!entity || !view.scenario.paths.some((path) => path.entityId === entity.id)) return []
+    const events = view.attrition.events.filter(
+      (event) => event.uasId === entity.id && event.tS <= t,
+    )
     const members = trialMemberStatesAt(view, entity.id, t)
     // A formation leaks if any member leaks; partial defeat never labels it defeated.
-    const states: TrialOutcomeWord[] = assessment.status === 'no-path' ? ['no path']
-      : members.some(member => member.leakageCredit) ? ['leaked']
-        : members.some(member => member.outcome === 'active') || members.length === 0 ? ['active']
-          : [
-            ...(members.some(member => member.outcome === 'hard-kill') ? ['defeated (hard)' as const] : []),
-            ...(members.some(member => member.outcome === 'mission-kill') ? ['defeated (mission)' as const] : []),
-          ]
-    return [{
-      id: entity.id, track: entity.name,
-      detect: first([assessment.firstDetectS]),
-      identify: first([assessment.classificationAtS.hostileAtS]),
-      engage: first(events.map(event => event.tS)),
-      effect: first(events.filter(event => event.killDelta === 1).map(event => event.tEffectS)),
-      salvos: events.length, result: states.join(' · '), states,
-    }]
+    const states: TrialOutcomeWord[] =
+      assessment.status === 'no-path'
+        ? ['no path']
+        : members.some((member) => member.leakageCredit)
+          ? ['leaked']
+          : members.some((member) => member.outcome === 'active') || members.length === 0
+            ? ['active']
+            : [
+                ...(members.some((member) => member.outcome === 'hard-kill')
+                  ? ['defeated (hard)' as const]
+                  : []),
+                ...(members.some((member) => member.outcome === 'mission-kill')
+                  ? ['defeated (mission)' as const]
+                  : []),
+              ]
+    return [
+      {
+        id: entity.id,
+        track: entity.name,
+        detect: first([assessment.firstDetectS]),
+        identify: first([assessment.classificationAtS.hostileAtS]),
+        engage: first(events.map((event) => event.tS)),
+        effect: first(
+          events.filter((event) => event.killDelta === 1).map((event) => event.tEffectS),
+        ),
+        salvos: events.length,
+        result: states.join(' · '),
+        states,
+      },
+    ]
   })
 }
 
@@ -138,7 +156,12 @@ const telemetryCache = new WeakMap<TrialSweep, Map<string, TrialTelemetryState>>
 const eligibilityCache = new WeakMap<TrialResultView, Map<string, number>>()
 
 /** Only retained facts reached at this horizon; never runs a forecast sweep. */
-export function trialTelemetryAt(view: TrialResultView, uasId: string, horizonS: number, supplied?: TrialSweep): TrialTelemetryState {
+export function trialTelemetryAt(
+  view: TrialResultView,
+  uasId: string,
+  horizonS: number,
+  supplied?: TrialSweep,
+): TrialTelemetryState {
   const t = Math.min(Math.max(0, horizonS), view.observedThroughS)
   const sweep = supplied?.timeS === t ? supplied : trialSweepAt(view, t)
   const cached = telemetryCache.get(sweep)?.get(uasId)
@@ -149,35 +172,63 @@ export function trialTelemetryAt(view: TrialResultView, uasId: string, horizonS:
     eligibilityCache.set(view, cutoffs)
   }
   const members = trialMemberStatesAt(view, uasId, t)
-  const assessment = view.assessments.find(a => a.uasId === uasId)
-  const sensors = sweep.sensors.filter(s => s.threatId === uasId && s.stateAtTime !== 'not-held')
-  const holdingSensorIds = sensors.map(s => s.sensorId)
-  const coasting = sensors.length > 0 && sensors.every(s => s.stateAtTime === 'coasting')
+  const assessment = view.assessments.find((a) => a.uasId === uasId)
+  const sensors = sweep.sensors.filter((s) => s.threatId === uasId && s.stateAtTime !== 'not-held')
+  const holdingSensorIds = sensors.map((s) => s.sensorId)
+  const coasting = sensors.length > 0 && sensors.every((s) => s.stateAtTime === 'coasting')
   const cls = assessment?.classificationAtS
   const hasReached = (time: number | null | undefined) => time != null && time <= t
-  const classification = hasReached(cls?.hostileAtS) ? 'hostile' : hasReached(cls?.suspectedAtS) ? 'suspected' : 'unknown'
-  const events = view.attrition.events.filter(e => e.uasId === uasId && e.tS <= t)
-  const activeCount = members.filter(m => m.outcome === 'active').length
-  const hardKillCount = members.filter(m => m.outcome === 'hard-kill').length
-  const missionKillCount = members.filter(m => m.outcome === 'mission-kill').length
-  const targetedNow = t < (cutoffs.get(uasId) ?? Infinity) && activeCount > 0 && assessment?.windowS != null && t >= assessment.windowS[0] && t <= assessment.windowS[1]
-  const phase: TrackPhase = members.length > 0 && hardKillCount === members.length ? 'ghost'
-    : events.length > 0 ? 'engaged' : targetedNow ? 'targeted'
-      : sensors.length > 0 ? classification === 'hostile' ? 'identified' : 'tracked'
-        : hasReached(assessment?.firstDetectS) ? 'searching' : 'undetected'
+  const classification = hasReached(cls?.hostileAtS)
+    ? 'hostile'
+    : hasReached(cls?.suspectedAtS)
+      ? 'suspected'
+      : 'unknown'
+  const events = view.attrition.events.filter((e) => e.uasId === uasId && e.tS <= t)
+  const activeCount = members.filter((m) => m.outcome === 'active').length
+  const hardKillCount = members.filter((m) => m.outcome === 'hard-kill').length
+  const missionKillCount = members.filter((m) => m.outcome === 'mission-kill').length
+  const targetedNow =
+    t < (cutoffs.get(uasId) ?? Infinity) &&
+    activeCount > 0 &&
+    assessment?.windowS != null &&
+    t >= assessment.windowS[0] &&
+    t <= assessment.windowS[1]
+  const phase: TrackPhase =
+    members.length > 0 && hardKillCount === members.length
+      ? 'ghost'
+      : events.length > 0
+        ? 'engaged'
+        : targetedNow
+          ? 'targeted'
+          : sensors.length > 0
+            ? classification === 'hostile'
+              ? 'identified'
+              : 'tracked'
+            : hasReached(assessment?.firstDetectS)
+              ? 'searching'
+              : 'undetected'
   const state: TrialTelemetryState = {
-    phase, holdingSensorIds, coasting, sensors, classification, targetedNow,
-    firstSalvoAtS: events.length ? Math.min(...events.map(e => e.tS)) : null,
-    kineticSalvos: events.filter(e => e.channelClass === 'kinetic').length,
-    deSalvos: events.filter(e => e.channelClass === 'directed-energy').length,
-    jamSalvos: events.filter(e => e.channelClass === 'ew').length,
-    incomingSalvos: events.filter(e => {
+    phase,
+    holdingSensorIds,
+    coasting,
+    sensors,
+    classification,
+    targetedNow,
+    firstSalvoAtS: events.length ? Math.min(...events.map((e) => e.tS)) : null,
+    kineticSalvos: events.filter((e) => e.channelClass === 'kinetic').length,
+    deSalvos: events.filter((e) => e.channelClass === 'directed-energy').length,
+    jamSalvos: events.filter((e) => e.channelClass === 'ew').length,
+    incomingSalvos: events.filter((e) => {
       const release = engagementReleaseS(e, view.scenario)
       return e.channelClass === 'kinetic' && release != null && release <= t && t < e.tEffectS
     }).length,
-    effectsLanded: events.filter(e => e.tEffectS <= t).length,
-    activeCount, hardKillCount, missionKillCount, shipCount: members.length,
-    jammedNow: members.some(m => m.jamState?.jammed), members,
+    effectsLanded: events.filter((e) => e.tEffectS <= t).length,
+    activeCount,
+    hardKillCount,
+    missionKillCount,
+    shipCount: members.length,
+    jammedNow: members.some((m) => m.jamState?.jammed),
+    members,
   }
   const byId = telemetryCache.get(sweep) ?? new Map<string, TrialTelemetryState>()
   byId.set(uasId, state)
@@ -215,36 +266,57 @@ export function threatReadoutAt({
   horizon = FULL_RUN,
 }: ThreatReadoutInput): ThreatReadoutView {
   const cap = horizon.scoped ? Math.min(tS, horizon.horizonS) : tS
-  const tObs = trial && horizonS !== null ? Math.min(cap, horizonS ?? cap, trial.observedThroughS) : -Infinity
+  const tObs =
+    trial && horizonS !== null ? Math.min(cap, horizonS ?? cap, trial.observedThroughS) : -Infinity
   const untouched = tObs === -Infinity
   const observationHorizon = { scoped: true, horizonS: tObs }
-  const assessment = trial?.assessments.find(candidate => candidate.uasId === entity.id)
-  const state = trial && assessment && !untouched ? trialTelemetryAt(trial, entity.id, tObs, trialSweep) : undefined
+  const assessment = trial?.assessments.find((candidate) => candidate.uasId === entity.id)
+  const state =
+    trial && assessment && !untouched
+      ? trialTelemetryAt(trial, entity.id, tObs, trialSweep)
+      : undefined
   const model = modelFor(scenario, entity)
   const uas = model?.uas
-  const member = state?.members.find(m => m.memberIdx === 0)
+  const member = state?.members.find((m) => m.memberIdx === 0)
   const position = member?.position ?? entity.pos
   const anchorPosition = anchor?.position ?? position
   const headingDeg = Math.round(member?.heading ?? entity.headingDeg)
   const phase: TrackPhase = state?.phase ?? 'undetected'
-  const pillLabel = state?.coasting && (phase === 'tracked' || phase === 'identified') ? 'COAST'
-    : phase === 'ghost' ? 'HARD KILL'
-      : state && state.shipCount > 0 && state.missionKillCount === state.shipCount ? 'MISSION KILL' : PHASE_STYLE[phase].label
+  const pillLabel =
+    state?.coasting && (phase === 'tracked' || phase === 'identified')
+      ? 'COAST'
+      : phase === 'ghost'
+        ? 'HARD KILL'
+        : state && state.shipCount > 0 && state.missionKillCount === state.shipCount
+          ? 'MISSION KILL'
+          : PHASE_STYLE[phase].label
 
   const path = scenario.paths.find((candidate) => candidate.entityId === entity.id)
-  const speedMps = member?.outcome === 'hard-kill' ? 0 : path ? pathSpeed(scenario, path) : (uas?.cruiseSpeedMps ?? null)
+  const speedMps =
+    member?.outcome === 'hard-kill'
+      ? 0
+      : path
+        ? pathSpeed(scenario, path)
+        : (uas?.cruiseSpeedMps ?? null)
   const holdIds = state?.holdingSensorIds ?? []
-  const holdNames = holdIds
-    .map(id => {
-      const name = scenario.entities.find(candidate => candidate.id === id)?.name ?? id
-      const sensor = state?.sensors.find(sensor => sensor.sensorId === id)
-      const mode = sensor?.stateAtTime === 'coasting' ? 'coast' : sensor?.stateAtTime === 'measured' ? 'measured' : 'held'
-      return `${name} (${mode}${sensor?.lastMeasurementTimeS != null ? ` · last T+${formatTime(sensor.lastMeasurementTimeS)}` : ''})`
-    })
-  const continuity = assessment && !untouched ? trackQualityAt(assessment, tObs)?.continuity : undefined
+  const holdNames = holdIds.map((id) => {
+    const name = scenario.entities.find((candidate) => candidate.id === id)?.name ?? id
+    const sensor = state?.sensors.find((sensor) => sensor.sensorId === id)
+    const mode =
+      sensor?.stateAtTime === 'coasting'
+        ? 'coast'
+        : sensor?.stateAtTime === 'measured'
+          ? 'measured'
+          : 'held'
+    return `${name} (${mode}${sensor?.lastMeasurementTimeS != null ? ` · last T+${formatTime(sensor.lastMeasurementTimeS)}` : ''})`
+  })
+  const continuity =
+    assessment && !untouched ? trackQualityAt(assessment, tObs)?.continuity : undefined
   const altitudeText = `${threatAltitudeFt(scenario, entity).toLocaleString()} ft AGL`
 
-  const hasAsset = trial?.hasActiveAsset ?? scenario.entities.some((candidate) => candidate.kind === 'asset' && candidate.enabled !== false)
+  const hasAsset =
+    trial?.hasActiveAsset ??
+    scenario.entities.some((candidate) => candidate.kind === 'asset' && candidate.enabled !== false)
   const cpaAsset = assessment?.cpaAssetId
     ? scenario.entities.find((candidate) => candidate.id === assessment.cpaAssetId)
     : undefined
@@ -312,7 +384,7 @@ export function threatReadoutAt({
     {
       id: 'ew',
       label: 'EW',
-      value: state ? state.jammedNow ? 'JAMMED' : 'no sampled jam effect' : NA,
+      value: state ? (state.jammedNow ? 'JAMMED' : 'no sampled jam effect') : NA,
       horizon: 'cursor',
     },
     {
@@ -326,13 +398,17 @@ export function threatReadoutAt({
     {
       id: 'effects',
       label: 'Effects',
-      value: state ? `${state.effectsLanded} landed · ${state.hardKillCount} hard kill · ${state.missionKillCount} mission kill` : NA,
+      value: state
+        ? `${state.effectsLanded} landed · ${state.hardKillCount} hard kill · ${state.missionKillCount} mission kill`
+        : NA,
       horizon: 'cursor',
     },
     {
       id: 'residual',
       label: 'Residual',
-      value: state ? `${state.activeCount} active · ${state.hardKillCount} hard kill · ${state.missionKillCount} mission kill · ${state.shipCount} members` : NA,
+      value: state
+        ? `${state.activeCount} active · ${state.hardKillCount} hard kill · ${state.missionKillCount} mission kill · ${state.shipCount} members`
+        : NA,
       horizon: 'cursor',
     },
     { id: 'cpa', label: 'CPA (full path)', value: cpaText, horizon: 'full-path' },
@@ -349,30 +425,61 @@ export function threatReadoutAt({
     },
   ]
 
-  const ghostLine = state && state.hardKillCount + state.missionKillCount > 0
-    ? `${state.hardKillCount} hard-killed members frozen at effect positions · ${state.missionKillCount} mission-killed members follow the planned path.`
-    : null
+  const ghostLine =
+    state && state.hardKillCount + state.missionKillCount > 0
+      ? `${state.hardKillCount} hard-killed members frozen at effect positions · ${state.missionKillCount} mission-killed members follow the planned path.`
+      : null
 
-  const planningRows = rows.filter(row => row.horizon === 'full-path').map(row => ({
-    ...row, label: row.id === 'arrival' ? 'Planned arrival' : 'Planned CPA',
-  }))
-  const telemetryRows = rows.filter(row => row.horizon !== 'full-path')
-  telemetryRows.push({ id: 'arrival', label: 'Reached arrival', horizon: 'cursor',
-    value: state && assessment?.arrivalS != null && reached(assessment.arrivalS, observationHorizon)
-      ? `T+${formatTime(assessment.arrivalS)} · ${state.members.filter(m => m.leakageCredit).length} undefeated members` : DASH })
+  const planningRows = rows
+    .filter((row) => row.horizon === 'full-path')
+    .map((row) => ({
+      ...row,
+      label: row.id === 'arrival' ? 'Planned arrival' : 'Planned CPA',
+    }))
+  const telemetryRows = rows.filter((row) => row.horizon !== 'full-path')
+  telemetryRows.push({
+    id: 'arrival',
+    label: 'Reached arrival',
+    horizon: 'cursor',
+    value:
+      state && assessment?.arrivalS != null && reached(assessment.arrivalS, observationHorizon)
+        ? `T+${formatTime(assessment.arrivalS)} · ${state.members.filter((m) => m.leakageCredit).length} undefeated members`
+        : DASH,
+  })
   if (untouched) {
     for (const row of telemetryRows) {
       if (row.horizon !== 'cursor') continue
-      row.value = row.id === 'hold' ? '0 sensors'
-        : row.id === 'salvos' ? '0 kinetic · 0 DE · 0 EW · 0 inbound'
-          : row.id === 'effects' ? '0 landed · 0 hard kill · 0 mission kill' : DASH
+      row.value =
+        row.id === 'hold'
+          ? '0 sensors'
+          : row.id === 'salvos'
+            ? '0 kinetic · 0 DE · 0 EW · 0 inbound'
+            : row.id === 'effects'
+              ? '0 landed · 0 hard kill · 0 mission kill'
+              : DASH
     }
   }
-  const firstSensor = scenario.entities.find((candidate) => candidate.id === assessment?.firstDetectSensorId)
-  const firstDetectText = assessment?.firstDetectS != null && reached(assessment.firstDetectS, observationHorizon)
-    ? `${firstSensor?.name ?? DASH} · T+${formatTime(assessment.firstDetectS)}` : DASH
-  const warningText = hasAsset && assessment?.warningS != null && (reached(assessment.firstDetectS, observationHorizon) && reached(assessment.arrivalS, observationHorizon)) ? formatTime(assessment.warningS) : DASH
-  const engageText = untouched ? DASH : state?.firstSalvoAtS != null ? 'engaged' : state?.targetedNow ? 'targeted' : DASH
+  const firstSensor = scenario.entities.find(
+    (candidate) => candidate.id === assessment?.firstDetectSensorId,
+  )
+  const firstDetectText =
+    assessment?.firstDetectS != null && reached(assessment.firstDetectS, observationHorizon)
+      ? `${firstSensor?.name ?? DASH} · T+${formatTime(assessment.firstDetectS)}`
+      : DASH
+  const warningText =
+    hasAsset &&
+    assessment?.warningS != null &&
+    reached(assessment.firstDetectS, observationHorizon) &&
+    reached(assessment.arrivalS, observationHorizon)
+      ? formatTime(assessment.warningS)
+      : DASH
+  const engageText = untouched
+    ? DASH
+    : state?.firstSalvoAtS != null
+      ? 'engaged'
+      : state?.targetedNow
+        ? 'targeted'
+        : DASH
 
   return {
     rows: telemetryRows,
@@ -388,6 +495,8 @@ export function threatReadoutAt({
     anchorPosition,
     altitudeText,
     cursorText: untouched ? DASH : `T+${formatTime(tObs)}`,
-    sourceHorizon: untouched ? 'CONFIGURATION · TRIAL NOT OBSERVED' : `SIMULATED TRIAL · THROUGH T+${formatTime(tObs)} · ALT CONSTANT`,
+    sourceHorizon: untouched
+      ? 'CONFIGURATION · TRIAL NOT OBSERVED'
+      : `SIMULATED TRIAL · THROUGH T+${formatTime(tObs)} · ALT CONSTANT`,
   }
 }

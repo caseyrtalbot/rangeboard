@@ -23,13 +23,23 @@ import { kineticEffectProbability } from './pk/kinetic'
  */
 
 const APKWS = {
-  effectorType: 'interceptor', minRangeM: 0, maxRangeM: 10000, engageTimeS: 0,
-  lethalRadiusM: 10, guidanceNoiseM: 1,
+  effectorType: 'interceptor',
+  minRangeM: 0,
+  maxRangeM: 10000,
+  engageTimeS: 0,
+  lethalRadiusM: 10,
+  guidanceNoiseM: 1,
 } as EffectorSpec
 
 const GROUP_4 = {
-  group: 4, airframe: 'fixed-wing', cruiseSpeedMps: 40, maxSpeedMps: 60,
-  enduranceMin: 60, altBandFt: [0, 5000], navMode: 'gps', emissionsNote: '',
+  group: 4,
+  airframe: 'fixed-wing',
+  cruiseSpeedMps: 40,
+  maxSpeedMps: 60,
+  enduranceMin: 60,
+  altBandFt: [0, 5000],
+  navMode: 'gps',
+  emissionsNote: '',
 } as UasSpec
 
 describe('interceptor-miss datasheet validation', () => {
@@ -42,21 +52,29 @@ describe('interceptor-miss datasheet validation', () => {
     [10, 0.3934693402873666],
   ])('reproduces the 10 m effective-radius table at sigma %s m', (sigmaM, expected) => {
     const predictionSigmaM = Math.sqrt(Math.max(0, sigmaM * sigmaM - 1))
-    expect(kineticEffectProbability(APKWS, {
-      basePk: 1,
-      uas: GROUP_4,
-      slantM: 1000,
-      predictionSigmaM,
-      fallback: false,
-    })).toBeCloseTo(expected, 12)
+    expect(
+      kineticEffectProbability(APKWS, {
+        basePk: 1,
+        uas: GROUP_4,
+        slantM: 1000,
+        predictionSigmaM,
+        fallback: false,
+      }),
+    ).toBeCloseTo(expected, 12)
   })
 })
 
 describe('gun-burst datasheet and timeline validation', () => {
   const gun = {
-    effectorType: 'gun', minRangeM: 0, maxRangeM: 3000, engageTimeS: 0,
-    dispersionMils: 1, fireControlErrorMils: 1,
-    burstRounds: 20, rateOfFireRpm: 1200, muzzleVelocityMps: 1050,
+    effectorType: 'gun',
+    minRangeM: 0,
+    maxRangeM: 3000,
+    engageTimeS: 0,
+    dispersionMils: 1,
+    fireControlErrorMils: 1,
+    burstRounds: 20,
+    rateOfFireRpm: 1200,
+    muzzleVelocityMps: 1050,
   } as EffectorSpec
 
   it('matches a hand-derived 20-projectile burst and last-projectile effect time', () => {

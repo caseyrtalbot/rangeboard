@@ -12,13 +12,7 @@
  *   row is a stated count (`successes` of `trials`) under a Jeffreys prior
  *   (`a = successes + 0.5`, `b = failures + 0.5`), so an all-success row keeps a spread.
  */
-import type {
-  Connection,
-  FireDoctrine,
-  Scenario,
-  SpecModel,
-  Spread,
-} from '../model/types'
+import type { Connection, FireDoctrine, Scenario, SpecModel, Spread } from '../model/types'
 import { effectiveDoctrine } from '../model/types'
 import { rcsM2For } from '../model/rcsFactors'
 import { bdaSFor, defaultLinkLatencyS, targetSFor, trackInitSFor } from './doctrineFactors'
@@ -184,7 +178,10 @@ function sampleModel(model: SpecModel, doctrine: FireDoctrine, u: ParamSampler):
     if (!Number.isFinite(nominal)) continue
     const v = sampleSpread(nominal, spread, uv)
     next = next ?? cloneSpec(model)
-    const spec = (next.sensor ?? next.effector ?? next.uas ?? next.c2) as unknown as Record<string, unknown>
+    const spec = (next.sensor ?? next.effector ?? next.uas ?? next.c2) as unknown as Record<
+      string,
+      unknown
+    >
     spec[field] = v
   }
   return next ?? model
@@ -230,9 +227,7 @@ function nominalOf(model: SpecModel, field: string, doctrine: FireDoctrine): num
 export function sampleScenario(scenario: Scenario, u: ParamSampler): Scenario {
   const doctrine = effectiveDoctrine(scenario)
   const inUse = modelsInUse(scenario)
-  const library = scenario.library.map((m) =>
-    inUse.has(m.id) ? sampleModel(m, doctrine, u) : m,
-  )
+  const library = scenario.library.map((m) => (inUse.has(m.id) ? sampleModel(m, doctrine, u) : m))
   const kindOf = new Map(scenario.entities.map((e) => [e.id, e.kind]))
   const latency = PF_SPREAD.latencyS?.spread
   const connections: Connection[] = scenario.connections.map((c) => {

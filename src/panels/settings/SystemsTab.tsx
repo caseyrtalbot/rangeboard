@@ -105,7 +105,8 @@ function EditRow({
   const [reason, setReason] = useState('')
   const setOverride = useOverrides((s) => s.setOverride)
   const numbers = parts.map(Number)
-  const ready = reason.trim() !== '' && parts.every((p) => p.trim() !== '') && numbers.every(Number.isFinite)
+  const ready =
+    reason.trim() !== '' && parts.every((p) => p.trim() !== '') && numbers.every(Number.isFinite)
 
   function apply(event: React.FormEvent) {
     event.preventDefault()
@@ -119,7 +120,10 @@ function EditRow({
       <td colSpan={COLUMNS}>
         <form className="field-row systems-edit" onSubmit={apply}>
           {parts.map((part, i) => (
-            <Field key={i} label={parts.length === 1 ? `${field} value` : `${field} value ${i + 1}`}>
+            <Field
+              key={i}
+              label={parts.length === 1 ? `${field} value` : `${field} value ${i + 1}`}
+            >
               <input
                 type="number"
                 step="any"
@@ -129,14 +133,27 @@ function EditRow({
             </Field>
           ))}
           <Field label={`Reason for the ${field} override`}>
-            <input type="text" required value={reason} onChange={(e) => setReason(e.target.value)} />
+            <input
+              type="text"
+              required
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
           </Field>
-          <button type="submit" className="mini" disabled={!ready}
-            aria-label={`Apply the ${field} override on ${model.name}`}>
+          <button
+            type="submit"
+            className="mini"
+            disabled={!ready}
+            aria-label={`Apply the ${field} override on ${model.name}`}
+          >
             Apply
           </button>
-          <button type="button" className="mini" onClick={onDone}
-            aria-label={`Cancel the ${field} override on ${model.name}`}>
+          <button
+            type="button"
+            className="mini"
+            onClick={onDone}
+            aria-label={`Cancel the ${field} override on ${model.name}`}
+          >
             Cancel
           </button>
         </form>
@@ -180,30 +197,47 @@ function FieldRow({
         <td>
           {valueText(value, row?.unit)}
           {seedVersion != null && (
-            <> <span className="chip det" title="This load filled the field from the seed library">
-              seed v{seedVersion}
-            </span></>
+            <>
+              {' '}
+              <span className="chip det" title="This load filled the field from the seed library">
+                seed v{seedVersion}
+              </span>
+            </>
           )}
         </td>
         <td>{override ? `override ${valueText(override.value, row?.unit)}` : '—'}</td>
         <td className="prose">{grade}</td>
         <td>{layer}</td>
-        <td className="prose" title={row?.date}>{sourceText(row, value)}</td>
+        <td className="prose" title={row?.date}>
+          {sourceText(row, value)}
+        </td>
         <td className="prose">{spreadLabel(spreadFor(model, field))}</td>
         <td className="systems-actions">
-          <button type="button" className="mini" aria-label={`Edit ${field} on ${model.name}`}
-            onClick={() => onEdit(editing ? null : field)}>
+          <button
+            type="button"
+            className="mini"
+            aria-label={`Edit ${field} on ${model.name}`}
+            onClick={() => onEdit(editing ? null : field)}
+          >
             Edit
           </button>
           {family && (
-            <button type="button" className="mini" aria-label={`Calibrate ${field} on ${model.name}`}
-              onClick={() => onCalibrate(calibrating ? null : field)}>
+            <button
+              type="button"
+              className="mini"
+              aria-label={`Calibrate ${field} on ${model.name}`}
+              onClick={() => onCalibrate(calibrating ? null : field)}
+            >
               Calibrate
             </button>
           )}
           {override && (
-            <button type="button" className="mini" aria-label={`Reset ${field} on ${model.name}`}
-              onClick={() => resetField(model.id, field)}>
+            <button
+              type="button"
+              className="mini"
+              aria-label={`Reset ${field} on ${model.name}`}
+              onClick={() => resetField(model.id, field)}
+            >
               Reset
             </button>
           )}
@@ -213,8 +247,14 @@ function FieldRow({
       {calibrating && family && typeof value === 'number' && (
         <tr>
           <td colSpan={COLUMNS}>
-            <CalibrateDialog model={model} field={field} family={family} value={value}
-              unit={row?.unit ?? (family === 'proportion' ? 'fraction' : 's')} onClose={() => onCalibrate(null)} />
+            <CalibrateDialog
+              model={model}
+              field={field}
+              family={family}
+              value={value}
+              unit={row?.unit ?? (family === 'proportion' ? 'fraction' : 's')}
+              onClose={() => onCalibrate(null)}
+            />
           </td>
         </tr>
       )}
@@ -223,7 +263,11 @@ function FieldRow({
 }
 
 /** One library model in use, with every field the contract calls a field. */
-function ModelGroup({ model, overrides, notice }: {
+function ModelGroup({
+  model,
+  overrides,
+  notice,
+}: {
   model: SpecModel
   overrides: Override[]
   notice: LoadNotice | null
@@ -238,8 +282,13 @@ function ModelGroup({ model, overrides, notice }: {
     <section className="systems-group" aria-label={model.name}>
       <div className="systems-head">
         <h4>{model.name}</h4>
-        <button type="button" className="mini" disabled={mine.length === 0}
-          aria-label={`Reset every override on ${model.name}`} onClick={() => resetModel(model.id)}>
+        <button
+          type="button"
+          className="mini"
+          disabled={mine.length === 0}
+          aria-label={`Reset every override on ${model.name}`}
+          onClick={() => resetModel(model.id)}
+        >
           Reset system
         </button>
       </div>
@@ -260,10 +309,20 @@ function ModelGroup({ model, overrides, notice }: {
           </thead>
           <tbody>
             {fields.map(([field, value]) => (
-              <FieldRow key={field} model={model} field={field} value={value} editing={editing === field}
-                override={mine.find((o) => o.field === field)} onEdit={setEditing}
-                calibrating={calibrating === field} onCalibrate={setCalibrating}
-                seedVersion={adopted.has(`${model.id}/${field}`) ? notice!.dataPackageVersion : null} />
+              <FieldRow
+                key={field}
+                model={model}
+                field={field}
+                value={value}
+                editing={editing === field}
+                override={mine.find((o) => o.field === field)}
+                onEdit={setEditing}
+                calibrating={calibrating === field}
+                onCalibrate={setCalibrating}
+                seedVersion={
+                  adopted.has(`${model.id}/${field}`) ? notice!.dataPackageVersion : null
+                }
+              />
             ))}
           </tbody>
         </table>
@@ -301,13 +360,20 @@ export function SystemsTab() {
           {models.length} {models.length === 1 ? 'system' : 'systems'} in use, {overrides.length}{' '}
           {overrides.length === 1 ? 'override' : 'overrides'}
         </span>
-        <button type="button" className="mini" disabled={overrides.length === 0}
-          aria-label="Reset every override" onClick={resetAll}>
+        <button
+          type="button"
+          className="mini"
+          disabled={overrides.length === 0}
+          aria-label="Reset every override"
+          onClick={resetAll}
+        >
           Reset all
         </button>
       </div>
       {models.length === 0 ? (
-        <p className="systems-empty">No system is in use. Place a sensor, effector or threat on the board.</p>
+        <p className="systems-empty">
+          No system is in use. Place a sensor, effector or threat on the board.
+        </p>
       ) : (
         models.map((model) => (
           <ModelGroup key={model.id} model={model} overrides={overrides} notice={notice} />

@@ -137,7 +137,8 @@ export const CARD_TEMPLATES: CardTemplate[] = [
   {
     name: 'Airport',
     category: 'Sensitive site',
-    purpose: 'Assess DTI along approach and departure corridors without interfering with airport RF.',
+    purpose:
+      'Assess DTI along approach and departure corridors without interfering with airport RF.',
     customerQuestion: 'How early is a drone incursion into the corridor detected and confirmed?',
     threatProfile: 'G1-G2 quad or fixed-wing, 100-2000 ft AGL, corridor crossing',
     measures: MEASURES_DTI,
@@ -169,7 +170,8 @@ export const CARD_TEMPLATES: CardTemplate[] = [
   {
     name: 'Outdoor concert',
     category: 'Public event',
-    purpose: 'Assess acoustic and RF DTI performance under high crowd noise and dense spectrum use.',
+    purpose:
+      'Assess acoustic and RF DTI performance under high crowd noise and dense spectrum use.',
     customerQuestion: 'Which technologies still confirm tracks under noise and EM load?',
     threatProfile: 'G1 quad, night, low altitude, mixed with authorized drones',
     measures: MEASURES_DTI,
@@ -186,7 +188,8 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     name: 'International summit',
     category: 'Public event',
     purpose: 'Assess multi-layer DTI with strict rules of engagement and VIP movement corridors.',
-    customerQuestion: 'Are confirmation and identification achieved before any engagement decision?',
+    customerQuestion:
+      'Are confirmation and identification achieved before any engagement decision?',
     threatProfile: 'G1-G2 mixed, including decoys and simultaneous tracks',
     measures: MEASURES_DTI,
   },

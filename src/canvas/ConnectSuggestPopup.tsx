@@ -76,7 +76,10 @@ export function ConnectSuggestPopup() {
             <div className="suggest-info">
               <div>{name(partnerId)}</div>
               <div className="suggest-meta">
-                <ProvMark kind={CONFIDENCE_MARK[confidence]} title={`${CONFIDENCE_BADGE[confidence]} · ${c.verdict.note}`} />
+                <ProvMark
+                  kind={CONFIDENCE_MARK[confidence]}
+                  title={`${CONFIDENCE_BADGE[confidence]} · ${c.verdict.note}`}
+                />
                 {c.verdict.label}
                 {c.verdict.medium ? ` · ${c.verdict.medium}` : ''}
               </div>
@@ -107,7 +110,10 @@ export function ConnectSuggestPopup() {
               <div className="suggest-info">
                 <div>{p.name}</div>
                 <div className="suggest-meta">
-                  <ProvMark kind={CONFIDENCE_MARK[p.confidence]} title={`${CONFIDENCE_BADGE[p.confidence]} · ${p.note}`} />
+                  <ProvMark
+                    kind={CONFIDENCE_MARK[p.confidence]}
+                    title={`${CONFIDENCE_BADGE[p.confidence]} · ${p.note}`}
+                  />
                   {p.role.replace('-', ' ')}
                 </div>
               </div>

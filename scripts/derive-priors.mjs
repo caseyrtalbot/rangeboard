@@ -40,7 +40,8 @@ export function classOf(file) {
     const t = a.sensorType
     let band = 'any'
     if (t === 'eo-ir') band = a.eoBand ?? 'dual'
-    else if (t === 'rf') band = Array.isArray(a.rfBands) && a.rfBands.length ? [...a.rfBands].sort().join('+') : 'any'
+    else if (t === 'rf')
+      band = Array.isArray(a.rfBands) && a.rfBands.length ? [...a.rfBands].sort().join('+') : 'any'
     // SensorSpec carries no target-group key (refRcsM2 and refSpanM are numbers), so 'any'.
     return `sensor/${t}/${band}/any`
   }
@@ -74,7 +75,10 @@ function sampleSd(values) {
 /** The prior for one field from its L1 members, or null under MIN_MEMBERS. */
 function fieldPrior(field, members) {
   const multiplicative = isMultiplicative(field)
-  const usable = members.filter(({ value }) => typeof value === 'number' && Number.isFinite(value) && (!multiplicative || value > 0))
+  const usable = members.filter(
+    ({ value }) =>
+      typeof value === 'number' && Number.isFinite(value) && (!multiplicative || value > 0),
+  )
   if (usable.length < MIN_MEMBERS) return null
   const ids = usable.map((m) => m.id)
   const values = usable.map((m) => m.value)
@@ -154,7 +158,9 @@ function literal(value, pad = '') {
   }
   const keys = Object.keys(value)
   if (!keys.length) return '{}'
-  const body = keys.map((k) => `${inner}${IDENT.test(k) ? k : quote(k)}: ${literal(value[k], inner)}`).join(',\n')
+  const body = keys
+    .map((k) => `${inner}${IDENT.test(k) ? k : quote(k)}: ${literal(value[k], inner)}`)
+    .join(',\n')
   return `{\n${body},\n${pad}}`
 }
 
@@ -166,7 +172,10 @@ export function render(priors) {
 function wantedFiles(priors) {
   const out = new Map()
   for (const prior of Object.values(priors)) {
-    out.set(path.join(PRIORS_DIR, `${classFileName(prior.class)}.json`), JSON.stringify(prior, null, 2) + '\n')
+    out.set(
+      path.join(PRIORS_DIR, `${classFileName(prior.class)}.json`),
+      JSON.stringify(prior, null, 2) + '\n',
+    )
   }
   out.set(OUT, render(priors))
   return out
@@ -175,7 +184,10 @@ function wantedFiles(priors) {
 function currentPriorFiles() {
   const dir = path.join(ROOT, PRIORS_DIR)
   if (!fs.existsSync(dir)) return []
-  return fs.readdirSync(dir).filter((n) => n.endsWith('.json')).map((n) => path.join(PRIORS_DIR, n))
+  return fs
+    .readdirSync(dir)
+    .filter((n) => n.endsWith('.json'))
+    .map((n) => path.join(PRIORS_DIR, n))
 }
 
 function main() {
@@ -190,7 +202,9 @@ function main() {
     }
     for (const rel of currentPriorFiles()) if (!wanted.has(rel)) stale.push(`${rel} (stale file)`)
     if (stale.length) {
-      console.error(`Class priors are stale; run \`npm run priors:build\` and review the diff:\n  ${stale.join('\n  ')}`)
+      console.error(
+        `Class priors are stale; run \`npm run priors:build\` and review the diff:\n  ${stale.join('\n  ')}`,
+      )
       process.exit(1)
     }
     console.log(`${PRIORS_DIR} and ${OUT} are current (${classes} classes).`)

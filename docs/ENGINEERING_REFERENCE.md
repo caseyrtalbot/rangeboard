@@ -206,7 +206,7 @@ Breaking one of these breaks the app.
   evidence metadata, resolves scenario/entity/link defaults, and uses `uncertainFields`
   for effective spreads and draw identities. Raw model specs are conservatively included;
   object key order is ignored and array order is preserved. See the input matrix in
-  `docs/field-te/C1_COMPLETION.md`. A second worker slot runs `runSensitivity` and
+  `docs/field-te/C1_COMPLETION.md` in Git history. A second worker slot runs `runSensitivity` and
   `runSweep` on demand.
   `engagementPicture` stays the deterministic path; the replicate loop never touches its cache.
 - **Factor sweep** (`src/playback/sweepFactors.ts`, the sweep section of `mcRun.ts`):
@@ -1156,8 +1156,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
 
 Code follows the existing two-space, single-quote, no-semicolon style. Prefer named
 exports and interfaces for object shapes, JSDoc on exported symbols, short rationale
-comments and lines near 100 characters. There is no source formatter. Do not add unused
-exports or TODO markers.
+comments and lines near 100 characters. Prettier (`prettier.config.mjs`, printWidth 100)
+owns `.ts`, `.tsx` and `.mjs` layout; oxlint owns lint. Generated modules
+(`*.generated.ts`, `src/io/runtimeSchema.ts`) stay out of the formatter so byte
+checks remain exact. Application `tsconfig` files enable `strict`, `noImplicitOverride`
+and `noImplicitReturns`. Do not add unused exports or TODO markers.
 
 `src/ui/ErrorBoundary.tsx` isolates the Board root. Its fallback uses `State` with Export
 and Reload. Export reads the Board scenario; a caught render error never clears records.

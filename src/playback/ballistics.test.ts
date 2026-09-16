@@ -9,8 +9,13 @@ import {
 } from './ballistics'
 
 const gun = {
-  effectorType: 'gun', minRangeM: 0, maxRangeM: 3000, engageTimeS: 0,
-  burstRounds: 20, rateOfFireRpm: 1200, muzzleVelocityMps: 1050,
+  effectorType: 'gun',
+  minRangeM: 0,
+  maxRangeM: 3000,
+  engageTimeS: 0,
+  burstRounds: 20,
+  rateOfFireRpm: 1200,
+  muzzleVelocityMps: 1050,
 } as EffectorSpec
 
 it('resolves projectile count, cyclic spacing and burst duration', () => {

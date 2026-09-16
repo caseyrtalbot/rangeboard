@@ -82,8 +82,7 @@ export function threatWezList(scenario: Scenario): ThreatWez[] {
     if (radiusM == null) continue
     const path = scenario.paths.find((p) => p.entityId === e.id)
     const hasPath = !!path && path.points.length >= 2
-    const planCenter =
-      kind === 'impact' && hasPath ? path!.points[path!.points.length - 1] : e.pos
+    const planCenter = kind === 'impact' && hasPath ? path!.points[path!.points.length - 1] : e.pos
     out.push({ uasId: e.id, kind, radiusM, planCenter, hasPath, count: 1 })
   }
   // Raids built toward one target end every path at the same point: merge coincident

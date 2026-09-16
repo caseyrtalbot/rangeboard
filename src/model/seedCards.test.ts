@@ -59,7 +59,9 @@ describe('describeThreats', () => {
 
   it('groups by designator with ship counts, group, altitude band, and cruise speed', () => {
     const s = emptyScenario()
-    s.entities.push(ent('uas', 'lib-mavic3', { formation: { count: 3, shape: 'line', spacingM: 50 } }))
+    s.entities.push(
+      ent('uas', 'lib-mavic3', { formation: { count: 3, shape: 'line', spacingM: 50 } }),
+    )
     // 12 m/s cruise rounds to 23 kt.
     expect(describeThreats(s)).toBe(
       '3x THR-G1-Q-01, Group 1, 50-1200 ft AGL, cruise 23 kt, 1 formation',

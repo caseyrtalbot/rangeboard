@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Entity, Scenario, SensorSpec } from '../model/types'
-import { DEFAULT_REQUIREMENT_THRESHOLDS, TRACK_DROP_MISSES, TRACK_INIT_M, TRACK_INIT_N } from '../model/types'
+import {
+  DEFAULT_REQUIREMENT_THRESHOLDS,
+  TRACK_DROP_MISSES,
+  TRACK_INIT_M,
+  TRACK_INIT_N,
+} from '../model/types'
 import { dist, pointInSector } from '../geometry/geo'
 import { mOfN } from '../analysis/radarPd'
 import { DT, stepIndex } from './clock'
@@ -38,12 +43,23 @@ const RADAR: SensorSpec = {
 function fixture(radar: Partial<SensorSpec>): Scenario {
   const scenario = emptyScenario()
   scenario.library.push({
-    id: 'tst-radar', name: 'Radar', description: '', color: '#0f0', builtin: false, kind: 'sensor',
+    id: 'tst-radar',
+    name: 'Radar',
+    description: '',
+    color: '#0f0',
+    builtin: false,
+    kind: 'sensor',
     sensor: { ...RADAR, ...radar },
   })
   const radarEnt: Entity = {
-    id: 'radar', name: 'R', kind: 'sensor', specId: 'tst-radar', pos: { x: 0, y: 0 },
-    headingDeg: 0, color: null, notes: '',
+    id: 'radar',
+    name: 'R',
+    kind: 'sensor',
+    specId: 'tst-radar',
+    pos: { x: 0, y: 0 },
+    headingDeg: 0,
+    color: null,
+    notes: '',
   }
   scenario.entities.push(radarEnt)
   return scenario
@@ -142,11 +158,17 @@ describe('false-track process', () => {
     // The load without a sink is the same load.
     const silent = prepareFalseTracks(scenario, policy, horizonS)
     expect(silent.created).toBe(load.created)
-    for (let i = 0; i <= stepIndex(horizonS); i += 1) expect(silent.countAt(i * DT)).toBe(load.countAt(i * DT))
+    for (let i = 0; i <= stepIndex(horizonS); i += 1)
+      expect(silent.countAt(i * DT)).toBe(load.countAt(i * DT))
   })
 
   it('a false track is truth-free: no uas, source false, inside the coverage, speed in the band', () => {
-    const scenario = fixture({ falseAlarmRatePerScan: 300, sectorDeg: 90, rangeAccuracyM: 10, azimuthAccuracyDeg: 1 })
+    const scenario = fixture({
+      falseAlarmRatePerScan: 300,
+      sectorDeg: 90,
+      rangeAccuracyM: 10,
+      azimuthAccuracyDeg: 1,
+    })
     scenario.entities[0].headingDeg = 45
     const estimates: TrackEstimate[] = []
     prepareFalseTracks(scenario, monteCarloPolicy(11, 0, T), 200, (e) => estimates.push(e))
@@ -173,7 +195,9 @@ describe('false-track process', () => {
     // The covariance grows while the track coasts.
     const first = estimates.find((e) => e.misses === 0)!
     const later = estimates.find((e) => e.id === first.id && e.misses === TRACK_DROP_MISSES - 1)!
-    expect(later.covariance[0] + later.covariance[5]).toBeGreaterThan(first.covariance[0] + first.covariance[5])
+    expect(later.covariance[0] + later.covariance[5]).toBeGreaterThan(
+      first.covariance[0] + first.covariance[5],
+    )
   })
 
   it('the noFalseTracks switch yields none and consumes no draw', () => {
@@ -215,7 +239,14 @@ describe('trial integration', () => {
     scenario.seed = 4821
     scenario.doctrine!.enabled = false
     const entity = (id: string, kind: Entity['kind'], specId: string, y: number): Entity => ({
-      id, kind, specId, name: id, pos: { x: 0, y }, headingDeg: 0, color: null, notes: '',
+      id,
+      kind,
+      specId,
+      name: id,
+      pos: { x: 0, y },
+      headingDeg: 0,
+      color: null,
+      notes: '',
     })
     scenario.entities = [
       entity('radar', 'sensor', 'lib-giraffe1x', 0),
@@ -227,8 +258,18 @@ describe('trial integration', () => {
       { id: 'link-1', fromId: 'radar', toId: 'c2', label: '' },
       { id: 'link-2', fromId: 'c2', toId: 'effector', label: '' },
     ]
-    scenario.paths = [{ id: 'path', entityId: 'uas', points: [{ x: 0, y: -5000 }, { x: 0, y: -800 }],
-      speedMps: 30, startDelayS: 0 }]
+    scenario.paths = [
+      {
+        id: 'path',
+        entityId: 'uas',
+        points: [
+          { x: 0, y: -5000 },
+          { x: 0, y: -800 },
+        ],
+        speedMps: 30,
+        startDelayS: 0,
+      },
+    ]
     const radar = scenario.library.find((model) => model.id === 'lib-giraffe1x')!
     radar.sensor = { ...radar.sensor!, falseAlarmRatePerScan: 300 }
     return scenario
@@ -248,8 +289,14 @@ describe('trial integration', () => {
     expect(falseTracks.length).toBeGreaterThan(0)
     expect(falseTracks.every((t) => t.uasId === null && t.sensorIds[0] === 'radar')).toBe(true)
     expect(tracks.some((t) => t.source !== 'false')).toBe(true)
-    const policy = monteCarloPolicy(manifest.seed, manifest.replicateIndex, resolvedThresholds(scenario))
-    expect(result.report).toEqual(resolveEngagements(scenario, assessAllThreats(scenario, policy), policy))
+    const policy = monteCarloPolicy(
+      manifest.seed,
+      manifest.replicateIndex,
+      resolvedThresholds(scenario),
+    )
+    expect(result.report).toEqual(
+      resolveEngagements(scenario, assessAllThreats(scenario, policy), policy),
+    )
     expect(runTrial(structuredClone(scenario), structuredClone(manifest))).toEqual(result)
   })
 })

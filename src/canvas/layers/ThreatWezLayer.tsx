@@ -7,7 +7,13 @@ import { trialTrackStatesAt } from '../../playback/trialTrackState'
 import { entityActive } from '../../model/types'
 import type { LiveTrack } from '../../playback/tracks'
 import type { ImpactSeverity, ThreatWez } from '../../analysis/impact'
-import { SEVERITY_LABEL, severityFor, threatWezList, wezKindFor, wezRadiusM } from '../../analysis/impact'
+import {
+  SEVERITY_LABEL,
+  severityFor,
+  threatWezList,
+  wezKindFor,
+  wezRadiusM,
+} from '../../analysis/impact'
 import type { DisplayUnits } from '../../geometry/geo'
 import { formatDistance } from '../../geometry/geo'
 import { DANGER_INK } from '../../ui/ink'
@@ -30,25 +36,40 @@ export interface TrialArrival {
 
 /** Realized leakage credit survives later hard or mission kills. */
 // oxlint-disable-next-line react/only-export-components
-export function visibleImpactArrivals(trial: TrialResultView | null, horizonS: number | null): TrialArrival[] {
+export function visibleImpactArrivals(
+  trial: TrialResultView | null,
+  horizonS: number | null,
+): TrialArrival[] {
   if (!trial || horizonS == null || !trial.hasActiveAsset) return []
   const arrivals: TrialArrival[] = []
   for (const track of trialTrackStatesAt(trial, horizonS)) {
-    const ships = track.members.filter(member => member.leakageCredit).length
+    const ships = track.members.filter((member) => member.leakageCredit).length
     if (!ships) continue
-    const assessment = trial.assessments.find(a => a.uasId === track.entity.id)
+    const assessment = trial.assessments.find((a) => a.uasId === track.entity.id)
     const assetId = assessment?.assetId
     if (!assetId || assessment.arrivalS == null) continue
-    const asset = trial.scenario.entities.find(e => e.id === assetId && e.kind === 'asset' && entityActive(e))
+    const asset = trial.scenario.entities.find(
+      (e) => e.id === assetId && e.kind === 'asset' && entityActive(e),
+    )
     if (!asset) continue
-    const model = trial.scenario.library.find(m => m.id === track.entity.specId)
+    const model = trial.scenario.library.find((m) => m.id === track.entity.specId)
     if (wezKindFor(model) === 'none') continue
     const radius = wezRadiusM(model)
-    const inside = assessment.cpaAssetId === assetId && (radius == null || (assessment.cpaDistanceM != null && assessment.cpaDistanceM <= radius))
+    const inside =
+      assessment.cpaAssetId === assetId &&
+      (radius == null || (assessment.cpaDistanceM != null && assessment.cpaDistanceM <= radius))
     const kg = model?.uas?.warheadKg
     const warheadKg = kg == null ? null : kg * ships
     const severity = severityFor(inside, ships, warheadKg ?? 0)
-    if (severity) arrivals.push({ uasId: track.entity.id, assetId, arrivalS: assessment.arrivalS, ships, warheadKg, severity })
+    if (severity)
+      arrivals.push({
+        uasId: track.entity.id,
+        assetId,
+        arrivalS: assessment.arrivalS,
+        ships,
+        warheadKg,
+        severity,
+      })
   }
   return arrivals.sort((a, b) => a.arrivalS - b.arrivalS)
 }
@@ -134,7 +155,12 @@ const Badge = memo(function Badge({
     <Group x={x} y={y} scaleX={1 / k} scaleY={1 / k} opacity={opacity}>
       <Group x={xOffPx} y={-26}>
         {severity === 'severe' && pulse != null && (
-          <Circle radius={15 + 4 * pulse} stroke={DANGER_INK} strokeWidth={2} opacity={0.8 - 0.5 * pulse} />
+          <Circle
+            radius={15 + 4 * pulse}
+            stroke={DANGER_INK}
+            strokeWidth={2}
+            opacity={0.8 - 0.5 * pulse}
+          />
         )}
         <RegularPolygon sides={3} radius={11} fill={DANGER_INK} />
         <Text
@@ -148,7 +174,16 @@ const Badge = memo(function Badge({
           width={22}
           align="center"
         />
-        {count > 1 && <Text text={`×${count}`} fontFamily={MONO} fontSize={10} fill={DANGER_INK} x={13} y={-9} />}
+        {count > 1 && (
+          <Text
+            text={`×${count}`}
+            fontFamily={MONO}
+            fontSize={10}
+            fill={DANGER_INK}
+            x={13}
+            y={-9}
+          />
+        )}
         <Text
           text={label}
           fontFamily={MONO}
@@ -169,7 +204,13 @@ const Badge = memo(function Badge({
  * Memoized on the zone, its live centre and its caption, so a frame re-renders
  * only the standoff rings that ride a moving track.
  */
-const WezRing = memo(function WezRing({ wez, cx, cy, label, k }: {
+const WezRing = memo(function WezRing({
+  wez,
+  cx,
+  cy,
+  label,
+  k,
+}: {
   wez: ThreatWez
   cx: number
   cy: number
@@ -259,7 +300,10 @@ export function ThreatWezLayer({
 
   // Playback: a badge per arrived leaker, stacked per asset in arrival order.
   const liveBadges = useMemo(() => {
-    const arrived = visibleImpactArrivals(trial, horizonS == null ? null : Math.min(displayTimeS, horizonS))
+    const arrived = visibleImpactArrivals(
+      trial,
+      horizonS == null ? null : Math.min(displayTimeS, horizonS),
+    )
     const stackIndex = new Map<string, number>()
     return arrived.map((i) => {
       const idx = stackIndex.get(i.assetId!) ?? 0

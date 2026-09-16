@@ -33,12 +33,18 @@ class RangeWorker {
     if (m.type === 'cancel') this.cancelled = true
     else this.pending = request as McRangeRequest
   })
-  terminate = vi.fn(() => { this.terminated = true })
+  terminate = vi.fn(() => {
+    this.terminated = true
+  })
 
-  constructor() { RangeWorker.instances.push(this) }
+  constructor() {
+    RangeWorker.instances.push(this)
+  }
 
   /** Deliver one message as the worker would; a terminated worker is silent. */
-  send(data: unknown): void { if (!this.terminated) this.onmessage?.({ data }) }
+  send(data: unknown): void {
+    if (!this.terminated) this.onmessage?.({ data })
+  }
 
   /**
    * Run the chunk it holds to its end, or to its next checkpoint when a cancel
@@ -101,7 +107,12 @@ function run(scenario: Scenario, size: number, runId = 'pool-run') {
   const messages: McWorkerMessage[] = []
   const polls: PoolProgress[] = []
   const pool = createWorkerPool({ spawn, size })
-  const started = pool.start(scenario, runId, (m) => messages.push(m), (p) => polls.push(p))
+  const started = pool.start(
+    scenario,
+    runId,
+    (m) => messages.push(m),
+    (p) => polls.push(p),
+  )
   const summary = (): McSummary => {
     const last = messages.at(-1)
     if (last?.type !== 'done') throw new Error(`expected done, got ${last?.type}`)
@@ -161,7 +172,12 @@ describe('worker pool', () => {
       expect(RangeWorker.ran.map(([, end]) => end).sort((a, b) => b - a)[0]).toBe(40)
       // Progress ends at the configured count and every replicate is accounted for.
       const progress = pooled.messages.filter((m) => m.type === 'progress')
-      expect(progress.at(-1)).toEqual({ type: 'progress', runId: pooled.runId, done: 40, total: 40 })
+      expect(progress.at(-1)).toEqual({
+        type: 'progress',
+        runId: pooled.runId,
+        done: 40,
+        total: 40,
+      })
       expect(pooled.polls).toHaveLength(progress.length)
       const last = pooled.polls.at(-1)!
       expect(last.workers).toBe(size)
@@ -176,7 +192,11 @@ describe('worker pool', () => {
 
   it('stops on the half-width rule and finishes on the contiguous prefix only', () => {
     const scenario = base({
-      replicates: 60, targetHalfWidth: 0.2, stopFloor: 10, stopCap: 60, uncertainty: 'aleatory',
+      replicates: 60,
+      targetHalfWidth: 0.2,
+      stopFloor: 10,
+      stopCap: 60,
+      uncertainty: 'aleatory',
     })
     // The single-worker loop stops early on the same laydown, at its own cadence.
     expect(runReplicates(scenario).stopped).toEqual({ rule: 'halfWidth', at: 10 })
@@ -203,7 +223,11 @@ describe('worker pool', () => {
 
   it('stops at the cap when the target never holds', () => {
     const scenario = base({
-      replicates: 60, targetHalfWidth: 0.001, stopFloor: 10, stopCap: 25, uncertainty: 'total',
+      replicates: 60,
+      targetHalfWidth: 0.001,
+      stopFloor: 10,
+      stopCap: 25,
+      uncertainty: 'total',
     })
     const pooled = run(scenario, 3)
     RangeWorker.drain()
@@ -211,7 +235,10 @@ describe('worker pool', () => {
     expect(summary.stopped).toEqual({ rule: 'replicates', at: 25 })
     expect(summary.replicates).toBe(25)
     expect(pooled.messages.filter((m) => m.type === 'progress').at(-1)).toEqual({
-      type: 'progress', runId: pooled.runId, done: 25, total: 25,
+      type: 'progress',
+      runId: pooled.runId,
+      done: 25,
+      total: 25,
     })
   })
 
@@ -228,7 +255,11 @@ describe('worker pool', () => {
     // The two cancelled chunks each end one replicate in, past the gap at 14.
     expect(summary.stopped).toEqual({ rule: 'cancelled', at: 15 })
     expect(summary.replicates).toBe(15)
-    expect(RangeWorker.ran).toEqual([[0, 14], [14, 15], [28, 29]])
+    expect(RangeWorker.ran).toEqual([
+      [0, 14],
+      [14, 15],
+      [28, 29],
+    ])
   })
 
   it('terminates a silent worker after the grace period and reports the timeout', () => {
@@ -241,7 +272,9 @@ describe('worker pool', () => {
     expect(pooled.messages.some((m) => m.type === 'error')).toBe(false)
     vi.advanceTimersByTime(2)
     expect(pooled.messages.at(-1)).toEqual({
-      type: 'error', runId: pooled.runId, message: CANCEL_TIMEOUT_MESSAGE,
+      type: 'error',
+      runId: pooled.runId,
+      message: CANCEL_TIMEOUT_MESSAGE,
     })
     expect(RangeWorker.instances.every((w) => w.terminated)).toBe(true)
     // A callback from a released worker is dropped.
@@ -265,7 +298,12 @@ describe('worker pool', () => {
     const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
     const first = run(scenario, 2, 'first')
     const stale = RangeWorker.instances[0]
-    const second = first.pool.start(scenario, 'second', () => {}, () => {})
+    const second = first.pool.start(
+      scenario,
+      'second',
+      () => {},
+      () => {},
+    )
     expect(second).toBe(true)
     expect(stale.terminated).toBe(true)
     stale.onmessage?.({ data: { type: 'range-done', runId: 'first' } })
@@ -281,7 +319,14 @@ describe('worker pool', () => {
     vi.stubGlobal('Worker', undefined)
     const messages: McWorkerMessage[] = []
     const pool = createWorkerPool({ spawn })
-    expect(pool.start(scenario, 'none', (m) => messages.push(m), () => {})).toBe(false)
+    expect(
+      pool.start(
+        scenario,
+        'none',
+        (m) => messages.push(m),
+        () => {},
+      ),
+    ).toBe(false)
     expect(RangeWorker.instances).toHaveLength(0)
     expect(messages).toHaveLength(0)
   })
@@ -298,7 +343,14 @@ describe('worker pool', () => {
         return spawn()
       },
     })
-    expect(pool.start(scenario, 'blocked', (m) => messages.push(m), () => {})).toBe(true)
+    expect(
+      pool.start(
+        scenario,
+        'blocked',
+        (m) => messages.push(m),
+        () => {},
+      ),
+    ).toBe(true)
     expect(messages).toEqual([{ type: 'error', runId: 'blocked', message: 'Worker blocked' }])
     expect(RangeWorker.instances).toHaveLength(1)
     expect(RangeWorker.instances[0].terminated).toBe(true)
@@ -339,7 +391,9 @@ describe('mc.worker run-range route', () => {
 
   it('drives the range loop and posts the partial the pool merges', async () => {
     const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
-    await context.onmessage!({ data: { type: 'run-range', runId: 'w', scenario, start: 4, end: 16 } })
+    await context.onmessage!({
+      data: { type: 'run-range', runId: 'w', scenario, start: 4, end: 16 },
+    })
     const expected = (() => {
       const loop = replicateRangeLoop(scenario, 4, 16)
       let next = loop.next()
@@ -349,7 +403,9 @@ describe('mc.worker run-range route', () => {
     expect({ ...finished(), elapsedMs: 0 }).toEqual({ ...expected, elapsedMs: 0 })
     // Progress counts within the range, ascending, and ends at its last replicate.
     const progress = posted().slice(0, -1)
-    expect(progress.map((m) => m.type === 'range-progress' && m.total)).toEqual(progress.map(() => 12))
+    expect(progress.map((m) => m.type === 'range-progress' && m.total)).toEqual(
+      progress.map(() => 12),
+    )
     const lastProgress = progress.at(-1)!
     expect(lastProgress.type === 'range-progress' && lastProgress.done).toBe(12)
   })
@@ -359,7 +415,9 @@ describe('mc.worker run-range route', () => {
     let now = 0
     vi.spyOn(performance, 'now').mockImplementation(() => (now += 100))
     const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
-    const running = context.onmessage!({ data: { type: 'run-range', runId: 'w', scenario, start: 0, end: 20 } })
+    const running = context.onmessage!({
+      data: { type: 'run-range', runId: 'w', scenario, start: 0, end: 20 },
+    })
     // The driver is parked at its first yield; the cancel is read when it resumes.
     await context.onmessage!({ data: { type: 'cancel', runId: 'w' } })
     await running
@@ -368,7 +426,9 @@ describe('mc.worker run-range route', () => {
 
   it('a cancel for another run is ignored', async () => {
     const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
-    const running = context.onmessage!({ data: { type: 'run-range', runId: 'w', scenario, start: 0, end: 3 } })
+    const running = context.onmessage!({
+      data: { type: 'run-range', runId: 'w', scenario, start: 0, end: 3 },
+    })
     await context.onmessage!({ data: { type: 'cancel', runId: 'other' } })
     await running
     expect(finished().indices).toEqual([0, 1, 2])

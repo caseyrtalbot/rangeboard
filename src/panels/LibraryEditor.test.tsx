@@ -51,7 +51,9 @@ describe('LibraryEditor sources', () => {
     useStore.getState().select({ libraryId: 'lib-giraffe1x' })
     const html = render()
     const entries = [...html.matchAll(/<details class="source-entry">([\s\S]*?)<\/details>/g)]
-    const rows = useStore.getState().scenario.library.find((model) => model.id === 'lib-giraffe1x')!.provenance!
+    const rows = useStore
+      .getState()
+      .scenario.library.find((model) => model.id === 'lib-giraffe1x')!.provenance!
     expect(entries).toHaveLength(rows.length)
     for (const [index, entry] of entries.entries()) {
       for (const field of ['Field', 'Value', 'Basis', 'Spread', 'Source', 'Date']) {

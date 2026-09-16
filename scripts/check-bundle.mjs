@@ -19,8 +19,12 @@ export function measureBundle(directory) {
   const initial = new Set()
   const preloads = new Set()
   for (const tag of html.matchAll(/<(script|link)\b[^>]*>/gi)) {
-    const attrs = Object.fromEntries([...tag[0].matchAll(/([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)]
-      .map((match) => [match[1].toLowerCase(), match[2] ?? match[3]]))
+    const attrs = Object.fromEntries(
+      [...tag[0].matchAll(/([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map((match) => [
+        match[1].toLowerCase(),
+        match[2] ?? match[3],
+      ]),
+    )
     const rels = (attrs.rel ?? '').toLowerCase().split(/\s+/)
     if (tag[1].toLowerCase() === 'script' && attrs.src) {
       entries.add(attrs.src)
@@ -36,7 +40,8 @@ export function measureBundle(directory) {
   if (entries.size !== 1) throw new Error(`Expected one built entry script; found ${entries.size}`)
   const files = new Map()
   const measure = (url) => {
-    if (/^(?:[a-z][\w+.-]*:|\/\/)/i.test(url)) throw new Error(`Cannot measure external initial asset: ${url}`)
+    if (/^(?:[a-z][\w+.-]*:|\/\/)/i.test(url))
+      throw new Error(`Cannot measure external initial asset: ${url}`)
     const file = resolve(root, decodeURIComponent(url.split(/[?#]/, 1)[0]).replace(/^\//, ''))
     const name = relative(root, file)
     if (name === '..' || name.startsWith(`..${sep}`)) throw new Error(`Asset outside dist: ${url}`)
@@ -47,7 +52,7 @@ export function measureBundle(directory) {
     return name
   }
   const initialFiles = new Set([...initial].map(measure))
-  const preloadFiles = new Set([...preloads].map(measure).filter(file => !initialFiles.has(file)))
+  const preloadFiles = new Set([...preloads].map(measure).filter((file) => !initialFiles.has(file)))
   const total = (names) => [...names].reduce((sum, name) => sum + files.get(name), 0)
   const entryFile = measure([...entries][0])
   const initialBytes = total(initialFiles)
@@ -64,8 +69,10 @@ export function measureBundle(directory) {
 
 export function budgetFailures(result, budget = BUNDLE_BUDGET) {
   return [
-    result.entryBytes > budget.entry && `Entry exceeds ${budget.entry} bytes gzip-9: ${result.entryBytes}`,
-    result.initialBytes > budget.initial && `Initial JavaScript + CSS exceeds ${budget.initial} bytes gzip-9: ${result.initialBytes}`,
+    result.entryBytes > budget.entry &&
+      `Entry exceeds ${budget.entry} bytes gzip-9: ${result.entryBytes}`,
+    result.initialBytes > budget.initial &&
+      `Initial JavaScript + CSS exceeds ${budget.initial} bytes gzip-9: ${result.initialBytes}`,
   ].filter(Boolean)
 }
 
@@ -75,7 +82,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     console.log(JSON.stringify(result, null, 2))
     const failures = budgetFailures(result)
     if (failures.length) throw new Error(failures.join('\n'))
-    console.log(`Bundle budget passed: entry <= ${BUNDLE_BUDGET.entry / 1000} kB; initial JavaScript + CSS <= ${BUNDLE_BUDGET.initial / 1000} kB (gzip -9).`)
+    console.log(
+      `Bundle budget passed: entry <= ${BUNDLE_BUDGET.entry / 1000} kB; initial JavaScript + CSS <= ${BUNDLE_BUDGET.initial / 1000} kB (gzip -9).`,
+    )
   } catch (error) {
     console.error(error.message)
     process.exitCode = 1

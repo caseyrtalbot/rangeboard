@@ -2,7 +2,7 @@
 
 Captured 2026-09-14 on local `main` at `e199461` with the fixes in the working tree.
 Nothing was committed or pushed. This closes CR-01 to CR-04 of the
-[Phase 3 integration review](../../../CodeReview.md).
+then-current `docs/CodeReview.md`.
 
 ## Fixes
 

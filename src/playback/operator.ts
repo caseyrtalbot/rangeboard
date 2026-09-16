@@ -188,7 +188,9 @@ export function createOperatorQueue(
       // timeline holds; a decision faster than the median never shortens a
       // doctrine dwell, and the floor that drops it is reported.
       const raw = base * overloadFactor(loadAt(c2Id, tS), spec.operatorTrackCapacity) - medianS
-      return raw < 0 ? { extraS: 0, floored: true, decided: true } : { extraS: raw, floored: false, decided: true }
+      return raw < 0
+        ? { extraS: 0, floored: true, decided: true }
+        : { extraS: raw, floored: false, decided: true }
     },
   }
 }

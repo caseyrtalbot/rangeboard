@@ -301,7 +301,11 @@ export type SensitivityResponse = 'leakers' | 'kills' | 'firstDetectS' | 'minWar
 
 /** The five responses, in the order the row records them. */
 export const SENSITIVITY_RESPONSES: readonly SensitivityResponse[] = [
-  'leakers', 'kills', 'firstDetectS', 'minWarningS', 'salvos',
+  'leakers',
+  'kills',
+  'firstDetectS',
+  'minWarningS',
+  'salvos',
 ]
 
 /** One response of one row: its mean at the field's p10 and p90, the paired swing and se. */
@@ -412,8 +416,20 @@ export function statOf(samples: number[], kind: StatKind, conf = STAT_CONF): Sta
   const defined = definedOf(n, total)
   if (n === 0) {
     return {
-      mean: NaN, sd: NaN, se: NaN, lo: NaN, hi: NaN, conf, interval: 'none',
-      p10: NaN, p90: NaN, p025: NaN, p975: NaN, n: 0, total, defined,
+      mean: NaN,
+      sd: NaN,
+      se: NaN,
+      lo: NaN,
+      hi: NaN,
+      conf,
+      interval: 'none',
+      p10: NaN,
+      p90: NaN,
+      p025: NaN,
+      p975: NaN,
+      n: 0,
+      total,
+      defined,
     }
   }
   const { mean, sd, lo, hi } = meanInterval(sorted, conf)
@@ -875,10 +891,20 @@ type ResponseSamples = Record<SensitivityResponse, Samples>
  * replicate runs. One checkpoint per replicate, reporting the caller's field
  * progress; a stop records itself in `halt` and returns null.
  */
-function* responseLoop(scenario: Scenario, cp: Checkpoint, halt: Halt): Loop<ResponseSamples | null> {
+function* responseLoop(
+  scenario: Scenario,
+  cp: Checkpoint,
+  halt: Halt,
+): Loop<ResponseSamples | null> {
   const { seed, replicates } = runSettings(scenario)
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
-  const out: ResponseSamples = { leakers: [], kills: [], firstDetectS: [], minWarningS: [], salvos: [] }
+  const out: ResponseSamples = {
+    leakers: [],
+    kills: [],
+    firstDetectS: [],
+    minWarningS: [],
+    salvos: [],
+  }
   for (let i = 0; i < replicates; i += 1) {
     const row = endOfRunResponses(scenario, monteCarloPolicy(seed, i, thresholds))
     for (const r of SENSITIVITY_RESPONSES) out[r].push(row[r])
@@ -1063,7 +1089,10 @@ export const SWEEP_REPLICATES_DEFAULT = 40
 export interface SweepCell {
   index: number[]
   values: (number | string)[]
-  summary: Pick<McSummary, 'kills' | 'leakers' | 'firstDetectS' | 'minWarningS' | 'perEffector' | 'replicates'>
+  summary: Pick<
+    McSummary,
+    'kills' | 'leakers' | 'firstDetectS' | 'minWarningS' | 'perEffector' | 'replicates'
+  >
 }
 
 /** The sweep run result: cells in row-major order over the factor grid. */
@@ -1084,7 +1113,8 @@ function gridIndices(factors: SweepFactor[]): number[][] {
   let cells: number[][] = [[]]
   for (const f of factors) {
     const next: number[][] = []
-    for (const prefix of cells) for (let i = 0; i < f.values.length; i += 1) next.push([...prefix, i])
+    for (const prefix of cells)
+      for (let i = 0; i < f.values.length; i += 1) next.push([...prefix, i])
     cells = next
   }
   return cells
@@ -1095,7 +1125,9 @@ function assertSweepFactors(factors: SweepFactor[]): void {
   if (factors.length < 1 || factors.length > 2) throw new Error('A sweep takes one or two factors')
   for (const f of factors) {
     if (f.values.length < SWEEP_VALUES_MIN || f.values.length > SWEEP_VALUES_MAX) {
-      throw new Error(`${f.id} takes ${SWEEP_VALUES_MIN} to ${SWEEP_VALUES_MAX} values, not ${f.values.length}`)
+      throw new Error(
+        `${f.id} takes ${SWEEP_VALUES_MIN} to ${SWEEP_VALUES_MAX} values, not ${f.values.length}`,
+      )
     }
   }
 }
@@ -1113,7 +1145,9 @@ export function sweepCellScenario(
   replicatesPerCell: number,
 ): Scenario {
   let s: Scenario = { ...scenario, replicates: replicatesPerCell, targetHalfWidth: null }
-  factors.forEach((f, k) => { s = applySweepValue(s, f.id, f.values[index[k]]) })
+  factors.forEach((f, k) => {
+    s = applySweepValue(s, f.id, f.values[index[k]])
+  })
   return s
 }
 
@@ -1175,7 +1209,8 @@ export function* sweepLoop(
     onProgress?.(cells.length, indices.length)
     if (cells.length === indices.length) break
     const stop = yield { done: cells.length, total: indices.length, retained }
-    if (stop) return summary({ rule: stop === 'cancelled' ? 'cancelled' : 'budget', at: cells.length })
+    if (stop)
+      return summary({ rule: stop === 'cancelled' ? 'cancelled' : 'budget', at: cells.length })
   }
   return summary()
 }

@@ -10,7 +10,7 @@ import { analysisBasisSignature } from './analysisBasis'
 import { useStore } from './store'
 
 function scenario(): Scenario {
-  return { ...structuredClone(probe) as unknown as Scenario, runMode: 'monte-carlo' }
+  return { ...(structuredClone(probe) as unknown as Scenario), runMode: 'monte-carlo' }
 }
 const factors: McSweepRequest['factors'] = [
   { id: 'threatAltitudeFt', values: [300, 3000] },
@@ -32,15 +32,30 @@ describe('factor sweep from the store', () => {
     const worker = ControlledWorker.latest()
     const { playback, scenario: current } = useStore.getState()
     expect(useStore.getState().mc.sweep).toMatchObject({
-      status: 'running', runId: playback.runId, progress: 0, total: 4, summary: null,
-      basisSignature: analysisBasisSignature(current), error: null,
+      status: 'running',
+      runId: playback.runId,
+      progress: 0,
+      total: 4,
+      summary: null,
+      basisSignature: analysisBasisSignature(current),
+      error: null,
     })
     const request = worker.request as McSweepRequest
-    expect(request).toMatchObject({ type: 'sweep', runId: playback.runId, factors, ...SWEEP_DEFAULTS })
+    expect(request).toMatchObject({
+      type: 'sweep',
+      runId: playback.runId,
+      factors,
+      ...SWEEP_DEFAULTS,
+    })
     expect(request.replicatesPerCell).toBe(40)
     worker.send({ type: 'sweep-progress', runId: playback.runId, done: 2, total: 4 })
     expect(useStore.getState().mc.sweep.progress).toBe(2)
-    const summary = runSweep({ scenario: request.scenario, factors, replicatesPerCell: 2, responses: ['leakers'] })
+    const summary = runSweep({
+      scenario: request.scenario,
+      factors,
+      replicatesPerCell: 2,
+      responses: ['leakers'],
+    })
     worker.send({ type: 'sweep-done', runId: playback.runId, summary })
     const { sweep } = useStore.getState().mc
     expect(sweep).toMatchObject({ status: 'done', progress: 4, total: 4, error: null })

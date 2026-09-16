@@ -90,9 +90,7 @@ function Options({ id, values }: { id: string; values: Array<string | number> })
 /** Sector select over the standard widths, with the stored value kept and a custom escape. */
 function SectorField({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   const [custom, setCustom] = useState(false)
-  const options = STANDARD_SECTORS.includes(value)
-    ? STANDARD_SECTORS
-    : [value, ...STANDARD_SECTORS]
+  const options = STANDARD_SECTORS.includes(value) ? STANDARD_SECTORS : [value, ...STANDARD_SECTORS]
   return (
     <Field label="Sector (deg, 360 = omni)">
       <select
@@ -280,7 +278,9 @@ function Sources({
         <div className="source-entries">
           {rows.map((row) => (
             <details className="source-entry" key={row.field}>
-              <summary>{row.field} · {row.value}</summary>
+              <summary>
+                {row.field} · {row.value}
+              </summary>
               <dl>
                 <div className="source-field">
                   <dt>Field</dt>
@@ -293,8 +293,7 @@ function Sources({
                 <div className="source-field">
                   <dt>Basis</dt>
                   <dd>
-                    {row.basis}{' '}
-                    <PfTag model={model} field={row.field} />
+                    {row.basis} <PfTag model={model} field={row.field} />
                   </dd>
                 </div>
                 <div className="source-field">
@@ -410,8 +409,15 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
   const units = useStore((s) => s.ui.units)
   const libraryId = useStore((s) => s.selection.libraryId)
   const [copiedModel, setCopiedModel] = useState<{ id: string; sourceId: string } | null>(null)
-  const { updateModel, editModel, duplicateModel, deleteModel, resetModelToSeed, select, setRightTab } =
-    useStore.getState()
+  const {
+    updateModel,
+    editModel,
+    duplicateModel,
+    deleteModel,
+    resetModelToSeed,
+    select,
+    setRightTab,
+  } = useStore.getState()
 
   const model = scenario.library.find((m) => m.id === (modelId ?? libraryId))
   const availableCopy = scenario.library.find((m) => m.id === copiedModel?.id)
@@ -421,9 +427,11 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
         <Section label="Model">
           <EmptyState
             title={modelId == null ? 'No model selected' : 'Model unavailable'}
-            body={modelId == null
-              ? 'Open the Library (L) and choose Model basis on a model.'
-              : 'This model is no longer in the library. Choose a model in Configure to link an available specification.'}
+            body={
+              modelId == null
+                ? 'Open the Library (L) and choose Model basis on a model.'
+                : 'This model is no longer in the library. Choose a model in Configure to link an available specification.'
+            }
           />
         </Section>
       </div>
@@ -455,7 +463,11 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
         />
       </Field>
       <Field label="Color">
-        <input type="color" value={model.color} onChange={(e) => patch({ color: e.target.value })} />
+        <input
+          type="color"
+          value={model.color}
+          onChange={(e) => patch({ color: e.target.value })}
+        />
       </Field>
 
       {sensor && (
@@ -473,10 +485,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             </select>
           </Field>
           <Field label="Role (sets default range when unknown)">
-            <select
-              value={sensor.role ?? ''}
-              onChange={(e) => edit('sensor.role', e.target.value)}
-            >
+            <select value={sensor.role ?? ''} onChange={(e) => edit('sensor.role', e.target.value)}>
               <option value="">unset</option>
               {SENSOR_ROLES.map((r) => (
                 <option key={r} value={r}>
@@ -526,10 +535,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             board. A planning figure names no target, so no physics runs on it: every threat gets
             the same ring.
           </p>
-          <SectorField
-            value={sensor.sectorDeg}
-            onChange={(n) => edit('sensor.sectorDeg', n)}
-          />
+          <SectorField value={sensor.sectorDeg} onChange={(n) => edit('sensor.sectorDeg', n)} />
           <div className="field-row">
             <Num
               label="Elev min (deg)"
@@ -553,8 +559,8 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             onChange={(n) => edit('sensor.maxAltitudeFt', n)}
           />
           <p className="muted small">
-            The geometry gate reads the elevation limits and the altitude ceiling. A threat
-            outside either one is not detected. A ceiling of 0 records none.
+            The geometry gate reads the elevation limits and the altitude ceiling. A threat outside
+            either one is not detected. A ceiling of 0 records none.
           </p>
           <MountHeight
             model={model}
@@ -591,8 +597,8 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               <p className="muted small">
                 The detect range is quoted against the reference RCS. Against another threat the
                 range scales with the fourth root of the RCS ratio, then stops at the maximum
-                reported range. The board ring shows the reference-RCS range; select a threat to
-                see each radar's ring against that threat.
+                reported range. The board ring shows the reference-RCS range; select a threat to see
+                each radar's ring against that threat.
               </p>
               <div className="field-row">
                 <Num
@@ -618,9 +624,9 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                 </Field>
               </div>
               <p className="muted small">
-                The placard range is quoted at this Pd and Pfa against the reference RCS.
-                Detection at another range follows the radar range equation and the threat's
-                Swerling case. Empty fields keep the planning factors.
+                The placard range is quoted at this Pd and Pfa against the reference RCS. Detection
+                at another range follows the radar range equation and the threat's Swerling case.
+                Empty fields keep the planning factors.
               </p>
               <Num
                 label="Scan period (s, 0 = role table)"
@@ -712,7 +718,11 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                     const bands = rfSensorBands(sensor)
                     const on = bands.includes(b)
                     return (
-                      <label key={b} className="small" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <label
+                        key={b}
+                        className="small"
+                        style={{ display: 'flex', gap: 4, alignItems: 'center' }}
+                      >
                         <input
                           type="checkbox"
                           checked={on}
@@ -789,8 +799,8 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             onChange={(n) => edit('effector.flyoutSpeedMps', n)}
           />
           <p className="muted small">
-            Average interceptor or round speed to the target. The engine adds the time of flight
-            to the engagement time. A speed of 0 records none.
+            Average interceptor or round speed to the target. The engine adds the time of flight to
+            the engagement time. A speed of 0 records none.
           </p>
           <SectorField
             value={effector.sectorDeg ?? 360}
@@ -821,7 +831,11 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
                     const bands = jammerBands(effector)
                     const on = bands.includes(b)
                     return (
-                      <label key={b} className="small" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <label
+                        key={b}
+                        className="small"
+                        style={{ display: 'flex', gap: 4, alignItems: 'center' }}
+                      >
                         <input
                           type="checkbox"
                           checked={on}
@@ -872,10 +886,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <div className="panel-subtitle">UAS performance</div>
           <div className="field-row">
             <Field label="Group">
-              <select
-                value={uas.group}
-                onChange={(e) => edit('uas.group', e.target.value)}
-              >
+              <select value={uas.group} onChange={(e) => edit('uas.group', e.target.value)}>
                 {[1, 2, 3, 4, 5].map((g) => (
                   <option key={g} value={g}>
                     {g}
@@ -884,10 +895,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               </select>
             </Field>
             <Field label="Airframe">
-              <select
-                value={uas.airframe}
-                onChange={(e) => edit('uas.airframe', e.target.value)}
-              >
+              <select value={uas.airframe} onChange={(e) => edit('uas.airframe', e.target.value)}>
                 <option value="quad">quad</option>
                 <option value="fixed-wing">fixed-wing</option>
                 <option value="vtol">vtol</option>
@@ -901,7 +909,9 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               value={uas.swerling == null ? '' : String(uas.swerling)}
               onChange={(e) => edit('uas.swerling', e.target.value)}
             >
-              <option value="">by airframe, planning factor (multirotor Swerling 1, fixed wing Swerling 3)</option>
+              <option value="">
+                by airframe, planning factor (multirotor Swerling 1, fixed wing Swerling 3)
+              </option>
               <option value="0">Swerling 0 (steady)</option>
               <option value="1">Swerling 1</option>
               <option value="3">Swerling 3</option>
@@ -917,8 +927,8 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <p className="muted small">
             Planning factor, not signature data. Group tier when 0:{' '}
             {([1, 2, 3, 4, 5] as const).map((g) => `G${g} ${RCS_PLANNING_M2[g]}`).join(', ')} m².
-            Each radar sees this threat at its quoted range times the fourth root of (this RCS /
-            the radar's reference RCS).
+            Each radar sees this threat at its quoted range times the fourth root of (this RCS / the
+            radar's reference RCS).
           </p>
           <div className="field-row">
             <Num
@@ -952,8 +962,8 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <p className="muted small">
             Planning factors. Span tier when 0:{' '}
             {([1, 2, 3, 4, 5] as const).map((g) => `G${g} ${SPAN_PLANNING_M[g]}`).join(', ')} m
-            (wingspan, or motor-to-motor diagonal); EO/IR range scales linearly with the span
-            ratio. Acoustic tier when 0:{' '}
+            (wingspan, or motor-to-motor diagonal); EO/IR range scales linearly with the span ratio.
+            Acoustic tier when 0:{' '}
             {([1, 2, 3, 4, 5] as const).map((g) => `G${g} ${ACOUSTIC_PLANNING_DB[g]}`).join(', ')}{' '}
             dB; acoustic range follows spreading plus absorption against the sensor's reference
             level. The IR class multiplies thermal-channel range.
@@ -977,10 +987,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               onChange={(n) => edit('uas.enduranceMin', n)}
             />
             <Field label="Nav mode">
-              <select
-                value={uas.navMode}
-                onChange={(e) => edit('uas.navMode', e.target.value)}
-              >
+              <select value={uas.navMode} onChange={(e) => edit('uas.navMode', e.target.value)}>
                 <option value="gps">gps</option>
                 <option value="inertial">inertial</option>
                 <option value="rf-manual">rf manual</option>
@@ -1006,8 +1013,8 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           </div>
           <p className="muted small">
             The middle of this band is the flight altitude of a placed threat when neither the
-            entity nor the threat profile states one. Altitude sets the slant range and the
-            geometry gates.
+            entity nor the threat profile states one. Altitude sets the slant range and the geometry
+            gates.
           </p>
           <div className="field-row">
             <Num
@@ -1057,9 +1064,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <Options
             id="emissions-options"
             values={[
-              ...new Set(
-                scenario.library.map((m) => m.uas?.emissionsNote ?? '').filter(Boolean),
-              ),
+              ...new Set(scenario.library.map((m) => m.uas?.emissionsNote ?? '').filter(Boolean)),
             ]}
           />
         </div>
@@ -1086,7 +1091,9 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
           <button
             className="mini"
             title="Generate the next free THR-G<group>-<code>-<seq> designator"
-            onClick={() => edit('threatProfile.designator', autoDesignator(model, scenario.library))}
+            onClick={() =>
+              edit('threatProfile.designator', autoDesignator(model, scenario.library))
+            }
           >
             Auto
           </button>
@@ -1126,11 +1133,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
               Use cruise speed ({uas.cruiseSpeedMps} m/s)
             </button>
           )}
-          <Num
-            label="Count"
-            value={tp.count}
-            onChange={(n) => edit('threatProfile.count', n)}
-          />
+          <Num label="Count" value={tp.count} onChange={(n) => edit('threatProfile.count', n)} />
         </div>
       )}
 
@@ -1145,11 +1148,15 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
             Reset to seed
           </button>
         )}
-        <button onClick={() => {
-          const id = duplicateModel(model.id)
-          if (modelId == null) select({ libraryId: id })
-          else setCopiedModel({ id, sourceId: model.id })
-        }}>Duplicate</button>
+        <button
+          onClick={() => {
+            const id = duplicateModel(model.id)
+            if (modelId == null) select({ libraryId: id })
+            else setCopiedModel({ id, sourceId: model.id })
+          }}
+        >
+          Duplicate
+        </button>
         <button
           className="danger"
           onClick={() => {
@@ -1162,13 +1169,17 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
       </div>
       {modelId != null && copiedModel?.sourceId === model.id && availableCopy && (
         <p className="note" role="status">
-          Added {availableCopy.name} to the library. This entity still uses {model.name}.
-          Choose the copy in Configure to change its model.
-          {' '}
-          <button className="mini" onClick={() => {
-            select({ libraryId: copiedModel.id })
-            setRightTab('library')
-          }}>Open duplicate in model library</button>
+          Added {availableCopy.name} to the library. This entity still uses {model.name}. Choose the
+          copy in Configure to change its model.{' '}
+          <button
+            className="mini"
+            onClick={() => {
+              select({ libraryId: copiedModel.id })
+              setRightTab('library')
+            }}
+          >
+            Open duplicate in model library
+          </button>
         </p>
       )}
     </div>

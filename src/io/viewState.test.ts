@@ -40,7 +40,9 @@ it('savedView reads and drops the retired analysis lens field', () => {
   const analysis = {
     layout: {
       presetId: 'sensors',
-      widgets: [{ id: 'se-kpi', type: 'kpi-tiles', params: { tiles: ['detect'] }, collapsed: false }],
+      widgets: [
+        { id: 'se-kpi', type: 'kpi-tiles', params: { tiles: ['detect'] }, collapsed: false },
+      ],
     },
     userPresets: [{ id: 'user-1', label: 'Wide look', builtin: false, widgets: [] }],
   }

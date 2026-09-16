@@ -26,8 +26,15 @@ export function trialActiveSensorIds(sweep: TrialSweep | null): Set<string> {
   if (!sweep) return EMPTY_SENSORS
   const cached = activeSets.get(sweep)
   if (cached) return cached
-  const ids = new Set(sweep.sensors.filter(s => s.stateAtTime === 'measured' || s.stateAtTime === 'held-between-scans').map(s => s.sensorId))
-  const stable = recentActiveSets.find(previous => previous.size === ids.size && [...ids].every(id => previous.has(id))) ?? ids
+  const ids = new Set(
+    sweep.sensors
+      .filter((s) => s.stateAtTime === 'measured' || s.stateAtTime === 'held-between-scans')
+      .map((s) => s.sensorId),
+  )
+  const stable =
+    recentActiveSets.find(
+      (previous) => previous.size === ids.size && [...ids].every((id) => previous.has(id)),
+    ) ?? ids
   if (stable === ids) {
     recentActiveSets.unshift(ids)
     if (recentActiveSets.length > 4) recentActiveSets.pop()
@@ -38,7 +45,9 @@ export function trialActiveSensorIds(sweep: TrialSweep | null): Set<string> {
 
 /** Configured ring geometry is unchanged; only sampled activity varies. */
 export const StaticScene = memo(function StaticScene({ trial, horizonS }: Props) {
-  const activeSensorIds = trialActiveSensorIds(trial && horizonS != null ? trialSweepAt(trial, horizonS) : null)
+  const activeSensorIds = trialActiveSensorIds(
+    trial && horizonS != null ? trialSweepAt(trial, horizonS) : null,
+  )
   return (
     <>
       <StaticBoundaryLayer />

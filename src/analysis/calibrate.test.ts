@@ -40,7 +40,10 @@ describe('familyFor', () => {
 
 describe('proportion', () => {
   it('updates the Jeffreys prior with a typed count', () => {
-    const record = calibrateProportion({ modelId: COYOTE, field: 'pk' }, { successes: 17, trials: 20 })
+    const record = calibrateProportion(
+      { modelId: COYOTE, field: 'pk' },
+      { successes: 17, trials: 20 },
+    )
     // Jeffreys (0.5, 0.5) + 17 successes, 3 failures = Beta(17.5, 3.5).
     expect(record.posterior).toEqual({ a: 17.5, b: 3.5 })
     // Mean 17.5 / 21 = 0.83333...
@@ -60,7 +63,11 @@ describe('time', () => {
 
   it('reduces a sample to its count, mean and unbiased variance', () => {
     // Mean 260 / 5 = 52; deviations -2, 2, 0, -4, 4; sum of squares 40; 40 / 4 = 10.
-    expect(timeSummary({ form: 'sample', timesS: [50, 54, 52, 48, 56] })).toEqual({ n: 5, meanS: 52, varianceS2: 10 })
+    expect(timeSummary({ form: 'sample', timesS: [50, 54, 52, 48, 56] })).toEqual({
+      n: 5,
+      meanS: 52,
+      varianceS2: 10,
+    })
     expect(timeSummary({ form: 'sample', timesS: [7] })).toEqual({ n: 1, meanS: 7, varianceS2: 0 })
   })
 
@@ -71,13 +78,23 @@ describe('time', () => {
     // = 684 / 18 = 38 s2.
     expect(spreadVariance({ kind: 'triangular', lo: -0.2, hi: 0.3 }, 60)).toBeCloseTo(38, 9)
     // beta0 = alpha0 kappa0 var / (kappa0 + 1) = 1 * 1 * 38 / 2 = 19.
-    expect(defaultTimePrior(coyote, 'engageTimeS', 60)).toEqual({ mu: 60, kappa: 1, alpha: 1, beta: 19 })
+    expect(defaultTimePrior(coyote, 'engageTimeS', 60)).toEqual({
+      mu: 60,
+      kappa: 1,
+      alpha: 1,
+      beta: 19,
+    })
     // Lognormal 3 dB on 100: ln sigma = 0.3 ln 10 = 0.69078, s2 = 0.47717,
     // var = 100^2 (e^s2 - 1) e^s2 = 10000 * 0.61150 * 1.61150 = 9854.4.
     expect(spreadVariance({ kind: 'lognormal', sigmaDb: 3 }, 100)).toBeCloseTo(9854.4, 0)
     // No spread: CV one half, var = (0.5 * 10)^2 = 25, beta0 = 12.5.
-    expect(defaultTimePrior({ ...coyote, id: 'x', effector: { ...coyote.effector!, engageTimeS: 10 } }, 'noSuchTimeS', 10).beta)
-      .toBe(12.5)
+    expect(
+      defaultTimePrior(
+        { ...coyote, id: 'x', effector: { ...coyote.effector!, engageTimeS: 10 } },
+        'noSuchTimeS',
+        10,
+      ).beta,
+    ).toBe(12.5)
     // A beta spread is not a time spread.
     expect(spreadVariance({ kind: 'beta', successes: 17, trials: 20, pseudo: true }, 60)).toBeNull()
   })
@@ -109,7 +126,10 @@ describe('acceptCalibration', () => {
   afterEach(() => useOverrides.getState().resetAll())
 
   it('writes the posterior as an override whose reason names prior, observation and posterior', () => {
-    const record = calibrateProportion({ modelId: COYOTE, field: 'pk' }, { successes: 17, trials: 20 })
+    const record = calibrateProportion(
+      { modelId: COYOTE, field: 'pk' },
+      { successes: 17, trials: 20 },
+    )
     const reason = overrideReason(record)
     expect(reason).toBe(
       'Calibrated from counts: prior Beta(0.5, 0.5), observed 17 of 20, posterior Beta(17.5, 3.5), ' +
@@ -118,11 +138,20 @@ describe('acceptCalibration', () => {
     const accepted = acceptCalibration(record)
     expect(accepted.accepted).toMatchObject({ accepted: true, reason })
     const [override] = useOverrides.getState().overrides
-    expect(override).toMatchObject({ modelId: COYOTE, field: 'pk', value: acceptedValue(record), reason })
+    expect(override).toMatchObject({
+      modelId: COYOTE,
+      field: 'pk',
+      value: acceptedValue(record),
+      reason,
+    })
     // The override reaches a run through the trial manifest, in the style of
     // trialManifestOverrides.test.ts; the scenario library keeps its 0.85.
-    const manifest = createTrialManifest(scenario, 'trial', 'basis', { overrides: activeOverrides(useOverrides.getState().overrides, scenario) })
-    expect(manifest.overrides).toMatchObject([{ modelId: COYOTE, field: 'pk', value: 17.5 / 21, reason }])
+    const manifest = createTrialManifest(scenario, 'trial', 'basis', {
+      overrides: activeOverrides(useOverrides.getState().overrides, scenario),
+    })
+    expect(manifest.overrides).toMatchObject([
+      { modelId: COYOTE, field: 'pk', value: 17.5 / 21, reason },
+    ])
     expect(modelOf(COYOTE).effector?.pk).toBe(0.85)
   })
 

@@ -70,7 +70,13 @@ describe('buildRaidPlan', () => {
 
   it('a simultaneous timing launches every wave at T+0', () => {
     const plan = buildRaidPlan({ shipsPerWave: 5, waveSpacingS: 0 }, [
-      'a', 'b', 'c', 'd', 'e', 'f', 'g',
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+      'g',
     ])
     expect(plan.waves).toHaveLength(2)
     expect(plan.waves.every((w) => w.startDelayS === 0)).toBe(true)

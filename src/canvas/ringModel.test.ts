@@ -33,11 +33,17 @@ describe('prepareRingModel', () => {
     const { rings } = prepareRingModel(s, view, null)
     const spec = s.library.find((m) => m.id === 'lib-rps42')!.sensor!
     expect(rings.map((r) => [r.kind, r.entity.id])).toEqual([
-      ['sensor', 'radar'], ['effector', 'coyote'], ['asset', 'site'],
+      ['sensor', 'radar'],
+      ['effector', 'coyote'],
+      ['asset', 'site'],
     ])
     expect(rings[0]).toMatchObject({
-      kind: 'sensor', sectorDeg: 90, placardM: effectiveDetectRangeM(spec, s.environment),
-      contourLowM: null, band: null, classifyM: null,
+      kind: 'sensor',
+      sectorDeg: 90,
+      placardM: effectiveDetectRangeM(spec, s.environment),
+      contourLowM: null,
+      band: null,
+      classifyM: null,
     })
     expect(rings[1]).toMatchObject({ kind: 'effector', maxM: 10000, minM: null, releaseM: null })
     expect(rings[2]).toMatchObject({ kind: 'asset', radiusM: 500 })
@@ -48,10 +54,16 @@ describe('prepareRingModel', () => {
     const model = prepareRingModel(s, view, null)
     const placardM = (model.rings[0] as { placardM: number }).placardM
     expect(model.hitAt(destination(radarPos, 0, placardM + 3), 6)).toMatchObject({
-      key: 'sensorPlacard', radiusM: placardM, distanceM: 3, name: 'Placard ring',
+      key: 'sensorPlacard',
+      radiusM: placardM,
+      distanceM: 3,
+      name: 'Placard ring',
     })
     expect(model.hitAt(destination(radarPos, 90, placardM), 6)).toBeNull()
-    expect(model.hitAt({ x: 30000, y: 0 }, 6)).toMatchObject({ key: 'effectorMaxRange', radiusM: 10000 })
+    expect(model.hitAt({ x: 30000, y: 0 }, 6)).toMatchObject({
+      key: 'effectorMaxRange',
+      radiusM: 10000,
+    })
     expect(model.hitAt({ x: 50500, y: 0 }, 6)).toMatchObject({ key: 'defendedArea', radiusM: 500 })
     expect(model.hitAt({ x: 40000, y: 0 }, 6)).toBeNull()
   })
@@ -59,7 +71,10 @@ describe('prepareRingModel', () => {
   it('drops a ring the layer or the entity override turns off', () => {
     const s = fixture()
     const noPlacard = { ...view, layers: { ...DEFAULT_LAYERS, sensorPlacard: false } }
-    expect(prepareRingModel(s, noPlacard, null).rings.map((r) => r.kind)).toEqual(['effector', 'asset'])
+    expect(prepareRingModel(s, noPlacard, null).rings.map((r) => r.kind)).toEqual([
+      'effector',
+      'asset',
+    ])
     const noMax = { ...view, layers: { ...DEFAULT_LAYERS, effectorMaxRange: false } }
     expect(prepareRingModel(s, noMax, null).rings.map((r) => r.kind)).toEqual(['sensor', 'asset'])
     const override = { ...view, ringOverrides: { radar: { sensorPlacard: false } } }
@@ -75,11 +90,13 @@ describe('prepareRingModel', () => {
     const scaled = prepareRingModel(s, contours, 'threat').rings[0]
     expect(plain).toMatchObject({ contourLowM: null, lowLabel: null })
     expect(scaled).toMatchObject({ held: true, behind: true })
-    const low = (scaled as { contourLowM: number; lowLabel: string })
+    const low = scaled as { contourLowM: number; lowLabel: string }
     expect(low.contourLowM).toBeGreaterThan(0)
     expect(low.lowLabel).toMatch(/^Pd /)
-    expect(prepareRingModel(s, contours, 'threat').hitAt(destination(radarPos, 0, low.contourLowM), 1)?.key)
-      .toBe('pdLow')
+    expect(
+      prepareRingModel(s, contours, 'threat').hitAt(destination(radarPos, 0, low.contourLowM), 1)
+        ?.key,
+    ).toBe('pdLow')
   })
 
   it('caches on the scenario and lends identities across a swap', () => {
@@ -97,6 +114,8 @@ describe('prepareRingModel', () => {
     expect(next[0]).toBe(first.rings[0])
     expect(next[1]).not.toBe(first.rings[1])
     expect(next[2]).toBe(first.rings[2])
-    expect(prepareRingModel({ ...s, entities: [] }, view, null).hitAt({ x: 0, y: 0 }, 1e9)).toBeNull()
+    expect(
+      prepareRingModel({ ...s, entities: [] }, view, null).hitAt({ x: 0, y: 0 }, 1e9),
+    ).toBeNull()
   })
 })

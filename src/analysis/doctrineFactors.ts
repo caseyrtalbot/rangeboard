@@ -6,12 +6,7 @@ import type {
   SensorRole,
   SensorSpec,
 } from '../model/types'
-import {
-  TRACK_DROP_MISSES,
-  TRACK_INIT_M,
-  TRACK_INIT_N,
-  defaultSensorRole,
-} from '../model/types'
+import { TRACK_DROP_MISSES, TRACK_INIT_M, TRACK_INIT_N, defaultSensorRole } from '../model/types'
 
 /**
  * Per-system doctrine planning factors. The scenario-level FireDoctrine

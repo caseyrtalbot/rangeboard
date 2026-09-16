@@ -24,20 +24,38 @@ import {
 import { RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
 import { ControlledWorker } from '../playback/controlledWorker'
 
-
 /** Supply a real retained result for clock tests; async worker ownership lives in store.trial.test. */
 function prepareReadyTrial() {
   const st = useStore.getState()
   if (st.trial.status === 'ready') return
   const scenario = structuredClone(st.scenario)
-  const manifest = createTrialManifest(scenario, st.playback.runId, analysisBasisSignature(scenario))
-  useStore.setState({ trial: { ...IDLE_TRIAL, status: 'ready', scenario, manifest, result: runTrial(scenario, manifest) } })
+  const manifest = createTrialManifest(
+    scenario,
+    st.playback.runId,
+    analysisBasisSignature(scenario),
+  )
+  useStore.setState({
+    trial: {
+      ...IDLE_TRIAL,
+      status: 'ready',
+      scenario,
+      manifest,
+      result: runTrial(scenario, manifest),
+    },
+  })
 }
 
 function reset() {
   useStore.setState((st) => ({ ui: { ...st.ui, boardPhase: 'prepare', executeLayers: null } }))
   // The fresh scenario runs Monte Carlo; the slices under test start from the envelope mode.
-  useStore.getState().replaceScenario({ ...emptyScenario(), runMode: 'deterministic', uncertainty: 'aleatory', targetHalfWidth: null })
+  useStore
+    .getState()
+    .replaceScenario({
+      ...emptyScenario(),
+      runMode: 'deterministic',
+      uncertainty: 'aleatory',
+      targetHalfWidth: null,
+    })
 }
 
 describe('store scenario actions', () => {
@@ -613,7 +631,6 @@ function stubLayerStorage(seed: string | null): Map<string, string> {
 }
 
 describe('layer visibility', () => {
-
   const FULL: LayerVisibility = {
     grid: true,
     boundaries: true,
@@ -1065,7 +1082,11 @@ describe('view state', () => {
 
   it('drops an invalid field and keeps the others', () => {
     stubStorage({
-      [VIEW_KEY]: JSON.stringify({ camera: { x: 1, y: 2, scale: 0 }, basemap: 'sat', rightTab: 'nope' }),
+      [VIEW_KEY]: JSON.stringify({
+        camera: { x: 1, y: 2, scale: 0 },
+        basemap: 'sat',
+        rightTab: 'nope',
+      }),
     })
     expect(savedView()).toEqual({ basemap: 'sat' })
   })
@@ -1142,7 +1163,6 @@ describe('loadScenario camera fit', () => {
     expect(useStore.getState().camera).toEqual(before)
   })
 })
-
 
 describe('run sequence persistence', () => {
   beforeEach(reset)
@@ -1228,8 +1248,19 @@ describe('monte carlo slice', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   const ZERO_STAT = {
-    mean: 0, sd: 0, se: 0, lo: 0, hi: 0, conf: 0.95, interval: 't' as const,
-    p10: 0, p90: 0, p025: 0, p975: 0, n: 1, total: 1,
+    mean: 0,
+    sd: 0,
+    se: 0,
+    lo: 0,
+    hi: 0,
+    conf: 0.95,
+    interval: 't' as const,
+    p10: 0,
+    p90: 0,
+    p025: 0,
+    p975: 0,
+    n: 1,
+    total: 1,
     defined: { p: 1, lo: 0.2, hi: 1 },
   }
   const ZERO_BAND = { mean: [0], lo: [0], hi: [0], p10: [0], p90: [0], p025: [0], p975: [0] }
@@ -1289,13 +1320,45 @@ describe('monte carlo slice', () => {
 
   it('starts with no pool, Morris or Sobol state and a run reset clears the three', () => {
     expect([IDLE_MC.pool, IDLE_MC.morris, IDLE_MC.sobol]).toEqual([null, null, null])
-    const field = { modelId: 'lib-coyote', field: 'pk', spread: { kind: 'lognormal' as const, sigmaDb: 3 } }
+    const field = {
+      modelId: 'lib-coyote',
+      field: 'pk',
+      spread: { kind: 'lognormal' as const, sigmaDb: 3 },
+    }
     const interval = { value: 0.5, lo: 0.4, hi: 0.6, bootstrap: 200, confidence: 0.95 }
-    useStore.getState().setPoolProgress({ workers: 2, done: 3, total: 4, stopRule: 'replicates', elapsedMs: 5, perWorkerDone: [2, 1] })
-    useStore.getState().setMorrisResult({ method: 'morris', trajectories: 10, fields: [{ field, mu: 1, muStar: 1, sigma: 0 }],
-      ranking: [0], kept: [0], response: 'leakers', seed: 4821, evaluations: 20 })
-    useStore.getState().setSobolResult({ method: 'saltelli', base: 256, evaluations: 768,
-      fields: [{ field, firstOrder: interval, total: interval }], ranking: [0], response: 'leakers', seed: 4821 })
+    useStore
+      .getState()
+      .setPoolProgress({
+        workers: 2,
+        done: 3,
+        total: 4,
+        stopRule: 'replicates',
+        elapsedMs: 5,
+        perWorkerDone: [2, 1],
+      })
+    useStore
+      .getState()
+      .setMorrisResult({
+        method: 'morris',
+        trajectories: 10,
+        fields: [{ field, mu: 1, muStar: 1, sigma: 0 }],
+        ranking: [0],
+        kept: [0],
+        response: 'leakers',
+        seed: 4821,
+        evaluations: 20,
+      })
+    useStore
+      .getState()
+      .setSobolResult({
+        method: 'saltelli',
+        base: 256,
+        evaluations: 768,
+        fields: [{ field, firstOrder: interval, total: interval }],
+        ranking: [0],
+        response: 'leakers',
+        seed: 4821,
+      })
     const mc = useStore.getState().mc
     expect(mc.pool?.done).toBe(3)
     expect(mc.morris?.fields[0].muStar).toBe(1)
@@ -1508,9 +1571,7 @@ describe('sensitivity slice', () => {
     const summary = primeSensitivity()
     useStore.getState().patchScenario({ seed: 99 })
     const runId = useStore.getState().mc.sensitivity.runId as string
-    useStore
-      .getState()
-      .sensitivityMessage({ type: 'sens-done', runId, summary: fakeSensitivity() })
+    useStore.getState().sensitivityMessage({ type: 'sens-done', runId, summary: fakeSensitivity() })
     const sens = useStore.getState().mc.sensitivity
     expect(sens.status).toBe('stale')
     expect(sens.summary).toBe(summary)
@@ -1698,9 +1759,16 @@ describe('Execute phase view state', () => {
     const layers = useStore.getState().ui.layers
     st.setBoardPhase('execute')
     st.setLayer('labels', false)
-    expect(selectEffectiveLayers(useStore.getState())).toEqual({ ...EXECUTE_DEFAULT_LAYERS, labels: false })
+    expect(selectEffectiveLayers(useStore.getState())).toEqual({
+      ...EXECUTE_DEFAULT_LAYERS,
+      labels: false,
+    })
     st.toggleLayer('connections')
-    expect(selectEffectiveLayers(useStore.getState())).toEqual({ ...EXECUTE_DEFAULT_LAYERS, labels: false, connections: true })
+    expect(selectEffectiveLayers(useStore.getState())).toEqual({
+      ...EXECUTE_DEFAULT_LAYERS,
+      labels: false,
+      connections: true,
+    })
     expect(useStore.getState().ui.layers).toBe(layers)
     expect(storage).toEqual(saved)
   })
@@ -1716,6 +1784,11 @@ describe('Execute phase view state', () => {
     st.advanceRun(5)
     const before = useStore.getState().playback
     st.applyFrame(id)
-    expect(useStore.getState().playback).toEqual({ ...before, simTimeS: 30, playing: false, phase: 'review' })
+    expect(useStore.getState().playback).toEqual({
+      ...before,
+      simTimeS: 30,
+      playing: false,
+      phase: 'review',
+    })
   })
 })

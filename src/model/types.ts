@@ -5,7 +5,13 @@
  */
 
 import type { IntegrationConfidence, LinkMedium } from './integration'
-import type { FieldEstimator, LibraryGrade, LibraryLayer, PhysicsSwitch, RangeType } from './libraryField'
+import type {
+  FieldEstimator,
+  LibraryGrade,
+  LibraryLayer,
+  PhysicsSwitch,
+  RangeType,
+} from './libraryField'
 import { DT } from '../playback/clock'
 
 export interface Vec2 {
@@ -1207,8 +1213,15 @@ export interface Scenario {
 
 /** Every physics switch, in the declaration order of the union type; the manifest order. */
 const PHYSICS_SWITCH_ORDER: readonly PhysicsSwitch[] = [
-  'truthTracks', 'noFalseTracks', 'noOperatorQueue', 'singlePulseRadar',
-  'noFlightLimits', 'rfBandGate', 'eoirSpanRatio', 'legacyKineticPk', 'legacyBeamPk',
+  'truthTracks',
+  'noFalseTracks',
+  'noOperatorQueue',
+  'singlePulseRadar',
+  'noFlightLimits',
+  'rfBandGate',
+  'eoirSpanRatio',
+  'legacyKineticPk',
+  'legacyBeamPk',
 ]
 
 /** The scenario's physics switches, deduplicated, in PHYSICS_SWITCH_ORDER; empty on old saves. */
@@ -1258,7 +1271,8 @@ export function runSettings(s: Scenario): McSettings {
     seed: Number.isInteger(seed) ? (seed as number) : DEFAULT_SEED,
     replicates: positiveInt(s.replicates, DEFAULT_REPLICATES),
     targetHalfWidth: typeof half === 'number' && Number.isFinite(half) && half > 0 ? half : null,
-    sweepStepS: typeof step === 'number' && Number.isFinite(step) && step > 0 ? step : DEFAULT_SWEEP_STEP_S,
+    sweepStepS:
+      typeof step === 'number' && Number.isFinite(step) && step > 0 ? step : DEFAULT_SWEEP_STEP_S,
     uncertainty: s.uncertainty === 'total' ? 'total' : 'aleatory',
     sampling: s.sampling === 'independent' ? 'independent' : DEFAULT_SAMPLING,
     sensitivityDepth: s.sensitivityDepth === 'quick' ? 'quick' : DEFAULT_SENSITIVITY_DEPTH,
@@ -1266,7 +1280,9 @@ export function runSettings(s: Scenario): McSettings {
     stopFloor,
     stopCap,
     confidence:
-      typeof conf === 'number' && Number.isFinite(conf) && conf > 0 && conf < 1 ? conf : DEFAULT_CONFIDENCE,
+      typeof conf === 'number' && Number.isFinite(conf) && conf > 0 && conf < 1
+        ? conf
+        : DEFAULT_CONFIDENCE,
   }
 }
 
@@ -1327,8 +1343,7 @@ export type TimeObservation =
  * manifest shows why the sourced value was replaced.
  */
 export type CalibrationAcceptance =
-  | { accepted: false }
-  | { accepted: true; at: string; reason: string }
+  { accepted: false } | { accepted: true; at: string; reason: string }
 
 /** The library field a calibration updates, as `Override` names it. */
 export interface CalibrationField {

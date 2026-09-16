@@ -55,13 +55,26 @@ interface RingProps {
 }
 
 /** A full circle or a sector wedge, whichever the sector angle asks for. */
-function Ring({ entity, sectorDeg, radiusM, fill, fillOpacity, stroke, strokeWidth, dash, strokeOpacity }: RingProps) {
+function Ring({
+  entity,
+  sectorDeg,
+  radiusM,
+  fill,
+  fillOpacity,
+  stroke,
+  strokeWidth,
+  dash,
+  strokeOpacity,
+}: RingProps) {
   const { x, y } = entity.pos
   const headingDeg = entity.headingDeg
   // One wedge per ring, shared by the fill and the stroke node: Konva compares
   // point arrays by identity, so a fresh array per render repaints the layer.
   const wedge = useMemo(
-    () => (sectorDeg >= 360 || !(radiusM > 0) ? null : wedgePoints({ x, y }, headingDeg, sectorDeg, radiusM)),
+    () =>
+      sectorDeg >= 360 || !(radiusM > 0)
+        ? null
+        : wedgePoints({ x, y }, headingDeg, sectorDeg, radiusM),
     [x, y, headingDeg, sectorDeg, radiusM],
   )
   if (!(radiusM > 0)) return null
@@ -69,7 +82,13 @@ function Ring({ entity, sectorDeg, radiusM, fill, fillOpacity, stroke, strokeWid
   const fillNode =
     fill != null ? (
       full ? (
-        <Circle x={entity.pos.x} y={entity.pos.y} radius={radiusM} fill={fill} opacity={fillOpacity} />
+        <Circle
+          x={entity.pos.x}
+          y={entity.pos.y}
+          radius={radiusM}
+          fill={fill}
+          opacity={fillOpacity}
+        />
       ) : (
         <Line points={wedge!} closed fill={fill} opacity={fillOpacity} />
       )
@@ -149,7 +168,11 @@ const SensorNode = memo(function SensorNode({
   r,
   dim,
   active,
-}: { r: SensorRings; dim: boolean; active: boolean }) {
+}: {
+  r: SensorRings
+  dim: boolean
+  active: boolean
+}) {
   const e = r.entity
   const strokeOpacity = r.grey ? 0.35 : dim ? 0.3 : 0.7
   const hot = active
@@ -345,7 +368,14 @@ const JammerNode = memo(function JammerNode({ r, dim }: { r: JammerRings; dim: b
     fillRadialGradientEndPoint: { x: e.pos.x, y: e.pos.y },
     fillRadialGradientStartRadius: 0,
     fillRadialGradientEndRadius: rangeM,
-    fillRadialGradientColorStops: [0, withAlpha(r.color, 0.38), 0.55, withAlpha(r.color, 0.14), 1, withAlpha(r.color, 0.02)],
+    fillRadialGradientColorStops: [
+      0,
+      withAlpha(r.color, 0.38),
+      0.55,
+      withAlpha(r.color, 0.14),
+      1,
+      withAlpha(r.color, 0.02),
+    ],
   }
   return (
     <Group listening={false} opacity={r.off ? 0.2 : dim ? 0.35 : 0.85}>
@@ -396,7 +426,13 @@ const AssetNode = memo(function AssetNode({ r, dim }: { r: AssetRings; dim: bool
   const e = r.entity
   return (
     <Group listening={false}>
-      <Circle x={e.pos.x} y={e.pos.y} radius={r.radiusM} fill={r.color} opacity={dim ? 0.02 : 0.05} />
+      <Circle
+        x={e.pos.x}
+        y={e.pos.y}
+        radius={r.radiusM}
+        fill={r.color}
+        opacity={dim ? 0.02 : 0.05}
+      />
       <Circle
         x={e.pos.x}
         y={e.pos.y}
@@ -451,4 +487,3 @@ export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: 
     </>
   )
 })
-

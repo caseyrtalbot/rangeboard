@@ -24,7 +24,10 @@ describe('DJI Mavic 3 Classic flight figure (read 2026-09-10)', () => {
     // Straight east, starting from rest. At t=1 s the model distance is
     // d = 0.5*a*t2 = 3.45 m, so a = 2d/t2 = 6.9 m/s2.
     const sample = limitedPosAtTime(
-      [{ x: 0, y: 0 }, { x: 1000, y: 0 }],
+      [
+        { x: 0, y: 0 },
+        { x: 1000, y: 0 },
+      ],
       spec.cruiseSpeedMps,
       0,
       1,
@@ -36,7 +39,7 @@ describe('DJI Mavic 3 Classic flight figure (read 2026-09-10)', () => {
 
     // Invert a = g tan(theta): atan(6.9 / 9.81) = 35.11 deg. The 0.2 deg
     // tolerance covers the seed's one-decimal acceleration rounding.
-    const modeledTiltDeg = Math.atan(modeledAccelMps2 / 9.81) * 180 / Math.PI
+    const modeledTiltDeg = (Math.atan(modeledAccelMps2 / 9.81) * 180) / Math.PI
     expect(Math.abs(modeledTiltDeg - 35)).toBeLessThan(0.2)
   })
 })

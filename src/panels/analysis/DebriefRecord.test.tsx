@@ -11,16 +11,17 @@ import { DebriefRecord } from './DebriefRecord'
 import { installTrial } from './trialTestState'
 
 const actions = vi.hoisted(() => ({ export: undefined as (() => void) | undefined }))
-vi.mock('../../io/persist', async importOriginal => ({
-  ...await importOriginal<typeof import('../../io/persist')>(),
+vi.mock('../../io/persist', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../io/persist')>()),
   exportRunRecord: vi.fn(),
 }))
 // Capture the real rendered button handler while keeping React's server render intact.
-vi.mock('react/jsx-dev-runtime', async importOriginal => {
+vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
     const button = props as { children?: unknown; onClick?: () => void }
-    if (type === 'button' && button.children === 'Export debrief JSON') actions.export = button.onClick
+    if (type === 'button' && button.children === 'Export debrief JSON')
+      actions.export = button.onClick
     return actual.jsxDEV(type, props, ...rest)
   }
   return { ...actual, jsxDEV }
@@ -31,14 +32,28 @@ function render() {
   const { assessments, report, impacts } = engagementPicture(scenario)
   const aar = buildAarSummary(scenario, assessments, report, impacts)
   Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(<DebriefRecord scenario={scenario} assessments={assessments}
-    report={report} aar={aar} durationS={scenarioDurationS(scenario)} />)
+  return renderToStaticMarkup(
+    <DebriefRecord
+      scenario={scenario}
+      assessments={assessments}
+      report={report}
+      aar={aar}
+      durationS={scenarioDurationS(scenario)}
+    />,
+  )
 }
 
 function complete() {
   const fixture = installTrial(60)
-  useStore.setState({ playback: { ...useStore.getState().playback, phase: 'complete',
-    completedAtMs: 2, observedThroughS: fixture.view.durationS, simTimeS: 0 } })
+  useStore.setState({
+    playback: {
+      ...useStore.getState().playback,
+      phase: 'complete',
+      completedAtMs: 2,
+      observedThroughS: fixture.view.durationS,
+      simTimeS: 0,
+    },
+  })
   return fixture
 }
 
@@ -51,7 +66,10 @@ describe('DebriefRecord', () => {
 
   it('keeps the completed records after rewind without repeating the outcome grid', () => {
     const html = render()
-    const trial = html.slice(html.indexOf('aria-label="Completed simulated trial record"'), html.indexOf('class="debrief-actions"'))
+    const trial = html.slice(
+      html.indexOf('aria-label="Completed simulated trial record"'),
+      html.indexOf('class="debrief-actions"'),
+    )
     expect(html).not.toContain('trial-summary')
     expect(html).not.toContain('outcome-grid')
     expect(html).not.toContain('Pre-arrival hard kills')
@@ -73,7 +91,9 @@ describe('DebriefRecord', () => {
     expect(html).toContain('aria-label="Forecast requirements"')
     expect(html).toContain('Forecast · requirement record')
     expect(html).toContain('these gates do not adjudicate the simulated trial')
-    expect(html.indexOf('Completed simulated trial record')).toBeLessThan(html.indexOf('Forecast · requirement record'))
+    expect(html.indexOf('Completed simulated trial record')).toBeLessThan(
+      html.indexOf('Forecast · requirement record'),
+    )
   })
 
   it('exports the matching completed trial with unchanged forecast inputs and ensemble selections', () => {
@@ -88,26 +108,45 @@ describe('DebriefRecord', () => {
     expect(args.slice(5, 7)).toEqual([null, null])
   })
 
-  it.each(['idle', 'preparing', 'error'] as const)('keeps the legacy completed export without a trial when %s', status => {
-    const trial = useStore.getState().trial
-    useStore.setState({ trial: status === 'idle' ? IDLE_TRIAL : {
-      ...trial, status, error: status === 'error' ? 'Trial failed' : null,
-    } })
-    expect(render()).not.toContain('aria-label="Completed simulated trial record"')
-    actions.export!()
-    expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBeNull()
-  })
+  it.each(['idle', 'preparing', 'error'] as const)(
+    'keeps the legacy completed export without a trial when %s',
+    (status) => {
+      const trial = useStore.getState().trial
+      useStore.setState({
+        trial:
+          status === 'idle'
+            ? IDLE_TRIAL
+            : {
+                ...trial,
+                status,
+                error: status === 'error' ? 'Trial failed' : null,
+              },
+      })
+      expect(render()).not.toContain('aria-label="Completed simulated trial record"')
+      actions.export!()
+      expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBeNull()
+    },
+  )
 
-  it.each(['incomplete', 'run mismatch', 'basis mismatch', 'unstarted'] as const)('rechecks %s at export click time', change => {
-    render()
-    const state = useStore.getState()
-    if (change === 'incomplete') useStore.setState({ playback: { ...state.playback, observedThroughS: 3, completedAtMs: null } })
-    if (change === 'run mismatch') useStore.setState({ playback: { ...state.playback, runId: 'another-run' } })
-    if (change === 'basis mismatch') useStore.setState({ scenario: { ...state.scenario, entities: [] } })
-    if (change === 'unstarted') useStore.setState({ playback: { ...state.playback, startedAtMs: null } })
-    actions.export!()
-    expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBeNull()
-  })
+  it.each(['incomplete', 'run mismatch', 'basis mismatch', 'unstarted'] as const)(
+    'rechecks %s at export click time',
+    (change) => {
+      render()
+      const state = useStore.getState()
+      if (change === 'incomplete')
+        useStore.setState({
+          playback: { ...state.playback, observedThroughS: 3, completedAtMs: null },
+        })
+      if (change === 'run mismatch')
+        useStore.setState({ playback: { ...state.playback, runId: 'another-run' } })
+      if (change === 'basis mismatch')
+        useStore.setState({ scenario: { ...state.scenario, entities: [] } })
+      if (change === 'unstarted')
+        useStore.setState({ playback: { ...state.playback, startedAtMs: null } })
+      actions.export!()
+      expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBeNull()
+    },
+  )
 
   it('preserves a current ensemble in export independently of the trial', () => {
     const { scenario, view } = complete()

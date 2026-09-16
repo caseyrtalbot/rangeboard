@@ -17,7 +17,11 @@ export interface OptimizeCancel {
 /** What the optimize worker receives. */
 export type OptimizeWorkerRequest = OptimizeRequest | OptimizeCancel
 
-const TYPES: readonly OptimizeWorkerMessage['type'][] = ['optimize-progress', 'optimize-done', 'optimize-error']
+const TYPES: readonly OptimizeWorkerMessage['type'][] = [
+  'optimize-progress',
+  'optimize-done',
+  'optimize-error',
+]
 
 /** The optimization run, on its own slot: a second start replaces the first. */
 const slot = createWorkerSlot()
@@ -32,7 +36,8 @@ function protocol(
     decode: (data) => {
       if (data === null || typeof data !== 'object') return null
       const m = data as { type?: unknown; runId?: unknown }
-      if (m.runId !== request.runId || !TYPES.includes(m.type as OptimizeWorkerMessage['type'])) return null
+      if (m.runId !== request.runId || !TYPES.includes(m.type as OptimizeWorkerMessage['type']))
+        return null
       return data as OptimizeWorkerMessage
     },
     errorOf: (message) => ({ type: 'optimize-error', runId: request.runId, message }),

@@ -53,8 +53,20 @@ export function SystemHandleLayer() {
 
   return (
     <Group ref={groupRef} x={cx} y={cy} scaleX={1 / k} scaleY={1 / k}>
-      <Circle radius={RING_PX} stroke="#a9b4bd" strokeWidth={1} dash={RING_DASH} listening={false} />
-      <Line points={ARM_POINTS} stroke="#a9b4bd" strokeWidth={1} dash={ARM_DASH} listening={false} />
+      <Circle
+        radius={RING_PX}
+        stroke="#a9b4bd"
+        strokeWidth={1}
+        dash={RING_DASH}
+        listening={false}
+      />
+      <Line
+        points={ARM_POINTS}
+        stroke="#a9b4bd"
+        strokeWidth={1}
+        dash={ARM_DASH}
+        listening={false}
+      />
       <Circle
         y={-HANDLE_PX}
         radius={7}

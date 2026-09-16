@@ -108,7 +108,10 @@ describe('adoptSeedFields', () => {
   })
 
   it('adopts a spec block the save lacks, returns the same object with nothing to adopt, and skips a custom model', () => {
-    const seed: SpecModel = { ...seedModel(), c2: { decisionLatencyS: 10, decisionLatencySigmaDb: 3, operatorTrackCapacity: 6 } }
+    const seed: SpecModel = {
+      ...seedModel(),
+      c2: { decisionLatencyS: 10, decisionLatencySigmaDb: 3, operatorTrackCapacity: 6 },
+    }
     const saved = seedModel()
     const out = adoptSeedFields(saved, seed)
     expect(out.c2).toEqual(seed.c2)
@@ -140,7 +143,11 @@ describe('reconcileLibraryReport', () => {
     expect(report.adopted).toEqual([
       { modelId: 'lib-x', block: 'sensor', keys: ['rangeAccuracyM', 'falseAlarmRatePerScan'] },
       // A block the save has none of reports every key of the seed block.
-      { modelId: 'lib-x', block: 'c2', keys: ['decisionLatencyS', 'decisionLatencySigmaDb', 'operatorTrackCapacity'] },
+      {
+        modelId: 'lib-x',
+        block: 'c2',
+        keys: ['decisionLatencyS', 'decisionLatencySigmaDb', 'operatorTrackCapacity'],
+      },
       { modelId: 'lib-y', block: 'sensor', keys: ['rangeAccuracyM'] },
     ])
     // The library is the one reconcileLibrary gives for the same arguments.

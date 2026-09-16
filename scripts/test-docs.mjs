@@ -19,7 +19,7 @@ function fixture(t) {
   return { root, put }
 }
 
-test('review detects changed source, edited prose, additions, deletions and moves', t => {
+test('review detects changed source, edited prose, additions, deletions and moves', (t) => {
   const { root, put } = fixture(t)
   const entry = { document: 'docs/guide.md', inputs: ['src/'] }
   const hash = () => fingerprint(root, repositoryFiles(root), entry)
@@ -41,7 +41,7 @@ test('review detects changed source, edited prose, additions, deletions and move
   assert.throws(hash, /Missing review input/)
 })
 
-test('untracked inputs count, ignored scratch files do not, ordering is stable', t => {
+test('untracked inputs count, ignored scratch files do not, ordering is stable', (t) => {
   const { root, put } = fixture(t)
   put('.gitignore', 'src/scratch.ts\n')
   put('src/scratch.ts', 'private scratch\n')
@@ -57,10 +57,10 @@ test('untracked inputs count, ignored scratch files do not, ordering is stable',
   assert.ok(!repositoryFiles(root).includes('src/a.ts'))
 })
 
-test('orphan documents, missing index links and oversized agent guidance fail', t => {
+test('orphan documents, missing index links and oversized agent guidance fail', (t) => {
   const { root, put } = fixture(t)
   const registry = {
-    references: ['AGENTS.md', 'docs/README.md', 'docs/guide.md'].map(document => ({ document })),
+    references: ['AGENTS.md', 'docs/README.md', 'docs/guide.md'].map((document) => ({ document })),
     historical: ['docs/records/'],
   }
   assert.deepEqual(placementErrors(root, repositoryFiles(root), registry), [])
@@ -68,17 +68,24 @@ test('orphan documents, missing index links and oversized agent guidance fail', 
   assert.equal(placementErrors(root, repositoryFiles(root), registry).length, 2)
   rmSync(join(root, 'notes.md'))
   put('docs/README.md', '# Index\n\n[Agents](../AGENTS.md)\n')
-  assert.match(placementErrors(root, repositoryFiles(root), registry)[0], /Missing direct index link/)
+  assert.match(
+    placementErrors(root, repositoryFiles(root), registry)[0],
+    /Missing direct index link/,
+  )
   put('AGENTS.md', '# Agents\n'.repeat(81))
-  assert.ok(placementErrors(root, repositoryFiles(root), registry).some(error => error.includes('80 lines')))
+  assert.ok(
+    placementErrors(root, repositoryFiles(root), registry).some((error) =>
+      error.includes('80 lines'),
+    ),
+  )
 })
 
-test('historical placement does not grant an exemption from indexing', t => {
+test('historical placement does not grant an exemption from indexing', (t) => {
   const { root, put } = fixture(t)
   mkdirSync(join(root, 'docs/records'))
   put('docs/records/capture.md', '# Capture\n')
   const registry = {
-    references: ['AGENTS.md', 'docs/README.md', 'docs/guide.md'].map(document => ({ document })),
+    references: ['AGENTS.md', 'docs/README.md', 'docs/guide.md'].map((document) => ({ document })),
     historical: ['docs/records/'],
   }
   assert.deepEqual(placementErrors(root, repositoryFiles(root), registry), [

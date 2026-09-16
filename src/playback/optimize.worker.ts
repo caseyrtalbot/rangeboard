@@ -59,6 +59,10 @@ self.onmessage = async (e: MessageEvent<OptimizeWorkerRequest>) => {
       stop = cancelled ? 'cancelled' : overBudget(next.value, DEFAULT_BUDGET, now - t0)
     }
   } catch (err) {
-    post({ type: 'optimize-error', runId: id, message: err instanceof Error ? err.message : String(err) })
+    post({
+      type: 'optimize-error',
+      runId: id,
+      message: err instanceof Error ? err.message : String(err),
+    })
   }
 }

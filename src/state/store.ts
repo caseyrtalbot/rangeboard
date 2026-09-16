@@ -68,12 +68,6 @@ import {
 import type { McSweepMessage, McWorkerMessage, SensitivityResponse } from '../playback/mcRun'
 import type { AnalysisSinks, OptimizeSpec, SensitivityMessage, SweepSpec } from './analysisRequests'
 import type { OptimizeWorkerMessage } from '../playback/optimizeTypes'
-
-/**
- * The lens system is gone, so every run is stamped with the old default lens
- * id. `Scenario.observedPresetId` stays for saved-scenario compatibility.
- */
-const OBSERVED_PRESET_ID = 'run-summary'
 import {
   acceptMcMessage,
   acceptOptimizeMessage,
@@ -88,6 +82,11 @@ import {
   requestSobol,
 } from './analysisRequests'
 
+/**
+ * The lens system is gone, so every run is stamped with the old default lens
+ * id. `Scenario.observedPresetId` stays for saved-scenario compatibility.
+ */
+const OBSERVED_PRESET_ID = 'run-summary'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
 export type RightTab = 'inspect' | 'library' | 'analysis'
@@ -100,7 +99,6 @@ export interface Camera {
   /** Pixels per meter. */
   scale: number
 }
-
 
 /**
  * Armed tactic-builder state. UI only, never part of the scenario and never
@@ -483,17 +481,30 @@ export const useStore = create<Store>()((set, get) => {
   function install(op: ScenarioInstall) {
     const st = get()
     const { scenario, past, future, selection, playback, mc, trial, ui } = st
-    const slices = { scenario, past, future, selection, playback, mc, trial, ringOverrides: ui.ringOverrides }
+    const slices = {
+      scenario,
+      past,
+      future,
+      selection,
+      playback,
+      mc,
+      trial,
+      ringOverrides: ui.ringOverrides,
+    }
     const next = installScenario(slices, op, useOverrides.getState().overrides)
     if (next === slices) return
     const { ringOverrides, ...rest } = next
     if (ringOverrides !== ui.ringOverrides) writeRingOverrides(ringOverrides)
     const nextUi =
-      op.op === 'replace' ? { ...ui, ...CLEARED_DRAFT, tool: 'select' as const, ringOverrides }
-      : op.op === 'edit' ? (ringOverrides === ui.ringOverrides ? ui : { ...ui, ringOverrides })
-      : ui.connectSuggestion || ringOverrides !== ui.ringOverrides
-        ? { ...ui, connectSuggestion: null, ringOverrides }
-        : ui
+      op.op === 'replace'
+        ? { ...ui, ...CLEARED_DRAFT, tool: 'select' as const, ringOverrides }
+        : op.op === 'edit'
+          ? ringOverrides === ui.ringOverrides
+            ? ui
+            : { ...ui, ringOverrides }
+          : ui.connectSuggestion || ringOverrides !== ui.ringOverrides
+            ? { ...ui, connectSuggestion: null, ringOverrides }
+            : ui
     set({ ...rest, ui: nextUi })
   }
 
@@ -574,9 +585,7 @@ export const useStore = create<Store>()((set, get) => {
           // A threat flies at one altitude, seeded from the model profile so a
           // fresh drop is not silently at ground level. Null keeps the
           // threatAltitudeFt fallback (profile, else the band midpoint).
-          ...(model.kind === 'uas'
-            ? { altitudeFt: model.threatProfile?.altitudeFt ?? null }
-            : {}),
+          ...(model.kind === 'uas' ? { altitudeFt: model.threatProfile?.altitudeFt ?? null } : {}),
         }
         return { ...s, entities: [...s.entities, entity] }
       })
@@ -857,7 +866,8 @@ export const useStore = create<Store>()((set, get) => {
     closeContextMenu: () =>
       set((st) => (st.ui.contextMenu ? { ui: { ...st.ui, contextMenu: null } } : st)),
 
-    addDraftPoint: (p) => set((st) => ({ ui: { ...st.ui, draftPoints: [...st.ui.draftPoints, p] } })),
+    addDraftPoint: (p) =>
+      set((st) => ({ ui: { ...st.ui, draftPoints: [...st.ui.draftPoints, p] } })),
 
     finishBoundary: (closed) => {
       const { ui } = get()
@@ -1058,9 +1068,7 @@ export const useStore = create<Store>()((set, get) => {
         ...s,
         geoRef: g,
         environment:
-          fieldElevationFt == null
-            ? s.environment
-            : { ...s.environment, fieldElevationFt },
+          fieldElevationFt == null ? s.environment : { ...s.environment, fieldElevationFt },
       })),
 
     addModel: (kind) => {
@@ -1075,10 +1083,20 @@ export const useStore = create<Store>()((set, get) => {
           builtin: false,
         }
         if (kind === 'sensor') {
-          model.sensor = { sensorType: 'radar', detectRangeM: 10000, classifyRangeM: 5000, sectorDeg: 360 }
+          model.sensor = {
+            sensorType: 'radar',
+            detectRangeM: 10000,
+            classifyRangeM: 5000,
+            sectorDeg: 360,
+          }
         }
         if (kind === 'effector') {
-          model.effector = { effectorType: 'interceptor', minRangeM: 500, maxRangeM: 10000, engageTimeS: 60 }
+          model.effector = {
+            effectorType: 'interceptor',
+            minRangeM: 500,
+            maxRangeM: 10000,
+            engageTimeS: 60,
+          }
         }
         if (kind === 'uas') {
           model.uas = {
@@ -1218,7 +1236,8 @@ export const useStore = create<Store>()((set, get) => {
         testCards: s.testCards.map((c) => (c.id === id ? { ...c, ...patch } : c)),
       })),
 
-    deleteCard: (id) => mutate((s) => ({ ...s, testCards: s.testCards.filter((c) => c.id !== id) })),
+    deleteCard: (id) =>
+      mutate((s) => ({ ...s, testCards: s.testCards.filter((c) => c.id !== id) })),
 
     toggleCardEntity: (cardId, entityId) =>
       mutate((s) => ({
@@ -1284,9 +1303,13 @@ export const useStore = create<Store>()((set, get) => {
 
     select: (patch, additive = false) =>
       set((st) => {
-        const next = additive && patch.entityIds
-          ? { ...st.selection, entityIds: [...new Set([...st.selection.entityIds, ...patch.entityIds])] }
-          : { ...EMPTY_SELECTION, ...patch }
+        const next =
+          additive && patch.entityIds
+            ? {
+                ...st.selection,
+                entityIds: [...new Set([...st.selection.entityIds, ...patch.entityIds])],
+              }
+            : { ...EMPTY_SELECTION, ...patch }
         // Re-selecting the same objects keeps the identity, so no subscriber re-renders.
         return sameSelection(next, st.selection) ? st : { selection: next }
       }),
@@ -1327,8 +1350,8 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, theme: t } }))
     },
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
-    setBoardPhase: (boardPhase) => set((st) =>
-      st.ui.boardPhase === boardPhase ? st : { ui: { ...st.ui, boardPhase } }),
+    setBoardPhase: (boardPhase) =>
+      set((st) => (st.ui.boardPhase === boardPhase ? st : { ui: { ...st.ui, boardPhase } })),
     setLayer: (key, v) => {
       const st = get()
       const layers = { ...selectEffectiveLayers(st), [key]: v }
@@ -1464,7 +1487,8 @@ export const useStore = create<Store>()((set, get) => {
       if (mc.status === 'running' && mc.runId != null) requestCancel('mc', mc.runId)
     },
 
-    runSensitivity: (response) => requestAnalysis('sensitivity', get(), set, sinks, undefined, response),
+    runSensitivity: (response) =>
+      requestAnalysis('sensitivity', get(), set, sinks, undefined, response),
 
     sensitivityMessage: (m) => {
       const patch = acceptSensitivityMessage(get(), m)
@@ -1502,10 +1526,12 @@ export const useStore = create<Store>()((set, get) => {
 
     cancelOptimize: () => {
       const { optimize } = get().mc
-      if (optimize.status === 'running' && optimize.runId != null) requestCancel('optimize', optimize.runId)
+      if (optimize.status === 'running' && optimize.runId != null)
+        requestCancel('optimize', optimize.runId)
     },
 
-    clearOptimize: () => set((st) => ({ mc: { ...st.mc, optimize: IDLE_OPTIMIZE, optimizeBest: null } })),
+    clearOptimize: () =>
+      set((st) => ({ mc: { ...st.mc, optimize: IDLE_OPTIMIZE, optimizeBest: null } })),
 
     overridesChanged: () => {
       const { scenario, playback, mc, trial } = get()
@@ -1519,13 +1545,14 @@ export const useStore = create<Store>()((set, get) => {
       if (mc.status !== 'done' || mc.runId !== playback.runId || !mc.summary) return
       const scenarioHash = analysisBasisSignature(scenario)
       if (mc.basisSignature != null && mc.basisSignature !== scenarioHash) return
-      set({ baseline: buildBaseline(scenario, mc.summary, scenarioHash, label, undefined, mc.overrides) })
+      set({
+        baseline: buildBaseline(scenario, mc.summary, scenarioHash, label, undefined, mc.overrides),
+      })
     },
 
     clearBaseline: () => set({ baseline: null }),
 
     restoreBaseline: (baseline) => set({ baseline }),
-
   }
 })
 

@@ -15,9 +15,17 @@ const latest = () => ControlledWorker.latest()
 const requestOf = (worker: ControlledWorker) => worker.request as TrialRequest
 function done(worker = latest()): TrialWorkerMessage {
   const { requestToken, runId, basisSignature, scenario, manifest } = requestOf(worker)
-  return { type: 'trial-done', requestToken, runId, basisSignature, result: runTrial(scenario, manifest) }
+  return {
+    type: 'trial-done',
+    requestToken,
+    runId,
+    basisSignature,
+    result: runTrial(scenario, manifest),
+  }
 }
-function finish() { latest().send(done()) }
+function finish() {
+  latest().send(done())
+}
 function edit() {
   const st = useStore.getState()
   st.patchScenario({ seed: (st.scenario.seed ?? 0) + 1 })
@@ -46,30 +54,40 @@ describe('sampled trial preparation and playback lifecycle', () => {
     expect(useStore.getState().trial.status).toBe('ready')
   })
 
-  it.each(['startRun', 'setPlaying'] as const)('%s cannot start observation without the sampled result', action => {
-    const st = useStore.getState()
-    st.advanceRun(10)
-    st.completeRun(500)
-    expect(useStore.getState().playback).toBe(st.playback)
-    if (action === 'startRun') st.startRun()
-    else st.setPlaying(true)
-    expect(useStore.getState().trial.status).toBe('preparing')
-    expect(useStore.getState().playback.startedAtMs).toBeNull()
-    finish()
-    expect(useStore.getState().playback.playing).toBe(true)
-  })
+  it.each(['startRun', 'setPlaying'] as const)(
+    '%s cannot start observation without the sampled result',
+    (action) => {
+      const st = useStore.getState()
+      st.advanceRun(10)
+      st.completeRun(500)
+      expect(useStore.getState().playback).toBe(st.playback)
+      if (action === 'startRun') st.startRun()
+      else st.setPlaying(true)
+      expect(useStore.getState().trial.status).toBe('preparing')
+      expect(useStore.getState().playback.startedAtMs).toBeNull()
+      finish()
+      expect(useStore.getState().playback.playing).toBe(true)
+    },
+  )
 
-  it.each(['runId', 'basisSignature', 'result'] as const)('clock guards reject a ready preparation with mismatched %s', field => {
-    useStore.getState().prepareTrial()
-    finish()
-    const st = useStore.getState()
-    useStore.setState({ trial: field === 'result' ? { ...st.trial, result: null } :
-      { ...st.trial, manifest: { ...st.trial.manifest!, [field]: 'wrong' } } })
-    const before = useStore.getState().playback
-    st.advanceRun(10)
-    st.completeRun(500)
-    expect(useStore.getState().playback).toBe(before)
-  })
+  it.each(['runId', 'basisSignature', 'result'] as const)(
+    'clock guards reject a ready preparation with mismatched %s',
+    (field) => {
+      useStore.getState().prepareTrial()
+      finish()
+      const st = useStore.getState()
+      useStore.setState({
+        trial:
+          field === 'result'
+            ? { ...st.trial, result: null }
+            : { ...st.trial, manifest: { ...st.trial.manifest!, [field]: 'wrong' } },
+      })
+      const before = useStore.getState().playback
+      st.advanceRun(10)
+      st.completeRun(500)
+      expect(useStore.getState().playback).toBe(before)
+    },
+  )
 
   it('preparation captures a detached scenario and frozen manifest without starting the clock', () => {
     const original = useStore.getState().scenario
@@ -104,20 +122,24 @@ describe('sampled trial preparation and playback lifecycle', () => {
     expect(useStore.getState().trial.result?.manifest).toBe(useStore.getState().trial.manifest)
   })
 
-  it.each(['pause', 'scrub', 'frame'] as const)('%s during preparation cancels automatic start without discarding the trial', (action) => {
-    useStore.getState().saveFrame('Preview')
-    useStore.getState().startTrialRun()
-    if (action === 'pause') useStore.getState().pauseRun()
-    if (action === 'scrub') useStore.getState().scrubTo(80)
-    if (action === 'frame') useStore.getState().applyFrame(useStore.getState().scenario.frames[0].id)
-    finish()
-    expect(useStore.getState().trial.status).toBe('ready')
-    expect(useStore.getState().playback.playing).toBe(false)
-    expect(useStore.getState().playback.startedAtMs).toBeNull()
-    expect(useStore.getState().playback.observedThroughS).toBe(0)
-    useStore.getState().startTrialRun()
-    expect(useStore.getState().playback.simTimeS).toBe(0)
-  })
+  it.each(['pause', 'scrub', 'frame'] as const)(
+    '%s during preparation cancels automatic start without discarding the trial',
+    (action) => {
+      useStore.getState().saveFrame('Preview')
+      useStore.getState().startTrialRun()
+      if (action === 'pause') useStore.getState().pauseRun()
+      if (action === 'scrub') useStore.getState().scrubTo(80)
+      if (action === 'frame')
+        useStore.getState().applyFrame(useStore.getState().scenario.frames[0].id)
+      finish()
+      expect(useStore.getState().trial.status).toBe('ready')
+      expect(useStore.getState().playback.playing).toBe(false)
+      expect(useStore.getState().playback.startedAtMs).toBeNull()
+      expect(useStore.getState().playback.observedThroughS).toBe(0)
+      useStore.getState().startTrialRun()
+      expect(useStore.getState().playback.simTimeS).toBe(0)
+    },
+  )
 
   it('retries within a run replace request token but retain draw identity and reject old sinks', () => {
     useStore.getState().prepareTrial()
@@ -140,12 +162,15 @@ describe('sampled trial preparation and playback lifecycle', () => {
     expect(ControlledWorker.instances).toHaveLength(2)
   })
 
-  it.each(['requestToken', 'runId', 'basisSignature'] as const)('rejects a wrong %s at the store sink', (field) => {
-    useStore.getState().prepareTrial()
-    const current = useStore.getState().trial
-    useStore.getState().trialMessage({ ...done(), [field]: 'wrong' })
-    expect(useStore.getState().trial).toBe(current)
-  })
+  it.each(['requestToken', 'runId', 'basisSignature'] as const)(
+    'rejects a wrong %s at the store sink',
+    (field) => {
+      useStore.getState().prepareTrial()
+      const current = useStore.getState().trial
+      useStore.getState().trialMessage({ ...done(), [field]: 'wrong' })
+      expect(useStore.getState().trial).toBe(current)
+    },
+  )
 
   it('rejects a result with a mismatched manifest', () => {
     useStore.getState().prepareTrial()
@@ -158,40 +183,46 @@ describe('sampled trial preparation and playback lifecycle', () => {
     expect(useStore.getState().playback.startedAtMs).toBeNull()
   })
 
-  it.each(['reset', 'load', 'edit'] as const)('%s clears preparation and rejects every late result or error', (action) => {
-    useStore.getState().startTrialRun()
-    const worker = latest()
-    const message = done()
-    const runId = useStore.getState().playback.runId
-    if (action === 'reset') resetAnalysisRun()
-    if (action === 'load') useStore.getState().loadScenario(scenario())
-    if (action === 'edit') edit()
-    const { trial, playback } = useStore.getState()
-    expect(worker.terminated).toBe(true)
-    expect(trial).toBe(IDLE_TRIAL)
-    expect(playback.runId).not.toBe(runId)
-    worker.send(message)
-    worker.onerror?.({ message: 'late native failure' })
-    useStore.getState().trialMessage(message)
-    expect(useStore.getState().trial).toBe(trial)
-    expect(useStore.getState().playback).toBe(playback)
-  })
+  it.each(['reset', 'load', 'edit'] as const)(
+    '%s clears preparation and rejects every late result or error',
+    (action) => {
+      useStore.getState().startTrialRun()
+      const worker = latest()
+      const message = done()
+      const runId = useStore.getState().playback.runId
+      if (action === 'reset') resetAnalysisRun()
+      if (action === 'load') useStore.getState().loadScenario(scenario())
+      if (action === 'edit') edit()
+      const { trial, playback } = useStore.getState()
+      expect(worker.terminated).toBe(true)
+      expect(trial).toBe(IDLE_TRIAL)
+      expect(playback.runId).not.toBe(runId)
+      worker.send(message)
+      worker.onerror?.({ message: 'late native failure' })
+      useStore.getState().trialMessage(message)
+      expect(useStore.getState().trial).toBe(trial)
+      expect(useStore.getState().playback).toBe(playback)
+    },
+  )
 
-  it.each(['preparing', 'ready'] as const)('material edits, undo and redo invalidate %s trials', (status) => {
-    const prepare = () => {
-      useStore.getState().prepareTrial()
-      if (status === 'ready') finish()
-    }
-    prepare()
-    edit()
-    expect(useStore.getState().trial).toBe(IDLE_TRIAL)
-    prepare()
-    useStore.getState().undo()
-    expect(useStore.getState().trial).toBe(IDLE_TRIAL)
-    prepare()
-    useStore.getState().redo()
-    expect(useStore.getState().trial).toBe(IDLE_TRIAL)
-  })
+  it.each(['preparing', 'ready'] as const)(
+    'material edits, undo and redo invalidate %s trials',
+    (status) => {
+      const prepare = () => {
+        useStore.getState().prepareTrial()
+        if (status === 'ready') finish()
+      }
+      prepare()
+      edit()
+      expect(useStore.getState().trial).toBe(IDLE_TRIAL)
+      prepare()
+      useStore.getState().undo()
+      expect(useStore.getState().trial).toBe(IDLE_TRIAL)
+      prepare()
+      useStore.getState().redo()
+      expect(useStore.getState().trial).toBe(IDLE_TRIAL)
+    },
+  )
 
   it('presentation edits, undo/redo, speed and phase changes preserve pending and ready identity', () => {
     useStore.getState().prepareTrial()
@@ -251,10 +282,19 @@ describe('sampled trial preparation and playback lifecycle', () => {
     if (message.type !== 'trial-done') throw new Error('expected result')
     message.result.assessments = []
     worker.send(message)
-    expect(useStore.getState().trial).toMatchObject({ status: 'error', error: 'Invalid trial result', startWhenReady: false })
+    expect(useStore.getState().trial).toMatchObject({
+      status: 'error',
+      error: 'Invalid trial result',
+      startWhenReady: false,
+    })
     useStore.getState().advanceRun(10)
     useStore.getState().completeRun(500)
-    expect(useStore.getState().playback).toMatchObject({ playing: false, startedAtMs: null, completedAtMs: null, observedThroughS: 0 })
+    expect(useStore.getState().playback).toMatchObject({
+      playing: false,
+      startedAtMs: null,
+      completedAtMs: null,
+      observedThroughS: 0,
+    })
     toggleAnalysisRun()
     expect(requestOf(latest()).manifest).toBe(requestOf(worker).manifest)
     finish()
@@ -264,10 +304,16 @@ describe('sampled trial preparation and playback lifecycle', () => {
   it('synchronous construction failure and missing Worker leave an actionable error', () => {
     ControlledWorker.constructionError = 'constructor failed'
     useStore.getState().startTrialRun()
-    expect(useStore.getState().trial).toMatchObject({ status: 'error', error: 'constructor failed' })
+    expect(useStore.getState().trial).toMatchObject({
+      status: 'error',
+      error: 'constructor failed',
+    })
     vi.stubGlobal('Worker', undefined)
     useStore.getState().startTrialRun()
-    expect(useStore.getState().trial).toMatchObject({ status: 'error', error: 'Web Worker unavailable' })
+    expect(useStore.getState().trial).toMatchObject({
+      status: 'error',
+      error: 'Web Worker unavailable',
+    })
     expect(useStore.getState().playback.playing).toBe(false)
   })
 
@@ -281,8 +327,11 @@ describe('sampled trial preparation and playback lifecycle', () => {
     toggleAnalysisRun()
     let current = useStore.getState()
     expect(current.playback).toMatchObject({
-      runId: before.playback.runId, simTimeS: 0, observedThroughS: 500,
-      completedAtMs: before.playback.completedAtMs, playing: true,
+      runId: before.playback.runId,
+      simTimeS: 0,
+      observedThroughS: 500,
+      completedAtMs: before.playback.completedAtMs,
+      playing: true,
     })
     current.advanceRun(10)
     current.pauseRun()
@@ -305,11 +354,15 @@ describe('sampled trial preparation and playback lifecycle', () => {
     expect(ControlledWorker.instances).toHaveLength(1)
     toggleAnalysisRun()
     expect(useStore.getState().trial.manifest?.runId).not.toBe(before.trial.manifest?.runId)
-    expect(useStore.getState().trial.manifest?.replicateIndex).not.toBe(before.trial.manifest?.replicateIndex)
+    expect(useStore.getState().trial.manifest?.replicateIndex).not.toBe(
+      before.trial.manifest?.replicateIndex,
+    )
   })
 
   it('repairs a legacy observation record without a retained trial', () => {
-    useStore.setState(({ playback }) => ({ playback: { ...playback, startedAtMs: 1, observedThroughS: 60, simTimeS: 60 } }))
+    useStore.setState(({ playback }) => ({
+      playback: { ...playback, startedAtMs: 1, observedThroughS: 60, simTimeS: 60 },
+    }))
     const id = useStore.getState().playback.runId
     useStore.getState().startTrialRun()
     expect(useStore.getState().playback.runId).not.toBe(id)

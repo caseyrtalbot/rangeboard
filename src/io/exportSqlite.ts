@@ -52,11 +52,22 @@ export interface SqliteExportOptions {
  */
 function statColumns(prefix: string): string[] {
   return [
-    `${prefix}_mean REAL`, `${prefix}_sd REAL`, `${prefix}_se REAL`,
-    `${prefix}_lo REAL`, `${prefix}_hi REAL`, `${prefix}_conf REAL`, `${prefix}_interval TEXT`,
-    `${prefix}_p10 REAL`, `${prefix}_p90 REAL`, `${prefix}_p025 REAL`, `${prefix}_p975 REAL`,
-    `${prefix}_n INTEGER`, `${prefix}_total INTEGER`,
-    `${prefix}_defined_p REAL`, `${prefix}_defined_lo REAL`, `${prefix}_defined_hi REAL`,
+    `${prefix}_mean REAL`,
+    `${prefix}_sd REAL`,
+    `${prefix}_se REAL`,
+    `${prefix}_lo REAL`,
+    `${prefix}_hi REAL`,
+    `${prefix}_conf REAL`,
+    `${prefix}_interval TEXT`,
+    `${prefix}_p10 REAL`,
+    `${prefix}_p90 REAL`,
+    `${prefix}_p025 REAL`,
+    `${prefix}_p975 REAL`,
+    `${prefix}_n INTEGER`,
+    `${prefix}_total INTEGER`,
+    `${prefix}_defined_p REAL`,
+    `${prefix}_defined_lo REAL`,
+    `${prefix}_defined_hi REAL`,
   ]
 }
 
@@ -68,11 +79,22 @@ function num(value: number | null | undefined): SqlValue {
 /** Column values in the order `statColumns` declares them. */
 function statValues(stat: Stat): SqlValue[] {
   return [
-    num(stat.mean), num(stat.sd), num(stat.se),
-    num(stat.lo), num(stat.hi), num(stat.conf), stat.interval,
-    num(stat.p10), num(stat.p90), num(stat.p025), num(stat.p975),
-    num(stat.n), num(stat.total),
-    num(stat.defined.p), num(stat.defined.lo), num(stat.defined.hi),
+    num(stat.mean),
+    num(stat.sd),
+    num(stat.se),
+    num(stat.lo),
+    num(stat.hi),
+    num(stat.conf),
+    stat.interval,
+    num(stat.p10),
+    num(stat.p90),
+    num(stat.p025),
+    num(stat.p975),
+    num(stat.n),
+    num(stat.total),
+    num(stat.defined.p),
+    num(stat.defined.lo),
+    num(stat.defined.hi),
   ]
 }
 
@@ -152,8 +174,12 @@ const SENSITIVITY: TableSchema = {
     'hi REAL',
     'swing REAL',
     'se REAL',
-    'defined_lo_p REAL', 'defined_lo_lo REAL', 'defined_lo_hi REAL',
-    'defined_hi_p REAL', 'defined_hi_lo REAL', 'defined_hi_hi REAL',
+    'defined_lo_p REAL',
+    'defined_lo_lo REAL',
+    'defined_lo_hi REAL',
+    'defined_hi_p REAL',
+    'defined_hi_lo REAL',
+    'defined_hi_hi REAL',
     // The sensitivity run's own basis, which is not the replicate run's.
     'nominal_leakers REAL',
     'sensitivity_replicates INTEGER NOT NULL',
@@ -170,8 +196,12 @@ const SOBOL: TableSchema = {
     'field TEXT NOT NULL',
     'response TEXT NOT NULL',
     'total_rank INTEGER NOT NULL',
-    'first_order REAL', 'first_order_lo REAL', 'first_order_hi REAL',
-    'total REAL', 'total_lo REAL', 'total_hi REAL',
+    'first_order REAL',
+    'first_order_lo REAL',
+    'first_order_hi REAL',
+    'total REAL',
+    'total_lo REAL',
+    'total_hi REAL',
     'bootstrap INTEGER NOT NULL',
     'confidence REAL NOT NULL',
     'base INTEGER NOT NULL',
@@ -206,11 +236,24 @@ function insertRun(db: SqlDatabase, records: RunRecord[]): void {
     for (const record of records) {
       const m = record.manifest
       stmt.run([
-        record.id, record.savedAt, record.label, record.scenario.name, record.scenarioHash,
-        num(m.seed), num(m.replicates), m.uncertainty, m.runMode, m.engineRevision,
-        m.drawPolicyVersion, m.buildRevision, num(m.sweepStepS), num(m.dataPackageVersion),
-        m.fidelityFloor, m.producer,
-        JSON.stringify(m.overrides), JSON.stringify(m.physicsSwitches),
+        record.id,
+        record.savedAt,
+        record.label,
+        record.scenario.name,
+        record.scenarioHash,
+        num(m.seed),
+        num(m.replicates),
+        m.uncertainty,
+        m.runMode,
+        m.engineRevision,
+        m.drawPolicyVersion,
+        m.buildRevision,
+        num(m.sweepStepS),
+        num(m.dataPackageVersion),
+        m.fidelityFloor,
+        m.producer,
+        JSON.stringify(m.overrides),
+        JSON.stringify(m.physicsSwitches),
       ])
     }
   } finally {
@@ -224,8 +267,13 @@ function insertPerTarget(db: SqlDatabase, records: RunRecord[]): void {
     for (const record of records) {
       for (const [threatId, row] of Object.entries(record.mc.perThreat)) {
         stmt.run([
-          record.id, threatId, num(row.arrivalS), num(row.shipCount),
-          ...statValues(row.killed), ...statValues(row.leaked), ...statValues(row.firstDetectS),
+          record.id,
+          threatId,
+          num(row.arrivalS),
+          num(row.shipCount),
+          ...statValues(row.killed),
+          ...statValues(row.leaked),
+          ...statValues(row.firstDetectS),
         ])
       }
     }
@@ -258,18 +306,42 @@ function sensitivityRows(record: RunRecord, summary: SensitivitySummary): SqlVal
     const basis = [num(summary.nominal), num(summary.replicates), num(summary.seed)]
     if (!row.responses) {
       out.push([
-        record.id, row.modelId, row.field, row.label, 'leakers',
-        num(row.low), num(row.high), num(row.swing), num(row.se),
-        null, null, null, null, null, null, ...basis,
+        record.id,
+        row.modelId,
+        row.field,
+        row.label,
+        'leakers',
+        num(row.low),
+        num(row.high),
+        num(row.swing),
+        num(row.se),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        ...basis,
       ])
       continue
     }
     for (const [response, stat] of Object.entries(row.responses)) {
       out.push([
-        record.id, row.modelId, row.field, row.label, response,
-        num(stat.lo), num(stat.hi), num(stat.swing), num(stat.se),
-        num(stat.defined.lo.p), num(stat.defined.lo.lo), num(stat.defined.lo.hi),
-        num(stat.defined.hi.p), num(stat.defined.hi.lo), num(stat.defined.hi.hi),
+        record.id,
+        row.modelId,
+        row.field,
+        row.label,
+        response,
+        num(stat.lo),
+        num(stat.hi),
+        num(stat.swing),
+        num(stat.se),
+        num(stat.defined.lo.p),
+        num(stat.defined.lo.lo),
+        num(stat.defined.lo.hi),
+        num(stat.defined.hi.p),
+        num(stat.defined.hi.lo),
+        num(stat.defined.hi.hi),
         ...basis,
       ])
     }
@@ -299,12 +371,22 @@ function insertSobol(db: SqlDatabase, records: RunRecord[]): void {
       const rankOf = new Map(sobol.ranking.map((index, position) => [index, position]))
       sobol.fields.forEach((field, index) => {
         stmt.run([
-          record.id, field.field.modelId, field.field.field, sobol.response,
+          record.id,
+          field.field.modelId,
+          field.field.field,
+          sobol.response,
           num(rankOf.get(index) ?? index),
-          num(field.firstOrder.value), num(field.firstOrder.lo), num(field.firstOrder.hi),
-          num(field.total.value), num(field.total.lo), num(field.total.hi),
-          num(field.firstOrder.bootstrap), num(field.firstOrder.confidence),
-          num(sobol.base), num(sobol.evaluations), num(sobol.seed),
+          num(field.firstOrder.value),
+          num(field.firstOrder.lo),
+          num(field.firstOrder.hi),
+          num(field.total.value),
+          num(field.total.lo),
+          num(field.total.hi),
+          num(field.firstOrder.bootstrap),
+          num(field.firstOrder.confidence),
+          num(sobol.base),
+          num(sobol.evaluations),
+          num(sobol.seed),
         ])
       })
     }
@@ -328,7 +410,7 @@ export async function exportRunsSqlite(
   records: RunRecord[],
   options: SqliteExportOptions = {},
 ): Promise<Uint8Array> {
-  const locateFile = options.locateFile ?? await bundledWasm()
+  const locateFile = options.locateFile ?? (await bundledWasm())
   // @ts-expect-error sql.js ships no declarations; `SqlJsStatic` above is the surface this uses.
   const module = await import('sql.js')
   const initSqlJs = (module.default ?? module) as InitSqlJs
@@ -354,7 +436,10 @@ function safeName(name: string): string {
 }
 
 /** Save the export as `<scenario>.runs.sqlite`, in the style of `downloadJson`. */
-export async function downloadRunsSqlite(records: RunRecord[], scenarioName: string): Promise<void> {
+export async function downloadRunsSqlite(
+  records: RunRecord[],
+  scenarioName: string,
+): Promise<void> {
   const bytes = await exportRunsSqlite(records)
   const blob = new Blob([bytes as BlobPart], { type: 'application/vnd.sqlite3' })
   const url = URL.createObjectURL(blob)

@@ -1,0 +1,11 @@
+# Build output
+dist
+dist-engine
+node_modules
+
+# Generated sources: library:check and schema:check compare bytes
+*.generated.ts
+src/io/runtimeSchema.ts
+
+# Historical captures keep original bytes
+docs/field-te

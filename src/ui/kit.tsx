@@ -109,7 +109,9 @@ export function State({
   role?: string
   children: ReactNode
 }) {
-  const mark = ['state-square', hollow ? 'hollow' : '', live ? 'live' : ''].filter(Boolean).join(' ')
+  const mark = ['state-square', hollow ? 'hollow' : '', live ? 'live' : '']
+    .filter(Boolean)
+    .join(' ')
   return (
     <span className={`state ${tone}`} style={style} title={title} role={role}>
       <i className={mark} aria-hidden="true" />

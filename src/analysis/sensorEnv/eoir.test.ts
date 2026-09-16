@@ -52,8 +52,13 @@ describe('EO/IR optics', () => {
     const both = sensor({ fovDeg: 10, detectorPixelsH: 100 })
     expect(eoIfovRadFor(both)).toBeCloseTo(4e-5, 12)
 
-    const fov = sensor({ pixelPitchUm: null, focalLengthMm: null, fovDeg: 5, detectorPixelsH: 1000 })
-    expect(eoIfovRadFor(fov)).toBeCloseTo((5 * Math.PI / 180) / 1000, 12)
+    const fov = sensor({
+      pixelPitchUm: null,
+      focalLengthMm: null,
+      fovDeg: 5,
+      detectorPixelsH: 1000,
+    })
+    expect(eoIfovRadFor(fov)).toBeCloseTo((5 * Math.PI) / 180 / 1000, 12)
 
     expect(eoIfovRadFor(sensor({ focalLengthMm: null }))).toBeNull()
     expect(eoIfovRadFor(sensor({ pixelPitchUm: 0, fovDeg: 0, detectorPixelsH: 1000 }))).toBeNull()
@@ -83,10 +88,7 @@ describe('EO/IR optics', () => {
     expect(ituMwirRatio).toBeCloseTo(0.37569, 5)
     expect(THERMAL_EXTINCTION_RATIO).toBeCloseTo(ituMwirRatio, 2)
     expect(eoExtinctionPerM(visible, day)).toBeCloseTo(visibleSigma, 12)
-    expect(eoExtinctionPerM(thermal, day)).toBeCloseTo(
-      visibleSigma * THERMAL_EXTINCTION_RATIO,
-      12,
-    )
+    expect(eoExtinctionPerM(thermal, day)).toBeCloseTo(visibleSigma * THERMAL_EXTINCTION_RATIO, 12)
     expect(eoTransmissionAt(visible, day, 1000)).toBeCloseTo(KOSCHMIEDER_CONTRAST, 12)
     expect(eoBandFor(sensor({ eoBand: 'dual' }), day)).toBe('visible')
     expect(eoBandFor(sensor({ eoBand: 'dual' }), night)).toBe('thermal')
@@ -98,9 +100,8 @@ describe('EO/IR optics', () => {
     const weather = env({ visibilityM: 1000 })
     const dri = eoIrDriRangesM(spec, target(), weather)!
     const ifov = eoIfovRadFor(spec)!
-    const availableCycles = (
-      eoPixelsOnTarget(0.8, dri.detectM, ifov) * eoTransmissionAt(spec, weather, dri.detectM) / 2
-    )
+    const availableCycles =
+      (eoPixelsOnTarget(0.8, dri.detectM, ifov) * eoTransmissionAt(spec, weather, dri.detectM)) / 2
 
     expect(availableCycles).toBeCloseTo(JOHNSON_CYCLES.detect, 10)
     expect(dri.detectM).toBeGreaterThan(1000)
@@ -113,18 +114,26 @@ describe('EO/IR fallback adapter', () => {
     const fallback = 1234.567890123
     const weather = env()
     const t = target()
-    expect(eoIrRangeM(sensor(), t, weather, {
-      task: 'detect', fallbackRangeM: fallback, useFallback: true,
-    })).toBe(fallback)
-    expect(eoIrRangeM(sensor({ pixelPitchUm: null, focalLengthMm: null }), t, weather, {
-      task: 'detect', fallbackRangeM: fallback,
-    })).toBe(fallback)
+    expect(
+      eoIrRangeM(sensor(), t, weather, {
+        task: 'detect',
+        fallbackRangeM: fallback,
+        useFallback: true,
+      }),
+    ).toBe(fallback)
+    expect(
+      eoIrRangeM(sensor({ pixelPitchUm: null, focalLengthMm: null }), t, weather, {
+        task: 'detect',
+        fallbackRangeM: fallback,
+      }),
+    ).toBe(fallback)
   })
 
   it('models complete optics even when the placard basis is planning', () => {
     const spec = sensor({ rangeBasis: 'planning' })
     const result = eoIrRangeM(spec, target(), env({ apply: false }), {
-      task: 'identify', fallbackRangeM: 99,
+      task: 'identify',
+      fallbackRangeM: 99,
     })
     expect(result).toBe(1250)
   })

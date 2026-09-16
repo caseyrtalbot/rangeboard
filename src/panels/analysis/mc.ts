@@ -4,7 +4,13 @@
  * the run finished and it belongs to the run id on the playhead; a stale,
  * running or idle slice reads as no summary.
  */
-import type { BandSeries, McSummary, SensitivitySummary, Stat, SweepSummary } from '../../playback/mcRun'
+import type {
+  BandSeries,
+  McSummary,
+  SensitivitySummary,
+  Stat,
+  SweepSummary,
+} from '../../playback/mcRun'
 import { BAND80_MIN_N, BAND95_MIN_N, STAT_CONF } from '../../playback/mcRun'
 import { DT } from '../../playback/clock'
 import type { RunRecord } from '../../model/runRecord'
@@ -38,7 +44,9 @@ export function runRecordOf(
     id: newId('run'),
     savedAt,
     label: defaultBaselineLabel(scenario.name, savedAt),
-    manifest: createRunManifest(scenario, mc.runId ?? runId, signature, { overrides: mc.overrides }),
+    manifest: createRunManifest(scenario, mc.runId ?? runId, signature, {
+      overrides: mc.overrides,
+    }),
     scenario,
     scenarioHash: signature,
     mc: mc.summary,
@@ -115,9 +123,10 @@ export function timeStatSub(stat: Stat, quantity: StatQuantity): string {
   const defined = definedSub(stat, quantity)
   if (statMean(stat) == null) return `MC estimate unavailable · ${defined}`
   const h = (stat.hi - stat.lo) / 2
-  const interval = stat.n < TIME_CI_MIN_N || !Number.isFinite(h)
-    ? `mean CI unavailable under ${TIME_CI_MIN_N} defined`
-    : `±${h < 10 ? h.toFixed(1) : Math.round(h)} s (${Math.round(stat.conf * 100)}% mean CI)`
+  const interval =
+    stat.n < TIME_CI_MIN_N || !Number.isFinite(h)
+      ? `mean CI unavailable under ${TIME_CI_MIN_N} defined`
+      : `±${h < 10 ? h.toFixed(1) : Math.round(h)} s (${Math.round(stat.conf * 100)}% mean CI)`
   return `MC conditional mean · ${QUANTITY_BASIS[quantity]} · ${interval} · n=${stat.n} · ${defined}`
 }
 

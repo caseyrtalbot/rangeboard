@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
-import { allowAutosave, dismissRecoveryNotice, getRecoveryNotices, notifyRecovery,
-  stashUnreadableSave, subscribeRecoveryNotices } from './recovery'
+import {
+  allowAutosave,
+  dismissRecoveryNotice,
+  getRecoveryNotices,
+  notifyRecovery,
+  stashUnreadableSave,
+  subscribeRecoveryNotices,
+} from './recovery'
 
 // The lifecycle around these helpers (read, admit, debounce, flush) is in autosave.test.ts.
 function storage(initial: Record<string, string> = {}) {
@@ -14,9 +20,10 @@ function storage(initial: Record<string, string> = {}) {
 }
 
 afterEach(() => {
-  getRecoveryNotices().forEach(notice => dismissRecoveryNotice(notice.id))
+  getRecoveryNotices().forEach((notice) => dismissRecoveryNotice(notice.id))
   allowAutosave(SCENARIO_KEY)
-  vi.restoreAllMocks(); vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 describe('recovery durability', () => {
@@ -36,10 +43,15 @@ describe('recovery durability', () => {
     const { data } = storage()
     const a = stashUnreadableSave('first', SCENARIO_RECOVERY_PREFIX)
     const b = stashUnreadableSave('second', SCENARIO_RECOVERY_PREFIX)
-    expect(a).not.toBe(b); expect(data.get(a!)).toBe('first'); expect(data.get(b!)).toBe('second')
+    expect(a).not.toBe(b)
+    expect(data.get(a!)).toBe('first')
+    expect(data.get(b!)).toBe('second')
   })
   it('detects an interrupted or silently truncated recovery copy', () => {
-    vi.stubGlobal('localStorage', { getItem: vi.fn().mockReturnValueOnce(null).mockReturnValue('truncated'), setItem: vi.fn() })
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn().mockReturnValueOnce(null).mockReturnValue('truncated'),
+      setItem: vi.fn(),
+    })
     expect(stashUnreadableSave('entire raw record', SCENARIO_RECOVERY_PREFIX)).toBeNull()
   })
 })

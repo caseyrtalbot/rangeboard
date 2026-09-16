@@ -72,22 +72,25 @@ export function truthTrackHistory(): TrackEstimate[] {
 
 /** A false alarm track: no target, drawn in the muted ink. */
 export function falseTrackHistory(): TrackEstimate[] {
-  return [{
-    id: 'trk-false',
-    uasId: null,
-    sensorIds: ['radar'],
-    state: { x: 2200, y: 900, vx: 0, vy: 0, tS: 4 * FIXTURE_STEP_S },
-    covariance: covarianceOf(120, 120, 0),
-    quality: 0.2,
-    hits: 1,
-    misses: 0,
-    coasting: false,
-    source: 'false',
-  }]
+  return [
+    {
+      id: 'trk-false',
+      uasId: null,
+      sensorIds: ['radar'],
+      state: { x: 2200, y: 900, vx: 0, vy: 0, tS: 4 * FIXTURE_STEP_S },
+      covariance: covarianceOf(120, 120, 0),
+      quality: 0.2,
+      hits: 1,
+      misses: 0,
+      coasting: false,
+      source: 'false',
+    },
+  ]
 }
 
 /** Every fixture track, interleaved the way a tracker appends them. */
 export function trackEstimateFixture(): TrackEstimate[] {
-  return [...estimateTrackHistory(), ...truthTrackHistory(), ...falseTrackHistory()]
-    .sort((a, b) => a.state.tS - b.state.tS)
+  return [...estimateTrackHistory(), ...truthTrackHistory(), ...falseTrackHistory()].sort(
+    (a, b) => a.state.tS - b.state.tS,
+  )
 }

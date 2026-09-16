@@ -38,10 +38,11 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
 
   const series = run.series?.effectors[entity.id] ?? []
   const marks = run.series?.marks[entity.id] ?? []
-  const releaseRows = (run.series?.engagementLadder ?? []).filter(row => JSON.parse(row.id)[0] === entity.id)
-    .map(row => ({ ...row, label: boardDesignator(row.label) }))
+  const releaseRows = (run.series?.engagementLadder ?? [])
+    .filter((row) => JSON.parse(row.id)[0] === entity.id)
+    .map((row) => ({ ...row, label: boardDesignator(row.label) }))
   const bareReleaseRows = releaseRows.map(bareSpans)
-  const pk = series.filter(s => s.id.startsWith('pk.') && s.values.some(Number.isFinite))
+  const pk = series.filter((s) => s.id.startsWith('pk.') && s.values.some(Number.isFinite))
   const rounds = series.find((s) => s.id === 'rounds')
   const salvos = series.find((s) => s.id === 'salvos')
   const magazineSize = spec?.magazineSize
@@ -54,28 +55,45 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
       const gate = a.effectorGates?.find((g) => g.effectorId === entity.id)
       return [
         scenario.entities.find((e) => e.id === a.uasId)?.name ?? a.uasId,
-        gate && (!horizon.scoped || reached(gate.gateS, horizon)) ? formatTime(gate.gateS) : missing,
-        gate && (!horizon.scoped || reached(gate.readyS, horizon)) ? formatTime(gate.readyS) : missing,
+        gate && (!horizon.scoped || reached(gate.gateS, horizon))
+          ? formatTime(gate.gateS)
+          : missing,
+        gate && (!horizon.scoped || reached(gate.readyS, horizon))
+          ? formatTime(gate.readyS)
+          : missing,
         commit,
       ]
     })
   }, [scenario, spec, doctrine, threats, entity.id, horizon])
 
-  const legend: LegendEntry[] = [...new Map(releaseRows.flatMap((row) =>
-    row.spans.filter((span) => !horizon.scoped || reached(span.startS, horizon)).map((span) => {
-      const label = span.label === 'preparation' || span.label === 'launch timing unavailable'
-        ? span.label : `${row.label} · ${span.label ?? 'effect'}`
-      return [label, { label, color: span.color ?? OTHER_TOKEN }] as const
-    }),
-  )).values()]
+  const legend: LegendEntry[] = [
+    ...new Map(
+      releaseRows.flatMap((row) =>
+        row.spans
+          .filter((span) => !horizon.scoped || reached(span.startS, horizon))
+          .map((span) => {
+            const label =
+              span.label === 'preparation' || span.label === 'launch timing unavailable'
+                ? span.label
+                : `${row.label} · ${span.label ?? 'effect'}`
+            return [label, { label, color: span.color ?? OTHER_TOKEN }] as const
+          }),
+      ),
+    ).values(),
+  ]
 
-  const assigned = report?.events.filter(event => event.effectorId === entity.id && reached(event.tS, horizon)) ?? []
-  const attrition = run.untouched ? undefined : {
-    shotsFired: assigned.filter(event => event.channelClass === 'kinetic').length,
-    deSalvos: assigned.filter(event => event.channelClass === 'directed-energy').length,
-    jamSalvos: assigned.filter(event => event.channelClass === 'ew').length,
-    roundsRemaining: component?.capacityRemaining,
-  }
+  const assigned =
+    report?.events.filter(
+      (event) => event.effectorId === entity.id && reached(event.tS, horizon),
+    ) ?? []
+  const attrition = run.untouched
+    ? undefined
+    : {
+        shotsFired: assigned.filter((event) => event.channelClass === 'kinetic').length,
+        deSalvos: assigned.filter((event) => event.channelClass === 'directed-energy').length,
+        jamSalvos: assigned.filter((event) => event.channelClass === 'ew').length,
+        roundsRemaining: component?.capacityRemaining,
+      }
   const capacityRows: DetailRow[] = [
     { label: 'Kinetic shots', value: attrition ? `${attrition.shotsFired}` : DASH },
     { label: 'DE salvos', value: attrition ? `${attrition.deSalvos}` : DASH },
@@ -83,10 +101,7 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
     magazineSize != null
       ? {
           label: 'Rounds remaining',
-          value:
-            attrition?.roundsRemaining != null
-              ? `${attrition.roundsRemaining}`
-              : DASH,
+          value: attrition?.roundsRemaining != null ? `${attrition.roundsRemaining}` : DASH,
           unit: ` of ${magazineSize}`,
         }
       : { label: 'Rounds remaining', value: 'unlimited' },
@@ -135,7 +150,14 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
       />
       <DetailSection id="pk" title="Pk per track">
         {pk.length > 0 ? (
-          <TimeSeries series={pk} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} yDomain={[0, 1]} yLabel="Pk" />
+          <TimeSeries
+            series={pk}
+            tS={t}
+            horizonS={horizon.scoped ? horizon.horizonS : undefined}
+            onScrub={setSimTime}
+            yDomain={[0, 1]}
+            yLabel="Pk"
+          />
         ) : (
           none
         )}
@@ -144,14 +166,21 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
         {rounds && magazineSize != null ? (
           <TimeSeries
             series={[rounds]}
-            tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined}
+            tS={t}
+            horizonS={horizon.scoped ? horizon.horizonS : undefined}
             onScrub={setSimTime}
             yDomain={[0, magazineSize]}
             yLabel="rounds"
             marks={marks}
           />
         ) : salvos ? (
-          <TimeSeries series={[salvos]} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} marks={marks} />
+          <TimeSeries
+            series={[salvos]}
+            tS={t}
+            horizonS={horizon.scoped ? horizon.horizonS : undefined}
+            onScrub={setSimTime}
+            marks={marks}
+          />
         ) : (
           none
         )}
@@ -159,7 +188,13 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
       <DetailSection id="release" title="Assignment, release and effect">
         {releaseRows.length > 0 ? (
           <>
-            <Ladder rows={bareReleaseRows} durationS={durationS} tS={t} horizonS={horizon.scoped ? horizon.horizonS : undefined} onScrub={setSimTime} />
+            <Ladder
+              rows={bareReleaseRows}
+              durationS={durationS}
+              tS={t}
+              horizonS={horizon.scoped ? horizon.horizonS : undefined}
+              onScrub={setSimTime}
+            />
             <Legend entries={legend} />
           </>
         ) : (

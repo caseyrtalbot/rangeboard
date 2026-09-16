@@ -70,10 +70,7 @@ describe('captured Layered (Acoustic + MEROPS) scenario', () => {
     expect(jam).toBe(report.totals.jamSalvos)
     // Kill mass reconciles only against both credit buckets.
     const killMass = report.events.reduce((s, e) => s + e.killDelta, 0)
-    expect(killMass).toBeCloseTo(
-      report.totals.expectedKills + report.totals.expectedLateKills,
-      9,
-    )
+    expect(killMass).toBeCloseTo(report.totals.expectedKills + report.totals.expectedLateKills, 9)
   })
 
   it('credits kill mass that lands after arrival as late, not as defeat', () => {
@@ -94,9 +91,7 @@ describe('captured Layered (Acoustic + MEROPS) scenario', () => {
     }
     // The partition identity uses the defeat mass alone.
     expect(
-      report.totals.expectedKills +
-        report.totals.expectedLeakers +
-        report.totals.expectedNoArrival,
+      report.totals.expectedKills + report.totals.expectedLeakers + report.totals.expectedNoArrival,
     ).toBeCloseTo(report.totals.raidSize, 9)
   })
 
@@ -110,15 +105,13 @@ describe('captured Layered (Acoustic + MEROPS) scenario', () => {
     expect(totals.expectedLeakers).toBeGreaterThan(0)
     expect(totals.expectedNoArrival).toBe(0)
     expect(totals.expectedLeakers).toBeCloseTo(totals.raidSize - totals.expectedKills, 9)
-    expect(
-      totals.expectedKills + totals.expectedLeakers + totals.expectedNoArrival,
-    ).toBeCloseTo(totals.raidSize, 9)
+    expect(totals.expectedKills + totals.expectedLeakers + totals.expectedNoArrival).toBeCloseTo(
+      totals.raidSize,
+      9,
+    )
     // Row by row as well, so no threat is double counted into two buckets.
     for (const t of report.threats) {
-      expect(t.expectedKills + t.expectedLeakers + t.expectedNoArrival).toBeCloseTo(
-        t.shipCount,
-        9,
-      )
+      expect(t.expectedKills + t.expectedLeakers + t.expectedNoArrival).toBeCloseTo(t.shipCount, 9)
       if (t.arrived) expect(t.expectedNoArrival).toBe(0)
       else expect(t.expectedLeakers).toBe(0)
     }

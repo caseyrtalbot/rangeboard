@@ -7,7 +7,9 @@ import { parentPort, workerData } from 'node:worker_threads'
 import { pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
 
-const { replicateRangeLoop } = await import(pathToFileURL(resolve(import.meta.dirname, '../dist-engine/engine.js')).href)
+const { replicateRangeLoop } = await import(
+  pathToFileURL(resolve(import.meta.dirname, '../dist-engine/engine.js')).href
+)
 
 /** Run start..end-1 on this thread. */
 export function runRange(scenario, start, end) {
@@ -27,6 +29,9 @@ parentPort.on('message', (request) => {
     const partial = runRange(scenario, request.start, request.end)
     parentPort.postMessage({ type: 'partial', start: request.start, end: request.end, partial })
   } catch (error) {
-    parentPort.postMessage({ type: 'error', message: error instanceof Error ? error.message : String(error) })
+    parentPort.postMessage({
+      type: 'error',
+      message: error instanceof Error ? error.message : String(error),
+    })
   }
 })

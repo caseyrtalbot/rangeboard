@@ -464,10 +464,12 @@ function resolveDesignator(designator: string, library: SpecModel[]): SpecModel 
   const uasModels = library.filter((m) => m.kind === 'uas')
   const exact = uasModels.find((m) => m.id.toLowerCase() === d || m.name.toLowerCase() === d)
   if (exact) return exact
-  return uasModels.find((m) => {
-    const n = m.name.toLowerCase()
-    return n.includes(d) || d.includes(n)
-  }) ?? null
+  return (
+    uasModels.find((m) => {
+      const n = m.name.toLowerCase()
+      return n.includes(d) || d.includes(n)
+    }) ?? null
+  )
 }
 
 /**

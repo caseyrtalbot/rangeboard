@@ -785,7 +785,7 @@ describe('runReplicates', () => {
       expect(leaked.n).toBe(at)
       expect(leaked.total).toBe(at)
       expect((leaked.hi - leaked.lo) / 2).toBeLessThan(TARGET_H)
-      expect(Math.abs(leaked.mean - 0.5)).toBeLessThan(3 * 0.5 / Math.sqrt(at))
+      expect(Math.abs(leaked.mean - 0.5)).toBeLessThan((3 * 0.5) / Math.sqrt(at))
       expect(last(summary.leakers.mean)).toBe(leaked.mean)
       expect(summary.kills.mean).toHaveLength(sampleCount(scenario))
       // Progress keeps the configured total and ends at the stop.
@@ -880,14 +880,19 @@ describe('runReplicates', () => {
       expect(summary.stopped).toEqual({ rule: 'budget', at: 7 })
       expect(summary.replicates).toBe(7)
       expect(summary.leakers.mean).toHaveLength(n)
-      expect(runReplicates(scenario, undefined, wide).stopped).toEqual({ rule: 'replicates', at: 40 })
+      expect(runReplicates(scenario, undefined, wide).stopped).toEqual({
+        rule: 'replicates',
+        at: 40,
+      })
     })
 
     it('the wall-time budget stops after the first replicate, and the last checkpoint takes no stop', () => {
       const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
       scenario.replicates = 5
-      expect(runReplicates(scenario, undefined, { ...wide, timeMs: 0 }).stopped)
-        .toEqual({ rule: 'budget', at: 1 })
+      expect(runReplicates(scenario, undefined, { ...wide, timeMs: 0 }).stopped).toEqual({
+        rule: 'budget',
+        at: 1,
+      })
       const loop = replicateLoop({ ...scenario, replicates: 1 })
       loop.next()
       const done = loop.next('cancelled')
@@ -900,11 +905,13 @@ describe('runReplicates', () => {
       const need = summaryNumbers(scenario)
       expect(need).toBe(7 * sampleCount(scenario) * 6)
       const cost = vi.spyOn(uncertainty, 'sampleScenario')
-      expect(() => runReplicates(scenario, undefined, { ...wide, retainedNumbers: need - 1 }))
-        .toThrow(/over the budget/)
+      expect(() =>
+        runReplicates(scenario, undefined, { ...wide, retainedNumbers: need - 1 }),
+      ).toThrow(/over the budget/)
       expect(cost).not.toHaveBeenCalled()
-      expect(runReplicates(scenario, undefined, { ...wide, retainedNumbers: need }).stopped)
-        .toEqual({ rule: 'budget', at: 7 })
+      expect(
+        runReplicates(scenario, undefined, { ...wide, retainedNumbers: need }).stopped,
+      ).toEqual({ rule: 'budget', at: 7 })
     })
   })
 })
@@ -955,7 +962,15 @@ describe('runSensitivity', () => {
       { ...link(radar.id, c2.id), id: 'sens-l1' },
       { ...link(c2.id, eff.id), id: 'sens-l2' },
     ]
-    s.paths = [{ ...flight(uas.id, [{ x: -10000, y: 0 }, { x: 0, y: 0 }]), id: 'sens-path' }]
+    s.paths = [
+      {
+        ...flight(uas.id, [
+          { x: -10000, y: 0 },
+          { x: 0, y: 0 },
+        ]),
+        id: 'sens-path',
+      },
+    ]
     s.runMode = 'monte-carlo'
     s.uncertainty = 'aleatory'
     s.targetHalfWidth = null
@@ -1063,7 +1078,10 @@ describe('runSensitivity', () => {
       const sa = 4821 + 2 * j
       const sb = 4822 + 2 * j
       const [lo10, lo90, hi10, hi90] = [
-        meanAt(sa, 0.1), meanAt(sa, 0.9), meanAt(sb, 0.1), meanAt(sb, 0.9),
+        meanAt(sa, 0.1),
+        meanAt(sa, 0.9),
+        meanAt(sb, 0.1),
+        meanAt(sb, 0.9),
       ]
       // Paired: each swing pairs its p10 and p90 means by seed and replicate.
       sumD += Math.abs(Math.abs(lo90 - lo10) - Math.abs(hi90 - hi10))
@@ -1088,9 +1106,7 @@ describe('runSensitivity', () => {
     // uncertainFields order behind it.
     const key = (r: { modelId: string; field: string }) => `${r.modelId}.${r.field}`
     expect(summary.rows[0].field).toBe('pk')
-    expect(summary.rows.slice(1).map(key)).toEqual(
-      fields.filter((f) => f.field !== 'pk').map(key),
-    )
+    expect(summary.rows.slice(1).map(key)).toEqual(fields.filter((f) => f.field !== 'pk').map(key))
     expect(summary.rows.slice(1).every((r) => r.swing === 0)).toBe(true)
     // Labels: the model name, the connection label or id, and Doctrine.
     const byKey = new Map(summary.rows.map((r) => [key(r), r.label]))
@@ -1107,8 +1123,9 @@ describe('runSensitivity', () => {
     const s = fixture()
     const full = runSensitivity(s)
     expect('stopped' in full).toBe(false)
-    expect(JSON.stringify(runSensitivity(s, undefined, { retainedNumbers: Infinity, timeMs: Infinity })))
-      .toBe(JSON.stringify(full))
+    expect(
+      JSON.stringify(runSensitivity(s, undefined, { retainedNumbers: Infinity, timeMs: Infinity })),
+    ).toBe(JSON.stringify(full))
     const cut = runSensitivity(s, undefined, { retainedNumbers: Infinity, timeMs: 0 })
     expect(cut.stopped).toEqual({ rule: 'budget', at: 0 })
     expect(cut.rows).toEqual([])
@@ -1123,7 +1140,9 @@ describe('runSensitivity', () => {
     expect(partial.stopped).toEqual({ rule: 'cancelled', at: 1 })
     expect(partial.nominal).toBe(full.nominal)
     expect(partial.rows).toHaveLength(1)
-    expect(full.rows.map((r) => r.modelId + r.field)).toContain(partial.rows[0].modelId + partial.rows[0].field)
+    expect(full.rows.map((r) => r.modelId + r.field)).toContain(
+      partial.rows[0].modelId + partial.rows[0].field,
+    )
     expect(full.rows.find((r) => r.field === partial.rows[0].field)).toEqual(partial.rows[0])
   })
 })

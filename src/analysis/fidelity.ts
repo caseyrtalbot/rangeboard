@@ -7,9 +7,7 @@
  * `docs/ENGINEERING_REFERENCE.md`, section "Standards referenced by model tags", where a
  * published method applies.
  */
-import type {
-  Entity, EntityKind, Scenario, SensorSpec, SpecModel, UasSpec,
-} from '../model/types'
+import type { Entity, EntityKind, Scenario, SensorSpec, SpecModel, UasSpec } from '../model/types'
 import { effectiveDoctrine, entityActive, physicsSwitches, runSettings } from '../model/types'
 import { expenditureChannel } from '../playback/pk'
 import { radarDwellPulses } from '../playback/radarDwell'
@@ -22,12 +20,33 @@ import { rfLinkModelApplies } from './sensorEnv/rf'
 
 /** Every model the engine runs. */
 export type ModelId =
-  | 'radar-pd' | 'radar-dwell' | 'radar-scan' | 'eoir-range' | 'eoir-dri' | 'acoustic-range'
-  | 'rf-detect' | 'rf-link' | 'jam' | 'environment' | 'threat-flight' | 'horizon'
-  | 'track-init' | 'doctrine' | 'kinetic-pk' | 'interceptor-miss' | 'gun-burst'
-  | 'de-dwell' | 'hpm-field' | 'flyout'
-  | 'draw-policy' | 'parameter-spread'
-  | 'tracker' | 'fusion' | 'classification' | 'operator' | 'false-tracks'
+  | 'radar-pd'
+  | 'radar-dwell'
+  | 'radar-scan'
+  | 'eoir-range'
+  | 'eoir-dri'
+  | 'acoustic-range'
+  | 'rf-detect'
+  | 'rf-link'
+  | 'jam'
+  | 'environment'
+  | 'threat-flight'
+  | 'horizon'
+  | 'track-init'
+  | 'doctrine'
+  | 'kinetic-pk'
+  | 'interceptor-miss'
+  | 'gun-burst'
+  | 'de-dwell'
+  | 'hpm-field'
+  | 'flyout'
+  | 'draw-policy'
+  | 'parameter-spread'
+  | 'tracker'
+  | 'fusion'
+  | 'classification'
+  | 'operator'
+  | 'false-tracks'
 
 /** How a model is built: a planning factor table, or a physical law. */
 type FidelityTier = 'planning' | 'physics'
@@ -296,17 +315,41 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
 /** Model ids `modelsForEntity` reports, per entity kind. An asset carries none. */
 const ENTITY_MODELS: Partial<Record<EntityKind, ModelId[]>> = {
   sensor: [
-    'radar-pd', 'radar-dwell', 'radar-scan', 'eoir-range', 'eoir-dri',
-    'acoustic-range', 'rf-detect', 'rf-link',
-    'environment', 'horizon', 'track-init', 'tracker', 'false-tracks',
+    'radar-pd',
+    'radar-dwell',
+    'radar-scan',
+    'eoir-range',
+    'eoir-dri',
+    'acoustic-range',
+    'rf-detect',
+    'rf-link',
+    'environment',
+    'horizon',
+    'track-init',
+    'tracker',
+    'false-tracks',
   ],
   effector: [
-    'jam', 'doctrine', 'kinetic-pk', 'interceptor-miss', 'gun-burst',
-    'de-dwell', 'hpm-field', 'flyout',
+    'jam',
+    'doctrine',
+    'kinetic-pk',
+    'interceptor-miss',
+    'gun-burst',
+    'de-dwell',
+    'hpm-field',
+    'flyout',
   ],
   uas: [
-    'radar-pd', 'radar-dwell', 'rf-link', 'environment', 'threat-flight', 'kinetic-pk',
-    'interceptor-miss', 'gun-burst', 'de-dwell', 'hpm-field',
+    'radar-pd',
+    'radar-dwell',
+    'rf-link',
+    'environment',
+    'threat-flight',
+    'kinetic-pk',
+    'interceptor-miss',
+    'gun-burst',
+    'de-dwell',
+    'hpm-field',
   ],
   c2: ['doctrine', 'fusion', 'classification', 'operator'],
 }
@@ -348,73 +391,108 @@ function scanPeriods(spec: SensorSpec, targets: UasSpec[]): Array<number | null>
 /** Every model id the laydown exercises. `entity` narrows one side of each pair. */
 function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   const sensors = activeSpecs(
-    scenario, 'sensor', (m) => m.sensor, entity?.kind === 'sensor' ? entity.id : undefined,
+    scenario,
+    'sensor',
+    (m) => m.sensor,
+    entity?.kind === 'sensor' ? entity.id : undefined,
   )
   const effectors = activeSpecs(
-    scenario, 'effector', (m) => m.effector, entity?.kind === 'effector' ? entity.id : undefined,
+    scenario,
+    'effector',
+    (m) => m.effector,
+    entity?.kind === 'effector' ? entity.id : undefined,
   )
   const targets = activeSpecs(
-    scenario, 'uas', (m) => m.uas, entity?.kind === 'uas' ? entity.id : undefined,
+    scenario,
+    'uas',
+    (m) => m.uas,
+    entity?.kind === 'uas' ? entity.id : undefined,
   )
   // A c2 model may carry no spec; the entity counts through its kind alone.
   const c2Count = scenario.entities.filter(
     (e) => e.kind === 'c2' && entityActive(e) && (entity?.kind !== 'c2' || e.id === entity.id),
   ).length
   // The sensor count for fusion is the laydown's, so one sensor entity still reports fusion.
-  const allSensors = entity?.kind === 'sensor' ? activeSpecs(scenario, 'sensor', (m) => m.sensor) : sensors
+  const allSensors =
+    entity?.kind === 'sensor' ? activeSpecs(scenario, 'sensor', (m) => m.sensor) : sensors
   const kinetic = effectors.filter((e) => expenditureChannel(e.effectorType) === 'kinetic')
   const switches = physicsSwitches(scenario)
   const beamFallback = switches.includes('legacyBeamPk')
   const deModeled = effectors.filter((e) => opticalDwellModelApplies(e, beamFallback))
   const hpmModeled = effectors.filter((e) => hpmFieldModelApplies(e, beamFallback))
   const legacyBeam = effectors.filter(
-    (e) => (e.effectorType === 'de' && !deModeled.includes(e))
-      || (e.effectorType === 'hpm' && !hpmModeled.includes(e)),
+    (e) =>
+      (e.effectorType === 'de' && !deModeled.includes(e)) ||
+      (e.effectorType === 'hpm' && !hpmModeled.includes(e)),
   )
   const out = new Set<ModelId>()
   const add = (id: ModelId, when: boolean): void => {
     if (when) out.add(id)
   }
-  add('radar-pd', sensors.some((s) => targets.some((t) => radarPdModeled(s, t))))
+  add(
+    'radar-pd',
+    sensors.some((s) => targets.some((t) => radarPdModeled(s, t))),
+  )
   add(
     'radar-dwell',
-    !physicsSwitches(scenario).includes('singlePulseRadar')
-      && sensors.some((s) => radarDwellPulses(s) != null && targets.some((t) => radarPdModeled(s, t))),
+    !physicsSwitches(scenario).includes('singlePulseRadar') &&
+      sensors.some((s) => radarDwellPulses(s) != null && targets.some((t) => radarPdModeled(s, t))),
   )
-  add('radar-scan', sensors.some((s) => scanPeriods(s, targets).some((p) => p != null)))
-  add('eoir-range', sensors.some((s) => s.sensorType === 'eo-ir'))
+  add(
+    'radar-scan',
+    sensors.some((s) => scanPeriods(s, targets).some((p) => p != null)),
+  )
+  add(
+    'eoir-range',
+    sensors.some((s) => s.sensorType === 'eo-ir'),
+  )
   add(
     'eoir-dri',
-    !switches.includes('eoirSpanRatio')
-      && targets.length > 0
-      && sensors.some((s) => s.sensorType === 'eo-ir' && eoIfovRadFor(s) != null),
+    !switches.includes('eoirSpanRatio') &&
+      targets.length > 0 &&
+      sensors.some((s) => s.sensorType === 'eo-ir' && eoIfovRadFor(s) != null),
   )
-  add('acoustic-range', sensors.some((s) => s.sensorType === 'acoustic'))
-  add('rf-detect', sensors.some((s) => s.sensorType === 'rf'))
+  add(
+    'acoustic-range',
+    sensors.some((s) => s.sensorType === 'acoustic'),
+  )
+  add(
+    'rf-detect',
+    sensors.some((s) => s.sensorType === 'rf'),
+  )
   add(
     'rf-link',
-    !switches.includes('rfBandGate')
-      && sensors.some((s) => targets.some((t) => rfLinkModelApplies(s, t))),
+    !switches.includes('rfBandGate') &&
+      sensors.some((s) => targets.some((t) => rfLinkModelApplies(s, t))),
   )
-  add('jam', effectors.some((e) => e.effectorType === 'jammer'))
+  add(
+    'jam',
+    effectors.some((e) => e.effectorType === 'jammer'),
+  )
   add('environment', scenario.environment.apply)
   add(
     'threat-flight',
-    !switches.includes('noFlightLimits')
-      && targets.some((t) => [t.maxTurnRateDegS, t.climbRateMps, t.maxAccelMps2]
-        .some((value) => value != null)),
+    !switches.includes('noFlightLimits') &&
+      targets.some((t) =>
+        [t.maxTurnRateDegS, t.climbRateMps, t.maxAccelMps2].some((value) => value != null),
+      ),
   )
   // sensorGeometryGate answers before the horizon test for an acoustic sensor.
-  add('horizon', sensors.some((s) => s.sensorType !== 'acoustic'))
-  add('track-init', sensors.some((s) => scanPeriods(s, targets).every((p) => p == null)))
+  add(
+    'horizon',
+    sensors.some((s) => s.sensorType !== 'acoustic'),
+  )
+  add(
+    'track-init',
+    sensors.some((s) => scanPeriods(s, targets).every((p) => p == null)),
+  )
   add('doctrine', effectiveDoctrine(scenario).enabled)
   add('kinetic-pk', kinetic.length > 0 || legacyBeam.length > 0)
   const legacyKinetic = switches.includes('legacyKineticPk')
   add(
     'interceptor-miss',
-    !legacyKinetic && effectors.some(
-      (e) => e.effectorType === 'interceptor' && e.lethalRadiusM != null,
-    ),
+    !legacyKinetic &&
+      effectors.some((e) => e.effectorType === 'interceptor' && e.lethalRadiusM != null),
   )
   add(
     'gun-burst',
@@ -422,7 +500,10 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   )
   add('de-dwell', deModeled.length > 0)
   add('hpm-field', hpmModeled.length > 0)
-  add('flyout', kinetic.some((e) => (e.flyoutSpeedMps ?? 0) > 0))
+  add(
+    'flyout',
+    kinetic.some((e) => (e.flyoutSpeedMps ?? 0) > 0),
+  )
   const run = runSettings(scenario)
   add('draw-policy', run.runMode === 'monte-carlo')
   add('parameter-spread', run.runMode === 'monte-carlo' && run.uncertainty === 'total')
@@ -432,8 +513,8 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add('operator', c2Count > 0)
   add(
     'false-tracks',
-    !switches.includes('noFalseTracks')
-      && sensors.some((s) => s.sensorType === 'radar' && s.falseAlarmRatePerScan != null),
+    !switches.includes('noFalseTracks') &&
+      sensors.some((s) => s.sensorType === 'radar' && s.falseAlarmRatePerScan != null),
   )
   return out
 }

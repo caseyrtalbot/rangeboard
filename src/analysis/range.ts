@@ -19,7 +19,13 @@ import { bearingDeg, destination, dist } from '../geometry/geo'
  * Level 5 wind resistance is ~12 m/s for Group 1 quads.
  */
 const ENV_MODEL = {
-  temperature: { refC: 15, pctPerDegBelowRef: 1.8, floorFactor: 0.5, hotRefC: 35, hotDeratePct: 0.5 },
+  temperature: {
+    refC: 15,
+    pctPerDegBelowRef: 1.8,
+    floorFactor: 0.5,
+    hotRefC: 35,
+    hotDeratePct: 0.5,
+  },
   densityAltitude: { refFt: 2000, pctPer1000FtAboveRef: 2.5, floorFactor: 0.6 },
   wind: { maxOperatableWindMps: 12 },
   source: 'researched 2026-08, representative planning values',
@@ -42,7 +48,8 @@ function isOneWay(uas: UasSpec): boolean {
 
 export function rangeBasis(uas: UasSpec): RangeBasis {
   const oneWay = isOneWay(uas)
-  const batteryPowered = uas.airframe === 'quad' || uas.airframe === 'fpv' || uas.airframe === 'vtol'
+  const batteryPowered =
+    uas.airframe === 'quad' || uas.airframe === 'fpv' || uas.airframe === 'vtol'
   if (uas.combatRadiusM != null && uas.combatRadiusM > 0) {
     return { radiusM: uas.combatRadiusM, oneWay, source: 'combat', batteryPowered }
   }
@@ -94,7 +101,7 @@ function groundSpeed(airSpeedMps: number, env: EnvironmentSpec, bearing: number)
 export function effectiveRadiusM(uas: UasSpec, env: EnvironmentSpec, bearing: number): number {
   const basis = rangeBasis(uas)
   const va = Math.max(1, uas.cruiseSpeedMps)
-  const enduranceS = (basis.oneWay ? basis.radiusM / va : (2 * basis.radiusM) / va)
+  const enduranceS = basis.oneWay ? basis.radiusM / va : (2 * basis.radiusM) / va
   const tS = enduranceS * enduranceDerate(env, basis.batteryPowered)
   if (basis.oneWay) return tS * groundSpeed(va, env, bearing)
   const w = Math.min(va * 0.95, Math.abs(windComponentMps(env, bearing)))

@@ -33,10 +33,18 @@ describe('trial manifest overrides', () => {
     toggleAnalysisRun()
     const worker = ControlledWorker.latest()
     const request = worker.request as TrialRequest
-    expect(request.manifest.overrides).toMatchObject([{ modelId: 'lib-kurfs', field: 'detectRangeM', value: 3200, reason: 'site survey' }])
+    expect(request.manifest.overrides).toMatchObject([
+      { modelId: 'lib-kurfs', field: 'detectRangeM', value: 3200, reason: 'site survey' },
+    ])
     expect(useStore.getState().trial.manifest?.overrides).toHaveLength(1)
     const { requestToken, runId, basisSignature, scenario, manifest } = request
-    const done: TrialWorkerMessage = { type: 'trial-done', requestToken, runId, basisSignature, result: runTrial(scenario, manifest) }
+    const done: TrialWorkerMessage = {
+      type: 'trial-done',
+      requestToken,
+      runId,
+      basisSignature,
+      result: runTrial(scenario, manifest),
+    }
     worker.send(done)
     expect(useStore.getState().trial.status).toBe('ready')
     const selection = selectTrialSelection(useStore.getState())

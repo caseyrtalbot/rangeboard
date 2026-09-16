@@ -25,7 +25,11 @@ export const SENSOR_ENV_MODEL = {
 }
 
 /** The environment factor with the urban term switchable (the RF urban override supplies its own). */
-export function envFactorImpl(type: SensorType, env: EnvironmentSpec, includeUrban: boolean): number {
+export function envFactorImpl(
+  type: SensorType,
+  env: EnvironmentSpec,
+  includeUrban: boolean,
+): number {
   if (!env.apply) return 1
   let f = 1
   const precip = env.precipitation ?? 'clear'

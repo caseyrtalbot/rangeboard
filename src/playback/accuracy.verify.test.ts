@@ -207,7 +207,10 @@ describe('CLAIM 1 - assignment latency, closed-form single interceptor', () => {
       salvoCooldownS: 20,
       magazineSize: 10,
     })
-    const { scenario, effIds: [effId] } = crossing([model])
+    const {
+      scenario,
+      effIds: [effId],
+    } = crossing([model])
 
     const a = assessAllThreats(scenario)[0]
     expect(a.status).toBe('engageable')
@@ -302,7 +305,10 @@ describe('CLAIM 1 refutation (a) - threat exits the envelope before the effect',
       salvoCooldownS: 5,
       magazineSize: 20,
     })
-    const { scenario, effIds: [effId] } = crossing([model])
+    const {
+      scenario,
+      effIds: [effId],
+    } = crossing([model])
     const r = resolveEngagements(scenario)
     const t = r.threats[0]
     expect(t.shotsFired).toBe(2)
@@ -710,7 +716,11 @@ describe('formation member outside the envelope never draws fire', () => {
       salvoCooldownS: 2,
       magazineSize: 3,
     })
-    const { scenario, uasId, effIds: [effId] } = crossing([model])
+    const {
+      scenario,
+      uasId,
+      effIds: [effId],
+    } = crossing([model])
     const uas = scenario.entities.find((e) => e.id === uasId)!
     uas.formation = { count: 2, shape: 'line', spacingM: 5000 }
 
@@ -757,9 +767,14 @@ describe('wingman-only envelope crossing draws fire', () => {
     scenario.library = [...scenario.library, radar, target, model]
     const sensor = ent('sensor', radar.id, { x: 0, y: 0 })
     const eff = ent('effector', model.id, { x: 0, y: 0 })
-    const uas = ent('uas', target.id, { x: -2010, y: -5000 }, {
-      formation: { count: 2, shape: 'line', spacingM: 5000 },
-    })
+    const uas = ent(
+      'uas',
+      target.id,
+      { x: -2010, y: -5000 },
+      {
+        formation: { count: 2, shape: 'line', spacingM: 5000 },
+      },
+    )
     scenario.entities = [sensor, eff, uas]
     scenario.connections = [link(sensor.id, eff.id)]
     scenario.paths = [
@@ -827,7 +842,11 @@ describe('member-union intervals split by ship: column formation', () => {
       salvoCooldownS: 30,
       magazineSize: 10,
     })
-    const { scenario, uasId, effIds: [effId] } = crossing([model])
+    const {
+      scenario,
+      uasId,
+      effIds: [effId],
+    } = crossing([model])
     const uas = scenario.entities.find((e) => e.id === uasId)!
     uas.formation = { count: 2, shape: 'column', spacingM: 3000 }
     scenario.paths[0].points[1] = { x: 5010, y: 0 }
@@ -895,9 +914,7 @@ describe('longest window no longer shadows a usable shorter one', () => {
     expect(a.windowS).toEqual([25.5, 75]) // longest USABLE, not longest gated
     expect(a.windowEffectorId).toBe(effIds[1])
     // A's raw geometry is still reported.
-    expect(a.effectorWindows.find((w) => w.effectorId === effIds[0])!.intervals).toEqual([
-      [0, 101],
-    ])
+    expect(a.effectorWindows.find((w) => w.effectorId === effIds[0])!.intervals).toEqual([[0, 101]])
     const r = resolveEngagements(scenario, [a])
     const t = r.threats[0]
     expect(r.totals.shotsFired).toBe(1)
@@ -923,7 +940,10 @@ describe('longest window no longer shadows a usable shorter one', () => {
       salvoCooldownS: 1000,
       magazineSize: 5,
     })
-    const { scenario, effIds: [aId] } = crossing([modelA])
+    const {
+      scenario,
+      effIds: [aId],
+    } = crossing([modelA])
     const a = assessAllThreats(scenario)[0]
     expect(a.status).toBe('window-too-short')
     expect(a.windowS).toEqual([0, 101]) // informative: longest gated interval

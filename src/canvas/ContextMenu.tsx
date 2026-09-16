@@ -63,7 +63,15 @@ function Item({ label, onPick, danger }: { label: string; onPick: () => void; da
 
 // Layer variant of Item: it keeps the menu open so several layers can be
 // switched in one visit. Every other entry closes on pick through Item.
-function ToggleItem({ label, checked, onPick }: { label: string; checked: boolean; onPick: () => void }) {
+function ToggleItem({
+  label,
+  checked,
+  onPick,
+}: {
+  label: string
+  checked: boolean
+  onPick: () => void
+}) {
   return (
     <button className="ctx-item" onClick={onPick}>
       <span className="ctx-check">{checked ? '✓' : ''}</span>
@@ -222,7 +230,11 @@ export function ContextMenu() {
         )}
         {entity.kind === 'uas' && (
           <Item
-            label={scenario.paths.some((p) => p.entityId === entity.id) ? 'Redraw flight path' : 'Draw flight path'}
+            label={
+              scenario.paths.some((p) => p.entityId === entity.id)
+                ? 'Redraw flight path'
+                : 'Draw flight path'
+            }
             onPick={() => st.beginPath(entity.id)}
           />
         )}
@@ -242,10 +254,13 @@ export function ContextMenu() {
             }
           />
         )}
-        <Item label="Connect from here" onPick={() => {
-          st.setTool('connect')
-          st.beginConnect(entity.id)
-        }} />
+        <Item
+          label="Connect from here"
+          onPick={() => {
+            st.setTool('connect')
+            st.beginConnect(entity.id)
+          }}
+        />
         {blue && (
           <Item
             label="Suggest connections"
@@ -272,10 +287,14 @@ export function ContextMenu() {
         {entity.kind === 'sensor' && ringsFlyout(entity.id, SENSOR_RING_KEYS)}
         {entity.kind === 'effector' && ringsFlyout(entity.id, EFFECTOR_RING_KEYS)}
         {displayFlyout()}
-        <Item danger label="Delete" onPick={() => {
-          st.select({ entityIds: [entity.id] })
-          st.deleteSelection()
-        }} />
+        <Item
+          danger
+          label="Delete"
+          onPick={() => {
+            st.select({ entityIds: [entity.id] })
+            st.deleteSelection()
+          }}
+        />
       </>
     )
   }
@@ -290,7 +309,11 @@ export function ContextMenu() {
             {submenu === 'systems' && (
               <div className="ctx-menu ctx-flyout">
                 {scenario.systemPresets.map((p) => (
-                  <Item key={p.id} label={p.name} onPick={() => st.addSystemFromPreset(p.id, menu!.world)} />
+                  <Item
+                    key={p.id}
+                    label={p.name}
+                    onPick={() => st.addSystemFromPreset(p.id, menu!.world)}
+                  />
                 ))}
               </div>
             )}
@@ -305,7 +328,11 @@ export function ContextMenu() {
               {submenu === g.kind && (
                 <div className="ctx-menu ctx-flyout">
                   {models.map((m) => (
-                    <Item key={m.id} label={m.name} onPick={() => st.addEntityFromModel(m.id, menu!.world)} />
+                    <Item
+                      key={m.id}
+                      label={m.name}
+                      onPick={() => st.addEntityFromModel(m.id, menu!.world)}
+                    />
                   ))}
                 </div>
               )}

@@ -10,25 +10,56 @@ import type { RunHistorySave } from './RunHistory'
 import { RunHistoryView, RunRecordView } from './RunHistory'
 import probe from '../../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
 
-const scenario: Scenario = { ...structuredClone(probe) as unknown as Scenario, runMode: 'monte-carlo', replicates: 2, seed: 7 }
+const scenario: Scenario = {
+  ...(structuredClone(probe) as unknown as Scenario),
+  runMode: 'monte-carlo',
+  replicates: 2,
+  seed: 7,
+}
 const summary = runReplicates(scenario)
 const savedAt = '2026-09-10T12:00:00.000Z'
 const record: RunRecord = {
-  id: 'run-1', savedAt, label: 'Camp Able · saved',
+  id: 'run-1',
+  savedAt,
+  label: 'Camp Able · saved',
   manifest: createRunManifest(scenario, 'sim-1', 'basis'),
-  scenario, scenarioHash: 'basis', mc: summary, sensitivity: null,
+  scenario,
+  scenarioHash: 'basis',
+  mc: summary,
+  sensitivity: null,
 }
 const listed: RunSummary = {
-  id: 'run-1', label: record.label, savedAt, seed: summary.seed,
-  replicates: summary.replicates, scenarioName: scenario.name, bytes: 1024,
+  id: 'run-1',
+  label: record.label,
+  savedAt,
+  seed: summary.seed,
+  replicates: summary.replicates,
+  scenarioName: scenario.name,
+  bytes: 1024,
 }
-const save: RunHistorySave = { enabled: true, reason: 'Save this ensemble to the run history', run: () => Promise.resolve({ evicted: [] }) }
+const save: RunHistorySave = {
+  enabled: true,
+  reason: 'Save this ensemble to the run history',
+  run: () => Promise.resolve({ evicted: [] }),
+}
 const basis = `Monte Carlo estimate · ${summary.replicates} replicates`
 
 function view(props: Partial<Parameters<typeof RunHistoryView>[0]> = {}) {
-  return renderToStaticMarkup(<RunHistoryView
-    runs={[listed]} opened={null} notice={null} error={null} save={save}
-    onOpen={() => {}} onDelete={() => {}} onSave={() => {}} onImport={() => {}} onExportSqlite={() => {}} {...props} />)
+  return renderToStaticMarkup(
+    <RunHistoryView
+      runs={[listed]}
+      opened={null}
+      notice={null}
+      error={null}
+      save={save}
+      onOpen={() => {}}
+      onDelete={() => {}}
+      onSave={() => {}}
+      onImport={() => {}}
+      onExportSqlite={() => {}}
+      {...props}
+    />,
+  )
 }
 
 describe('RunHistoryView', () => {
@@ -46,9 +77,14 @@ describe('RunHistoryView', () => {
   })
 
   it('offers import beside save and never disables it with the save reason', () => {
-    const html = view({ runs: [], save: { ...save, enabled: false, reason: 'No finished ensemble to save' } })
+    const html = view({
+      runs: [],
+      save: { ...save, enabled: false, reason: 'No finished ensemble to save' },
+    })
     expect(html).toContain('title="Read a saved-run JSON file into this history"')
-    expect(html.indexOf('>Import run</button>')).toBeLessThan(html.indexOf('>Save to history</button>'))
+    expect(html.indexOf('>Import run</button>')).toBeLessThan(
+      html.indexOf('>Save to history</button>'),
+    )
     // Save is disabled by its reason and the SQLite export by the empty list; import never is.
     expect(html.match(/disabled=""/g)).toHaveLength(2)
     expect(html).not.toMatch(/disabled=""[^>]*>Import run</)
@@ -56,18 +92,24 @@ describe('RunHistoryView', () => {
 
   it('reports the empty list, the eviction notice and the load error', () => {
     expect(view({ runs: [] })).toContain('No saved run yet.')
-    expect(view({ notice: 'Saved · 2 oldest records evicted to stay under the size cap.' }))
-      .toContain('2 oldest records evicted')
-    expect(view({ runs: [], error: 'Run history is unavailable: this browser provides no IndexedDB.' }))
-      .toContain('this browser provides no IndexedDB')
+    expect(
+      view({ notice: 'Saved · 2 oldest records evicted to stay under the size cap.' }),
+    ).toContain('2 oldest records evicted')
+    expect(
+      view({ runs: [], error: 'Run history is unavailable: this browser provides no IndexedDB.' }),
+    ).toContain('this browser provides no IndexedDB')
   })
 
   it('disables Save with its reason and renders the opened record below the list', () => {
-    const disabled = view({ save: { ...save, enabled: false, reason: 'No finished ensemble to save' } })
+    const disabled = view({
+      save: { ...save, enabled: false, reason: 'No finished ensemble to save' },
+    })
     expect(disabled).toContain('title="No finished ensemble to save"')
     expect(disabled).toContain('disabled=""')
     const opened = view({ opened: record })
-    expect(opened.indexOf('aria-label="Saved runs"')).toBeLessThan(opened.indexOf('aria-label="Saved run Camp Able · saved"'))
+    expect(opened.indexOf('aria-label="Saved runs"')).toBeLessThan(
+      opened.indexOf('aria-label="Saved run Camp Able · saved"'),
+    )
   })
 })
 
@@ -81,7 +123,11 @@ describe('RunRecordView', () => {
     expect(html).toContain(`${basis} · seed ${summary.seed}`)
     // One basis line per tile, one per table, one in the scope line.
     expect(html.match(new RegExp(basis, 'g'))!.length).toBeGreaterThanOrEqual(7)
-    expect(html).toContain(summary.firstDetectS.interval === 'none' ? 'no interval' : `${summary.firstDetectS.interval} interval`)
+    expect(html).toContain(
+      summary.firstDetectS.interval === 'none'
+        ? 'no interval'
+        : `${summary.firstDetectS.interval} interval`,
+    )
   })
 
   it('renders the per-threat and per-effector tables with the scenario names', () => {
@@ -91,12 +137,14 @@ describe('RunRecordView', () => {
     expect(html).toContain('Per threat · ' + basis)
     expect(html).toContain('Per effector · ' + basis)
     for (const id of Object.keys(summary.perThreat)) {
-      expect(html).toContain(scenario.entities.find(entity => entity.id === id)!.name)
+      expect(html).toContain(scenario.entities.find((entity) => entity.id === id)!.name)
     }
     for (const id of Object.keys(summary.perEffector)) {
-      expect(html).toContain(scenario.entities.find(entity => entity.id === id)!.name)
+      expect(html).toContain(scenario.entities.find((entity) => entity.id === id)!.name)
     }
-    expect(html).toContain('<th scope="col" style="white-space:normal;overflow-wrap:anywhere">Ships</th>')
+    expect(html).toContain(
+      '<th scope="col" style="white-space:normal;overflow-wrap:anywhere">Ships</th>',
+    )
     expect(html).toContain('>Salvos</th>')
   })
 
@@ -117,12 +165,25 @@ describe('RunRecordView', () => {
     for (const label of ['Kills', 'Leakers', 'First detect', 'Min warning']) {
       expect(html).toContain(`aria-label="${label} lineage"`)
     }
-    for (const field of ['Seed', 'Replicates', 'Uncertainty', 'Run mode', 'Engine revision',
-      'Draw policy', 'Data package', 'Overrides', 'Physics switches', 'Fidelity floor', 'Producer']) {
+    for (const field of [
+      'Seed',
+      'Replicates',
+      'Uncertainty',
+      'Run mode',
+      'Engine revision',
+      'Draw policy',
+      'Data package',
+      'Overrides',
+      'Physics switches',
+      'Fidelity floor',
+      'Producer',
+    ]) {
       expect(html).toContain(`<dt>${field}</dt>`)
     }
     // FNV-1a 32-bit of 'basis', as idHash computes it; the raw signature never prints.
-    expect(html).toContain(`<dt>Scenario hash</dt><dd>${idHash('basis').toString(16).padStart(8, '0')}</dd>`)
+    expect(html).toContain(
+      `<dt>Scenario hash</dt><dd>${idHash('basis').toString(16).padStart(8, '0')}</dd>`,
+    )
     expect(html).toContain(`<dt>Seed</dt><dd>${record.manifest.seed}</dd>`)
     expect(html).toContain('<dt>Overrides</dt><dd>none</dd>')
   })
@@ -135,8 +196,21 @@ describe('RunRecordView', () => {
     }
     expect(html).toContain('title="This run carries no sensitivity result"')
     expect(record.sensitivity).toBeNull()
-    const withRows = renderToStaticMarkup(<RunRecordView record={{ ...record, sensitivity: {
-      stat: 'leakers', rows: [], nominal: 1, replicates: 2, seed: 7, elapsedMs: 1 } }} />)
+    const withRows = renderToStaticMarkup(
+      <RunRecordView
+        record={{
+          ...record,
+          sensitivity: {
+            stat: 'leakers',
+            rows: [],
+            nominal: 1,
+            replicates: 2,
+            seed: 7,
+            elapsedMs: 1,
+          },
+        }}
+      />,
+    )
     expect(withRows).toContain('title="Export the sensitivity rows"')
     expect(withRows).not.toContain('title="Export the sensitivity rows" disabled')
   })

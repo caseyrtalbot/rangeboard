@@ -7,7 +7,12 @@ import { EntityWorkspace, type EntityWorkspaceSection } from './EntityWorkspace'
 function render(entityId: string, section: EntityWorkspaceSection): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(
-    <EntityWorkspace entityId={entityId} section={section} onSectionChange={() => {}} onOverview={() => {}} />,
+    <EntityWorkspace
+      entityId={entityId}
+      section={section}
+      onSectionChange={() => {}}
+      onOverview={() => {}}
+    />,
   )
 }
 
@@ -45,7 +50,9 @@ describe('EntityWorkspace', () => {
   it('keeps the section navigation outside the sole workspace scroll region', () => {
     const html = render(useStore.getState().scenario.entities[0].id, 'configure')
     expect(html.match(/class="entity-workspace-scroll"/g)).toHaveLength(1)
-    expect(html.indexOf('role="tablist"')).toBeLessThan(html.indexOf('class="entity-workspace-scroll"'))
+    expect(html.indexOf('role="tablist"')).toBeLessThan(
+      html.indexOf('class="entity-workspace-scroll"'),
+    )
     expect(html).toContain('id="entity-section-telemetry"')
     expect(html).toContain('id="entity-section-configure" role="tab" aria-selected="true"')
     expect(html).toContain('aria-labelledby="entity-section-configure"')
@@ -62,7 +69,9 @@ describe('EntityWorkspace', () => {
     expect(html).toContain('Open Configure')
     expect(html).not.toContain('source-entries')
     expect(useStore.getState().selection.entityIds).toEqual([entityId])
-    expect(useStore.getState().scenario.entities.every((entity) => entity.specId === null)).toBe(true)
+    expect(useStore.getState().scenario.entities.every((entity) => entity.specId === null)).toBe(
+      true,
+    )
   })
 
   it('leaves the existing shared scope intact when a library duplicate is created', () => {
@@ -71,7 +80,9 @@ describe('EntityWorkspace', () => {
     const html = render(state.scenario.entities[0].id, 'model')
     expect(html).toContain('Edits to this model affect all 2 linked instances.')
     expect(html).not.toContain('(copy)')
-    expect(useStore.getState().scenario.entities.some((entity) => entity.specId === copyId)).toBe(false)
+    expect(useStore.getState().scenario.entities.some((entity) => entity.specId === copyId)).toBe(
+      false,
+    )
     expect(useStore.getState().selection).toBe(state.selection)
   })
 

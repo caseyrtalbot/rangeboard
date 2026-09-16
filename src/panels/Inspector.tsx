@@ -16,15 +16,7 @@ import {
   MOUNT_HEIGHT_M,
   physicsSwitches,
 } from '../model/types'
-import {
-  Actions,
-  EmptyState,
-  ObjectHeader,
-  PfTag,
-  pfaText,
-  Row,
-  Section,
-} from './inspector/kit'
+import { Actions, EmptyState, ObjectHeader, PfTag, pfaText, Row, Section } from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
 import { ProvMark, Seg } from '../ui/kit'
 import type { ProvKind } from '../ui/kit'
@@ -268,7 +260,13 @@ function AgainstThreats({ spec }: { spec: SensorSpec }) {
         const gate = sensorHoldGate(spec, m.uas)
         const label = m.threatProfile?.designator ?? m.name
         if (gate !== 'ok') return <Row key={m.id} label={label} value={GATE_WORD[gate]} muted />
-        const r = effectiveDetectRangeM(spec, scenario.environment, m.uas, thresholds.pdDetect, physics)
+        const r = effectiveDetectRangeM(
+          spec,
+          scenario.environment,
+          m.uas,
+          thresholds.pdDetect,
+          physics,
+        )
         return (
           <Row
             key={m.id}
@@ -368,11 +366,7 @@ function PathSpeedField({ path, cruise, max }: { path: FlightPath; cruise: numbe
   const { updatePath } = useStore.getState()
   const [customDraft, setCustomDraft] = useState(false)
   const stored =
-    path.speedMps == null
-      ? 'cruise'
-      : path.speedMps === max && max !== cruise
-        ? 'max'
-        : 'custom'
+    path.speedMps == null ? 'cruise' : path.speedMps === max && max !== cruise ? 'max' : 'custom'
   const mode = customDraft ? 'custom' : stored
   return (
     <div className="field">
@@ -516,17 +510,15 @@ function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
           unit={tactic.axes > 1 ? `across ${tactic.axisSpreadDeg}°` : undefined}
         />
         <Row label="Standoff" value={formatDistance(tactic.standoffM, units)} />
-        {tactic.decoy && (
-          <Row label="Decoys" value={`1 in ${tactic.decoy.everyNth}`} />
-        )}
+        {tactic.decoy && <Row label="Decoys" value={`1 in ${tactic.decoy.everyNth}`} />}
         <p className="muted small">
           Standoff is that range or beyond every sensor detection ring, whichever is greater.
         </p>
         {existingWaves > 0 && (
           <p className="muted small">
             New waves add alongside the {existingWaves} existing{' '}
-            {existingWaves === 1 ? 'wave' : 'waves'}; delays restart at 0. Adjust wave delays in
-            the timeline strip to sequence them.
+            {existingWaves === 1 ? 'wave' : 'waves'}; delays restart at 0. Adjust wave delays in the
+            timeline strip to sequence them.
           </p>
         )}
       </Section>
@@ -605,7 +597,10 @@ function IntegrationSection({ entity }: { entity: Entity }) {
     const w = host instanceof HTMLElement ? host.clientWidth : 800
     const h = host instanceof HTMLElement ? host.clientHeight : 600
     const x = Math.min(Math.max(entity.pos.x * camera.scale + camera.x + 16, 8), w - 280)
-    const y = Math.min(Math.max(entity.pos.y * camera.scale + camera.y + 16, 8), Math.max(h - 260, 8))
+    const y = Math.min(
+      Math.max(entity.pos.y * camera.scale + camera.y + 16, 8),
+      Math.max(h - 260, 8),
+    )
     openConnectSuggestion(entity.id, { x, y }, { always: true })
   }
 
@@ -759,7 +754,9 @@ function EntityInspector({ entity }: { entity: Entity }) {
               step={0.1}
               value={(entity.pos.x / 1000).toFixed(2)}
               onChange={(e) =>
-                updateEntity(entity.id, { pos: { ...entity.pos, x: Number(e.target.value) * 1000 } })
+                updateEntity(entity.id, {
+                  pos: { ...entity.pos, x: Number(e.target.value) * 1000 },
+                })
               }
             />
           </Field>
@@ -795,7 +792,9 @@ function EntityInspector({ entity }: { entity: Entity }) {
               aria-label="Heading, degrees (value)"
               value={Math.round(entity.headingDeg)}
               onChange={(e) =>
-                updateEntity(entity.id, { headingDeg: ((Number(e.target.value) % 360) + 360) % 360 })
+                updateEntity(entity.id, {
+                  headingDeg: ((Number(e.target.value) % 360) + 360) % 360,
+                })
               }
             />
           </div>
@@ -811,8 +810,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
                 value={entity.altitudeFt ?? ''}
                 onChange={(e) =>
                   updateEntity(entity.id, {
-                    altitudeFt:
-                      e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
+                    altitudeFt: e.target.value === '' ? null : Math.max(0, Number(e.target.value)),
                   })
                 }
               />
@@ -877,12 +875,23 @@ function EntityInspector({ entity }: { entity: Entity }) {
               tag={<PfTag model={model} field="instrumentedRangeM" />}
             />
           )}
-          {effectiveDetectRangeM(model.sensor, scenario.environment, undefined, undefined, physicsSwitches(scenario)) !==
-            model.sensor.detectRangeM && (
+          {effectiveDetectRangeM(
+            model.sensor,
+            scenario.environment,
+            undefined,
+            undefined,
+            physicsSwitches(scenario),
+          ) !== model.sensor.detectRangeM && (
             <Row
               label="Detection, this environment"
               value={formatDistance(
-                effectiveDetectRangeM(model.sensor, scenario.environment, undefined, undefined, physicsSwitches(scenario)),
+                effectiveDetectRangeM(
+                  model.sensor,
+                  scenario.environment,
+                  undefined,
+                  undefined,
+                  physicsSwitches(scenario),
+                ),
                 units,
               )}
             />
@@ -1036,9 +1045,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
             label="IR signature"
             value={irSignatureFor(model.uas)}
             unit={model.uas.irSignature == null ? 'default' : undefined}
-            tag={
-              <PfTag model={model} field="irSignature" absent={model.uas.irSignature == null} />
-            }
+            tag={<PfTag model={model} field="irSignature" absent={model.uas.irSignature == null} />}
             title="Thermal contrast class. Multiplies EO/IR range when the thermal channel carries."
           />
           <Row
@@ -1088,10 +1095,10 @@ function EntityInspector({ entity }: { entity: Entity }) {
             }
           />
           <p className="muted small">
-            A threat that crosses this radius has ARRIVED at the asset. Arrival sets warning
-            time, and it separates a defeat that protected the asset from one that landed too
-            late. Leave the field empty to use the{' '}
-            {formatDistance(DEFAULT_DEFENDED_RADIUS_M, units)} planning factor.
+            A threat that crosses this radius has ARRIVED at the asset. Arrival sets warning time,
+            and it separates a defeat that protected the asset from one that landed too late. Leave
+            the field empty to use the {formatDistance(DEFAULT_DEFENDED_RADIUS_M, units)} planning
+            factor.
           </p>
         </Section>
       )}
@@ -1313,14 +1320,21 @@ function EntityInspector({ entity }: { entity: Entity }) {
       </Section>
 
       <Actions>
-        <button onClick={() => {
-          select({ entityIds: [entity.id] })
-          setTool('connect')
-        }}>Connect from here</button>
-        <button className="danger" onClick={() => {
-          select({ entityIds: [entity.id] })
-          deleteSelection()
-        }}>
+        <button
+          onClick={() => {
+            select({ entityIds: [entity.id] })
+            setTool('connect')
+          }}
+        >
+          Connect from here
+        </button>
+        <button
+          className="danger"
+          onClick={() => {
+            select({ entityIds: [entity.id] })
+            deleteSelection()
+          }}
+        >
           Delete
         </button>
       </Actions>
@@ -1516,7 +1530,9 @@ export function Inspector({ entityId }: { entityId?: string } = {}) {
 
   if (entityId != null) {
     const explicitEntity = scenario.entities.find((e) => e.id === entityId)
-    return explicitEntity ? <EntityInspector entity={explicitEntity} /> : (
+    return explicitEntity ? (
+      <EntityInspector entity={explicitEntity} />
+    ) : (
       <div className="inspector-body insp">
         <EmptyState title="Entity unavailable" body="This entity is no longer on the board." />
       </div>

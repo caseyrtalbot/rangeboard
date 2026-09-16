@@ -1,23 +1,40 @@
 import { expect, it } from 'vitest'
 import { emptyScenario } from './seed'
 import type { Entity, FlightPath } from './types'
-import { engineKeyOf, markPresentationVariant, modelFor, pathSpeed, scenarioDurationS } from './scenario'
+import {
+  engineKeyOf,
+  markPresentationVariant,
+  modelFor,
+  pathSpeed,
+  scenarioDurationS,
+} from './scenario'
 
 const entity: Entity = {
-  id: 'r1-uas', kind: 'uas', specId: 'lib-shahed136', name: 'R1 path probe',
-  pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '',
+  id: 'r1-uas',
+  kind: 'uas',
+  specId: 'lib-shahed136',
+  name: 'R1 path probe',
+  pos: { x: 0, y: 0 },
+  headingDeg: 0,
+  color: null,
+  notes: '',
 }
 const path: FlightPath = {
-  id: 'r1-path', entityId: entity.id,
-  points: [{ x: 0, y: 0 }, { x: 3000, y: 4000 }],
-  speedMps: null, startDelayS: 0,
+  id: 'r1-path',
+  entityId: entity.id,
+  points: [
+    { x: 0, y: 0 },
+    { x: 3000, y: 4000 },
+  ],
+  speedMps: null,
+  startDelayS: 0,
 }
 
 it('resolves model identity and preserves the speed override, cruise and missing-model fallback', () => {
   const s = emptyScenario()
   s.entities = [entity]
   // Pin this helper test independently of sourced seed speed updates.
-  const model = s.library.find(m => m.id === entity.specId)!
+  const model = s.library.find((m) => m.id === entity.specId)!
   model.uas = { ...model.uas!, cruiseSpeedMps: 50 }
   expect(modelFor(s, entity)).toBe(model)
   expect(pathSpeed(s, path)).toBe(50)

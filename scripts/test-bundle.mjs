@@ -12,11 +12,14 @@ function fixture(t, entry = 'export const ready = true') {
   t.after(() => rmSync(root, { recursive: true, force: true }))
   mkdirSync(join(root, 'assets'))
   const put = (file, text) => writeFileSync(join(root, file), text)
-  put('index.html', `<script type="module" src="/assets/index.js"></script>
+  put(
+    'index.html',
+    `<script type="module" src="/assets/index.js"></script>
     <link rel="modulepreload" href="/assets/shared.js">
     <link rel="modulepreload" href="/assets/shared.js?duplicate">
     <link rel="stylesheet" href="/assets/index.css">
-    <link rel="preload" as="font" href="/assets/font.woff2">`)
+    <link rel="preload" as="font" href="/assets/font.woff2">`,
+  )
   put('assets/index.js', entry)
   put('assets/shared.js', 'export const shared = true')
   put('assets/index.css', 'body { color: white }')
@@ -30,8 +33,14 @@ test('counts entry, modulepreloads and CSS once; reports font and all-in totals,
   const result = measureBundle(root)
   assert.equal(result.files.length, 4)
   const bytes = Object.fromEntries(result.files.map(({ file, gzipBytes }) => [file, gzipBytes]))
-  assert.equal(result.entryBytes, execFileSync('gzip', ['-9', '-c'], { input: 'export const ready = true' }).length)
-  assert.equal(result.initialBytes, bytes['assets/index.js'] + bytes['assets/shared.js'] + bytes['assets/index.css'])
+  assert.equal(
+    result.entryBytes,
+    execFileSync('gzip', ['-9', '-c'], { input: 'export const ready = true' }).length,
+  )
+  assert.equal(
+    result.initialBytes,
+    bytes['assets/index.js'] + bytes['assets/shared.js'] + bytes['assets/index.css'],
+  )
   assert.equal(result.preloadBytes, bytes['assets/font.woff2'])
   assert.equal(result.allBytes, result.initialBytes + result.preloadBytes)
   assert.deepEqual(budgetFailures(result), [])
@@ -40,12 +49,16 @@ test('counts entry, modulepreloads and CSS once; reports font and all-in totals,
 test('budget boundaries use exact decimal bytes and allow equality', () => {
   assert.deepEqual(budgetFailures({ entryBytes: 364_000, initialBytes: 400_000 }), [])
   assert.equal(budgetFailures({ entryBytes: 364_001, initialBytes: 400_000 }).length, 1)
-  assert.match(budgetFailures({ entryBytes: 364_000, initialBytes: 400_001 })[0], /Initial JavaScript \+ CSS/)
+  assert.match(
+    budgetFailures({ entryBytes: 364_000, initialBytes: 400_001 })[0],
+    /Initial JavaScript \+ CSS/,
+  )
 })
 
 test('CLI passes a small bundle and fails an entry whose gzip size exceeds its budget', (t) => {
   const { root, put } = fixture(t)
-  const run = () => spawnSync(process.execPath, ['scripts/check-bundle.mjs', root], { encoding: 'utf8' })
+  const run = () =>
+    spawnSync(process.execPath, ['scripts/check-bundle.mjs', root], { encoding: 'utf8' })
   assert.equal(run().status, 0)
   put('assets/index.js', randomBytes(380_000))
   const result = run()
@@ -57,7 +70,9 @@ test('CLI fails when shared JS and CSS push the initial set over budget', (t) =>
   const { root, put } = fixture(t, randomBytes(240_000))
   put('assets/shared.js', randomBytes(100_000))
   put('assets/index.css', randomBytes(70_000))
-  const result = spawnSync(process.execPath, ['scripts/check-bundle.mjs', root], { encoding: 'utf8' })
+  const result = spawnSync(process.execPath, ['scripts/check-bundle.mjs', root], {
+    encoding: 'utf8',
+  })
   assert.equal(result.status, 1)
   assert.match(result.stderr, /Initial JavaScript \+ CSS exceeds 400000/)
   assert.doesNotMatch(result.stderr, /Entry exceeds/)

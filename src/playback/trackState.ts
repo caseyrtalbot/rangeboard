@@ -57,8 +57,7 @@ export const EW_JAM_COLOR = '#5ad1e0'
  * ENGAGED latches: see TrackFileState.firstSalvoAtS.
  */
 export type TrackPhase =
-  | 'undetected' | 'searching' | 'tracked' | 'identified'
-  | 'targeted' | 'engaged' | 'ghost'
+  'undetected' | 'searching' | 'tracked' | 'identified' | 'targeted' | 'engaged' | 'ghost'
 
 /**
  * Canonical phase presentation. One table, so the canvas ring and the
@@ -187,15 +186,17 @@ type EffectorEngagementMode = 'semi-active' | 'active' | 'beam'
  * 'depleted' means the magazine is spent; a live salvo outranks it, so the
  * guidance treatment still plays out on the last round in flight.
  */
-export type EffectorLiveState = 'idle' | 'preparing' | 'timing-unavailable' | 'semi-active' | 'active' | 'beam' | 'depleted'
+export type EffectorLiveState =
+  'idle' | 'preparing' | 'timing-unavailable' | 'semi-active' | 'active' | 'beam' | 'depleted'
 
 /** Researched guidance value to draw treatment. */
-const GUIDANCE_MODE: Record<'fc-uplink' | 'c2-cue' | 'self' | 'operator', EffectorEngagementMode> = {
-  'fc-uplink': 'semi-active',
-  operator: 'semi-active',
-  'c2-cue': 'active',
-  self: 'active',
-}
+const GUIDANCE_MODE: Record<'fc-uplink' | 'c2-cue' | 'self' | 'operator', EffectorEngagementMode> =
+  {
+    'fc-uplink': 'semi-active',
+    operator: 'semi-active',
+    'c2-cue': 'active',
+    self: 'active',
+  }
 
 /** Effector-type fallback when no integration profile carries a guidance. */
 const TYPE_MODE: Record<EffectorSpec['effectorType'], EffectorEngagementMode> = {
@@ -424,7 +425,10 @@ export function trialShotTimelineOf(scenario: Scenario, report: AttritionReport)
   return timeline
 }
 
-const trialShotCache = new WeakMap<AttritionReport, { scenario: Scenario; timeline: TrackTimeline }>()
+const trialShotCache = new WeakMap<
+  AttritionReport,
+  { scenario: Scenario; timeline: TrackTimeline }
+>()
 
 /** Prefix-aggregate the whole-run forecast. Pure; `trackTimelineOf` is the cached entry. */
 export function buildTrackTimeline(
@@ -624,7 +628,10 @@ export function buildTrackTimeline(
     modeById.set(e.id, effectorEngagementMode(e.specId, spec?.effectorType))
     effectors.push({
       effectorId: e.id,
-      assignTS: report.events.filter((ev) => ev.effectorId === e.id).map((ev) => ev.tS).sort(ascending),
+      assignTS: report.events
+        .filter((ev) => ev.effectorId === e.id)
+        .map((ev) => ev.tS)
+        .sort(ascending),
       magazineSize: spec?.magazineSize ?? null,
     })
   }
@@ -680,7 +687,7 @@ export function buildTrackTimeline(
       to: { x: to.x, y: to.y },
       mode: !engagementIsKinetic(ev)
         ? 'beam'
-        : modeById.get(ev.effectorId) ?? effectorEngagementMode(null, ev.effectorType),
+        : (modeById.get(ev.effectorId) ?? effectorEngagementMode(null, ev.effectorType)),
     })
   }
   shots.sort((x, y) => x.tS - y.tS)
@@ -719,13 +726,11 @@ export function trackStatesAt(tl: TrackTimeline, tS: number): Map<string, TrackF
     const eliminated = tr.eliminatedAtS != null && tS >= tr.eliminatedAtS
     // Each dwell start pairs with one dwell end, so starts-so-far minus
     // ends-so-far counts the dwells live at t even when dwells overlap.
-    const ewDwellLive =
-      countAtMost(tr.ewLiveStartTS, tS) - countAtMost(tr.ewLiveEndTS, tS) > 0
+    const ewDwellLive = countAtMost(tr.ewLiveStartTS, tS) - countAtMost(tr.ewLiveEndTS, tS) > 0
     const jammedNow = !eliminated && (ewDwellLive || jammedFraction >= JAMMED_AT)
 
     // Stays null until the first shot is taken: no field here may read ahead of t.
-    const firstSalvoAtS =
-      tr.assignTS.length > 0 && tS >= tr.assignTS[0] ? tr.assignTS[0] : null
+    const firstSalvoAtS = tr.assignTS.length > 0 && tS >= tr.assignTS[0] ? tr.assignTS[0] : null
 
     let phase: TrackPhase = 'undetected'
     if (eliminated) phase = 'ghost'
@@ -784,7 +789,9 @@ function liveShots(tl: TrackTimeline, tS: number): ShotRecord[] {
 /** Released salvos only. Kinetic zero-flight intervals never fabricate travel. */
 export function shotsInFlightAt(tl: TrackTimeline, tS: number): ShotInFlight[] {
   return liveShots(tl, tS)
-    .filter((s): s is ShotRecord & { tReleaseS: number } => s.tReleaseS != null && tS >= s.tReleaseS)
+    .filter(
+      (s): s is ShotRecord & { tReleaseS: number } => s.tReleaseS != null && tS >= s.tReleaseS,
+    )
     .map((s) => ({
       effectorId: s.effectorId,
       uasId: s.uasId,
@@ -813,7 +820,8 @@ export function shotsInFlightAt(tl: TrackTimeline, tS: number): ShotInFlight[] {
 export function effectorStatesAt(tl: TrackTimeline, tS: number): Map<string, EffectorLiveState> {
   const out = new Map<string, EffectorLiveState>()
   for (const s of liveShots(tl, tS)) {
-    const state = s.tReleaseS == null ? 'timing-unavailable' : tS < s.tReleaseS ? 'preparing' : s.mode
+    const state =
+      s.tReleaseS == null ? 'timing-unavailable' : tS < s.tReleaseS ? 'preparing' : s.mode
     const current = out.get(s.effectorId)
     // A released round keeps its guidance cue while the next round prepares.
     if (current == null || current === 'preparing' || current === 'timing-unavailable') {

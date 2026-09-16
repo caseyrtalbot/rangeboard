@@ -38,7 +38,11 @@ describe('morrisDesign', () => {
     expect(morrisDesign(4, 10, 4821, 4)).toEqual(d)
     expect(morrisDesign(4, 10, 4822, 4)).not.toEqual(d)
     // Odd levels keep the base point where a step fits.
-    expect(morrisDesign(3, 20, 1, 5).rows.flat().every((u) => u >= 0 && u <= 1)).toBe(true)
+    expect(
+      morrisDesign(3, 20, 1, 5)
+        .rows.flat()
+        .every((u) => u >= 0 && u <= 1),
+    ).toBe(true)
   })
 })
 
@@ -83,10 +87,16 @@ describe('morrisLoop', () => {
     // Only the one field listed moves.
     const only = rowScenario(s, [fields[pk]], [1])
     expect(coyote(only)).toBe(coyote(rowScenario(s, fields, one)))
-    expect(only.library.find((m) => m.id === 'lib-kurfs')).toBe(s.library.find((m) => m.id === 'lib-kurfs'))
+    expect(only.library.find((m) => m.id === 'lib-kurfs')).toBe(
+      s.library.find((m) => m.id === 'lib-kurfs'),
+    )
     expect(fieldGroup(s, fields[pk])).toBe('effector')
-    expect(fieldGroup(s, { modelId: 'doctrine', field: 'declareHostileS', spread: fields[0].spread })).toBe('doctrine')
-    expect(fieldGroup(s, { modelId: 'con-mtnvzhmr-27', field: 'latencyS', spread: fields[0].spread })).toBe('connection')
+    expect(
+      fieldGroup(s, { modelId: 'doctrine', field: 'declareHostileS', spread: fields[0].spread }),
+    ).toBe('doctrine')
+    expect(
+      fieldGroup(s, { modelId: 'con-mtnvzhmr-27', field: 'latencyS', spread: fields[0].spread }),
+    ).toBe('connection')
   })
 
   it('screens the JIATF-401 first detect: KuRFS range leads, kept is the top eight, evaluations 10 (k + 1)', () => {
@@ -101,15 +111,24 @@ describe('morrisLoop', () => {
     let next = loop.next()
     while (!next.done) next = loop.next()
     const result = next.value as MorrisResult
-    expect(result).toMatchObject({ method: 'morris', trajectories: 10, response: 'firstDetectS', seed: 4821 })
+    expect(result).toMatchObject({
+      method: 'morris',
+      trajectories: 10,
+      response: 'firstDetectS',
+      seed: 4821,
+    })
     expect(result.evaluations).toBe(10 * (k + 1))
     expect(progress).toHaveLength(result.evaluations)
     expect(progress.at(-1)).toEqual([result.evaluations, result.evaluations])
     expect(result.fields).toHaveLength(k)
     expect(result.ranking).toHaveLength(k)
-    expect([...result.ranking].sort((a, b) => a - b)).toEqual(Array.from({ length: k }, (_, i) => i))
+    expect([...result.ranking].sort((a, b) => a - b)).toEqual(
+      Array.from({ length: k }, (_, i) => i),
+    )
     for (let r = 1; r < k; r += 1) {
-      expect(result.fields[result.ranking[r - 1]].muStar).toBeGreaterThanOrEqual(result.fields[result.ranking[r]].muStar)
+      expect(result.fields[result.ranking[r - 1]].muStar).toBeGreaterThanOrEqual(
+        result.fields[result.ranking[r]].muStar,
+      )
     }
     expect(result.kept).toEqual(result.ranking.slice(0, 8))
     const top = result.fields[result.ranking[0]].field

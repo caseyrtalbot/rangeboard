@@ -89,7 +89,11 @@ export function isLogPrior(prior: FieldPrior): prior is LogPrior {
  * mean, lo = -sd * sqrt(6) / mean and hi = +sd * sqrt(6) / mean. Null when the
  * mean is 0, as no fraction of it exists.
  */
-export function classPriorFor(model: SpecModel, field: string, table: ClassPriorTable = CLASS_PRIORS): Spread | null {
+export function classPriorFor(
+  model: SpecModel,
+  field: string,
+  table: ClassPriorTable = CLASS_PRIORS,
+): Spread | null {
   const key = classOfModel(model)
   const prior = key ? table[key]?.fields[field] : undefined
   if (!prior) return null

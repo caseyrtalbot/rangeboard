@@ -13,13 +13,7 @@
  */
 
 /** The five categorical chart hues, in slot order. Fixed values. */
-export const CHART_HUES: readonly string[] = [
-  '#3987e5',
-  '#d95926',
-  '#199e70',
-  '#c98500',
-  '#d55181',
-]
+export const CHART_HUES: readonly string[] = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181']
 
 /** Token names for the five chart hue slots. */
 export const CHART_SLOT_TOKENS: readonly string[] = [
@@ -78,8 +72,7 @@ export interface ChartTokens {
  * `TOKEN_FALLBACK`. Call it once per chart render, never per point and never at module load.
  */
 export function readTokens(): ChartTokens {
-  const style =
-    typeof document === 'undefined' ? null : getComputedStyle(document.documentElement)
+  const style = typeof document === 'undefined' ? null : getComputedStyle(document.documentElement)
   const cache = new Map<string, string>()
   const read = (name: string): string => {
     const hit = cache.get(name)

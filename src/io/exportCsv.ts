@@ -32,15 +32,25 @@ function num(value: number | null | undefined): string {
 /** The seven columns one `Stat` occupies: the mean, its interval, and its definedness. */
 function statHeader(name: string, unit: string): string[] {
   return [
-    `${name}_mean (${unit})`, `${name}_lo (${unit})`, `${name}_hi (${unit})`,
-    `${name}_conf`, `${name}_interval`, `${name}_defined_n (replicates)`, `${name}_total (replicates)`,
+    `${name}_mean (${unit})`,
+    `${name}_lo (${unit})`,
+    `${name}_hi (${unit})`,
+    `${name}_conf`,
+    `${name}_interval`,
+    `${name}_defined_n (replicates)`,
+    `${name}_total (replicates)`,
   ]
 }
 
 function statCells(stat: Stat): string[] {
   return [
-    num(stat.mean), num(stat.lo), num(stat.hi),
-    num(stat.conf), stat.interval, String(stat.n), String(stat.total),
+    num(stat.mean),
+    num(stat.lo),
+    num(stat.hi),
+    num(stat.conf),
+    stat.interval,
+    String(stat.n),
+    String(stat.total),
   ]
 }
 
@@ -49,8 +59,11 @@ const RECORD_HEADER = ['run_label', 'saved_at (ISO 8601)', 'seed', 'replicates',
 
 function recordCells(record: RunRecord): string[] {
   return [
-    record.label, record.savedAt, String(record.mc.seed),
-    String(record.mc.replicates), num(record.mc.durationS),
+    record.label,
+    record.savedAt,
+    String(record.mc.seed),
+    String(record.mc.replicates),
+    num(record.mc.durationS),
   ]
 }
 
@@ -60,14 +73,24 @@ const entityName = (record: RunRecord, id: string) =>
 /** One row per threat: its ships, its arrival geometry and its three statistics. */
 export function perThreatCsv(record: RunRecord): string {
   const header = [
-    ...RECORD_HEADER, 'threat_id', 'threat_name', 'ships (count)', 'arrival (s from T0)',
-    ...statHeader('killed', 'ships'), ...statHeader('leaked', 'ships'),
+    ...RECORD_HEADER,
+    'threat_id',
+    'threat_name',
+    'ships (count)',
+    'arrival (s from T0)',
+    ...statHeader('killed', 'ships'),
+    ...statHeader('leaked', 'ships'),
     ...statHeader('first_detect', 's from T0'),
   ]
   const rows = Object.entries(record.mc.perThreat).map(([id, threat]) => [
-    ...recordCells(record), id, entityName(record, id),
-    String(threat.shipCount), num(threat.arrivalS),
-    ...statCells(threat.killed), ...statCells(threat.leaked), ...statCells(threat.firstDetectS),
+    ...recordCells(record),
+    id,
+    entityName(record, id),
+    String(threat.shipCount),
+    num(threat.arrivalS),
+    ...statCells(threat.killed),
+    ...statCells(threat.leaked),
+    ...statCells(threat.firstDetectS),
   ])
   return csvText(header, rows)
 }
@@ -75,12 +98,18 @@ export function perThreatCsv(record: RunRecord): string {
 /** One row per effector: the salvos it fired and the kills credited to it. */
 export function perEffectorCsv(record: RunRecord): string {
   const header = [
-    ...RECORD_HEADER, 'effector_id', 'effector_name',
-    ...statHeader('salvos', 'salvos'), ...statHeader('kills', 'ships'),
+    ...RECORD_HEADER,
+    'effector_id',
+    'effector_name',
+    ...statHeader('salvos', 'salvos'),
+    ...statHeader('kills', 'ships'),
   ]
   const rows = Object.entries(record.mc.perEffector).map(([id, effector]) => [
-    ...recordCells(record), id, entityName(record, id),
-    ...statCells(effector.salvos), ...statCells(effector.kills),
+    ...recordCells(record),
+    id,
+    entityName(record, id),
+    ...statCells(effector.salvos),
+    ...statCells(effector.kills),
   ])
   return csvText(header, rows)
 }
@@ -99,11 +128,27 @@ const RESPONSE_UNIT: Record<SensitivityResponse, string> = {
  * per-response block carries its leakers aliases alone, so it prints that one
  * response and leaves the definedness columns empty rather than assuming them.
  */
-export function sensitivityCsv(summary: SensitivitySummary, label: string, savedAt: string): string {
+export function sensitivityCsv(
+  summary: SensitivitySummary,
+  label: string,
+  savedAt: string,
+): string {
   const header = [
-    'run_label', 'saved_at (ISO 8601)', 'seed', 'replicates',
-    'model_id', 'field', 'label', 'response', 'unit',
-    'low', 'high', 'swing', 'swing_se', 'low_defined_p', 'high_defined_p',
+    'run_label',
+    'saved_at (ISO 8601)',
+    'seed',
+    'replicates',
+    'model_id',
+    'field',
+    'label',
+    'response',
+    'unit',
+    'low',
+    'high',
+    'swing',
+    'swing_se',
+    'low_defined_p',
+    'high_defined_p',
     'nominal_leakers (ships)',
   ]
   const identity = [label, savedAt, String(summary.seed), String(summary.replicates)]
@@ -111,15 +156,40 @@ export function sensitivityCsv(summary: SensitivitySummary, label: string, saved
   for (const row of summary.rows) {
     const responses = row.responses
     if (!responses) {
-      rows.push([...identity, row.modelId, row.field, row.label, 'leakers', RESPONSE_UNIT.leakers,
-        num(row.low), num(row.high), num(row.swing), num(row.se), '', '', num(summary.nominal)])
+      rows.push([
+        ...identity,
+        row.modelId,
+        row.field,
+        row.label,
+        'leakers',
+        RESPONSE_UNIT.leakers,
+        num(row.low),
+        num(row.high),
+        num(row.swing),
+        num(row.se),
+        '',
+        '',
+        num(summary.nominal),
+      ])
       continue
     }
     for (const response of SENSITIVITY_RESPONSES) {
       const stat = responses[response]
-      rows.push([...identity, row.modelId, row.field, row.label, response, RESPONSE_UNIT[response],
-        num(stat.lo), num(stat.hi), num(stat.swing), num(stat.se),
-        num(stat.defined.lo.p), num(stat.defined.hi.p), num(summary.nominal)])
+      rows.push([
+        ...identity,
+        row.modelId,
+        row.field,
+        row.label,
+        response,
+        RESPONSE_UNIT[response],
+        num(stat.lo),
+        num(stat.hi),
+        num(stat.swing),
+        num(stat.se),
+        num(stat.defined.lo.p),
+        num(stat.defined.hi.p),
+        num(summary.nominal),
+      ])
     }
   }
   return csvText(header, rows)
@@ -136,7 +206,9 @@ export interface CsvTable {
 export function runCsvTable(record: RunRecord, name: CsvTableName): string | null {
   if (name === 'per-threat') return perThreatCsv(record)
   if (name === 'per-effector') return perEffectorCsv(record)
-  return record.sensitivity ? sensitivityCsv(record.sensitivity, record.label, record.savedAt) : null
+  return record.sensitivity
+    ? sensitivityCsv(record.sensitivity, record.label, record.savedAt)
+    : null
 }
 
 /** Every table the record can fill, in file order. */

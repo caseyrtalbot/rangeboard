@@ -65,8 +65,14 @@ function draw(seed: number, trajectory: number, part: number, index: number): nu
  * stays in the hypercube; each factor's direction and the factor order are
  * keyed draws of (seed, trajectory), so the design is the same on any thread.
  */
-export function morrisDesign(k: number, trajectories: number, seed: number, levels: number): MorrisDesign {
-  if (!Number.isInteger(levels) || levels < 2) throw new Error(`Morris takes 2 or more levels, not ${levels}`)
+export function morrisDesign(
+  k: number,
+  trajectories: number,
+  seed: number,
+  levels: number,
+): MorrisDesign {
+  if (!Number.isInteger(levels) || levels < 2)
+    throw new Error(`Morris takes 2 or more levels, not ${levels}`)
   const delta = levels / (2 * (levels - 1))
   // Grid points a step of delta can leave without leaving the hypercube.
   const lowerGrid = Math.floor(levels / 2)

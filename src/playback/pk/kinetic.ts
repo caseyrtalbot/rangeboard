@@ -109,10 +109,8 @@ export function projectileMissSigmaM(
   fireControlErrorMils: number,
   predictionSigmaM: number | null,
 ): number {
-  const angularSigmaM = Math.max(0, slantM) * Math.hypot(
-    dispersionMils * MIL_TO_RAD,
-    fireControlErrorMils * MIL_TO_RAD,
-  )
+  const angularSigmaM =
+    Math.max(0, slantM) * Math.hypot(dispersionMils * MIL_TO_RAD, fireControlErrorMils * MIL_TO_RAD)
   return Math.hypot(angularSigmaM, predictionSigmaM ?? 0)
 }
 
@@ -157,12 +155,7 @@ export function kineticEffectProbability(
   spec: EffectorSpec,
   context: KineticEffectContext,
 ): number {
-  const legacy = kineticPk(
-    context.basePk,
-    spec.maxRangeM,
-    context.uas,
-    context.slantM,
-  )
+  const legacy = kineticPk(context.basePk, spec.maxRangeM, context.uas, context.slantM)
   if (context.fallback) return legacy
 
   if (spec.effectorType === 'interceptor') {
@@ -177,13 +170,14 @@ export function kineticEffectProbability(
   if (spec.effectorType === 'gun') {
     const rounds = projectileCount(spec)
     if (
-      !validNonNegative(spec.dispersionMils)
-      || !validNonNegative(spec.fireControlErrorMils)
-      || rounds == null
-      || !validPositive(spec.rateOfFireRpm)
-      || !validPositive(spec.muzzleVelocityMps)
-      || context.uas == null
-    ) return legacy
+      !validNonNegative(spec.dispersionMils) ||
+      !validNonNegative(spec.fireControlErrorMils) ||
+      rounds == null ||
+      !validPositive(spec.rateOfFireRpm) ||
+      !validPositive(spec.muzzleVelocityMps) ||
+      context.uas == null
+    )
+      return legacy
     const sigmaM = projectileMissSigmaM(
       context.slantM,
       spec.dispersionMils,

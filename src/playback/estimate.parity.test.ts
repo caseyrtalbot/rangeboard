@@ -34,7 +34,13 @@ function trialOf(fixture: unknown, name: string) {
 
 const pick = (r: ReturnType<typeof runTrial>) =>
   r.assessments.map((t) => [
-    t.uasId, t.status, t.firstDetectS, t.firstConfirmS, t.stableTrackAtS, t.declaredHostileAtS, t.engageGateS,
+    t.uasId,
+    t.status,
+    t.firstDetectS,
+    t.firstConfirmS,
+    t.stableTrackAtS,
+    t.declaredHostileAtS,
+    t.engageGateS,
   ])
 
 const killMass = (r: ReturnType<typeof runTrial>) =>
@@ -55,9 +61,7 @@ function monteCarlo(fixture: unknown) {
 describe('estimate-path parity: the trial at seed 4821, replicate of the gate run id', () => {
   it('JIATF-401 laydown', () => {
     const r = trialOf(jiatfFixture, 'detection-outside-rings')
-    expect(pick(r)).toEqual([
-      ['ent-mtnvzhmr-25', 'engageable', 1, null, 505, 548, 548],
-    ])
+    expect(pick(r)).toEqual([['ent-mtnvzhmr-25', 'engageable', 1, null, 505, 548, 548]])
     expect(r.report.events).toHaveLength(2)
     expect(killMass(r)).toBe(0)
     expect(r.tracks).toHaveLength(3168)

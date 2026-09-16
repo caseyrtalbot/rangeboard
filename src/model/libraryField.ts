@@ -35,7 +35,8 @@ export type LibraryLayer = 'L1' | 'L2' | 'L3'
  * and effective engagement ranges are different quantities and are never
  * substituted for one another.
  */
-export type RangeType = 'detection' | 'instrumented' | 'track' | 'classification' | 'effective-engagement'
+export type RangeType =
+  'detection' | 'instrumented' | 'track' | 'classification' | 'effective-engagement'
 
 /** How an L2 figure was produced when no public value exists. */
 export type FieldEstimator = 'class-median' | 'planning-factor' | 'analyst'
@@ -127,12 +128,19 @@ export interface OverrideSet {
 
 /** Engine simplifications a run may switch on; each is recorded in the manifest. */
 export type PhysicsSwitch =
-  | 'truthTracks' | 'noFalseTracks' | 'noOperatorQueue' | 'singlePulseRadar'
+  | 'truthTracks'
+  | 'noFalseTracks'
+  | 'noOperatorQueue'
+  | 'singlePulseRadar'
   // Phase 3 fallbacks, one per physics lane: constant-speed waypoints with no wind
   // (3.1), the RF band gate with no link budget (3.2), the EO/IR span ratio with the
   // Koschmieder cap (3.3), the shared kinetic Pk formula for interceptors and guns
   // (3.5) and for directed energy and HPM (3.6).
-  | 'noFlightLimits' | 'rfBandGate' | 'eoirSpanRatio' | 'legacyKineticPk' | 'legacyBeamPk'
+  | 'noFlightLimits'
+  | 'rfBandGate'
+  | 'eoirSpanRatio'
+  | 'legacyKineticPk'
+  | 'legacyBeamPk'
 
 /** Lowest model fidelity a run accepted, best to worst. */
 export type FidelityTier = 'analytic' | 'datasheet' | 'calibrated' | 'fallback'

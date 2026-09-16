@@ -427,10 +427,7 @@ describe('AAR late intercepts', () => {
   it('reports the late mass apart and never adds it to the defeat', () => {
     expect(aar.expectedLateKills).toBeGreaterThan(0)
     // The defeat number carries PRE-ARRIVAL mass only.
-    expect(aar.expectedKills).toBeCloseTo(
-      aar.expectedHardKills + aar.expectedSoftKills,
-      9,
-    )
+    expect(aar.expectedKills).toBeCloseTo(aar.expectedHardKills + aar.expectedSoftKills, 9)
     expect(aar.expectedKills + aar.expectedLeakers).toBeCloseTo(aar.raidSize, 9)
     // Late mass sits inside the undefeated bucket, so the two overlap.
     expect(aar.expectedLateKills!).toBeLessThanOrEqual(aar.expectedLeakers + 1e-9)

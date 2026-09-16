@@ -9,9 +9,12 @@ import { detectionsAt } from '../../playback/detection'
 import { SystemStatus } from './SystemStatus'
 
 const scenario = parseAutosave(JSON.stringify(fixture))
-scenario.paths.forEach((path) => { path.startDelayS += 20 })
+scenario.paths.forEach((path) => {
+  path.startDelayS += 20
+})
 const { assessments, report } = engagementPicture(scenario)
-const groupsAt = (t: number) => systemTelemetryAt(scenario, assessments, report, t, detectionsAt(scenario, t))
+const groupsAt = (t: number) =>
+  systemTelemetryAt(scenario, assessments, report, t, detectionsAt(scenario, t))
 
 describe('SystemStatus visibility', () => {
   it('defaults DebriefRecord mounts to full-run telemetry', () => {
@@ -32,14 +35,22 @@ describe('SystemStatus visibility', () => {
   })
 
   it('has no telemetry rows for EMPTY_HORIZON', () => {
-    const html = renderToStaticMarkup(<SystemStatus groups={groupsAt(2000)} horizon={EMPTY_HORIZON} />)
+    const html = renderToStaticMarkup(
+      <SystemStatus groups={groupsAt(2000)} horizon={EMPTY_HORIZON} />,
+    )
     expect(html).toContain('No system telemetry yet.')
     expect(html).not.toContain('system-telemetry-head')
   })
 
   it('rejects unreached or unspecified samples for scoped custom mounts', () => {
     for (const sampledAtS of [undefined, 250]) {
-      const html = renderToStaticMarkup(<SystemStatus groups={groupsAt(2000)} horizon={{ scoped: true, horizonS: 1 }} sampledAtS={sampledAtS} />)
+      const html = renderToStaticMarkup(
+        <SystemStatus
+          groups={groupsAt(2000)}
+          horizon={{ scoped: true, horizonS: 1 }}
+          sampledAtS={sampledAtS}
+        />,
+      )
       expect(html).toContain(FORECAST_IN_ANALYZE)
       expect(html).not.toContain('system-telemetry-head')
     }

@@ -45,7 +45,15 @@ function setMc(patch: Partial<McState>): void {
 }
 
 function pool(patch: Partial<PoolProgress>): PoolProgress {
-  return { workers: 4, done: 40, total: 100, stopRule: 'replicates', elapsedMs: 900, perWorkerDone: [10, 10, 10, 10], ...patch }
+  return {
+    workers: 4,
+    done: 40,
+    total: 100,
+    stopRule: 'replicates',
+    elapsedMs: 900,
+    perWorkerDone: [10, 10, 10, 10],
+    ...patch,
+  }
 }
 
 /** Only the fields the progress line reads. */
@@ -97,7 +105,9 @@ describe('RunControl', () => {
     const html = render()
     expect(html).toContain('checked=""')
     expect(interaction.buttons.get('Run')!.disabled).toBe(true)
-    expect(html).toContain('Deterministic mode computes one expected-value envelope, not replicates.')
+    expect(html).toContain(
+      'Deterministic mode computes one expected-value envelope, not replicates.',
+    )
 
     interaction.checks[0]({ target: { checked: false } })
     expect(useStore.getState().scenario.runMode).toBe('monte-carlo')
@@ -107,7 +117,10 @@ describe('RunControl', () => {
     setMc({ status: 'running', progress: 40, total: 100, pool: pool({}) })
     expect(render()).toContain('40 of 100 replicates · 4 workers')
 
-    setMc({ status: 'running', pool: pool({ stopRule: 'halfWidth', total: null, done: 62, workers: 1 }) })
+    setMc({
+      status: 'running',
+      pool: pool({ stopRule: 'halfWidth', total: null, done: 62, workers: 1 }),
+    })
     expect(render()).toContain('62 replicates · stop on half-width, floor 30, cap 2000 · 1 worker')
   })
 
@@ -133,19 +146,25 @@ describe('RunControl', () => {
 
   it('stamps the operator floor on a finished run, and only when the floor caught a decision', () => {
     // 0.7 floored of 2 decisions a replicate over 20 replicates: 14 of 40.
-    setMc({ status: 'done', summary: {
-      ...summary(20, 'replicates'),
-      operatorDecisions: stat(2, 20),
-      operatorFlooredDecisions: stat(0.7, 20),
-    } })
+    setMc({
+      status: 'done',
+      summary: {
+        ...summary(20, 'replicates'),
+        operatorDecisions: stat(2, 20),
+        operatorFlooredDecisions: stat(0.7, 20),
+      },
+    })
     expect(render()).toContain('operator wait floored in 14 of 40 decisions')
 
     // Nothing floored: the line stays as it was.
-    setMc({ status: 'done', summary: {
-      ...summary(20, 'replicates'),
-      operatorDecisions: stat(2, 20),
-      operatorFlooredDecisions: stat(0, 20),
-    } })
+    setMc({
+      status: 'done',
+      summary: {
+        ...summary(20, 'replicates'),
+        operatorDecisions: stat(2, 20),
+        operatorFlooredDecisions: stat(0, 20),
+      },
+    })
     expect(render()).not.toContain('operator wait floored')
 
     // A summary written before the stamp existed carries no counts at all.

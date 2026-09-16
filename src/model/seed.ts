@@ -33,7 +33,14 @@ function defaultRequirements(): RequirementThresholds {
 }
 
 function emptyUnderlay(): Underlay {
-  return { dataUrl: null, pos: { x: 0, y: 0 }, widthM: 10000, naturalW: 0, naturalH: 0, opacity: 0.85 }
+  return {
+    dataUrl: null,
+    pos: { x: 0, y: 0 },
+    widthM: 10000,
+    naturalW: 0,
+    naturalH: 0,
+    opacity: 0.85,
+  }
 }
 
 export function emptyScenario(): Scenario {

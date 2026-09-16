@@ -10,32 +10,53 @@ import { useStore } from '../../../state/store'
 import { PlacementScreen } from './PlacementScreen'
 
 const interaction = vi.hoisted(() => ({
-  cursor: 0, states: [] as unknown[],
+  cursor: 0,
+  states: [] as unknown[],
   buttons: new Map<string, { disabled?: boolean; onClick: () => void }>(),
   fields: new Map<string, (event: { target: { value: string } }) => void>(),
   boxes: new Map<string, (event: { target: { checked: boolean } }) => void>(),
 }))
-vi.mock('react', async importOriginal => {
+vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
-  return { ...actual, useState: (initial: unknown) => {
-    const index = interaction.cursor++
-    if (!(index in interaction.states)) interaction.states[index] = typeof initial === 'function' ? initial() : initial
-    return [interaction.states[index], (value: unknown) => { interaction.states[index] = value }]
-  } }
+  return {
+    ...actual,
+    useState: (initial: unknown) => {
+      const index = interaction.cursor++
+      if (!(index in interaction.states))
+        interaction.states[index] = typeof initial === 'function' ? initial() : initial
+      return [
+        interaction.states[index],
+        (value: unknown) => {
+          interaction.states[index] = value
+        },
+      ]
+    },
+  }
 })
-vi.mock('react/jsx-dev-runtime', async importOriginal => {
+vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
     const p = props as {
-      children?: unknown; disabled?: boolean; onClick?: () => void; label?: string
-      type?: string; 'aria-label'?: string; onChange?: (event: never) => void
+      children?: unknown
+      disabled?: boolean
+      onClick?: () => void
+      label?: string
+      type?: string
+      'aria-label'?: string
+      onChange?: (event: never) => void
     }
-    if (type === 'button' && typeof p.children === 'string' && p.onClick) interaction.buttons.set(p.children, { disabled: p.disabled, onClick: p.onClick })
+    if (type === 'button' && typeof p.children === 'string' && p.onClick)
+      interaction.buttons.set(p.children, { disabled: p.disabled, onClick: p.onClick })
     if (type === 'input' && p.type === 'checkbox' && p['aria-label'] && p.onChange) {
-      interaction.boxes.set(p['aria-label'], p.onChange as (event: { target: { checked: boolean } }) => void)
+      interaction.boxes.set(
+        p['aria-label'],
+        p.onChange as (event: { target: { checked: boolean } }) => void,
+      )
     }
     if (typeof type === 'function' && type.name === 'Field') {
-      const child = p.children as { props?: { onChange?: (event: { target: { value: string } }) => void } }
+      const child = p.children as {
+        props?: { onChange?: (event: { target: { value: string } }) => void }
+      }
       if (p.label && child?.props?.onChange) interaction.fields.set(p.label, child.props.onChange)
     }
     return actual.jsxDEV(type, props, ...rest)
@@ -44,13 +65,30 @@ vi.mock('react/jsx-dev-runtime', async importOriginal => {
 })
 
 const RANGE: Boundary = {
-  id: 'bnd-range', name: 'Main range', type: 'range', closed: true, altBandFt: null,
-  points: [{ x: -3000, y: -3000 }, { x: 3000, y: -3000 }, { x: 3000, y: 3000 }, { x: -3000, y: 3000 }],
+  id: 'bnd-range',
+  name: 'Main range',
+  type: 'range',
+  closed: true,
+  altBandFt: null,
+  points: [
+    { x: -3000, y: -3000 },
+    { x: 3000, y: -3000 },
+    { x: 3000, y: 3000 },
+    { x: -3000, y: 3000 },
+  ],
 }
 const EFFECTOR = 'ent-effector'
 const SENSOR = 'ent-sensor'
-const entity = (id: string, kind: Entity['kind'], name: string, x: number, y: number): Entity =>
-  ({ id, name, kind, specId: null, pos: { x, y }, headingDeg: 0, color: null, notes: '' })
+const entity = (id: string, kind: Entity['kind'], name: string, x: number, y: number): Entity => ({
+  id,
+  name,
+  kind,
+  specId: null,
+  pos: { x, y },
+  headingDeg: 0,
+  color: null,
+  notes: '',
+})
 
 function board(): Scenario {
   const s = emptyScenario()
@@ -62,11 +100,28 @@ function board(): Scenario {
   return s
 }
 
-const stat = (mean: number): Stat => ({ mean, sd: 1, se: 0.2, lo: mean - 0.4, hi: mean + 0.4,
-  conf: 0.95, interval: 't', p10: mean, p90: mean, p025: mean, p975: mean, n: 40, total: 40,
-  defined: { p: 1, lo: 0.9, hi: 1 } })
-const evaluation = (index: number, mean: number, x: number, y: number): OptimizeEvaluation =>
-  ({ index, positions: { [EFFECTOR]: { x, y } }, objective: stat(mean), incumbent: index === 0 || index === 2 })
+const stat = (mean: number): Stat => ({
+  mean,
+  sd: 1,
+  se: 0.2,
+  lo: mean - 0.4,
+  hi: mean + 0.4,
+  conf: 0.95,
+  interval: 't',
+  p10: mean,
+  p90: mean,
+  p025: mean,
+  p975: mean,
+  n: 40,
+  total: 40,
+  defined: { p: 1, lo: 0.9, hi: 1 },
+})
+const evaluation = (index: number, mean: number, x: number, y: number): OptimizeEvaluation => ({
+  index,
+  positions: { [EFFECTOR]: { x, y } },
+  objective: stat(mean),
+  incumbent: index === 0 || index === 2,
+})
 
 /** Four evaluations of a six-evaluation budget: a cut run, best at index 2. */
 function cutResult(): OptimizeResult {
@@ -76,12 +131,20 @@ function cutResult(): OptimizeResult {
     evaluation(2, 1.4, 1500.24, -1200.46),
     evaluation(3, 1.9, 200, 200),
   ]
-  const candidate = (e: OptimizeEvaluation) => ({ positions: e.positions, objective: e.objective, evaluationIndex: e.index })
+  const candidate = (e: OptimizeEvaluation) => ({
+    positions: e.positions,
+    objective: e.objective,
+    evaluationIndex: e.index,
+  })
   return {
-    method: 'gp-ei', objective: { response: 'leakers', direction: 'minimize' }, movableIds: [EFFECTOR],
+    method: 'gp-ei',
+    objective: { response: 'leakers', direction: 'minimize' },
+    movableIds: [EFFECTOR],
     budget: { evaluations: 6, replicates: 40, seed: 4821 },
     candidates: [candidate(trace[2]), candidate(trace[3]), candidate(trace[0])],
-    trace, replicatesRun: 160, elapsedMs: 9000,
+    trace,
+    replicatesRun: 160,
+    elapsedMs: 9000,
   }
 }
 
@@ -105,9 +168,20 @@ function change(label: string, value: string) {
 }
 function installResult(result: OptimizeResult) {
   const { playback, scenario } = useStore.getState()
-  useStore.setState({ mc: { ...IDLE_MC, optimize: { ...IDLE_OPTIMIZE, status: 'done',
-    runId: playback.runId, summary: result, progress: result.trace.length,
-    total: result.budget.evaluations, basisSignature: analysisBasisSignature(scenario) } } })
+  useStore.setState({
+    mc: {
+      ...IDLE_MC,
+      optimize: {
+        ...IDLE_OPTIMIZE,
+        status: 'done',
+        runId: playback.runId,
+        summary: result,
+        progress: result.trace.length,
+        total: result.budget.evaluations,
+        basisSignature: analysisBasisSignature(scenario),
+      },
+    },
+  })
 }
 
 describe('PlacementScreen', () => {
@@ -148,7 +222,8 @@ describe('PlacementScreen', () => {
       objective: { response: 'leakers', direction: 'minimize' },
       movableIds: [EFFECTOR],
       bounds: { boundaryId: RANGE.id, points: RANGE.points },
-      evaluations: 6, replicates: 10,
+      evaluations: 6,
+      replicates: 10,
     })
   })
 
@@ -172,9 +247,19 @@ describe('PlacementScreen', () => {
     const cancel = vi.fn()
     useStore.setState({ cancelOptimize: cancel })
     const { playback } = useStore.getState()
-    useStore.setState({ mc: { ...IDLE_MC,
-      optimize: { ...IDLE_OPTIMIZE, status: 'running', runId: playback.runId, progress: 3, total: 6 },
-      optimizeBest: evaluation(2, 1.4, 1500.24, -1200.46) } })
+    useStore.setState({
+      mc: {
+        ...IDLE_MC,
+        optimize: {
+          ...IDLE_OPTIMIZE,
+          status: 'running',
+          runId: playback.runId,
+          progress: 3,
+          total: 6,
+        },
+        optimizeBest: evaluation(2, 1.4, 1500.24, -1200.46),
+      },
+    })
     const html = render()
     expect(html).toContain('3 of 6 evaluations')
     // The incumbent keeps its own interval: mean 1.4, hand-built lo 1.4-0.4 and hi 1.4+0.4.
@@ -191,7 +276,9 @@ describe('PlacementScreen', () => {
     expect(html).toContain('Run cut at 4 of 6 evaluations.')
     expect(html).toContain('4 evaluations · 160 engine replicates')
     const order = ['data-placement-row="1"', 'data-placement-row="2"', 'data-placement-row="3"']
-    expect(order.map(mark => html.indexOf(mark))).toEqual([...order.map(mark => html.indexOf(mark))].sort((a, b) => a - b))
+    expect(order.map((mark) => html.indexOf(mark))).toEqual(
+      [...order.map((mark) => html.indexOf(mark))].sort((a, b) => a - b),
+    )
     // Candidate 1 is trace index 2: 1500.24, -1200.46 rounds to one decimal.
     expect(html).toContain('1500.2, -1200.5')
     expect(html).toContain('1.4 · 1.0 to 1.8 (95% mean CI) · n=40')
@@ -219,10 +306,10 @@ describe('PlacementScreen', () => {
     interaction.buttons.get('Apply placement 1')!.onClick()
     const after = useStore.getState().scenario
     expect(after.name).toBe(`${before.name} (placement 1)`)
-    expect(after.entities.find(e => e.id === EFFECTOR)!.pos).toEqual({ x: 1500.24, y: -1200.46 })
+    expect(after.entities.find((e) => e.id === EFFECTOR)!.pos).toEqual({ x: 1500.24, y: -1200.46 })
     // Every other entity keeps its place, and the previous object is untouched.
-    expect(after.entities.find(e => e.id === SENSOR)!.pos).toEqual({ x: 0, y: 0 })
-    expect(before.entities.find(e => e.id === EFFECTOR)!.pos).toEqual({ x: 1700, y: -1700 })
+    expect(after.entities.find((e) => e.id === SENSOR)!.pos).toEqual({ x: 0, y: 0 })
+    expect(before.entities.find((e) => e.id === EFFECTOR)!.pos).toEqual({ x: 1700, y: -1700 })
     expect(before.name).not.toContain('placement')
     // A replacement starts a clean run, so the result no longer reads as current.
     expect(useStore.getState().mc.optimize.status).toBe('idle')
@@ -233,7 +320,9 @@ describe('PlacementScreen', () => {
     installResult(cutResult())
     expect(render()).toContain('data-placement-row=')
     const mc = useStore.getState().mc
-    useStore.setState({ mc: { ...mc, optimize: { ...mc.optimize, basisSignature: 'other-board' } } })
+    useStore.setState({
+      mc: { ...mc, optimize: { ...mc.optimize, basisSignature: 'other-board' } },
+    })
     expect(render()).toContain('No current placement result.')
     useStore.setState({ mc: { ...mc, optimize: { ...mc.optimize, runId: 'other-run' } } })
     expect(render()).toContain('No current placement result.')

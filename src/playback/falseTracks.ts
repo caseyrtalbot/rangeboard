@@ -261,7 +261,7 @@ function emitFalseTrack(
   const pos = destination(radar.sensor.pos, bearing, rangeM)
   const [lo, hi] = FALSE_TRACK_SPEED_MPS
   const speed = lo + (hi - lo) * uSpeed
-  const headingRad = (2 * Math.PI) * uHeading
+  const headingRad = 2 * Math.PI * uHeading
   const vx = speed * Math.sin(headingRad)
   const vy = -speed * Math.cos(headingRad)
 
@@ -270,9 +270,16 @@ function emitFalseTrack(
   if (!radar.truth) {
     const m: TrackMeasurement = {
       ...polarMeasurement(
-        radar.sensor.pos, pos, dist(radar.sensor.pos, pos),
-        radar.spec.rangeAccuracyM ?? 0, ((radar.spec.azimuthAccuracyDeg ?? 0) * Math.PI) / 180,
-        0, 0, id, '', tScan,
+        radar.sensor.pos,
+        pos,
+        dist(radar.sensor.pos, pos),
+        radar.spec.rangeAccuracyM ?? 0,
+        ((radar.spec.azimuthAccuracyDeg ?? 0) * Math.PI) / 180,
+        0,
+        0,
+        id,
+        '',
+        tScan,
       ),
       uasId: null,
     }

@@ -1,5 +1,11 @@
 import type { Entity, Scenario, SensorSpec, SensorType, Vec2 } from '../model/types'
-import { defaultSensorRole, effectiveDoctrine, entityActive, physicsSwitches, runSettings } from '../model/types'
+import {
+  defaultSensorRole,
+  effectiveDoctrine,
+  entityActive,
+  physicsSwitches,
+  runSettings,
+} from '../model/types'
 import { modelFor } from '../model/scenario'
 import type { DrawPolicy } from './policy'
 import { deterministicPolicy } from './policy'
@@ -327,8 +333,21 @@ export function prepareSweepRun(
     anyResolved: false,
     firstDetectS: null,
     firstDetectSensorId: null,
-    result: { firstHitSensorId: null, measuredTechs: 0, fcClassified: false, coastHeld: false, held: false },
-    tracks: createTrackManager(scenario, uas.id, trackSensors, altitudeFt * FT_TO_M, draw, trackSink),
+    result: {
+      firstHitSensorId: null,
+      measuredTechs: 0,
+      fcClassified: false,
+      coastHeld: false,
+      held: false,
+    },
+    tracks: createTrackManager(
+      scenario,
+      uas.id,
+      trackSensors,
+      altitudeFt * FT_TO_M,
+      draw,
+      trackSink,
+    ),
   }
   return run
 }
@@ -393,7 +412,7 @@ export function stepSweep(handle: SweepRun, members: Vec2[], t: number): SweepSt
           // A single DF node supplies a bearing but no triangulated range.
           // Represent that bearing-only ambiguity as one full detect-range sigma.
           rangeSigmaM: accuracy.rangeAccuracyM ?? detectRangeM,
-          azimuthSigmaRad: accuracy.azimuthAccuracyDeg * Math.PI / 180,
+          azimuthSigmaRad: (accuracy.azimuthAccuracyDeg * Math.PI) / 180,
         })
       }
     }

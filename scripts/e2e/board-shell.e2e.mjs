@@ -6,19 +6,28 @@ import { after, before, test } from 'node:test'
 import { chromium } from 'playwright'
 
 const BASE_URL = process.env.E2E_URL || 'http://localhost:5377'
-const FIXTURE = new URL('../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json', import.meta.url)
+const FIXTURE = new URL(
+  '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json',
+  import.meta.url,
+)
 const RAW = readFileSync(FIXTURE, 'utf8')
 const ENTITY_COUNT = JSON.parse(RAW).entities.length
 
 let browser
-before(async () => { browser = await chromium.launch({ headless: true }) })
-after(async () => { await browser?.close() })
+before(async () => {
+  browser = await chromium.launch({ headless: true })
+})
+after(async () => {
+  await browser?.close()
+})
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-const read = (page, path) => page.evaluate((p) => p.split('.').reduce((o, k) => o?.[k], window.__store.getState()), path)
+const read = (page, path) =>
+  page.evaluate((p) => p.split('.').reduce((o, k) => o?.[k], window.__store.getState()), path)
 const has = (page, selector) => page.evaluate((sel) => !!document.querySelector(sel), selector)
 const waitFor = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 10000 })
-const PLACE_MODEL = '.palette-scroll .palette-section:not(:first-child) button[aria-label^="Place "]'
+const PLACE_MODEL =
+  '.palette-scroll .palette-section:not(:first-child) button[aria-label^="Place "]'
 
 async function open(t) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
@@ -26,10 +35,16 @@ async function open(t) {
   const page = await ctx.newPage()
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text().slice(0, 200)) })
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+  })
   t.after(() => ctx.close())
   await page.goto(BASE_URL, { waitUntil: 'load' })
-  await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store, null, { timeout: 60000 })
+  await page.waitForFunction(
+    () => document.querySelector('.konvajs-content canvas') && window.__store,
+    null,
+    { timeout: 60000 },
+  )
   await page.evaluate(async (raw) => {
     const { parseAutosave } = await import('/src/io/persist.ts')
     window.__store.getState().loadScenario(parseAutosave(raw))
@@ -48,7 +63,12 @@ async function armPlacement(page) {
   await page.keyboard.press('l')
   await waitFor(page, () => !document.getElementById('board-library-drawer').hidden)
   await page.click(PLACE_MODEL)
-  await waitFor(page, () => document.getElementById('board-library-drawer').hidden && document.querySelector('.board-placement'))
+  await waitFor(
+    page,
+    () =>
+      document.getElementById('board-library-drawer').hidden &&
+      document.querySelector('.board-placement'),
+  )
 }
 
 async function openRangeSetup(page, item) {
@@ -63,7 +83,11 @@ test('phase switching sets the phase, the analysis tab and aria-selected', async
     await page.click(`#board-phase-${phase}`)
     await waitFor(page, (p) => document.querySelector(`.board-app[data-board-phase="${p}"]`), phase)
     assert.equal(await read(page, 'ui.rightTab'), 'analysis', `${phase}: rightTab`)
-    assert.equal(await page.getAttribute(`#board-phase-${phase}`, 'aria-selected'), 'true', `${phase}: aria-selected`)
+    assert.equal(
+      await page.getAttribute(`#board-phase-${phase}`, 'aria-selected'),
+      'true',
+      `${phase}: aria-selected`,
+    )
   }
   assert.deepEqual(errors, [])
 })
@@ -77,7 +101,10 @@ test('selection routing opens the entity workspace and Overview returns to analy
   await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), sensor.id)
   await waitFor(page, () => document.querySelector('.entity-workspace'))
   assert.equal(await read(page, 'ui.rightTab'), 'inspect')
-  assert.ok((await page.textContent('.entity-workspace-header')).includes(sensor.name), 'header shows the entity name')
+  assert.ok(
+    (await page.textContent('.entity-workspace-header')).includes(sensor.name),
+    'header shows the entity name',
+  )
   await page.click('.entity-workspace-header button:has-text("Overview")')
   await waitFor(page, () => window.__store.getState().ui.rightTab === 'analysis')
   assert.deepEqual(await read(page, 'selection.entityIds'), [sensor.id])
@@ -94,7 +121,10 @@ test('placement: L opens the drawer, Place arms, Place at center adds one entity
   await focusCanvas(page)
   await page.keyboard.press('l')
   await waitFor(page, () => !document.getElementById('board-library-drawer').hidden)
-  assert.ok(await page.evaluate(() => !!document.activeElement?.closest('#board-library-drawer')), 'focus is inside the drawer')
+  assert.ok(
+    await page.evaluate(() => !!document.activeElement?.closest('#board-library-drawer')),
+    'focus is inside the drawer',
+  )
   // The first section is the system presets; a preset places several entities.
   await page.click(PLACE_MODEL)
   await waitFor(page, () => document.getElementById('board-library-drawer').hidden)
@@ -112,7 +142,11 @@ test('Escape chain: the Location dialog closes first, then the placement, then c
   await armPlacement(page)
   await openRangeSetup(page, 'Location…')
   await waitFor(page, () => window.__store.getState().ui.locationDialogOpen === true)
-  assert.equal(await has(page, '.board-placement'), true, 'placement stays armed while the dialog opens')
+  assert.equal(
+    await has(page, '.board-placement'),
+    true,
+    'placement stays armed while the dialog opens',
+  )
   await page.keyboard.press('Escape')
   await waitFor(page, () => window.__store.getState().ui.locationDialogOpen === false)
   assert.equal(await has(page, '.board-placement'), true, 'placement survives the first Escape')
@@ -120,7 +154,9 @@ test('Escape chain: the Location dialog closes first, then the placement, then c
   await waitFor(page, () => !document.querySelector('.board-placement'))
   await openRangeSetup(page, 'Calibrate scale')
   await waitFor(page, () => window.__store.getState().ui.tool === 'calibrate')
-  await waitFor(page, () => document.querySelector('.board-placement[role="status"]')?.textContent.includes('Calibrating'))
+  await waitFor(page, () =>
+    document.querySelector('.board-placement[role="status"]')?.textContent.includes('Calibrating'),
+  )
   await page.keyboard.press('Escape')
   await waitFor(page, () => window.__store.getState().ui.tool === 'select')
   assert.equal(await has(page, '.board-placement[role="status"]'), false)
@@ -139,19 +175,32 @@ test('debrief record opens on run completion with a status summary', async (t) =
     s.completeRun(durationOf(s.scenario))
   })
   await waitFor(page, () => document.querySelector('details.evidence-products'))
-  assert.equal(await page.evaluate(() => document.querySelector('details.evidence-products').hasAttribute('open')), true)
+  assert.equal(
+    await page.evaluate(() =>
+      document.querySelector('details.evidence-products').hasAttribute('open'),
+    ),
+    true,
+  )
   assert.equal(await page.getAttribute('details.evidence-products > summary', 'role'), 'status')
   assert.deepEqual(errors, [])
 })
 
 test('analysis screens follow the phase and no lens bar renders', async (t) => {
   const { page, errors } = await open(t)
-  const labels = () => page.evaluate(() => [...document.querySelectorAll('[aria-label="Analysis screens"] button')].map((b) => b.textContent))
+  const labels = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('[aria-label="Analysis screens"] button')].map(
+        (b) => b.textContent,
+      ),
+    )
   await page.click('#board-phase-analyze')
   await waitFor(page, () => document.querySelector('[aria-label="Analysis screens"]'))
   assert.deepEqual(await labels(), ['Outcome', 'Compare'])
   await page.click('#board-phase-execute')
-  await waitFor(page, () => document.querySelectorAll('[aria-label="Analysis screens"] button').length === 1)
+  await waitFor(
+    page,
+    () => document.querySelectorAll('[aria-label="Analysis screens"] button').length === 1,
+  )
   assert.deepEqual(await labels(), ['Now'])
   assert.equal(await has(page, '.lens-builtins'), false)
   assert.equal(await has(page, '.lens-layout'), false)
@@ -169,7 +218,8 @@ test('drawer: the header toggle and ] close and reopen the right panel and hold 
   assert.equal(await page.evaluate(() => localStorage.getItem('rangeboard.rightpanel.open')), '0')
   const w1 = await hostWidth()
   assert.ok(w1 > w0, 'the canvas takes the drawer width')
-  const near = (actual, expected, label) => assert.ok(Math.abs(actual - expected) < 1e-6, `${label}: ${actual} vs ${expected}`)
+  const near = (actual, expected, label) =>
+    assert.ok(Math.abs(actual - expected) < 1e-6, `${label}: ${actual} vs ${expected}`)
   near(await read(page, 'camera.x'), x0 + (w1 - w0) / 2, 'closed camera.x')
   await focusCanvas(page)
   await page.keyboard.press(']')
@@ -187,7 +237,10 @@ test('drawer: a selection keeps it closed and a resize drag past the minimum clo
   await page.evaluate((entityId) => window.__store.getState().select({ entityIds: [entityId] }), id)
   await sleep(150)
   assert.equal(await read(page, 'ui.rightTab'), 'inspect')
-  assert.equal(await page.evaluate(() => document.getElementById('board-workspace-panel').hidden), true)
+  assert.equal(
+    await page.evaluate(() => document.getElementById('board-workspace-panel').hidden),
+    true,
+  )
   await page.click('#drawer-toggle')
   await waitFor(page, () => !document.getElementById('board-workspace-panel').hidden)
   const bar = await page.locator('.right-resizer').boundingBox()
@@ -232,7 +285,11 @@ test('playback bar: the engagement open state is restored from storage', async (
   await page.evaluate(() => localStorage.setItem('rangeboard.engstrip.open', '1'))
   // The reload loads the autosaved scenario, not the fixture; only the strip is asserted.
   await page.reload({ waitUntil: 'load' })
-  await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store, null, { timeout: 60000 })
+  await page.waitForFunction(
+    () => document.querySelector('.konvajs-content canvas') && window.__store,
+    null,
+    { timeout: 60000 },
+  )
   await waitFor(page, () => document.querySelector('#engagement-strip'))
   assert.equal(await page.getAttribute('#engagement-toggle', 'aria-expanded'), 'true')
   assert.deepEqual(errors, [])
@@ -247,7 +304,11 @@ test('header: the lifecycle tabs and run status sit in the 40 px header and no p
     return el.scrollWidth - el.clientWidth
   })
   assert.equal(overflow, 0, `the header does not scroll sideways: ${overflow}`)
-  assert.equal(await has(page, '.toolbar [role="tablist"][aria-label="Lifecycle views"]'), true, 'the tablist is in the header')
+  assert.equal(
+    await has(page, '.toolbar [role="tablist"][aria-label="Lifecycle views"]'),
+    true,
+    'the tablist is in the header',
+  )
   const runText = await page.textContent('.toolbar .board-run-context')
   assert.ok(runText.startsWith('RUN-'), `the run status is in the header: ${runText}`)
   assert.equal(await has(page, '.board-lifecycle'), false, 'no phase row renders')

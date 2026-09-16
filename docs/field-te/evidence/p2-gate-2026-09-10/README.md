@@ -1,7 +1,7 @@
 # Phase 2 gate evidence, 2026-09-10
 
 Dated capture for the Phase 2 (tracks and kill chain) gate of the
-[calibration implementation plan](../../../IMPLEMENTATION_PLAN.md). Measurements describe
+then-current `docs/IMPLEMENTATION_PLAN.md`. Measurements describe
 the tree at the gate commit on `main`, not the current tree.
 
 ## Files

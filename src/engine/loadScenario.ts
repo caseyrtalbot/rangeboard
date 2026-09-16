@@ -19,7 +19,11 @@ export function loadScenario(parsed: unknown): Scenario {
   const empty = emptyScenario()
   const roe =
     parsed.roe ??
-    (parsed.engageOn === 'detected' ? 'free' : parsed.engageOn === 'confirmed' ? 'tight' : empty.roe)
+    (parsed.engageOn === 'detected'
+      ? 'free'
+      : parsed.engageOn === 'confirmed'
+        ? 'tight'
+        : empty.roe)
   const deletedSeedIds = Array.isArray(parsed.deletedSeedIds) ? parsed.deletedSeedIds : []
   const filled: Scenario = {
     ...empty,
@@ -48,5 +52,9 @@ export function parseScenarioJson(raw: string): Scenario {
 function fillDoctrine(empty: FireDoctrine, saved: Partial<FireDoctrine> | undefined): FireDoctrine {
   if (!saved) return { ...empty }
   const preLaunchPolicy = saved.launchPolicy == null
-  return { ...empty, ...saved, enabled: preLaunchPolicy ? empty.enabled : (saved.enabled ?? empty.enabled) }
+  return {
+    ...empty,
+    ...saved,
+    enabled: preLaunchPolicy ? empty.enabled : (saved.enabled ?? empty.enabled),
+  }
 }

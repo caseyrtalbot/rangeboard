@@ -83,7 +83,14 @@ function domainOf(rows: TornadoRow[], nominal: number): [number, number] {
  * nominal, so the part of the swing below the nominal reads `--chart-2` and the part above
  * reads `--chart-1`. A bar wholly on one side of the nominal takes one color.
  */
-export function Tornado({ rows, nominal, unit, width, rowHeight = 16, horizonS = Infinity }: TornadoProps) {
+export function Tornado({
+  rows,
+  nominal,
+  unit,
+  width,
+  rowHeight = 16,
+  horizonS = Infinity,
+}: TornadoProps) {
   const tokens = useMemo(() => readTokens(), [])
   // React ids carry punctuation that a url(#...) reference must not; keep word characters.
   const uid = useId().replace(/[^\w-]/g, '')
@@ -114,9 +121,15 @@ export function Tornado({ rows, nominal, unit, width, rowHeight = 16, horizonS =
 
   if (Number.isFinite(horizonS) || horizonS === -Infinity) {
     return (
-      <div ref={hostRef} className="chart chart-tornado" style={width != null ? { width } : undefined}>
+      <div
+        ref={hostRef}
+        className="chart chart-tornado"
+        style={width != null ? { width } : undefined}
+      >
         <svg className="chart-tornado-svg" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-          <text x={2} y={11} style={font}>{FORECAST_IN_ANALYZE}</text>
+          <text x={2} y={11} style={font}>
+            {FORECAST_IN_ANALYZE}
+          </text>
         </svg>
       </div>
     )

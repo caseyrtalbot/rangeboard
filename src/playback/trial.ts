@@ -19,15 +19,18 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
     manifest.basis !== 'nominal-aleatory' ||
     manifest.drawPolicyVersion !== TRIAL_DRAW_POLICY_VERSION ||
     manifest.engineRevision !== TRIAL_ENGINE_REVISION
-  ) throw new Error('Incompatible trial engine or draw-policy revision')
+  )
+    throw new Error('Incompatible trial engine or draw-policy revision')
   const settings = runSettings(scenario)
   if (
-    !manifest.runId || !manifest.basisSignature ||
+    !manifest.runId ||
+    !manifest.basisSignature ||
     manifest.seed !== settings.seed ||
     manifest.sweepStepS !== settings.sweepStepS ||
     manifest.replicateIndex !== idHash(manifest.runId) ||
     !(manifest.buildRevision === null || typeof manifest.buildRevision === 'string')
-  ) throw new Error('Invalid trial manifest identity or seed')
+  )
+    throw new Error('Invalid trial manifest identity or seed')
   // The manifest's overrides are the values in force; the captured scenario keeps the library's.
   const s = applyOverrides(scenario, manifest.overrides)
 
@@ -44,13 +47,23 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
     },
   }
   const assessments = assessAllThreats(
-    s, draw, (observation) => observations.push(observation), (estimate) => tracks.push(estimate),
+    s,
+    draw,
+    (observation) => observations.push(observation),
+    (estimate) => tracks.push(estimate),
   )
   // False tracks (kind-9 draws only) join the trial's track history; the
   // operator queue in resolveEngagements reads the same load.
-  const falseLoad = prepareFalseTracks(
-    s, draw, scenarioHorizonS(s), (estimate) => tracks.push(estimate),
+  const falseLoad = prepareFalseTracks(s, draw, scenarioHorizonS(s), (estimate) =>
+    tracks.push(estimate),
   )
   const report = resolveEngagements(s, assessments, draw, falseLoad)
-  return { manifest: Object.freeze({ ...manifest }), assessments, report, observations, jamDecisions, tracks }
+  return {
+    manifest: Object.freeze({ ...manifest }),
+    assessments,
+    report,
+    observations,
+    jamDecisions,
+    tracks,
+  }
 }

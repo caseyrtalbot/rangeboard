@@ -178,8 +178,7 @@ export function sensorRingStyle(input: SensorRingInput): SensorRingStyle {
   const contourLowM = contoursOn && sees ? positiveOrNull(pdLowM) : null
   const contourHighM = contoursOn && sees ? positiveOrNull(pdHighM) : null
   const contours = contourLowM != null || contourHighM != null
-  const placardDash =
-    kind === 'held' ? (contours ? PLACARD_DASH : null) : DETECT_DASH[kind]
+  const placardDash = kind === 'held' ? (contours ? PLACARD_DASH : null) : DETECT_DASH[kind]
   // One fill per sensor: the low contour takes it over from the placard, and
   // the envelope band replaces both.
   const placardFill = kind === 'held' && !contours && !envelopeOn

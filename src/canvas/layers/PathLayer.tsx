@@ -23,7 +23,13 @@ const DRAFT_DASH = [6, 4]
  * inputs; the zoom is read here, so an unrelated path edit re-renders only
  * the path that changed.
  */
-const FlightPathShape = memo(function FlightPathShape({ path, color, lengthM, etaS, units }: {
+const FlightPathShape = memo(function FlightPathShape({
+  path,
+  color,
+  lengthM,
+  etaS,
+  units,
+}: {
   path: FlightPath
   color: string
   lengthM: number
@@ -51,7 +57,8 @@ const FlightPathShape = memo(function FlightPathShape({ path, color, lengthM, et
       {/* Counter-scaled group, so the caption font size never changes and Konva
           never re-measures the text on a zoom step. */}
       <Group x={last.x} y={last.y} scaleX={1 / k} scaleY={1 / k}>
-        <Text fontFamily="JetBrains Mono"
+        <Text
+          fontFamily="JetBrains Mono"
           x={8}
           text={`${formatDistance(lengthM, units)} · ${Math.round(etaS)} s`}
           fontSize={11}
@@ -63,7 +70,12 @@ const FlightPathShape = memo(function FlightPathShape({ path, color, lengthM, et
 })
 
 /** The rubber band of a boundary or path draft, from its start to the cursor. */
-function DraftShape({ start, draftPoints, mouseWorld, k }: {
+function DraftShape({
+  start,
+  draftPoints,
+  mouseWorld,
+  k,
+}: {
   start: Vec2 | undefined
   draftPoints: Vec2[]
   mouseWorld: Vec2 | null
@@ -149,7 +161,8 @@ export function PathLayer({ mouseWorld }: Props) {
               strokeScaleEnabled={false}
             />
             <Group x={(a.x + b.x) / 2} y={(a.y + b.y) / 2} scaleX={1 / k} scaleY={1 / k}>
-              <Text fontFamily="JetBrains Mono"
+              <Text
+                fontFamily="JetBrains Mono"
                 y={-16}
                 text={formatDistance(dist(a, b), units)}
                 fontSize={12}

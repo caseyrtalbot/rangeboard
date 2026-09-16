@@ -16,7 +16,11 @@ import {
 } from './intercept'
 
 const INTERCEPTOR = {
-  effectorType: 'interceptor', minRangeM: 0, maxRangeM: 10000, engageTimeS: 5, flyoutSpeedMps: 100,
+  effectorType: 'interceptor',
+  minRangeM: 0,
+  maxRangeM: 10000,
+  engageTimeS: 5,
+  flyoutSpeedMps: 100,
 } as EffectorSpec
 
 /** Launcher at the origin, one stationary ship 7 km east at launcher height. */
@@ -34,8 +38,16 @@ function estimate(
   source: TrackSource = 'estimate',
 ): TrackEstimate {
   return {
-    id: 'trk', uasId: 'u1', sensorIds: ['s1'], state, covariance,
-    quality: 1, hits: 1, misses: 0, coasting: false, source,
+    id: 'trk',
+    uasId: 'u1',
+    sensorIds: ['s1'],
+    state,
+    covariance,
+    quality: 1,
+    hits: 1,
+    misses: 0,
+    coasting: false,
+    source,
   }
 }
 
@@ -76,7 +88,10 @@ describe('intercept kinematics', () => {
     // samples the target 938.272 m out: past the flyout, so the old code
     // declined the shot. The accelerated meeting is 0.5 t^2 + 70 t = 1000,
     // t = 13.066 s at 914.637 m, which the flyout reaches.
-    const points = [{ x: 1000, y: 0 }, { x: 0, y: 0 }]
+    const points = [
+      { x: 1000, y: 0 },
+      { x: 0, y: 0 },
+    ]
     const flownM = (tS: number) => {
       const t = Math.max(0, tS)
       // Requested speed 20 m/s at 1 m/s2: 20 s of acceleration, then cruise.
@@ -92,7 +107,10 @@ describe('intercept kinematics', () => {
       delayS: 0,
     } as ThreatState
     const es = {
-      entity: { pos: { x: 0, y: 0 } }, spec: INTERCEPTOR, mountM: 4, engageTimeS: 0,
+      entity: { pos: { x: 0, y: 0 } },
+      spec: INTERCEPTOR,
+      mountM: 4,
+      engageTimeS: 0,
     } as EffectorState
     const ic = interceptAt(ts, es, 0, 0)
     expect(ic.tEffectS).toBeCloseTo(13.066238629, 6)
@@ -105,9 +123,21 @@ describe('intercept kinematics', () => {
   it('interceptFor with no estimate or a truth-source estimate is interceptAt exactly', () => {
     const { ts, es } = states(INTERCEPTOR)
     const truth = interceptAt(ts, es, 10, 0, stationary, 50)
-    const truthEstimate = estimate({ x: 7000, y: 0, vx: 0, vy: 0, tS: 10 }, ZERO_COVARIANCE, 'truth')
+    const truthEstimate = estimate(
+      { x: 7000, y: 0, vx: 0, vy: 0, tS: 10 },
+      ZERO_COVARIANCE,
+      'truth',
+    )
     for (const e of [null, truthEstimate]) {
-      const { predictionSigmaM, interceptSource, ...rest } = interceptFor(ts, es, 10, 0, stationary, 50, e)
+      const { predictionSigmaM, interceptSource, ...rest } = interceptFor(
+        ts,
+        es,
+        10,
+        0,
+        stationary,
+        50,
+        e,
+      )
       expect(rest).toEqual(truth)
       expect(predictionSigmaM).toBeNull()
       expect(interceptSource).toBe('truth')
@@ -119,8 +149,15 @@ describe('intercept kinematics', () => {
     // Estimate at t = 10 with the truth position and velocity: release at 15,
     // C = (7000, 0), B = 0, v = 70 m/s, so tau = 7000 / 70 = 100 s and the
     // point is the truth point (7000, 0) at 115 s.
-    const still = interceptFor(ts, es, 10, 0, stationary, Infinity,
-      estimate({ x: 7000, y: 0, vx: 0, vy: 0, tS: 10 }))
+    const still = interceptFor(
+      ts,
+      es,
+      10,
+      0,
+      stationary,
+      Infinity,
+      estimate({ x: 7000, y: 0, vx: 0, vy: 0, tS: 10 }),
+    )
     expect(still.interceptSource).toBe('estimate')
     expect(still.tEffectS).toBeCloseTo(115, 9)
     expect(still.pos.x).toBeCloseTo(7000, 9)
@@ -134,8 +171,15 @@ describe('intercept kinematics', () => {
     // flight: 6850 + (-30)(68.5) = 4795, which is 7000 + (-30)(5 + 68.5) =
     // 7000 - 2205 from the zero-velocity point.
     const delta = -30
-    const closing = interceptFor(ts, es, 10, 0, stationary, Infinity,
-      estimate({ x: 7000, y: 0, vx: delta, vy: 0, tS: 10 }))
+    const closing = interceptFor(
+      ts,
+      es,
+      10,
+      0,
+      stationary,
+      Infinity,
+      estimate({ x: 7000, y: 0, vx: delta, vy: 0, tS: 10 }),
+    )
     const tof = closing.tEffectS - 15
     expect(tof).toBeCloseTo(68.5, 9)
     expect(closing.pos.x).toBeCloseTo(6850 + delta * tof, 9)
@@ -143,8 +187,15 @@ describe('intercept kinematics', () => {
     expect(closing.pos.x).toBeCloseTo(4795, 9)
     expect(closing.slantM).toBeCloseTo(4795, 9)
     // A flight past the cap is held at the cap and is unreachable (7000 m at 35 s of 70 m/s).
-    const capped = interceptFor(ts, es, 10, 0, stationary, 50,
-      estimate({ x: 7000, y: 0, vx: 0, vy: 0, tS: 10 }))
+    const capped = interceptFor(
+      ts,
+      es,
+      10,
+      0,
+      stationary,
+      50,
+      estimate({ x: 7000, y: 0, vx: 0, vy: 0, tS: 10 }),
+    )
     expect(capped.tEffectS).toBe(50)
     expect(capped.capped).toBe(true)
     expect(capped.infeasible).toBe(true)
@@ -168,8 +219,15 @@ describe('intercept kinematics', () => {
     // At the intercept the same covariance has grown for the 105 s lead
     // (5 s engage + 100 s flight): 100 + 105^2 + 105^3 / 3 = 397000 m^2.
     const { ts, es } = states(INTERCEPTOR)
-    const ic = interceptFor(ts, es, 10, 0, stationary, Infinity,
-      estimate({ x: 7000, y: 0, vx: 0, vy: 0, tS: 10 }, diagCov(100, 1)))
+    const ic = interceptFor(
+      ts,
+      es,
+      10,
+      0,
+      stationary,
+      Infinity,
+      estimate({ x: 7000, y: 0, vx: 0, vy: 0, tS: 10 }, diagCov(100, 1)),
+    )
     expect(ic.tEffectS).toBeCloseTo(115, 9)
     expect(ic.predictionSigmaM).toBeCloseTo(Math.sqrt(100 + 105 ** 2 + 105 ** 3 / 3), 6)
     expect(ic.predictionSigmaM).toBeCloseTo(Math.sqrt(397000), 6)
@@ -188,7 +246,10 @@ describe('intercept kinematics', () => {
 
   it('intervalIndexAt finds the inclusive interval within the time tolerance', () => {
     expect(intervalIndexAt(undefined, 5)).toBe(-1)
-    const windows: Array<[number, number]> = [[0, 10], [20, 30]]
+    const windows: Array<[number, number]> = [
+      [0, 10],
+      [20, 30],
+    ]
     expect(intervalIndexAt(windows, 5)).toBe(0)
     expect(intervalIndexAt(windows, 10 + 1e-10)).toBe(0)
     expect(intervalIndexAt(windows, 15)).toBe(-1)
@@ -242,10 +303,7 @@ describe('Phase 3 kinetic flight', () => {
   })
 
   it('exposes the track prediction sigma at physical release for kinetic P(effect)', () => {
-    const e = estimate(
-      { x: 0, y: 0, vx: 0, vy: 0, tS: 0 },
-      diagCov(100, 0),
-    )
+    const e = estimate({ x: 0, y: 0, vx: 0, vy: 0, tS: 0 }, diagCov(100, 0))
     // CWNA position variance after 3 s: 100 + q * dt^3 / 3, q = 1.
     expect(predictionSigmaAtS(e, 3)).toBeCloseTo(Math.sqrt(109), 12)
     expect(predictionSigmaAtS({ ...e, source: 'truth' }, 3)).toBeNull()
@@ -275,10 +333,16 @@ describe('Phase 3 kinetic flight', () => {
 
   it('places one gun event at the effect of the last projectile', () => {
     const gun = {
-      effectorType: 'gun', minRangeM: 0, maxRangeM: 3000, engageTimeS: 5,
-      flyoutSpeedMps: 1000, muzzleVelocityMps: 1000,
-      dispersionMils: 1, fireControlErrorMils: 1,
-      burstRounds: 20, rateOfFireRpm: 1200,
+      effectorType: 'gun',
+      minRangeM: 0,
+      maxRangeM: 3000,
+      engageTimeS: 5,
+      flyoutSpeedMps: 1000,
+      muzzleVelocityMps: 1000,
+      dispersionMils: 1,
+      fireControlErrorMils: 1,
+      burstRounds: 20,
+      rateOfFireRpm: 1200,
     } as EffectorSpec
     const { ts, es } = states(gun)
     // Release 5 + burst 1 + drag-free 1000 m / 1000 m/s = effect 7.

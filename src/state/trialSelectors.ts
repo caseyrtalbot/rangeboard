@@ -13,7 +13,10 @@ export type TrialSelection =
 
 type State = { scenario: Scenario; playback: PlaybackState; trial: TrialState }
 const signatures = new WeakMap<Scenario, string>()
-const selections = new WeakMap<TrialState, { scenario: Scenario; runId: string; selection: TrialSelection }>()
+const selections = new WeakMap<
+  TrialState,
+  { scenario: Scenario; runId: string; selection: TrialSelection }
+>()
 
 export function selectTrialSelection(state: State): TrialSelection {
   const { scenario, playback, trial } = state
@@ -31,18 +34,34 @@ export function selectTrialSelection(state: State): TrialSelection {
     if (manifest.basisSignature !== signature) return idle
     const expected = createTrialManifest(scenario, playback.runId, signature)
     // Record-only keys never decide whether a trial still belongs to this run.
-    if (!sameManifest(expected, manifest, ['buildRevision', 'overrides', 'physicsSwitches', 'fidelityFloor', 'dataPackageVersion', 'producer']) ||
-      !(manifest.buildRevision === null || typeof manifest.buildRevision === 'string')) return idle
+    if (
+      !sameManifest(expected, manifest, [
+        'buildRevision',
+        'overrides',
+        'physicsSwitches',
+        'fidelityFloor',
+        'dataPackageVersion',
+        'producer',
+      ]) ||
+      !(manifest.buildRevision === null || typeof manifest.buildRevision === 'string')
+    )
+      return idle
     if (trial.status === 'cancelled') return { status: 'cancelled', runId: manifest.runId }
     if (trial.error != null) return { status: 'error', runId: manifest.runId, message: trial.error }
-    if (trial.status === 'preparing') return { status: 'preparing', runId: manifest.runId, manifest }
+    if (trial.status === 'preparing')
+      return { status: 'preparing', runId: manifest.runId, manifest }
     if (trial.status !== 'ready' || !trial.result) return idle
     try {
       trialResultOf(trial.scenario, manifest, trial.result)
     } catch {
       return idle
     }
-    return { status: 'ready', runId: manifest.runId, scenario: trial.scenario, result: trial.result }
+    return {
+      status: 'ready',
+      runId: manifest.runId,
+      scenario: trial.scenario,
+      result: trial.result,
+    }
   }
   const selection = choose()
   selections.set(trial, { scenario, runId: playback.runId, selection })
@@ -54,5 +73,12 @@ export function selectTrialHorizon(state: State, runCursor: number): number {
   const selection = selectTrialSelection(state)
   if (selection.status !== 'ready' || state.playback.startedAtMs == null) return 0
   const view = trialResultOf(selection.scenario, state.trial.manifest!, selection.result)
-  return Math.max(0, Math.min(Number.isNaN(runCursor) ? 0 : runCursor, state.playback.observedThroughS, view.observedThroughS))
+  return Math.max(
+    0,
+    Math.min(
+      Number.isNaN(runCursor) ? 0 : runCursor,
+      state.playback.observedThroughS,
+      view.observedThroughS,
+    ),
+  )
 }

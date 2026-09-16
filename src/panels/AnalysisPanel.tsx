@@ -14,7 +14,8 @@ interface AnalysisPanelProps {
 }
 
 export function AnalysisPanel({ phase = 'execute', screen }: AnalysisPanelProps) {
-  const active = PHASE_SCREENS[phase].find(option => option.v === screen)?.v ?? PHASE_SCREENS[phase][0].v
+  const active =
+    PHASE_SCREENS[phase].find((option) => option.v === screen)?.v ?? PHASE_SCREENS[phase][0].v
   if (active === 'inputs') return <BoardPreparation />
 
   return (

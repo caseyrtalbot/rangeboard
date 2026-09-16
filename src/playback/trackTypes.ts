@@ -6,7 +6,6 @@
  * fill them. Board meters throughout: +x east, +y south, m/s for velocity.
  */
 
-
 /** Estimated kinematic state in board meters and m/s, stamped with the update time. */
 export interface TrackState {
   x: number

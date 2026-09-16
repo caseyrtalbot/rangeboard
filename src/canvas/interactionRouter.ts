@@ -121,9 +121,14 @@ function routeEscape(state: InteractionState): Action {
  * boundary, calibrate and an armed raid draft let it fall through as a stage
  * point so the aim gesture may land on an asset.
  */
-function routeEntityClick(intent: Extract<Intent, { kind: 'click-entity' }>, state: InteractionState): Action {
-  if (state.tool === 'connect') return state.connectFrom ? { type: 'complete-connect' } : { type: 'begin-connect' }
-  if (state.tool === 'path') return intent.entityKind === 'uas' && !state.pathStarted ? { type: 'begin-path' } : CONTINUE
+function routeEntityClick(
+  intent: Extract<Intent, { kind: 'click-entity' }>,
+  state: InteractionState,
+): Action {
+  if (state.tool === 'connect')
+    return state.connectFrom ? { type: 'complete-connect' } : { type: 'begin-connect' }
+  if (state.tool === 'path')
+    return intent.entityKind === 'uas' && !state.pathStarted ? { type: 'begin-path' } : CONTINUE
   if (state.tool !== 'select') return CONTINUE
   if (state.raidDraft) return CONTINUE
   return { type: 'select-entity', additive: intent.shiftKey }
@@ -136,11 +141,15 @@ function routeEntityClick(intent: Extract<Intent, { kind: 'click-entity' }>, sta
  * second click of an in-place double-click is not a vertex; only a plain
  * select click on empty canvas clears the selection.
  */
-function routeStageClick(intent: Extract<Intent, { kind: 'click-stage' }>, state: InteractionState): Action {
+function routeStageClick(
+  intent: Extract<Intent, { kind: 'click-stage' }>,
+  state: InteractionState,
+): Action {
   if (state.clickSuppressed) return CONSUME
   if (state.placementArmed) return { type: 'place' }
   if (state.raidDraft) return { type: 'commit-raid' }
-  if (state.tool === 'boundary' || state.tool === 'path') return intent.inPlacePair ? CONSUME : { type: 'add-draft-point' }
+  if (state.tool === 'boundary' || state.tool === 'path')
+    return intent.inPlacePair ? CONSUME : { type: 'add-draft-point' }
   if (state.tool === 'calibrate') return { type: 'set-calibrate-point' }
   if (intent.onEmpty && state.tool === 'select') return { type: 'clear-selection' }
   return CONSUME

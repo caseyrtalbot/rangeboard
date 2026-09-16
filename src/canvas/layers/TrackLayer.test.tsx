@@ -12,7 +12,13 @@ import { TRACK_ESTIMATE_INK, TRACK_FALSE_INK } from './footprintStyle'
 vi.mock('react-konva', () => ({
   Group: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
   Line: ({ stroke }: { stroke?: string }) => <span data-node="marker" data-stroke={stroke} />,
-  Ellipse: (p: { radiusX: number; radiusY: number; rotation: number; stroke?: string; dash?: number[] }) => (
+  Ellipse: (p: {
+    radiusX: number
+    radiusY: number
+    rotation: number
+    stroke?: string
+    dash?: number[]
+  }) => (
     <span
       data-node="ellipse"
       data-rx={String(p.radiusX)}
@@ -37,16 +43,20 @@ function ellipses(html: string): EllipseAttrs[] {
   for (const tag of html.match(/<span data-node="ellipse"[^>]*>/g) ?? []) {
     const read = (name: string) => tag.match(new RegExp(`data-${name}="([^"]*)"`))![1]
     out.push({
-      rx: Number(read('rx')), ry: Number(read('ry')), rot: Number(read('rot')),
-      stroke: read('stroke'), dash: read('dash'),
+      rx: Number(read('rx')),
+      ry: Number(read('ry')),
+      rot: Number(read('rot')),
+      stroke: read('stroke'),
+      dash: read('dash'),
     })
   }
   return out
 }
 
 function markerStrokes(html: string): string[] {
-  return (html.match(/<span data-node="marker" data-stroke="([^"]*)"/g) ?? [])
-    .map((tag) => tag.match(/data-stroke="([^"]*)"/)![1])
+  return (html.match(/<span data-node="marker" data-stroke="([^"]*)"/g) ?? []).map(
+    (tag) => tag.match(/data-stroke="([^"]*)"/)![1],
+  )
 }
 
 const fixture = trackEstimateFixture()

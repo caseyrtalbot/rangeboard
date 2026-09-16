@@ -21,7 +21,11 @@ function without<T extends object, K extends keyof T>(value: T, keys: K[]): Omit
 function basisJson(value: unknown): string {
   return JSON.stringify(value, (_key, part) => {
     if (part == null || typeof part !== 'object' || Array.isArray(part)) return part
-    return Object.fromEntries(Object.keys(part).sort().map((key) => [key, part[key]]))
+    return Object.fromEntries(
+      Object.keys(part)
+        .sort()
+        .map((key) => [key, part[key]]),
+    )
   })
 }
 
@@ -35,9 +39,24 @@ export function analysisBasisSignature(s: Scenario): string {
   const kindOf = new Map(s.entities.map((e) => [e.id, e.kind]))
   return basisJson({
     ...without(s, [
-      'schemaVersion', 'name', 'systemPresets', 'deletedSeedIds', 'observedPresetId',
-      'engageOn', 'mcdaWeights', 'scorecards', 'boundaries', 'testCards', 'frames',
-      'underlay', 'geoRef', 'runMode', 'seed', 'replicates', 'targetHalfWidth', 'uncertainty',
+      'schemaVersion',
+      'name',
+      'systemPresets',
+      'deletedSeedIds',
+      'observedPresetId',
+      'engageOn',
+      'mcdaWeights',
+      'scorecards',
+      'boundaries',
+      'testCards',
+      'frames',
+      'underlay',
+      'geoRef',
+      'runMode',
+      'seed',
+      'replicates',
+      'targetHalfWidth',
+      'uncertainty',
     ]),
     environment: {
       ...s.environment,
@@ -62,17 +81,18 @@ export function analysisBasisSignature(s: Scenario): string {
       ...without(e, ['name', 'color', 'notes', 'systemId', 'showRange']),
       enabled: entityActive(e),
       formation: e.formation ?? null,
-      altitudeFt: e.kind === 'uas' ? threatAltitudeFt(s, e) : e.altitudeFt ?? null,
-      defendedRadiusM: e.kind === 'asset' ? defendedRadiusOf(e) : e.defendedRadiusM ?? null,
+      altitudeFt: e.kind === 'uas' ? threatAltitudeFt(s, e) : (e.altitudeFt ?? null),
+      defendedRadiusM: e.kind === 'asset' ? defendedRadiusOf(e) : (e.defendedRadiusM ?? null),
     })),
     connections: s.connections.map((c) => ({
       ...without(c, ['label', 'note']),
       medium: c.medium ?? null,
       confidence: c.confidence ?? null,
-      latencyS: c.latencyS ?? (doctrine.enabled
-        ? defaultLinkLatencyS(kindOf.get(c.fromId) ?? 'sensor', kindOf.get(c.toId) ?? 'c2')
-        : 0),
+      latencyS:
+        c.latencyS ??
+        (doctrine.enabled
+          ? defaultLinkLatencyS(kindOf.get(c.fromId) ?? 'sensor', kindOf.get(c.toId) ?? 'c2')
+          : 0),
     })),
   })
 }
-

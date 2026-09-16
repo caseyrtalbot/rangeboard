@@ -68,8 +68,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-faadc2',
         role: 'track-data',
         confidence: 'documented',
-        note:
-          'Northrop names MHR/RPS-42/62/82 in the FAAD C2 supported-sensor list.',
+        note: 'Northrop names MHR/RPS-42/62/82 in the FAAD C2 supported-sensor list.',
         source: 'Northrop Grumman FAAD C2 infographic NG23-0503-0384, 2023',
       },
       {
@@ -83,7 +82,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-coyote',
-        reason: 'Cannot serve as Coyote Block 2 fire control; that requires the Ku-band KuRFS uplink.',
+        reason:
+          'Cannot serve as Coyote Block 2 fire control; that requires the Ku-band KuRFS uplink.',
       },
     ],
   },
@@ -313,7 +313,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       },
       {
         withSpecId: 'lib-dronebuster',
-        reason: 'Handheld point-and-shoot jammer with no C2 data interface; operator-employed only.',
+        reason:
+          'Handheld point-and-shoot jammer with no C2 data interface; operator-employed only.',
       },
       {
         withSpecId: 'lib-smash',
@@ -690,7 +691,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       },
       {
         withSpecId: 'lib-coyote',
-        reason: 'Direct competitor to Coyote Block 2 in the same threat class; no cross-integration exists.',
+        reason:
+          'Direct competitor to Coyote Block 2 in the same threat class; no cross-integration exists.',
       },
     ],
   },
@@ -741,7 +743,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-medusa',
-        reason: 'No documented Picogrid link to USAF MEDUSA; the published network list is Army-centric.',
+        reason:
+          'No documented Picogrid link to USAF MEDUSA; the published network list is Army-centric.',
       },
     ],
   },
@@ -764,7 +767,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-lattice',
-        reason: 'No documented MEDUSA-Lattice interoperability; both claim FAAD C2 compatibility instead.',
+        reason:
+          'No documented MEDUSA-Lattice interoperability; both claim FAAD C2 compatibility instead.',
       },
       {
         withSpecId: 'lib-dronebuster',
@@ -773,7 +777,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       },
       {
         withSpecId: 'lib-thor',
-        reason: 'No public reporting shows THOR netted into MEDUSA; AFRL ran THOR with its own operator console.',
+        reason:
+          'No public reporting shows THOR netted into MEDUSA; AFRL ran THOR with its own operator console.',
       },
       {
         withSpecId: 'lib-coyote',
@@ -890,7 +895,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-lattice',
-        reason: 'No public documentation of a Modi-Lattice integration; the MADIS C2 path is CAC2S/MACCS.',
+        reason:
+          'No public documentation of a Modi-Lattice integration; the MADIS C2 path is CAC2S/MACCS.',
       },
       {
         withSpecId: 'lib-dronebuster',
@@ -915,7 +921,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       },
       {
         withSpecId: 'lib-rfone',
-        reason: 'An RF sensor can alert the sentry only by voice/procedure; there is no technical integration.',
+        reason:
+          'An RF sensor can alert the sentry only by voice/procedure; there is no technical integration.',
       },
       {
         withSpecId: 'lib-rf360',
@@ -936,11 +943,13 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-faadc2',
-        reason: 'No public FAAD C2 integration kit; the documented DoD fielding path is via SAIC C2.',
+        reason:
+          'No public FAAD C2 integration kit; the documented DoD fielding path is via SAIC C2.',
       },
       {
         withSpecId: 'lib-rf360',
-        reason: 'Dedrone is a direct competitor with its own RF-cyber stack; no documented interoperability.',
+        reason:
+          'Dedrone is a direct competitor with its own RF-cyber stack; no documented interoperability.',
       },
       {
         withSpecId: 'lib-medusa',
@@ -964,11 +973,13 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-faadc2',
-        reason: 'No documented FAAD C2 integration; the 2000LE advertises BMS connectivity but no public FAAD C2 kit exists.',
+        reason:
+          'No documented FAAD C2 integration; the 2000LE advertises BMS connectivity but no public FAAD C2 kit exists.',
       },
       {
         withSpecId: 'lib-rps42',
-        reason: 'No documented machine cue from air-surveillance radars to the rifle optic; cueing is procedural.',
+        reason:
+          'No documented machine cue from air-surveillance radars to the rifle optic; cueing is procedural.',
       },
       {
         withSpecId: 'lib-dronebuster',
@@ -1264,11 +1275,13 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-dronebuster',
-        reason: 'Any cue from RfOne detections reaches the jammer operator only verbally, not as a machine link.',
+        reason:
+          'Any cue from RfOne detections reaches the jammer operator only verbally, not as a machine link.',
       },
       {
         withSpecId: 'lib-coyote',
-        reason: 'Passive RF direction-finding yields bearing, not a fire-control track; cannot support Coyote guidance.',
+        reason:
+          'Passive RF direction-finding yields bearing, not a fire-control track; cannot support Coyote guidance.',
       },
     ],
   },
@@ -1328,7 +1341,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-coyote',
-        reason: 'Acoustic direction-finding cannot generate a fire-control-grade track or datalink.',
+        reason:
+          'Acoustic direction-finding cannot generate a fire-control-grade track or datalink.',
       },
     ],
   },
@@ -1356,7 +1370,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       },
       {
         withSpecId: 'lib-merops',
-        reason: 'No published link between acoustic picket cueing and Merops interceptor employment.',
+        reason:
+          'No published link between acoustic picket cueing and Merops interceptor employment.',
       },
     ],
   },
@@ -1403,16 +1418,14 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-faadc2',
         role: 'c2-interop',
         confidence: 'probable',
-        note:
-          'Northrop states FAAD C2 will converge into IBCS, which will replace Army Patriot, THAAD and FAAD C2 systems; a fielded bidirectional FAAD C2-IBCS data link is not published.',
+        note: 'Northrop states FAAD C2 will converge into IBCS, which will replace Army Patriot, THAAD and FAAD C2 systems; a fielded bidirectional FAAD C2-IBCS data link is not published.',
         source: 'NG IBCS overview 2023; NG FAAD C2 infographic NG23-0503-0384, 2023',
       },
       {
         withSpecId: 'lib-lattice',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'Army selected Anduril Lattice as the next-generation fire-control platform for the IBCS Maneuver (IBCS-M) C-UAS program.',
+        note: 'Army selected Anduril Lattice as the next-generation fire-control platform for the IBCS Maneuver (IBCS-M) C-UAS program.',
         source: 'DefenseScoop, 11 Nov 2025',
       },
     ],
@@ -1442,16 +1455,14 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-faadc2',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'ADSI carries the Forward Area Air Defense (FAAD) data link as a named interface, and the 2020 DoD C-sUAS C2 selection listed ADSI as a FAAD C2-interoperable system.',
+        note: 'ADSI carries the Forward Area Air Defense (FAAD) data link as a named interface, and the 2020 DoD C-sUAS C2 selection listed ADSI as a FAAD C2-interoperable system.',
         source: 'Ultra ADSI datasheet Jul 2023; army.mil C-sUAS selection Jun 2020',
       },
       {
         withSpecId: 'lib-tak',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'ADSI names Cursor on Target as a supported interface and performs CoT to JREAP-C translation.',
+        note: 'ADSI names Cursor on Target as a supported interface and performs CoT to JREAP-C translation.',
         source: 'Ultra ADSI datasheet Jul 2023; Breaking Defense Dec 2024',
       },
     ],
@@ -1463,14 +1474,16 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       },
       {
         withSpecId: 'lib-dronebuster',
-        reason: 'Handheld jammer with no data-link interface; nothing for a link gateway to forward to.',
+        reason:
+          'Handheld jammer with no data-link interface; nothing for a link gateway to forward to.',
       },
     ],
   },
   // Team Awareness Kit. Defense Threat Reduction Agency transitions new situational awareness tool to C5ISR Center's TAK Product Center (army.mil); Tactical Awareness Kit (TAK): Ultimate Guide
   {
     specId: 'lib-tak',
-    program: 'C5ISR Center TAK Product Center; AFRL origin 2010; supports 15 DoD programs of record',
+    program:
+      'C5ISR Center TAK Product Center; AFRL origin 2010; supports 15 DoD programs of record',
     protocols: [],
     media: ['mesh-radio', 'cable'],
     standalone: false,
@@ -1479,32 +1492,28 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-dronesentryc2',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'DroneShield implemented Cursor-on-Target in DroneSentry-C2 to stream detections to TAK servers; the RfLink ATAK-CIV plugin renders RF detections and line of bearing in ATAK.',
+        note: 'DroneShield implemented Cursor-on-Target in DroneSentry-C2 to stream detections to TAK servers; the RfLink ATAK-CIV plugin renders RF detections and line of bearing in ATAK.',
         source: 'DroneShield/Unmanned Airspace Feb 2022; DroneShield Q2 2026 release Apr 2026',
       },
       {
         withSpecId: 'lib-rfone',
         role: 'alert',
         confidence: 'documented',
-        note:
-          'RfOne implemented the CoT protocol to push RF detections into TAK; bearing-only alerts, not a track.',
+        note: 'RfOne implemented the CoT protocol to push RF detections into TAK; bearing-only alerts, not a track.',
         source: 'DroneShield/Unmanned Airspace, 1 Feb 2022',
       },
       {
         withSpecId: 'lib-picogrid',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'Picogrid LAPIS and Legion support direct integration with TAK alongside FAAD C2, Lattice, NGC2 and Maven.',
+        note: 'Picogrid LAPIS and Legion support direct integration with TAK alongside FAAD C2, Lattice, NGC2 and Maven.',
         source: 'Picogrid newsroom / sUAS News, Jun 2026',
       },
       {
         withSpecId: 'lib-adsi',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'ADSI names CoT as a supported interface and translates CoT to JREAP-C, bridging TAK into the link architecture.',
+        note: 'ADSI names CoT as a supported interface and translates CoT to JREAP-C, bridging TAK into the link architecture.',
         source: 'Ultra ADSI datasheet Jul 2023; Breaking Defense Dec 2024',
       },
       {
@@ -1529,7 +1538,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       {
         withSpecId: 'lib-lattice',
         reason:
-          'No published Lattice CoT or TAK interface. Anduril\'s developer documentation names only the Entities, Tasks and Objects APIs over REST and gRPC.',
+          "No published Lattice CoT or TAK interface. Anduril's developer documentation names only the Entities, Tasks and Objects APIs over REST and gRPC.",
       },
     ],
   },
@@ -1566,40 +1575,35 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-discovair',
         role: 'track-data',
         confidence: 'documented',
-        note:
-          'The Squarehead Discovair G2 acoustic array is integrated with DroneShield products in DroneSentry-C2.',
+        note: 'The Squarehead Discovair G2 acoustic array is integrated with DroneShield products in DroneSentry-C2.',
         source: 'DroneShield-Squarehead PR; HSToday',
       },
       {
         withSpecId: 'lib-leonidas',
         role: 'engage-order',
         confidence: 'documented',
-        note:
-          'Leonidas HPM is integrated as an effector in DroneSentry-C2; fused RF and radar detections cue the engagement.',
+        note: 'Leonidas HPM is integrated as an effector in DroneSentry-C2; fused RF and radar detections cue the engagement.',
         source: 'UASweekly, Mar 2025',
       },
       {
         withSpecId: 'lib-tak',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'DroneSentry-C2 implements Cursor-on-Target to stream the C-UAS picture to TAK servers; RfLink renders detections inside ATAK-CIV.',
+        note: 'DroneSentry-C2 implements Cursor-on-Target to stream the C-UAS picture to TAK servers; RfLink renders detections inside ATAK-CIV.',
         source: 'Unmanned Airspace Feb 2022; DroneShield Q2 2026 release',
       },
       {
         withSpecId: 'lib-rps42',
         role: 'track-data',
         confidence: 'probable',
-        note:
-          'DroneShield names RADA among its sensor interoperability partners; the RPS-42-specific pairing is not published.',
+        note: 'DroneShield names RADA among its sensor interoperability partners; the RPS-42-specific pairing is not published.',
         source: 'DroneShield products-software page, 2026',
       },
       {
         withSpecId: 'lib-hdcmr',
         role: 'track-data',
         confidence: 'probable',
-        note:
-          'Teledyne FLIR is a named DroneSentry-C2 sensor interoperability partner; the Ranger HDC MR-specific pairing is not published.',
+        note: 'Teledyne FLIR is a named DroneSentry-C2 sensor interoperability partner; the Ranger HDC MR-specific pairing is not published.',
         source: 'DroneShield products-software page, 2026',
       },
     ],
@@ -1628,7 +1632,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-rf360',
         role: 'track-data',
         confidence: 'documented',
-        note: 'RF-360 is Dedrone\'s own passive RF sensor; its detections fuse inside DedroneTracker.AI.',
+        note: "RF-360 is Dedrone's own passive RF sensor; its detections fuse inside DedroneTracker.AI.",
         source: 'dedrone.com product pages, 2026',
       },
       {
@@ -1657,7 +1661,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       {
         withSpecId: 'lib-faadc2',
         reason:
-          'No public FAAD C2 integration for DedroneTracker.AI; Northrop\'s published FAAD C2 sensor and external-system lists do not name Dedrone.',
+          "No public FAAD C2 integration for DedroneTracker.AI; Northrop's published FAAD C2 sensor and external-system lists do not name Dedrone.",
       },
       {
         withSpecId: 'lib-coyote',
@@ -1678,16 +1682,14 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'engage-order',
         confidence: 'inferred',
         medium: 'mesh-radio',
-        note:
-          'The LOCUST subsystem is FAAD-integrated; AMP-HEL-specific integration is not separately documented.',
+        note: 'The LOCUST subsystem is FAAD-integrated; AMP-HEL-specific integration is not separately documented.',
         source: 'AV, 31 Aug 2025; BlueHalo/PRNewswire, 2024',
       },
       {
         withSpecId: 'lib-lattice',
         role: 'c2-interop',
         confidence: 'inferred',
-        note:
-          'Falls under the Army enterprise C-UAS C2 transition from FAAD C2 to Lattice. No AMP-HEL-specific pairing is published.',
+        note: 'Falls under the Army enterprise C-UAS C2 transition from FAAD C2 to Lattice. No AMP-HEL-specific pairing is published.',
         source: 'DefenseScoop, Mar 2026',
       },
     ],
@@ -1732,7 +1734,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
   // Wide-Area Infrared Sensing with Persistence (WISP). Anduril to use artificial intelligence (AI) and sensor fusion for IR-based counter-UAV perimeter security
   {
     specId: 'lib-wisp',
-    program: 'Anduril Lattice C-UAS; USAF AFTC order Dec 2023; Washington National Guard fielding Aug 2026',
+    program:
+      'Anduril Lattice C-UAS; USAF AFTC order Dec 2023; Washington National Guard fielding Aug 2026',
     protocols: ['lattice'],
     media: ['cable', 'mesh-radio'],
     standalone: false,
@@ -1742,8 +1745,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'WISP detections feed Lattice, which fuses them with tower video and Pulsar RF tracks into one picture.',
+        note: 'WISP detections feed Lattice, which fuses them with tower video and Pulsar RF tracks into one picture.',
         source: 'Defence Industry Europe, Aug 2026; Army Recognition, Aug 2026',
       },
       {
@@ -1777,8 +1779,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'cue',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'MHR radar and MX-GCS EO/IR ride the same SGT Stout mission equipment package; the radar provides the 360 deg surveillance that slews the sight.',
+        note: 'MHR radar and MX-GCS EO/IR ride the same SGT Stout mission equipment package; the radar provides the 360 deg surveillance that slews the sight.',
         source: 'Leonardo DRS SGT Stout data sheet, Dec 2025',
       },
       {
@@ -1786,8 +1787,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'fc-uplink',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'MX-GCS is the stabilised sighting system for the RIwP turret that carries the XM914 30 mm gun.',
+        note: 'MX-GCS is the stabilised sighting system for the RIwP turret that carries the XM914 30 mm gun.',
         source: 'Leonardo DRS SGT Stout data sheet, Dec 2025',
       },
       {
@@ -1795,8 +1795,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'SGT Stout \'integrates with existing Army networks and interoperable with Sentinel radar\'; FAAD C2 is the Army SHORAD C2 those networks run on, but the sheet does not name it.',
+        note: "SGT Stout 'integrates with existing Army networks and interoperable with Sentinel radar'; FAAD C2 is the Army SHORAD C2 those networks run on, but the sheet does not name it.",
         source: 'Leonardo DRS SGT Stout data sheet, Dec 2025',
       },
     ],
@@ -1837,12 +1836,13 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       {
         withSpecId: 'lib-faadc2',
         reason:
-          'No public evidence of a FAAD C2 interface. Zvook delivers its picture into Ukraine\'s Delta system, which RangeBoard does not model.',
+          "No public evidence of a FAAD C2 interface. Zvook delivers its picture into Ukraine's Delta system, which RangeBoard does not model.",
       },
       { withSpecId: 'lib-lattice', reason: 'No published Zvook-Lattice integration.' },
       {
         withSpecId: 'lib-merops',
-        reason: 'No published link between acoustic station cueing and Merops interceptor employment.',
+        reason:
+          'No published link between acoustic station cueing and Merops interceptor employment.',
       },
     ],
   },
@@ -1857,7 +1857,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-faadc2',
-        reason: 'No FAAD C2 interface published; the sensor reports into the vendor\'s own Zvook UI map.',
+        reason:
+          "No FAAD C2 interface published; the sensor reports into the vendor's own Zvook UI map.",
       },
       { withSpecId: 'lib-lattice', reason: 'No published Zvook-Lattice integration.' },
     ],
@@ -1875,8 +1876,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'engage-order',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'In LIDS all sensors and effectors are correlated through FAAD C2, which provides the fratricide-avoidance and integrated air picture the EW engagement runs under.',
+        note: 'In LIDS all sensors and effectors are correlated through FAAD C2, which provides the fratricide-avoidance and integrated air picture the EW engagement runs under.',
         source: 'SRC LIDS Family of Systems brochure (Approved for Public Release), 2021',
       },
       {
@@ -1884,24 +1884,21 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'cue',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'KuRFS/KuMRFS is the LIDS air-surveillance and fire-control radar; its track feeds the same LIDS picture the operator uses to task the EW effector.',
+        note: 'KuRFS/KuMRFS is the LIDS air-surveillance and fire-control radar; its track feeds the same LIDS picture the operator uses to task the EW effector.',
         source: 'SRC LIDS Family of Systems brochure, 2021; RTX LIDS overview, Feb 2024',
       },
       {
         withSpecId: 'lib-coyote',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'Published LIDS layered sequence: Coyote Block 2+ to about 15 km, then EW effects to about 8 km, then the 30 mm gun as final protection.',
+        note: 'Published LIDS layered sequence: Coyote Block 2+ to about 15 km, then EW effects to about 8 km, then the 30 mm gun as final protection.',
         source: 'SRC LIDS Family of Systems brochure, 2021',
       },
       {
         withSpecId: 'lib-xm914',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'XM914 30 mm is the innermost LIDS layer behind the EW belt; both are tasked from the same FAAD C2 engagement plan.',
+        note: 'XM914 30 mm is the innermost LIDS layer behind the EW belt; both are tasked from the same FAAD C2 engagement plan.',
         source: 'SRC LIDS Family of Systems brochure, 2021',
       },
     ],
@@ -1931,8 +1928,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'engage-order',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'NINJA was one of the JCO\'s interim C-sUAS selections, and the JCO mandated a common interim C2; no NINJA-specific FAAD C2 integration kit is published.',
+        note: "NINJA was one of the JCO's interim C-sUAS selections, and the JCO mandated a common interim C2; no NINJA-specific FAAD C2 integration kit is published.",
         source: 'army.mil Jun 2020 (JCO interim selections); CRS R48477, Mar 2025',
       },
     ],
@@ -1940,7 +1936,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       {
         withSpecId: 'lib-lattice',
         reason:
-          'No documented NINJA-Lattice integration. The vendor\'s published C2 partnership is with UNIFY.C2 (Feb 2026), which is not in this library.',
+          "No documented NINJA-Lattice integration. The vendor's published C2 partnership is with UNIFY.C2 (Feb 2026), which is not in this library.",
       },
       {
         withSpecId: 'lib-modi',
@@ -1962,8 +1958,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'engage-order',
         confidence: 'documented',
         medium: 'mesh-radio',
-        note:
-          'Pulsar is the RF sensing and EW defeat element of Anduril\'s base-defense architecture, managed through the Lattice C2 layer.',
+        note: "Pulsar is the RF sensing and EW defeat element of Anduril's base-defense architecture, managed through the Lattice C2 layer.",
         source: 'Anduril Pulsar-L release, Apr 2025; Army Recognition WDS 2026',
       },
       {
@@ -1984,12 +1979,12 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     denied: [
       {
         withSpecId: 'lib-faadc2',
-        reason: 'No documented Pulsar-FAAD C2 integration; Anduril\'s published C2 path is Lattice.',
+        reason: "No documented Pulsar-FAAD C2 integration; Anduril's published C2 path is Lattice.",
       },
       {
         withSpecId: 'lib-medusa',
         reason:
-          'No public reporting nets Pulsar into MEDUSA; MEDUSA\'s published interoperability is with FAAD C2.',
+          "No public reporting nets Pulsar into MEDUSA; MEDUSA's published interoperability is with FAAD C2.",
       },
     ],
     guidance: 'self',
@@ -2011,7 +2006,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       { withSpecId: 'lib-lattice', reason: 'No published Pitbull-Lattice integration.' },
       {
         withSpecId: 'lib-dronebuster',
-        reason: 'Both are dismounted jammers; no machine-to-machine integration exists or is needed.',
+        reason:
+          'Both are dismounted jammers; no machine-to-machine integration exists or is needed.',
       },
       {
         withSpecId: 'lib-modi',
@@ -2034,8 +2030,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'documented',
         medium: 'fiber',
-        note:
-          'CRS names G/ATOR and CAC2S as two of the three components of the Marine MRIC air-defence system; G/ATOR feeds the CAC2S air picture.',
+        note: 'CRS names G/ATOR and CAC2S as two of the three components of the Marine MRIC air-defence system; G/ATOR feeds the CAC2S air picture.',
         source: 'CRS R48477, 31 Mar 2025',
       },
       {
@@ -2043,16 +2038,14 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'inferred',
         medium: 'cable',
-        note:
-          'MADIS Mk2 and L-MADIS carry the RADA MHR family and are fought by LAAD battalions inside the MACCS that CAC2S serves. No source names a MADIS-to-CAC2S data interface, so this is an organisational association only.',
+        note: 'MADIS Mk2 and L-MADIS carry the RADA MHR family and are fought by LAAD battalions inside the MACCS that CAC2S serves. No source names a MADIS-to-CAC2S data interface, so this is an organisational association only.',
       },
       {
         withSpecId: 'lib-modi',
         role: 'cue',
         confidence: 'inferred',
         medium: 'operator-manual',
-        note:
-          'Modi 2 is operator-employed on the L-MADIS EW vehicle off the section air picture. CAC2S supplies the picture the section fights on; it does not machine-task the jammer.',
+        note: 'Modi 2 is operator-employed on the L-MADIS EW vehicle off the section air picture. CAC2S supplies the picture the section fights on; it does not machine-task the jammer.',
       },
     ],
     denied: [
@@ -2081,8 +2074,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'fc-uplink',
         confidence: 'documented',
         medium: 'proprietary-rf',
-        note:
-          'Coyote Block 2+ \'is command and control guided to target using from the KuMRFS family of radars until the on-board seeker takes over\'; KuMRFS-M is the masted radar on the same M-LIDS vehicle that carries the two-round Coyote launcher.',
+        note: "Coyote Block 2+ 'is command and control guided to target using from the KuMRFS family of radars until the on-board seeker takes over'; KuMRFS-M is the masted radar on the same M-LIDS vehicle that carries the two-round Coyote launcher.",
         source:
           'SRC LIDS Family of Systems brochure (Approved for Public Release), Coyote and Mobile Solutions sections',
       },
@@ -2091,8 +2083,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'In LIDS \'all sensors and effectors are correlated with higher echelon through the Forward Area Air Defense Command and Control (FAAD C2) system\'.',
+        note: "In LIDS 'all sensors and effectors are correlated with higher echelon through the Forward Area Air Defense Command and Control (FAAD C2) system'.",
         source: 'SRC LIDS Family of Systems brochure, capability description',
       },
       {
@@ -2100,8 +2091,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'cue',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'The M-LIDS kinetic vehicle carries KuMRFS-M on the mast and the XM914E1 30 mm on the RIwP turret; the radar supplies the engagement track for the turret.',
+        note: 'The M-LIDS kinetic vehicle carries KuMRFS-M on the mast and the XM914E1 30 mm on the RIwP turret; the radar supplies the engagement track for the turret.',
         source: 'SRC LIDS Family of Systems brochure, two-vehicle M-LIDS system description',
       },
       {
@@ -2109,23 +2099,20 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'cue',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'Radar track slews the RIwP sight for visual identification before a kinetic engagement; both sit on the same vehicle, but the brochure does not describe the handover explicitly.',
+        note: 'Radar track slews the RIwP sight for visual identification before a kinetic engagement; both sit on the same vehicle, but the brochure does not describe the handover explicitly.',
       },
       {
         withSpecId: 'lib-cuaews',
         role: 'cue',
         confidence: 'probable',
         medium: 'mesh-radio',
-        note:
-          'The two M-LIDS vehicles fight as one section under FAAD C2, and the brochure\'s layered sequence runs Coyote to about 15 km, then EW effects to about 8 km, then the 30 mm gun.',
+        note: "The two M-LIDS vehicles fight as one section under FAAD C2, and the brochure's layered sequence runs Coyote to about 15 km, then EW effects to about 8 km, then the 30 mm gun.",
       },
       {
         withSpecId: 'lib-lattice',
         role: 'track-data',
         confidence: 'probable',
-        note:
-          'Lattice replacing FAAD C2 as Army C-UAS fire control will have to ingest LIDS radars, but no KuMRFS-M-specific integration is published.',
+        note: 'Lattice replacing FAAD C2 as Army C-UAS fire control will have to ingest LIDS radars, but no KuMRFS-M-specific integration is published.',
       },
     ],
     denied: [],
@@ -2143,8 +2130,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'CRS records FAAD C2 as the M-LIDS C2 and states \'The LIDS and M-SHORAD systems use FAADC2\'; every LIDS sensor is correlated through it.',
+        note: "CRS records FAAD C2 as the M-LIDS C2 and states 'The LIDS and M-SHORAD systems use FAADC2'; every LIDS sensor is correlated through it.",
         source: 'CRS R48477, 31 Mar 2025; SRC LIDS Family of Systems brochure',
       },
       {
@@ -2152,37 +2138,34 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'fc-uplink',
         confidence: 'probable',
         medium: 'proprietary-rf',
-        note:
-          'XBAEU is the only radar CRS records on the Increment 2.1 Stryker, which also carries Coyote, so it must supply the guidance track. No source states the uplink explicitly, unlike the documented KuMRFS-Coyote case.',
+        note: 'XBAEU is the only radar CRS records on the Increment 2.1 Stryker, which also carries Coyote, so it must supply the guidance track. No source states the uplink explicitly, unlike the documented KuMRFS-Coyote case.',
       },
       {
         withSpecId: 'lib-xm914',
         role: 'cue',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'Same Increment 2.1 vehicle: the RIwP turret with the 30 mm is cued off the vehicle\'s only radar.',
+        note: "Same Increment 2.1 vehicle: the RIwP turret with the 30 mm is cued off the vehicle's only radar.",
       },
       {
         withSpecId: 'lib-cuaews',
         role: 'cue',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'CRS lists SRC CUAEWS on the same single-Stryker build, so radar track and EW effect are on one platform under one FAAD C2 picture.',
+        note: 'CRS lists SRC CUAEWS on the same single-Stryker build, so radar track and EW effect are on one platform under one FAAD C2 picture.',
       },
       {
         withSpecId: 'lib-kurfs',
         role: 'track-data',
         confidence: 'probable',
-        note:
-          'RTX states KuRFS and the scaled Ku720-2 XBAEU work together to deliver the 360 deg picture, which implies a distributed sensing architecture rather than two independent radars.',
+        note: 'RTX states KuRFS and the scaled Ku720-2 XBAEU work together to deliver the 360 deg picture, which implies a distributed sensing architecture rather than two independent radars.',
       },
     ],
     denied: [
       {
         withSpecId: 'lib-lattice',
-        reason: 'No published XBAEU-Lattice integration. The documented Increment 2.1 C2 path is FAAD C2.',
+        reason:
+          'No published XBAEU-Lattice integration. The documented Increment 2.1 C2 path is FAAD C2.',
       },
     ],
   },
@@ -2199,17 +2182,16 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'The DF \'automatically de-clutters EW information before sending to command and control system\', and in LIDS all sensors are correlated through FAAD C2.',
-        source: 'SRC LIDS Family of Systems brochure, CUAEWS DF TRACK sequence and capability description',
+        note: "The DF 'automatically de-clutters EW information before sending to command and control system', and in LIDS all sensors are correlated through FAAD C2.",
+        source:
+          'SRC LIDS Family of Systems brochure, CUAEWS DF TRACK sequence and capability description',
       },
       {
         withSpecId: 'lib-cuaews',
         role: 'cue',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'Two halves of one SRC assembly: the DF finds, fixes and classifies, then \'a man in the loop activates the defeat technique\'. The system automatically resumes passive RF search on cease fire.',
+        note: "Two halves of one SRC assembly: the DF finds, fixes and classifies, then 'a man in the loop activates the defeat technique'. The system automatically resumes passive RF search on cease fire.",
         source: 'SRC LIDS Family of Systems brochure, CUAEWS DF FIND/ENGAGE/ASSESS sequence',
       },
       {
@@ -2217,16 +2199,14 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'alert',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'The declutted EW picture goes to the same FAAD C2 that authorises Coyote, so the DF contributes warning rather than a fire-control track. It cannot provide a Coyote guidance uplink: it is passive and produces bearings, not range.',
+        note: 'The declutted EW picture goes to the same FAAD C2 that authorises Coyote, so the DF contributes warning rather than a fire-control track. It cannot provide a Coyote guidance uplink: it is passive and produces bearings, not range.',
       },
       {
         withSpecId: 'lib-kumrfs-m',
         role: 'track-data',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'Passive DF bearing and radar track are the two halves of the LIDS detect picture on the two-vehicle M-LIDS section, fused at FAAD C2 rather than sensor to sensor.',
+        note: 'Passive DF bearing and radar track are the two halves of the LIDS detect picture on the two-vehicle M-LIDS section, fused at FAAD C2 rather than sensor to sensor.',
       },
     ],
     denied: [
@@ -2254,8 +2234,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'CRS names the RPS-42 radar and the CACI AVT CM262 together as the L-MADIS detection pair: the radar cues, the gimbal identifies.',
+        note: 'CRS names the RPS-42 radar and the CACI AVT CM262 together as the L-MADIS detection pair: the radar cues, the gimbal identifies.',
         source: 'CRS R48477, 31 Mar 2025',
       },
       {
@@ -2263,31 +2242,28 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'cue',
         confidence: 'probable',
         medium: 'operator-manual',
-        note:
-          'On the L-MADIS pair the radar and CM262 find and identify; the operator then engages with Modi 2 on the second ULTV. The handover is an operator action, not a data interface.',
+        note: 'On the L-MADIS pair the radar and CM262 find and identify; the operator then engages with Modi 2 on the second ULTV. The handover is an operator action, not a data interface.',
       },
       {
         withSpecId: 'lib-faadc2',
         role: 'track-data',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'The Joint C-sUAS Office required its interim selections including L-MADIS to integrate with FAAD C2. The requirement was on the system, not specifically on this gimbal.',
+        note: 'The Joint C-sUAS Office required its interim selections including L-MADIS to integrate with FAAD C2. The requirement was on the system, not specifically on this gimbal.',
       },
       {
         withSpecId: 'lib-cac2s',
         role: 'track-data',
         confidence: 'inferred',
         medium: 'cable',
-        note:
-          'The L-MADIS section fights inside the Marine Air Command and Control System that CAC2S serves. No source names a CM262-to-CAC2S interface.',
+        note: 'The L-MADIS section fights inside the Marine Air Command and Control System that CAC2S serves. No source names a CM262-to-CAC2S interface.',
       },
     ],
     denied: [
       {
         withSpecId: 'lib-lattice',
         reason:
-          'No published CM262-Lattice integration. Do not infer one from Lattice\'s general third-party sensor claims.',
+          "No published CM262-Lattice integration. Do not infer one from Lattice's general third-party sensor claims.",
       },
     ],
   },
@@ -2304,8 +2280,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'fc-uplink',
         confidence: 'documented',
         medium: 'cable',
-        note:
-          'The S3 is the RIwP\'s integrated sight for the XM914E1 30 mm and coaxial M240 on the same turret, with a built-in auto-tracker that holds the track through the engagement.',
+        note: "The S3 is the RIwP's integrated sight for the XM914E1 30 mm and coaxial M240 on the same turret, with a built-in auto-tracker that holds the track through the engagement.",
         source: 'SRC LIDS Family of Systems brochure, Turreted Systems section',
       },
       {
@@ -2313,24 +2288,21 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'cue',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'The same RIwP turret hosts the two-round Coyote Block 2+ launcher, so the sight supports visual identification before release. The Coyote guidance track itself comes from the KuMRFS family radar, not from the sight.',
+        note: 'The same RIwP turret hosts the two-round Coyote Block 2+ launcher, so the sight supports visual identification before release. The Coyote guidance track itself comes from the KuMRFS family radar, not from the sight.',
       },
       {
         withSpecId: 'lib-faadc2',
         role: 'track-data',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'M-LIDS correlates all sensors and effectors through FAAD C2; the brochure lists FAAD C2 on both vehicles.',
+        note: 'M-LIDS correlates all sensors and effectors through FAAD C2; the brochure lists FAAD C2 on both vehicles.',
       },
       {
         withSpecId: 'lib-kumrfs-m',
         role: 'track-data',
         confidence: 'probable',
         medium: 'cable',
-        note:
-          'Masted radar and turret sight are the two halves of the kinetic vehicle\'s track picture: radar acquires, sight identifies and holds.',
+        note: "Masted radar and turret sight are the two halves of the kinetic vehicle's track picture: radar acquires, sight identifies and holds.",
       },
     ],
     denied: [
@@ -2353,8 +2325,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'documented',
         medium: 'mesh-radio',
-        note:
-          'Sentry towers are Lattice-native: \'Lattice fuses real-time data from Anduril\'s Sentry Towers in addition to third-party data sources to create comprehensive actionable intelligence for operators.\'',
+        note: "Sentry towers are Lattice-native: 'Lattice fuses real-time data from Anduril's Sentry Towers in addition to third-party data sources to create comprehensive actionable intelligence for operators.'",
         source: 'Anduril Sentry product page and XRST launch announcement, accessed 2026-08-24',
       },
       {
@@ -2362,16 +2333,14 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'track-data',
         confidence: 'probable',
         medium: 'mesh-radio',
-        note:
-          'Pulsar RF and Sentry tower feeds are fused in the same Lattice picture in fielded kits; the pairing runs through Lattice, not sensor to sensor.',
+        note: 'Pulsar RF and Sentry tower feeds are fused in the same Lattice picture in fielded kits; the pairing runs through Lattice, not sensor to sensor.',
       },
       {
         withSpecId: 'lib-wisp',
         role: 'track-data',
         confidence: 'probable',
         medium: 'mesh-radio',
-        note:
-          'WISP infrared and tower radar are co-fielded Anduril sensors fused by Lattice. Same routing caveat.',
+        note: 'WISP infrared and tower radar are co-fielded Anduril sensors fused by Lattice. Same routing caveat.',
       },
     ],
     denied: [
@@ -2383,7 +2352,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
       {
         withSpecId: 'lib-anvil',
         reason:
-          'Not a denial of capability: Anvil is documented as receiving targeting from Sentry towers, but only THROUGH Lattice. lib-anvil already carries requiredC2 [\'lib-lattice\'], so a direct sensor-to-effector pair would misrepresent the architecture.',
+          "Not a denial of capability: Anvil is documented as receiving targeting from Sentry towers, but only THROUGH Lattice. lib-anvil already carries requiredC2 ['lib-lattice'], so a direct sensor-to-effector pair would misrepresent the architecture.",
       },
       { withSpecId: 'lib-medusa', reason: 'No published Sentry-MEDUSA integration.' },
     ],
@@ -2400,24 +2369,21 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-faadc2',
         role: 'engage-order',
         confidence: 'documented',
-        note:
-          'FAAD C2 is the Army/USMC SHORAD C2 of record that authorises Stinger engagements on M-SHORAD and MADIS.',
+        note: 'FAAD C2 is the Army/USMC SHORAD C2 of record that authorises Stinger engagements on M-SHORAD and MADIS.',
         source: 'CRS R48477, Mar 2025; NG FAAD/C-RAM C2 data sheet',
       },
       {
         withSpecId: 'lib-rps42',
         role: 'cue',
         confidence: 'documented',
-        note:
-          'The MADIS Mk2 RPS-42-family radar cues the Mk1 turret that carries the four-round Stinger ATAL pod.',
+        note: 'The MADIS Mk2 RPS-42-family radar cues the Mk1 turret that carries the four-round Stinger ATAL pod.',
         source: 'Army Recognition MADIS page, 2025; CRS R48477',
       },
       {
         withSpecId: 'lib-xm914',
         role: 'c2-interop',
         confidence: 'documented',
-        note:
-          'Co-mounted with the XM914E1 30 mm on the MADIS Mk1 RS6 RWS and on the M-SHORAD RIwP turret for layered defeat.',
+        note: 'Co-mounted with the XM914E1 30 mm on the MADIS Mk1 RS6 RWS and on the M-SHORAD RIwP turret for layered defeat.',
         source: 'Seapower MADIS RWS; CRS R48477, Mar 2025',
       },
       {
@@ -2442,24 +2408,21 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-faadc2',
         role: 'engage-order',
         confidence: 'inferred',
-        note:
-          'Reporting states EAGLS shares tracks and engagement data with existing air-defence networks; CENTCOM C-UAS effectors operate under the FAAD C2 architecture, but no FAAD C2 integration kit is named for EAGLS.',
+        note: 'Reporting states EAGLS shares tracks and engagement data with existing air-defence networks; CENTCOM C-UAS effectors operate under the FAAD C2 architecture, but no FAAD C2 integration kit is named for EAGLS.',
         source: 'Army Recognition, 22 Jan 2026',
       },
       {
         withSpecId: 'lib-lattice',
         role: 'engage-order',
         confidence: 'inferred',
-        note:
-          'Anduril Lattice was selected to replace FAAD C2 as Army C-UAS fire control, which would place fielded launchers such as EAGLS under it.',
+        note: 'Anduril Lattice was selected to replace FAAD C2 as Army C-UAS fire control, which would place fielded launchers such as EAGLS under it.',
         source: 'Breaking Defense Oct 2025; DefenseScoop Mar 2026',
       },
       {
         withSpecId: 'lib-kurfs',
         role: 'c2-interop',
         confidence: 'inferred',
-        note:
-          'EAGLS and the LIDS KuRFS/Coyote layer are both deployed for CENTCOM base defence, so co-siting and picture sharing is likely; no source establishes a specific pairing.',
+        note: 'EAGLS and the LIDS KuRFS/Coyote layer are both deployed for CENTCOM base defence, so co-siting and picture sharing is likely; no source establishes a specific pairing.',
         source: 'CRS R48477 Mar 2025; Army Recognition Jan 2026',
       },
     ],
@@ -2510,8 +2473,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'cue',
         confidence: 'inferred',
         medium: 'cable',
-        note:
-          'Fortem publishes an open C2 API and SkyDome Manager for third-party track ingest; no source establishes a specific Picogrid pairing.',
+        note: 'Fortem publishes an open C2 API and SkyDome Manager for third-party track ingest; no source establishes a specific Picogrid pairing.',
         source: 'Fortem DroneHunter F700 product page, 2026',
       },
     ],
@@ -2536,16 +2498,14 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-faadc2',
         role: 'track-data',
         confidence: 'documented',
-        note:
-          'Lockheed Martin lists a FAAD C2 interface for SHORAD forces as a Sentinel A4 data link interface.',
+        note: 'Lockheed Martin lists a FAAD C2 interface for SHORAD forces as a Sentinel A4 data link interface.',
         source: 'LM Sentinel A4 product card, 2024',
       },
       {
         withSpecId: 'lib-lattice',
         role: 'track-data',
         confidence: 'probable',
-        note:
-          'Lattice is replacing FAAD C2 as Army C-UAS fire control, so the Army\'s new SHORAD acquisition radar is in scope; no Sentinel-specific integration is published.',
+        note: "Lattice is replacing FAAD C2 as Army C-UAS fire control, so the Army's new SHORAD acquisition radar is in scope; no Sentinel-specific integration is published.",
         source: 'Breaking Defense Oct 2025; DefenseScoop Mar 2026 (as cited in existing library)',
       },
     ],
@@ -2589,7 +2549,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
   // SPEXER 2000 3D (MkII / MkIII) surveillance radar. HENSOLDT SPEXER 2000 3D Radar — C-UAV and Critical Asset Protection datasheet, issue 2
   {
     specId: 'lib-spexer2000',
-    program: 'HENSOLDT SPEXER family; C-UAV and critical asset protection; in service with 8 nations',
+    program:
+      'HENSOLDT SPEXER family; C-UAV and critical asset protection; in service with 8 nations',
     protocols: [],
     media: ['cable'],
     standalone: true,
@@ -2608,16 +2569,14 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-rf360',
         role: 'c2-interop',
         confidence: 'probable',
-        note:
-          'Dedrone lists Echodyne as a technology partner and fuses Echodyne radar with Dedrone RF in DedroneTracker.AI; the Echodyne model is not named.',
+        note: 'Dedrone lists Echodyne as a technology partner and fuses Echodyne radar with Dedrone RF in DedroneTracker.AI; the Echodyne model is not named.',
         source: 'dedrone.com technology partners (as cited for lib-echoshield)',
       },
       {
         withSpecId: 'lib-rfone',
         role: 'c2-interop',
         confidence: 'probable',
-        note:
-          'DroneShield DroneSentry-C2 integrates Echodyne radars alongside DroneShield RF sensors; the Echodyne model is not named.',
+        note: 'DroneShield DroneSentry-C2 integrates Echodyne radars alongside DroneShield RF sensors; the Echodyne model is not named.',
         source: 'UASweekly, Mar 2025 (as cited for lib-echoshield)',
       },
     ],
@@ -2641,8 +2600,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         withSpecId: 'lib-lattice',
         role: 'track-data',
         confidence: 'probable',
-        note:
-          'Anduril states Spyglass is being integrated into Lattice; the integration is stated as intent, not completion.',
+        note: 'Anduril states Spyglass is being integrated into Lattice; the integration is stated as intent, not completion.',
         source: 'Anduril / Military Embedded Systems, Jan 2025',
       },
     ],
@@ -2702,8 +2660,7 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
     protocols: ['cot-tak'],
     media: ['mesh-radio', 'operator-manual'],
     standalone: true,
-    pairs: [
-    ],
+    pairs: [],
     denied: [
       {
         withSpecId: 'lib-dronebuster',
@@ -2730,9 +2687,8 @@ export const INTEGRATION_PROFILES: IntegrationProfile[] = [
         role: 'c2-interop',
         confidence: 'probable',
         medium: 'proprietary-rf',
-        note:
-          'DroneShield\'s Aug 2024 RF sensor release updated RfPatrol Mk2 and RfOne Mk2 together and shipped a shared expanded API plus protocol-buffer packages for third-party integration; a common DroneSentry-C2 picture is near-certain but not stated in those words.',
-        source: 'cuashub, \'DroneShield Releases Update for RF Sensors\', Aug 2024',
+        note: "DroneShield's Aug 2024 RF sensor release updated RfPatrol Mk2 and RfOne Mk2 together and shipped a shared expanded API plus protocol-buffer packages for third-party integration; a common DroneSentry-C2 picture is near-certain but not stated in those words.",
+        source: "cuashub, 'DroneShield Releases Update for RF Sensors', Aug 2024",
       },
     ],
     denied: [

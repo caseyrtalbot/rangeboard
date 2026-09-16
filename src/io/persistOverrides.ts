@@ -31,7 +31,9 @@ function override(value: unknown, path: string): Override {
 export function parseOverrideSet(raw: string): OverrideSet {
   const save = objectAt(JSON.parse(raw), 'overrideSet')
   if (!Array.isArray(save.overrides)) invalid('overrideSet.overrides', 'expected an array')
-  return { overrides: save.overrides.map((entry, i) => override(entry, `overrideSet.overrides[${i}]`)) }
+  return {
+    overrides: save.overrides.map((entry, i) => override(entry, `overrideSet.overrides[${i}]`)),
+  }
 }
 
 const OVERRIDES_ERROR = 'Overrides not saved'
@@ -56,7 +58,8 @@ export const overridesAutosaveAdapter: AutosaveAdapter<OverrideSet> = {
     }),
   reportSaved: () => {
     const store = useStore.getState()
-    if (store.save.error?.startsWith(OVERRIDES_ERROR)) store.setSaveState(store.save.lastAutosaveAt, null)
+    if (store.save.error?.startsWith(OVERRIDES_ERROR))
+      store.setSaveState(store.save.lastAutosaveAt, null)
   },
   reportPaused: (message) => {
     const store = useStore.getState()
@@ -65,7 +68,10 @@ export const overridesAutosaveAdapter: AutosaveAdapter<OverrideSet> = {
   reportWriteFailure: (error) => {
     const store = useStore.getState()
     const reason = error instanceof Error ? error.message || error.name : 'storage error'
-    store.setSaveState(store.save.lastAutosaveAt, `${OVERRIDES_ERROR}: ${reason}. Record them again when storage is available.`)
+    store.setSaveState(
+      store.save.lastAutosaveAt,
+      `${OVERRIDES_ERROR}: ${reason}. Record them again when storage is available.`,
+    )
   },
 }
 

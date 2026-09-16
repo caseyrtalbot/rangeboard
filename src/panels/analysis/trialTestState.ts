@@ -5,9 +5,18 @@ import { useStore } from '../../state/store'
 export function installTrial(horizonS = 3) {
   const fixture = mixedTrial()
   const { scenario, manifest, result } = fixture
-  useStore.setState({ scenario,
-    playback: { ...freshPlayback(1), runId: manifest.runId, startedAtMs: 1, phase: 'paused', simTimeS: 50, observedThroughS: horizonS },
-    trial: { ...IDLE_TRIAL, status: 'ready', scenario, manifest, result } })
+  useStore.setState({
+    scenario,
+    playback: {
+      ...freshPlayback(1),
+      runId: manifest.runId,
+      startedAtMs: 1,
+      phase: 'paused',
+      simTimeS: 50,
+      observedThroughS: horizonS,
+    },
+    trial: { ...IDLE_TRIAL, status: 'ready', scenario, manifest, result },
+  })
   return fixture
 }
 

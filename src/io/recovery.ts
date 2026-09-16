@@ -1,8 +1,12 @@
 /** A failed recovery must never let autosave destroy the only unreadable copy. */
 const blockedAutosaves = new Map<string, string>()
 
-export function blockAutosave(key: string, reason: string): void { blockedAutosaves.set(key, reason) }
-export function allowAutosave(key: string): void { blockedAutosaves.delete(key) }
+export function blockAutosave(key: string, reason: string): void {
+  blockedAutosaves.set(key, reason)
+}
+export function allowAutosave(key: string): void {
+  blockedAutosaves.delete(key)
+}
 export function assertAutosaveAllowed(key: string): void {
   const reason = blockedAutosaves.get(key)
   if (reason) throw new Error(reason)
@@ -26,7 +30,11 @@ export function stashUnreadableSave(raw: string, prefix: string): string | null 
 export function recoverUnreadableSave(raw: string, liveKey: string, prefix: string): string | null {
   const key = stashUnreadableSave(raw, prefix)
   if (key) allowAutosave(liveKey)
-  else blockAutosave(liveKey, 'Autosave paused to preserve an unreadable save. Export current work, free browser storage, and reload.')
+  else
+    blockAutosave(
+      liveKey,
+      'Autosave paused to preserve an unreadable save. Export current work, free browser storage, and reload.',
+    )
   return key
 }
 
@@ -40,14 +48,18 @@ let notices: RecoveryNotice[] = []
 let nextNoticeId = 0
 const listeners = new Set<() => void>()
 
-export function getRecoveryNotices(): RecoveryNotice[] { return notices }
+export function getRecoveryNotices(): RecoveryNotice[] {
+  return notices
+}
 export function subscribeRecoveryNotices(listener: () => void): () => void {
   listeners.add(listener)
-  return () => { listeners.delete(listener) }
+  return () => {
+    listeners.delete(listener)
+  }
 }
 export function dismissRecoveryNotice(id: number): void {
-  notices = notices.filter(notice => notice.id !== id)
-  listeners.forEach(listener => listener())
+  notices = notices.filter((notice) => notice.id !== id)
+  listeners.forEach((listener) => listener())
 }
 
 /** Startup notice includes the actual validation failure and copy result. */
@@ -55,9 +67,12 @@ export function notifyRecovery(what: string, key: string | null, reason?: string
   const where = key
     ? `A copy is kept in browser storage under "${key}".`
     : 'A recovery copy could not be verified. The original is retained; autosave is paused. Export current work, free browser storage, and reload.'
-  notices = [...notices, {
-    id: ++nextNoticeId,
-    message: `The saved ${what} could not be read and was not loaded. ${reason ?? ''} ${where}`,
-  }]
-  listeners.forEach(listener => listener())
+  notices = [
+    ...notices,
+    {
+      id: ++nextNoticeId,
+      message: `The saved ${what} could not be read and was not loaded. ${reason ?? ''} ${where}`,
+    },
+  ]
+  listeners.forEach((listener) => listener())
 }

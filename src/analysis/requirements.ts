@@ -54,7 +54,10 @@ function pct(fraction: number): string {
  * a defended boundary, which is most tracks in a laydown with no asset or a
  * threat that turns away.
  */
-function heldAtDecision(a: ThreatAssessment, att: ThreatAttrition | undefined): {
+function heldAtDecision(
+  a: ThreatAssessment,
+  att: ThreatAttrition | undefined,
+): {
   pass: boolean
   tS: number | null
 } {
@@ -131,7 +134,8 @@ function buildGate(
   for (const a of spec.population) {
     const result = spec.test(a)
     if (result.pass) met += 1
-    else failures.push({ uasId: a.uasId, name: threatName(scenario, a.uasId), reason: result.reason })
+    else
+      failures.push({ uasId: a.uasId, name: threatName(scenario, a.uasId), reason: result.reason })
   }
   return {
     id: spec.id,
@@ -175,9 +179,10 @@ export function buildRequirementGateReport(
   }
   // A supplied MC assessment can name parameter-spread models these gates never use.
   // Recompute the full envelope findings, rather than mixing the two validity bases.
-  const envelopeValidity = scenario.runMode === 'monte-carlo'
-    ? assessRunValidity({ ...scenario, runMode: 'deterministic' }, assessments)
-    : validity ?? assessRunValidity(scenario, assessments)
+  const envelopeValidity =
+    scenario.runMode === 'monte-carlo'
+      ? assessRunValidity({ ...scenario, runMode: 'deterministic' }, assessments)
+      : (validity ?? assessRunValidity(scenario, assessments))
   const findings = envelopeValidity.findings
   const population = (id: RequirementGateId): ThreatAssessment[] => {
     const invalid = invalidatedTracksForGate(findings, id)
@@ -291,13 +296,16 @@ export function buildRequirementGateReport(
       population: targetPop,
       test: (a) => ({
         pass: a.status === 'engageable',
-        reason: a.status === 'no-fc-uplink'
-          ? 'fire-control uplink required: route has no fire-control sensor; geometry only, no shot'
-          : a.status.replaceAll('-', ' '),
+        reason:
+          a.status === 'no-fc-uplink'
+            ? 'fire-control uplink required: route has no fire-control sensor; geometry only, no shot'
+            : a.status.replaceAll('-', ' '),
       }),
       metric: `${targetPop.filter((a) => a.status === 'engageable').length}/${targetPop.length} usable`,
       detail:
-        minWindow == null ? 'no usable engagement window' : `shortest selected window ${formatTime(minWindow)}`,
+        minWindow == null
+          ? 'no usable engagement window'
+          : `shortest selected window ${formatTime(minWindow)}`,
       notEvaluatedReason: noEngagementRun ? holdReason : null,
     }),
     buildGate(scenario, threats, findings, {
@@ -309,10 +317,12 @@ export function buildRequirementGateReport(
         const fired = (att?.shotsFired ?? 0) + (att?.deSalvos ?? 0) + (att?.jamSalvos ?? 0)
         return { pass: fired > 0, reason: 'no salvo assigned' }
       },
-      metric: `${engagePop.filter((a) => {
-        const att = attrition.get(a.uasId)
-        return (att?.shotsFired ?? 0) + (att?.deSalvos ?? 0) + (att?.jamSalvos ?? 0) > 0
-      }).length}/${engagePop.length} engaged`,
+      metric: `${
+        engagePop.filter((a) => {
+          const att = attrition.get(a.uasId)
+          return (att?.shotsFired ?? 0) + (att?.deSalvos ?? 0) + (att?.jamSalvos ?? 0) > 0
+        }).length
+      }/${engagePop.length} engaged`,
       detail: `${salvos} total salvos assigned`,
       notEvaluatedReason: noEngagementRun ? holdReason : null,
     }),

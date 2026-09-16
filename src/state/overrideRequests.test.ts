@@ -16,16 +16,34 @@ import { useStore } from './store'
 
 const EFFECTOR = 'lib-coyote'
 const RANGE: Boundary = {
-  id: 'bnd-range', name: 'Range', type: 'range', closed: true, altBandFt: null,
-  points: [{ x: -2000, y: -2000 }, { x: 2000, y: -2000 }, { x: 2000, y: 2000 }, { x: -2000, y: 2000 }],
+  id: 'bnd-range',
+  name: 'Range',
+  type: 'range',
+  closed: true,
+  altBandFt: null,
+  points: [
+    { x: -2000, y: -2000 },
+    { x: 2000, y: -2000 },
+    { x: 2000, y: 2000 },
+    { x: -2000, y: 2000 },
+  ],
 }
 
 function scenario(): Scenario {
-  return { ...structuredClone(probe) as unknown as Scenario, runMode: 'monte-carlo', sensitivityDepth: 'quick', boundaries: [RANGE] }
+  return {
+    ...(structuredClone(probe) as unknown as Scenario),
+    runMode: 'monte-carlo',
+    sensitivityDepth: 'quick',
+    boundaries: [RANGE],
+  }
 }
 
 /** One finished replicate of the probe, enough for a `done` message. */
-const summary = runReplicates({ ...structuredClone(probe) as unknown as Scenario, runMode: 'monte-carlo', replicates: 1 })
+const summary = runReplicates({
+  ...(structuredClone(probe) as unknown as Scenario),
+  runMode: 'monte-carlo',
+  replicates: 1,
+})
 
 /** The Pk the latest worker request carries for the Coyote. */
 function requestedPk(): unknown {
@@ -64,12 +82,16 @@ describe('overrides in the analysis requests', () => {
     expect(requestedPk()).toBe(0.02)
 
     useStore.getState().runOptimize({
-      objective: { response: 'leakers', direction: 'minimize' }, movableIds: ['ent-mtnvzhmr-24'], evaluations: 2,
+      objective: { response: 'leakers', direction: 'minimize' },
+      movableIds: ['ent-mtnvzhmr-24'],
+      evaluations: 2,
     })
     expect((ControlledWorker.latest().request as OptimizeRequest).type).toBe('optimize')
     expect(requestedPk()).toBe(0.02)
 
-    expect(useStore.getState().scenario.library.find((m) => m.id === EFFECTOR)!.effector!.pk).toBe(0.85)
+    expect(useStore.getState().scenario.library.find((m) => m.id === EFFECTOR)!.effector!.pk).toBe(
+      0.85,
+    )
   })
 
   it('the Morris screening and its Sobol stage run the override', () => {
@@ -91,8 +113,13 @@ describe('overrides in the analysis requests', () => {
     useStore.getState().mcMessage({ type: 'done', runId, summary })
     useStore.getState().prepareTrial()
     const request = ControlledWorker.latest().request as TrialRequest
-    ControlledWorker.latest().send({ type: 'trial-done', requestToken: request.requestToken, runId: request.runId,
-      basisSignature: request.basisSignature, result: runTrial(request.scenario, request.manifest) })
+    ControlledWorker.latest().send({
+      type: 'trial-done',
+      requestToken: request.requestToken,
+      runId: request.runId,
+      basisSignature: request.basisSignature,
+      result: runTrial(request.scenario, request.manifest),
+    })
     expect(useStore.getState().mc.status).toBe('done')
     expect(useStore.getState().trial.status).toBe('ready')
     const applied = useStore.getState().mc.overrides
@@ -124,7 +151,9 @@ describe('overrides in the analysis requests', () => {
     const { scenario: board, mc } = useStore.getState()
     const record = runRecordOf(board, mc, runId, analysisBasisSignature(board), null)
     expect(record.manifest.overrides).toEqual(applied)
-    expect(record.manifest.overrides).toMatchObject([{ modelId: EFFECTOR, field: 'pk', value: 0.02 }])
+    expect(record.manifest.overrides).toMatchObject([
+      { modelId: EFFECTOR, field: 'pk', value: 0.02 },
+    ])
     expect(record.scenario.library.find((m) => m.id === EFFECTOR)!.effector!.pk).toBe(0.85)
   })
 })

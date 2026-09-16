@@ -97,10 +97,11 @@ export function trackId(sensorId: string, uasId: string): string {
 export function truthPathFor(scenario: Scenario, spec: SensorSpec, target?: UasSpec): boolean {
   if (physicsSwitches(scenario).includes('truthTracks')) return true
   if (
-    target
-    && spec.azimuthAccuracyDeg != null
-    && rfLinkModelApplies(spec, target, physicsSwitches(scenario).includes('rfBandGate'))
-  ) return false
+    target &&
+    spec.azimuthAccuracyDeg != null &&
+    rfLinkModelApplies(spec, target, physicsSwitches(scenario).includes('rfBandGate'))
+  )
+    return false
   return spec.rangeAccuracyM == null || spec.azimuthAccuracyDeg == null
 }
 
@@ -138,7 +139,8 @@ export function polarMeasurement(
   const cov = (vr - vc) * s * c
   const sigmaXM = Math.sqrt(varX)
   const sigmaYM = Math.sqrt(varY)
-  const rhoXY = sigmaXM > 0 && sigmaYM > 0 ? Math.max(-1, Math.min(1, cov / (sigmaXM * sigmaYM))) : 0
+  const rhoXY =
+    sigmaXM > 0 && sigmaYM > 0 ? Math.max(-1, Math.min(1, cov / (sigmaXM * sigmaYM))) : 0
   return {
     sensorId,
     tS,
@@ -216,7 +218,11 @@ export function createTrackManager(
       hit.slantM,
       accuracy?.rangeSigmaM ?? ts.rangeSigmaM,
       accuracy?.azimuthSigmaRad ?? ts.azimuthSigmaRad,
-      normalQuantile(u1), normalQuantile(u2), ts.sensor.id, uasId, t,
+      normalQuantile(u1),
+      normalQuantile(u2),
+      ts.sensor.id,
+      uasId,
+      t,
     )
   }
 
@@ -245,9 +251,16 @@ export function createTrackManager(
         if (!track) {
           if (!measured) return
           track = {
-            id, sensorId, state: { x: measured.x, y: measured.y, vx: truthVx, vy: truthVy, tS: t },
-            cov: ZERO_COVARIANCE, hits: 0, misses: 0, coasting: false, truth: true,
-            offset: { x: 0, y: 0 }, touched: false,
+            id,
+            sensorId,
+            state: { x: measured.x, y: measured.y, vx: truthVx, vy: truthVy, tS: t },
+            cov: ZERO_COVARIANCE,
+            hits: 0,
+            misses: 0,
+            coasting: false,
+            truth: true,
+            offset: { x: 0, y: 0 },
+            touched: false,
           }
           tracks.set(id, track)
         }
@@ -265,8 +278,16 @@ export function createTrackManager(
         if (!track) {
           const init = initFromMeasurement(m, INIT_SPEED_SIGMA_MPS)
           track = {
-            id, sensorId, state: init.state, cov: init.cov,
-            hits: 1, misses, coasting: false, truth: false, offset: { x: 0, y: 0 }, touched: true,
+            id,
+            sensorId,
+            state: init.state,
+            cov: init.cov,
+            hits: 1,
+            misses,
+            coasting: false,
+            truth: false,
+            offset: { x: 0, y: 0 },
+            touched: true,
           }
           tracks.set(id, track)
           return

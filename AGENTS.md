@@ -23,8 +23,8 @@ One zustand store holds the Board; persistence is localStorage.
 - The library is the JSON package under `data/library`. Edit the JSON, then run
   `npm run library:build`; never hand-edit a generated file.
 - Reuse existing resolvers, statistics and UI tokens. Follow the
-  [design system](docs/design/DESIGN_SYSTEM.md) and existing code style: two spaces,
-  no semicolons, single quotes, named exports, short rationale comments.
+  [design system](docs/design/DESIGN_SYSTEM.md) and Prettier (`npm run format`): two
+  spaces, no semicolons, single quotes, named exports, short rationale comments.
 
 ## Verify and finish
 

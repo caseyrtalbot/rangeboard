@@ -106,7 +106,9 @@ export function sobolFromResponses(
   confidence = 0.95,
 ): SobolIndices {
   if (y.length !== base * (k + 2)) {
-    throw new Error(`Sobol takes ${base * (k + 2)} responses for ${k} factors at base ${base}, not ${y.length}`)
+    throw new Error(
+      `Sobol takes ${base * (k + 2)} responses for ${k} factors at base ${base}, not ${y.length}`,
+    )
   }
   const yA = y.slice(0, base)
   const yB = y.slice(base, 2 * base)
@@ -154,7 +156,14 @@ export function sobolIndices(
   bootstrap = SOBOL_BOOTSTRAP,
   confidence = 0.95,
 ): SobolIndices {
-  return sobolFromResponses(evaluate(sobolDesign(k, base, seed)), k, base, seed, bootstrap, confidence)
+  return sobolFromResponses(
+    evaluate(sobolDesign(k, base, seed)),
+    k,
+    base,
+    seed,
+    bootstrap,
+    confidence,
+  )
 }
 
 /**

@@ -41,7 +41,10 @@ interface Marquee {
   additive: boolean
 }
 
-export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: {
+export const CanvasStage = memo(function CanvasStage({
+  onOpenDetail,
+  onPlace,
+}: {
   onOpenDetail?: () => void
   onPlace?: (world: Vec2, screen?: Vec2) => void
 }) {
@@ -116,9 +119,18 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
   }, [])
 
   const { selection: trialSelection, horizon } = useTrialResult()
-  const started = useStore(s => s.playback.startedAtMs != null)
-  const trial = useMemo(() => trialSelection.status === 'ready'
-    ? trialResultOf(trialSelection.scenario, trialSelection.result.manifest, trialSelection.result) : null, [trialSelection])
+  const started = useStore((s) => s.playback.startedAtMs != null)
+  const trial = useMemo(
+    () =>
+      trialSelection.status === 'ready'
+        ? trialResultOf(
+            trialSelection.scenario,
+            trialSelection.result.manifest,
+            trialSelection.result,
+          )
+        : null,
+    [trialSelection],
+  )
   const horizonS = trial && started ? horizon : null
 
   function toWorld(pointer: Vec2): Vec2 {
@@ -161,7 +173,9 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
   /** True when the last two clicks form a genuine in-place double-click. */
   function isInPlacePair(): boolean {
     const [a, b] = lastClicks.current
-    return !!a && !!b && b.t - a.t < DBL_CLICK_MS && Math.hypot(b.x - a.x, b.y - a.y) <= DBL_CLICK_PX
+    return (
+      !!a && !!b && b.t - a.t < DBL_CLICK_MS && Math.hypot(b.x - a.x, b.y - a.y) <= DBL_CLICK_PX
+    )
   }
 
   function beginMarquee(e: KonvaEventObject<MouseEvent>) {
@@ -198,14 +212,20 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
     // Read the frame clock once so a box tests the rendered member positions.
     const displayTimeS = displayTimeNow()
     const current = useStore.getState()
-    const outcomeTimeS = trial && current.playback.startedAtMs != null ? selectTrialHorizon(current, displayTimeS) : null
+    const outcomeTimeS =
+      trial && current.playback.startedAtMs != null
+        ? selectTrialHorizon(current, displayTimeS)
+        : null
     const { tracks, members } = renderedTrialGeometry(scenario, trial, outcomeTimeS, displayTimeS)
     const ids = scenario.entities
       .filter((en) => {
         const track = tracks.get(en.id)
-        const positions = members.get(en.id)?.map(member => member.position) ?? (en.kind === 'uas'
-          ? memberPositions(en, track?.pos ?? en.pos, track?.headingDeg ?? en.headingDeg) : [track?.pos ?? en.pos])
-        return positions.some(p => p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1)
+        const positions =
+          members.get(en.id)?.map((member) => member.position) ??
+          (en.kind === 'uas'
+            ? memberPositions(en, track?.pos ?? en.pos, track?.headingDeg ?? en.headingDeg)
+            : [track?.pos ?? en.pos])
+        return positions.some((p) => p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1)
       })
       .map((en) => en.id)
     select({ entityIds: ids }, m.additive)
@@ -223,14 +243,29 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
   /** Dispatches a routed stage click, drop or placement action at one point. */
   function dispatch(action: Action, world: Vec2, screen?: Vec2) {
     switch (action.type) {
-      case 'place': onPlace?.(world, screen); return
-      case 'commit-raid': commitRaid(world); return
-      case 'add-draft-point': addDraftPoint(world); return
-      case 'set-calibrate-point': setCalibratePoint(world); return
-      case 'clear-selection': clearSelection(); return
-      case 'add-entity-from-model': addEntityFromModel(action.modelId, world, screen); return
-      case 'add-system-from-preset': addSystemFromPreset(action.systemId, world); return
-      default: return
+      case 'place':
+        onPlace?.(world, screen)
+        return
+      case 'commit-raid':
+        commitRaid(world)
+        return
+      case 'add-draft-point':
+        addDraftPoint(world)
+        return
+      case 'set-calibrate-point':
+        setCalibratePoint(world)
+        return
+      case 'clear-selection':
+        clearSelection()
+        return
+      case 'add-entity-from-model':
+        addEntityFromModel(action.modelId, world, screen)
+        return
+      case 'add-system-from-preset':
+        addSystemFromPreset(action.systemId, world)
+        return
+      default:
+        return
     }
   }
 
@@ -247,8 +282,16 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
     }
     // Precedence (raid draft ahead of the draw tools, the in-place pair's
     // second click, select-only deselect) lives in the router.
-    const action = routeInteraction({ kind: 'click-stage', onEmpty, inPlacePair: isInPlacePair() },
-      { ...IDLE_INTERACTION, tool, raidDraft: raidDraft != null, placementArmed: onPlace != null, clickSuppressed })
+    const action = routeInteraction(
+      { kind: 'click-stage', onEmpty, inPlacePair: isInPlacePair() },
+      {
+        ...IDLE_INTERACTION,
+        tool,
+        raidDraft: raidDraft != null,
+        placementArmed: onPlace != null,
+        clickSuppressed,
+      },
+    )
     dispatch(action, world, pointer ?? undefined)
   }
 
@@ -315,8 +358,15 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
         const screen = { x: e.clientX - rect.left, y: e.clientY - rect.top }
         const modelId = e.dataTransfer.getData('text/rangeboard-model')
         const systemId = e.dataTransfer.getData('text/rangeboard-system')
-        const action = routeInteraction({ kind: 'drop', modelId, systemId },
-          { ...IDLE_INTERACTION, tool, raidDraft: raidDraft != null, placementArmed: onPlace != null })
+        const action = routeInteraction(
+          { kind: 'drop', modelId, systemId },
+          {
+            ...IDLE_INTERACTION,
+            tool,
+            raidDraft: raidDraft != null,
+            placementArmed: onPlace != null,
+          },
+        )
         dispatch(action, toWorld(screen), screen)
       }}
     >
@@ -407,11 +457,14 @@ export const CanvasStage = memo(function CanvasStage({ onOpenDetail, onPlace }: 
           aria-label="Place library item on board"
           onClick={(event) => {
             const rect = event.currentTarget.getBoundingClientRect()
-            const screen = event.detail === 0
-              ? { x: rect.width / 2, y: rect.height / 2 }
-              : { x: event.clientX - rect.left, y: event.clientY - rect.top }
-            const action = routeInteraction({ kind: 'click-stage', onEmpty: true, inPlacePair: false },
-              { ...IDLE_INTERACTION, tool, raidDraft: raidDraft != null, placementArmed: true })
+            const screen =
+              event.detail === 0
+                ? { x: rect.width / 2, y: rect.height / 2 }
+                : { x: event.clientX - rect.left, y: event.clientY - rect.top }
+            const action = routeInteraction(
+              { kind: 'click-stage', onEmpty: true, inPlacePair: false },
+              { ...IDLE_INTERACTION, tool, raidDraft: raidDraft != null, placementArmed: true },
+            )
             dispatch(action, toWorld(screen), screen)
           }}
         />

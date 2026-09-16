@@ -127,18 +127,59 @@ const FIXTURE = JSON.parse(
 ) as SpecModel[]
 
 /** The keys the data package adds to a provenance row; everything else is pre-migration. */
-const LINEAGE_KEYS = ['grade', 'layer', 'rangeType', 'condition', 'unit', 'estimator', 'comparisonSet', 'note']
+const LINEAGE_KEYS = [
+  'grade',
+  'layer',
+  'rangeType',
+  'condition',
+  'unit',
+  'estimator',
+  'comparisonSet',
+  'note',
+]
 /** Sensor spec keys the Phase 2 contract added; the pre-migration fixture has none. */
-const PHASE2_SENSOR_KEYS = ['rangeAccuracyM', 'azimuthAccuracyDeg', 'elevationAccuracyDeg', 'falseAlarmRatePerScan']
+const PHASE2_SENSOR_KEYS = [
+  'rangeAccuracyM',
+  'azimuthAccuracyDeg',
+  'elevationAccuracyDeg',
+  'falseAlarmRatePerScan',
+]
 /** Spec keys the Phase 3 contract added (lanes 3.R1 and 3.R2 filled them); the fixture predates them too. */
 const PHASE3_KEYS: Record<'sensor' | 'uas' | 'effector', string[]> = {
-  sensor: ['pulsesPerDwell', 'dwellTimeS', 'pixelPitchUm', 'focalLengthMm', 'detectorPixelsH', 'fovDeg',
-    'mrtdMk', 'receiverSensitivityDbm', 'geolocationMinNodes', 'noiseFloorDb'],
+  sensor: [
+    'pulsesPerDwell',
+    'dwellTimeS',
+    'pixelPitchUm',
+    'focalLengthMm',
+    'detectorPixelsH',
+    'fovDeg',
+    'mrtdMk',
+    'receiverSensitivityDbm',
+    'geolocationMinNodes',
+    'noiseFloorDb',
+  ],
   uas: ['maxTurnRateDegS', 'climbRateMps', 'maxAccelMps2', 'radiatedPowerW', 'linkProtocol'],
-  effector: ['seekerAcquisitionRangeM', 'lethalRadiusM', 'guidanceNoiseM', 'maxFlyoutSpeedMps', 'boostTimeS',
-    'dispersionMils', 'fireControlErrorMils', 'burstRounds', 'rateOfFireRpm', 'muzzleVelocityMps',
-    'outputPowerKw', 'beamQualityM2', 'jitterUrad', 'apertureM', 'dwellToEffectS',
-    'fieldStrengthVm', 'fieldStrengthRangeM', 'beamwidthDeg', 'rechargeS'],
+  effector: [
+    'seekerAcquisitionRangeM',
+    'lethalRadiusM',
+    'guidanceNoiseM',
+    'maxFlyoutSpeedMps',
+    'boostTimeS',
+    'dispersionMils',
+    'fireControlErrorMils',
+    'burstRounds',
+    'rateOfFireRpm',
+    'muzzleVelocityMps',
+    'outputPowerKw',
+    'beamQualityM2',
+    'jitterUrad',
+    'apertureM',
+    'dwellToEffectS',
+    'fieldStrengthVm',
+    'fieldStrengthRangeM',
+    'beamwidthDeg',
+    'rechargeS',
+  ],
 }
 
 interface LibraryFileOnDisk {
@@ -179,7 +220,8 @@ describe('generated library parity', () => {
         const spec = rest[block]
         if (!spec) continue
         const copy = { ...spec } as Record<string, unknown>
-        const drop = block === 'sensor' ? [...PHASE2_SENSOR_KEYS, ...PHASE3_KEYS.sensor] : PHASE3_KEYS[block]
+        const drop =
+          block === 'sensor' ? [...PHASE2_SENSOR_KEYS, ...PHASE3_KEYS.sensor] : PHASE3_KEYS[block]
         for (const key of drop) delete copy[key]
         stripped[block] = copy
       }

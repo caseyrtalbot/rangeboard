@@ -1,4 +1,13 @@
-import { lazy, memo, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  lazy,
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { useStore } from './state/store'
 import type { BoardPhase } from './state/runState'
 import { selectBoardPhase } from './state/selectors'
@@ -30,8 +39,12 @@ import { nextTabIndex } from './ui/rovingTabs'
 // Right-panel tabs and the palette: each opens on demand, so each loads on demand.
 // LibraryEditor stays static: EntityWorkspace renders it inline, so a boundary here
 // moves no bytes and only makes rolldown report an ineffective dynamic import.
-const AnalysisPanel = lazy(() => import('./panels/AnalysisPanel').then((m) => ({ default: m.AnalysisPanel })))
-const CommandPalette = lazy(() => import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })))
+const AnalysisPanel = lazy(() =>
+  import('./panels/AnalysisPanel').then((m) => ({ default: m.AnalysisPanel })),
+)
+const CommandPalette = lazy(() =>
+  import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })),
+)
 
 /** One fallback for every panel boundary: the panel body is empty for one frame. */
 function PanelLoading({ label }: { label: string }) {
@@ -65,7 +78,11 @@ function moveTab(
   current: RightTab,
   setRightTab: (t: RightTab) => void,
 ) {
-  const to = nextTabIndex(e.key, TABS.findIndex((t) => t.id === current), TABS.length)
+  const to = nextTabIndex(
+    e.key,
+    TABS.findIndex((t) => t.id === current),
+    TABS.length,
+  )
   if (to < 0) return
   e.preventDefault()
   setRightTab(TABS[to].id)
@@ -109,13 +126,21 @@ const ResourceRail = memo(function ResourceRail({
 }) {
   return (
     <nav className="board-resource-rail" aria-label="Board resources">
-      <button ref={libraryTrigger} aria-expanded={libraryOpen} aria-controls="board-library-drawer" onClick={onToggleLibrary} title="Library (L)">
+      <button
+        ref={libraryTrigger}
+        aria-expanded={libraryOpen}
+        aria-controls="board-library-drawer"
+        onClick={onToggleLibrary}
+        title="Library (L)"
+      >
         <span aria-hidden="true">⊞</span>Library
       </button>
       <button onClick={onOpenObjects} title="Board entity register">
         <span aria-hidden="true">⌖</span>Objects
       </button>
-      <button className="board-keys" onClick={onOpenKeys} title="Command palette (⌘K)"><span aria-hidden="true">⌘</span>Keys</button>
+      <button className="board-keys" onClick={onOpenKeys} title="Command palette (⌘K)">
+        <span aria-hidden="true">⌘</span>Keys
+      </button>
     </nav>
   )
 })
@@ -157,7 +182,11 @@ function focusRangeSetup() {
 }
 
 /** The Escape snapshot: shell state from App, surfaces from the DOM, drafts from the store. */
-function escapeState(libraryOpen: boolean, placementArmed: boolean, target: EventTarget | null): InteractionState {
+function escapeState(
+  libraryOpen: boolean,
+  placementArmed: boolean,
+  target: EventTarget | null,
+): InteractionState {
   const ui = useStore.getState().ui
   return {
     ...IDLE_INTERACTION,
@@ -356,7 +385,8 @@ export default function App() {
   const boardPhase = useStore(selectBoardPhase)
   const [prepareScreen, setPrepareScreen] = useState<AnalysisScreen>('fragility')
   const [analyzeScreen, setAnalyzeScreen] = useState<AnalysisScreen>('outcome')
-  const analysisScreen = boardPhase === 'prepare' ? prepareScreen : boardPhase === 'execute' ? 'now' : analyzeScreen
+  const analysisScreen =
+    boardPhase === 'prepare' ? prepareScreen : boardPhase === 'execute' ? 'now' : analyzeScreen
   const setBoardPhase = useStore((s) => s.setBoardPhase)
 
   useEffect(() => {
@@ -371,10 +401,18 @@ export default function App() {
   const selectionKey = useStore(selectSelectionKey)
   const raidDraft = useStore((s) => s.ui.raidDraft)
   const calibrating = useStore((s) => s.ui.tool === 'calibrate')
-  const [entityView, setEntityView] = useState<{ key: string; section: EntityWorkspaceSection } | null>(null)
-  const entitySection = entityView?.key === selectionKey
-    ? entityView.section : boardPhase === 'prepare' ? 'configure' : 'telemetry'
-  const setEntitySection = (section: EntityWorkspaceSection) => setEntityView({ key: selectionKey, section })
+  const [entityView, setEntityView] = useState<{
+    key: string
+    section: EntityWorkspaceSection
+  } | null>(null)
+  const entitySection =
+    entityView?.key === selectionKey
+      ? entityView.section
+      : boardPhase === 'prepare'
+        ? 'configure'
+        : 'telemetry'
+  const setEntitySection = (section: EntityWorkspaceSection) =>
+    setEntityView({ key: selectionKey, section })
   const activeTab = rightTab
 
   // The right drawer. A selection switches its tab but never reopens it.
@@ -386,7 +424,8 @@ export default function App() {
 
   const setRightOpen = useCallback((open: boolean) => {
     if (open === rightOpenNow.current) return
-    if (!open && document.activeElement?.closest('.right-panel')) document.getElementById('drawer-toggle')?.focus()
+    if (!open && document.activeElement?.closest('.right-panel'))
+      document.getElementById('drawer-toggle')?.focus()
     centerFrom.current = document.querySelector('.canvas-host')?.clientWidth ?? null
     rightOpenNow.current = open
     setRightOpenState(open)
@@ -429,7 +468,8 @@ export default function App() {
   }, [])
 
   const armPlacement = useCallback((next: LibraryPlacement) => {
-    if (routeInteraction({ kind: 'arm-placement' }, IDLE_INTERACTION).type !== 'arm-placement') return
+    if (routeInteraction({ kind: 'arm-placement' }, IDLE_INTERACTION).type !== 'arm-placement')
+      return
     const store = useStore.getState()
     store.cancelDraft()
     store.closeContextMenu()
@@ -440,21 +480,27 @@ export default function App() {
     requestAnimationFrame(() => document.getElementById('place-at-center')?.focus())
   }, [])
 
-  const placeAt = useCallback((world: Vec2, screen?: Vec2) => {
-    if (!placement) return
-    const store = useStore.getState()
-    if (placement.kind === 'model') store.addEntityFromModel(placement.id, world, screen)
-    else store.addSystemFromPreset(placement.id, world)
-    setPlacement(null)
-    document.querySelector<HTMLElement>('.canvas-host')?.focus()
-  }, [placement])
+  const placeAt = useCallback(
+    (world: Vec2, screen?: Vec2) => {
+      if (!placement) return
+      const store = useStore.getState()
+      if (placement.kind === 'model') store.addEntityFromModel(placement.id, world, screen)
+      else store.addSystemFromPreset(placement.id, world)
+      setPlacement(null)
+      document.querySelector<HTMLElement>('.canvas-host')?.focus()
+    },
+    [placement],
+  )
 
   function placeAtCenter() {
     const rect = document.querySelector('.canvas-host')?.getBoundingClientRect()
     if (!rect) return
     const camera = useStore.getState().camera
     const screen = { x: rect.width / 2, y: rect.height / 2 }
-    placeAt({ x: (screen.x - camera.x) / camera.scale, y: (screen.y - camera.y) / camera.scale }, screen)
+    placeAt(
+      { x: (screen.x - camera.x) / camera.scale, y: (screen.y - camera.y) / camera.scale },
+      screen,
+    )
   }
 
   // The bubble-phase keyboard map has no deps, so it reads the drawer and
@@ -498,7 +544,10 @@ export default function App() {
     // Any other Escape action stays with the bubble-phase keyboard map.
     function onEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
-      const action = routeInteraction({ kind: 'escape' }, escapeState(libraryOpen, placement != null, event.target))
+      const action = routeInteraction(
+        { kind: 'escape' },
+        escapeState(libraryOpen, placement != null, event.target),
+      )
       if (action.type !== 'cancel-placement') return
       event.stopPropagation()
       dispatchEscape(action)
@@ -509,59 +558,76 @@ export default function App() {
 
   useEffect(() => {
     const stopBoard = useStore.subscribe((state, previous) => {
-      if (state.ui.tool !== previous.ui.tool || state.ui.raidDraft !== previous.ui.raidDraft ||
+      if (
+        state.ui.tool !== previous.ui.tool ||
+        state.ui.raidDraft !== previous.ui.raidDraft ||
         state.scenario.entities.length !== previous.scenario.entities.length ||
-        state.scenario.systemPresets.length !== previous.scenario.systemPresets.length) setPlacement(null)
+        state.scenario.systemPresets.length !== previous.scenario.systemPresets.length
+      )
+        setPlacement(null)
     })
     return () => {
       stopBoard()
     }
   }, [])
 
-  const openPhase = useCallback((phase: BoardPhase) => {
-    setPlacement(null)
-    setLibraryOpen(false)
-    setBoardPhase(phase)
-    setRightTab('analysis')
-  }, [setBoardPhase, setRightTab])
+  const openPhase = useCallback(
+    (phase: BoardPhase) => {
+      setPlacement(null)
+      setLibraryOpen(false)
+      setBoardPhase(phase)
+      setRightTab('analysis')
+    },
+    [setBoardPhase, setRightTab],
+  )
 
   // Stable handlers for the memoized chrome, so a selection change stops at `App`.
   const clearPlacement = useCallback(() => {
-    if (routeInteraction({ kind: 'tool-change' }, IDLE_INTERACTION).type === 'clear-placement') setPlacement(null)
+    if (routeInteraction({ kind: 'tool-change' }, IDLE_INTERACTION).type === 'clear-placement')
+      setPlacement(null)
   }, [])
   const toggleLibrary = useCallback(() => setLibraryOpen((open) => !open), [])
   const openObjects = useCallback(() => {
     openPhase('prepare')
     setPrepareScreen('inputs')
     setRightOpen(true)
-    requestAnimationFrame(() => document.querySelector('.prepare-entity-register')?.scrollIntoView())
+    requestAnimationFrame(() =>
+      document.querySelector('.prepare-entity-register')?.scrollIntoView(),
+    )
   }, [openPhase, setRightOpen])
   const openKeys = useCallback(() => setPaletteOpen(true), [])
-  const navigateAnalysis = useCallback((screen: AnalysisScreen) => {
-    if (screen === 'fragility' || screen === 'inputs' || screen === 'placement') setPrepareScreen(screen)
-    if (screen === 'outcome' || screen === 'compare') setAnalyzeScreen(screen)
-    setRightTab('analysis')
-  }, [setRightTab])
+  const navigateAnalysis = useCallback(
+    (screen: AnalysisScreen) => {
+      if (screen === 'fragility' || screen === 'inputs' || screen === 'placement')
+        setPrepareScreen(screen)
+      if (screen === 'outcome' || screen === 'compare') setAnalyzeScreen(screen)
+      setRightTab('analysis')
+    },
+    [setRightTab],
+  )
 
   useEffect(() => {
     if (hasObjectSelection && useStore.getState().ui.rightTab !== 'inspect') setRightTab('inspect')
   }, [hasObjectSelection, setRightTab])
-  const openPreparation = useCallback((section: 'run' | 'environment' | 'doctrine' | 'requirements') => {
-    setPrepareScreen('inputs')
-    setBoardPhase('prepare')
-    setPlacement(null)
-    setLibraryOpen(false)
-    setRightTab('analysis')
-    setRightOpen(true)
-    requestAnimationFrame(() => {
-      const target = document.getElementById(`prepare-${section}`)
-      if (!target) return
-      if (target instanceof HTMLDetailsElement) target.open = true
-      const focusTarget = target.querySelector('summary') ?? target
-      focusTarget.focus()
-      target.scrollIntoView({ block: 'start' })
-    })
-  }, [setBoardPhase, setRightTab, setRightOpen])
+  const openPreparation = useCallback(
+    (section: 'run' | 'environment' | 'doctrine' | 'requirements') => {
+      setPrepareScreen('inputs')
+      setBoardPhase('prepare')
+      setPlacement(null)
+      setLibraryOpen(false)
+      setRightTab('analysis')
+      setRightOpen(true)
+      requestAnimationFrame(() => {
+        const target = document.getElementById(`prepare-${section}`)
+        if (!target) return
+        if (target instanceof HTMLDetailsElement) target.open = true
+        const focusTarget = target.querySelector('summary') ?? target
+        focusTarget.focus()
+        target.scrollIntoView({ block: 'start' })
+      })
+    },
+    [setBoardPhase, setRightTab, setRightOpen],
+  )
 
   const [rightW, setRightW] = useState(savedRightWidth)
 
@@ -630,7 +696,9 @@ export default function App() {
       const st = useStore.getState()
       if (e.key === 'Escape') {
         const { libraryOpen, placementArmed } = shell.current
-        dispatchEscape(routeInteraction({ kind: 'escape' }, escapeState(libraryOpen, placementArmed, e.target)))
+        dispatchEscape(
+          routeInteraction({ kind: 'escape' }, escapeState(libraryOpen, placementArmed, e.target)),
+        )
         return
       }
       if (isTypingTarget(e.target)) return
@@ -676,10 +744,20 @@ export default function App() {
 
   const board = (
     <div className="app board-app" data-board-phase={boardPhase}>
-      <Toolbar drawerOpen={rightOpen} onToggleDrawer={toggleRight}
-        boardPhase={boardPhase} runSeq={runSeq} runPhase={runPhase} onOpenPhase={openPhase} />
-      <div className="main" id="board-workspace" role="tabpanel" aria-labelledby={`board-phase-${boardPhase}`}>
-
+      <Toolbar
+        drawerOpen={rightOpen}
+        onToggleDrawer={toggleRight}
+        boardPhase={boardPhase}
+        runSeq={runSeq}
+        runPhase={runPhase}
+        onOpenPhase={openPhase}
+      />
+      <div
+        className="main"
+        id="board-workspace"
+        role="tabpanel"
+        aria-labelledby={`board-phase-${boardPhase}`}
+      >
         <ResourceRail
           libraryOpen={libraryOpen}
           libraryTrigger={libraryTrigger}
@@ -688,29 +766,70 @@ export default function App() {
           onOpenKeys={openKeys}
         />
         <div id="board-library-drawer" className="board-library-drawer" hidden={!libraryOpen}>
-          <Palette open={libraryOpen} onClose={closeLibrary} onArmPlacement={armPlacement} onPlacementStart={closeLibrary} />
+          <Palette
+            open={libraryOpen}
+            onClose={closeLibrary}
+            onArmPlacement={armPlacement}
+            onPlacementStart={closeLibrary}
+          />
         </div>
         <div className="center">
           <BoardTools onSelectTool={clearPlacement} />
-          {placement && <div className="board-placement" role="region" aria-label="Place library item">
-            <span>Place <strong>{placement.name}</strong></span>
-            <span className="muted">Click the canvas · Escape cancels</span>
-            <button id="place-at-center" className="mini" onClick={placeAtCenter}>Place at center</button>
-            <button onClick={() => { setPlacement(null); libraryTrigger.current?.focus() }}>Cancel</button>
-          </div>}
-          {calibrating && <div className="board-placement" role="status" aria-label="Calibrating image scale">
-            <span><strong>Calibrating</strong> image scale</span>
-            <span className="muted">Click two points on the image · Escape cancels</span>
-            <button onClick={() => { const st = useStore.getState(); st.cancelDraft(); st.setTool('select') }}>Cancel</button>
-          </div>}
+          {placement && (
+            <div className="board-placement" role="region" aria-label="Place library item">
+              <span>
+                Place <strong>{placement.name}</strong>
+              </span>
+              <span className="muted">Click the canvas · Escape cancels</span>
+              <button id="place-at-center" className="mini" onClick={placeAtCenter}>
+                Place at center
+              </button>
+              <button
+                onClick={() => {
+                  setPlacement(null)
+                  libraryTrigger.current?.focus()
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          {calibrating && (
+            <div className="board-placement" role="status" aria-label="Calibrating image scale">
+              <span>
+                <strong>Calibrating</strong> image scale
+              </span>
+              <span className="muted">Click two points on the image · Escape cancels</span>
+              <button
+                onClick={() => {
+                  const st = useStore.getState()
+                  st.cancelDraft()
+                  st.setTool('select')
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
           <CanvasStage onOpenDetail={openTelemetry} onPlace={placement ? placeAt : undefined} />
           {engagementOpen && <EngagementStrip />}
           <TimelineBar engagementOpen={engagementOpen} onToggleEngagement={toggleEngagement} />
         </div>
-        <aside id="board-workspace-panel" className="right-panel" style={{ width: rightW }} hidden={!rightOpen}
-          aria-label="Board workspace panel">
+        <aside
+          id="board-workspace-panel"
+          className="right-panel"
+          style={{ width: rightW }}
+          hidden={!rightOpen}
+          aria-label="Board workspace panel"
+        >
           <div className="board-panel-heading">
-            <h2>{boardPhase === 'prepare' ? 'Prepare scenario' : boardPhase === 'execute' ? 'Run monitor' : 'Analyze run'}</h2>
+            <h2>
+              {boardPhase === 'prepare'
+                ? 'Prepare scenario'
+                : boardPhase === 'execute'
+                  ? 'Run monitor'
+                  : 'Analyze run'}
+            </h2>
           </div>
           <div
             className="right-resizer"
@@ -726,7 +845,11 @@ export default function App() {
             onKeyDown={nudgeRightWidth}
           />
           <PanelTabs activeTab={activeTab} setRightTab={setRightTab} />
-          <AnalysisNavigation phase={boardPhase} screen={analysisScreen} onNavigate={navigateAnalysis} />
+          <AnalysisNavigation
+            phase={boardPhase}
+            screen={analysisScreen}
+            onNavigate={navigateAnalysis}
+          />
           <div
             className="right-panel-body"
             id="insp-tabpanel"
@@ -734,24 +857,32 @@ export default function App() {
             tabIndex={0}
             aria-labelledby={`insp-tab-${activeTab}`}
           >
-            {activeTab === 'inspect' && (selectedEntityId && !raidDraft
-              ? <EntityWorkspace
+            {activeTab === 'inspect' &&
+              (selectedEntityId && !raidDraft ? (
+                <EntityWorkspace
                   entityId={selectedEntityId}
                   section={entitySection}
                   onSectionChange={setEntitySection}
                   onOpenSettings={() => openPreparation('run')}
                   onOverview={() => {
                     setRightTab('analysis')
-                    requestAnimationFrame(() => document.getElementById('insp-tab-analysis')?.focus())
+                    requestAnimationFrame(() =>
+                      document.getElementById('insp-tab-analysis')?.focus(),
+                    )
                   }}
                 />
-              : <Inspector />)}
+              ) : (
+                <Inspector />
+              ))}
             {activeTab === 'library' && <LibraryEditor />}
-            {activeTab === 'analysis' && (analysisScreen === 'inputs'
-              ? <BoardPreparation />
-              : <Suspense fallback={<PanelLoading label="Loading analysis" />}>
-                <AnalysisPanel phase={boardPhase} screen={analysisScreen} />
-              </Suspense>)}
+            {activeTab === 'analysis' &&
+              (analysisScreen === 'inputs' ? (
+                <BoardPreparation />
+              ) : (
+                <Suspense fallback={<PanelLoading label="Loading analysis" />}>
+                  <AnalysisPanel phase={boardPhase} screen={analysisScreen} />
+                </Suspense>
+              ))}
           </div>
         </aside>
       </div>
@@ -765,7 +896,11 @@ export default function App() {
     </div>
   )
   return (
-    <ErrorBoundary key="board" label="Board" onExport={() => exportScenario(useStore.getState().scenario)}>
+    <ErrorBoundary
+      key="board"
+      label="Board"
+      onExport={() => exportScenario(useStore.getState().scenario)}
+    >
       {board}
     </ErrorBoundary>
   )

@@ -20,7 +20,10 @@ import type {
   OptimizeRequest,
   OptimizeWorkerMessage,
 } from '../playback/optimizeTypes'
-import { DEFAULT_OPTIMIZE_EVALUATIONS, DEFAULT_OPTIMIZE_REPLICATES } from '../playback/optimizeTypes'
+import {
+  DEFAULT_OPTIMIZE_EVALUATIONS,
+  DEFAULT_OPTIMIZE_REPLICATES,
+} from '../playback/optimizeTypes'
 import { cancelOptimize, startOptimize } from '../playback/optimize/client'
 import {
   cancelPooledRun,
@@ -238,22 +241,25 @@ function mcLaunch(
   const runId = st.playback.runId
   const overrides = launchOverrides(st.scenario)
   return {
-    pending: { mc: {
-      // The total is where the loop ends: the cap under a half-width target.
-      ...pendingRun(st, loopEnd(settings), overrides),
-      // A new replicate run starts with no pool progress. The Morris and Sobol
-      // results describe the same board until its basis changes, so they stay.
-      pool: null,
-      morris: st.mc.morris,
-      sobol: st.mc.sobol,
-      // The sensitivity run, the sweep and the placement run have their own
-      // worker and lifecycle, so a replicate run leaves all three alone.
-      sensitivity: st.mc.sensitivity,
-      sweep: st.mc.sweep,
-      optimize: st.mc.optimize,
-      optimizeBest: st.mc.optimizeBest,
-    } },
-    start: (deliver) => startPooledRun(applyOverrides(st.scenario, overrides), runId, deliver, onPool),
+    pending: {
+      mc: {
+        // The total is where the loop ends: the cap under a half-width target.
+        ...pendingRun(st, loopEnd(settings), overrides),
+        // A new replicate run starts with no pool progress. The Morris and Sobol
+        // results describe the same board until its basis changes, so they stay.
+        pool: null,
+        morris: st.mc.morris,
+        sobol: st.mc.sobol,
+        // The sensitivity run, the sweep and the placement run have their own
+        // worker and lifecycle, so a replicate run leaves all three alone.
+        sensitivity: st.mc.sensitivity,
+        sweep: st.mc.sweep,
+        optimize: st.mc.optimize,
+        optimizeBest: st.mc.optimizeBest,
+      },
+    },
+    start: (deliver) =>
+      startPooledRun(applyOverrides(st.scenario, overrides), runId, deliver, onPool),
     unavailable: { type: 'error', runId, message: UNAVAILABLE },
   }
 }
@@ -270,9 +276,15 @@ function sensitivityLaunch(
   // shared slot is replaced; its pending state goes with it. A new sensitivity
   // run clears the Morris and Sobol results of the last one.
   const overrides = launchOverrides(st.scenario)
-  const pending: AnalysisPatch = { mc: {
-    ...st.mc, sensitivity: pendingRun(st, 0, overrides), sweep: replaced(st.mc.sweep, IDLE_SWEEP), morris: null, sobol: null,
-  } }
+  const pending: AnalysisPatch = {
+    mc: {
+      ...st.mc,
+      sensitivity: pendingRun(st, 0, overrides),
+      sweep: replaced(st.mc.sweep, IDLE_SWEEP),
+      morris: null,
+      sobol: null,
+    },
+  }
   const scenario = applyOverrides(st.scenario, overrides)
   if (sensitivityDepth === 'quick') {
     return {
@@ -310,14 +322,22 @@ export function requestSobol(
   const runId = st.playback.runId
   // The stage continues the screening's run, so it applies the overrides that run kept.
   const request: McSobolRequest = {
-    type: 'sobol', runId, scenario: applyOverrides(st.scenario, sens.overrides), kept, response: morris.response,
+    type: 'sobol',
+    runId,
+    scenario: applyOverrides(st.scenario, sens.overrides),
+    kept,
+    response: morris.response,
   }
-  launch<SensitivityMessage>({
-    // The run stays live on its identity; the evaluation count starts over.
-    pending: { mc: { ...st.mc, sensitivity: { ...sens, progress: 0, total: 0 } } },
-    start: (deliver) => startSobol(request, deliver),
-    unavailable: { type: 'sobol-error', runId, message: UNAVAILABLE },
-  }, publish, sinks.sensitivity)
+  launch<SensitivityMessage>(
+    {
+      // The run stays live on its identity; the evaluation count starts over.
+      pending: { mc: { ...st.mc, sensitivity: { ...sens, progress: 0, total: 0 } } },
+      start: (deliver) => startSobol(request, deliver),
+      unavailable: { type: 'sobol-error', runId, message: UNAVAILABLE },
+    },
+    publish,
+    sinks.sensitivity,
+  )
 }
 
 /**
@@ -336,7 +356,10 @@ export function requestOptimize(
   launch(optimizeLaunch(st, spec), publish, sinks.optimize)
 }
 
-function optimizeLaunch(st: AnalysisSlices, spec: OptimizeSpec): Launch<OptimizeWorkerMessage> | null {
+function optimizeLaunch(
+  st: AnalysisSlices,
+  spec: OptimizeSpec,
+): Launch<OptimizeWorkerMessage> | null {
   const settings = runSettings(st.scenario)
   if (settings.runMode === 'deterministic') return null
   const bounds = spec.bounds ?? rangeBounds(st.scenario)
@@ -360,7 +383,9 @@ function optimizeLaunch(st: AnalysisSlices, spec: OptimizeSpec): Launch<Optimize
   }
   return {
     // A new run starts with no incumbent; the first progress message brings one.
-    pending: { mc: { ...st.mc, optimize: pendingRun(st, budget.evaluations, overrides), optimizeBest: null } },
+    pending: {
+      mc: { ...st.mc, optimize: pendingRun(st, budget.evaluations, overrides), optimizeBest: null },
+    },
     start: (deliver) => startOptimize(request, deliver),
     unavailable: { type: 'optimize-error', runId, message: UNAVAILABLE },
   }
@@ -385,14 +410,24 @@ function sweepLaunch(st: AnalysisSlices, spec: SweepSpec): Launch<McSweepMessage
   }
   const cells = spec.factors.reduce((n, f) => n * f.values.length, 1)
   return {
-    pending: { mc: { ...st.mc, sweep: pendingRun(st, cells, overrides), sensitivity: replaced(st.mc.sensitivity, IDLE_SENSITIVITY) } },
+    pending: {
+      mc: {
+        ...st.mc,
+        sweep: pendingRun(st, cells, overrides),
+        sensitivity: replaced(st.mc.sensitivity, IDLE_SENSITIVITY),
+      },
+    },
     start: (deliver) => startSweep(request, deliver),
     unavailable: { type: 'sweep-error', runId, message: UNAVAILABLE },
   }
 }
 
 /** A run identified by the current playback run, analysis basis and applied overrides, with nothing done yet. */
-function pendingRun<S>(st: AnalysisSlices, total: number, overrides: Override[]): AnalysisRunState<S> {
+function pendingRun<S>(
+  st: AnalysisSlices,
+  total: number,
+  overrides: Override[],
+): AnalysisRunState<S> {
   return {
     runId: st.playback.runId,
     status: 'running',
@@ -412,10 +447,11 @@ function pendingRun<S>(st: AnalysisSlices, total: number, overrides: Override[])
 function trialLaunch(st: AnalysisSlices): Launch<TrialWorkerMessage> {
   const basisSignature = analysisBasisSignature(st.scenario)
   // The record names the overrides in force at launch; a later edit never rewrites it.
-  const manifest = st.trial.manifest ?? createTrialManifest(
-    st.scenario, st.playback.runId, basisSignature,
-    { overrides: activeOverrides(useOverrides.getState().overrides, st.scenario) },
-  )
+  const manifest =
+    st.trial.manifest ??
+    createTrialManifest(st.scenario, st.playback.runId, basisSignature, {
+      overrides: activeOverrides(useOverrides.getState().overrides, st.scenario),
+    })
   const scenario = st.trial.scenario ?? structuredClone(st.scenario)
   const requestToken = newId('trialrequest')
   const identity = { requestToken, runId: manifest.runId, basisSignature }
@@ -423,11 +459,17 @@ function trialLaunch(st: AnalysisSlices): Launch<TrialWorkerMessage> {
     pending: {
       playback: { ...st.playback, playing: false, basisSignature },
       trial: {
-        status: 'preparing', requestToken, manifest, scenario, result: null,
-        startWhenReady: st.trial.startWhenReady, error: null,
+        status: 'preparing',
+        requestToken,
+        manifest,
+        scenario,
+        result: null,
+        startWhenReady: st.trial.startWhenReady,
+        error: null,
       },
     },
-    start: (deliver) => startTrial({ type: 'prepare-trial', ...identity, scenario, manifest }, deliver),
+    start: (deliver) =>
+      startTrial({ type: 'prepare-trial', ...identity, scenario, manifest }, deliver),
     unavailable: { type: 'trial-error', ...identity, message: UNAVAILABLE },
   }
 }
@@ -443,10 +485,13 @@ function owns(
   request: { live: boolean; runId: string | null; basisSignature: string | null },
   message: { runId: string; basisSignature?: string },
 ): boolean {
-  return request.live &&
-    message.runId === request.runId && message.runId === st.playback.runId &&
+  return (
+    request.live &&
+    message.runId === request.runId &&
+    message.runId === st.playback.runId &&
     (message.basisSignature ?? request.basisSignature) === request.basisSignature &&
     request.basisSignature === analysisBasisSignature(st.scenario)
+  )
 }
 
 /**
@@ -492,7 +537,9 @@ export function acceptSensitivityMessage(
 function acceptOatMessage(st: AnalysisSlices, m: McSensitivityMessage): AnalysisPatch | null {
   const sens = st.mc.sensitivity
   // A run with no progress message (one field, or none) has no total yet.
-  const next = acceptRun(st, sens, m, (summary) => sens.total > 0 ? sens.total : summary.rows.length)
+  const next = acceptRun(st, sens, m, (summary) =>
+    sens.total > 0 ? sens.total : summary.rows.length,
+  )
   return next == null ? null : { mc: { ...st.mc, sensitivity: { ...sens, ...next } } }
 }
 
@@ -525,7 +572,13 @@ export function acceptSobolMessage(st: AnalysisSlices, m: McSobolMessage): Analy
     case 'sobol-progress':
       return { mc: { ...st.mc, sensitivity: { ...sens, progress: m.done, total: m.total } } }
     case 'sobol-done':
-      return { mc: { ...st.mc, sobol: m.result, sensitivity: { ...sens, status: 'done', progress: sens.total, error: null } } }
+      return {
+        mc: {
+          ...st.mc,
+          sobol: m.result,
+          sensitivity: { ...sens, status: 'done', progress: sens.total, error: null },
+        },
+      }
     case 'sobol-error':
       return { mc: { ...st.mc, sensitivity: { ...sens, status: 'error', error: m.message } } }
   }
@@ -553,23 +606,39 @@ export function acceptOptimizeMessage(
   if (!owns(st, { live: run.status === 'running', ...run }, m)) return null
   switch (m.type) {
     case 'optimize-progress':
-      return { mc: { ...st.mc, optimize: { ...run, progress: m.done, total: m.total }, optimizeBest: m.best } }
+      return {
+        mc: {
+          ...st.mc,
+          optimize: { ...run, progress: m.done, total: m.total },
+          optimizeBest: m.best,
+        },
+      }
     case 'optimize-done':
-      return { mc: { ...st.mc, optimize: {
-        ...run,
-        status: 'done',
-        summary: m.result,
-        progress: m.result.trace.length,
-        total: m.result.budget.evaluations,
-        error: null,
-      } } }
+      return {
+        mc: {
+          ...st.mc,
+          optimize: {
+            ...run,
+            status: 'done',
+            summary: m.result,
+            progress: m.result.trace.length,
+            total: m.result.budget.evaluations,
+            error: null,
+          },
+        },
+      }
     case 'optimize-error':
       return { mc: { ...st.mc, optimize: { ...run, status: 'error', error: m.message } } }
   }
 }
 
 type RunMessage<S> =
-  | { type: 'progress' | 'sens-progress' | 'sweep-progress'; runId: string; done: number; total: number }
+  | {
+      type: 'progress' | 'sens-progress' | 'sweep-progress'
+      runId: string
+      done: number
+      total: number
+    }
   | { type: 'done' | 'sens-done' | 'sweep-done'; runId: string; summary: S }
   | { type: 'error' | 'sens-error' | 'sweep-error'; runId: string; message: string }
 
@@ -604,12 +673,27 @@ function acceptRun<S>(
  * shared identity, a trial answers to its request token, and its result must
  * repeat the retained manifest and pass the shared adapter before it is ready.
  */
-export function acceptTrialMessage(st: AnalysisSlices, m: TrialWorkerMessage): AnalysisPatch | null {
+export function acceptTrialMessage(
+  st: AnalysisSlices,
+  m: TrialWorkerMessage,
+): AnalysisPatch | null {
   const { trial } = st
   const manifest = trial.manifest
-  if (manifest == null || m.requestToken !== trial.requestToken || m.runId !== manifest.runId ||
-    !owns(st, { live: trial.status === 'preparing', runId: manifest.runId,
-      basisSignature: manifest.basisSignature }, m)) return null
+  if (
+    manifest == null ||
+    m.requestToken !== trial.requestToken ||
+    m.runId !== manifest.runId ||
+    !owns(
+      st,
+      {
+        live: trial.status === 'preparing',
+        runId: manifest.runId,
+        basisSignature: manifest.basisSignature,
+      },
+      m,
+    )
+  )
+    return null
   const failed = (error: string): AnalysisPatch => ({
     trial: { ...trial, status: 'error', error, startWhenReady: false },
   })
@@ -618,7 +702,10 @@ export function acceptTrialMessage(st: AnalysisSlices, m: TrialWorkerMessage): A
   const received = m.result.manifest
   if (!sameManifest(manifest, received)) return failed('Trial manifest mismatch')
   const ready: TrialState = {
-    ...trial, status: 'ready', error: null, startWhenReady: false,
+    ...trial,
+    status: 'ready',
+    error: null,
+    startWhenReady: false,
     result: { ...m.result, manifest },
   }
   // Validate the shared adapter once before exposing a ready trial or starting its clock.

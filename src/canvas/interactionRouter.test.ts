@@ -4,26 +4,65 @@ import { IDLE_INTERACTION, routeInteraction } from './interactionRouter'
 import type { Action, InteractionState } from './interactionRouter'
 
 const TOOLS: Tool[] = ['select', 'boundary', 'connect', 'path', 'calibrate']
-const state = (patch: Partial<InteractionState>): InteractionState => ({ ...IDLE_INTERACTION, ...patch })
-const escape = (patch: Partial<InteractionState>) => routeInteraction({ kind: 'escape' }, state(patch)).type
+const state = (patch: Partial<InteractionState>): InteractionState => ({
+  ...IDLE_INTERACTION,
+  ...patch,
+})
+const escape = (patch: Partial<InteractionState>) =>
+  routeInteraction({ kind: 'escape' }, state(patch)).type
 const stage = (patch: Partial<InteractionState>, onEmpty = true, inPlacePair = false) =>
   routeInteraction({ kind: 'click-stage', onEmpty, inPlacePair }, state(patch))
-const entity = (patch: Partial<InteractionState>, entityKind: 'uas' | 'sensor' = 'sensor', shiftKey = false) =>
-  routeInteraction({ kind: 'click-entity', entityKind, shiftKey }, state(patch))
+const entity = (
+  patch: Partial<InteractionState>,
+  entityKind: 'uas' | 'sensor' = 'sensor',
+  shiftKey = false,
+) => routeInteraction({ kind: 'click-entity', entityKind, shiftKey }, state(patch))
 
 describe('escape precedence', () => {
   // Each row adds one more open surface below the previous one; the higher one always wins.
   it.each<[string, Partial<InteractionState>, Action['type']]>([
-    ['palette over everything', { paletteOpen: true, settingsOpen: true, locationDialogOpen: true, placementArmed: true }, 'continue'],
-    ['settings over the dialog', { settingsOpen: true, locationDialogOpen: true, placementArmed: true }, 'continue'],
-    ['location dialog over the placement', { locationDialogOpen: true, placementArmed: true, calibratePlaced: true }, 'close-location-dialog'],
-    ['location dialog while typing', { locationDialogOpen: true, typing: true }, 'close-location-dialog'],
-    ['roe menu leaves the placement armed', { roeMenuOpen: true, placementArmed: true }, 'continue'],
-    ['placement over calibration', { placementArmed: true, calibratePlaced: true, tool: 'calibrate' }, 'cancel-placement'],
+    [
+      'palette over everything',
+      { paletteOpen: true, settingsOpen: true, locationDialogOpen: true, placementArmed: true },
+      'continue',
+    ],
+    [
+      'settings over the dialog',
+      { settingsOpen: true, locationDialogOpen: true, placementArmed: true },
+      'continue',
+    ],
+    [
+      'location dialog over the placement',
+      { locationDialogOpen: true, placementArmed: true, calibratePlaced: true },
+      'close-location-dialog',
+    ],
+    [
+      'location dialog while typing',
+      { locationDialogOpen: true, typing: true },
+      'close-location-dialog',
+    ],
+    [
+      'roe menu leaves the placement armed',
+      { roeMenuOpen: true, placementArmed: true },
+      'continue',
+    ],
+    [
+      'placement over calibration',
+      { placementArmed: true, calibratePlaced: true, tool: 'calibrate' },
+      'cancel-placement',
+    ],
     ['placement while typing', { placementArmed: true, typing: true }, 'cancel-placement'],
     ['open drawer alone', { libraryOpen: true }, 'cancel-placement'],
-    ['two-point calibration over the board', { tool: 'calibrate', calibratePlaced: true, raidDraft: true }, 'cancel-calibration'],
-    ['two-point calibration while typing', { tool: 'calibrate', calibratePlaced: true, typing: true }, 'cancel-calibration'],
+    [
+      'two-point calibration over the board',
+      { tool: 'calibrate', calibratePlaced: true, raidDraft: true },
+      'cancel-calibration',
+    ],
+    [
+      'two-point calibration while typing',
+      { tool: 'calibrate', calibratePlaced: true, typing: true },
+      'cancel-calibration',
+    ],
     ['one-point calibration is a board clear', { tool: 'calibrate' }, 'clear-board'],
     ['typing swallows the board clear', { typing: true }, 'continue'],
     ['idle board', {}, 'clear-board'],
@@ -33,7 +72,9 @@ describe('escape precedence', () => {
 
   it('clears the board for every drawing tool and draft', () => {
     for (const tool of TOOLS) {
-      expect(escape({ tool, raidDraft: true, connectFrom: true, pathStarted: true })).toBe('clear-board')
+      expect(escape({ tool, raidDraft: true, connectFrom: true, pathStarted: true })).toBe(
+        'clear-board',
+      )
     }
   })
 })
@@ -41,12 +82,15 @@ describe('escape precedence', () => {
 describe('stage click precedence', () => {
   it('drops a marquee-paired click before anything else', () => {
     for (const tool of TOOLS) {
-      expect(stage({ tool, clickSuppressed: true, placementArmed: true, raidDraft: true })).toEqual({ type: 'consume' })
+      expect(stage({ tool, clickSuppressed: true, placementArmed: true, raidDraft: true })).toEqual(
+        { type: 'consume' },
+      )
     }
   })
 
   it('an armed placement owns the click ahead of the raid draft and the tools', () => {
-    for (const tool of TOOLS) expect(stage({ tool, placementArmed: true, raidDraft: true })).toEqual({ type: 'place' })
+    for (const tool of TOOLS)
+      expect(stage({ tool, placementArmed: true, raidDraft: true })).toEqual({ type: 'place' })
   })
 
   it('an armed raid draft commits ahead of every tool, on empty canvas or an entity', () => {
@@ -69,18 +113,35 @@ describe('stage click precedence', () => {
   ])('%s tool, in-place pair %s', (tool, inPlacePair, expected) => {
     expect(stage({ tool }, true, inPlacePair)).toEqual(expected)
     // A bubbled entity click reaches the same tools; only select stops deselecting.
-    expect(stage({ tool }, false, inPlacePair)).toEqual(tool === 'select' ? { type: 'consume' } : expected)
+    expect(stage({ tool }, false, inPlacePair)).toEqual(
+      tool === 'select' ? { type: 'consume' } : expected,
+    )
   })
 })
 
 describe('entity click precedence', () => {
   it.each<[string, Partial<InteractionState>, 'uas' | 'sensor', Action]>([
     ['connect starts', { tool: 'connect' }, 'sensor', { type: 'begin-connect' }],
-    ['connect completes', { tool: 'connect', connectFrom: true }, 'sensor', { type: 'complete-connect' }],
-    ['connect ignores the raid draft', { tool: 'connect', raidDraft: true }, 'sensor', { type: 'begin-connect' }],
+    [
+      'connect completes',
+      { tool: 'connect', connectFrom: true },
+      'sensor',
+      { type: 'complete-connect' },
+    ],
+    [
+      'connect ignores the raid draft',
+      { tool: 'connect', raidDraft: true },
+      'sensor',
+      { type: 'begin-connect' },
+    ],
     ['path starts on a UAS', { tool: 'path' }, 'uas', { type: 'begin-path' }],
     ['path bubbles a non-UAS', { tool: 'path' }, 'sensor', { type: 'continue' }],
-    ['path bubbles once drafting', { tool: 'path', pathStarted: true }, 'uas', { type: 'continue' }],
+    [
+      'path bubbles once drafting',
+      { tool: 'path', pathStarted: true },
+      'uas',
+      { type: 'continue' },
+    ],
     ['boundary bubbles', { tool: 'boundary' }, 'uas', { type: 'continue' }],
     ['calibrate bubbles', { tool: 'calibrate' }, 'uas', { type: 'continue' }],
     ['raid draft bubbles under select', { raidDraft: true }, 'uas', { type: 'continue' }],
@@ -97,15 +158,31 @@ describe('entity click precedence', () => {
 
 describe('drop, tool change and arming', () => {
   it('routes a drop by its payload, model first', () => {
-    expect(routeInteraction({ kind: 'drop', modelId: 'm1', systemId: 's1' }, IDLE_INTERACTION)).toEqual({ type: 'add-entity-from-model', modelId: 'm1' })
-    expect(routeInteraction({ kind: 'drop', modelId: '', systemId: 's1' }, IDLE_INTERACTION)).toEqual({ type: 'add-system-from-preset', systemId: 's1' })
-    expect(routeInteraction({ kind: 'drop', modelId: '', systemId: '' }, state({ placementArmed: true }))).toEqual({ type: 'consume' })
+    expect(
+      routeInteraction({ kind: 'drop', modelId: 'm1', systemId: 's1' }, IDLE_INTERACTION),
+    ).toEqual({ type: 'add-entity-from-model', modelId: 'm1' })
+    expect(
+      routeInteraction({ kind: 'drop', modelId: '', systemId: 's1' }, IDLE_INTERACTION),
+    ).toEqual({ type: 'add-system-from-preset', systemId: 's1' })
+    expect(
+      routeInteraction(
+        { kind: 'drop', modelId: '', systemId: '' },
+        state({ placementArmed: true }),
+      ),
+    ).toEqual({ type: 'consume' })
   })
 
   it('a tool change disarms the placement in every state and arming is always a compound reset', () => {
     for (const tool of TOOLS) {
-      expect(routeInteraction({ kind: 'tool-change' }, state({ tool, placementArmed: true, raidDraft: true }))).toEqual({ type: 'clear-placement' })
-      expect(routeInteraction({ kind: 'arm-placement' }, state({ tool, connectFrom: true }))).toEqual({ type: 'arm-placement' })
+      expect(
+        routeInteraction(
+          { kind: 'tool-change' },
+          state({ tool, placementArmed: true, raidDraft: true }),
+        ),
+      ).toEqual({ type: 'clear-placement' })
+      expect(
+        routeInteraction({ kind: 'arm-placement' }, state({ tool, connectFrom: true })),
+      ).toEqual({ type: 'arm-placement' })
     }
   })
 })

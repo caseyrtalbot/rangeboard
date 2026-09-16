@@ -8,7 +8,12 @@ import type {
   UasSpec,
   Vec2,
 } from '../model/types'
-import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, mountHeightOf, physicsSwitches } from '../model/types'
+import {
+  DEFAULT_REQUIREMENT_THRESHOLDS,
+  entityActive,
+  mountHeightOf,
+  physicsSwitches,
+} from '../model/types'
 import { dist, pointInWedge } from '../geometry/geo'
 import { slantRangeM } from '../geometry/slant'
 import { modelFor } from '../model/scenario'
@@ -111,13 +116,16 @@ function admittedSlantsM(term: SensorTerms, altM: number, members: Vec2[]): numb
   const { sensor, spec } = term
   const dAltM = altM - term.sensorHeightM
   const seen: number[] = []
-  const indexed = term.seenIndices ? [] as Array<{ slantM: number; memberIdx: number }> : null
+  const indexed = term.seenIndices ? ([] as Array<{ slantM: number; memberIdx: number }>) : null
   for (let memberIdx = 0; memberIdx < members.length; memberIdx += 1) {
     const m = members[memberIdx]
     const groundM = dist(sensor.pos, m)
     if (term.geometryGate(groundM) !== 'ok') continue
     // A full circle admits every bearing, as pointInWedge answers without the test.
-    if (!(spec.sectorDeg >= 360) && !pointInWedge(sensor.pos, sensor.headingDeg, spec.sectorDeg, m)) {
+    if (
+      !(spec.sectorDeg >= 360) &&
+      !pointInWedge(sensor.pos, sensor.headingDeg, spec.sectorDeg, m)
+    ) {
       continue
     }
     const slantM = slantRangeM(groundM, dAltM)
@@ -156,7 +164,12 @@ function sensorHit(
 ): DetectionHit | null {
   const gate = term.gate
   const f = formation
-  const resolved = !(f && f.count > 1 && term.spec.resolutionM != null && f.spacingM < term.spec.resolutionM)
+  const resolved = !(
+    f &&
+    f.count > 1 &&
+    term.spec.resolutionM != null &&
+    f.spacingM < term.spec.resolutionM
+  )
   if (observation) observation.resolved = resolved
   if (gate === 'needs-cue' ? !cued : gate !== 'ok') return null
   // Between scans a scan radar has no hit of its own; the carried hold is the only cue.
@@ -171,7 +184,11 @@ function sensorHit(
       const pd = pdAt(slant)
       const detected = policy.detect(pd, sensor.id, uasId, tS, i)
       observation?.members.push({
-        memberIdx: term.seenIndices![i], drawIndex: i, slantM: slant, pd, detected,
+        memberIdx: term.seenIndices![i],
+        drawIndex: i,
+        slantM: slant,
+        pd,
+        detected,
         classified: detected && term.classifyR != null && slant <= term.classifyR,
       })
       return detected
@@ -182,7 +199,11 @@ function sensorHit(
     detected = seen.filter((slant, i) => {
       const detected = slant <= detectR
       observation?.members.push({
-        memberIdx: term.seenIndices![i], drawIndex: i, slantM: slant, pd: null, detected,
+        memberIdx: term.seenIndices![i],
+        drawIndex: i,
+        slantM: slant,
+        pd: null,
+        detected,
         classified: detected && term.classifyR != null && slant <= term.classifyR,
       })
       return detected
@@ -291,11 +312,31 @@ export function prepareSweep(
       for (const pass of passes) {
         for (const term of pass) {
           const scanStep = scan ? scan.scanStep(term.sensor.id) : true
-          const observation: SensorScanObservation | undefined = capture && scanStep ? {
-            uasId, sensorId: term.sensor.id, sensorType: term.spec.sensorType, tS,
-            gate: term.gate, cued, resolved: true, members: [],
-          } : undefined
-          const hit = sensorHit(term, formation, altM, members, cued, draw, uasId, tS, scanStep, observation)
+          const observation: SensorScanObservation | undefined =
+            capture && scanStep
+              ? {
+                  uasId,
+                  sensorId: term.sensor.id,
+                  sensorType: term.spec.sensorType,
+                  tS,
+                  gate: term.gate,
+                  cued,
+                  resolved: true,
+                  members: [],
+                }
+              : undefined
+          const hit = sensorHit(
+            term,
+            formation,
+            altM,
+            members,
+            cued,
+            draw,
+            uasId,
+            tS,
+            scanStep,
+            observation,
+          )
           if (observation) capture!(observation)
           if (hit) {
             out.push({ spec: term.spec, hit })
@@ -414,14 +455,9 @@ export function spawnInRingViolations(scenario: Scenario): SpawnViolation[] {
     if (!start) continue
     const uasSpec = modelFor(scenario, uas)?.uas
     const altitudeFt = threatAltitudeFt(scenario, uas)
-    for (const { hit } of sweepSensorHits(
-      scenario,
-      sensors,
-      uas.formation,
-      uasSpec,
-      altitudeFt,
-      [start],
-    )) {
+    for (const { hit } of sweepSensorHits(scenario, sensors, uas.formation, uasSpec, altitudeFt, [
+      start,
+    ])) {
       out.push({ uasId: uas.id, sensorId: hit.sensorId })
     }
   }

@@ -46,8 +46,10 @@ const ROUTE_CACHE = new WeakMap<Vec2[], Map<string, FlightRoute>>()
 
 /** True when the target states at least one Phase 3 flight limit. */
 export function hasFlightLimits(uas: UasSpec | undefined): boolean {
-  return uas != null && [uas.maxTurnRateDegS, uas.climbRateMps, uas.maxAccelMps2]
-    .some((value) => value != null)
+  return (
+    uas != null &&
+    [uas.maxTurnRateDegS, uas.climbRateMps, uas.maxAccelMps2].some((value) => value != null)
+  )
 }
 
 /** Constant-speed turn radius R = V / omega. */
@@ -72,15 +74,22 @@ function addLine(legs: FlightLeg[], from: Vec2, to: Vec2): void {
  * cannot fit between adjacent vertices is left sharp rather than silently
  * shrinking its radius and exceeding the stated turn-rate limit.
  */
-function buildRoute(points: Vec2[], speedMps: number, maxTurnRateDegS: number | null | undefined): FlightRoute {
+function buildRoute(
+  points: Vec2[],
+  speedMps: number,
+  maxTurnRateDegS: number | null | undefined,
+): FlightRoute {
   const start = points[0] ?? { x: 0, y: 0 }
   const end = points.at(-1) ?? start
   if (points.length < 2 || !(speedMps > 0) || maxTurnRateDegS == null || !(maxTurnRateDegS > 0)) {
     const legs: FlightLeg[] = []
     for (let i = 1; i < points.length; i += 1) addLine(legs, points[i - 1], points[i])
-    const finalHeadingDeg = legs.at(-1)?.kind === 'line'
-      ? (legs.at(-1) as LineLeg).headingDeg
-      : points.length > 1 ? bearingDeg(points[points.length - 2], end) : 0
+    const finalHeadingDeg =
+      legs.at(-1)?.kind === 'line'
+        ? (legs.at(-1) as LineLeg).headingDeg
+        : points.length > 1
+          ? bearingDeg(points[points.length - 2], end)
+          : 0
     return { legs, lengthM: pathLength(points), start, end, finalHeadingDeg }
   }
 
@@ -99,11 +108,12 @@ function buildRoute(points: Vec2[], speedMps: number, maxTurnRateDegS: number | 
     const tangentM = radiusM * Math.tan(angleRad / 2)
     const availableInM = dist(current, vertex)
     const availableOutM = dist(vertex, next)
-    const feasible = turnDeg > EPS
-      && turnDeg < 180 - EPS
-      && Number.isFinite(tangentM)
-      && tangentM <= availableInM + EPS
-      && tangentM <= availableOutM + EPS
+    const feasible =
+      turnDeg > EPS &&
+      turnDeg < 180 - EPS &&
+      Number.isFinite(tangentM) &&
+      tangentM <= availableInM + EPS &&
+      tangentM <= availableOutM + EPS
 
     if (!feasible) {
       addLine(legs, current, vertex)
@@ -133,15 +143,20 @@ function buildRoute(points: Vec2[], speedMps: number, maxTurnRateDegS: number | 
   addLine(legs, current, end)
   const lengthM = legs.reduce((sum, leg) => sum + leg.lengthM, 0)
   const last = legs.at(-1)
-  const finalHeadingDeg = last == null
-    ? 0
-    : last.kind === 'line'
-      ? last.headingDeg
-      : last.headingStartDeg + last.sign * last.turnDeg
+  const finalHeadingDeg =
+    last == null
+      ? 0
+      : last.kind === 'line'
+        ? last.headingDeg
+        : last.headingStartDeg + last.sign * last.turnDeg
   return { legs, lengthM, start, end, finalHeadingDeg: (finalHeadingDeg + 360) % 360 }
 }
 
-function routeFor(points: Vec2[], speedMps: number, maxTurnRateDegS: number | null | undefined): FlightRoute {
+function routeFor(
+  points: Vec2[],
+  speedMps: number,
+  maxTurnRateDegS: number | null | undefined,
+): FlightRoute {
   let routes = ROUTE_CACHE.get(points)
   if (!routes) {
     routes = new Map()
@@ -193,7 +208,11 @@ function sampleRoute(route: FlightRoute, distanceM: number): PathSample {
   }
 }
 
-function distanceAfterS(speedMps: number, accelMps2: number | null | undefined, flightS: number): number {
+function distanceAfterS(
+  speedMps: number,
+  accelMps2: number | null | undefined,
+  flightS: number,
+): number {
   const t = Math.max(0, flightS)
   const speed = Math.max(0, speedMps)
   if (accelMps2 == null) return t * speed
@@ -203,7 +222,11 @@ function distanceAfterS(speedMps: number, accelMps2: number | null | undefined, 
   return 0.5 * accelMps2 * accelerateS * accelerateS + speed * (t - accelerateS)
 }
 
-function durationForDistanceS(distanceM: number, speedMps: number, accelMps2: number | null | undefined): number {
+function durationForDistanceS(
+  distanceM: number,
+  speedMps: number,
+  accelMps2: number | null | undefined,
+): number {
   if (!(speedMps > 0)) return Number.POSITIVE_INFINITY
   if (accelMps2 == null) return distanceM / speedMps
   if (!(accelMps2 > 0)) return Number.POSITIVE_INFINITY

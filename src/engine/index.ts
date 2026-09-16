@@ -136,7 +136,11 @@ export {
   TRIAL_DRAW_POLICY_VERSION,
   TRIAL_ENGINE_REVISION,
 } from '../playback/trialTypes'
-export type { TrialRequest, TrialRequestIdentity, TrialWorkerMessage } from '../playback/trialMessages'
+export type {
+  TrialRequest,
+  TrialRequestIdentity,
+  TrialWorkerMessage,
+} from '../playback/trialMessages'
 export { runTrial } from '../playback/trial'
 
 // Phase 2 track contract: estimates, fused tracks, the classification matrix and the measurement.
@@ -174,7 +178,12 @@ export {
   scenarioHorizonS,
 } from '../playback/falseTracks'
 export type { OperatorQueue } from '../playback/operator'
-export { createOperatorQueue, decisionLatencyS, firstC2Of, overloadFactor } from '../playback/operator'
+export {
+  createOperatorQueue,
+  decisionLatencyS,
+  firstC2Of,
+  overloadFactor,
+} from '../playback/operator'
 export type { KillChainRoute } from '../playback/killChain'
 export type { C2Link, FusionStage } from '../playback/fusion'
 export {
@@ -199,7 +208,12 @@ export type {
   InterceptSource,
   SelectedIntercept,
 } from '../playback/intercept'
-export { interceptAt, interceptFor, interceptFromEstimate, predictedStateAt } from '../playback/intercept'
+export {
+  interceptAt,
+  interceptFor,
+  interceptFromEstimate,
+  predictedStateAt,
+} from '../playback/intercept'
 export type { ShotAccepted, ShotContext, ShotRejected, ShotRejection } from '../playback/shot'
 export { evaluateShot } from '../playback/shot'
 export { kineticPk, missDistanceSigmaM } from '../playback/pk'

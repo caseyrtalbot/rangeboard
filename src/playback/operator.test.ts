@@ -57,13 +57,29 @@ describe('operator queue', () => {
   function fixture(c2: C2Spec | null): Scenario {
     const scenario = emptyScenario()
     const ent = (id: string, kind: Entity['kind'], specId: string | null): Entity => ({
-      id, kind, specId, name: id, pos: { x: 0, y: 0 }, headingDeg: 0, color: null, notes: '',
+      id,
+      kind,
+      specId,
+      name: id,
+      pos: { x: 0, y: 0 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
     })
     scenario.library.push({
-      id: 'tst-c2', name: 'C2', description: '', color: '#fff', builtin: false, kind: 'c2',
+      id: 'tst-c2',
+      name: 'C2',
+      description: '',
+      color: '#fff',
+      builtin: false,
+      kind: 'c2',
       ...(c2 ? { c2 } : {}),
     })
-    scenario.entities = [ent('radar', 'sensor', null), ent('c2', 'c2', 'tst-c2'), ent('other-c2', 'c2', 'tst-c2')]
+    scenario.entities = [
+      ent('radar', 'sensor', null),
+      ent('c2', 'c2', 'tst-c2'),
+      ent('other-c2', 'c2', 'tst-c2'),
+    ]
     scenario.connections = [{ id: 'l1', fromId: 'radar', toId: 'c2', label: '' }]
     return scenario
   }
@@ -71,12 +87,16 @@ describe('operator queue', () => {
   /** A minimal assessment: tracked from firstDetectS to lastTrackS by the radar. */
   function tracked(uasId: string, firstDetectS: number, lastTrackS: number): ThreatAssessment {
     return {
-      uasId, firstDetectS, detectingSensorIds: ['radar'],
+      uasId,
+      firstDetectS,
+      detectingSensorIds: ['radar'],
       trackQuality: { heldSamples: 0, totalSamples: 0, continuity: 1, longestGapS: 0, lastTrackS },
     } as unknown as ThreatAssessment
   }
 
-  function spy(base: DrawPolicy): DrawPolicy & { latencyCalls: Array<[string, string, number, number]> } {
+  function spy(
+    base: DrawPolicy,
+  ): DrawPolicy & { latencyCalls: Array<[string, string, number, number]> } {
     const p = {
       ...base,
       latencyCalls: [] as Array<[string, string, number, number]>,
@@ -96,9 +116,17 @@ describe('operator queue', () => {
     expect(q.loadAt('c2', 10)).toBe(0)
     expect(policy.latencyCalls).toEqual([])
     // A spec with no median is the same as no spec.
-    const capacityOnly = createOperatorQueue(fixture({ operatorTrackCapacity: 4 }), [tracked('u1', 0, 100)], policy)
+    const capacityOnly = createOperatorQueue(
+      fixture({ operatorTrackCapacity: 4 }),
+      [tracked('u1', 0, 100)],
+      policy,
+    )
     expect(capacityOnly.active).toBe(false)
-    expect(capacityOnly.delayS('c2', 'u1', 10, 0)).toEqual({ extraS: 0, floored: false, decided: false })
+    expect(capacityOnly.delayS('c2', 'u1', 10, 0)).toEqual({
+      extraS: 0,
+      floored: false,
+      decided: false,
+    })
   })
 
   it('the noOperatorQueue switch adds zero and consumes no draw', () => {
@@ -132,13 +160,21 @@ describe('operator queue', () => {
     const second = q.delayS('c2', 'u1', tS, 1)
     expect(second.extraS).toBeCloseTo(Math.max(0, raw1), 12)
     expect(second.floored).toBe(raw1 < 0)
-    expect(policy.latencyCalls).toEqual([['c2', 'u1', tS, 0], ['c2', 'u1', tS, 1]])
+    expect(policy.latencyCalls).toEqual([
+      ['c2', 'u1', tS, 0],
+      ['c2', 'u1', tS, 1],
+    ])
     // A c2 that is not on the map adds zero and is no decision.
     expect(q.delayS('nobody', 'u1', tS, 0)).toEqual({ extraS: 0, floored: false, decided: false })
   })
 
   it('the deterministic policy adds nothing at the median; overload adds (load / capacity - 1) medians', () => {
-    const threats = [tracked('u1', 0, 100), tracked('u2', 0, 100), tracked('u3', 50, 100), tracked('u4', 50, 100)]
+    const threats = [
+      tracked('u1', 0, 100),
+      tracked('u2', 0, 100),
+      tracked('u3', 50, 100),
+      tracked('u4', 50, 100),
+    ]
     const q = createOperatorQueue(fixture(C2), threats, deterministicPolicy(T))
     // Two tracks at t 10 (capacity 2): the median, so no extra. Four at t 60: twice the median, one median extra.
     expect(q.loadAt('c2', 10)).toBe(2)
@@ -155,7 +191,11 @@ describe('operator queue', () => {
   })
 
   it('a threat with no detection is not a track', () => {
-    const none = { uasId: 'u0', firstDetectS: null, detectingSensorIds: [] } as unknown as ThreatAssessment
+    const none = {
+      uasId: 'u0',
+      firstDetectS: null,
+      detectingSensorIds: [],
+    } as unknown as ThreatAssessment
     const q = createOperatorQueue(fixture(C2), [none], deterministicPolicy(T))
     expect(q.loadAt('c2', 10)).toBe(0)
   })
