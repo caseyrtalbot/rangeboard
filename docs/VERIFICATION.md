@@ -188,9 +188,14 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   [numerical-capture.ts.txt](field-te/evidence/r5-sampled-experience-2026-09-08/numerical-capture.ts.txt).
   It captures assessments, deterministic attrition, aleatory MC, total MC and sensitivity
   for the firing and detection-outside-rings fixtures with four replicates. Keep fixture
-  IDs, seed and settings fixed and compare complete serialized captures. Its relative
-  imports require a scratch test under `src/playback/`; redirect the output for a new
-  capture and remove the scratch test afterward. Preserve dated baseline files.
+  IDs, seed and settings fixed. New captures go through `scripts/evidence/capture.mjs`:
+  `writeCapture` serializes once, hashes, and records the entry in the folder's
+  `manifest.json` `captures` list; an identical repeat becomes a `sameAs` entry instead of
+  a second file, and anything over 512 KB is stored as `.json.gz`. `compareCapture` hashes
+  the new serialization against the manifest rather than reading the stored file. The
+  relative TypeScript imports still need a Vitest scratch test under `src/playback/`, which
+  imports the helper with the `@ts-expect-error` convention; remove it afterward.
+  Preserve dated baseline files.
 - Trial adapter checks colocate with `analysis/trialResult.ts`, `trialSeries.ts`,
   `playback/trialTrackState.ts`, `trialSweepAt.ts`, `state/trialSelectors.ts` and
   `useTrialResult.ts`. Store transport tests are in `state/store.trial.test.ts`;
