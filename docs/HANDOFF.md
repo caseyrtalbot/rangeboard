@@ -12,17 +12,15 @@ this file and the docs index. This file does not authorize a commit, push or mer
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, branch `p4f/kinetic-zero-kill`, checked out from
-  `main` at `31a6d5d` and uncommitted. `main` at `31a6d5d` is pushed to `origin/main`.
-  The apply-overrides task (`663f695`) was fast-forwarded into `main` from
-  `p4f/apply-overrides`; that branch is deleted locally and on origin.
-- A separate shell session works in the worktree `~/Projects/rangeboard-shell` on
-  branch `shell/slice-2-playback-bar` (base `e35c0f1`); it owns `src/App.tsx`,
-  `src/index.css`, the Toolbar files and `scripts/e2e/board-shell.e2e.mjs`. The docs
-  registry `docs/maintenance.json` is shared; a rebase across that lane conflicts there
-  and is resolved by re-recording each review with `docs:review` on the combined tree.
-- No lane worktrees or lane branches exist; the five `p4/*` branches were merged and
-  deleted.
+- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch and
+  contains the board-header slice (`8e4545e`), the zero-kill kinetic finding (`8766728`)
+  and this reconciliation. `origin/main` remains at `1ee0169` pending a separately
+  authorized publication step.
+- The authoritative checkout is `~/Projects/rangeboard` on `main`. No lane worktrees,
+  unmerged local task branches or stashes remain after this cleanup.
+- The board-header slice moves the lifecycle tabs and run status into the 40 px header,
+  removes the separate phase row and keeps the existing drawer and playback-bar behavior.
+  Its source, tests, current guides and documentation fingerprints are integrated.
 - Plan: Phases 0 to 4 complete, each marked in the plan with its merge commits. Phase 4
   is the last phase in the plan; there is no Phase 5 tasking.
 - The zero-kill kinetic task is done on this branch and is a written finding, not a code
@@ -30,11 +28,11 @@ this file and the docs index. This file does not authorize a commit, push or mer
   [the zero-kill kinetic record](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md);
   it carries the per-shot table, the hand derivation, the reference probe and the two
   probe captures.
-- Gate on this branch, 2026-09-15: `npm run check` passed (202 test files, 2,173 tests,
-  the same counts as `31a6d5d`), and `npm run build && npm run check:bundle` passed with
-  the entry at 361,302 bytes gzip against the 364,000 budget (2.7 kB of headroom),
-  unchanged from `main` because no source file moved. The Phase 4 gate on the committed
-  tree is recorded in
+- Integrated local gate, 2026-09-16: `npm run check` passed (202 test files,
+  2,175 tests, plus docs, engine CLI, library, schema, typecheck, lint and build),
+  `npm run check:bundle` passed with the entry at 361,510 bytes gzip against the
+  364,000 budget, and the real-browser board-shell suite passed 11 of 11 checks at
+  1400 by 900. The prior Phase 4 committed-tree result remains recorded in
   [the Phase 4 gate record](field-te/evidence/p4-gate-2026-09-15/README.md).
 - Open defect, diagnosed and quantified but not fixed: `src/playback/shot.ts:319` charges
   the assignment-to-release delay as an open-loop coast of the fire-control track, so at
@@ -48,11 +46,35 @@ this file and the docs index. This file does not authorize a commit, push or mer
 
 ## Tasking
 
-Each is one session task with its own gate. None is selected; the user picks. Tasks 1
-and 2 are Phase 4 gate follow-ups; Task 3 is the follow-up the zero-kill kinetic finding
-names. None is plan tasking.
+Each is one session task with its own gate. Task 1 is the next bounded task because it
+repairs a correctness defect in the default physical kinetic path. It is not started or
+authorized by this cleanup. Tasks 2 and 3 are lower-priority Phase 4 follow-ups. None is
+plan tasking.
 
-### Task 1: Entry chunk lazy split
+### Task 1: Land the kinetic miss horizon and recapture the estimate-path anchors
+
+- Outcome: `src/playback/shot.ts:319` uses the flight as the miss horizon, with a
+  regression test sized like `src/playback/kinetic.verify.test.ts`, and
+  `src/playback/estimate.parity.test.ts` recaptured. The candidate change, its measured
+  effect and the five moved pins are in
+  [the zero-kill kinetic record](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md).
+- Do the `flyoutSpeedMps` adoption gap first or decide against it explicitly. The layered
+  golden fixture saves no `flyoutSpeedMps` and `ADOPTED_SEED_KEYS.effector`
+  (`src/model/libraryLifecycle.ts:116`) does not adopt it, so its interceptors fly with a
+  zero flight time while the physical Pk model still applies. Recapturing that fixture's
+  kills mean as 4.68 without fixing this pins a teleporting interceptor.
+- The recapture needs the user's authorization for each replacement value. The Monte
+  Carlo means over 200 replicates and the layered event count are not hand derivable, and
+  `estimate.parity.test.ts`'s own header requires a replacement named in the slice brief.
+  Write the before and after into the record beside the Phase 3 comparison, as
+  [the Phase 3 estimate-path comparison](field-te/evidence/p3-gate-2026-09-10/comparison.md)
+  did.
+- The residual gap after the fix is a model limit: the interceptor model has no
+  terminal-homing term, so the Coyote reaches Pk 0.034 to 0.050 per shot against the
+  fallback's 0.556 to 0.564. A terminal-guidance term is separate tasking and is not
+  authorized here.
+
+### Task 2: Entry chunk lazy split
 
 - Outcome: the entry chunk back under 340 kB gzip with the budget lowered again, by
   loading an engine or analysis addition lazily. Measure with `npm run build && npm run
@@ -61,7 +83,7 @@ names. None is plan tasking.
   `src/io/persist.ts` and `src/io/runRecordPackage.ts` (the split made at the gate),
   `src/state/analysisRequests.ts` (the optimize wiring is the newest entry weight).
 
-### Task 2: Smaller follow-ups, each a short task
+### Task 3: Smaller follow-ups, select one per session
 
 - `RunRecord` gains `sobol: SobolResult | null` so the SQLite `sobol` table fills
   (`src/model/runRecord.ts`, `src/io/exportSqlite.ts` already reads the field, the save
@@ -86,29 +108,6 @@ names. None is plan tasking.
   others) detect earlier in a sampled trial than in the deterministic forecast on the
   firing laydown with no override at all, so `forecast-trial-disagreement` fires on them
   by model behavior; LSTAR, the RF, acoustic and EO/IR sensors agree exactly.
-
-### Task 3: Land the kinetic miss horizon and recapture the estimate-path anchors
-
-- Outcome: `src/playback/shot.ts:319` uses the flight as the miss horizon, with a
-  regression test sized like `src/playback/kinetic.verify.test.ts`, and
-  `src/playback/estimate.parity.test.ts` recaptured. The candidate change, its measured
-  effect and the five moved pins are in
-  [the zero-kill kinetic record](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md).
-- Do the `flyoutSpeedMps` adoption gap first or decide against it explicitly. The layered
-  golden fixture saves no `flyoutSpeedMps` and `ADOPTED_SEED_KEYS.effector`
-  (`src/model/libraryLifecycle.ts:116`) does not adopt it, so its interceptors fly with a
-  zero flight time while the physical Pk model still applies. Recapturing that fixture's
-  kills mean as 4.68 without fixing this pins a teleporting interceptor.
-- The recapture needs the user's authorization for each replacement value. The Monte
-  Carlo means over 200 replicates and the layered event count are not hand derivable, and
-  `estimate.parity.test.ts`'s own header requires a replacement named in the slice brief.
-  Write the before and after into the record beside the Phase 3 comparison, as
-  [the Phase 3 estimate-path comparison](field-te/evidence/p3-gate-2026-09-10/comparison.md)
-  did.
-- The residual gap after the fix is a model limit, not a defect: the interceptor model
-  has no terminal-homing term, so the Coyote reaches Pk 0.034 to 0.050 per shot against
-  the fallback's 0.556 to 0.564. A terminal-guidance term is separate tasking and is not
-  authorized here.
 
 ## Landmines
 

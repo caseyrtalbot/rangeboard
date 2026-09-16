@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "2209e5f32db1453b16df9de7d4612bdf3572bc5578476d4d9e4fefe735b0561f",
-      "reviewedAt": "2026-09-15",
-      "note": "Zero-kill kinetic task: Position moved to branch p4f/kinetic-zero-kill on main 31a6d5d with the finding delivered and no engine change; the open-defect bullet now names shot.ts:319, the 282 m miss sigma and why the fix is not landed; old Task 1 removed and the survivors renumbered, with the horizon fix and the estimate-path recapture added as Task 3; six landmines added on the horizon defect, the verify-suite regime, which suites the physical Pk path can move, the layered fixture's zero flight time and the missing terminal-homing term."
+      "sha256": "9f373ad56e574810a2d959068d7c9cac7d5edc74e9750a9b0ddaa690f5f1bbbf",
+      "reviewedAt": "2026-09-16",
+      "note": "Recorded the 2026-09-16 combined local gate: 2,175 tests, bundle budget, and 11 browser checks all pass; retained kinetic repair as the next bounded task."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
