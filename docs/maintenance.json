@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "f09ed82795331b9e2f84d052b88971e35b5c191d9455d21d1fd00355cb8b6701",
+      "sha256": "59c1412eb961d0a23dbc06dba27a5d16302cb6cb2a6040b25da048a1b28f771f",
       "reviewedAt": "2026-09-16",
-      "note": "Evidence slices 1-2: package.json gains evidence:report and test:evidence; the check gate is unchanged, so no guidance change."
+      "note": "Evidence slice 3: package.json gains check:evidence and inserts it plus test:evidence into the check chain. AGENTS.md names only npm run check for the complete local gate, which stays true."
     },
     {
       "document": "CLAUDE.md",
@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "d0b2badda49c388fd804f408863b84c0d3e291b779d29fb04b33abd4cce28c1f",
+      "sha256": "6e8a3d60e409b9c3b8801305d5a3d5fc3bf3128f00d83b1c386dd3814e2a07ca",
       "reviewedAt": "2026-09-16",
-      "note": "Evidence slices 1-2: package.json gains evidence:report and test:evidence; README names only npm run check, unchanged."
+      "note": "Evidence slice 3: the check chain gains check:evidence and test:evidence. README names only npm run check and the Node version, so no text change is needed."
     },
     {
       "document": "docs/README.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "de9d38ebb719de550402236302e4e741e524cc96cf92e3fc0e3cda21589de5b9",
+      "sha256": "a1b3f3bd395e5fb8404b320cdfa36bc738cb9654417e674485f48f0d111158f8",
       "reviewedAt": "2026-09-16",
-      "note": "Reviewed the numerical-harness guidance against the new scripts/evidence/capture.mjs; captures now serialize once, hash into the folder manifest, dedupe identical repeats as sameAs and gzip above 512 KB."
+      "note": "Evidence slice 3: command table gains evidence:report, check:evidence and test:evidence rows; the check row names the evidence stage."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "d261fea275103b1626da0366c6df3aebf54178f71cfa8cc7fece760689f61553",
+      "sha256": "f808e065911012bdf6175efab8c012af540ecdf025b6ca976e26cf4c95f06565",
       "reviewedAt": "2026-09-16",
-      "note": "Evidence slices 1-2: report-mode check-evidence.mjs and capture.mjs added under scripts/; the check gate is unchanged, enforcement lands in slice 3."
+      "note": "Evidence slice 3: step 4 now states that engine captures go through scripts/evidence/capture.mjs and that npm run check:evidence fails on duplicate or oversized JSON, and the historical evidence row records sameAs entries and .json.gz storage."
     },
     {
       "document": "docs/HANDOFF.md",

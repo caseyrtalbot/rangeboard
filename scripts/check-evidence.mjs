@@ -8,6 +8,9 @@ export const EVIDENCE_DIR = 'docs/field-te/evidence'
 // Captured JSON stays readable below 512 kB; larger records belong in a gzip sidecar.
 export const JSON_LIMIT_BYTES = 524_288
 
+// Fixtures that tests and scripts import stay exempt from the gate.
+export const ALLOWLIST_FILE = 'scripts/evidence/allowlist.json'
+
 /** Treat a gzip sidecar as one extension so `.json` never counts compressed bytes. */
 export function extensionOf(path) {
   return path.toLowerCase().endsWith('.json.gz') ? '.json.gz' : extname(path).toLowerCase()
@@ -122,13 +125,40 @@ export function report(scan, limitBytes = JSON_LIMIT_BYTES) {
   return lines.join('\n')
 }
 
-/** Read the flags this slice supports; enforcement lands on the same parse. */
+/** Fixtures imported by tests and scripts are exempt; missing list means nothing is exempt. */
+export function loadAllowlist(root, file = ALLOWLIST_FILE) {
+  try {
+    return JSON.parse(readFileSync(resolve(root, file), 'utf8'))
+  } catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+}
+
+/** Gate messages: one per duplicate JSON group, one per oversized JSON file. */
+export function enforcementFailures(scan, { limitBytes = JSON_LIMIT_BYTES, allow = [] } = {}) {
+  const exempt = new Set(allow)
+  const failures = []
+  for (const group of duplicateGroups(scan.files)) {
+    const paths = group.paths.filter(path => !exempt.has(path))
+    if (paths.length < 2) continue
+    failures.push(`Duplicate JSON (${formatBytes(group.bytes)} x ${paths.length}): ${paths.join(', ')}`)
+  }
+  for (const file of oversizedJson(scan.files, limitBytes)) {
+    if (exempt.has(file.path)) continue
+    failures.push(`Oversized JSON (${formatBytes(file.bytes)} over ${formatBytes(limitBytes)}): ${file.path}`)
+  }
+  return failures
+}
+
+/** Read the flags this slice supports. */
 export function parseArgs(args) {
-  const options = { limitBytes: JSON_LIMIT_BYTES }
+  const options = { limitBytes: JSON_LIMIT_BYTES, enforce: false }
   for (let index = 0; index < args.length; index += 1) {
+    if (args[index] === '--enforce') { options.enforce = true; continue }
     if (args[index] !== '--limit') continue
     const value = Number(args[index + 1])
-    if (!Number.isFinite(value) || value < 0) throw new Error('Usage: check-evidence.mjs [--limit <bytes>]')
+    if (!Number.isFinite(value) || value < 0) throw new Error('Usage: check-evidence.mjs [--limit <bytes>] [--enforce]')
     options.limitBytes = value
     index += 1
   }
@@ -138,8 +168,18 @@ export function parseArgs(args) {
 function main(args) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
   const options = parseArgs(args)
-  console.log(report(scanEvidence(root), options.limitBytes))
-  // Report mode only: findings never fail the run until the enforce slice lands.
+  const scan = scanEvidence(root)
+  console.log(report(scan, options.limitBytes))
+  if (!options.enforce) return
+  const allow = loadAllowlist(root)
+  const failures = enforcementFailures(scan, { limitBytes: options.limitBytes, allow })
+  if (failures.length === 0) {
+    console.log(`Evidence gate passed (${scan.files.length} files, 0 duplicate JSON groups, 0 oversized JSON, ${allow.length} allowlisted)`)
+    return
+  }
+  console.error(`\nEvidence gate failed: ${failures.length} findings`)
+  for (const failure of failures) console.error(`  ${failure}`)
+  process.exitCode = 1
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

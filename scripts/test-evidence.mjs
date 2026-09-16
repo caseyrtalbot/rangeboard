@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { duplicateGroups, oversizedJson, report, scanEvidence, summarize } from './check-evidence.mjs'
+import { duplicateGroups, enforcementFailures, loadAllowlist, oversizedJson, parseArgs, report, scanEvidence, summarize } from './check-evidence.mjs'
 
 const EVIDENCE = 'docs/field-te/evidence'
 
@@ -71,4 +71,37 @@ test('summary accounts for every byte and splits unique from duplicate JSON', t 
   assert.equal(summary.gzJsonBytes, 2)
   assert.equal(summary.pngBytes, 9)
   assert.equal(oversizedJson(scan().files, 1).some(file => file.ext === '.json.gz'), false)
+})
+
+test('enforcement fails a duplicate group and an oversized file, and honours the allowlist', t => {
+  const { put, scan } = fixture(t)
+  put('run-a/summary.json', '{"a":1}')
+  put('run-b/summary.json', '{"a":1}')
+  put('run-a/big.json', 'x'.repeat(1025))
+  const failures = enforcementFailures(scan(), { limitBytes: 1024 })
+  assert.equal(failures.length, 2)
+  assert.match(failures[0], /^Duplicate JSON .*run-a\/summary\.json, .*run-b\/summary\.json$/)
+  assert.match(failures[1], /^Oversized JSON .*run-a\/big\.json$/)
+  const allowed = enforcementFailures(scan(), {
+    limitBytes: 1024,
+    allow: [`${EVIDENCE}/run-a/big.json`, `${EVIDENCE}/run-b/summary.json`],
+  })
+  assert.deepEqual(allowed, [])
+})
+
+test('a gzip sidecar over the limit never fails', t => {
+  const { put, scan } = fixture(t)
+  put('run-a/bundle.json.gz', 'x'.repeat(2048))
+  assert.deepEqual(enforcementFailures(scan(), { limitBytes: 1024 }), [])
+})
+
+test('parseArgs reads --enforce and defaults to report mode', () => {
+  assert.equal(parseArgs(['--enforce']).enforce, true)
+  assert.equal(parseArgs([]).enforce, false)
+  assert.equal(parseArgs(['--limit', '64', '--enforce']).limitBytes, 64)
+})
+
+test('a missing allowlist file means nothing is exempt', t => {
+  const { root } = fixture(t)
+  assert.deepEqual(loadAllowlist(root, 'scripts/evidence/absent.json'), [])
 })

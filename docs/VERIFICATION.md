@@ -23,13 +23,16 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run library:check` | Reject a stale generated library or prior file and run the data health check |
 | `npm run docs:check` | Lint Markdown, validate local links, placement and source review |
 | `npm run test:docs` | Exercise documentation maintenance failure paths |
+| `npm run evidence:report` | Measure `docs/field-te/evidence`: size by type, duplicate JSON groups, uncompressed JSON over 512 kB |
+| `npm run check:evidence` | Fail on a byte-identical JSON copy or an uncompressed JSON capture over 512 kB, except paths in `scripts/evidence/allowlist.json` |
+| `npm run test:evidence` | Test the evidence gate and the shared capture helper |
 | `npm run test:bundle` | Test bundle accounting and over-budget rejection |
 | `npm run check:bundle` | Check the current `dist/` entry and initial JavaScript + CSS gzip budgets |
 | `npm run test:e2e` | Run the Board shell Playwright spec against a dev server (`E2E_URL`, default port 5377) |
 | `npm run engine:build` | Build the headless engine bundle `dist-engine/engine.js` from `src/engine/index.ts` |
 | `npm run engine -- <scenario.json> --replicates N --seed S --out run.json [--overrides overrides.json]` | Run a fixed replicate count over worker threads, an override set applied from the manifest, and write a run record |
 | `npm run test:engine` | Check the runner record equals the in-process summary at one seed |
-| `npm run check` | Complete documentation, type, library, schema, engine, test, lint and build gate |
+| `npm run check` | Complete documentation, evidence, type, library, schema, engine, test, lint and build gate |
 
 Run the complete gate for source changes and after integrating lanes. `npm run check`
 does not run `check:bundle`; `test:bundle` tests the accounting script only. Run

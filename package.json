@@ -28,8 +28,9 @@
     "test:engine": "node --test scripts/test-engine-cli.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "evidence:report": "node scripts/check-evidence.mjs",
+    "check:evidence": "node scripts/check-evidence.mjs --enforce",
     "test:evidence": "node --test scripts/test-evidence.mjs scripts/test-evidence-capture.mjs",
-    "check": "npm run docs:check && npm run test:docs && npm run test:bundle && npm run test:engine && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
+    "check": "npm run docs:check && npm run check:evidence && npm run test:docs && npm run test:evidence && npm run test:bundle && npm run test:engine && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run build"
   },
   "dependencies": {
     "konva": "^10.3.1",
