@@ -83,9 +83,12 @@ Breaking one of these breaks the app.
   defaults where needed. Bump the version only for a breaking shape change, and only
   when the user asks. A save that cannot load is copied to
   `rangeboard.scenario.recovered.<ms>` before anything writes; the copy is read back and
-  checked. Read denial or a failed recovery pauses autosave so the only raw copy survives.
-  Read denial uses the save-status error; failed recovery queues an in-app Storage notice
-  explaining export, storage cleanup and reload. Runtime validation
+  checked. A later load of those same bytes reuses that key. Read denial or a failed
+  recovery pauses that lane so the only raw copy survives. The next edit retries the
+  copy and resumes the lane once the copy verifies. Read denial uses the save-status
+  error and does not replace another lane's error. Failed recovery queues an in-app
+  Storage notice explaining export and freeing storage.
+  Runtime validation
   (`src/io/runtimeValidation.ts`, `validateScenario.ts`) checks shapes, finite and ranged
   values, ids, references and engine representability before default filling. The shape
   check runs once, inside `fillScenario`; `parseScenarioData` and `parseAutosave` both
@@ -109,18 +112,20 @@ Breaking one of these breaks the app.
   is not a localStorage key: `RUNS_DB_NAME` (`rangeboard.runs.v1`) names the IndexedDB
   database `src/io/runStore.ts` owns, with a 64 MiB cap and oldest-first eviction. The removed T&E Ops workspace wrote
   `rangeboard.te.v1` and `rangeboard.te.recovered.*`; nothing reads or lists them now,
-  and no code deletes them. Two recovery namespaces exist: `SCENARIO_RECOVERY_PREFIX` and
-  `BASELINE_RECOVERY_PREFIX` (`rangeboard.baseline.recovered.`); `storageManagement.ts`
-  derives the live-key list and the namespace list from every export of `storageKeys.ts`
-  by the `_RECOVERY_PREFIX` name suffix. The scenario and baseline autosaves have their
-  own read and error paths; both run through the one lifecycle in `src/io/autosave.ts`,
-  and their adapters keep the keys, the records and the save status separate: a lane's
-  successful write clears only its own error, so another lane's failure stays visible
-  until that lane succeeds. The baseline adapter
+  and no code deletes them. Recovery namespaces are the `_RECOVERY_PREFIX` exports:
+  `SCENARIO_RECOVERY_PREFIX`, `BASELINE_RECOVERY_PREFIX`
+  (`rangeboard.baseline.recovered.`) and `OVERRIDES_RECOVERY_PREFIX`.
+  `storageManagement.ts` derives the live-key list and the namespace list from every
+  export of `storageKeys.ts` by that suffix. The scenario, baseline and overrides
+  autosaves have their own read and error paths; all run through the one lifecycle in
+  `src/io/autosave.ts`, and their adapters keep the keys, the records and the save
+  status separate: a lane's successful write clears only its own error, and a pause
+  fills an empty status without replacing another lane's error. The baseline adapter
   (`baselineAutosaveAdapter`, `src/io/persist.ts`) writes a `BaselineSave` (`schemaVersion`
   1, `baseline` or null; a cleared baseline is written as null, never removed, so a
   pending pin write cannot revive it). A baseline write that failed is retried on the
-  next autosave pass until it succeeds. `parseBaselineSave` validates before adoption: the
+  next autosave pass until it succeeds. A failed overrides write is retried on the next
+  Board change until it succeeds. `parseBaselineSave` validates before adoption: the
   scenario passes `parseScenarioData`, the `McSummary` passes `validateMcSummary`
   (`src/state/baseline.ts`), and `label`, `pinnedAt` and `scenarioHash` must be nonempty
   strings with an ISO time. JSON has no NaN, so a NaN statistic is saved as null and
@@ -545,7 +550,8 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                persistOverrides.ts (overridesAutosaveAdapter, restoreOverrides,
                startOverridesAutosave), runStore.ts (IndexedDB run history: saveRun,
                listRuns, getRun, deleteRun, clearRuns, RUN_STORE_CAP_BYTES) with
-               fakeIndexedDb.ts for tests, storageKeys.ts, recovery.ts
+               fakeIndexedDb.ts for tests, storageKeys.ts, recovery.ts (rescue copy,
+               lane block and resume once that copy verifies)
 src/main.tsx   restores the Board autosave (restoreAutosave reads and adopts it), starts
                the autosave subscription, then does the same for the overrides,
                exposes window.__store in dev

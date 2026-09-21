@@ -2,9 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX } from './storageKeys'
 import {
   allowAutosave,
+  assertAutosaveAllowed,
   dismissRecoveryNotice,
   getRecoveryNotices,
   notifyRecovery,
+  recoverUnreadableSave,
+  resumeAutosave,
   stashUnreadableSave,
   subscribeRecoveryNotices,
 } from './recovery'
@@ -15,6 +18,10 @@ function storage(initial: Record<string, string> = {}) {
   vi.stubGlobal('localStorage', {
     getItem: (key: string) => data.get(key) ?? null,
     setItem: (key: string, value: string) => void data.set(key, value),
+    key: (index: number) => [...data.keys()][index] ?? null,
+    get length() {
+      return data.size
+    },
   })
   return { data }
 }
@@ -46,6 +53,38 @@ describe('recovery durability', () => {
     expect(a).not.toBe(b)
     expect(data.get(a!)).toBe('first')
     expect(data.get(b!)).toBe('second')
+  })
+  it('reuses a rescue that already holds the same bytes', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(123)
+    const { data } = storage()
+    const first = stashUnreadableSave('same', SCENARIO_RECOVERY_PREFIX)
+    const second = stashUnreadableSave('same', SCENARIO_RECOVERY_PREFIX)
+    expect(second).toBe(first)
+    expect([...data.keys()]).toEqual([first])
+  })
+  it('resumes a blocked lane once the rescue copy verifies', () => {
+    let fail = true
+    const data = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => data.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        if (fail && key.startsWith(SCENARIO_RECOVERY_PREFIX))
+          throw new DOMException('full', 'QuotaExceededError')
+        data.set(key, value)
+      },
+      key: (index: number) => [...data.keys()][index] ?? null,
+      get length() {
+        return data.size
+      },
+    })
+    expect(recoverUnreadableSave('bad', SCENARIO_KEY, SCENARIO_RECOVERY_PREFIX)).toBeNull()
+    expect(() => assertAutosaveAllowed(SCENARIO_KEY)).toThrow(/preserve/)
+    fail = false
+    resumeAutosave(SCENARIO_KEY)
+    expect(() => assertAutosaveAllowed(SCENARIO_KEY)).not.toThrow()
+    expect([...data.values()]).toEqual(['bad'])
+    resumeAutosave(SCENARIO_KEY)
+    expect(data.size).toBe(1)
   })
   it('detects an interrupted or silently truncated recovery copy', () => {
     vi.stubGlobal('localStorage', {

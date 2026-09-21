@@ -10,6 +10,7 @@ import {
   blockAutosave,
   notifyRecovery,
   recoverUnreadableSave,
+  resumeAutosave,
 } from './recovery'
 
 /** Write delay after a store change. A hide or unload flush never waits for it. */
@@ -40,7 +41,10 @@ export interface AutosaveAdapter<R> {
   subscribe: (changed: (record: R) => void) => () => void
   /** Stamp a completed write in the owning store's time format. */
   reportSaved: () => void
-  /** Keep the previous stamp and show why autosave is paused. */
+  /**
+   * Keep the previous stamp and show why autosave is paused. The status string is
+   * shared: a pause fills it only while no lane has reported an error (`pauseStatus`).
+   */
   reportPaused: (message: string) => void
   /** Keep the previous stamp and render a failed write in the store's words. */
   reportWriteFailure: (error: unknown) => void
@@ -60,6 +64,14 @@ export interface Autosave<R> {
   flush: () => void
   /** Drop the pending record and release the subscription and the browser events. */
   stop: () => void
+}
+
+/**
+ * Shared status is one string. A pause fills an empty status and leaves another
+ * lane's error until that lane clears it.
+ */
+export function pauseStatus(current: string | null, message: string): string | null {
+  return current ?? message
 }
 
 /** Each call owns its own timer, pending record and restore latch. */
@@ -104,6 +116,8 @@ export function createAutosave<R>(adapter: AutosaveAdapter<R>): Autosave<R> {
     pending = null
     if (!record) return
     try {
+      // A failed rescue stays blocked until this copy verifies, then the edit writes.
+      resumeAutosave(adapter.key)
       assertAutosaveAllowed(adapter.key)
       localStorage.setItem(adapter.key, JSON.stringify(record))
       adapter.reportSaved()

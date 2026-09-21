@@ -1,14 +1,17 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Scenario } from '../model/types'
 import { emptyScenario } from '../model/seed'
+import { useOverrides } from '../state/overrides'
 import { useStore } from '../state/store'
 import type { BaselineSave } from './persist'
 import { baselineAutosaveAdapter, scenarioAutosaveAdapter } from './persist'
+import { overridesAutosaveAdapter } from './persistOverrides'
 import type { Autosave, AutosaveAdapter } from './autosave'
 import { createAutosave } from './autosave'
 import {
   BASELINE_RECOVERY_PREFIX,
   BOARD_BASELINE,
+  OVERRIDES_KEY,
   SCENARIO_KEY,
   SCENARIO_RECOVERY_PREFIX,
 } from './storageKeys'
@@ -143,6 +146,9 @@ afterEach(() => {
   getRecoveryNotices().forEach((notice) => dismissRecoveryNotice(notice.id))
   allowAutosave(SCENARIO_KEY)
   allowAutosave(BOARD_BASELINE)
+  allowAutosave(OVERRIDES_KEY)
+  overridesAutosaveAdapter.reportSaved()
+  useOverrides.setState({ overrides: [] })
   useStore.setState({ baseline: null, mc: IDLE_MC, save: { lastAutosaveAt: null, error: null } })
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -274,6 +280,55 @@ describe('autosave lifecycle', () => {
     expect(useStore.getState().save.error).toBeNull()
   })
 
+  it('a pause fills an empty status and leaves another lane error', () => {
+    const message = 'Autosave paused: browser storage could not be read.'
+    for (const adapter of [
+      scenarioAutosaveAdapter,
+      baselineAutosaveAdapter,
+      overridesAutosaveAdapter,
+    ]) {
+      useStore.getState().setSaveState(1234, 'Baseline not saved: quota')
+      adapter.reportPaused(message)
+      expect(useStore.getState().save).toEqual({
+        lastAutosaveAt: 1234,
+        error: 'Baseline not saved: quota',
+      })
+      useStore.getState().setSaveState(1234, null)
+      adapter.reportPaused(message)
+      expect(useStore.getState().save.error).toBe(message)
+    }
+  })
+
+  it('retries a failed overrides write on the next scenario edit', () => {
+    const saved = {
+      modelId: 'lib-giraffe1x',
+      field: 'detectRangeM',
+      value: 1,
+      reason: 'site survey',
+      date: '2026-09-10T00:00:00.000Z',
+    }
+    let failing = true
+    const { data } = storage(
+      { [OVERRIDES_KEY]: JSON.stringify({ overrides: [saved] }) },
+      (key) => failing && key === OVERRIDES_KEY,
+    )
+    const timers = browser()
+    const autosave = createAutosave(overridesAutosaveAdapter)
+    running.push(autosave)
+    autosave.restore()
+    autosave.observe()
+    useOverrides.getState().setOverride('lib-giraffe1x', 'detectRangeM', 2, 'retry me')
+    timers.runTimers()
+    expect(JSON.parse(data.get(OVERRIDES_KEY)!).overrides[0].value).toBe(1)
+    expect(timers.scheduled()).toBe(0)
+    expect(useStore.getState().save.error).toContain('Overrides not saved')
+    failing = false
+    useStore.getState().setScenarioName('nudge')
+    timers.runTimers()
+    expect(JSON.parse(data.get(OVERRIDES_KEY)!).overrides[0].value).toBe(2)
+    expect(useStore.getState().save.error).toBeNull()
+  })
+
   it('retries a failed baseline write on the next scenario edit, without a new pin', () => {
     let failing = true
     const { data } = storage(
@@ -318,6 +373,24 @@ describe('autosave read failures', () => {
       expect(getRecoveryNotices().at(-1)?.message).toContain('autosave is paused')
       expect(window.alert).not.toHaveBeenCalled()
     }
+  })
+
+  eachLane('resumes after a failed rescue and keeps the later edit', (lane) => {
+    let failing = true
+    const raw = lane.corrupt
+    const { data } = storage({ [lane.key]: raw }, (key) => failing && key.startsWith(lane.prefix))
+    const timers = browser()
+    started(lane)
+    lane.edit('held back')
+    timers.runTimers()
+    expect(data.get(lane.key)).toBe(raw)
+    failing = false
+    lane.edit('written after')
+    timers.runTimers()
+    expect(lane.written(data.get(lane.key)!)).toBe('written after')
+    const rescues = [...data.keys()].filter((key) => key.startsWith(lane.prefix))
+    expect(rescues).toHaveLength(1)
+    expect(data.get(rescues[0]!)).toBe(raw)
   })
 
   eachLane('suppresses later writes after a failed recovery', (lane) => {

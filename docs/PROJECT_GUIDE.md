@@ -202,8 +202,12 @@ when a view fails; it carries the scenario and the pinned baseline as two lanes.
    independently of MC and sensitivity. No trial is autosaved or archived in application
    storage.
 4. Runtime validation precedes default filling and adoption. Recovery preserves unreadable
-   saves and suppresses autosave when preservation fails. The pinned baseline has its own
-   key, parser, validation and recovery prefix beside the scenario autosave.
+   saves and pauses that lane when the copy cannot be verified. The next edit retries the
+   copy and resumes the lane once the copy verifies; a later load of the same bytes reuses
+   the rescue key. The pinned baseline and the library overrides each have their own key,
+   parser and recovery prefix beside the scenario autosave. A failed baseline or overrides
+   write is retried on the next Board change. A pause fills an empty save status and leaves
+   another lane's error in place.
 
 There is no backend, authentication or multi-user synchronization. Storage is per browser
 origin: another localhost port has another autosave. Export JSON before moving origins.

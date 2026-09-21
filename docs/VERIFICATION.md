@@ -190,7 +190,8 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 - Baseline checks are `state/baseline.test.ts` (`validateMcSummary` null to NaN, arrival
   stays null, `buildBaseline` labels, the store actions and the scenario/history
   isolation), the baseline lane of `io/autosave.test.ts` (save, restore, corrupt copy and
-  recovery beside the scenario and T&E lanes) and `io/storageManagement.test.ts` (the
+  recovery beside the scenario lane; a failed rescue resumes when the next edit can store
+  the copy), the overrides retry in that same file, and `io/storageManagement.test.ts` (the
   key and its recovery namespace in the storage readout).
 - R5 reuses the retained R4 fixed-ID numerical harness, preserved as
   [numerical-capture.ts.txt](field-te/evidence/r5-sampled-experience-2026-09-08/numerical-capture.ts.txt).

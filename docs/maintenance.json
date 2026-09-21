@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "29a8247ac371e802db6deacbbcc2012f59273c60684f30e3af17b93e5ebe4041",
+      "sha256": "20c2826ea23419cfe81f6fc3b38e2b1ab4a7d82154ab9a79121db52b3a72d0df",
       "reviewedAt": "2026-09-21",
-      "note": "Play now retains one ledger plus compact sampled observations and the estimate fields the board reads. The Play row links retainTrial.ts. Release still applies only to that page copy."
+      "note": "Recovery resumes a lane once its copy verifies and reuses that rescue on a later load. A failed baseline or overrides write retries on the next Board change, and a pause leaves another lane's error in place."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "acaa5d0dc2b1d32df4efa793c6b07e9bdbf5f4a073acc0198466786a226c2847",
+      "sha256": "2d43a2064c0703290b44e30a584878192b80571d8826d5a83abedec197d5a19f",
       "reviewedAt": "2026-09-21",
-      "note": "Page retention stores boundRetainedTrial: compact scans, the ellipse position block, and no fused tracks. releaseRetainedTrial empties only that page copy when New run or a scenario load drops it. The engine return stays complete."
+      "note": "A failed rescue stays blocked until a later edit stores the copy, and the same unreadable bytes reuse one rescue key. A pause fills an empty status and leaves another lane's error. A failed overrides write retries on the next Board change."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "891ab04ad17ed7fbeedd4e13a9e49559e2d6974817d7d31f4918d806ff132db6",
+      "sha256": "2c4e1b44089403552034e2a0abd17cbe6939d8f7202c54666010d1430bb6a15a",
       "reviewedAt": "2026-09-21",
-      "note": "Updated the estimate-path pin sentence to the authorized 2026-09-21 means: layered kills 1.115, JIATF leakers 0.895, JIATF kills 0.105. Truth-path files still move only with a hand-derived replacement."
+      "note": "Autosave tests now cover a failed rescue that resumes on the next edit, and an overrides write that retries after a Board change. The baseline lane sits beside the scenario lane."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "09a400518b1a020f46043d41e92e5a5b414023e67a6c34671de35d45a3b8e839",
+      "sha256": "e9d08ff0d4b9cd9a8ec27abd13afd86bf55332f0077bbf4033907694df75a783",
       "reviewedAt": "2026-09-21",
-      "note": "Tasking is row E. The trial-retention commit carries this handoff. releaseRetainedTrial empties only the bound page copy. npm run check passed: 201 files, 2122 tests. Plan.md stays frozen."
+      "note": "Tasking is row F. The autosave commit carries this handoff. npm run check passed: 201 files, 2129 tests. check:bundle passed. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

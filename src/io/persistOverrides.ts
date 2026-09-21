@@ -2,7 +2,7 @@ import type { Override, OverrideSet } from '../model/libraryField'
 import { useOverrides } from '../state/overrides'
 import { useStore } from '../state/store'
 import type { AutosaveAdapter } from './autosave'
-import { createAutosave } from './autosave'
+import { createAutosave, pauseStatus } from './autosave'
 import { invalid, objectAt } from './runtimeValidation'
 import { OVERRIDES_KEY, OVERRIDES_RECOVERY_PREFIX } from './storageKeys'
 
@@ -37,6 +37,9 @@ export function parseOverrideSet(raw: string): OverrideSet {
 
 const OVERRIDES_ERROR = 'Overrides not saved'
 
+/** A failed write is retried on the next Board change until storage accepts it. */
+let overridesWriteFailed = false
+
 /**
  * The overrides half of the autosave lifecycle in `io/autosave.ts`. It shares the
  * Board save status and clears only its own error.
@@ -48,26 +51,41 @@ export const overridesAutosaveAdapter: AutosaveAdapter<OverrideSet> = {
   parse: parseOverrideSet,
   adopt: (saved) => useOverrides.getState().restoreOverrides(saved),
   deferred: true,
-  subscribe: (changed) =>
-    useOverrides.subscribe((state, prev) => {
+  subscribe: (changed) => {
+    const onOverrides = useOverrides.subscribe((state, prev) => {
       if (state.overrides === prev.overrides) return
       changed({ overrides: state.overrides })
-    }),
+    })
+    const onBoard = useStore.subscribe((state, prev) => {
+      // Save-status updates are excluded: reporting the failure would otherwise
+      // schedule the retry that reports it again.
+      if (!overridesWriteFailed || state.save !== prev.save) return
+      changed({ overrides: useOverrides.getState().overrides })
+    })
+    return () => {
+      onOverrides()
+      onBoard()
+    }
+  },
   reportSaved: () => {
+    overridesWriteFailed = false
     const store = useStore.getState()
     if (store.save.error?.startsWith(OVERRIDES_ERROR))
       store.setSaveState(store.save.lastAutosaveAt, null)
   },
   reportPaused: (message) => {
     const store = useStore.getState()
-    store.setSaveState(store.save.lastAutosaveAt, message)
+    const next = pauseStatus(store.save.error, message)
+    if (next === store.save.error) return
+    store.setSaveState(store.save.lastAutosaveAt, next)
   },
   reportWriteFailure: (error) => {
+    overridesWriteFailed = true
     const store = useStore.getState()
     const reason = error instanceof Error ? error.message || error.name : 'storage error'
     store.setSaveState(
       store.save.lastAutosaveAt,
-      `${OVERRIDES_ERROR}: ${reason}. Record them again when storage is available.`,
+      `${OVERRIDES_ERROR}: ${reason}. The overrides retry on the next save.`,
     )
   },
 }

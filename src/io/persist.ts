@@ -22,7 +22,7 @@ import { runResultGroups } from './runResultGroups'
 import type { RunResultGroups } from './runResultGroups'
 import type { TrialResultView } from '../analysis/trialResult'
 import type { AutosaveAdapter } from './autosave'
-import { createAutosave } from './autosave'
+import { createAutosave, pauseStatus } from './autosave'
 import { SCENARIO_LEGACY_FIELDS, fillContainers } from './compat'
 import {
   parseLibraryData,
@@ -168,7 +168,9 @@ export const scenarioAutosaveAdapter: AutosaveAdapter<Scenario> = {
   },
   reportPaused: (message) => {
     const store = useStore.getState()
-    store.setSaveState(store.save.lastAutosaveAt, message)
+    const next = pauseStatus(store.save.error, message)
+    if (next === store.save.error) return
+    store.setSaveState(store.save.lastAutosaveAt, next)
   },
   reportWriteFailure: (error) => {
     const store = useStore.getState()
@@ -272,7 +274,9 @@ export const baselineAutosaveAdapter: AutosaveAdapter<BaselineSave> = {
   },
   reportPaused: (message) => {
     const store = useStore.getState()
-    store.setSaveState(store.save.lastAutosaveAt, message)
+    const next = pauseStatus(store.save.error, message)
+    if (next === store.save.error) return
+    store.setSaveState(store.save.lastAutosaveAt, next)
   },
   reportWriteFailure: (error) => {
     baselineWriteFailed = true

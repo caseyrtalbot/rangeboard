@@ -703,6 +703,10 @@ function stubStorage(raw: string | null): Map<string, string> {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, v),
     removeItem: (k: string) => void store.delete(k),
+    key: (index: number) => [...store.keys()][index] ?? null,
+    get length() {
+      return store.size
+    },
   })
   return store
 }
@@ -734,6 +738,14 @@ describe('autosave recovery', () => {
     expect(store.get(SCENARIO_KEY)).toBe('{not json')
     expect(alert).not.toHaveBeenCalled()
     expect(getRecoveryNotices().at(-1)?.message).toContain(keys[0])
+  })
+
+  it('keeps one rescue when the same unreadable save is read again', () => {
+    const store = stubStorage('{not json')
+    expect(readSave()).toBeNull()
+    expect(readSave()).toBeNull()
+    expect(recoveryKeys(store)).toHaveLength(1)
+    expect(store.get(SCENARIO_KEY)).toBe('{not json')
   })
 
   it('copies a save with another schema version to a recovery key', () => {
