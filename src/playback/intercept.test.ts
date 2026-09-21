@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import layeredFixture from './__fixtures__/layered-acoustic-merops.json'
+import { parseAutosave } from '../io/persist'
 import type { EffectorSpec, Entity, FlightPath } from '../model/types'
 import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import type { EffectorState, ThreatState } from './sweepState'
@@ -14,6 +16,8 @@ import {
   predictedStateAt,
   predictionSigmaAtS,
 } from './intercept'
+import { kineticPk } from './pk'
+import { kineticEffectProbability } from './pk/kinetic'
 
 const INTERCEPTOR = {
   effectorType: 'interceptor',
@@ -307,6 +311,55 @@ describe('Phase 3 kinetic flight', () => {
     // CWNA position variance after 3 s: 100 + q * dt^3 / 3, q = 1.
     expect(predictionSigmaAtS(e, 3)).toBeCloseTo(Math.sqrt(109), 12)
     expect(predictionSigmaAtS({ ...e, source: 'truth' }, 3)).toBeNull()
+  })
+
+  it('is not both on the physical miss model and at zero flight time', () => {
+    const spec = {
+      effectorType: 'interceptor',
+      minRangeM: 0,
+      maxRangeM: 10000,
+      engageTimeS: 0,
+      lethalRadiusM: 10,
+      guidanceNoiseM: 2,
+    } as EffectorSpec
+    const context = {
+      basePk: 0.85,
+      uas: undefined,
+      slantM: 1000,
+      predictionSigmaM: 8,
+      fallback: false,
+    }
+    const legacy = kineticPk(context.basePk, spec.maxRangeM, undefined, context.slantM)
+    // No cruise speed: the profile does not fly, and Pk stays on the legacy curve.
+    expect(interceptorFlightTimeS(spec, 1000)).toBeNull()
+    expect(kineticEffectProbability(spec, context)).toBe(legacy)
+    expect(kineticEffectProbability({ ...spec, flyoutSpeedMps: null }, context)).toBe(legacy)
+
+    const flying = { ...spec, flyoutSpeedMps: 154 }
+    expect(interceptorFlightTimeS(flying, 1000)).toBeGreaterThan(0)
+    expect(kineticEffectProbability(flying, context)).not.toBe(legacy)
+  })
+
+  it('loads the layered fixture as a real flight or an explicit legacy Pk', () => {
+    const scenario = parseAutosave(JSON.stringify(layeredFixture))
+    delete scenario.physics
+    expect(scenario.library.find((m) => m.id === 'lib-coyote')?.effector?.flyoutSpeedMps).toBe(154)
+    expect(scenario.library.find((m) => m.id === 'lib-merops')?.effector?.flyoutSpeedMps).toBe(78)
+    for (const model of scenario.library) {
+      const spec = model.effector
+      if (spec?.effectorType !== 'interceptor') continue
+      const context = {
+        basePk: spec.pk ?? 0.8,
+        uas: undefined,
+        slantM: 1000,
+        predictionSigmaM: 8,
+        fallback: false,
+      }
+      const legacy = kineticPk(context.basePk, spec.maxRangeM, undefined, context.slantM)
+      const physical = kineticEffectProbability(spec, context) !== legacy
+      const zeroFlight = interceptorFlightTimeS(spec, 1000) == null
+      expect(physical && zeroFlight).toBe(false)
+    }
   })
 
   it('uses flyoutSpeedMps directly when either profile field is null', () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Provenance, SpecModel } from './types'
+import { SEED_LIBRARY } from './seedLibrary'
 import {
   adoptSeedFields,
   adoptSeedProvenance,
@@ -120,6 +121,21 @@ describe('adoptSeedFields', () => {
     expect(adoptSeedFields(same, seedModel())).toBe(same)
     const custom: SpecModel = { ...seedModel(), builtin: false }
     expect(adoptSeedFields(custom, seed)).toBe(custom)
+  })
+
+  it('adopts a seed cruise speed a saved builtin omits and keeps an explicit null', () => {
+    const seed = SEED_LIBRARY.find((m) => m.id === 'lib-coyote')!
+    const effector = { ...seed.effector! }
+    delete effector.flyoutSpeedMps
+    const saved: SpecModel = { ...seed, effector }
+    expect(adoptSeedFields(saved, seed).effector?.flyoutSpeedMps).toBe(
+      seed.effector?.flyoutSpeedMps,
+    )
+    const held: SpecModel = {
+      ...seed,
+      effector: { ...seed.effector!, flyoutSpeedMps: null },
+    }
+    expect(adoptSeedFields(held, seed).effector?.flyoutSpeedMps).toBeNull()
   })
 
   it('reaches the save through reconcileLibrary', () => {

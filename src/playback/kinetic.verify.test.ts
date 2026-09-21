@@ -27,6 +27,8 @@ const APKWS = {
   minRangeM: 0,
   maxRangeM: 10000,
   engageTimeS: 0,
+  // The physical miss model requires a cruise speed; the table itself is the Rayleigh CDF.
+  flyoutSpeedMps: 739,
   lethalRadiusM: 10,
   guidanceNoiseM: 1,
 } as EffectorSpec

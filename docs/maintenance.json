@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "da8113696c9e97e531b367d75792ad6554bd520de466046126f8a75be74fc218",
-      "reviewedAt": "2026-09-16",
-      "note": "Restored HANDOFF.md as a current reference after rewriting it as the living session document."
+      "sha256": "01e12aecf830bbf0c8f975b19034844c4c63fabcee1d54efea9e6c8dbe5b7cb3",
+      "reviewedAt": "2026-09-21",
+      "note": "Indexed Plan.md as the frozen queue and described the handoff as the current-row selector."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "67763a98c06e2689c528500608f922b7684409f7b5ea55912125effe486d011e",
+      "sha256": "7642358d0f5e741965aa767eef0f435869baf3f32fc4ccf6430e5503854457e0",
       "reviewedAt": "2026-09-21",
-      "note": "Reviewed against the run-crash fixes: board boundary Try again and the canvas notice with Retry; comment sweep across src."
+      "note": "Reviewed the physics-switch and playback sentences against the flyout change. Cleared switches still select physical kinetic effects when the fields are present; the cruise-speed rule is in the engineering reference."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "01d4bce56435890be987a6120a9d9e59948fba7bce661d7d9ddb472f3b794967",
+      "sha256": "e52746abc55fb1d319d7e4a868ce990000cae95994c3c5e6ad66a01d7fae9514",
       "reviewedAt": "2026-09-21",
-      "note": "Reviewed against the run-crash fixes: pool budget and cancel prefix, sweep in-cell cancel, Sobol null result on cancel, per-adapter save errors and baseline retry, scene boundary; comment sweep across src."
+      "note": "Reviewed flyout adoption and the missing-cruise kinetic fallback against libraryLifecycle.ts and pk/kinetic.ts. The fire-doctrine and seed-lifecycle sentences now state both rules."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -88,16 +88,23 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "f564befe12da71e973d016c4d556aa01cdd8d01cba8460bc62f6dca219b18f91",
-      "reviewedAt": "2026-09-16",
-      "note": "Session state and handoff protocol again name docs/HANDOFF.md as the rewritten-in-place position, tasking and landmines file."
+      "sha256": "9faa699751057efa0edf190e0274028d829af74b85dadba2abc380482d44c481",
+      "reviewedAt": "2026-09-21",
+      "note": "Handoff protocol now keeps Plan.md frozen and advances one row at a time through HANDOFF.md."
+    },
+    {
+      "document": "docs/Plan.md",
+      "inputs": [],
+      "sha256": "78939889383acd20eeecabccdcb230c396e825030412fa33b7da171685d16c8d",
+      "reviewedAt": "2026-09-21",
+      "note": "Registered the frozen debug and cleanup queue. Sessions advance only by rewriting HANDOFF.md."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "54ac201b38ce8c47b963bf609d48e6180971c088245fba0c8dbd6e68509b478d",
+      "sha256": "e6fbfe7b551bf861c73a7549887d99419b62f77735e38adbfd9662f27eddc951",
       "reviewedAt": "2026-09-21",
-      "note": "Rewrote the position for the 2026-09-21 run-crash fixes and comment sweep, added Task 4 follow-ups and four landmines."
+      "note": "Handoff now selects row K from the flyout-semantics commit. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

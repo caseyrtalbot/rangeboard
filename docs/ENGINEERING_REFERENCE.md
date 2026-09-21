@@ -732,9 +732,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   truth path) and `interceptSource`; `missDistanceSigmaM` (`pk.ts`) roots it with the
   interceptor's guidance error for the physical probability of effect.
   Kinetic shots use `kineticEffectProbability`: interceptors combine predicted track error
-  with guidance error and integrate the Rayleigh miss distribution inside effective radius;
-  guns compound independent projectile hits from pointing error, dispersion, rate and burst
-  size. `legacyKineticPk` restores `kineticPk(basePk, maxRangeM, uas, slantM)`, which
+  with guidance error and integrate the Rayleigh miss distribution inside effective radius.
+  An interceptor with no positive `flyoutSpeedMps` returns `kineticPk`, the same missing
+  cruise speed that leaves the flight profile at zero time of flight. Guns compound
+  independent projectile hits from pointing error, dispersion, rate and burst size.
+  `legacyKineticPk` restores `kineticPk(basePk, maxRangeM, uas, slantM)`, which
   `footprintStyle.ts` also imports to invert the commit ring. Optical shots compute diffraction,
   jitter, atmospheric transmission and a sampled fluence threshold; their effect time includes
   settle and dwell. `solveBeamTiming` (`shot.ts`) iterates the effect delay to a fixed point,
@@ -1059,7 +1061,9 @@ Each fact below has exactly one definition. Read it there; never add a second co
   not hold (`'*'` adopts a whole block the save lacks), so a key the save holds, null
   included, stays the user's. Phase 2 lists the four sensor accuracy fields and the whole
   `c2` block; Phase 3 adds its sensor, uas and effector keys (the lists in
-  `libraryLifecycle.ts`). `reconcileLibraryReport` returns the adopted (model, block, keys) list;
+  `libraryLifecycle.ts`). `flyoutSpeedMps` is on the effector list: a saved builtin that
+  omits it takes the seed cruise speed, and a saved null stays unknown.
+  `reconcileLibraryReport` returns the adopted (model, block, keys) list;
   `fillScenario` keeps it in a WeakMap by model object (`seedAdoptionOf`, never persisted),
   so the stamp follows the installed library and a baseline parse, a rejected import or
   New leaves no stale stamp; the Systems tab reads `loadNoticeFor(scenario.library)` and

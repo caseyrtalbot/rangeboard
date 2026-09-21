@@ -15,7 +15,11 @@ import { createTrialManifest } from './trialTypes'
  * estimate, fusion, false tracks and the operator queue on. The before/after capture and
  * the model-specific reasons for every moved value are in
  * docs/field-te/evidence/p3-gate-2026-09-10/comparison.md. A later physics change moves
- * one of them only with a replacement named in its slice brief.
+ * one of them only with a replacement named in its slice brief. The layered event
+ * count, kill mass and kills mean below are the post-flyout measurement: saved
+ * builtins adopt a seed cruise speed, and an interceptor with no cruise speed
+ * uses the legacy curve. The shot horizon is unchanged. The 4.68 figure is not
+ * this pin.
  */
 
 const SEED = 4821
@@ -81,8 +85,8 @@ describe('estimate-path parity: the trial at seed 4821, replicate of the gate ru
       ['ent-mt5bqnfg-35', 'engageable', 0.5, 0.5, 1.5, 6.5, 6.5],
       ['ent-mt5bqnfg-37', 'engageable', 0.5, 0.5, 1.5, 6.5, 6.5],
     ])
-    expect(r.report.events).toHaveLength(16)
-    expect(killMass(r)).toBe(0)
+    expect(r.report.events).toHaveLength(11)
+    expect(killMass(r)).toBe(1)
     expect(r.tracks).toHaveLength(14192)
   })
 })
@@ -100,7 +104,7 @@ describe('estimate-path parity: 200 aleatory replicates at seed 4821', () => {
     const m = monteCarlo(layeredFixture)
     expect(m.replicates).toBe(REPLICATES)
     expect(last(m.leakers.mean)).toBeCloseTo(0, 9)
-    expect(last(m.kills.mean)).toBeCloseTo(0.005, 9)
+    expect(last(m.kills.mean)).toBeCloseTo(1.1, 9)
     expect(last(m.firmTrackS.mean)).toBeCloseTo(1.5, 9)
   }, 120_000)
 })

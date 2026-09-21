@@ -17,7 +17,8 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [VERIFICATION.md](VERIFICATION.md) | Commands, tests, parity and browser procedures |
 | [WORKFLOW.md](WORKFLOW.md) | Bounded work, documentation maintenance, handoffs and orchestration |
 | [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Implemented visual rules, tokens and shared components |
-| [HANDOFF.md](HANDOFF.md) | Position, tasking ahead and landmines; rewritten in place, never a journal |
+| [Plan.md](Plan.md) | Frozen debug and cleanup queue; sessions advance only in the handoff |
+| [HANDOFF.md](HANDOFF.md) | Position, the current plan row and landmines; rewritten in place, never a journal |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
 Run `npm run docs:check`; follow the [workflow](WORKFLOW.md#documentation-maintenance) when

@@ -229,6 +229,33 @@ the fix's horizon is zero, so the miss sigma collapses to the track's own 7.0 to
 Pk rises to 0.41 to 0.49 per shot, and the fixture's Monte Carlo kills mean goes from
 0.005 to 4.68. That number would pin an interceptor that teleports.
 
+## Flyout semantics, landed
+
+Two rules, so a round is never both on the physical miss model and at zero flight time.
+
+- A saved builtin that omits `flyoutSpeedMps` adopts the seed cruise speed.
+  `lib-coyote` is 154 m/s and `lib-merops` is 78 m/s, so those flights are real.
+  A saved null stays the user's unknown.
+- `kineticEffectProbability` returns `kineticPk` when cruise speed is missing, the
+  same condition `flyoutProfile` already uses. `lib-roadrunner` and `lib-anvil` have
+  no seed cruise speed. Inventing one would be a false flight, so they stay at zero
+  flight time on the legacy curve.
+
+`src/playback/shot.ts` is unchanged. The assignment-to-release horizon is still the
+open defect. The 4.68 kills mean above is the zero-flight horizon candidate and is
+not a pin.
+
+Measured on the estimate path after this change, physics stripped, seed 4821, with
+the horizon still in place. Coyote's per-shot physical Pk stays about 0.00046. The
+kill increase is the no-speed interceptors moving onto the legacy curve. JIATF pins
+did not move. Leakers mean stayed 0 and firm-track mean stayed 1.5 s.
+
+| Pin | Before | After flyout semantics |
+| --- | ---: | ---: |
+| Layered trial `report.events` length | 16 | 11 |
+| Layered trial kill mass | 0 | 1 |
+| Layered 200-replicate kills mean | 0.005 | 1.1 |
+
 ## Why the fix is not landed
 
 The candidate change is one site, `src/playback/shot.ts:319`:
@@ -330,10 +357,6 @@ Only a terminal-guidance term would.
 
 ## Follow-ups, not selected
 
-- `flyoutSpeedMps` is missing from `ADOPTED_SEED_KEYS.effector`, so every saved board
-  older than that field runs its interceptors at zero flight time while the physical Pk
-  model still applies. `phase3FlyoutProfile` and `kineticEffectProbability` should agree
-  on the fallback condition.
 - `uncertainty-crosswalk.md` describes `effector.engageTimeS` as "release-to-effect time
   for every channel". For a kinetic effector it is assignment-to-release, and the flyout
   follows it.

@@ -367,5 +367,11 @@ describe('modelsUsed, Phase 3 kinetic tags', () => {
     coyote.effector = { ...coyote.effector!, lethalRadiusM: null }
     s.entities.push(entity('e1', 'effector', coyote.id))
     expect(modelsUsed(s).map((t) => t.id)).not.toContain('interceptor-miss')
+
+    const noCruise = radarLaydown()
+    const cruising = noCruise.library.find((m) => m.id === 'lib-coyote')!
+    cruising.effector = { ...cruising.effector!, flyoutSpeedMps: null }
+    noCruise.entities.push(entity('e1', 'effector', cruising.id))
+    expect(modelsUsed(noCruise).map((t) => t.id)).not.toContain('interceptor-miss')
   })
 })

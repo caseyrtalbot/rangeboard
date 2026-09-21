@@ -208,7 +208,8 @@ export const MODEL_TAGS: Record<ModelId, ModelTag> = {
     validation: 'datasheet',
     note:
       'Rayleigh miss probability from track prediction and guidance error at the published ' +
-      'effective radius; the APKWS 10 m radius table is pinned in kinetic.verify.test.ts.',
+      'effective radius, for an interceptor with a positive cruise speed; the APKWS 10 m ' +
+      'radius table is pinned in kinetic.verify.test.ts.',
   },
   'gun-burst': {
     id: 'gun-burst',
@@ -492,7 +493,12 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   add(
     'interceptor-miss',
     !legacyKinetic &&
-      effectors.some((e) => e.effectorType === 'interceptor' && e.lethalRadiusM != null),
+      effectors.some(
+        (e) =>
+          e.effectorType === 'interceptor' &&
+          e.lethalRadiusM != null &&
+          (e.flyoutSpeedMps ?? 0) > 0,
+      ),
   )
   add(
     'gun-burst',

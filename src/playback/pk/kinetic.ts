@@ -141,6 +141,8 @@ function validNonNegative(value: number | null | undefined): value is number {
  * The old size factor and distance falloff are omitted because lethal radius
  * and the combined miss sigma now carry geometry and range. The evasion term
  * remains because this miss model has no maneuver-error term of its own.
+ * No positive `flyoutSpeedMps` returns `kineticPk`: the flight profile has
+ * no cruise then, and this miss model does not score a zero-flight round.
  *
  * Gun: each projectile uses a Rayleigh CDF at half `spanMFor(uas)`, and n
  * independent projectiles combine as 1 - (1 - P(intercept))^n. The burst
@@ -158,7 +160,12 @@ export function kineticEffectProbability(
   if (context.fallback) return legacy
 
   if (spec.effectorType === 'interceptor') {
-    if (!validPositive(spec.lethalRadiusM) || !validNonNegative(spec.guidanceNoiseM)) return legacy
+    if (
+      !validPositive(spec.lethalRadiusM) ||
+      !validNonNegative(spec.guidanceNoiseM) ||
+      !validPositive(spec.flyoutSpeedMps)
+    )
+      return legacy
     const sigmaM = missDistanceSigmaM(context.predictionSigmaM, spec.guidanceNoiseM)
     const intercept = rayleighProbabilityWithin(spec.lethalRadiusM, sigmaM)
     const effectGivenIntercept = Math.min(1, Math.max(0, context.basePk))

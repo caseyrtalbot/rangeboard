@@ -124,6 +124,9 @@ export const ADOPTED_SEED_KEYS: Partial<Record<SeedBlock, readonly string[] | '*
   uas: ['maxTurnRateDegS', 'climbRateMps', 'maxAccelMps2', 'radiatedPowerW', 'linkProtocol'],
   // Interceptor, gun, directed-energy and HPM physics fields.
   effector: [
+    // A saved builtin that omits the seed cruise speed takes it, so the
+    // physical flight is real. A held null stays the user's unknown.
+    'flyoutSpeedMps',
     'seekerAcquisitionRangeM',
     'lethalRadiusM',
     'guidanceNoiseM',
