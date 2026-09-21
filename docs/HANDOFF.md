@@ -18,71 +18,56 @@ Do not start the following row in the same session.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  The flight horizon is committed. `src/playback/shot.ts` calls
-  `predictionSigmaAtS(est, est.state.tS + flightS)` with
-  `flightS = max(0, intercept.tEffectS - (t + es.engageTimeS))` when an estimate exists.
-  An untracked `.cursor/` directory, if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row C. The next rewrite
-  selects row L.
-- The five estimate-path pins are still the pre-horizon expects. Two trial pins still
-  pass. Three means moved and are written in
-  [the flight-horizon note](field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md).
-  No expected value has been replaced.
+  The flight horizon is `7fdcb1e`. The authorized estimate-path recapture is the
+  commit that carries this handoff, four commits ahead of `origin/main`. An
+  untracked `.cursor/` directory, if present, is not part of the queue.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row L. The next rewrite
+  selects row D.
+- The estimate-path expects are the authorized 2026-09-21 recapture. Layered events
+  stay 11, layered kill mass stays 1, layered kills mean is 1.115, JIATF leakers mean
+  is 0.895, and JIATF kills mean is 0.105. `4.68` is not a pin.
 
 ## Tasking
 
-### Row C: Recapture
+### Row L: Current docs
 
-- Repository `~/Projects/rangeboard`. Base is the flight-horizon commit on `main`.
-  Leave `docs/Plan.md` unmodified. Do not start row L.
-- Outcome: replace only the estimate-path expects that this horizon moved, and only
-  after the user authorizes each number. Update the kinetic record so it no longer
-  describes the assignment-to-release coast as the code. Leave `truthTracks`, the
-  golden fixture files, and the Coyote datasheet fields unchanged.
-- Owned files: `src/playback/estimate.parity.test.ts` and
-  [the kinetic record](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md).
-  The measured before/after is
-  [the flight-horizon note](field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md).
-- Measured at seed 4821, physics stripped, 200 aleatory replicates. Before is the
-  expect still in the test. After is the flight horizon.
-
-  | Pin | Before | After | Expect |
-  | --- | ---: | ---: | --- |
-  | Layered `report.events` length | 11 | 11 | still passes |
-  | Layered kill mass | 1 | 1 | still passes |
-  | Layered kills mean | 1.1 | 1.115 | fails |
-  | JIATF leakers mean | 1 | 0.895 | fails |
-  | JIATF kills mean | 0 | 0.105 | fails; the leakers expect stops the test first |
-
-- Exclusions: do not replace an expect before that number is authorized. Do not pin
-  4.68. Do not restore 16 events, kill mass 0, or kills mean 0.005. Do not change
-  Coyote `lethalRadiusM`, `guidanceNoiseM`, or `engageTimeS`. Do not add a
-  terminal-homing term. Do not restore `src/analysis/series.ts`. Do not enable
-  TypeScript flags or split store, Inspector, or integration data.
-- Verified on this tree before row C: `kinetic.horizon.test.ts`,
-  `kinetic.verify.test.ts`, `shot.test.ts`, and `intercept.test.ts` passed.
+- Repository `~/Projects/rangeboard`. Base is local `main` with the authorized
+  recapture committed. Leave `docs/Plan.md` unmodified. Do not start row D.
+- Outcome: current docs name live modules only. `docs/ENGINEERING_REFERENCE.md` no
+  longer contains `withBands`, `TRACK_LADDER_STYLE`, or `series.ts`; confirm that and
+  do not restore them. `docs/field-te/model-evidence/uncertainty-crosswalk.md` still
+  cites `KpiTilesWidget`, `OutcomeSummary`, and `withBands` (`series.ts`) in the
+  analysis-panel sentence. Rewrite that sentence to `trialSeries` and `mc.ts`. Leave
+  dated evidence manifests alone. The doctrine link to the pre-deletion
+  `OutcomeSummary` blob in `docs/field-te/model-evidence/track-c2-doctrine.md` can
+  stay as history. This handoff has no bullet that treats run-store NaN as an open
+  export failure; `docs/Plan.md` already records that closure. Do not add one back.
+- Owned files: `docs/field-te/model-evidence/uncertainty-crosswalk.md`, and
+  `docs/ENGINEERING_REFERENCE.md` only if a live-module sentence is still wrong.
+- Exclusions: do not edit `docs/Plan.md`. Do not restore `src/analysis/series.ts`.
+  Do not change the estimate-path expects. Do not pin 4.68. Do not restore 16 events,
+  kill mass 0, or kills mean 0.005. Do not change Coyote `lethalRadiusM`,
+  `guidanceNoiseM`, or `engageTimeS`. Do not add a terminal-homing term.
+- Verified on this tree before row L: `estimate.parity.test.ts`,
   `sensitivity.parity.test.ts`, `accuracy.verify.test.ts`, and
-  `convergence.verify.test.ts` passed (28 tests). The attrition flyout describe
-  passed (3 tests). `estimate.parity.test.ts` is 2 failed and 2 passed. Layered
-  leakers mean stayed 0, layered firm-track mean stayed 1.5 s, and JIATF firm-track
-  mean stayed 505.0625 s. `npm run check` was not run: the parity expects are still
-  the pre-horizon pins on purpose.
-- Next action: ask for authorization of 1.115, 0.895, and 0.105. Leave the two
-  passing trial expects as they are. Then update the kinetic record and run
-  `estimate.parity.test.ts`.
-- Completion: each replaced expect was authorized, the kinetic record matches the
-  landed horizon, and the protected truth-path suites still pass.
-- Stop when the authorized expects are in the test and the kinetic record is
-  updated. Do not edit `docs/Plan.md`.
+  `convergence.verify.test.ts` passed (4 files, 32 tests). `npm run check` was not
+  run.
+- Next action: rewrite the stale analysis-panel sentence in the uncertainty
+  crosswalk, then confirm the engineering reference names only live modules.
+- Completion: the crosswalk cites `trialSeries` and `mc.ts`, and no current guide
+  names `withBands`, `TRACK_LADDER_STYLE`, or `series.ts` as live.
+- Stop when those sentences match the live modules. Do not edit `docs/Plan.md`.
 
 ## Landmines
 
-- The assignment-to-release coast is no longer the code. `kinetic.verify.test.ts`
-  still feeds hand-supplied miss sigmas. `kinetic.horizon.test.ts` is the regression
-  that uses `predictionSigmaAtS`. Do not put `engageTimeS` back into that call.
-- The parity expects are still the pre-horizon pins. Layered events 11 and kill
-  mass 1 still pass. The means that fail are layered kills 1.1 against 1.115,
-  JIATF leakers 1 against 0.895, and JIATF kills 0 against 0.105. Do not pin the
+- The assignment-to-release coast is no longer the code. `shot.ts` calls
+  `predictionSigmaAtS(est, est.state.tS + flightS)` with
+  `flightS = max(0, intercept.tEffectS - (t + es.engageTimeS))`.
+  `kinetic.verify.test.ts` still feeds hand-supplied miss sigmas.
+  `kinetic.horizon.test.ts` is the regression that uses `predictionSigmaAtS`. Do not
+  put `engageTimeS` back into that call.
+- The estimate-path expects are the authorized recapture: layered events 11, kill
+  mass 1, layered kills 1.115, JIATF leakers 0.895, JIATF kills 0.105. Do not pin the
   record's 4.68 kills mean. Do not restore 16, 0, and 0.005.
 - Flyout semantics are landed. A saved builtin that omits `flyoutSpeedMps` adopts the
   seed cruise speed. An interceptor with no positive cruise speed uses `kineticPk`,
@@ -93,9 +78,9 @@ Do not start the following row in the same session.
 - Physics tab: a checked box selects the prior planning fallback; a cleared box selects
   the physical model when its required fields are present.
 - Row L's frozen plan text still names `withBands`, `TRACK_LADDER_STYLE`, and
-  `series.ts`. Those sentences were removed from `docs/ENGINEERING_REFERENCE.md` with
-  the adapter. `docs/field-te/model-evidence/uncertainty-crosswalk.md` still cites the
-  old panel names. Dated evidence stays.
+  `series.ts` inside `docs/ENGINEERING_REFERENCE.md`. Those sentences were removed
+  with the adapter. `docs/field-te/model-evidence/uncertainty-crosswalk.md` still cites
+  the old panel names. Dated evidence stays.
 - Three property-order-sensitive JSON comparisons remain findings, not fixes, and are
   row N: `dropEditedProvenance` in `src/model/types.ts:589`, `resetBuiltin` in
   `src/model/libraryLifecycle.ts:239`, and `sameAppliedOverrides` in

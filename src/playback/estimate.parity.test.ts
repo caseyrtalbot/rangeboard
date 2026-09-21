@@ -16,10 +16,10 @@ import { createTrialManifest } from './trialTypes'
  * the model-specific reasons for every moved value are in
  * docs/field-te/evidence/p3-gate-2026-09-10/comparison.md. A later physics change moves
  * one of them only with a replacement named in its slice brief. The layered event
- * count and kill mass below are the post-flyout measurement and still match.
- * The Monte Carlo means that moved are still the pre-horizon expects. The
- * flight horizon is the flight from the estimate time; the measured means are
- * in docs/field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md.
+ * count and kill mass are the post-flyout measurement. The three Monte Carlo means
+ * the flight horizon moved were authorized on 2026-09-21: layered kills 1.115,
+ * JIATF leakers 0.895, and JIATF kills 0.105. The measurement is
+ * docs/field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md.
  * The 4.68 figure is not this pin.
  */
 
@@ -96,8 +96,8 @@ describe('estimate-path parity: 200 aleatory replicates at seed 4821', () => {
   it('JIATF-401 end-of-run means', () => {
     const m = monteCarlo(jiatfFixture)
     expect(m.replicates).toBe(REPLICATES)
-    expect(last(m.leakers.mean)).toBeCloseTo(1, 9)
-    expect(last(m.kills.mean)).toBeCloseTo(0, 9)
+    expect(last(m.leakers.mean)).toBeCloseTo(0.895, 9)
+    expect(last(m.kills.mean)).toBeCloseTo(0.105, 9)
     expect(last(m.firmTrackS.mean)).toBeCloseTo(505.0625, 9)
   }, 60_000)
 
@@ -105,7 +105,7 @@ describe('estimate-path parity: 200 aleatory replicates at seed 4821', () => {
     const m = monteCarlo(layeredFixture)
     expect(m.replicates).toBe(REPLICATES)
     expect(last(m.leakers.mean)).toBeCloseTo(0, 9)
-    expect(last(m.kills.mean)).toBeCloseTo(1.1, 9)
+    expect(last(m.kills.mean)).toBeCloseTo(1.115, 9)
     expect(last(m.firmTrackS.mean)).toBeCloseTo(1.5, 9)
   }, 120_000)
 })

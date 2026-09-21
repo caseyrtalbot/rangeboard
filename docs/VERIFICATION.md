@@ -118,8 +118,11 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
     removed, so the Kalman estimate, fusion, false tracks and the operator queue run; pins
     the seed-4821 trial per threat (status, first detect, confirm, stable track,
     declaration, gate), the event count, the kill mass, the track count, and the 200
-    replicate aleatory end-of-run means (leakers, kills, firm track) from the Phase 2 gate
-    capture. Moves only with a hand-derived replacement, like the truth-path parity files.
+    replicate aleatory end-of-run means (leakers, kills, firm track). The layered event
+    count and kill mass are the post-flyout measurement. The three means the flight
+    horizon moved are the authorized 2026-09-21 recapture: layered kills 1.115, JIATF
+    leakers 0.895, and JIATF kills 0.105. The truth-path parity files still move only
+    with a hand-derived replacement.
   - `playback/kalman.test.ts`: the steady-state gain against the closed form of the CWNA
     tracking index, symmetry after 1000 predict and update steps, the coast growing and
     an update lowering the position sigma, and the quality map at 0 and at the scale.

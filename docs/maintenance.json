@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "739ac59ec60832f6a2a80e591930859832a4a10f2d8ca683c00bbab8d76c2373",
+      "sha256": "575aaaff191848d7c1b953f0495c9017f104fa937fda9eea1f7cd2b8fd6e8884",
       "reviewedAt": "2026-09-21",
-      "note": "Re-reviewed after the parity header edit. The guide still describes intercept prediction from the fused track and does not state the miss-sigma horizon."
+      "note": "Parity expects recaptured to the authorized flight-horizon means. The guide still describes intercept prediction from the fused track and does not cite those pin numbers or the miss-sigma horizon."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "170737d6df9824cbac473fc6ae82661f8f83be008b5e11065274d9b273fdf6ec",
+      "sha256": "d5a8bb0a297e65d9349d32b8c01347277b454284bc56c639aec86743cd02923e",
       "reviewedAt": "2026-09-21",
-      "note": "Re-reviewed after the parity header pointed at the flight-horizon measurement. The fire-doctrine paragraph already describes predictionSigmaAtS over the flight from the estimate time."
+      "note": "Parity expects recaptured. The fire-doctrine paragraph still calls predictionSigmaAtS at the estimate time plus max(0, tEffectS - releaseS), so engageTimeS does not coast the track."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "e331add265f6c291044549eeded1a903ea3599191cdf2329c84f909318f60ece",
+      "sha256": "891ab04ad17ed7fbeedd4e13a9e49559e2d6974817d7d31f4918d806ff132db6",
       "reviewedAt": "2026-09-21",
-      "note": "Reviewed after the run-crash fixes and the comment sweep; the listed suites and checks are unchanged in name and scope."
+      "note": "Updated the estimate-path pin sentence to the authorized 2026-09-21 means: layered kills 1.115, JIATF leakers 0.895, JIATF kills 0.105. Truth-path files still move only with a hand-derived replacement."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "4228d500601addc9a3ef5b6255277b2d8560c185d79a33b51a0faed316be2ff6",
+      "sha256": "ba9bcf5e92ed0157413395ef162490f1b929c133d55e23935e750c5224e32e7d",
       "reviewedAt": "2026-09-21",
-      "note": "Tasking is row C after the flight-horizon commit. The parity expects are still the pre-horizon pins."
+      "note": "Tasking is row L after the authorized parity recapture commit. The flight horizon remains the landed miss sigma."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

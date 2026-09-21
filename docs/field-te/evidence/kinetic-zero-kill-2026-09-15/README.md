@@ -7,17 +7,43 @@ file changed. The probe that produced every number is
 [`probe-baseline.txt`](probe-baseline.txt) for the committed tree and
 [`probe-fixed.txt`](probe-fixed.txt) for the candidate fix.
 
+## Landed horizon
+
+Landed 2026-09-21 on local `main` at `7fdcb1e`. The miss sigma is
+`predictionSigmaAtS` at the estimate time plus
+`max(0, intercept.tEffectS - (t + engageTimeS))`. `engageTimeS` does not enter
+that call. The assignment-to-release coast in the capture below is not the code.
+
+The estimate-path expects recaptured with that horizon, seed 4821, physics
+stripped, 200 aleatory replicates, each authorized on 2026-09-21:
+
+| Pin | Expect |
+| --- | ---: |
+| Layered trial `report.events` length | 11 |
+| Layered trial kill mass | 1 |
+| Layered 200-replicate kills mean | 1.115 |
+| JIATF 200-replicate leakers mean | 0.895 |
+| JIATF 200-replicate kills mean | 0.105 |
+
+Events 11 and kill mass 1 were already the post-flyout measurement and did not
+move again. `4.68` is the zero-flight candidate recorded below and is not a pin.
+Coyote `lethalRadiusM`, `guidanceNoiseM`, and `engageTimeS` are unchanged. No
+terminal-homing term was added. The before/after measurement is
+[flight-horizon-2026-09-21.md](../p3-gate-2026-09-10/flight-horizon-2026-09-21.md).
+
+The sections below are the 2026-09-15 capture. Their tables describe `31a6d5d`.
+
 ## Decision
 
-One defect and one model limit together explain the zero kills.
+One defect and one model limit together explain the zero kills on the captured tree.
 
-- Defect: `src/playback/shot.ts:319` charges the assignment-to-release delay as an
-  open-loop coast of the fire-control track. At the Coyote's `engageTimeS` of 60 s the
-  process-noise term alone is 90.4% of the miss variance and the miss 1 sigma reaches
-  282 m against a 10 m lethal radius. The correct horizon is the flight, release to
-  effect. The fix is derived below and measured, but it is **not landed**: it moves five
-  pinned values in `src/playback/estimate.parity.test.ts` that cannot be hand derived,
-  and one of them is contaminated by a second defect found here.
+- Defect, on the captured tree: `src/playback/shot.ts:319` charged the
+  assignment-to-release delay as an open-loop coast of the fire-control track. At the
+  Coyote's `engageTimeS` of 60 s the process-noise term alone is 90.4% of the miss
+  variance and the miss 1 sigma reaches 282 m against a 10 m lethal radius. The correct
+  horizon is the flight, release to effect. The derivation is below. The horizon landed
+  at `7fdcb1e`; see Landed horizon. The five pins that moved are the authorized expects
+  in that section, not the zero-flight candidate.
 - Model limit: the interceptor model has no terminal-homing term. With the correct
   horizon the Coyote still reaches only Pk 0.034 to 0.050 per shot on this laydown,
   against 0.556 to 0.564 from the planning fallback. A lead-point-only miss model cannot
@@ -51,7 +77,7 @@ boundary the gate added, neither of which the saved JSON carries.
 ## Per-shot table, committed tree
 
 One-ship laydown, physical model. `sigma(t)` is the fused track's own position 1 sigma.
-`sigma(rel)` is what the code uses: the same estimate propagated to `t + engageTimeS`.
+`sigma(rel)` is what the captured tree used: the same estimate propagated to `t + engageTimeS`.
 `sigma(tof)` is the same estimate propagated by the flight time only. `sigma(eff)` is
 propagation to the effect time. All in meters.
 
@@ -78,7 +104,7 @@ Alternative Pk at shot 1, same geometry and the same Coyote fields:
 | Truth track (no estimate) | null | 0.84999 |
 | Track sigma at `t` | 3.626 | 0.80397 |
 | Propagated over the flight (the fix) | 28.69 | 0.04987 |
-| Propagated over `engageTimeS` (the code) | 282.21 | 0.00053 |
+| Propagated over `engageTimeS` (the captured tree) | 282.21 | 0.00053 |
 | Propagated to the effect time | 362.30 | 0.00032 |
 
 ## Value chain
@@ -87,7 +113,7 @@ Alternative Pk at shot 1, same geometry and the same Coyote fields:
    held at the assignment time.
 2. `intercept.ts:563` sets `releaseS = tS + es.engageTimeS` and solves the aim point from
    that estimate through `interceptFromEstimateProfile`.
-3. `shot.ts:319` computes `launchPredictionSigmaM = predictionSigmaAtS(estimate, t +
+3. On that tree, `shot.ts:319` computed `launchPredictionSigmaM = predictionSigmaAtS(estimate, t +
    es.engageTimeS)`.
 4. `intercept.ts:447` routes that through `predictedStateAt`, which calls
    `kalman.predict` with `PROCESS_NOISE_Q`.
@@ -103,7 +129,7 @@ The documented rule is in the
 sum square of the track prediction error at launch (`missDistanceSigmaM` already roots
 the estimate covariance) and `guidanceNoiseM`". The brief's parenthetical points at the
 estimate covariance itself. `ShotAccepted.predictionSigmaM` (`shot.ts:53`) is documented
-as the sigma at the intercept time. The code uses neither; it introduced a third
+as the sigma at the intercept time. The captured tree used neither; it introduced a third
 quantity.
 
 ## Hand derivation
@@ -114,7 +140,7 @@ for shot 1 are the fused estimate at t = 313.5 s, 689 hits, source `estimate`:
 `P_vy,vy` 1.6835. Constants: `PROCESS_NOISE_Q` q = 1 m^2/s^3 (`kalman.ts:18`),
 `lethalRadiusM` 10 m, `guidanceNoiseM` 2 m, `pk` 0.85, `engageTimeS` 60 s.
 
-At the coded horizon T = `engageTimeS` = 60 s, per `kalman.ts:72` and `kalman.ts:78`:
+At the captured horizon T = `engageTimeS` = 60 s, per `kalman.ts:72` and `kalman.ts:78`:
 
 - var(x) = 18.3872 + 2(60)(4.5409) + 3600(2.3127) + (1)(60^3)/3
   = 18.39 + 544.91 + 8325.72 + 72000 = 80,889.02 m^2
@@ -162,7 +188,7 @@ the flight is the interval over which prediction error becomes miss distance.
 justified in `kalman.ts:11` at the 0.5 s step, where it adds 0.7 m/s of velocity random
 walk and does not inflate a straight track. That justification does not extend to a 60 s
 horizon, where the same constant adds 268 m per axis. But the constant is not the defect.
-Set q to zero and the coded horizon still gives sigma 87.42 m, miss sigma 87.44 m,
+Set q to zero and the captured horizon still gives sigma 87.42 m, miss sigma 87.44 m,
 P(within 10 m) 0.00652 and Pk 0.00554: two orders of magnitude below the fallback. The
 horizon breaks the model on its own. Set q to zero at the flight horizon and sigma falls
 from 28.69 m to 18.65 m, Pk from 0.0499 to 0.1126, so q is worth a factor of 2.3 there
@@ -180,7 +206,7 @@ be inert.** `lethalRadiusM` 10 m is the class median of the one sourced intercep
 warhead radius, the APKWS M151 burst radius from Eglin AFB, and the entry itself records
 that Coyote's 1.8 kg warhead against the M151's 3.95 kg puts 10 m "at the generous end".
 `guidanceNoiseM` 2 m is a planning factor for a proximity-fuzed round. Both are recorded
-with a lognormal spread of 4 dB. Neither can change the result at the coded horizon,
+with a lognormal spread of 4 dB. Neither can change the result at the captured horizon,
 because Pk there scales as the square of the radius over a variance of 79,646 m^2:
 
 | `lethalRadiusM`, m | Pk at miss sigma 282.22 m | Pk at miss sigma 28.69 m |
@@ -190,7 +216,7 @@ because Pk there scales as the square of the radius over a variance of 79,646 m^
 | 10 | 0.00053344 | 0.04986 |
 | 25 | 0.00332852 | 0.26745 |
 
-Across the whole plausible range of interceptor lethal radii the coded horizon holds Pk
+Across the whole plausible range of interceptor lethal radii the captured horizon holds Pk
 below 0.0034, far under the doctrine's `pkCommit` of 0.35. The 4 dB spread the library
 records on the radius cannot move any run outcome. That is the sense in which the
 datasheet value is inert, and it is why `kinetic.verify.test.ts` passes while the engine
@@ -201,7 +227,7 @@ path never reaches.
 an INFERRED planning factor with no provenance row. It is a defensible
 decision-to-launch interval. Its only fault is entering the miss sigma at all. Because
 the process-noise term grows as T^3, the value sets the severity: reduce it to 10 s and
-the coded horizon gives sigma 24.88 m and Pk 0.0656, about what the flight horizon gives
+the captured horizon gives sigma 24.88 m and Pk 0.0656, about what the flight horizon gives
 at 60 s. The defect is the horizon, not the number.
 
 ## Second defect found: zero time of flight on the layered fixture
@@ -223,7 +249,7 @@ so the flight falls back to `interceptFromEstimate` with `averageFlyoutMps` 0, a
 both adopted, so it takes the physical branch. The interceptor arrives at the instant of
 release while its Pk is computed by the physical miss model.
 
-This is invisible on the committed tree, because the coded horizon charges 60 s of coast
+This is invisible on the captured tree, because that horizon charged 60 s of coast
 whatever the flight time is. It becomes decisive under the fix: with a zero flight time
 the fix's horizon is zero, so the miss sigma collapses to the track's own 7.0 to 8.0 m,
 Pk rises to 0.41 to 0.49 per shot, and the fixture's Monte Carlo kills mean goes from
@@ -241,12 +267,12 @@ Two rules, so a round is never both on the physical miss model and at zero fligh
   no seed cruise speed. Inventing one would be a false flight, so they stay at zero
   flight time on the legacy curve.
 
-`src/playback/shot.ts` is unchanged. The assignment-to-release horizon is still the
-open defect. The 4.68 kills mean above is the zero-flight horizon candidate and is
-not a pin.
+`src/playback/shot.ts` was still on the assignment-to-release coast when these
+flyout rules landed. The flight horizon landed later, at `7fdcb1e`. The 4.68 kills
+mean above is the zero-flight horizon candidate and is not a pin.
 
 Measured on the estimate path after this change, physics stripped, seed 4821, with
-the horizon still in place. Coyote's per-shot physical Pk stays about 0.00046. The
+the assignment-to-release coast still in place. Coyote's per-shot physical Pk stays about 0.00046. The
 kill increase is the no-speed interceptors moving onto the legacy curve. JIATF pins
 did not move. Leakers mean stayed 0 and firm-track mean stayed 1.5 s.
 
@@ -256,7 +282,7 @@ did not move. Leakers mean stayed 0 and firm-track mean stayed 1.5 s.
 | Layered trial kill mass | 0 | 1 |
 | Layered 200-replicate kills mean | 0.005 | 1.1 |
 
-## Why the fix is not landed
+## Why the fix was not landed on 2026-09-15
 
 The candidate change is one site, `src/playback/shot.ts:319`:
 
@@ -274,7 +300,7 @@ two golden fixtures and `kinetic.verify.test.ts` all pass unchanged, because bot
 fixtures pin `truthTracks` and `legacyKineticPk` and `kinetic.verify` supplies its own
 sigma.
 
-Five pinned values in `estimate.parity.test.ts` move:
+Five pinned values in `estimate.parity.test.ts` moved on that probe:
 
 | Pin | Committed | With the fix |
 | --- | ---: | ---: |
@@ -284,16 +310,18 @@ Five pinned values in `estimate.parity.test.ts` move:
 | JIATF 200-replicate kills mean | 0 | 0.105 |
 | Layered 200-replicate kills mean | 0.005 | 4.68 |
 
-None of these is hand derivable. The two Monte Carlo means are averages of Bernoulli
+None of these was hand derivable. The two Monte Carlo means are averages of Bernoulli
 kill draws over 200 replicates with a per-replicate sampled spec. The layered event
 count falls out of the doctrine re-engagement loop once kills start landing. The task
-constraint and the test file's own header both forbid moving them on this basis: the
-header states that "a later physics change moves one of them only with a replacement
-named in its slice brief", and no replacement is named. The layered numbers would also
-enshrine the zero-flight-time artifact above.
+constraint and the test file's header both forbade moving them on that basis: the
+header stated that "a later physics change moves one of them only with a replacement
+named in its slice brief", and no replacement was named then. The layered numbers would
+also have enshrined the zero-flight-time artifact above.
 
-The engine is therefore unchanged. The fix is specified, derived and measured here for
-the session that recaptures the anchors.
+The engine was therefore unchanged on 2026-09-15. That stop is closed. The horizon
+landed at `7fdcb1e` after flyout semantics. The recaptured expects are in Landed
+horizon. The 4.68 mean was not pinned. The candidate snippet above is the call that
+landed.
 
 ## Model limit: no terminal-homing term
 
@@ -331,12 +359,14 @@ Only a terminal-guidance term would.
 
 1. Do not change `lethalRadiusM`, `guidanceNoiseM` or `engageTimeS` in the Coyote entry.
    All three are correctly recorded and graded. None is the cause.
-2. Land the `shot.ts` horizon fix as its own task, with the replacement anchors named in
-   its brief. Fix the `flyoutSpeedMps` adoption gap first, or recapture the layered
-   fixture's anchors knowing they describe a zero-flight-time interceptor.
-3. Until then the default physical kinetic model should not be used to size a kinetic
-   engagement on any laydown. `legacyKineticPk` is the defensible planning choice for
-   that question, and the Physics tab already offers it. The fixture should not change.
+2. The horizon fix landed at `7fdcb1e` after flyout semantics. The authorized expects
+   are layered kills 1.115, JIATF leakers 0.895, and JIATF kills 0.105. Layered events
+   stayed 11 and kill mass stayed 1. Do not pin 4.68, and do not restore 16 events,
+   kill mass 0, or kills mean 0.005.
+3. The flight horizon does not restore the planning fallback. On this laydown Pk stays
+   about 0.03 to 0.05, under `pkCommit` 0.35, because the model has no terminal-homing
+   term. `legacyKineticPk` remains the planning choice when the question is advertised
+   effectiveness. The fixture should not change.
 4. A laydown that yields a valid physical result today needs a truth-source track
    (`truthTracks`), which returns a null prediction sigma and Pk 0.85. That is the
    configuration the protected suites use, and it measures the distance falloff and the
@@ -346,6 +376,9 @@ Only a terminal-guidance term would.
    the engine actually produces.
 
 ## Checks
+
+These checks are the 2026-09-15 capture, before flyout semantics and before the flight
+horizon. They do not describe `7fdcb1e`.
 
 - `npm run check` on the tree as delivered: 202 test files, 2,173 tests, all passed;
   docs, engine CLI, library, schema, typecheck, lint and build passed.
