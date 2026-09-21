@@ -16,10 +16,11 @@ import { createTrialManifest } from './trialTypes'
  * the model-specific reasons for every moved value are in
  * docs/field-te/evidence/p3-gate-2026-09-10/comparison.md. A later physics change moves
  * one of them only with a replacement named in its slice brief. The layered event
- * count, kill mass and kills mean below are the post-flyout measurement: saved
- * builtins adopt a seed cruise speed, and an interceptor with no cruise speed
- * uses the legacy curve. The shot horizon is unchanged. The 4.68 figure is not
- * this pin.
+ * count and kill mass below are the post-flyout measurement and still match.
+ * The Monte Carlo means that moved are still the pre-horizon expects. The
+ * flight horizon is the flight from the estimate time; the measured means are
+ * in docs/field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md.
+ * The 4.68 figure is not this pin.
  */
 
 const SEED = 4821

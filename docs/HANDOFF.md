@@ -18,70 +18,76 @@ Do not start the following row in the same session.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  This commit removes the orphan chart adapter on top of `6371ba0`. The three
-  `mcRun.test.ts` oracles call `heldTracksOnGrid`, `liveKpisAt`, and `residualOnGrid`.
-  Nothing under `src/` imports `analysis/series`. An untracked `.cursor/` directory,
-  if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row B. The next rewrite
-  selects row C.
-- Open defect, this row's target: `src/playback/shot.ts:320` charges the
-  assignment-to-release delay as an open-loop coast of the fire-control track. Until
-  this row lands, `legacyKineticPk` is the defensible model choice. See
-  [the zero-kill kinetic record](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md).
+  The flight horizon is committed. `src/playback/shot.ts` calls
+  `predictionSigmaAtS(est, est.state.tS + flightS)` with
+  `flightS = max(0, intercept.tEffectS - (t + es.engageTimeS))` when an estimate exists.
+  An untracked `.cursor/` directory, if present, is not part of the queue.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row C. The next rewrite
+  selects row L.
+- The five estimate-path pins are still the pre-horizon expects. Two trial pins still
+  pass. Three means moved and are written in
+  [the flight-horizon note](field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md).
+  No expected value has been replaced.
 
 ## Tasking
 
-### Row B: Flight horizon in `shot.ts`
+### Row C: Recapture
 
-- Repository `~/Projects/rangeboard`. Base is this commit on `main`, the series
-  deletion on top of `6371ba0`. Leave `docs/Plan.md` unmodified. Do not restore
-  `src/analysis/series.ts` or the old chart-adapter oracles.
-- Outcome: a regression the size of `kinetic.verify.test.ts` uses the engine's own
-  sigma. A long `engageTimeS` must not enter `predictionSigmaAtS`, and the horizon
-  must be `max(0, intercept.tEffectS - releaseS)` from the estimate time. Then replace
-  the horizon at `src/playback/shot.ts:320`. The candidate from the kinetic record is
-  `predictionSigmaAtS(est, est.state.tS + flightS)` when an estimate exists.
-- Owned files: `src/playback/shot.ts`, the new regression beside
-  `src/playback/kinetic.verify.test.ts`, and a before/after note beside
-  [the Phase 3 comparison](field-te/evidence/p3-gate-2026-09-10/comparison.md). The
-  before values are the post-flyout pins in `src/playback/estimate.parity.test.ts`:
-  layered events 11, layered kill mass 1, layered kills mean 1.1, JIATF leakers mean
-  1, JIATF kills mean 0. Write the measured after values. Do not edit those expects.
-- Exclusions: do not edit expected values in `estimate.parity.test.ts`. Do not change
+- Repository `~/Projects/rangeboard`. Base is the flight-horizon commit on `main`.
+  Leave `docs/Plan.md` unmodified. Do not start row L.
+- Outcome: replace only the estimate-path expects that this horizon moved, and only
+  after the user authorizes each number. Update the kinetic record so it no longer
+  describes the assignment-to-release coast as the code. Leave `truthTracks`, the
+  golden fixture files, and the Coyote datasheet fields unchanged.
+- Owned files: `src/playback/estimate.parity.test.ts` and
+  [the kinetic record](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md).
+  The measured before/after is
+  [the flight-horizon note](field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md).
+- Measured at seed 4821, physics stripped, 200 aleatory replicates. Before is the
+  expect still in the test. After is the flight horizon.
+
+  | Pin | Before | After | Expect |
+  | --- | ---: | ---: | --- |
+  | Layered `report.events` length | 11 | 11 | still passes |
+  | Layered kill mass | 1 | 1 | still passes |
+  | Layered kills mean | 1.1 | 1.115 | fails |
+  | JIATF leakers mean | 1 | 0.895 | fails |
+  | JIATF kills mean | 0 | 0.105 | fails; the leakers expect stops the test first |
+
+- Exclusions: do not replace an expect before that number is authorized. Do not pin
+  4.68. Do not restore 16 events, kill mass 0, or kills mean 0.005. Do not change
   Coyote `lethalRadiusM`, `guidanceNoiseM`, or `engageTimeS`. Do not add a
-  terminal-homing term. Do not restore 16 events, kill mass 0, or kills mean 0.005.
-  Do not pin the record's 4.68 kills mean. Do not enable TypeScript flags or split
-  store, Inspector, or integration data. Do not start row C.
-- Verified on this tree before row B: the Pd 1 / Pk 1 oracle in `mcRun.test.ts`
-  matches one replicate of `heldTracksOnGrid`, `residualOnGrid`, and `liveKpisAt`.
-  `npm run check` passed (199 test files, 2,116 tests). Flyout semantics are in the
-  kinetic evidence file. The layered kills mean after this horizon will differ from
-  both 1.1 and 4.68.
-- Next action: add the sigma regression, replace the horizon at `shot.ts:320`, run
-  `kinetic.verify.test.ts`, `estimate.parity.test.ts`, the protected truth-path
-  suites, and the intercept and attrition flyout tests. Expect the five pins above
-  to fail. Write before and after beside the Phase 3 comparison.
-- Completion: the five pins fail with measured values written down, and no expected
-  value is edited. If a registered guide's inputs changed, review it before
-  `npm run docs:check`.
-- Stop when the five parity pins have failed and the measured values are written
-  down. Ask before replacing any expected value. Rewrite this handoff so Tasking is
-  row C. Do not edit `docs/Plan.md`.
+  terminal-homing term. Do not restore `src/analysis/series.ts`. Do not enable
+  TypeScript flags or split store, Inspector, or integration data.
+- Verified on this tree before row C: `kinetic.horizon.test.ts`,
+  `kinetic.verify.test.ts`, `shot.test.ts`, and `intercept.test.ts` passed.
+  `sensitivity.parity.test.ts`, `accuracy.verify.test.ts`, and
+  `convergence.verify.test.ts` passed (28 tests). The attrition flyout describe
+  passed (3 tests). `estimate.parity.test.ts` is 2 failed and 2 passed. Layered
+  leakers mean stayed 0, layered firm-track mean stayed 1.5 s, and JIATF firm-track
+  mean stayed 505.0625 s. `npm run check` was not run: the parity expects are still
+  the pre-horizon pins on purpose.
+- Next action: ask for authorization of 1.115, 0.895, and 0.105. Leave the two
+  passing trial expects as they are. Then update the kinetic record and run
+  `estimate.parity.test.ts`.
+- Completion: each replaced expect was authorized, the kinetic record matches the
+  landed horizon, and the protected truth-path suites still pass.
+- Stop when the authorized expects are in the test and the kinetic record is
+  updated. Do not edit `docs/Plan.md`.
 
 ## Landmines
 
-- Zero kills from the default physical kinetic model are a defect, not physics.
-  `src/playback/shot.ts:320` propagates the track over `engageTimeS` before the Rayleigh
-  miss. `kinetic.verify.test.ts` passing at hand-supplied miss sigmas is not evidence the
-  integrated interceptor model works. The two golden fixtures pin `truthTracks` and
-  `legacyKineticPk`. Row B must not edit `estimate.parity.test.ts` expected values.
+- The assignment-to-release coast is no longer the code. `kinetic.verify.test.ts`
+  still feeds hand-supplied miss sigmas. `kinetic.horizon.test.ts` is the regression
+  that uses `predictionSigmaAtS`. Do not put `engageTimeS` back into that call.
+- The parity expects are still the pre-horizon pins. Layered events 11 and kill
+  mass 1 still pass. The means that fail are layered kills 1.1 against 1.115,
+  JIATF leakers 1 against 0.895, and JIATF kills 0 against 0.105. Do not pin the
+  record's 4.68 kills mean. Do not restore 16, 0, and 0.005.
 - Flyout semantics are landed. A saved builtin that omits `flyoutSpeedMps` adopts the
   seed cruise speed. An interceptor with no positive cruise speed uses `kineticPk`,
   matching `flyoutProfile`. Coyote is 154 m/s and MEROPS is 78 m/s. Roadrunner and
-  Anvil have no seed cruise speed, so they stay on the legacy curve. The layered
-  estimate-path pins are now 11 events, kill mass 1, and kills mean 1.1. Do not restore
-  16, 0, and 0.005. Do not pin the record's 4.68 kills mean. The horizon is still open,
-  so that 1.1 is not a physical-miss result.
+  Anvil have no seed cruise speed, so they stay on the legacy curve.
 - `seekerAcquisitionRangeM` gates feasibility only. Nothing reduces miss sigma for a
   seeker-equipped round.
 - Physics tab: a checked box selects the prior planning fallback; a cleared box selects
@@ -130,6 +136,7 @@ Do not start the following row in the same session.
 ## Evidence
 
 - [Plan](Plan.md)
+- [Flight-horizon measurement, 2026-09-21](field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md)
 - [Zero-kill kinetic finding, 2026-09-15](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md)
 - [Phase 3 estimate-path comparison](field-te/evidence/p3-gate-2026-09-10/comparison.md)
 - [Phase 4 gate, 2026-09-15](field-te/evidence/p4-gate-2026-09-15/README.md)

@@ -52,7 +52,7 @@ export interface ShotAccepted {
   /**
    * Predicted position 1 sigma at the intercept time, meters, when the
    * intercept was solved from a track estimate; null on the truth path.
-   * `pk.missDistanceSigmaM` turns it into a miss distance.
+   * The kinetic Pk does not read this field. It uses the flight-horizon sigma.
    */
   predictionSigmaM: number | null
   /** Which path solved the intercept point (interceptFor). */
@@ -317,7 +317,12 @@ export function evaluateShot(
       cooldownS: beam.cooldownS,
     }
   }
-  const launchPredictionSigmaM = predictionSigmaAtS(ctx.estimate ?? null, t + es.engageTimeS)
+  // engageTimeS is assignment-to-release. The tracker keeps updating through
+  // it, so the miss grows only over the flight, from the estimate time.
+  const est = ctx.estimate ?? null
+  const flightS = Math.max(0, intercept.tEffectS - (t + es.engageTimeS))
+  const launchPredictionSigmaM =
+    est == null ? null : predictionSigmaAtS(est, est.state.tS + flightS)
   return {
     intercept,
     interval,

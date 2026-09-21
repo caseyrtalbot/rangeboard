@@ -728,8 +728,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `attrition.ts` supplies the fused track the shooter holds at t from
   `ThreatAssessment.fusedTracks` through a per-threat cursor. `ShotAccepted` carries
   `predictionSigmaM` (the predicted position 1 sigma at the effect time, null on the
-  truth path) and `interceptSource`; `missDistanceSigmaM` (`pk.ts`) roots it with the
-  interceptor's guidance error for the physical probability of effect.
+  truth path) and `interceptSource`. The kinetic probability of effect does not read
+  that field. It calls `predictionSigmaAtS` at the estimate time plus
+  `max(0, tEffectS - releaseS)`, so `engageTimeS` stays an assignment-to-release
+  delay and does not coast the track. `missDistanceSigmaM` (`pk.ts`) roots that
+  flight-horizon sigma with the interceptor's guidance error.
   Kinetic shots use `kineticEffectProbability`: interceptors combine predicted track error
   with guidance error and integrate the Rayleigh miss distribution inside effective radius.
   An interceptor with no positive `flyoutSpeedMps` returns `kineticPk`, the same missing

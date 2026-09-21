@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "f8709d56e5b38ae3239764806b5d7904929f6f667cd54c311993dee96ffd06f0",
-      "reviewedAt": "2026-09-16",
-      "note": "Prettier 3.9.6 is a pinned devDependency; format and format:check scripts wrap .ts/.tsx/.mjs; format:check is in the check gate. AGENTS.md names npm run format for layout and still names npm run check as the complete gate."
+      "sha256": "c5df44e3f2a2a2fc3bc77234860131da77db6ad4eb4ccf16339aabb2a8e7e19f",
+      "reviewedAt": "2026-09-21",
+      "note": "A learned-preferences section was appended. The start, preserve, verify, and handoff rules are unchanged."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "326ccf5ce71336276dc31e064f9cbab65f9d8c2d4e5a8c856cac83fb428976ad",
-      "reviewedAt": "2026-09-16",
-      "note": "AGENTS.md now names Prettier for source layout; the Claude redirect is unchanged."
+      "sha256": "96df8731a3872de3864560df94e0efa351bb7dcf9977f0993c2505ffff575ef5",
+      "reviewedAt": "2026-09-21",
+      "note": "AGENTS.md gained a learned-preferences section. The Claude redirect is unchanged and still does not duplicate those rules."
     },
     {
       "document": "README.md",
@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "01e12aecf830bbf0c8f975b19034844c4c63fabcee1d54efea9e6c8dbe5b7cb3",
+      "sha256": "e2b6e488d1fc626cf53c1874a1ae90a01101f849827aea4f1a28d9f6b767ff89",
       "reviewedAt": "2026-09-21",
-      "note": "Indexed Plan.md as the frozen queue and described the handoff as the current-row selector."
+      "note": "Indexed the 2026-09-21 flight-horizon measurement beside the Phase 3 comparison."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "339f93b3da56acc857695a5f2be09302874f46a1fb332b334c2a2dfd12cf303a",
+      "sha256": "739ac59ec60832f6a2a80e591930859832a4a10f2d8ca683c00bbab8d76c2373",
       "reviewedAt": "2026-09-21",
-      "note": "Reviewed the project guide against the series-adapter deletion. It does not name series.ts. Trial series, the engagement picture, and the playback entry points are unchanged."
+      "note": "Re-reviewed after the parity header edit. The guide still describes intercept prediction from the fused track and does not state the miss-sigma horizon."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "784af100078e815ab3408a5b5e2bee72d784aa435aff7ef89e938a6e9c282df0",
+      "sha256": "170737d6df9824cbac473fc6ae82661f8f83be008b5e11065274d9b273fdf6ec",
       "reviewedAt": "2026-09-21",
-      "note": "Deleted the unused forecast chart adapter. The module map, store import list, band sentence, chart-horizon paragraph, and launch-count sentence now name projection, trialSeries, currentSummary, and the compare chart's lo/hi interval."
+      "note": "Re-reviewed after the parity header pointed at the flight-horizon measurement. The fire-doctrine paragraph already describes predictionSigmaAtS over the flight from the estimate time."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "3c7b351b9793cb917a01dfe3a2989aad0763c2c82d9c43f6a4f0bdb92966acfb",
+      "sha256": "4228d500601addc9a3ef5b6255277b2d8560c185d79a33b51a0faed316be2ff6",
       "reviewedAt": "2026-09-21",
-      "note": "Handoff selects row B from the series-deletion commit on top of 6371ba0. Plan.md stays frozen."
+      "note": "Tasking is row C after the flight-horizon commit. The parity expects are still the pre-horizon pins."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

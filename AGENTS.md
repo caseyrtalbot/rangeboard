@@ -48,3 +48,15 @@ One zustand store holds the Board; persistence is localStorage.
   files and integration to one owner. Workers must preserve others' edits.
 - Keep session logs, scratch tests and temporary handoffs outside tracked docs.
   Remove scratch tests after verification; never store secrets in handoffs.
+
+## Learned User Preferences
+
+- Execute one `docs/Plan.md` row per agent turn; do not start the next row until asked.
+- Leave `docs/Plan.md` unmodified during row work; rewrite `docs/HANDOFF.md` so it points at the plan and tasks the next row.
+- Prefer a brief, properly formatted `docs/HANDOFF.md` plus an inline kickoff prompt for the next agent—not a chat paste dump.
+- When scope authority is given, choose the option that best preserves realism, performance, and function and proceed.
+- When asked to finish a completed row, commit the owned changes and present the next-phase handoff prompt.
+
+## Learned Workspace Facts
+
+- `docs/Plan.md` is the durable multi-row cleanup/refactor plan; `docs/HANDOFF.md` is the mutable current-row tasking and must always reference the plan.

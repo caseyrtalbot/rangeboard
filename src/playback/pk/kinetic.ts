@@ -76,8 +76,8 @@ export function kineticPk(
 
 /**
  * Miss-distance 1 sigma, meters: the root sum square of the track prediction
- * error at physical release (`predictionSigmaAtS`) and the effector's own
- * guidance noise. A truth-source track contributes zero
+ * error over the flight (`predictionSigmaAtS` from the estimate time) and the
+ * effector's own guidance noise. A truth-source track contributes zero
  * prediction error, so its sigma is the guidance term alone.
  */
 export function missDistanceSigmaM(
@@ -119,7 +119,7 @@ export interface KineticEffectContext {
   basePk: number
   uas: UasSpec | undefined
   slantM: number
-  /** Track prediction error at physical release, null for a truth-source track. */
+  /** Track prediction error over the flight, null for a truth-source track. */
   predictionSigmaM: number | null
   /** True for the scenario's `legacyKineticPk` switch. */
   fallback: boolean

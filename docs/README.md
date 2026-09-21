@@ -52,6 +52,7 @@ Cancelled plans, the central handoff and wave completion write-ups were removed 
 - [Calibration lane 3.7 Physics settings verification, 2026-09-10](field-te/evidence/p3-physicstab-2026-09-10/README.md)
 - [Calibration Phase 3 gate evidence, 2026-09-10](field-te/evidence/p3-gate-2026-09-10/README.md)
 - [Calibration Phase 3 estimate-path comparison](field-te/evidence/p3-gate-2026-09-10/comparison.md)
+- [Flight-horizon measurement beside the Phase 3 comparison, 2026-09-21](field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md)
 - [Hypothesis tools Phase 4 gate evidence, 2026-09-15](field-te/evidence/p4-gate-2026-09-15/README.md)
 - [Zero-kill kinetic outcome on the firing laydown, 2026-09-15](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md)
 - [Calibration Phase 3 brief as issued 2026-09-10, common rules](field-te/evidence/p3-lanes-2026-09-10/briefs/p3-lane-common.md)
