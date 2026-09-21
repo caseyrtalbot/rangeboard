@@ -140,7 +140,7 @@ Breaking one of these breaks the app.
   `state/rings.ts` owns shared ring keys/types, so `viewState.ts` has no runtime store
   dependency. Panels and canvas import every leaf directly; `store.ts`, `sim.ts` and
   `attrition.ts` carry no re-exports.
-  Keep `store.ts` free of value imports from `mcRun.ts`, `series.ts`, `impact.ts` and
+  Keep `store.ts` free of value imports from `mcRun.ts`, `impact.ts` and
   `attrition.ts` or `trial.ts`; worker execution stays behind `mcClient.ts` and
   `trialClient.ts`, both over `workerSlot.ts`; `store.ts` and `scenarioInstall.ts` reach
   those adapters only through `src/state/analysisRequests.ts`, to start and to cancel
@@ -473,7 +473,6 @@ src/analysis/  classPriors.ts (classOfModel, classPriorFor over the generated CL
                (engagementPicture cache, WEZ), liveStats.ts (KPIs at t), projection.ts
                (pure named quantities on the DT grid: sampleCount, hold and residual
                rules, held-track union and count, mean held Pd; no chart ids),
-               series.ts (chart Series, labels, colors and ids over projection.ts),
                runValidity.ts, requirements.ts, uncertainty.ts
                (sampling), parameterBasis.ts (pure spread resolution and enumeration),
                fidelity.ts (model tags), aar.ts, systemTelemetry.ts,
@@ -806,11 +805,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   (names the single-scan-hit basis, shows the defined fraction's Wilson interval, withholds
   the mean CI under `TIME_CI_MIN_N` 30 defined) and a band step through
   `countSub` (the interval as its two ends, since a count interval is not symmetric)
-  (`panels/analysis/mc.ts`). Bands and tile subs read current `McSummary` through `withBands`
-  (`series.ts`) and `currentSummary`, only when `mc.status` is `done` for the current run
-  id; `currentSensitivity` and `currentSweep` apply the same rule to their slices. Covered chart lines become replicate means with 80/95 percent replicate-quantile
-  bands, each drawn only when its quantiles are finite; `bandNote` words the rule. Tile
-  intervals describe means, not those quantiles. Values and intervals share
+  (`panels/analysis/mc.ts`). Bands and tile subs read current `McSummary` through
+  `currentSummary`, only when `mc.status` is `done` for the current run
+  id; `currentSensitivity` and `currentSweep` apply the same rule to their slices. The compare
+  chart draws that summary's mean interval (`lo`/`hi`). `bandNote` still words the
+  replicate-quantile rule. Tile intervals describe means, not those quantiles. Values and intervals share
   quantity/denominator; Defeat converts ship count and interval to percent by the same raid
   size. Missing/zero-sample estimates remain unavailable and n=1 carries no claimed mean
   CI. Full-run conditional time means are labeled; quantities without a replicate
@@ -1030,21 +1029,15 @@ Each fact below has exactly one definition. Read it there; never add a second co
   expected-defeat semantics remain separate from sampled hard/mission kills.
   Null `reportedLeakers` remains the no-asset signal for display.
   Model source disclosures preserve all provenance fields.
-  `TRACK_LADDER_STYLE` (`series.ts`) is the one track-ladder legend and `STATE_LABEL`
-  (`SystemStatus.tsx`) the one component-state word.
-- **Forecast chart series** (`src/analysis/series.ts`, retained for numerical regression
-  tests, not imported by the app or engine entry): every builder is pure `(scenario, id?) =>
-  Series[]`, `LadderRow[]` or `ChartMark[]`, a series sampled from t = 0 at DT to
-  `scenarioDurationS`, NaN where undefined, one `engagementPicture` call per builder.
-  `trackSlots` assigns the five chart hues by first detection and never reassigns under a
-  filter; status colors never color a series. Chart `horizonS` censors sample values and
+  `STATE_LABEL`
+  (`SystemStatus.tsx`) is the one component-state word.
+- **Chart horizon.** Chart `horizonS` censors sample values and
   bands, automatic Y range, marks, endpoint dots, tooltips and legends while preserving
   the full time axis and scrub navigation. Scope text reads “Shown through T+m:ss”
   or “No outcomes observed yet” in the legend accessibility label, or a visually hidden
   span when no legend is shown.
   Ladder clips spans and their labels at the horizon.
-  Builders and full-run numerical results stay intact.
-  `src/analysis/trialSeries.ts` separately builds `simulated-trial` step series and ladders
+  `src/analysis/trialSeries.ts` builds `simulated-trial` step series and ladders
   from retained observations and events. Samples, marks and spans end at the trial horizon;
   `useTrialResult` supplies the same bounded series to the screens and detail panes.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
@@ -1160,9 +1153,10 @@ Each fact below has exactly one definition. Read it there; never add a second co
   zero-duration channel gets the existing 0.6 s display pulse. Committed rounds remain
   through effect, independent of the target's expected-defeat state. Assignment counters,
   effect calculations and outcomes are unchanged.
-  `series.ts` counts only physical kinetic flight, with NaN during an unresolved legacy
-  interval; effector marks are ASG, REL and FX, combined at coincident timestamps. Preparation/channel spans have a legend
-  censored to the horizon. `runResultGroups.ts` describes `tS`, `tReleaseS`, `tEffectS`
+  `trialSeries.ts` counts salvos in flight only over a resolved kinetic release-to-effect
+  interval, and reports NaN while a legacy release is unresolved and still before effect.
+  Engagement marks are ASG and REL, plus the effect outcome. Preparation and channel spans
+  are censored to the horizon. `runResultGroups.ts` describes `tS`, `tReleaseS`, `tEffectS`
   and `shipIdx` separately and counts recorded, reconstructable and unavailable release
   timing. Exports preserve legacy event omissions and the captured scenario.
 - **Words.** UI copy follows the code style in AGENTS.md: short active sentences in the

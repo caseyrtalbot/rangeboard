@@ -18,49 +18,55 @@ Do not start the following row in the same session.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  This handoff's commit records the flyout semantics on top of `7149cd2`. Do not
-  restore the layered parity pins from that base: 16 events, kill mass 0, kills mean
-  0.005.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row K. The next rewrite
-  selects row B.
-- Open defect, unchanged and out of scope: `src/playback/shot.ts:320` charges the
+  This commit removes the orphan chart adapter on top of `6371ba0`. The three
+  `mcRun.test.ts` oracles call `heldTracksOnGrid`, `liveKpisAt`, and `residualOnGrid`.
+  Nothing under `src/` imports `analysis/series`. An untracked `.cursor/` directory,
+  if present, is not part of the queue.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row B. The next rewrite
+  selects row C.
+- Open defect, this row's target: `src/playback/shot.ts:320` charges the
   assignment-to-release delay as an open-loop coast of the fire-control track. Until
-  row B lands, `legacyKineticPk` is the defensible model choice. See
+  this row lands, `legacyKineticPk` is the defensible model choice. See
   [the zero-kill kinetic record](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md).
 
 ## Tasking
 
-### Row K: Delete the orphan chart adapter
+### Row B: Flight horizon in `shot.ts`
 
-- Repository `~/Projects/rangeboard`. Base is this handoff's commit on `main`. Leave
-  `docs/Plan.md` unmodified. An untracked `.cursor/` directory, if present, is not
-  part of this task.
-- Outcome: `mcRun.test.ts` no longer uses `heldTracksSeries`, `kpiSeries`, or
-  `threatSeries` as oracles. Point those three equalities at `heldTracksOnGrid`,
-  `liveKpisAt`, and `residualOnGrid`, which `mcRun.ts` already calls. Then delete
-  `src/analysis/series.ts` and `src/analysis/series.test.ts`. If the legacy-release
-  NaN rule in `salvosInFlightSeries` still needs a pin, move that one check next to
-  engagement timing.
-- Owned files: `src/analysis/series.ts`, `src/analysis/series.test.ts`,
-  `src/playback/mcRun.test.ts` (the oracle equalities near the `heldTracksSeries`
-  import), and `src/playback/engagementTiming.test.ts` only if that NaN pin moves.
-  `mcRun.ts` already calls `heldTracksOnGrid` (`projection.ts`), `residualOnGrid`
-  (`projection.ts`), and `liveKpisAt` (`liveStats.ts`).
-- Exclusions: do not edit `src/playback/shot.ts`, `ADOPTED_SEED_KEYS`, or
-  `estimate.parity.test.ts` expected values. Do not change Coyote `lethalRadiusM`,
-  `guidanceNoiseM`, or `engageTimeS`. Do not enable TypeScript flags or split store,
-  Inspector, or integration data. Do not start row B.
-- Verified on the flyout commit: `npm run check` passed (200 test files, 2,156 tests).
-  The choice and the moved layered pins are in the kinetic evidence file.
-- Next action: retarget the three `mcRun.test.ts` equalities, move the legacy-release
-  NaN pin if it still has a caller, delete both series files, and confirm nothing
-  under `src/` imports `analysis/series`.
-- Completion: `npm run check` passes. If a registered guide's inputs changed, review
-  it before `npm run docs:check`. `docs/ENGINEERING_REFERENCE.md` still names
-  `series.ts` as the forecast chart series; leave that sentence for row L unless this
-  deletion makes a guide you must review factually false.
-- Stop when nothing under `src/` imports `analysis/series` and `npm run check` is
-  green. Rewrite this handoff so Tasking is row B. Do not edit `docs/Plan.md`.
+- Repository `~/Projects/rangeboard`. Base is this commit on `main`, the series
+  deletion on top of `6371ba0`. Leave `docs/Plan.md` unmodified. Do not restore
+  `src/analysis/series.ts` or the old chart-adapter oracles.
+- Outcome: a regression the size of `kinetic.verify.test.ts` uses the engine's own
+  sigma. A long `engageTimeS` must not enter `predictionSigmaAtS`, and the horizon
+  must be `max(0, intercept.tEffectS - releaseS)` from the estimate time. Then replace
+  the horizon at `src/playback/shot.ts:320`. The candidate from the kinetic record is
+  `predictionSigmaAtS(est, est.state.tS + flightS)` when an estimate exists.
+- Owned files: `src/playback/shot.ts`, the new regression beside
+  `src/playback/kinetic.verify.test.ts`, and a before/after note beside
+  [the Phase 3 comparison](field-te/evidence/p3-gate-2026-09-10/comparison.md). The
+  before values are the post-flyout pins in `src/playback/estimate.parity.test.ts`:
+  layered events 11, layered kill mass 1, layered kills mean 1.1, JIATF leakers mean
+  1, JIATF kills mean 0. Write the measured after values. Do not edit those expects.
+- Exclusions: do not edit expected values in `estimate.parity.test.ts`. Do not change
+  Coyote `lethalRadiusM`, `guidanceNoiseM`, or `engageTimeS`. Do not add a
+  terminal-homing term. Do not restore 16 events, kill mass 0, or kills mean 0.005.
+  Do not pin the record's 4.68 kills mean. Do not enable TypeScript flags or split
+  store, Inspector, or integration data. Do not start row C.
+- Verified on this tree before row B: the Pd 1 / Pk 1 oracle in `mcRun.test.ts`
+  matches one replicate of `heldTracksOnGrid`, `residualOnGrid`, and `liveKpisAt`.
+  `npm run check` passed (199 test files, 2,116 tests). Flyout semantics are in the
+  kinetic evidence file. The layered kills mean after this horizon will differ from
+  both 1.1 and 4.68.
+- Next action: add the sigma regression, replace the horizon at `shot.ts:320`, run
+  `kinetic.verify.test.ts`, `estimate.parity.test.ts`, the protected truth-path
+  suites, and the intercept and attrition flyout tests. Expect the five pins above
+  to fail. Write before and after beside the Phase 3 comparison.
+- Completion: the five pins fail with measured values written down, and no expected
+  value is edited. If a registered guide's inputs changed, review it before
+  `npm run docs:check`.
+- Stop when the five parity pins have failed and the measured values are written
+  down. Ask before replacing any expected value. Rewrite this handoff so Tasking is
+  row C. Do not edit `docs/Plan.md`.
 
 ## Landmines
 
@@ -68,7 +74,7 @@ Do not start the following row in the same session.
   `src/playback/shot.ts:320` propagates the track over `engageTimeS` before the Rayleigh
   miss. `kinetic.verify.test.ts` passing at hand-supplied miss sigmas is not evidence the
   integrated interceptor model works. The two golden fixtures pin `truthTracks` and
-  `legacyKineticPk`. Row K must not move `estimate.parity.test.ts`.
+  `legacyKineticPk`. Row B must not edit `estimate.parity.test.ts` expected values.
 - Flyout semantics are landed. A saved builtin that omits `flyoutSpeedMps` adopts the
   seed cruise speed. An interceptor with no positive cruise speed uses `kineticPk`,
   matching `flyoutProfile`. Coyote is 154 m/s and MEROPS is 78 m/s. Roadrunner and
@@ -80,6 +86,10 @@ Do not start the following row in the same session.
   seeker-equipped round.
 - Physics tab: a checked box selects the prior planning fallback; a cleared box selects
   the physical model when its required fields are present.
+- Row L's frozen plan text still names `withBands`, `TRACK_LADDER_STYLE`, and
+  `series.ts`. Those sentences were removed from `docs/ENGINEERING_REFERENCE.md` with
+  the adapter. `docs/field-te/model-evidence/uncertainty-crosswalk.md` still cites the
+  old panel names. Dated evidence stays.
 - Three property-order-sensitive JSON comparisons remain findings, not fixes, and are
   row N: `dropEditedProvenance` in `src/model/types.ts:589`, `resetBuiltin` in
   `src/model/libraryLifecycle.ts:239`, and `sameAppliedOverrides` in

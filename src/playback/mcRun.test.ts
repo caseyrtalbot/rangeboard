@@ -9,10 +9,14 @@ import type {
   SpecModel,
   Vec2,
 } from '../model/types'
-import { DEFAULT_REQUIREMENT_THRESHOLDS, MOUNT_HEIGHT_M } from '../model/types'
+import {
+  DEFAULT_REQUIREMENT_THRESHOLDS,
+  MOUNT_HEIGHT_M,
+  entityActive,
+  runSettings,
+} from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
-import { sampleCount } from '../analysis/projection'
-import { heldTracksSeries, kpiSeries, threatSeries } from '../analysis/series'
+import { heldTracksOnGrid, residualOnGrid, sampleCount } from '../analysis/projection'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
 import * as uncertainty from '../analysis/uncertainty'
 import { PF_SPREAD, sampleScenario, uncertainFields } from '../analysis/uncertainty'
@@ -298,13 +302,21 @@ describe('runReplicates', () => {
     expect(summary.perThreat[uasId].killed.mean).toBe(1)
     expect(summary.perEffector[effId].salvos.mean).toBe(1)
     expect(summary.perEffector[effId].kills.mean).toBe(1)
-    // Same assessments as the deterministic run, so the reproduced rules
-    // must equal the chart builders sample for sample.
-    expect(summary.tracked.mean).toEqual(heldTracksSeries(scenario).values)
-    const residual = threatSeries(scenario, uasId).find((x) => x.id === 'residual')!
-    expect(summary.perThreat[uasId].residual.mean).toEqual(residual.values)
-    const kills = kpiSeries(scenario).find((x) => x.id === 'kpi.expectedKills')!
-    expect(summary.kills.mean).toEqual(kills.values)
+    // Same grid the replicate loop fills: held tracks, residual ships, expected kills.
+    const n = sampleCount(scenario)
+    const policy = monteCarloPolicy(runSettings(scenario).seed, 0, thresholdsOf(scenario))
+    const assessments = assessAllThreats(scenario, policy)
+    const report = resolveEngagements(scenario, assessments, policy)
+    const tracks = assessments.filter((a) => a.status !== 'no-path')
+    const enabledSensorIds = new Set(
+      scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e)).map((e) => e.id),
+    )
+    expect(summary.tracked.mean).toEqual(heldTracksOnGrid(tracks, enabledSensorIds, n))
+    expect(summary.perThreat[uasId].residual.mean).toEqual(residualOnGrid(report, uasId, n))
+    const timeline = buildLiveTimeline(assessments, report)
+    const kills: number[] = []
+    for (let k = 0; k < n; k += 1) kills.push(liveKpisAt(timeline, k * DT).expectedKills)
+    expect(summary.kills.mean).toEqual(kills)
   })
 
   it('Pk 0.5 and one salvo give a kill mean near 0.5 over 200 replicates', () => {

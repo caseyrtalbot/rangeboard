@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "7642358d0f5e741965aa767eef0f435869baf3f32fc4ccf6430e5503854457e0",
+      "sha256": "339f93b3da56acc857695a5f2be09302874f46a1fb332b334c2a2dfd12cf303a",
       "reviewedAt": "2026-09-21",
-      "note": "Reviewed the physics-switch and playback sentences against the flyout change. Cleared switches still select physical kinetic effects when the fields are present; the cruise-speed rule is in the engineering reference."
+      "note": "Reviewed the project guide against the series-adapter deletion. It does not name series.ts. Trial series, the engagement picture, and the playback entry points are unchanged."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "e52746abc55fb1d319d7e4a868ce990000cae95994c3c5e6ad66a01d7fae9514",
+      "sha256": "784af100078e815ab3408a5b5e2bee72d784aa435aff7ef89e938a6e9c282df0",
       "reviewedAt": "2026-09-21",
-      "note": "Reviewed flyout adoption and the missing-cruise kinetic fallback against libraryLifecycle.ts and pk/kinetic.ts. The fire-doctrine and seed-lifecycle sentences now state both rules."
+      "note": "Deleted the unused forecast chart adapter. The module map, store import list, band sentence, chart-horizon paragraph, and launch-count sentence now name projection, trialSeries, currentSummary, and the compare chart's lo/hi interval."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "e6fbfe7b551bf861c73a7549887d99419b62f77735e38adbfd9662f27eddc951",
+      "sha256": "3c7b351b9793cb917a01dfe3a2989aad0763c2c82d9c43f6a4f0bdb92966acfb",
       "reviewedAt": "2026-09-21",
-      "note": "Handoff now selects row K from the flyout-semantics commit. Plan.md stays frozen."
+      "note": "Handoff selects row B from the series-deletion commit on top of 6371ba0. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
