@@ -28,13 +28,17 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run evidence:report` | Measure `docs/field-te/evidence`: size by type, duplicate JSON groups, uncompressed JSON over 512 kB |
 | `npm run check:evidence` | Fail on a byte-identical JSON copy or an uncompressed JSON capture over 512 kB, except paths in `scripts/evidence/allowlist.json` |
 | `npm run test:evidence` | Test the evidence gate and the shared capture helper |
+| `npm run check:silent` | Fail on an added line that hides a failure: an empty catch, a catch that returns a substitute without reporting, a no-op promise catch, or a comment or string that says silent, swallow, fallback, fail-open, fail-soft, or best-effort. Diff against `main` (`--base <ref>` overrides, `--staged` checks the index) |
+| `npm run check:silent:all` | Report the same patterns across every tracked source file without failing |
+| `npm run test:silent` | Run the ast-grep rule cases in `scripts/silent/rule-tests` and the gate script tests |
+| `npm run hooks:install` | Point `core.hooksPath` at `.githooks` so `check:silent --staged` runs before each commit. Opt in per clone |
 | `npm run test:bundle` | Test bundle accounting and over-budget rejection |
 | `npm run check:bundle` | Check the current `dist/` entry and initial JavaScript + CSS gzip budgets |
 | `npm run test:e2e` | Run the Board shell Playwright spec against a dev server (`E2E_URL`, default port 5377) |
 | `npm run engine:build` | Build the headless engine bundle `dist-engine/engine.js` from `src/engine/index.ts` |
 | `npm run engine -- <scenario.json> --replicates N --seed S --out run.json [--overrides overrides.json]` | Run a fixed replicate count over worker threads, an override set applied from the manifest, and write a run record |
 | `npm run test:engine` | Check the runner record equals the in-process summary at one seed |
-| `npm run check` | Complete documentation, evidence, type, library, schema, engine, test, lint, format and build gate |
+| `npm run check` | Complete documentation, evidence, silent-gate test, type, library, schema, engine, test, lint, format and build gate |
 
 Run the complete gate for source changes and after integrating lanes. `npm run check`
 does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
@@ -42,7 +46,12 @@ does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
 The budget (`scripts/check-bundle.mjs`) is 364,000 bytes gzip for the entry and 400,000
 for initial JavaScript plus CSS; the Phase 4 gate measured 360,308 and 375,965, so the
 entry headroom is under 4 kB. Documentation-only
-changes need `docs:check`; maintenance-script changes also need `test:docs`. Update a
+changes need `docs:check`; maintenance-script changes also need `test:docs`.
+`npm run check` runs the silent-gate tests but not `check:silent` itself; CI runs `check:silent`
+against the pull request base or the pushed-from commit, and a local run diffs against `main`.
+A finding is accepted with `// silent-ok: <reason>` on the line, the line above, or inside the
+matched block. Domain terms `RF silent` and `jam-degraded`, and comments that negate the
+pattern (`never silent`), are exempt. Rules live in `scripts/silent/rules`. Update a
 source-review fingerprint only after reading the affected document and changed inputs,
 following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 
@@ -286,7 +295,7 @@ committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 p
   debrief check calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
   completion requires a matching ready trial. Start the dev server first.
-  CI runs it separately after `npm run check` and `npm run check:bundle`, installing Chromium
+  CI runs it separately after `npm run check`, `npm run check:silent` and `npm run check:bundle`, installing Chromium
   and managing its own fixed-port Vite process. Locally the browser and built-bundle checks
   remain separate commands; bundle-accounting unit tests are included in `check`.
 - The performance-wave browser harness additionally verifies surviving Board/T&E

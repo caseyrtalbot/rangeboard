@@ -1,0 +1,25 @@
+id: silent-catch
+message: Catch block returns a substitute value without reporting, rethrowing, or recording.
+severity: error
+language: TypeScript
+rule:
+  kind: catch_clause
+  has:
+    kind: statement_block
+    has:
+      kind: return_statement
+      stopBy: end
+    not:
+      any:
+        - has:
+            kind: call_expression
+            stopBy: end
+        - has:
+            kind: throw_statement
+            stopBy: end
+        - has:
+            kind: new_expression
+            stopBy: end
+        - has:
+            kind: await_expression
+            stopBy: end

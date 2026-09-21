@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks a commit whose staged lines hide a failure. Install with: npm run hooks:install
+exec node scripts/check-silent.mjs --staged

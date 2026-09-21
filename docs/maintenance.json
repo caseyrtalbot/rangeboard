@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "c5df44e3f2a2a2fc3bc77234860131da77db6ad4eb4ccf16339aabb2a8e7e19f",
+      "sha256": "6c745ff9514e8c58f81f26c3d087666ff7cdf890021b6742c97d40ba248de373",
       "reviewedAt": "2026-09-21",
-      "note": "A learned-preferences section was appended. The start, preserve, verify, and handoff rules are unchanged."
+      "note": "Silent-failure gate added: check:silent, check:silent:all, test:silent, hooks:install scripts and a changed-lines CI step; VERIFICATION and WORKFLOW updated, AGENTS and README re-read and unchanged"
     },
     {
       "document": "CLAUDE.md",
@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "1c8e212d76e93554816487392fc304a502baa256eee803a7898f6b6b8159e5cd",
+      "sha256": "914563b28b07fa801ea014d1298703c948d54dc11c47915005c179a2f16fdb6e",
       "reviewedAt": "2026-09-21",
-      "note": "Reviewed after the App.tsx comment sweep; setup and usage text unchanged."
+      "note": "Silent-failure gate added: check:silent, check:silent:all, test:silent, hooks:install scripts and a changed-lines CI step; VERIFICATION and WORKFLOW updated, AGENTS and README re-read and unchanged"
     },
     {
       "document": "docs/README.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "2c4e1b44089403552034e2a0abd17cbe6939d8f7202c54666010d1430bb6a15a",
+      "sha256": "0dc12f23a16168d249b78fe8b062f33346a44b4cea60dfd80cdac51613b27ce4",
       "reviewedAt": "2026-09-21",
-      "note": "Autosave tests now cover a failed rescue that resumes on the next edit, and an overrides write that retries after a Board change. The baseline lane sits beside the scenario lane."
+      "note": "check-silent.mjs main guard tolerates import without argv; docs unchanged"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "9faa699751057efa0edf190e0274028d829af74b85dadba2abc380482d44c481",
+      "sha256": "c1ec0d179a125630174e249f6313659e83b844c81d86920222f1119add5a03c4",
       "reviewedAt": "2026-09-21",
-      "note": "Handoff protocol now keeps Plan.md frozen and advances one row at a time through HANDOFF.md."
+      "note": "check-silent.mjs main guard tolerates import without argv; docs unchanged"
     },
     {
       "document": "docs/Plan.md",

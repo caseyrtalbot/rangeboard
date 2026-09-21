@@ -1,0 +1,11 @@
+id: weasel-word
+valid:
+  - 'const fallback = 3'
+  - 'function countOr(value, fallback) { return value ?? fallback }'
+  - '// the default value is used when the input is missing'
+invalid:
+  - '// the parser swallows a bad row'
+  - '// silently skip an unreadable record'
+  - "const label = 'fallback used'"
+  - '/** best-effort: the write may not land */'
+  - '// this is fail-open by design'

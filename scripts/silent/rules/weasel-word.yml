@@ -1,0 +1,14 @@
+id: weasel-word
+message: Comment or string describes a hidden failure. Record the substitution, or mark the line silent-ok with a reason.
+severity: error
+language: TypeScript
+ignores:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/__tests__/**'
+  - '**/__fixtures__/**'
+rule:
+  any:
+    - kind: comment
+    - kind: string_fragment
+  regex: (?i)\b(silent|silently|swallow(s|ed|ing)?|fail[- ]?soft|fail[- ]?open|best[- ]effort|fallback|graceful(ly)?[- ]degrad\w*|degrade[sd]?\s+gracefully)\b

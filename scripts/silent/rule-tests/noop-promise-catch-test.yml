@@ -1,0 +1,9 @@
+id: noop-promise-catch
+valid:
+  - 'p.catch((error) => report(error))'
+  - 'p.catch(() => { throw new Error("x") })'
+  - 'p.catch(onError)'
+invalid:
+  - 'p.catch(() => {})'
+  - 'p.catch(() => null)'
+  - 'p.catch((error) => undefined)'

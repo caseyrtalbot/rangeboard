@@ -23,7 +23,8 @@ in Git history. Historical phase labels and proposed actions do not authorize ne
    results and remaining uncertainty. Commit/push only when authorized.
 
 The [Quality workflow](../.github/workflows/quality.yml) runs `npm ci` and the same
-`npm run check` gate on pushes and pull requests with Node 22. It then checks the built
+`npm run check` gate on pushes and pull requests with Node 22. It then runs
+`npm run check:silent` on the lines the push or pull request added, checks the built
 bundle budget, installs Playwright Chromium, starts Vite on fixed port 5377, waits for
 readiness, runs `npm run test:e2e` and stops its server even on failure. The budget uses
 `gzip -9`: at most 364,000 bytes for the entry and 400,000 for initial JavaScript plus CSS

@@ -1,0 +1,10 @@
+id: silent-catch
+valid:
+  - 'try { x() } catch (error) { report(error); return null }'
+  - 'try { x() } catch (error) { throw new Error("x failed", { cause: error }) }'
+  - 'try { x() } catch (error) { adapter.reportWriteFailure(error) }'
+  - 'try { x() } catch (error) { return { ok: false, error: String(error) } }'
+invalid:
+  - 'try { x() } catch { return null }'
+  - 'try { x() } catch (error) { return idle }'
+  - 'try { x() } catch { return { entries: [], error: "unreadable" } }'

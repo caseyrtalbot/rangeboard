@@ -32,7 +32,11 @@
     "evidence:report": "node scripts/check-evidence.mjs",
     "check:evidence": "node scripts/check-evidence.mjs --enforce",
     "test:evidence": "node --test scripts/test-evidence.mjs scripts/test-evidence-capture.mjs",
-    "check": "npm run docs:check && npm run check:evidence && npm run test:docs && npm run test:evidence && npm run test:bundle && npm run test:engine && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run format:check && npm run build"
+    "check:silent": "node scripts/check-silent.mjs",
+    "check:silent:all": "node scripts/check-silent.mjs --all",
+    "test:silent": "ast-grep test -c scripts/silent/sgconfig.yml --skip-snapshot-tests && node --test scripts/test-silent.mjs",
+    "hooks:install": "git config core.hooksPath .githooks",
+    "check": "npm run docs:check && npm run check:evidence && npm run test:docs && npm run test:evidence && npm run test:silent && npm run test:bundle && npm run test:engine && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run format:check && npm run build"
   },
   "dependencies": {
     "konva": "^10.3.1",
@@ -44,6 +48,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@ast-grep/cli": "^0.45.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
