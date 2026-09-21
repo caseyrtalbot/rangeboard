@@ -35,6 +35,7 @@ import { buildBaseline } from './baseline'
 import { analysisBasisSignature } from './analysisBasis'
 import { resolvePlayback } from './playbackCommands'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
+import { releaseRetainedTrial } from '../playback/retainTrial'
 import { buildRaid, raidDraftFor } from './raidBuilder'
 import {
   bumpCardVersion,
@@ -1524,4 +1525,11 @@ export const useStore = create<Store>()((set, get) => {
 // An override edit installs no scenario; the runs answer through the store.
 useOverrides.subscribe((state, prev) => {
   if (state.overrides !== prev.overrides) useStore.getState().overridesChanged()
+})
+
+// New run replaces the trial object, and the previous React fiber still holds it.
+// Empty that copy here so its buffers can be collected without another render.
+useStore.subscribe((state, prev) => {
+  if (prev.trial.result && prev.trial.result !== state.trial.result)
+    releaseRetainedTrial(prev.trial.result)
 })

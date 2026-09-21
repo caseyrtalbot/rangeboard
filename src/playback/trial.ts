@@ -32,6 +32,7 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
   // The manifest's overrides are the values in force; the captured scenario keeps the library's.
   const s = applyOverrides(scenario, manifest.overrides)
 
+  // Complete history for the engine return. The page copy is bound in retainTrial.ts.
   const observations: TrialResult['observations'] = []
   const jamDecisions: TrialResult['jamDecisions'] = []
   const tracks: TrackEstimate[] = []

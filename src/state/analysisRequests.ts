@@ -42,6 +42,7 @@ import { loopEnd } from '../playback/sampling'
 import { cancelTrial, startTrial } from '../playback/trialClient'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
 import { createTrialManifest, sameManifest } from '../playback/trialTypes'
+import { boundRetainedTrial } from '../playback/retainTrial'
 import { activeOverrides, applyOverrides, useOverrides } from './overrides'
 import type { AnalysisRunState, McState, PlaybackState, TrialState } from './runState'
 import { IDLE_SENSITIVITY, IDLE_SWEEP } from './runState'
@@ -689,7 +690,7 @@ export function acceptTrialMessage(
     status: 'ready',
     error: null,
     startWhenReady: false,
-    result: { ...m.result, manifest },
+    result: boundRetainedTrial({ ...m.result, manifest }),
   }
   // Validate the shared adapter once before exposing a ready trial or starting its clock.
   if (selectTrialSelection({ ...st, trial: ready }).status !== 'ready') {

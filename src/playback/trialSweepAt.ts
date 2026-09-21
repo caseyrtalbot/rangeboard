@@ -25,11 +25,22 @@ export interface TrialSweep {
   hits: Map<string, DetectionHit[]>
 }
 
+/** Fields the sweep reads from one scan. The observation object is attached only at that instant. */
+interface ScanFact {
+  index: number
+  tS: number
+  sensorType: SensorScanObservation['sensorType']
+  resolved: boolean
+  classified: boolean
+  detected: boolean
+  slantM?: number
+  pd?: number | null
+}
 interface PairIndex {
   threatId: string
   sensorId: string
-  scans: SensorScanObservation[]
-  measurements: SensorScanObservation[]
+  scans: ScanFact[]
+  measurements: ScanFact[]
   holds: Array<[number, number]>
   coasts: Array<[number, number]>
 }
@@ -68,10 +79,26 @@ function indexOf(view: TrialResultView): SweepIndex {
     }
     return pair
   }
-  for (const scan of view.observations) {
+  for (let index = 0; index < view.observations.length; index += 1) {
+    const scan = view.observations[index]
     const pair = get(scan.uasId, scan.sensorId)
-    pair.scans.push(scan)
-    if (scan.members.some((m) => m.detected)) pair.measurements.push(scan)
+    let nearest: SensorScanObservation['members'][number] | undefined
+    let classified = false
+    for (const member of scan.members) {
+      classified ||= member.classified
+      if (member.detected && (!nearest || member.slantM < nearest.slantM)) nearest = member
+    }
+    const fact: ScanFact = {
+      index,
+      tS: scan.tS,
+      sensorType: scan.sensorType,
+      resolved: scan.resolved,
+      classified,
+      detected: nearest != null,
+      ...(nearest ? { slantM: nearest.slantM, pd: nearest.pd } : {}),
+    }
+    pair.scans.push(fact)
+    if (fact.detected) pair.measurements.push(fact)
   }
   for (const a of view.assessments) {
     for (const observation of a.sensorObservations ?? []) {
@@ -101,9 +128,6 @@ export function trialSweepAt(view: TrialResultView, horizonS: number): TrialSwee
   const sensors = index.pairs.map((pair): TrialSensorState => {
     const scan = lastAt(pair.scans, t, (s) => s.tS)
     const measurement = lastAt(pair.measurements, t, (s) => s.tS)
-    const member = measurement?.members
-      .filter((m) => m.detected)
-      .reduce((nearest, m) => (m.slantM < nearest.slantM ? m : nearest))
     const stateAtTime =
       measurement?.tS === t
         ? 'measured'
@@ -114,15 +138,15 @@ export function trialSweepAt(view: TrialResultView, horizonS: number): TrialSwee
             : 'not-held'
     if (stateAtTime !== 'not-held') {
       holdingSensorIds.add(pair.sensorId)
-      if (measurement && member) {
+      if (measurement?.detected && measurement.slantM != null) {
         const list = hits.get(pair.threatId) ?? []
         list.push({
           sensorId: pair.sensorId,
           sensorType: measurement.sensorType,
-          classified: measurement.members.some((m) => m.classified),
+          classified: measurement.classified,
           resolved: measurement.resolved,
-          slantM: member.slantM,
-          pd: member.pd,
+          slantM: measurement.slantM,
+          pd: measurement.pd ?? null,
         })
         hits.set(pair.threatId, list)
       }
@@ -132,10 +156,13 @@ export function trialSweepAt(view: TrialResultView, horizonS: number): TrialSwee
       sensorId: pair.sensorId,
       stateAtTime,
       ...(measurement ? { lastMeasurementTimeS: measurement.tS } : {}),
-      ...(member
-        ? { slantRangeM: member.slantM, ...(member.pd != null ? { pd: member.pd } : {}) }
+      ...(measurement?.detected && measurement.slantM != null
+        ? {
+            slantRangeM: measurement.slantM,
+            ...(measurement.pd != null ? { pd: measurement.pd } : {}),
+          }
         : {}),
-      ...(scan?.tS === t ? { observation: scan } : {}),
+      ...(scan?.tS === t ? { observation: view.observations[scan.index] } : {}),
     }
   })
   const sweep = {

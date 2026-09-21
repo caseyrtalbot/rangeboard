@@ -19,42 +19,46 @@ Do not start the following row in the same session.
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
   The flight horizon is `7fdcb1e`. The authorized estimate-path recapture is
-  `225e027`. The row L docs commit carries this handoff. An untracked `.cursor/`
+  `225e027`. The trial-retention commit carries this handoff. An untracked `.cursor/`
   directory, if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row D. The next rewrite
-  selects row E.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row E. The next rewrite
+  selects row F.
 - The estimate-path expects are the authorized 2026-09-21 recapture. Layered events
   stay 11, layered kill mass stays 1, layered kills mean is 1.115, JIATF leakers mean
   is 0.895, and JIATF kills mean is 0.105. `4.68` is not a pin.
+- `releaseRetainedTrial` empties only the page copy from `boundRetainedTrial`.
 
 ## Tasking
 
-### Row D: Bound trial retention
+### Row E: Autosave that stops
 
-- Repository `~/Projects/rangeboard`. Base is local `main`. The flight horizon is
-  `7fdcb1e`. The authorized recapture is `225e027`. Leave `docs/Plan.md` unmodified.
-  Do not start row E.
-- Outcome: bound what the UI reads from a retained trial. `src/playback/trial.ts`
-  `runTrial` appends every scan observation and every per-step track estimate.
-  `src/state/analysisRequests.ts` `acceptTrialMessage` stores that whole
-  `TrialResult` on `TrialState.result` in `src/state/runState.ts`. React also keeps
-  the previous result on the alternate fiber after New run. Exported ledgers need
-  parity before and after. Browser memory check on the firing fixture.
-- Owned files: the retention path (`src/playback/trial.ts`, `src/state/runState.ts`,
-  `src/state/analysisRequests.ts`) and the readers that must keep the same ledger.
-  Export parity is `src/io/trialExport.test.ts`.
-- Exclusions: do not edit `docs/Plan.md`. Do not start row E. Do not change the
+- Repository `~/Projects/rangeboard`. Base is local `main`. The trial-retention
+  commit carries this handoff. Leave `docs/Plan.md` unmodified. Do not start row F.
+- Outcome: a failed rescue still blocks that lane for the session
+  (`src/io/recovery.ts`). `reportPaused` still overwrites the shared status
+  (`src/io/autosave.ts`, `src/io/persist.ts`, `src/io/persistOverrides.ts`). The
+  overrides adapter has no write retry. One reload of a bad live save leaves the bad
+  record plus a timestamped rescue, and later reloads add more. Give the blocked lane
+  a resume, stop one adapter from clobbering another, and retry overrides. `7149cd2`
+  already retries the baseline pin and keeps one adapter from clearing another's
+  saved error.
+- Owned files: `src/io/recovery.ts`, `src/io/autosave.ts`, `src/io/persist.ts`,
+  `src/io/persistOverrides.ts`, and their tests. The store subscribe that releases a
+  bound trial stays.
+- Exclusions: do not edit `docs/Plan.md`. Do not start row F. Do not change the
   estimate-path expects. Do not pin 4.68. Do not restore 16 events, kill mass 0, or
   kills mean 0.005. Do not change Coyote `lethalRadiusM`, `guidanceNoiseM`, or
   `engageTimeS`. Do not add a terminal-homing term. Do not restore
-  `src/analysis/series.ts`.
-- Verified on this tree before row D: row L changed only the uncertainty-crosswalk
-  analysis-panel sentence and this handoff. `npm run check` passed (200 files,
-  2118 tests).
-- Next action: bound retained observations and tracks to what the UI reads, then
-  show ledger parity and a flat firing-fixture heap across New run.
-- Completion: ledger parity held; firing-fixture heap stays flat across New run.
-- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row E.
+  `src/analysis/series.ts`. Do not add a handoff bullet that treats run-store NaN as
+  an open export failure.
+- Verified on this tree before row E: `npm run check` passed (201 files, 2122 tests).
+  On the firing fixture, after the worker was warm, New run left `trial.result` null
+  and the page's `Float64Array` and `Uint32Array` self sizes unchanged.
+- Next action: resume a blocked autosave lane, keep `reportPaused` from replacing
+  another adapter's status, and retry a failed overrides write.
+- Completion: a failed write does not drop later edits.
+- Stop when that gate passes. Browser check: fail a write and confirm later edits
+  still persist. Do not edit `docs/Plan.md`. Do not start row F.
 
 ## Landmines
 

@@ -40,6 +40,7 @@ export interface TrialState {
   manifest: TrialManifest | null
   /** Detached configuration captured once for this identity; never autosaved. */
   scenario: Scenario | null
+  /** Page copy of the trial: ledger, compact scans, and the estimate fields the board reads. */
   result: TrialResult | null
   startWhenReady: boolean
   error: string | null

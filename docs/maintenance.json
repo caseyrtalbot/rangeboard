@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "575aaaff191848d7c1b953f0495c9017f104fa937fda9eea1f7cd2b8fd6e8884",
+      "sha256": "29a8247ac371e802db6deacbbcc2012f59273c60684f30e3af17b93e5ebe4041",
       "reviewedAt": "2026-09-21",
-      "note": "Parity expects recaptured to the authorized flight-horizon means. The guide still describes intercept prediction from the fused track and does not cite those pin numbers or the miss-sigma horizon."
+      "note": "Play now retains one ledger plus compact sampled observations and the estimate fields the board reads. The Play row links retainTrial.ts. Release still applies only to that page copy."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "d5a8bb0a297e65d9349d32b8c01347277b454284bc56c639aec86743cd02923e",
+      "sha256": "acaa5d0dc2b1d32df4efa793c6b07e9bdbf5f4a073acc0198466786a226c2847",
       "reviewedAt": "2026-09-21",
-      "note": "Parity expects recaptured. The fire-doctrine paragraph still calls predictionSigmaAtS at the estimate time plus max(0, tEffectS - releaseS), so engageTimeS does not coast the track."
+      "note": "Page retention stores boundRetainedTrial: compact scans, the ellipse position block, and no fused tracks. releaseRetainedTrial empties only that page copy when New run or a scenario load drops it. The engine return stays complete."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "7a996489bb79b06b1c3307911f81683bf51cf14b9485fc0d75dcfd5c6fb5cd40",
+      "sha256": "09a400518b1a020f46043d41e92e5a5b414023e67a6c34671de35d45a3b8e839",
       "reviewedAt": "2026-09-21",
-      "note": "Tasking is row D after the uncertainty crosswalk cites trialSeries and mc.ts. npm run check passed."
+      "note": "Tasking is row E. The trial-retention commit carries this handoff. releaseRetainedTrial empties only the bound page copy. npm run check passed: 201 files, 2122 tests. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

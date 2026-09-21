@@ -451,7 +451,9 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex, stepCount, createSweepClock: the
                mc.worker.ts + mcClient.ts + workerPool.ts (the replicate pool, sensitivity, sweep,
                Morris and Sobol protocol adapters), mergeSummaries.ts (partial merge by
                replicate index), sampling.ts (LHS strata), morris.ts, sobol.ts,
-               trial.ts (one retained nominal/aleatory trial), trialTypes.ts + trialMessages.ts
+               trial.ts (one retained nominal/aleatory trial), retainTrial.ts
+               (page copy: compact scans, ellipse estimates, release on New run),
+               trialTypes.ts + trialMessages.ts
                (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
                (the trial protocol adapter), optimizeTypes.ts (OptimizeRequest,
                OptimizeResult, OptimizeWorkerMessage, the evaluation and replicate
@@ -644,7 +646,13 @@ Each fact below has exactly one definition. Read it there; never add a second co
   sigma equal to its detect range, while simultaneous nodes of the same model derive a
   cross-bearing range sigma from their maximum baseline and signal-to-noise. Capture is opt-in:
   `runTrial` attaches the sink that fills `TrialResult.tracks`, so the ensemble path
-  allocates no estimate history.
+  allocates no estimate history. The page does not keep that return. `acceptTrialMessage`
+  stores `boundRetainedTrial`: fused tracks are omitted once the ledger is resolved,
+  scans stay in a compact ledger that still exports the same records, and each stored
+  estimate keeps the position block the board ellipse reads. `releaseRetainedTrial`
+  empties that copy when New run or a scenario load drops it, so the previous
+  React fiber does not keep the buffers. An engine return, or a trial the page
+  did not bind, is left intact.
 - **Fusion and classification** (`src/playback/fusion.ts`, `classification.ts`, `sim.ts`):
   `fuseTracks` is information-form track-to-track fusion, the sum of the member inverse
   covariances inverted, with the covariance-weighted mean as the state; two equal members
