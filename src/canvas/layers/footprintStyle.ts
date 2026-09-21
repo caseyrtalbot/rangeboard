@@ -5,42 +5,10 @@ import { falloffRangeM, kineticPk } from '../../playback/pk'
 import { DANGER_INK, KIND_INK } from '../../ui/ink'
 
 /**
- * One style source for every ring the board draws. Each ring is either a
- * distance the engine uses, or it says why the engine does not use it.
- *
- * SENSOR RINGS, in the entity color, one per ring key:
- *
- *   placard   always at the placard range under the environment (no target).
- *             The hold gate picks its dash:
- *             held   gate 'ok'        solid; dotted PLACARD_DASH behind the
- *                                     Pd contours when those draw. Fill only
- *                                     when no contour draws and the envelope
- *                                     band is off.
- *             cued   gate 'needs-cue' dashed, no fill: the sensor holds only
- *                                     when another sensor holds the track.
- *             inert  rf-silent, rf-band, no-range
- *                                     thin dashed grey, no fill: this sensor
- *                                     cannot hold the selected threat.
- *             off    entity disabled  dotted grey, no fill.
- *   envelope  a fill-only band between the smallest and largest effective
- *             detect range over the UAS entities on the board.
- *   contours  selected threat only, held and cued kinds only: Pd at the
- *             test's pdDetect threshold solid (it carries the fill), Pd at
- *             PD_CONTOUR_HIGH dashed PD_HIGH_DASH, ground projected.
- *   classify  dashed CLASSIFY_DASH, held and cued only.
- *
- * EFFECTOR RINGS, in the danger color (grey when the entity is off):
- *
- *   max       solid, the placard max range or its ground projection for the
- *             selected threat.
- *   min       dotted EFFECTOR_MIN_DASH.
- *   doctrinal selected threat only: the release range per launch policy
- *             dashed RELEASE_DASH, the commit-Pk range dash-dot COMMIT_DASH.
- *             A ring that coincides with another (release under 'pk-commit'
- *             is the commit ring, under 'max-range' the max ring) draws once.
- *
- * The Inspector prints GATE_WORD for the same gates so the board and the
- * panel agree.
+ * Dash, width, fill and ink for every ring the board draws, plus the radii the
+ * sensor and effector rings take. Radii are meters; dashes and widths are screen
+ * px. Sensor rings take the entity color, effector rings the danger color, and a
+ * disabled or inert entity takes DISABLED_RING_COLOR.
  */
 
 type SensorRingKind = 'held' | 'cued' | 'inert' | 'off'
@@ -68,13 +36,9 @@ export const EFFECTOR_MIN_DASH = [2, 5]
 export const RELEASE_DASH = [7, 4]
 /** Commit-Pk range ring: dash-dot. */
 export const COMMIT_DASH = [6, 3, 1, 3]
-/**
- * Track covariance ellipse on a coasting track: even dash, distinct from
- * every ring dash above.
- */
+/** Track covariance ellipse on a coasting track: even dash. */
 export const TRACK_ELLIPSE_DASH = [4, 4]
-/** Ink for an estimated or truth track. Sage reads on the board and names no
- *  ring channel: the danger red and the EW cyan are taken. */
+/** Ink for an estimated or truth track. */
 export const TRACK_ESTIMATE_INK = KIND_INK.asset
 /** Ink for a false track: the same muted grey the inert rings take. */
 export const TRACK_FALSE_INK = DISABLED_RING_COLOR
@@ -83,8 +47,7 @@ export const TRACK_MARKER_PX = 3
 
 /** Two rings closer than this draw as one ring. */
 const PLACARD_TOLERANCE_M = 1
-/** Pd of the upper contour (PF, a display constant). Not a requirement
- *  threshold: the lower contour reads requirements.pdDetect. */
+/** Pd of the upper contour, a display constant. The lower contour reads requirements.pdDetect. */
 export const PD_CONTOUR_HIGH = 0.9
 
 interface RingStyle {
@@ -99,8 +62,7 @@ interface RingStyle {
   ink: 'entity' | 'danger'
 }
 
-/** Dash, width, fill and ink per ring key. Secondary rings read the named
- *  dashes: the upper contour PD_HIGH_DASH, the commit ring COMMIT_DASH. */
+/** Dash, width, fill and ink per ring key. Secondary rings read the named dashes above. */
 export const RING_STYLE: Record<RingKey, RingStyle> = {
   sensorPlacard: { dash: null, width: 1, fillAlpha: 0.1, ink: 'entity' },
   sensorEnvelope: { dash: null, width: 0, fillAlpha: 0.08, ink: 'entity' },
@@ -111,7 +73,7 @@ export const RING_STYLE: Record<RingKey, RingStyle> = {
   effectorDoctrinal: { dash: RELEASE_DASH, width: 1, fillAlpha: null, ink: 'danger' },
 }
 
-/** Inspector word for each gate that is not 'ok'. Same facts as the ring kinds above. */
+/** Inspector word for each gate that is not 'ok'. */
 export const GATE_WORD: Record<Exclude<SensorHoldGate, 'ok'>, string> = {
   'needs-cue': 'needs cue',
   'rf-silent': 'RF silent',
@@ -179,8 +141,7 @@ export function sensorRingStyle(input: SensorRingInput): SensorRingStyle {
   const contourHighM = contoursOn && sees ? positiveOrNull(pdHighM) : null
   const contours = contourLowM != null || contourHighM != null
   const placardDash = kind === 'held' ? (contours ? PLACARD_DASH : null) : DETECT_DASH[kind]
-  // One fill per sensor: the low contour takes it over from the placard, and
-  // the envelope band replaces both.
+  // One fill per sensor: the low contour takes it from the placard, the envelope from both.
   const placardFill = kind === 'held' && !contours && !envelopeOn
   const contourFill = kind === 'held' && contourLowM != null && !envelopeOn
   return {
@@ -249,9 +210,8 @@ export function effectorRingStyle(input: EffectorRingInput): EffectorRingStyle {
   const { on, maxM, minM, releaseM, commitM } = input
   const min = positiveOrNull(minM)
   if (!on) return { maxM, minM: min, releaseM: null, commitM: null, grey: true }
-  // 'pk-commit' makes the release range the commit range and 'max-range'
-  // makes it the max range: a coincident ring draws once, under the ring
-  // that names the fact.
+  // A coincident ring draws once: 'pk-commit' puts release on the commit ring,
+  // 'max-range' puts it on the max ring.
   const commit = commitM != null && commitM > 0 && !coincides(commitM, maxM) ? commitM : null
   const release =
     releaseM != null && releaseM > 0 && !coincides(releaseM, maxM) && !coincides(releaseM, commitM)
@@ -261,11 +221,8 @@ export function effectorRingStyle(input: EffectorRingInput): EffectorRingStyle {
 }
 
 /**
- * Slant range where the shot Pk falls to commitPk, or null when the effector
- * never commits against this target. The shot Pk is kineticPk, so the ring
- * inverts it: the falloff must equal commitPk / (the Pk at the launcher).
- * Below the falloff at max range the effector commits everywhere and the
- * result is maxRangeM.
+ * Slant range in meters where the kineticPk shot Pk falls to commitPk, or null
+ * when the effector never commits against this target.
  */
 export function commitRangeM(input: {
   basePk: number

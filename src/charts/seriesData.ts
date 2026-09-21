@@ -1,7 +1,6 @@
 /**
- * Pure series math for the time-series chart. Recharts-free on purpose: the
- * chart body sits behind a lazy boundary, and these helpers stay importable
- * from `TimeSeries.tsx` without pulling recharts into the initial graph.
+ * Pure series math for the time-series chart. Recharts-free, so `TimeSeries.tsx`
+ * can import it without pulling recharts into the initial graph.
  */
 
 import { DT } from '../playback/clock'
@@ -97,7 +96,7 @@ export function lastVisibleIndex(values: number[], horizonS?: number): number {
   return -1
 }
 
-/** Y tick label: whole numbers once the span reaches 2, else one decimal (the mockup rule). */
+/** Y tick label: whole numbers once the span reaches 2, else one decimal. */
 export function formatYTick(v: number, hi: number): string {
   if (Math.abs(v - Math.round(v)) < 1e-6 && hi >= 2) return String(Math.round(v))
   return v.toFixed(1)

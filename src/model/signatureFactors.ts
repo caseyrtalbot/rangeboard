@@ -1,11 +1,8 @@
 /**
- * EO/IR and acoustic signature planning factors for T&E laydown work.
- *
- * The same shape as rcsFactors.ts: every quoted sensor range is conditioned
- * on a REFERENCE target, the range against another target scales by a
- * physical law, group tiers fill the blanks and are labeled PF, and a
- * sourced per-model value overrides the tier. Nothing here is measured
- * signature data.
+ * EO/IR and acoustic signature planning factors for T&E laydown work. Every
+ * quoted sensor range is conditioned on a reference target; group tiers fill
+ * the blanks and a sourced per-model value overrides the tier. Nothing here
+ * is measured signature data.
  *
  * Span: the Johnson criteria put a fixed number of resolvable line pairs
  * across a target's critical dimension for detection, so at fixed optics the

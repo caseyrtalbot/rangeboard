@@ -14,7 +14,7 @@ import { CalibrateDialog } from './CalibrateDialog'
 /** Columns of the field table; the edit form spans them. */
 const COLUMNS = 8
 
-/** A library field value: the contract split is number, tuple of numbers, or null. */
+/** A library field value: a number, a tuple of numbers, or null. */
 type FieldValue = number | number[] | null
 
 /** Grade and layer of a value with no lineage of its own, by the row's basis. */
@@ -29,7 +29,7 @@ function isFieldValue(value: unknown): value is FieldValue {
   return Array.isArray(value) && value.length > 0 && value.every((v) => typeof v === 'number')
 }
 
-/** The spec keys this tab lists, in spec order: every key the contract calls a field. */
+/** The spec keys this tab lists, in spec order. */
 function fieldsOf(model: SpecModel): Array<[string, FieldValue]> {
   const entries = Object.entries(specFields(model))
   return entries.filter((entry): entry is [string, FieldValue] => isFieldValue(entry[1]))
@@ -68,9 +68,9 @@ function valueText(value: unknown, unit?: string): string {
 }
 
 /**
- * The fields the load filled from the seed library, as `modelId/field`
- * keys (`loadNoticeFor`). Each one gets a chip naming the data package the
- * value came from, so an adopted value is never read as the user's own.
+ * The fields the load filled from the seed library, as `modelId/field` keys. Each
+ * gets a chip naming the data package it came from, so an adopted value is never
+ * read as the user's own.
  */
 function adoptedFields(notice: LoadNotice | null): Set<string> {
   const out = new Set<string>()
@@ -88,7 +88,7 @@ function draftParts(value: FieldValue): string[] {
 
 /**
  * The edit form of one field: a number input per element, a required reason and
- * Apply. Mounted per field, so the draft never survives a different field.
+ * Apply. Mounted per field, so a draft never survives a change of field.
  */
 function EditRow({
   model,
@@ -188,7 +188,7 @@ function FieldRow({
   const resetField = useOverrides((s) => s.resetField)
   const row = rowFor(model, field)
   const { grade, layer } = lineage(model, field, value, row)
-  // Only a scalar proportion or time calibrates from counts (Phase 4.2).
+  // Only a scalar proportion or time calibrates from counts.
   const family = typeof value === 'number' ? familyFor(model, field) : null
   return (
     <>
@@ -262,7 +262,7 @@ function FieldRow({
   )
 }
 
-/** One library model in use, with every field the contract calls a field. */
+/** One library model in use, with every one of its spec fields. */
 function ModelGroup({
   model,
   overrides,
@@ -332,9 +332,9 @@ function ModelGroup({
 }
 
 /**
- * Systems: every library field of every model an active entity uses, with its
- * grade, layer, source and spread. An override never edits the scenario
- * library; it sits beside the source value and carries the reason it was made.
+ * Every library field of every model an active entity uses, with its grade, layer,
+ * source and spread. An override never edits the scenario library; it sits beside
+ * the source value and carries the reason it was made.
  */
 export function SystemsTab() {
   const scenario = useStore((s) => s.scenario)
@@ -342,8 +342,8 @@ export function SystemsTab() {
   const resetAll = useOverrides((s) => s.resetAll)
   const inUse = modelsInUse(scenario)
   const models = scenario.library.filter((m) => inUse.has(m.id))
-  // The load notice is not scenario state: persist.ts keeps it by model object,
-  // so it follows the installed library and clears with New or another load.
+  // Not scenario state: persist.ts keeps it by model object, so it follows the
+  // installed library and clears with New or another load.
   const notice = loadNoticeFor(scenario.library)
 
   return (

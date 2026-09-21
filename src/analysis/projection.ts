@@ -1,9 +1,7 @@
 /**
- * Numerical timeline projections on the engine DT grid. Every function is
- * pure and store-free, answers one named quantity as a number array, and
- * knows nothing about chart ids, labels or colors: `series.ts` builds chart
- * Series over these arrays and `playback/mcRun.ts` reduces them into bands,
- * so the two agree by construction rather than by parsing series ids.
+ * Numerical timeline projections on the engine DT grid. Each function answers
+ * one named quantity as a number array and knows nothing about chart ids,
+ * labels or colors.
  *
  * Grid rule: index i is t = i * DT from t = 0 through `scenarioDurationS`,
  * `sampleCount(scenario)` points, NaN where a quantity is undefined. A held
@@ -44,8 +42,7 @@ export function holdFrom(values: number[], tS: number, value: number): void {
 
 /**
  * Ships alive per step: the ship count, stepping down by killDelta at each
- * kill event's effect time. The threat pane's residual and the Monte Carlo
- * per-threat band read this one rule.
+ * kill event's effect time.
  */
 export function residualOnGrid(report: AttritionReport, uasId: string, n: number): number[] {
   const shipCount = report.threats.find((x) => x.uasId === uasId)?.shipCount ?? 1
@@ -116,11 +113,7 @@ export function heldUnionOnGrid(
   return union
 }
 
-/**
- * Tracks held per step: the count of tracks whose held-track union is 1.
- * Zeros, never NaN. The chart `tracksHeld` series and the Monte Carlo
- * `tracked` band both read this rule.
- */
+/** Tracks held per step: the count of tracks whose held-track union is 1. Zeros, never NaN. */
 export function heldTracksOnGrid(
   tracks: ThreatAssessment[],
   enabledSensorIds: Set<string>,

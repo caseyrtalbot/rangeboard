@@ -7,18 +7,10 @@ import { durationOf } from './selectors'
 import { selectTrialSelection } from './trialSelectors'
 
 /**
- * Playback commands: a caller names an intent, this module resolves the
- * transition. It owns reset versus replay, the first-start stamps
- * (`startedAtMs`, `basisSignature`, the observed lens, the run sequence),
- * observation advance, completion at duration, cancellation of a pending
- * automatic start and frame = scrub + camera. Store-free: the store applies
- * the returned patch through `set`, so nothing here enters undo history.
- *
- * Preserved rules: a scrub or frame never advances `observedThroughS` and
- * never stamps `startedAtMs` or `basisSignature`; observation advances only
- * while the retained sampled trial is valid for the current scenario and run;
- * a completed run replays from zero and keeps its completion and achieved
- * observation; a resumed run clamps to the observed horizon.
+ * A caller names an intent; this module resolves the transition. Store-free: the
+ * store applies the returned patch through `set`, so nothing here enters undo
+ * history. Only observation advances `observedThroughS`, and only while the
+ * retained sampled trial is valid for the current scenario and run.
  */
 export type PlaybackCommand =
   /** Play, resume or replay; prepares the trial first when it is not ready. */
@@ -112,8 +104,8 @@ export function resolvePlayback(
       if (!ctx.playback.playing) return NONE
       const durationS = durationOf(ctx.scenario)
       if (command.t < durationS) return advance(ctx, command.t)
-      // At the duration with no ready trial there is nothing to seal, and a
-      // playing run that changes nothing keeps the frame loop alive. Pause it.
+      // At the duration with no ready trial there is nothing to seal, and a playing
+      // run that changes nothing keeps the frame loop alive. Pause it.
       return trialReady(ctx) ? complete(ctx, durationS) : resolvePlayback({ type: 'pause' }, ctx)
     }
     case 'advance':
@@ -146,10 +138,9 @@ function scrub(ctx: PlaybackContext, t: number): PlaybackPatch {
 }
 
 /**
- * The observed lens belongs to the run: the first start and a reset stamp the
- * active lens on the scenario through `set`, never through history. A stamp
- * that already matches replaces nothing; a new stamp is a presentation
- * variant, so every engine-keyed cache still hits.
+ * The observed lens belongs to the run: the first start and a reset stamp it on
+ * the scenario through `set`, never through history. A new stamp is a
+ * presentation variant, so every engine-keyed cache still hits.
  */
 function observedLens(ctx: PlaybackContext): Pick<PlaybackPatch, 'scenario'> {
   if ((ctx.scenario.observedPresetId ?? null) === ctx.presetId) return {}
@@ -217,10 +208,9 @@ function complete(ctx: PlaybackContext, durationS: number): PlaybackTransition {
 }
 
 /**
- * Play resolves to one of: repair (an observation record without a retained
- * trial resets first), wait (preparation starts or continues and the run
- * starts when the result lands), replay (a completed run restarts from zero)
- * or resume (clamped to the observed horizon).
+ * Play resolves to repair (an observation record without a retained trial resets
+ * first), wait (the run starts when preparation lands), replay (a completed run
+ * restarts from zero) or resume (clamped to the observed horizon).
  */
 function play(ctx: PlaybackContext): PlaybackTransition {
   const { playback, trial } = ctx

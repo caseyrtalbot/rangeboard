@@ -1,9 +1,7 @@
 /**
  * Saved run history on Outcome: the list of records in the run store, and one
- * opened record rendered in place. Every number comes from the record's own
- * `mc`, so each readout carries that record's replicate basis, never the
- * current Board ensemble. `RunHistoryView` and `RunRecordView` are pure; only
- * `RunHistory` reads the store.
+ * opened record rendered in place. Every number comes from the record's own `mc`,
+ * never the current Board ensemble. Only `RunHistory` reads the store.
  */
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -106,18 +104,16 @@ function timeTile(stat: Stat, mc: McSummary): ReactNode {
 }
 
 const cell = { whiteSpace: 'normal', overflowWrap: 'anywhere' } as const
-// Five columns in a 320 px panel: the label takes the slack. The action words
-// never break, so the two buttons stack rather than overflow the panel.
+// Five columns; the label takes the slack.
 const listWidths = ['30%', '22%', '11%', '11%', '26%']
 const actionWord = { whiteSpace: 'nowrap' } as const
 const meanText = (stat: Stat) => (statMean(stat) == null ? '—' : formatCount(stat.mean))
 const timeText = (stat: Stat) => (statMean(stat) == null ? '—' : formatTime(stat.mean))
 
 /**
- * What fixed a tile's number: the manifest entries that decided the draws and
- * the models, and the scenario hash the run was made on. Every tile of one
- * record shares the same lineage, because one run produced all of them.
- * Collapsed by default: a tile shows the estimate, not its provenance.
+ * What fixed a tile's number: the manifest entries that decided the draws and the
+ * models, and the scenario hash the run was made on. Every tile of one record
+ * shares this lineage. Collapsed by default.
  */
 function lineageRows(record: RunRecord): Array<[string, ReactNode]> {
   const m = record.manifest

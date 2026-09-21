@@ -5,14 +5,9 @@ import { kineticPk } from './kinetic'
 
 /**
  * Beam effectors: what a directed-energy or HPM salvo spends and which
- * physical closure answers its effect. directedEnergy.ts and hpm.ts model
- * DE irradiance from `outputPowerKw`,
- * `beamQualityM2`, `jitterUrad` and `apertureM`; dwell to effect per airframe
- * class calibrated from the sourced Iron Beam `dwellToEffectS`; settle; HPM field strength
- * from `fieldStrengthVm` at `fieldStrengthRangeM` against a susceptibility
- * threshold per airframe class, `beamwidthDeg` and `rechargeS`. A dwell
- * requests its fine sweep step on the engagement clock (clock.ts
- * `SweepClock.requestFineStep`) at the salvo commit in attrition.ts.
+ * physical closure answers its effect. The laws themselves are in
+ * directedEnergy.ts (irradiance and dwell to effect) and hpm.ts (field
+ * strength against a susceptibility threshold).
  */
 
 /** What a salvo costs the battery, as opposed to how it kills. */

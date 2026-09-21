@@ -80,8 +80,8 @@ function ensembleMeans(mc: McSummary, hasAsset: boolean) {
 const signed = (value: number) => `${value > 0 ? '+' : ''}${formatCount(value)}`
 
 /**
- * A chart and its PNG button. The chart paints from CSS custom properties, so
- * the export takes the panel surface as the ground the SVG does not carry.
+ * A chart and its PNG button. The chart paints from CSS custom properties, so the
+ * export passes the panel surface as a background the SVG does not carry.
  */
 function ChartExport({ name, children }: { name: string; children: ReactNode }) {
   const frame = useRef<HTMLDivElement>(null)
@@ -408,10 +408,9 @@ type RunRow = {
 }
 
 /**
- * The five compared quantities of one saved ensemble, read from that record's
- * own summary. Same gates as the trial comparison above: a count band needs two
- * replicates, a conditional time mean needs 30 defined samples at 95 %, and an
- * aggregate salvo interval exists only with a single effector.
+ * The five compared quantities of one saved ensemble, read from that record's own
+ * summary. A count band needs two replicates, a conditional time mean needs 30
+ * defined samples at 95 %, and an aggregate salvo interval needs a single effector.
  */
 function savedRunRows(mc: McSummary, hasAsset: boolean): { population: number; rows: RunRow[] } {
   const { population, i, salvos, salvoMean } = ensembleMeans(mc, hasAsset)
@@ -462,13 +461,12 @@ function savedRunRows(mc: McSummary, hasAsset: boolean): { population: number; r
 const hasAssetIn = (record: RunRecord) =>
   record.scenario.entities.some((entity) => entity.kind === 'asset' && entityActive(entity))
 
-// The replicate count is the summary's own, never the manifest setting: the
-// loop may have stopped early, and the numbers carry the basis they were run on.
+// The summary's own replicate count, never the manifest setting: the loop may
+// have stopped early.
 const runScope = (record: RunRecord, population: number) =>
   `${record.mc.replicates} replicates · ${record.manifest.uncertainty === 'total' ? 'Total uncertainty' : 'Aleatory uncertainty'} · seed ${record.mc.seed} · full run T+${formatTime(record.mc.durationS)} · ${population} members`
 
-// Four columns at the panel's minimum width: each side's interval sits under
-// its mean rather than in a column of its own, so no unit breaks mid-word.
+// Each side's interval sits under its mean, so no unit breaks mid-word.
 const compareWidths = ['22%', '28%', '28%', '22%']
 
 export interface SavedRunCompareViewProps {
@@ -480,9 +478,9 @@ export interface SavedRunCompareViewProps {
 }
 
 /**
- * Two saved runs side by side. Each side keeps its own replicate basis,
- * horizon and population, so only the means are differenced; a count delta is
- * in members, because two records may raid different populations.
+ * Two saved runs side by side. Each side keeps its own replicate basis, horizon
+ * and population, so only the means are differenced. A count delta is in members,
+ * because two records may raid different populations.
  */
 export function SavedRunCompareView({ runs, a, b, error, onPick }: SavedRunCompareViewProps) {
   const left = a ? savedRunRows(a.mc, hasAssetIn(a)) : null
@@ -630,7 +628,7 @@ export function SavedRunCompare() {
 
   useEffect(() => {
     let live = true
-    // The two newest records open by default, the pair a reader most often wants.
+    // The two newest records open by default.
     const open = (side: 'a' | 'b', id: string | undefined) => {
       if (!id) return
       getRun(id).then(
@@ -693,7 +691,7 @@ export function CompareScreen() {
   const horizon = useStore((state) => selectTrialHorizon(state, state.playback.observedThroughS))
   const baseline = useStore((state) => state.baseline)
   const mc = currentSummary(mcState, runId)
-  // Stale marking already covers an edit; the check also guards a summary restored without a signature.
+  // Also guards a summary restored without a signature; an edit is already stale.
   const current = useMemo(
     () =>
       mc != null &&
@@ -701,8 +699,8 @@ export function CompareScreen() {
         mcState.basisSignature === analysisBasisSignature(scenario)),
     [mc, mcState.basisSignature, scenario],
   )
-  // Saved-run comparison needs no trial and no current ensemble, so it stays
-  // below both placeholders, as the run history does on Outcome.
+  // Saved-run comparison needs no trial and no current ensemble, so it renders
+  // below both placeholders.
   if (
     selection.status === 'idle' ||
     selection.status === 'cancelled' ||

@@ -12,18 +12,15 @@ import { MODEL_TAGS, modelsUsed } from './fidelity'
 import type { RequirementGateId } from './requirements'
 
 /**
- * RUN VALIDITY. One place decides whether a run can carry evidence at all,
- * so the toolbar chip, the requirement gates, and the exported record can
- * never disagree.
+ * The one decision on whether a run can carry evidence, shared by the toolbar
+ * chip, the requirement gates and the exported record.
  *
- * The rule is the T&E rule, not a scoring rule: a result the run cannot
- * support is NOT a pass and NOT a fail. It is not evaluated. An
- * 'invalidating' finding removes the named tracks from the gates it lists,
- * because the measurement was never made. A 'limiting' finding leaves the
- * measurement standing but attaches the caveat that qualifies it.
+ * A result the run cannot support is neither a pass nor a fail: it is not
+ * evaluated. An 'invalidating' finding removes the named tracks from the
+ * gates it lists, because the measurement was never made. A 'limiting'
+ * finding leaves the measurement standing and attaches a caveat.
  *
- * Pure TS: no store, no DOM, no caching. Derived live from the scenario and
- * the assessment sweep, never stored on the scenario.
+ * Derived live from the scenario and the assessment sweep, never stored.
  */
 
 /** Stable finding kinds. One finding per kind per run; tracks list in uasIds. */
@@ -50,9 +47,9 @@ export interface RunValidityFinding {
   /** Affected tracks. Empty when the finding is scenario-wide. */
   uasIds: string[]
   /**
-   * Requirement gates this finding bears on. An 'invalidating' finding
-   * INVALIDATES these gates for the tracks in uasIds; a 'limiting' finding
-   * adds itself to these gates as a caveat.
+   * Requirement gates this finding bears on. An 'invalidating' finding voids
+   * these gates for the tracks in uasIds; a 'limiting' finding adds itself to
+   * these gates as a caveat.
    */
   gates: RequirementGateId[]
   /** Operator-readable statement of the problem. */
@@ -173,8 +170,7 @@ function nonStandardCovariates(scenario: Scenario): string[] {
 /**
  * Threats whose flight path starts inside a sensor's effective detect ring.
  * The sensor holds the track at T0, so the run never exercises the search
- * problem and the Detect result is invalid by construction. The sweep itself
- * lives in sim.ts (spawnInRingViolations); this only groups it.
+ * problem and the Detect result is invalid by construction.
  */
 function spawnInRingFinding(scenario: Scenario): RunValidityFinding | null {
   const violations = spawnInRingViolations(scenario)

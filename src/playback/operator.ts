@@ -15,23 +15,19 @@ import type { ThreatAssessment } from './sim'
  * the ratio to the median, the lognormal `Spread` convention), from the
  * policy's kind-10 uniform `draw.latency(c2Id, uasId, tS)`.
  *
- * Overload. When the live tracks at the C2 (real threats currently tracked
- * plus the false tracks of the radars that feed it) exceed
- * `operatorTrackCapacity`, the latency multiplies by load / capacity. The
- * model is linear because one operator serves the queue in turn: with
- * capacity tracks each decision gets the operator's full attention, with
- * twice that many each track gets half of it and its decision takes twice
- * as long. A queueing model would add a knee near capacity; nothing in the
- * library states one, so the planning factor stays the first-order line.
+ * Overload. When the live tracks at the C2 (real threats currently tracked plus
+ * the false tracks of the radars that feed it) exceed `operatorTrackCapacity`,
+ * the latency multiplies by load / capacity. The model is linear because one
+ * operator serves the queue in turn.
  *
  * The doctrine dwells (`declareHostileS`, `targetS`) already charge the
  * planning decision time, so the queue adds only the excess over the median:
- * the tail of the draw and the overload penalty. At the median with no
- * overload the extra is 0 and the doctrine timeline holds.
+ * the tail of the draw and the overload penalty. At the median with no overload
+ * the extra is 0.
  *
- * Inactive (zero latency, today's timeline): no C2 with a `c2` spec that
- * states a median, the `noOperatorQueue` switch, or a threat whose route has
- * no C2 node. The C2 node of a route is its first c2 entity.
+ * Inactive, at zero latency: no C2 with a `c2` spec that states a median, the
+ * `noOperatorQueue` switch, or a threat whose route has no C2 node. The C2 node
+ * of a route is its first c2 entity.
  */
 
 /** The hash uniform is [0, 1); clamp so the quantile is finite (as sampleSpread does). */
@@ -65,11 +61,9 @@ export function firstC2Of(route: Pick<KillChainRoute, 'viaC2Ids'>): string | nul
 
 /**
  * What one operator decision charged, and whether the floor at 0 applied.
- * `floored` is the stamp the Board reads: the raw excess
- * `base * overload - medianS` was strictly below 0, so the decision drew
- * faster than its median and the queue charged nothing rather than shortening
- * a doctrine dwell. A raw excess of exactly 0 (the deterministic median draw)
- * is NOT floored: nothing was discarded.
+ * `floored` means the raw excess `base * overload - medianS` was strictly below
+ * 0, so the queue charged nothing. A raw excess of exactly 0 is not floored:
+ * nothing was discarded.
  */
 export interface OperatorDelay {
   /** Extra seconds over the doctrine dwell; never negative. */
@@ -88,10 +82,10 @@ export interface OperatorQueue {
   /** True when some C2 adds latency: a c2 spec with a median and the switch off. */
   readonly active: boolean
   /**
-   * Extra latency of one decision (0 declare, 1 assign) on `uasId` at `c2Id` taken at
-   * `tS`, seconds, over the doctrine dwell: the drawn latency times the overload factor, less the median, floored
-   * at 0, with the floor reported. extraS 0, floored false and decided false when
-   * inactive or when `c2Id` states no median: only a C2 that drew is a decision.
+   * Extra latency over the doctrine dwell of one decision (0 declare, 1 assign)
+   * on `uasId` at `c2Id` taken at `tS`, seconds: the drawn latency times the
+   * overload factor, less the median, floored at 0. All three fields read zero
+   * or false when the queue is inactive or `c2Id` states no median.
    */
   delayS(c2Id: string, uasId: string, tS: number, decision: number): OperatorDelay
   /** Live tracks at the C2 at `tS`: real threats tracked plus the false tracks of its feeding radars. */
@@ -182,11 +176,8 @@ export function createOperatorQueue(
       const u = draw.latency(c2Id, uasId, tS, decision)
       const medianS = spec.decisionLatencyS!
       const base = decisionLatencyS(medianS, spec.decisionLatencySigmaDb, u)
-      // The doctrine dwell already charges the planning decision time, so the
-      // queue adds only the excess: the tail of the draw and the overload
-      // penalty. At the median with no overload the extra is 0 and today's
-      // timeline holds; a decision faster than the median never shortens a
-      // doctrine dwell, and the floor that drops it is reported.
+      // Only the excess over the median is charged; a decision faster than the
+      // median never shortens a doctrine dwell, and the floor reports it.
       const raw = base * overloadFactor(loadAt(c2Id, tS), spec.operatorTrackCapacity) - medianS
       return raw < 0
         ? { extraS: 0, floored: true, decided: true }

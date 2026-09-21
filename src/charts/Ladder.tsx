@@ -39,11 +39,10 @@ function gutterLabel(label: string): string {
 }
 
 /**
- * The phase ladder: one row per track, spans as short rounded bars, the playhead, and
- * `m:ss` ticks under the rows. Plain SVG; Recharts has no row-span primitive, and a
- * Recharts `ResponsiveContainer` gives a non-Recharts child no width, so the ladder owns
- * its shell and measures its host like EngagementStrip does. Scrub maps the pointer x
- * through the same linear scale the spans use.
+ * The phase ladder: one row per track, spans as short rounded bars, the playhead,
+ * and `m:ss` ticks under the rows. Plain SVG; Recharts has no row-span primitive
+ * and gives a non-Recharts child no width, so the ladder measures its own host.
+ * Scrub maps the pointer x through the same linear scale the spans use.
  */
 export function Ladder({
   rows,
@@ -58,7 +57,7 @@ export function Ladder({
   const hostRef = useRef<HTMLDivElement>(null)
   const [measured, setMeasured] = useState(0)
 
-  // Same pattern as EngagementStrip: the container width is read, never polled.
+  // The container width is read, never polled.
   useEffect(() => {
     if (width != null) return
     const el = hostRef.current

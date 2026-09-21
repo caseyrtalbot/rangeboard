@@ -54,9 +54,8 @@ const AIRFRAME_CODE: Record<UasSpec['airframe'], string> = {
 }
 
 /**
- * Next free designator in the seed pattern for this model's group and
- * airframe. The sequence climbs past designators taken by other models, so
- * THREAT_TACTICS designator pairing stays intact.
+ * Next free designator in the seed pattern for this model's group and airframe.
+ * The sequence climbs past designators other models hold.
  */
 function autoDesignator(model: SpecModel, library: SpecModel[]): string {
   const group = model.uas?.group ?? 1
@@ -167,9 +166,8 @@ function Num({
 }
 
 /**
- * Height above ground of a sensor phase centre or an effector launcher, with
- * the basis of the value in use: a provenance row, else the planning factor.
- * An empty field keeps the planning factor.
+ * Height above ground of a sensor phase centre or an effector launcher, with the
+ * basis of the value in use: a provenance row, else the planning factor.
  */
 function MountHeight({
   model,
@@ -235,10 +233,10 @@ function spreadCell(model: SpecModel, row: Provenance): string {
 }
 
 /**
- * Where each recorded value of the model comes from. A field with no row is
- * a planning factor. A seed model is read only: the Reset to seed action
- * restores its rows. A custom model adds and removes rows, one row per field.
- * Each Spread value reads what a total-uncertainty replicate samples.
+ * Where each recorded value of the model comes from. A field with no row is a
+ * planning factor. A seed model is read only; a custom model adds and removes
+ * rows, one per field. Each Spread value is what a total-uncertainty replicate
+ * samples.
  */
 function Sources({
   model,

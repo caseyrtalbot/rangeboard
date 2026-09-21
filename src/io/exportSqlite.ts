@@ -1,16 +1,13 @@
 /**
- * Run history as one SQLite file (lane 4.4). A caller reads records through
- * `listRuns` then `getRun` and hands the array here; every table carries
- * `run_id` referencing `runs.id`, so a join across two runs is one query in
- * the `sqlite3` CLI. Units stay in the column names (`_s`, `_m`) exactly as
- * the record fields state them, and every statistic keeps its own interval
- * (`lo`, `hi`, `conf`, `interval`) and its own denominator (`n`, `total`,
- * `defined_*`): a NaN statistic writes NULL, never a substituted number.
+ * Run history as one SQLite file. A caller reads records through `listRuns` then
+ * `getRun` and hands the array here; every table carries `run_id` referencing
+ * `runs.id`. Units stay in the column names (`_s`, `_m`) exactly as the record
+ * fields state them, and every statistic keeps its own interval (`lo`, `hi`,
+ * `conf`, `interval`) and its own denominator (`n`, `total`, `defined_*`): a NaN
+ * statistic writes NULL, never a substituted number.
  *
- * `sql.js` is loaded only inside `exportRunsSqlite` (`await import`), and its
- * wasm URL with it. A static import of either would pull 46 kB of emscripten
- * glue into the entry chunk and fail the bundle budget in
- * `scripts/check-bundle.mjs`.
+ * `sql.js` and its wasm URL are loaded only inside `exportRunsSqlite`, so the
+ * emscripten glue stays out of the entry chunk.
  */
 import type { RunRecord } from '../model/runRecord'
 import type { SensitivitySummary, Stat } from '../playback/mcRun'
@@ -101,11 +98,7 @@ function statValues(stat: Stat): SqlValue[] {
 const TARGET_STATS = ['killed', 'leaked', 'first_detect_s']
 const EFFECTOR_STATS = ['salvos', 'kills']
 
-/**
- * One table: its column declarations and the constraints that follow them.
- * Every insert counts its placeholders from `columns`, so a column added here
- * cannot drift from the values the insert binds.
- */
+/** One table: its column declarations and the constraints that follow them. */
 interface TableSchema {
   name: string
   columns: string[]
@@ -223,11 +216,7 @@ function insertSql(table: TableSchema): string {
 
 const SCHEMA_SQL = [RUNS, PER_TARGET, PER_EFFECTOR, SENSITIVITY, SOBOL].map(createTable).join('\n')
 
-/**
- * A record may carry a Sobol result once the sensitivity screen saves one. No
- * saved record does today, so the `sobol` table is empty by construction; the
- * insert reads the field so the table fills the moment the record gains it.
- */
+/** A record may carry a Sobol result; no saved record does yet, so the `sobol` table is empty. */
 type RunRecordWithSobol = RunRecord & { sobol?: SobolResult | null }
 
 function insertRun(db: SqlDatabase, records: RunRecord[]): void {
@@ -296,9 +285,8 @@ function insertPerEffector(db: SqlDatabase, records: RunRecord[]): void {
 }
 
 /**
- * One row per response. A row written before the loop recorded `responses`
- * carries the leakers headline only, so it writes that one row with no
- * definedness rather than inventing the other four responses.
+ * One row per response. A row written before the loop recorded `responses` carries
+ * the leakers headline only, and writes that one row with no definedness.
  */
 function sensitivityRows(record: RunRecord, summary: SensitivitySummary): SqlValue[][] {
   const out: SqlValue[][] = []
@@ -395,11 +383,7 @@ function insertSobol(db: SqlDatabase, records: RunRecord[]): void {
   }
 }
 
-/**
- * The wasm URL Vite emits, imported inside the lazy path so nothing static
- * references sql.js. Both dist builds ship byte-identical wasm, so the
- * filename emscripten asks for does not change the answer.
- */
+/** The wasm URL Vite emits, imported inside the lazy path so nothing static references sql.js. */
 async function bundledWasm(): Promise<(file: string) => string> {
   const { default: url } = await import('sql.js/dist/sql-wasm.wasm?url')
   return () => url

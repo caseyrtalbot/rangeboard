@@ -6,11 +6,9 @@ const ANCHOR_GAP_PX = 6
 const POP_WIDTH_PX = 264
 
 /**
- * Inline info affordance: a small "i" dot that opens a click-toggled popover
- * for methodology notes, so explanatory prose stays out of the panel flow.
- * The popover portals to body (the panel scroll container never clips it) and
- * closes on outside click, Esc, any scroll, or a window resize, so it can
- * never sit detached from its anchor. Same surface treatment as .tooltip.
+ * A small "i" dot that opens a click-toggled popover for methodology notes. The
+ * popover portals to body, so the panel scroll container cannot clip it, and
+ * closes on outside click, Esc, any scroll or a window resize.
  */
 export function Info({ label, children }: { label: string; children: React.ReactNode }) {
   const btnRef = useRef<HTMLButtonElement>(null)
@@ -88,8 +86,7 @@ function InfoPop({
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
-    // Any scroll detaches the popover from its anchor; the capture phase
-    // catches nested scroll containers whose events never bubble to window.
+    // Capture phase: nested scroll containers do not bubble their events to window.
     function onScroll() {
       onClose()
     }

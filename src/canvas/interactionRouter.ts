@@ -2,13 +2,9 @@ import type { Entity } from '../model/types'
 import type { Tool } from '../state/store'
 
 /**
- * Board interaction routing. App (keyboard), CanvasStage (stage clicks, drops,
- * the placement target) and EntityLayer (entity clicks) each normalize their
- * DOM or Konva event into an intent, read the relevant state into a
- * snapshot, and dispatch the action this module returns. The precedence
- * rules live here once; the callers own no ordering of their own.
- *
- * Store-free: the snapshot is plain data, so the full matrix is table-tested.
+ * Board interaction routing. A caller normalizes its DOM or Konva event into an
+ * intent, reads the relevant state into a snapshot, and dispatches the action this
+ * module returns. Every precedence rule lives here, over plain data.
  */
 
 /** Everything the Escape chain and the click owners need to decide. */
@@ -92,18 +88,15 @@ export function routeInteraction(intent: Intent, state: InteractionState): Actio
       // Picking a tool or a Range setup action disarms the placement.
       return { type: 'clear-placement' }
     case 'arm-placement':
-      // Arming cancels every draft, the context menu, the connect suggestion
-      // and resets the tool; the caller performs that compound reset.
+      // The caller performs the compound reset: every draft, the context menu,
+      // the connect suggestion and the tool.
       return { type: 'arm-placement' }
   }
 }
 
 /**
- * Escape order: the command palette or Layout surface, then the Settings
- * dialog, then the Location dialog, then an armed placement or the open
- * drawer, then a two-point calibration, then the canvas draft, tool and
- * selection. The ROE dropdown closes in `usePopover` and leaves the placement
- * armed. A typing target gets Escape only for the dialog and calibration steps.
+ * The ROE dropdown closes in `usePopover` and leaves the placement armed. A typing
+ * target gets Escape only for the dialog and calibration steps.
  */
 function routeEscape(state: InteractionState): Action {
   if (state.paletteOpen || state.settingsOpen) return CONTINUE
@@ -116,10 +109,9 @@ function routeEscape(state: InteractionState): Action {
 }
 
 /**
- * An entity click either ends at the entity or bubbles to the stage. Connect
- * and select own it; a path tool owns only the UAS that starts the draft;
- * boundary, calibrate and an armed raid draft let it fall through as a stage
- * point so the aim gesture may land on an asset.
+ * An entity click either ends at the entity or bubbles to the stage. Boundary,
+ * calibrate and an armed raid draft let it fall through as a stage point, so the
+ * aim gesture may land on an asset.
  */
 function routeEntityClick(
   intent: Extract<Intent, { kind: 'click-entity' }>,
@@ -135,11 +127,8 @@ function routeEntityClick(
 }
 
 /**
- * A stage click is the empty canvas or an entity click that bubbled. The
- * marquee's paired click is stale; an armed placement owns the click; the raid
- * draft is ahead of the draw tools so the click is never a stray vertex; the
- * second click of an in-place double-click is not a vertex; only a plain
- * select click on empty canvas clears the selection.
+ * A stage click is the empty canvas or an entity click that bubbled. The raid draft
+ * sits ahead of the draw tools, so a click during one is never a stray vertex.
  */
 function routeStageClick(
   intent: Extract<Intent, { kind: 'click-stage' }>,

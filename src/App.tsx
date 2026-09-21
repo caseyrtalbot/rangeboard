@@ -37,8 +37,7 @@ import { State } from './ui/kit'
 import { nextTabIndex } from './ui/rovingTabs'
 
 // Right-panel tabs and the palette: each opens on demand, so each loads on demand.
-// LibraryEditor stays static: EntityWorkspace renders it inline, so a boundary here
-// moves no bytes and only makes rolldown report an ineffective dynamic import.
+// LibraryEditor stays static because EntityWorkspace renders it inline.
 const AnalysisPanel = lazy(() =>
   import('./panels/AnalysisPanel').then((m) => ({ default: m.AnalysisPanel })),
 )
@@ -394,8 +393,8 @@ export default function App() {
   }, [setRightTab])
   const runSeq = useStore((s) => s.playback.runSeq)
   const runPhase = useStore((s) => s.playback.phase)
-  // Primitives only: App renders the whole Board tree, so a whole `selection`
-  // or `scenario` subscription re-renders it on every click and every edit.
+  // Primitives only: a whole `selection` or `scenario` subscription would re-render
+  // the Board tree on every click and every edit.
   const selectedEntityId = useStore(selectSelectedEntityId)
   const hasObjectSelection = useStore(selectHasObjectSelection)
   const selectionKey = useStore(selectSelectionKey)
@@ -433,9 +432,8 @@ export default function App() {
   }, [])
   const toggleRight = useCallback(() => setRightOpen(!rightOpenNow.current), [setRightOpen])
 
-  // The engagement strip open flag. It stays here, not in the store: only this
-  // column reads it, and the strip is mounted only while it is open. The ref
-  // keeps one stable toggle, so the memoized playback bar holds its memo.
+  // The engagement strip open flag. Only this column reads it. The ref keeps one
+  // stable toggle, so the memoized playback bar holds its memo.
   const [engagementOpen, setEngagementOpen] = useState(() => readSetting(ENGSTRIP_OPEN_KEY) === '1')
   const engagementOpenNow = useRef(engagementOpen)
   const toggleEngagement = useCallback(() => {
@@ -503,13 +501,11 @@ export default function App() {
     )
   }
 
-  // The bubble-phase keyboard map has no deps, so it reads the drawer and
-  // placement state through this ref.
+  // The bubble-phase keyboard map has no deps, so it reads shell state through this ref.
   const shell = useRef({ libraryOpen: false, placementArmed: false })
   shell.current = { libraryOpen, placementArmed: placement != null }
 
-  // One dispatcher for every Escape action the router returns; the two
-  // listeners below only decide which phase acts.
+  // One dispatcher for every Escape action the router returns.
   const dispatchEscape = useCallback((action: Action) => {
     const st = useStore.getState()
     switch (action.type) {
@@ -541,7 +537,6 @@ export default function App() {
   useEffect(() => {
     if (!libraryOpen && !placement) return
     // Capture phase, so the placement cancels ahead of the canvas shortcut.
-    // Any other Escape action stays with the bubble-phase keyboard map.
     function onEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
       const action = routeInteraction(
@@ -675,8 +670,8 @@ export default function App() {
     window.addEventListener('mouseup', onUp)
   }
 
-  // The one place the theme reaches the document. `system` removes the
-  // attribute so the prefers-color-scheme query in index.css decides.
+  // The one place the theme reaches the document. `system` removes the attribute,
+  // so the prefers-color-scheme query in index.css decides.
   useEffect(() => {
     if (theme === 'system') document.documentElement.removeAttribute('data-theme')
     else document.documentElement.setAttribute('data-theme', theme)
@@ -686,8 +681,7 @@ export default function App() {
     function onKey(e: KeyboardEvent) {
       if (document.querySelector('#settings-panel[open]')) return
       const mod = e.metaKey || e.ctrlKey
-      // Cmd+K toggles the command palette. Deliberately ahead of the typing
-      // suppression so it opens from inside an input.
+      // Ahead of the typing suppression, so the palette opens from inside an input.
       if (mod && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setPaletteOpen((v) => !v)

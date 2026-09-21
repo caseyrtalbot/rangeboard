@@ -36,11 +36,7 @@ interface Props {
   members: Map<string, TrialMemberState[]>
   /** Entities whose labels render as spoke callouts in CalloutLayer instead. */
   spokeIds: Set<string>
-  /**
-   * The lit half of the pulse, computed once per frame from the display time.
-   * A node reads this boolean and never the time, so a frame re-renders only
-   * the nodes that moved or pulse.
-   */
+  /** The lit half of the pulse, computed once per frame from the display time. */
   blink: boolean
 }
 
@@ -51,16 +47,9 @@ const GHOST = PHASE_STYLE.ghost.color
 const JAM_CYAN = EW_JAM_COLOR
 /** Out of rounds. Matches the 'bad' treatment the system panel gives EMPTY. */
 const DEPLETED = DANGER_INK
-/**
- * Destroyed-overlay ink. Bright enough to carry over the dimmed ghost group,
- * and not a phase color, so it never reads as another kill-chain rung.
- */
+/** Destroyed-overlay ink. Not a phase color, so it never reads as a kill-chain rung. */
 const DESTROYED = '#cfd4cc'
 
-/**
- * A defeated track is quieter than a live one but never faint: the destroyed
- * strike, not the opacity, is what says the track is dead.
- */
 const GHOST_OPACITY = 0.7
 
 /**
@@ -81,11 +70,7 @@ const JAM_DIAMOND_R = 21
 /** Gap under the wrapped name before the DEFEATED tag, px. */
 const TAG_GAP = 6
 
-/**
- * Konva compares array props by identity, so an inline literal is re-set on
- * every render and dirties the layer. Every fixed dash and point list below is
- * one module constant instead.
- */
+/** Konva compares array props by identity, so every fixed dash and point list is a constant. */
 /** Heading tick: straight up from the glyph centre, screen px. */
 const HEADING_TICK = [0, 0, 0, -16]
 const MEMBER_HEADING_TICK = [0, 0, 0, -11]
@@ -123,10 +108,8 @@ interface GlyphProps {
 }
 
 /**
- * MIL-STD-2525 destroyed overlay: one bold strike across the frame, drawn
- * long enough to break out of it on both ends. It runs the opposite diagonal
- * to the inactive-entity slash, so a defeated track and a switched-off system
- * never read the same.
+ * MIL-STD-2525 destroyed overlay: one bold strike across the frame. It runs the
+ * opposite diagonal to the inactive-entity slash.
  */
 function DestroyedStrike({ points, width }: { points: number[]; width: number }) {
   return (
@@ -142,10 +125,9 @@ function DestroyedStrike({ points, width }: { points: number[]; width: number })
 }
 
 /**
- * The friend affiliation frame plus its function letter. Both come from
- * panels/Glyph.tsx, so the canvas and the palette draw one shape and one
- * letter per kind. An outline frame carries its letter in the entity color,
- * because the dark board shows through the unfilled frame.
+ * The friend affiliation frame plus its function letter, both from panels/Glyph.tsx.
+ * An outline frame carries its letter in the entity color, because the dark board
+ * shows through the unfilled frame.
  */
 function FriendFrame({
   kind,
@@ -168,8 +150,7 @@ function FriendFrame({
         stroke={filled ? EDGE : color}
         strokeWidth={filled ? 1 : 1.5}
         strokeScaleEnabled={false}
-        // A 1 px edge over an opaque fill: the buffer-canvas pass Konva runs
-        // for a fill+stroke shape under a transparent group buys nothing here.
+        // A 1 px edge over an opaque fill does not need Konva's buffer-canvas pass.
         perfectDrawEnabled={false}
         listening={false}
       />
@@ -191,8 +172,7 @@ function FriendFrame({
 /**
  * MIL-STD-2525 symbology, matching panels/Glyph.tsx: the FRAME carries
  * affiliation and an inner LETTER carries function.
- *   friend frame  - rounded-top rectangle: sensor S, c2 C2, effector E,
- *                   asset A. One blue-force frame, four readable functions.
+ *   friend frame  - rounded-top rectangle: sensor S, c2 C2, effector E, asset A.
  *   hostile frame - diamond: uas.
  *   neutral frame - hollow square with a centre dot: marker.
  * Heading ticks draw under the frame so only the protruding tip shows.
@@ -200,8 +180,7 @@ function FriendFrame({
 function Glyph({ entity, headingDeg, color, ghost, filled = true, tickRef }: GlyphProps) {
   switch (FRAME_FOR[entity.kind]) {
     case 'friend':
-      // Guidance treatment: an idle or empty weapon is an outline, a weapon
-      // holding the track is filled. Every other blue-force kind stays filled.
+      // An idle or empty weapon is an outline; every other blue-force kind is filled.
       return (
         <>
           {entity.kind === 'sensor' && (
@@ -302,15 +281,14 @@ function HeadingHandle({
   function headingFromPointer(e: KonvaEventObject<DragEvent>): number | null {
     const pointer = e.target.getStage()?.getPointerPosition()
     if (!pointer) return null
-    // The camera is read here, not subscribed: a pan or a zoom must not
-    // re-render every entity node.
+    // Read, not subscribed: a pan or a zoom must not re-render every entity node.
     const camera = useStore.getState().camera
     const world = {
       x: (pointer.x - camera.x) / camera.scale,
       y: (pointer.y - camera.y) / camera.scale,
     }
-    // Only a sensor or an effector carries a handle, and neither flies a
-    // path, so the rest position is the glyph position.
+    // Only a sensor or an effector carries a handle, and neither flies a path,
+    // so the rest position is the glyph position.
     return Math.round(bearingDeg(entity.pos, world))
   }
 
@@ -337,9 +315,8 @@ function HeadingHandle({
           if (h == null) return
           const deg = h % 360
           draft.current = deg
-          // Preview on the Konva nodes alone. A store write per pointer move
-          // reruns the whole deterministic picture and pushes an undo entry
-          // for every frame of the gesture.
+          // Preview on the Konva nodes alone: a store write per pointer move would
+          // rerun the picture and push an undo entry for every frame of the gesture.
           const p = handlePoint(deg)
           tickRef.current?.rotation(deg)
           leaderRef.current?.points([0, 0, p.x, p.y])
@@ -380,14 +357,13 @@ interface NodeProps {
 
 /**
  * The counter-scale wrapper of one entity: the formation members and the main
- * group. Only this wrapper reads the zoom, so a wheel step re-renders these
- * few elements and not the body under them. The handlers read the store at
- * event time, so a node subscribes to nothing it does not draw.
+ * group. Only this wrapper reads the zoom, so a wheel step re-renders these few
+ * elements and not the body under them.
  */
 const EntityNode = memo(function EntityNode(props: NodeProps) {
   const { entity, x, y, headingDeg, state } = props
-  // Only the scale is read at render; the handlers take x and y from the store
-  // directly, so a pan never re-renders a node.
+  // Only the scale is read at render; the handlers take x and y from the store,
+  // so a pan never re-renders a node.
   const k = useStore((s) => s.camera.scale)
   const tool = useStore((s) => s.ui.tool)
   const model = useStore((s) => modelFor(s.scenario, entity))
@@ -490,8 +466,7 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
                 fill={m.outcome === 'mission-kill' ? undefined : color}
                 stroke={m.outcome === 'mission-kill' ? JAM_CYAN : EDGE}
                 strokeWidth={1}
-                // The member group carries an opacity, so a fill+stroke shape
-                // under it would take Konva's stage-sized buffer canvas path.
+                // The group carries an opacity; skip Konva's buffer-canvas pass.
                 perfectDrawEnabled={false}
               />
             )}
@@ -511,8 +486,6 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
 function handleClick(e: KonvaEventObject<MouseEvent>, entity: Entity) {
   const store = useStore.getState()
   const { tool, connectFromId, pathEntityId, raidDraft } = store.ui
-  // Which tool owns an entity click, and when it bubbles to the stage as a
-  // draw point or raid axis, is decided in the router.
   const action = routeInteraction(
     { kind: 'click-entity', entityKind: entity.kind, shiftKey: e.evt.shiftKey },
     {
@@ -562,9 +535,7 @@ function handleContextMenu(e: KonvaEventObject<MouseEvent>, entity: Entity) {
 
 /**
  * Everything drawn inside the counter-scaled group, in screen px. Memoized on
- * per-entity primitives and its own store slices, so a frame re-renders a body
- * only when its heading, its hold, its track state or its pulse changed, and a
- * zoom re-renders none of them.
+ * per-entity primitives, so a zoom re-renders no body.
  */
 const EntityBody = memo(function EntityBody({
   entity,
@@ -624,17 +595,14 @@ const EntityBody = memo(function EntityBody({
   // (r16) and card-link (r19) rings are cues, so the hit disc carries their radii.
   const hitR = cardLinked ? 19 : selected ? 16 : 13
   const labelDrawn = showLabels && !spoked
-  // Board labels carry the short designator. Entity.name is untouched, so the
-  // Inspector and the panels keep the full vendor string. Both the designator
-  // and its wrap count are string work, so they are keyed on the entity.
+  // Board labels carry the short designator; Entity.name keeps the full string.
   const boardName = useMemo(() => boardDesignator(entity.name), [entity])
   const nameLines = useMemo(() => labelLineCount(boardName), [boardName])
   const labelLines = labelDrawn ? nameLines : 0
 
   return (
     <>
-      {/* Invisible hit disc: stroke-only glyphs are otherwise hard to click.
-          It alone sets the grab area, because every ring below is a cue. */}
+      {/* Invisible hit disc: it alone sets the grab area, because every ring below is a cue. */}
       <Circle radius={hitR} fill="#000" opacity={0} />
       {selected && (
         <Circle
@@ -820,11 +788,8 @@ interface GroupProps {
 }
 
 /**
- * The nodes of one group of entities. The per-frame inputs reach a node as
- * primitives and shared identities (the live position and heading, its own
- * hold flags, its own track state object, its effector state, and the pulse
- * phase only while it pulses), so per-frame React work is proportional to
- * what moved.
+ * The nodes of one group of entities. Per-frame inputs reach a node as primitives
+ * and shared identities, so per-frame React work is proportional to what moved.
  */
 const EntityGroup = memo(function EntityGroup(group: GroupProps) {
   const { entities, tracks, states, effectorStates, spokeIds, blink } = group
@@ -834,8 +799,7 @@ const EntityGroup = memo(function EntityGroup(group: GroupProps) {
         const track = tracks?.get(e.id)
         const state = states.get(e.id)
         const effectorState = effectorStates.get(e.id) ?? 'idle'
-        // The pulse reaches only the nodes that draw it, so the 2 Hz flip
-        // re-renders nothing else.
+        // The pulse reaches only the nodes that draw it.
         const pulses = state?.phase === 'engaged' || effectorState === 'active'
         return (
           <EntityNode
@@ -857,10 +821,8 @@ const EntityGroup = memo(function EntityGroup(group: GroupProps) {
 })
 
 /**
- * One node per entity, in two groups: the entities at rest, which re-render
- * only at a publication, and the entities that fly a path, which take the
- * per-frame tracks. A frame therefore creates elements for the flying
- * entities alone. The flying group draws above the group at rest.
+ * One node per entity, in two groups: the entities at rest and the entities that
+ * fly a path and take the per-frame tracks. The flying group draws above the rest.
  */
 const EMPTY_EFFECTORS = new Map<string, EffectorLiveState>()
 

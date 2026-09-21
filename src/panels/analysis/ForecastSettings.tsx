@@ -1,7 +1,6 @@
 /**
  * The forecast header on Prepare: the mode chip, what kind of number the run
- * produces, and the one Run control. Every run setting lives in the Run tab of
- * Settings, so nothing here opens a popover.
+ * produces, and the Run control. Every run setting lives in the Run tab.
  */
 
 import type { McState } from '../../state/runState'

@@ -6,8 +6,8 @@ import { createWorkerSlot } from './workerSlot'
 const slot = createWorkerSlot()
 
 /**
- * Transport-level twin of `sameManifest` (trialTypes.ts): the client must not import
- * the engine at runtime, so it carries its own value comparison for the array keys.
+ * Transport-level twin of `sameManifest` (trialTypes.ts). The client must not
+ * import the engine at runtime, so it carries its own array comparison.
  */
 function sameManifestRecord(
   expected: Record<string, unknown>,

@@ -1,14 +1,9 @@
 /**
- * Monte Carlo replicate loop. Replicate i runs the sweep and the attrition
- * with `monteCarloPolicy(seed, i, thresholds)` and records the per-step
- * counts the live panels read from the deterministic ledger. The summary
- * holds per-step bands and per-replicate scalars, never a replicate ledger.
- * Under `uncertainty: 'total'` each replicate first samples every uncertain
- * field through the policy's `param` draw; under `aleatory` the nominal
- * scenario runs. No store import at the value level; never reads
- * `engagementPicture`. The grid is the projection grid (`analysis/projection.ts`):
- * `sampleCount(scenario)` steps at DT, index k is t = k * DT; the chart series
- * builders sample the same grid.
+ * Monte Carlo replicate loop. Replicate i runs under
+ * `monteCarloPolicy(seed, i, thresholds)`. Under `uncertainty: 'total'` each
+ * replicate first samples every uncertain field; under `aleatory` the nominal
+ * scenario runs. The grid is the projection grid (`analysis/projection.ts`):
+ * `sampleCount(scenario)` steps at DT, index k is t = k * DT.
  */
 import { heldTracksOnGrid, residualOnGrid, sampleCount } from '../analysis/projection'
 import { buildLiveTimeline, liveKpisAt } from '../analysis/liveStats'
@@ -20,7 +15,7 @@ import type { Scenario } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, runSettings } from '../model/types'
 import type { SweepFactor } from './sweepFactors'
 import { applySweepValue, SWEEP_VALUES_MAX, SWEEP_VALUES_MIN } from './sweepFactors'
-import { meanInterval, quantile, wilson } from '../analysis/stats'
+import { meanInterval, sortedQuantile, wilson } from '../analysis/stats'
 import { resolveEngagements } from './attrition'
 import type { DrawPolicy } from './policy'
 import { monteCarloPolicy } from './policy'
@@ -36,14 +31,7 @@ export interface Stat {
   sd: number
   /** Standard error of the mean, sd / sqrt(n); 0 with one sample. */
   se: number
-  /**
-   * Interval on the mean at conf, by `interval`. A time keeps the t-interval
-   * (meanInterval from src/analysis/stats.ts). A count clamps it to the
-   * count's support. A 0/1 count (support {0, 1}) takes the Wilson interval.
-   * A count with a finite support maximum that samples all zero reports the
-   * rule-of-three upper bound 3 max / n (no independence between ships), and
-   * all at max the mirror max - 3 max / n; both are bounds, not a CI.
-   */
+  /** Interval on the mean at `conf`, built by the `interval` method (see `intervalOf`). */
   lo: number
   hi: number
   conf: number
@@ -67,8 +55,8 @@ export type IntervalMethod = 't' | 'wilson' | 'rule-of-three' | 'none'
 export const STAT_CONF = 0.95
 
 /**
- * Minimum samples before a replicate quantile is reported: below
- * these, the type-7 quantile interpolates toward one extreme sample.
+ * Minimum samples before a replicate quantile is reported; below these the
+ * type-7 quantile interpolates toward one extreme sample.
  */
 export const BAND80_MIN_N = 10
 export const BAND95_MIN_N = 40
@@ -78,26 +66,21 @@ export type StatKind = { kind: 'time' } | { kind: 'count'; max: number }
 const TIME: StatKind = { kind: 'time' }
 const count = (max: number): StatKind => ({ kind: 'count', max })
 
-/**
- * The sequential loop checks the half-width rule at `stopFloor` (runSettings)
- * and every STOP_EVERY replicates after it; a pool checks whenever it merges.
- */
+/** The sequential loop checks the half-width rule every STOP_EVERY replicates past `stopFloor`. */
 const STOP_EVERY = 10
 
 /**
- * Why a loop ended: every replicate (or field) ran, the half-width rule held,
- * the execution budget was reached, or the driver was asked to cancel.
+ * Why a loop ended: every replicate or field ran, the half-width rule held,
+ * the execution budget was reached, or a cancel arrived.
  */
 export type StopRule = 'replicates' | 'halfWidth' | 'budget' | 'cancelled'
 
 /**
  * Execution budget of one run. `retainedNumbers` bounds the sample rows kept
  * for the bands: one number per replicate per grid step per series, five raid
- * series plus one residual series per track. A Chromium worker on a 16 GB Mac
- * took the whole page down at 384 million retained numbers; the budget is one
- * quarter of that. `timeMs` is a wall-clock stop for a run nobody cancels
- * (about 100 ms per replicate on the largest fixture). A stop by either rule
- * keeps the replicates done and reports `stopped.rule` 'budget'.
+ * series plus one residual series per track. `timeMs` is a wall-clock stop for
+ * a run nobody cancels. A stop by either rule keeps the replicates done and
+ * reports `stopped.rule` 'budget'.
  */
 export interface ExecutionBudget {
   retainedNumbers: number
@@ -288,14 +271,12 @@ export type McMorrisMessage =
 /** Messages of a Sobol run; `done` and `total` count engine evaluations (rows). */
 export type McSobolMessage =
   | { type: 'sobol-progress'; runId: string; done: number; total: number }
-  | { type: 'sobol-done'; runId: string; result: SobolResult }
+  | { type: 'sobol-done'; runId: string; result: SobolResult | null }
   | { type: 'sobol-error'; runId: string; message: string }
 
 /**
- * The end-of-run responses a sensitivity row records per replicate: leaker
- * ships, expected kills, the raid's first detect and minimum warning times
- * (NaN in a replicate with no detect or no warning) and the salvos fired
- * over every effector.
+ * The end-of-run responses a sensitivity row records per replicate. A time is
+ * NaN in a replicate with no detect or no warning.
  */
 export type SensitivityResponse = 'leakers' | 'kills' | 'firstDetectS' | 'minWarningS' | 'salvos'
 
@@ -316,10 +297,7 @@ export interface SensitivityResponseStat {
   hi: number
   /** |hi - lo|. */
   swing: number
-  /**
-   * Paired standard error of the swing over the replicates finite on both
-   * sides: their sd of (hi minus lo) over sqrt(count); 0 with one, NaN with none.
-   */
+  /** Paired sd of (hi minus lo) over sqrt(count) of the replicates finite on both sides. */
   se: number
   /** The defined fraction of each side (a time's definedness; always n of n for a count). */
   defined: { lo: Stat['defined']; hi: Stat['defined'] }
@@ -338,17 +316,9 @@ interface SensitivityRow {
   high: number
   /** |high - low|; rows sort by it, largest first. Alias of `responses.leakers.swing`. */
   swing: number
-  /**
-   * Paired standard error of the swing: the sample sd of the per-replicate
-   * difference (high minus low) over sqrt(replicates); 0 with one replicate.
-   * Alias of `responses.leakers.se`.
-   */
+  /** Paired standard error of the swing; alias of `responses.leakers.se`. */
   se: number
-  /**
-   * Every response at the same two field runs. The loop always records it;
-   * optional only so hand-built rows in the store and widget tests still
-   * type until the UI moves to it.
-   */
+  /** Every response at the same two field runs; the loop always records it. */
   responses?: Record<SensitivityResponse, SensitivityResponseStat>
 }
 
@@ -362,10 +332,7 @@ export interface SensitivitySummary {
   seed: number
   /** Wall time in the worker, ms; 0 when run outside the worker. */
   elapsedMs: number
-  /**
-   * Present only when the run ended before every field: the rule and the
-   * fields completed. The field in progress is dropped; `rows` holds the rest.
-   */
+  /** Present only when the run ended before every field; the field in progress is dropped. */
   stopped?: { rule: 'budget' | 'cancelled'; at: number }
 }
 
@@ -377,13 +344,11 @@ function definedOf(n: number, total: number): Stat['defined'] {
 }
 
 /**
- * The interval on the mean of `sorted`. A count with a
- * finite support maximum at 0 of n reports the rule-of-three upper bound
- * 3 max / n on its mean, with no independence assumed between ships, and at
- * n of n the mirror max - 3 max / n; at max 1 these are the 0/1 bounds 3 / n.
- * A 0/1 count is otherwise a proportion: Wilson at STAT_CONF (z 1.96, the
- * `wilson` default). Any other count clamps the t-interval to [0, max]; an
- * unbounded count (salvos) always does. A time keeps the t-interval.
+ * The interval on the mean of `sorted`. A time keeps the t-interval. A count
+ * all at 0, or all at a finite support maximum, takes the rule-of-three bound
+ * 3 max / n, which assumes no independence between ships. A 0/1 count
+ * otherwise takes the Wilson interval; any other count clamps the t-interval
+ * to [0, max].
  */
 function intervalOf(
   sorted: number[],
@@ -411,8 +376,11 @@ function intervalOf(
  */
 export function statOf(samples: number[], kind: StatKind, conf = STAT_CONF): Stat {
   const total = samples.length
-  const sorted = samples.filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
-  const n = sorted.length
+  // A typed sort is numeric without a comparator; the bands call this per grid step.
+  const finite = new Float64Array(total)
+  let n = 0
+  for (const v of samples) if (Number.isFinite(v)) finite[n++] = v
+  const sorted = Array.from(finite.subarray(0, n).sort())
   const defined = definedOf(n, total)
   if (n === 0) {
     return {
@@ -433,7 +401,7 @@ export function statOf(samples: number[], kind: StatKind, conf = STAT_CONF): Sta
     }
   }
   const { mean, sd, lo, hi } = meanInterval(sorted, conf)
-  const q = (p: number, min: number) => (n < min ? NaN : quantile(sorted, p))
+  const q = (p: number, min: number) => (n < min ? NaN : sortedQuantile(sorted, p))
   return {
     mean,
     sd,
@@ -450,11 +418,7 @@ export function statOf(samples: number[], kind: StatKind, conf = STAT_CONF): Sta
   }
 }
 
-/**
- * Half-width of the displayed interval on the end-of-run leaker mean:
- * the same `statOf` path and ship support the leakers Stat uses,
- * so the stopping rule and the tile read one interval.
- */
+/** Half-width of the interval on the end-of-run leaker mean, over the raid's ship support. */
 function halfWidthOf(values: number[], ships: number, conf: number): number {
   const { lo, hi } = statOf(values, count(ships), conf)
   return (hi - lo) / 2
@@ -487,11 +451,8 @@ function minOf(acc: number, v: number): number {
 }
 
 /**
- * Numbers the summary of `scenario` holds: seven band statistics per grid
- * step for the five raid series and one residual series per threat with a
- * path (an upper bound on the tracks). The summary is built in the worker
- * and cloned to the main thread, so a run whose summary alone exceeds the
- * retained-number budget is refused before its first replicate.
+ * Numbers the summary of `scenario` holds: seven band statistics per grid step
+ * for the five raid series and one residual series per threat with a path.
  */
 export function summaryNumbers(scenario: Scenario): number {
   const threats = scenario.entities.filter(
@@ -520,9 +481,8 @@ export function overBudget(
 }
 
 /**
- * Run a loop to its summary on this thread. With a budget, the summary size is
- * checked first and each checkpoint is held against `overBudget`; without one
- * the loop runs to its own end. The worker has its own async driver.
+ * Run a loop to its summary on this thread. With a budget, each checkpoint is
+ * held against `overBudget`; without one the loop runs to its own end.
  */
 function drive<T>(loop: Loop<T>, budget?: ExecutionBudget): T {
   const t0 = performance.now()
@@ -535,15 +495,11 @@ function drive<T>(loop: Loop<T>, budget?: ExecutionBudget): T {
 }
 
 /**
- * What the replicate loop retains for a set of replicate indices: plain
- * arrays and numbers, so a partial crosses a worker message (structuredClone)
- * and a pool merges partials from several workers by index
- * (`mergeSummaries.ts`). Every per-replicate array is aligned with `indices`,
- * which is ascending. Per-threat arrays are aligned with `threatIds`, the
- * track order of the first replicate run (the same in every replicate, since
- * a path is geometry the sampler never moves); per-effector arrays with
- * `effectorIds`, the scenario's effector order. An undefined time is NaN,
- * which structuredClone keeps and JSON does not: a JSON transport must map it.
+ * What the replicate loop retains for a set of replicate indices. Per-replicate
+ * arrays are aligned with `indices`, which is ascending; per-threat arrays with
+ * `threatIds`, the track order; per-effector arrays with `effectorIds`, the
+ * scenario's effector order. An undefined time is NaN, which structuredClone
+ * keeps and JSON does not: a JSON transport must map it.
  */
 export interface McPartial {
   /** Replicate indices done, ascending. */
@@ -614,15 +570,11 @@ export function emptyPartial(): McPartial {
 
 /**
  * Run `runSettings(scenario).replicates` replicates from the scenario's seed
- * and summarize them. With `targetHalfWidth` set, the loop checks the
- * half-width of the displayed interval on the end-of-run leaker mean (the
- * leakers Stat over the raid's ships) at `stopFloor` replicates and every 10
- * after that, and stops once it is under the target; `replicates`
- * on the summary is then the count run. `onProgress` fires after every 10th
- * replicate and after the last, with the configured count as `total`.
- * `elapsedMs` is 0 here; the worker fills it. With a `budget`, a run whose
- * summary cannot fit throws, and the loop stops at the checkpoint where the
- * retained numbers or the wall time reach it.
+ * and summarize them. With `targetHalfWidth` set the loop stops once the
+ * half-width on the end-of-run leaker mean is under the target, checked at
+ * `stopFloor` replicates and every 10 after. `onProgress` fires after every
+ * 10th replicate and after the last. `elapsedMs` is 0 here; the worker fills
+ * it. With a `budget`, a run whose summary cannot fit throws.
  */
 export function runReplicates(
   scenario: Scenario,
@@ -634,13 +586,10 @@ export function runReplicates(
 }
 
 /**
- * The replicate loop behind `runReplicates`: `replicateRangeLoop` over
- * 0..replicates with the half-width rule applied at each checkpoint, then
- * `finishSummary`. The rule is checked before the checkpoint is passed on,
- * so a stop sent at the same replicate is never reported over it. The last
- * replicate's checkpoint accepts no stop: the run is complete. The worker
- * drives this loop asynchronously, yielding between replicates so a cancel
- * can arrive.
+ * The replicate loop behind `runReplicates`: the range 0..replicates with the
+ * half-width rule applied at each checkpoint, then `finishSummary`. The rule is
+ * checked before the checkpoint is passed on, so a stop sent at the same
+ * replicate is never reported over it.
  */
 export function* replicateLoop(
   scenario: Scenario,
@@ -672,14 +621,11 @@ export function* replicateLoop(
 }
 
 /**
- * The replicates `start..end-1` of `scenario` as a partial, one checkpoint
- * after each replicate with `done` and `total` counted within the range. A
- * stop sent at a checkpoint returns the partial so far; the last replicate's
- * checkpoint accepts no stop. No half-width rule runs here: the driver
- * applies `halfWidthReached` to the merged partials. Replicate i is a pure
- * function of i (the keyed draw policy), so ranges run in any order and on
- * any thread give the same rows. `onProgress` fires after every 10th
- * replicate of the range and after its last.
+ * The replicates `start..end-1` of `scenario` as a partial, one checkpoint per
+ * replicate with `done` and `total` counted within the range. No half-width
+ * rule runs here: the driver applies `halfWidthReached` to the merged partials.
+ * Replicate i is a pure function of i, so ranges give the same rows in any
+ * order and on any thread.
  */
 export function* replicateRangeLoop(
   scenario: Scenario,
@@ -791,12 +737,9 @@ function* rangeLoopInto(
 }
 
 /**
- * The half-width rule on a partial: true once the 95 percent half-width of
- * the displayed interval on the end-of-run leaker mean (the leakers Stat
- * over the raid's ships) is under `targetHalfWidth`, and never with fewer
- * than `stopFloor` replicates or with no target. `stopCap` is the caller's
- * own stop (the 'replicates' rule), so a pool that never reaches the target
- * still ends.
+ * True once the half-width at `confidence` on the end-of-run leaker mean is
+ * under `targetHalfWidth`; never with fewer than `stopFloor` replicates or
+ * with no target.
  */
 export function halfWidthReached(scenario: Scenario, partial: McPartial): boolean {
   const { targetHalfWidth, stopFloor, confidence } = runSettings(scenario)
@@ -813,9 +756,8 @@ function raidSizeOf(threatShips: number[]): number {
 
 /**
  * The summary of a partial: the end-of-run statistics over its rows.
- * `replicates` is the count of indices done; `stopped` and `elapsedMs` are
- * the caller's, since a pool decides the stop and keeps its own clock.
- * The rows are read in their stored order, so merge before finishing.
+ * `replicates` is the count of indices done; `stopped` and `elapsedMs` are the
+ * caller's. The rows are read in their stored order, so merge before finishing.
  */
 export function finishSummary(
   scenario: Scenario,
@@ -884,12 +826,10 @@ type ResponseSamples = Record<SensitivityResponse, Samples>
 
 /**
  * End-of-run responses per replicate over the replicates of
- * `runSettings(scenario)`. The leaker sum over the count is the number
- * `runReplicates(scenario).leakers.mean[n - 1]` reports, without the bands;
- * the times and salvos are the per-replicate scalars that loop records.
- * The caller passes an aleatory scenario with no stopping rule, so every
- * replicate runs. One checkpoint per replicate, reporting the caller's field
- * progress; a stop records itself in `halt` and returns null.
+ * `runSettings(scenario)`. The caller passes an aleatory scenario with no
+ * stopping rule, so every replicate runs. One checkpoint per replicate,
+ * reporting the caller's field progress; a stop records itself in `halt` and
+ * returns null.
  */
 function* responseLoop(
   scenario: Scenario,
@@ -919,11 +859,10 @@ function* responseLoop(
 }
 
 /**
- * The five end-of-run responses of one replicate of `scenario` under
- * `policy`: the leaker ships and expected kills at the last grid step, the
- * raid's first detect and minimum warning (NaN with none), and the salvos
- * over every effector, as `replicateLoop` records them. The Morris and Sobol
- * loops evaluate one row each through this.
+ * The five end-of-run responses of one replicate of `scenario` under `policy`:
+ * leaker ships and expected kills at the last grid step, the raid's first
+ * detect and minimum warning (NaN with none), and the salvos over every
+ * effector.
  */
 export function endOfRunResponses(
   scenario: Scenario,
@@ -1002,13 +941,11 @@ function fieldLabel(scenario: Scenario, modelId: string): string {
 
 /**
  * One-at-a-time sensitivity on the end-of-run leaker mean. For each uncertain
- * field the loop runs `replicates` replicates twice, the field at its p10
- * sample and at its p90 sample with every other field nominal, under the
- * same seed and replicate indices as the nominal run (common random
- * numbers), so the swing is a paired difference. Each row also records the
- * same pair for every `SensitivityResponse`. Rows sort by the leaker swing,
- * largest first; ties keep the `uncertainFields` order. `onProgress` fires after
- * every field with the field count. `elapsedMs` is 0 here; the worker fills it.
+ * field the loop runs `replicates` replicates twice, the field at its p10 and
+ * at its p90 sample with every other field nominal, under the same seed and
+ * replicate indices as the nominal run, so the swing is a paired difference.
+ * Rows sort by the leaker swing, largest first; ties keep the `uncertainFields`
+ * order. `elapsedMs` is 0 here; the worker fills it.
  */
 export function runSensitivity(
   scenario: Scenario,
@@ -1019,10 +956,9 @@ export function runSensitivity(
 }
 
 /**
- * The loop behind `runSensitivity`, one checkpoint per replicate of every
- * field run, reporting the fields completed. A stop drops the field in
- * progress and returns the rows so far under `stopped`; a full run has no
- * `stopped` key, so its summary is unchanged by this loop.
+ * The loop behind `runSensitivity`, one checkpoint per replicate of every field
+ * run, reporting the fields completed. A stop drops the field in progress and
+ * returns the rows so far under `stopped`; a full run has no `stopped` key.
  */
 export function* sensitivityLoop(
   scenario: Scenario,
@@ -1080,11 +1016,8 @@ export const SWEEP_REPLICATES_DEFAULT = 40
 
 /**
  * One grid cell: its index per factor, the factor values it ran, and the
- * replicate summary reduced to what the map reads. `kills` and `leakers`
- * keep the band series (the end-of-run value is the last step, as the
- * tiles read it); the times keep their Stat with definedness; `salvos` are
- * per effector under `perEffector`, as McSummary records them (no raid-level
- * salvos Stat exists there); `replicates` is every count's denominator.
+ * replicate summary reduced to what the map reads. The end-of-run value of a
+ * band series is its last step; `replicates` is every count's denominator.
  */
 export interface SweepCell {
   index: number[]
@@ -1133,10 +1066,9 @@ function assertSweepFactors(factors: SweepFactor[]): void {
 }
 
 /**
- * The scenario of one cell: the base with each factor at its indexed value,
- * every cell's replicate count set and the half-width rule off, so every
- * cell runs the same replicates from the same seed (common random numbers
- * across cells). The uncertainty mode is the scenario's own.
+ * The scenario of one cell: the base with each factor at its indexed value, the
+ * replicate count set and the half-width rule off, so every cell runs the same
+ * replicates from the same seed. The uncertainty mode is the scenario's own.
  */
 export function sweepCellScenario(
   scenario: Scenario,
@@ -1161,13 +1093,11 @@ export function runSweep(
 }
 
 /**
- * The loop behind `runSweep`: one checkpoint per cell, cells in sequence.
- * Each cell drives `replicateLoop` to its replicate count with no stop of its
- * own; the checkpoint reports the numbers that cell retained at its peak, so
- * the driver's budget rule sees the cost of the next cell. With a `budget`,
- * `assertSummaryFits` is checked per cell before its first replicate. A
- * stop lands between cells: the cells done are kept under `stopped`, and a
- * full run has no `stopped` key. `onProgress` fires after every cell.
+ * The loop behind `runSweep`: cells in sequence, a checkpoint after every
+ * replicate and after every cell, `done` counting cells. The checkpoint reports
+ * the numbers the cell retained at its peak, so the budget rule sees a cell's
+ * cost. A stop keeps the cells done under `stopped` and drops the cell in
+ * flight.
  */
 export function* sweepLoop(
   request: Omit<McSweepRequest, 'type' | 'runId'>,
@@ -1190,6 +1120,8 @@ export function* sweepLoop(
     elapsedMs: 0,
     ...(stopped ? { stopped } : {}),
   })
+  const stopped = (stop: StopRule): SweepSummary =>
+    summary({ rule: stop === 'cancelled' ? 'cancelled' : 'budget', at: cells.length })
   for (const index of indices) {
     const cell = sweepCellScenario(scenario, factors, index, replicatesPerCell)
     if (budget) assertSummaryFits(cell, budget)
@@ -1198,6 +1130,12 @@ export function* sweepLoop(
     let next = loop.next()
     while (!next.done) {
       retained = Math.max(retained, next.value.retained)
+      // A checkpoint per replicate, so a stop mid-cell lands within one
+      // replicate; the cell's last replicate is complete, so it takes none.
+      if (next.value.done < next.value.total) {
+        const stop = yield { done: cells.length, total: indices.length, retained }
+        if (stop) return stopped(stop)
+      }
       next = loop.next()
     }
     const { kills, leakers, firstDetectS, minWarningS, perEffector, replicates } = next.value
@@ -1209,8 +1147,7 @@ export function* sweepLoop(
     onProgress?.(cells.length, indices.length)
     if (cells.length === indices.length) break
     const stop = yield { done: cells.length, total: indices.length, retained }
-    if (stop)
-      return summary({ rule: stop === 'cancelled' ? 'cancelled' : 'budget', at: cells.length })
+    if (stop) return stopped(stop)
   }
   return summary()
 }

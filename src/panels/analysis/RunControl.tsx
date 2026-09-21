@@ -1,8 +1,6 @@
 /**
- * One Run button beside a Deterministic switch, with the progress line under
- * it. Prepare renders it inside the forecast settings; Analyze renders it
- * beside the screen segment. Every other run setting lives in the Run tab of
- * Settings, so this control carries only the two decisions a run needs.
+ * One Run button beside a Deterministic switch, with the progress line under it.
+ * Every other run setting lives in the Run tab of Settings.
  */
 
 import { runSettings } from '../../model/types'
@@ -30,13 +28,10 @@ function loopEndOf(run: McSettings): number {
 }
 
 /**
- * The operator floor stamp of a finished run: the decisions whose raw wait the
- * floor at 0 discarded, against the decisions the C2 queue took
- * (`AttritionTotals.operatorFlooredDecisions`). Counted over the whole run,
- * not per replicate: each Stat mean times its sample count is the sum over the
- * replicates, so both figures stay whole and a single floored decision in a
- * long run never rounds away. Null when nothing floored, and on a summary
- * written before the stamp existed, so the line stays as it was.
+ * The operator floor stamp of a finished run: decisions the floor at 0 discarded,
+ * against the decisions the C2 queue took. Counted over the whole run as each
+ * Stat mean times its sample count, so both figures are whole. Null when nothing
+ * floored and on a summary written before the stamp existed.
  */
 function flooredText(summary: McSummary): string | null {
   const floored = summary.operatorFlooredDecisions
@@ -48,10 +43,9 @@ function flooredText(summary: McSummary): string | null {
 }
 
 /**
- * The progress line: replicates done, the stop rule and the pool size. A
- * pooled run reports its own rule and worker count through `mc.pool`; the
- * single-worker path that runs today reports neither, so the count comes from
- * `mc.progress` and the rule from the settings.
+ * The progress line: replicates done, the stop rule and the pool size. A pooled
+ * run reports its own rule and worker count through `mc.pool`; without a pool the
+ * count comes from `mc.progress` and the rule from the settings.
  */
 function progressText(run: McSettings, mc: McState): string | null {
   const pool = mc.pool

@@ -1,19 +1,10 @@
 /**
- * Where to put it: one placement optimization over the positions of the
- * movable systems. The screen decides the request (objective, movable ids,
- * bounds, budget) and reads the result; the search itself runs on its own
- * worker behind `runOptimize`.
- *
- * The objective direction follows the response: a leaker count and a first
- * detection are minimized, a kill count, a warning time and a salvo count
- * maximized. Bounds are a range boundary of the scenario, so a proposal never
- * leaves the range. The budget defaults are the contract's 60 evaluations of
- * 40 replicates, at the scenario's own run seed, so every evaluation of one
- * request differs from the others by placement alone.
- *
- * Applying a candidate never edits the current scenario: it installs a copy
- * through `replaceScenario`, so history and the run reset exactly as they do
- * for a loaded scenario.
+ * One placement optimization over the positions of the movable systems. The
+ * screen builds the request and reads the result; the search runs on its own
+ * worker behind `runOptimize`. Bounds are a range boundary of the scenario, so a
+ * proposal never leaves the range. Every evaluation of one request shares the
+ * scenario's run seed and differs by placement alone. Applying a candidate
+ * installs a copy through `replaceScenario` rather than editing the scenario.
  */
 import { useMemo, useState } from 'react'
 import { SWEEP_RESPONSE_LABELS } from '../../../charts/SweepMap'

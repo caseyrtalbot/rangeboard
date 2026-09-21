@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { LABEL_FONT_PX, labelLineCount, layoutLabels } from './labelLayout'
+import { boardDesignator, LABEL_FONT_PX, labelLineCount, layoutLabels } from './labelLayout'
 import type { LabelInput, SpokePlacement } from './labelLayout'
 
 function spokeRect(p: SpokePlacement) {
@@ -162,5 +162,13 @@ describe('labelLineCount', () => {
   it('never reports fewer than one line', () => {
     expect(labelLineCount('')).toBe(1)
     expect(labelLineCount('   ')).toBe(1)
+  })
+})
+
+describe('boardDesignator', () => {
+  it('tolerates a non-string name from a loaded record', () => {
+    expect(boardDesignator(42 as unknown as string)).toBe('42')
+    expect(boardDesignator(null as unknown as string)).toBe('')
+    expect(boardDesignator({ boom: 1 } as unknown as string)).toBe('[OBJECT OBJECT]')
   })
 })

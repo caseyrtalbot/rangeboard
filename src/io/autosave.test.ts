@@ -247,6 +247,53 @@ describe('autosave lifecycle', () => {
     expect(useStore.getState().save).toEqual({ lastAutosaveAt: 1234, error: null })
   })
 
+  it('keeps another lane save error when the scenario writes, and clears only its own', () => {
+    storage(
+      { [SCENARIO_KEY]: board.raw('original'), [BOARD_BASELINE]: baseline.raw('saved') },
+      (key) => key === BOARD_BASELINE,
+    )
+    const timers = browser()
+    started(baseline)
+    started(board)
+    baseline.edit('cannot save')
+    timers.runTimers()
+    expect(useStore.getState().save.error).toContain('Baseline not saved')
+    board.edit('nudge')
+    timers.runTimers()
+    expect(useStore.getState().save.lastAutosaveAt).toEqual(expect.any(Number))
+    expect(useStore.getState().save.error).toContain('Baseline not saved')
+  })
+
+  it('clears its own error when the scenario writes again', () => {
+    storage({ [SCENARIO_KEY]: board.raw('original') })
+    const timers = browser()
+    started(board)
+    useStore.getState().setSaveState(1234, 'Not saved: storage error. Export the scenario.')
+    board.edit('saved now')
+    timers.runTimers()
+    expect(useStore.getState().save.error).toBeNull()
+  })
+
+  it('retries a failed baseline write on the next scenario edit, without a new pin', () => {
+    let failing = true
+    const { data } = storage(
+      { [SCENARIO_KEY]: board.raw('original'), [BOARD_BASELINE]: baseline.raw('saved') },
+      (key) => failing && key === BOARD_BASELINE,
+    )
+    const timers = browser()
+    started(baseline)
+    baseline.edit('pinned under quota')
+    timers.runTimers()
+    expect(baseline.written(data.get(BOARD_BASELINE)!)).toBe('saved')
+    // Reporting the failure must not schedule its own retry.
+    expect(timers.scheduled()).toBe(0)
+    failing = false
+    board.edit('unrelated edit')
+    timers.runTimers()
+    expect(baseline.written(data.get(BOARD_BASELINE)!)).toBe('pinned under quota')
+    expect(useStore.getState().save.error).toBeNull()
+  })
+
   eachLane('writes nothing after a stop', (lane) => {
     const original = lane.raw('original')
     const { data } = storage({ [lane.key]: original })

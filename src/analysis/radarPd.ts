@@ -1,22 +1,17 @@
 /**
  * Radar probability of detection at range, calibrated at the placard.
  *
- * A radar placard says "detects the reference target at r0". The engine
- * reads that as one point on a Pd-versus-SNR curve: at r0 the reference
- * target returns the SNR that gives pd0 at pfa for the reference
- * fluctuation case. When a pulse count is present the calibrated SNR is the
- * mean SNR per pulse required for the integrated dwell; otherwise it is the
- * historical single-pulse SNR. The radar range equation then carries that
- * SNR to any other target and range (SNR scales with RCS and with the inverse
- * fourth power of range), and the target's own fluctuation case turns the SNR
- * back into an integrated single-scan Pd.
+ * The placard range r0 is one point on a Pd-versus-SNR curve: at r0 the
+ * reference target returns the SNR that gives pd0 at pfa for the reference
+ * fluctuation case. That SNR is per pulse when a pulse count is present and
+ * single-pulse otherwise. The radar range equation carries it to any other
+ * target and range, and the target's own fluctuation case turns it back into
+ * an integrated single-scan Pd.
  *
  * Sources: Mahafza, Radar Systems Analysis and Design Using MATLAB, 3rd ed.,
  * CRC Press 2013, section 13.5 (Swerling I Eq. 13.45, Swerling III
- * Eq. 13.51); the nonfluctuating case is the Marcum Q function Q1(a, b)
- * written as the noncentral chi-square tail (Shnidman's series: Poisson
- * weights over central chi-square tails), Richards, Fundamentals of Radar
- * Signal Processing, chapter 6.
+ * Eq. 13.51); Richards, Fundamentals of Radar Signal Processing, chapter 6,
+ * for the nonfluctuating Marcum Q.
  */
 import type { SwerlingCase } from '../model/types'
 import { shnidmanPdFromSnr, shnidmanSnrForPd } from '../playback/radarDwell'
@@ -41,11 +36,9 @@ export interface RadarCalibration {
  * Marcum Q1(a, b) = P(chi'^2 with 2 dof and noncentrality a^2 exceeds b^2)
  *   = sum_j Poisson(j; a^2 / 2) * P(chi^2 with 2 + 2j dof exceeds b^2),
  * with P(chi^2_{2m} > 2y) = exp(-y) * sum_{i < m} y^i / i!. The Poisson
- * weights are summed over the window mean +- (12 sqrt(mean) + 40), which
- * holds every weight above 1e-15; the chi-square tail is carried by its
- * recurrence. a - b above 12 returns 1 (the deficit is under 1e-30). At a = 0
- * the sum is exp(-y) = Pfa exactly. Under 1e-12 absolute error against a
- * 20 000-point quadrature of the Rician density.
+ * weights are summed over mean +- (12 sqrt(mean) + 40), which holds every
+ * weight above 1e-15. a - b above 12 returns 1; at a = 0 the sum is
+ * exp(-y) = Pfa exactly. Absolute error under 1e-12.
  */
 function marcumQ1(a: number, b: number): number {
   if (!(b > 0)) return 1
@@ -103,9 +96,7 @@ function pfaSafe(pfa: number): number {
  * Swerling 3 (Mahafza Eq. 13.51, np = 1, vT = -ln Pfa):
  *   Pd = exp(-vT / (1 + SNR/2)) * (1 + vT / (1 + SNR/2) + 2/SNR) / (1 + 2/SNR),
  *   written here as (SNR * (1 + vT/d) + 2) / (SNR + 2) so SNR = 0 gives Pfa
- *   with no division by zero. Checked against numeric integration of the
- *   Marcum Q over the 4-dof chi-square target: under 0.001 dB apart at
- *   Pd 0.5, 0.8 and 0.9 for Pfa 1e-6, so the closed form is kept.
+ *   with no division by zero.
  * Swerling 0 (nonfluctuating): the exact single-pulse Marcum Q,
  *   Pd = Q1(sqrt(2 SNR), sqrt(-2 ln Pfa)); at SNR 0 it is Pfa.
  *
@@ -217,14 +208,11 @@ export function pdAtRange(
 }
 
 /**
- * Largest range at which pdAtRange >= pd. Closed form from the fourth-root law:
- * R = r0 * m * ((rcs / rcs0) * (snr0 / requiredSnr(pd))) ^ (1/4). When the
- * target case matches swerling0 and pd equals pd0 the SNR ratio is exactly 1
- * and this is r0 * m * (rcs / rcs0) ^ (1/4), the rcsRangeFactor law.
+ * Largest range at which pdAtRange >= pd, meters. Closed form from the
+ * fourth-root law: R = r0 * m * ((rcs / rcs0) * (snr0 / requiredSnr(pd))) ^ (1/4).
  *
  * pd >= 1 returns 0. pd <= 0, or a pd the case reaches at zero SNR, returns
- * Infinity: every range satisfies it, so no bound exists. Callers that draw
- * must clamp. Never NaN for finite inputs.
+ * Infinity, so a caller that draws must clamp. Never NaN for finite inputs.
  */
 export function rangeForPd(
   cal: RadarCalibration,

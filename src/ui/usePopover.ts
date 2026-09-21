@@ -3,10 +3,9 @@ import type { Dispatch, RefObject, SetStateAction } from 'react'
 
 /**
  * Open state and the dismissal rules shared by the toolbar dropdowns: a pointer
- * outside the wrapper closes, and Escape closes and restores focus to the
- * trigger. Capture phase keeps Escape from also reaching the global canvas
- * shortcut. The command palette can open over these surfaces, and then it owns
- * Escape. Opening moves focus into the panel, so the keyboard lands there.
+ * outside the wrapper closes, and Escape closes and restores focus to the trigger.
+ * Capture phase keeps Escape from also reaching the global canvas shortcut, except
+ * while the command palette is open, which owns Escape itself.
  */
 export function usePopover(
   wrapRef: RefObject<HTMLElement | null>,

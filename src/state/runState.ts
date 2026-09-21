@@ -73,9 +73,8 @@ export interface AnalysisRunState<S> {
   /** analysisBasisSignature of the scenario the summary was computed on. */
   basisSignature: string | null
   /**
-   * The overrides the run applied over that scenario's library, `activeOverrides`
-   * at launch. Part of the run's identity beside the basis signature: an
-   * override edit that changes the values in force makes the run stale.
+   * The overrides the run applied at launch. Part of the run's identity beside the
+   * basis signature, so an override edit makes the run stale.
    */
   overrides: Override[]
   error: string | null
@@ -123,8 +122,7 @@ export interface McState extends AnalysisRunState<McSummary> {
   /** The placement optimization, on its own worker and its own lifecycle. */
   optimize: OptimizeState
   /**
-   * The best evaluation the running optimization has reported, beside its run
-   * as Morris and Sobol sit beside the sensitivity run: `optimize-progress`
+   * The best evaluation the running optimization has reported. `optimize-progress`
    * carries it and the finished `OptimizeResult` does not repeat it.
    */
   optimizeBest: OptimizeEvaluation | null

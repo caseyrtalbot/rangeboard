@@ -20,8 +20,7 @@ import { EntityLayer } from './layers/EntityLayer'
 import { CalloutLayer } from './layers/CalloutLayer'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
 
-// These two take no time-dependent props and read the store themselves, so a
-// per-frame LiveScene render must not re-render them.
+// These two read the store themselves, so a per-frame render must not reach them.
 const StaticPathLayer = memo(PathLayer)
 const StaticSystemHandleLayer = memo(SystemHandleLayer)
 
@@ -49,9 +48,8 @@ function samePlacement(a: LabelPlacement, b: LabelPlacement): boolean {
 }
 
 /**
- * A fresh layout keeps the previous placement object wherever the placement
- * did not move, and the previous Map when nothing moved, so the callout memo
- * and the spoke set hold their identities across a frame.
+ * A fresh layout keeps the previous placement object wherever the placement did not
+ * move, and the previous Map when nothing moved.
  */
 function stablePlacements(
   next: Map<string, LabelPlacement>,
@@ -79,10 +77,8 @@ function sameTrack(a: LiveTrack, b: LiveTrack): boolean {
 }
 
 /**
- * A scenario swap at one display time rebuilds the tracks. A track whose
- * fields did not change keeps the previous object, and the Map keeps its
- * identity when nothing moved, so an edit that flies no threat re-renders
- * no flying node.
+ * A scenario swap at one display time rebuilds the tracks. A track whose fields did
+ * not change keeps the previous object, and the Map its identity when nothing moved.
  */
 function stableTracks(
   next: Map<string, LiveTrack>,
@@ -187,8 +183,7 @@ export function LiveScene(props: Props) {
 
   const prevSpokeIds = useRef<Set<string>>(new Set())
   const prevPlacements = useRef<Map<string, LabelPlacement> | null>(null)
-  // The drawn designator is scenario work; only the screen position of a label
-  // moves per frame, so layoutLabels is left with geometry alone.
+  // The drawn designator is scenario work; only a label's screen position moves per frame.
   const labelText = useMemo(
     () =>
       scenario.entities.map((e) => ({
@@ -211,20 +206,19 @@ export function LiveScene(props: Props) {
           sy: pos.y * camera.scale + camera.y,
         }
       }),
-      // oxlint-disable-next-line react/refs -- last frame's spoke set feeds hysteresis; one frame stale by design
+      // oxlint-disable-next-line react/refs -- last frame's spoke set feeds the hysteresis
       { sticky: prevSpokeIds.current, viewport: { w: size.w, h: size.h } },
     )
-    // oxlint-disable-next-line react/refs -- same one-frame hysteresis as the sticky set
+    // oxlint-disable-next-line react/refs -- same hysteresis as the sticky set
     return stablePlacements(fresh, prevPlacements.current)
   }, [labelText, tracks, camera, size])
-  // A moved label changes the placements but seldom the spoke set; the set
-  // keeps its identity while its ids hold, so the entity groups do not
-  // re-render for a callout that moved.
+  // A moved label changes the placements but seldom the spoke set, which keeps its
+  // identity while its ids hold.
   const spokeIds = useMemo(
     () =>
       stableIds(
         new Set([...labelPlacements].filter(([, p]) => p.mode === 'spoke').map(([id]) => id)),
-        // oxlint-disable-next-line react/refs -- last frame's spoke set lends its identity; one frame stale by design
+        // oxlint-disable-next-line react/refs -- last frame's spoke set lends its identity
         prevSpokeIds.current,
       ),
     [labelPlacements],

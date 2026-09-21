@@ -4,7 +4,6 @@ import { parseAutosave } from '../io/persist'
 import { uncertainFields } from '../analysis/uncertainty'
 import type { MorrisResult } from './mcTypes'
 import {
-  fieldGroup,
   keptFields,
   morrisDesign,
   morrisIndices,
@@ -90,13 +89,6 @@ describe('morrisLoop', () => {
     expect(only.library.find((m) => m.id === 'lib-kurfs')).toBe(
       s.library.find((m) => m.id === 'lib-kurfs'),
     )
-    expect(fieldGroup(s, fields[pk])).toBe('effector')
-    expect(
-      fieldGroup(s, { modelId: 'doctrine', field: 'declareHostileS', spread: fields[0].spread }),
-    ).toBe('doctrine')
-    expect(
-      fieldGroup(s, { modelId: 'con-mtnvzhmr-27', field: 'latencyS', spread: fields[0].spread }),
-    ).toBe('connection')
   })
 
   it('screens the JIATF-401 first detect: KuRFS range leads, kept is the top eight, evaluations 10 (k + 1)', () => {

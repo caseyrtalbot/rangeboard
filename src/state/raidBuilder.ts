@@ -7,9 +7,8 @@ import { sensorHoldsPoint } from '../playback/detection'
 import type { RaidDraft } from './store'
 
 /**
- * Spawn clamp for the tactic builder: raid origins sit beyond every enabled
- * sensor's detection ring (measured from each sensor position) by this
- * factor, so first detection happens inside the play, never at T0.
+ * Spawn clamp: raid origins sit beyond every enabled sensor's detection range by
+ * this factor, so first detection happens inside the play, never at T0.
  */
 const STANDOFF_CLEAR_FACTOR = 1.1
 /** Standoff search: multiply by this per step until no ship is held, up to the step cap. */
@@ -30,10 +29,9 @@ interface RaidBuild {
 }
 
 /**
- * The armed draft for a tactic: seed-id-first designator match; generic
- * tactics fall back to the most recently placed UAS model and stay editable
- * in the builder card. The sole asset becomes the target. Null for an
- * unknown tactic id.
+ * The armed draft for a tactic. The platform is matched by seed id first; a
+ * generic tactic falls back to the most recently placed UAS model. The sole asset
+ * becomes the target. Null for an unknown tactic id.
  */
 export function raidDraftFor(scenario: Scenario, tacticId: string): RaidDraft | null {
   const tactic = THREAT_TACTICS.find((t) => t.id === tacticId)
@@ -60,9 +58,8 @@ export function raidDraftFor(scenario: Scenario, tacticId: string): RaidDraft | 
 }
 
 /**
- * Lay out a raid from a draft: ships, two-point paths to the target and the
- * wave plan. Pure apart from the fresh ids. Null while the draft is blocked
- * (no tactic, no UAS platform or no target), so the caller leaves it armed.
+ * Lay out a raid from a draft: ships, two-point paths to the target and the wave
+ * plan. Null while the draft has no tactic, platform or target.
  */
 export function buildRaid(
   scenario: Scenario,
@@ -81,16 +78,15 @@ export function buildRaid(
   const shipCount = Number.isFinite(draft.shipCount)
     ? Math.min(60, Math.max(1, Math.floor(draft.shipCount)))
     : 1
-  // Ingress bearing: click point toward the target; no anchor (or a click
-  // on the target itself) uses the tactic default.
+  // Ingress bearing runs from the click point toward the target; no anchor uses
+  // the tactic default.
   const ingressDeg =
     axisAnchor && dist(axisAnchor, target.pos) > 1
       ? bearingDeg(axisAnchor, target.pos)
       : tactic.defaultBearingDeg
   const axes = fanAxes(ingressDeg, tactic.axes, tactic.axisSpreadDeg)
 
-  // Decoy platform, resolved like a one-designator tactic. Unresolvable
-  // decoys degrade to an all-strike raid rather than blocking.
+  // An unresolvable decoy degrades to an all-strike raid rather than blocking.
   const decoySpec = tactic.decoy
     ? resolvePlatform(
         { ...tactic, platforms: [{ designator: tactic.decoy.designator }] },
@@ -102,11 +98,8 @@ export function buildRaid(
       ? decoySpec
       : platform
 
-  // Spawn standoff clamp: no ship's own start point (after formation
-  // offsets, against its OWN spec: a decoy has its own signature) may be
-  // held by an enabled sensor at T0, under the real per-sensor rule
-  // (sector wedge, environment, target scaling, RF silence and bands,
-  // the EO/IR cue rule). The standoff steps outward until the group is
+  // No ship's start point may be held by an enabled sensor at T0, each ship
+  // checked against its own spec. The standoff steps outward until the group is
   // clear, then takes the clearance margin.
   const sensors = scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e))
   const layoutFor = (heading: number, members: number[], standoffM: number): Vec2[] => {
@@ -130,9 +123,9 @@ export function buildRaid(
     return layoutFor(heading, members, d * STANDOFF_CLEAR_FACTOR)
   }
 
-  // Ship i flies wave floor(i / shipsPerWave) on axis i % axes, so every
-  // wave draws from every ingress axis. Each wave-axis group is laid out
-  // with the tactic formation (in-trail column when the tactic has none).
+  // Ship i flies wave floor(i / shipsPerWave) on axis i % axes, so every wave
+  // draws from every ingress axis. Each group uses the tactic formation, or an
+  // in-trail column when the tactic has none.
   const perWave = Math.max(1, Math.floor(tactic.shipsPerWave))
   const groups = new Map<string, number[]>()
   for (let i = 0; i < shipCount; i++) {

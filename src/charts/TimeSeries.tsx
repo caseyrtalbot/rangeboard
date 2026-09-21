@@ -34,9 +34,8 @@ export interface TimeSeriesProps {
 const DEFAULT_HEIGHT = 120
 
 /**
- * Recharts and its d3 stack are the largest npm dependency in the app and nothing on the
- * first paint path draws a chart, so the plot body loads on first render behind this
- * boundary. The fallback reserves the plot box so the panel does not reflow.
+ * Nothing on the first paint path draws a chart, so the Recharts plot body loads
+ * lazily. The fallback reserves the plot box so the panel does not reflow.
  */
 const TimeSeriesChart = lazy(() =>
   import('./TimeSeriesChart').then((m) => ({ default: m.TimeSeries })),

@@ -23,16 +23,11 @@ function selectThreatCount(s: Store): number {
 }
 
 /**
- * Bottom transport: play/pause, scrub, speed, and the frames strip. It owns
- * the playback loop: one requestAnimationFrame loop that publishes
- * `playback.simTimeS` every PUBLISH_PERIOD_MS of wall time at every speed
- * (10 Hz). Each publication advances sim time by the measured wall time at
- * playback speed, so the clock does not drift. The loop only publishes; the
- * store's playback commands own observation and completion. The canvas
- * interpolates between publications with its own frame clock (`useFrameClock`).
- * It also holds the Engagement toggle; the strip's open flag lives in `App`, so
- * the two stable props leave the memo intact and the bar re-renders on its own
- * selectors only.
+ * Bottom transport: play/pause, scrub, speed, the frames strip and the Engagement
+ * toggle. It owns the one requestAnimationFrame loop that publishes
+ * `playback.simTimeS` every PUBLISH_PERIOD_MS of wall time, at every speed. Each
+ * publication advances sim time by the measured wall time at playback speed, so
+ * the clock does not drift.
  */
 export const TimelineBar = memo(function TimelineBar({
   engagementOpen,
@@ -66,9 +61,8 @@ export const TimelineBar = memo(function TimelineBar({
   useEffect(() => {
     if (!playing) return
     // Wall time and speed of the last publication. A frame inside the period
-    // publishes nothing, except when the speed changed: the elapsed span is
-    // published at once at the old speed, so the canvas clock never runs past
-    // what the store then observes.
+    // publishes nothing, unless the speed changed: the elapsed span is published at
+    // once at the old speed, so the canvas clock never runs ahead of the store.
     let last = performance.now()
     let speed = useStore.getState().playback.speedMult
     const tick = (now: number) => {
@@ -83,7 +77,7 @@ export const TimelineBar = memo(function TimelineBar({
       }
       last = now
       speed = st.playback.speedMult
-      // The store resolves the publication: observation advance, or the one
+      // The store resolves the publication into an observation advance, or the one
       // completion once the clock reaches the run duration.
       st.playbackCommand({ type: 'publish', t: next })
       if (!useStore.getState().playback.playing) return

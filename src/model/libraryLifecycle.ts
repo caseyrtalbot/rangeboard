@@ -102,13 +102,13 @@ export function reconcileLibraryReport(
  * field takes into an existing board.
  */
 export const ADOPTED_SEED_KEYS: Partial<Record<SeedBlock, readonly string[] | '*'>> = {
-  // Phase 2 (2026-09-10): tracker accuracy and the radar false-alarm rate.
+  // Tracker accuracy and the radar false-alarm rate.
   sensor: [
     'rangeAccuracyM',
     'azimuthAccuracyDeg',
     'elevationAccuracyDeg',
     'falseAlarmRatePerScan',
-    // Phase 3 (2026-09-10): radar dwell, EO/IR optics, RF sensitivity and acoustic threshold.
+    // Radar dwell, EO/IR optics, RF sensitivity and acoustic threshold.
     'pulsesPerDwell',
     'dwellTimeS',
     'pixelPitchUm',
@@ -120,9 +120,9 @@ export const ADOPTED_SEED_KEYS: Partial<Record<SeedBlock, readonly string[] | '*
     'geolocationMinNodes',
     'noiseFloorDb',
   ],
-  // Phase 3: threat kinematic limits and link emission.
+  // Threat kinematic limits and link emission.
   uas: ['maxTurnRateDegS', 'climbRateMps', 'maxAccelMps2', 'radiatedPowerW', 'linkProtocol'],
-  // Phase 3: interceptor, gun, directed-energy and HPM physics fields.
+  // Interceptor, gun, directed-energy and HPM physics fields.
   effector: [
     'seekerAcquisitionRangeM',
     'lethalRadiusM',
@@ -144,7 +144,7 @@ export const ADOPTED_SEED_KEYS: Partial<Record<SeedBlock, readonly string[] | '*
     'beamwidthDeg',
     'rechargeS',
   ],
-  // Phase 2: the C2 decision fields; c2 models had no spec block before.
+  // The C2 decision fields; c2 models had no spec block before.
   c2: '*',
 }
 

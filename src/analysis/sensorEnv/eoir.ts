@@ -16,12 +16,10 @@ import { sensorEnvFactor, targetScaled } from './common'
 
 /**
  * EO/IR target law, night and visibility rules, and the cue rule. The spec
- * range is quoted against a reference span; the range against another
- * target is linear in the span ratio (Johnson criteria), the thermal channel
- * carries a contrast class, and no contrast survives beyond the
- * meteorological visibility (Koschmieder). Lane 3.3 adds the Johnson
- * criteria per band from pixel pitch and focal length and the Beer-Lambert
- * extinction here.
+ * range is quoted against a reference span; the range against another target
+ * is linear in the span ratio (Johnson criteria), the thermal channel carries
+ * a contrast class, and no contrast survives beyond the meteorological
+ * visibility (Koschmieder).
  */
 
 /**
@@ -42,9 +40,9 @@ export const VISIBILITY_BY_PRECIP: Record<Precipitation, number> = {
 export type EoirTask = 'detect' | 'recognize' | 'identify'
 
 /**
- * Johnson line-pair thresholds at 50 percent task probability. The lane
- * contract uses the conservative industry values 1, 4 and 8 cycles across
- * the target critical dimension; one cycle occupies two detector pixels.
+ * Johnson line-pair thresholds at 50 percent task probability: the
+ * conservative industry values 1, 4 and 8 cycles across the target critical
+ * dimension. One cycle occupies two detector pixels.
  */
 export const JOHNSON_CYCLES: Readonly<Record<EoirTask, number>> = {
   detect: 1,
@@ -57,10 +55,8 @@ export const KOSCHMIEDER_CONTRAST = 0.02
 
 /**
  * MWIR extinction relative to visible extinction. ITU-R P.1814-0 equations
- * (4)-(5), evaluated at 4 um versus 550 nm and the model's 0.6 km fog
- * visibility, give q = 0.585 * 0.6^(1/3) and a ratio 0.3757. One rounded
- * constant keeps the band rule explicit instead of implying a spectral
- * weather model the inputs do not support.
+ * (4)-(5), at 4 um versus 550 nm and the model's 0.6 km fog visibility, give
+ * a ratio of 0.3757, rounded here to one constant.
  */
 export const THERMAL_EXTINCTION_RATIO = 0.38
 
@@ -73,8 +69,8 @@ export interface EoirDriRanges {
 
 /**
  * Adapter options for the shared sensor-range dispatch. `fallbackRangeM` is
- * the already-computed legacy result; returning it unchanged is the exact
- * fallback contract for the switch and incomplete optics.
+ * the already-computed legacy result, returned unchanged for the switch and
+ * for incomplete optics.
  */
 export interface EoirRangeOptions {
   task: EoirTask
@@ -185,18 +181,16 @@ function attenuatedRangeM(clearRangeM: number, extinctionPerM: number): number {
 }
 
 /**
- * Optics-based DRI ranges for one target. At range R the available line
- * pairs are
+ * Optics-based DRI ranges for one target, meters. At range R the available
+ * line pairs are
  *
  *   span * bandFactor * environmentFactor * exp(-sigma R)
  *   ------------------------------------------------------
  *                    2 R IFOV
  *
- * and the task range is where that value meets JOHNSON_CYCLES[task].
- * Null means this is not an EO/IR case with a target and a complete optics
- * pair, so the caller must use its legacy result. A planning-basis placard
- * may still use this path because the modeled range comes from the optics,
- * not by scaling that placard.
+ * and the task range is where that value meets JOHNSON_CYCLES[task]. Null
+ * means this is not an EO/IR case with a target and a complete optics pair,
+ * so the caller must use its legacy result.
  */
 export function eoIrDriRangesM(
   spec: SensorSpec,
@@ -225,9 +219,8 @@ export function eoIrDriRangesM(
 }
 
 /**
- * One DRI task range for sensorEnv.ts. The switch, incomplete optics,
- * missing target return the supplied legacy value bit for bit; modeled
- * cases ignore that value.
+ * One DRI task range for sensorEnv.ts, meters. The switch, incomplete optics
+ * and a missing target return the supplied legacy value unchanged.
  */
 export function eoIrRangeM(
   spec: SensorSpec,
@@ -284,11 +277,9 @@ const CUED_EO_ROLES: ReadonlySet<SensorRole> = new Set([
 ])
 
 /**
- * True when this EO/IR sensor needs a cue from another sensor before it
- * holds a track (COURAGEOUS: narrow-FOV cameras verify and track cued
- * targets, they do not search). Wide-area search sensors (surveillance,
- * early-warning roles) hold without a cue and can cue others. Non-EO/IR
- * sensors never need a cue.
+ * True when this EO/IR sensor needs a cue from another sensor before it holds
+ * a track (COURAGEOUS: narrow-FOV cameras verify cued targets, they do not
+ * search). Surveillance and early-warning roles hold without a cue.
  */
 export function eoIrNeedsCue(spec: SensorSpec): boolean {
   return spec.sensorType === 'eo-ir' && CUED_EO_ROLES.has(defaultSensorRole(spec))

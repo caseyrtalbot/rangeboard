@@ -1,13 +1,10 @@
 /**
- * Parameter draws per replicate: the loop end every runner agrees on, and
- * the Latin hypercube layout of the `param` draw under `sampling: 'lhs'`.
- * Replicate i takes, per uncertain field, stratum `perm(i)` of N strata,
- * where `perm` is a keyed bijection on [0, N) that depends only on (seed,
- * modelId, field, N), and its position in the stratum is the keyed `param`
- * draw. So replicate i is a pure function of (seed, i, N): a pool worker
- * on indices 500..524 and the Node runner draw what the single worker draws,
- * and two scenarios with one seed and N share their draws (common random
- * numbers). `'independent'` keeps the raw `param` draw.
+ * Parameter draws per replicate: the loop end every runner agrees on, and the
+ * Latin hypercube layout of the `param` draw under `sampling: 'lhs'`. Replicate
+ * i takes, per uncertain field, stratum `perm(i)` of N strata, where `perm` is
+ * a keyed bijection on [0, N) of (seed, modelId, field, N), and its position in
+ * the stratum is the keyed `param` draw. Replicate i is then a pure function of
+ * (seed, i, N). `'independent'` keeps the raw `param` draw.
  */
 import type { McSettings } from '../model/types'
 import { hashU01, idHash } from '../geometry/prng'

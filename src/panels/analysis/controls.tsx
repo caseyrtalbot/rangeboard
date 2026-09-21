@@ -38,10 +38,7 @@ export function RoleSeg<T extends string>({
   )
 }
 
-/**
- * Refresh the view memo when scenario or run identity changes. The deterministic
- * engine cache is keyed by engine inputs and remains reusable across clean runs.
- */
+/** Refresh the view memo when scenario or run identity changes. */
 // oxlint-disable-next-line react/only-export-components -- Screen hooks share this module with RoleSeg.
 export function useForecastEngagement(scenario: Scenario, runId: string): EngagementPicture {
   return useMemo(() => {

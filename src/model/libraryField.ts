@@ -1,9 +1,7 @@
 /**
- * Contract for the JSON data package under `data/library/<kind>/<slug>.json`.
- * Lane 0.1 writes these files and compiles them into the runtime library;
- * lane 0.2 reads the L1 entries to derive class priors. Every number the
- * board draws carries its grade, layer and lineage here, so the app can
- * always say what a value is and where it came from.
+ * Shape of the JSON data package under `data/library/<kind>/<slug>.json`,
+ * which compiles into the runtime library. Every number the board draws
+ * carries its grade, layer and lineage here.
  */
 
 import type { EntityKind, Spread, ThreatProfile } from './types'
@@ -132,10 +130,9 @@ export type PhysicsSwitch =
   | 'noFalseTracks'
   | 'noOperatorQueue'
   | 'singlePulseRadar'
-  // Phase 3 fallbacks, one per physics lane: constant-speed waypoints with no wind
-  // (3.1), the RF band gate with no link budget (3.2), the EO/IR span ratio with the
-  // Koschmieder cap (3.3), the shared kinetic Pk formula for interceptors and guns
-  // (3.5) and for directed energy and HPM (3.6).
+  // Fallbacks: constant-speed waypoints with no wind, the RF band gate with no
+  // link budget, the EO/IR span ratio with the Koschmieder cap, and the shared
+  // kinetic Pk formula for interceptors and guns and for directed energy and HPM.
   | 'noFlightLimits'
   | 'rfBandGate'
   | 'eoirSpanRatio'

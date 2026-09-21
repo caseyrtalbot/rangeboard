@@ -25,7 +25,7 @@ export const MORRIS_LEVELS = 4
 /** Fields kept for Sobol after screening. */
 export const MORRIS_KEPT = 8
 
-/** The draw kind of the trajectory layout; the policy's kinds are 1 to 5, the LHS shuffle 6. */
+/** The draw kind of the trajectory layout; kinds never collide (policy.ts DRAW_KIND). */
 const MORRIS_KIND = 7
 
 /**
@@ -160,18 +160,7 @@ export function morrisIndices(
   return { effects, ranking: morrisRanking(effects), evaluations: design.rows.length }
 }
 
-/** The group of a field: its library model's kind, or the off-library owner. */
-export function fieldGroup(scenario: Scenario, field: UncertainField): string {
-  if (field.modelId === 'doctrine') return 'doctrine'
-  const model = scenario.library.find((m) => m.id === field.modelId)
-  return model ? model.kind : 'connection'
-}
-
-/**
- * The fields kept for Sobol: the top `MORRIS_KEPT` of `ranking` (indices
- * into the fields). A group's best field ranks above its other fields, so
- * every group with a field in the top eight keeps its best one.
- */
+/** The fields kept for Sobol: the top `MORRIS_KEPT` of `ranking`, as indices into the fields. */
 export function keptFields(ranking: number[]): number[] {
   return ranking.slice(0, MORRIS_KEPT)
 }
@@ -201,12 +190,10 @@ export function studyBase(scenario: Scenario): Scenario {
 
 /**
  * Morris screening of `scenario` on `response`: every uncertain field is a
- * factor, each row runs as one aleatory replicate whose index is the row's
+ * factor, and each row runs as one aleatory replicate whose index is the row's
  * trajectory, so the steps of a trajectory share their engine draws and an
- * effect is a paired difference (common random numbers). One checkpoint per
- * row; a stop keeps the trajectories completed (`trajectories` reports the
- * count) and throws when none is. `onProgress` fires after every row with
- * the row count.
+ * effect is a paired difference. One checkpoint per row; a stop keeps the
+ * trajectories completed and throws when none is.
  */
 export function* morrisLoop(
   scenario: Scenario,

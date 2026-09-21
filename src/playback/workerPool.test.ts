@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import fixture from './__fixtures__/detection-outside-rings.json'
 import { parseAutosave } from '../io/persist'
 import type { Scenario, UncertaintyMode } from '../model/types'
-import type { McPartial, McSummary, McWorkerMessage } from './mcRun'
-import { replicateRangeLoop, runReplicates } from './mcRun'
+import type { ExecutionBudget, McPartial, McSummary, McWorkerMessage } from './mcRun'
+import { replicateRangeLoop, runReplicates, summaryNumbers } from './mcRun'
 import type { PoolProgress } from './mcTypes'
 import type { McRangeRequest, PoolMessage } from './workerPool'
 import { chunkSize, createWorkerPool, poolSize } from './workerPool'
-import { CANCEL_GRACE_MS, CANCEL_TIMEOUT_MESSAGE } from './workerSlot'
+import { CANCEL_GRACE_MS } from './workerSlot'
 
 /**
  * The pool driven with an in-process stand-in for `mc.worker.ts` (the
@@ -103,10 +103,10 @@ function timeless(summary: McSummary): Omit<McSummary, 'elapsedMs'> {
 }
 
 /** One pool run with its two message streams collected. */
-function run(scenario: Scenario, size: number, runId = 'pool-run') {
+function run(scenario: Scenario, size: number, runId = 'pool-run', budget?: ExecutionBudget) {
   const messages: McWorkerMessage[] = []
   const polls: PoolProgress[] = []
-  const pool = createWorkerPool({ spawn, size })
+  const pool = createWorkerPool({ spawn, size, budget })
   const started = pool.start(
     scenario,
     runId,
@@ -262,25 +262,77 @@ describe('worker pool', () => {
     ])
   })
 
-  it('terminates a silent worker after the grace period and reports the timeout', () => {
+  it('terminates a silent worker after the grace period and finishes on what landed', () => {
     vi.useFakeTimers()
     const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
     const pooled = run(scenario, 3)
     RangeWorker.instances[0].step()
     pooled.pool.cancel()
     vi.advanceTimersByTime(CANCEL_GRACE_MS - 1)
-    expect(pooled.messages.some((m) => m.type === 'error')).toBe(false)
+    expect(pooled.messages.at(-1)?.type).toBe('progress')
     vi.advanceTimersByTime(2)
-    expect(pooled.messages.at(-1)).toEqual({
-      type: 'error',
-      runId: pooled.runId,
-      message: CANCEL_TIMEOUT_MESSAGE,
-    })
+    const summary = pooled.summary()
+    expect(summary.stopped).toEqual({ rule: 'cancelled', at: 14 })
+    expect(summary.replicates).toBe(14)
     expect(RangeWorker.instances.every((w) => w.terminated)).toBe(true)
     // A callback from a released worker is dropped.
     const before = pooled.messages.length
     RangeWorker.instances[1].onmessage?.({ data: { type: 'range-done', runId: pooled.runId } })
     expect(pooled.messages).toHaveLength(before)
+  })
+
+  it('a silent worker after the grace period with nothing landed is an error', () => {
+    vi.useFakeTimers()
+    const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const pooled = run(scenario, 3)
+    pooled.pool.cancel()
+    vi.advanceTimersByTime(CANCEL_GRACE_MS + 1)
+    expect(pooled.messages).toEqual([
+      {
+        type: 'error',
+        runId: pooled.runId,
+        message: 'The run stopped before any replicate finished',
+      },
+    ])
+    expect(RangeWorker.instances.every((w) => w.terminated)).toBe(true)
+  })
+
+  it('refuses a run whose summary is over the budget before any worker is built', () => {
+    const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const need = summaryNumbers(scenario)
+    const pooled = run(scenario, 3, 'pool-run', { retainedNumbers: need - 1, timeMs: Infinity })
+    expect(pooled.started).toBe(true)
+    expect(pooled.messages).toHaveLength(1)
+    expect(pooled.messages[0].type).toBe('error')
+    if (pooled.messages[0].type === 'error') {
+      expect(pooled.messages[0].message).toMatch(/over the budget/)
+    }
+    expect(RangeWorker.instances).toHaveLength(0)
+    expect(pooled.pool.cancel()).toBe(false)
+  })
+
+  it('ends with the budget rule once the merged rows reach the retained budget', () => {
+    const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const need = summaryNumbers(scenario)
+    // One chunk of 14 retains more than the summary; the next merge trips the rule.
+    const pooled = run(scenario, 3, 'pool-run', { retainedNumbers: need + 1, timeMs: Infinity })
+    expect(RangeWorker.instances[0].step()).toBe(true)
+    expect(pooled.pool.cancel()).toBe(false)
+    RangeWorker.drain()
+    const summary = pooled.summary()
+    expect(summary.stopped).toEqual({ rule: 'budget', at: 15 })
+    expect(RangeWorker.ran).toEqual([
+      [0, 14],
+      [14, 15],
+      [28, 29],
+    ])
+  })
+
+  it('ends with the budget rule once the wall time reaches the budget', () => {
+    const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const pooled = run(scenario, 3, 'pool-run', { retainedNumbers: Infinity, timeMs: 0 })
+    RangeWorker.drain()
+    expect(pooled.summary().stopped).toEqual({ rule: 'budget', at: 15 })
   })
 
   it('a worker error ends the run and terminates the rest', () => {

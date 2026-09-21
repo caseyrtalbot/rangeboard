@@ -6,59 +6,43 @@ import { predict, PROCESS_NOISE_Q, quality, ZERO_COVARIANCE } from './kalman'
 import type { Covariance4, FusedTrack, TrackEstimate, TrackState } from './trackTypes'
 
 /**
- * Track-to-track fusion at a C2 node (lane 2.4). `fuseTracks` combines
- * member sensor tracks in information form: the fused information is the
- * sum of the member inverse covariances, the fused covariance its inverse
- * and the fused state the covariance-weighted mean. `createFusionStage`
- * runs it once per sweep step for one threat: it holds the per-sensor
- * estimates the tracker emits, applies the sensor-to-C2 link latency and
- * fuses the reports that have reached a C2 node. Board meters throughout.
+ * Track-to-track fusion at a C2 node. `fuseTracks` combines member sensor
+ * tracks in information form: the fused information is the sum of the member
+ * inverse covariances, the fused covariance its inverse and the fused state the
+ * covariance-weighted mean. `createFusionStage` runs it once per sweep step for
+ * one threat. Board meters throughout.
  *
- * Latency. A sensor report reaches the C2 one link latency after the
- * sensor made it, so at time t the C2 holds each sensor's estimate as of
- * t - latency. The stage keeps a short per-sensor ring of past estimates
- * (latency / DT + 1 entries, the objects the tracker already allocated for
- * the sink) and carries the delayed entry to t with the tracker's own
- * constant-velocity `predict`, so the covariance grows by the process noise
- * over the delay the way a real C2 dead-reckons a stale report. A ring
- * rather than a predict-only path because the estimate as of t - latency is
- * not recoverable from the estimate at t. The truth path bypasses the
- * latency: a truth member is exact at t by definition (zero covariance,
- * quality 1), so a fused track that has a truth member is the truth at t
- * with zero covariance and `source: 'truth'`, and a `truthTracks` run is
- * unchanged by fusion.
+ * Latency. At time t the C2 holds each sensor's estimate as of t - latency. The
+ * stage keeps a per-sensor ring of past estimates (latency / DT + 1 entries)
+ * and carries the delayed entry to t with the tracker's constant-velocity
+ * `predict`, so the covariance grows by the process noise over the delay. A
+ * ring rather than a predict-only path, because the estimate as of t - latency
+ * is not recoverable from the estimate at t. A truth member is exact at t, so
+ * it bypasses the latency and a fusion holding one is the truth at t with zero
+ * covariance and `source: 'truth'`.
  *
- * No C2 node: every live sensor track fuses at the sensors with no latency,
- * so today's behaviour holds. A sensor with no C2 link on a board that has
- * links fuses at the sensors too (NO_C2) and competes with the nodes on
- * quality, so a radar wired straight to an effector still reaches the
- * picture.
+ * With no C2 node every live sensor track fuses at the sensors with no latency.
+ * A sensor with no C2 link on a board that has links also fuses at the sensors
+ * (NO_C2) and competes with the nodes on quality.
  *
- * Truth members off the `truthTracks` switch. The tracker sends a sensor
- * with no range or azimuth accuracy down the truth path (tracker.ts
- * `truthPathFor`), and every RF and acoustic sensor in the library has no
- * range accuracy. When the switch is off, such a member would otherwise
- * make every mixed fusion exact, so the stage drops truth members from a
- * fusion that has at least one estimate member; a fusion whose members are
- * all truth (a laydown with no accuracy data) stands as before. With the
- * switch on nothing changes. Phase 3: a bearing-only sensor should become a
- * measurement with range sigma equal to its detect range instead.
+ * With `truthTracks` off, the stage drops truth members from a fusion that has
+ * at least one estimate member, so a sensor with no range or azimuth accuracy
+ * cannot make a mixed fusion exact. A fusion whose members are all truth
+ * stands. With the switch on nothing is dropped.
  */
 
 /**
- * Fire-control quality floor on the fused track, in the tracker's quality
- * scale (kalman.ts `quality`): 0.5 is a position 1 sigma of QUALITY_SCALE_M,
- * 50 m, the scale of a small interceptor's terminal basket. The stable
- * track condition of sim.ts requires the fused quality at or above it. On
- * the truth path quality is 1, so nothing changes.
+ * Fire-control quality floor on the fused track, in the tracker's quality scale
+ * (kalman.ts `quality`): 0.5 is a position 1 sigma of QUALITY_SCALE_M, 50 m.
+ * The stable track condition of sim.ts requires the fused quality at or above
+ * it.
  */
 export const FC_QUALITY_MIN = 0.5
 
 /**
  * Diagonal regularization for a member covariance that is singular but not
- * zero, m^2 or (m/s)^2: 1e-6 is far below any sensor accuracy in the
- * library (metres) and any velocity variance the filter carries, so it only
- * makes the inverse exist without moving the weight of a live member.
+ * zero, m^2 or (m/s)^2. 1e-6 is far below any sensor accuracy in the library,
+ * so it makes the inverse exist without moving a live member's weight.
  */
 export const COVARIANCE_FLOOR = 1e-6
 
@@ -314,9 +298,9 @@ export interface FusionStage {
 }
 
 /**
- * Members admitted to one fusion under the truth rule of the module comment:
- * with `truthTracks` off, truth members are dropped when an estimate member
- * is present. Returns the input when nothing is dropped.
+ * Members admitted to one fusion: with `truthTracks` off, truth members are
+ * dropped when an estimate member is present. Returns the input when nothing
+ * is dropped.
  */
 export function admitMembers(
   members: readonly TrackEstimate[],
@@ -328,14 +312,12 @@ export function admitMembers(
 }
 
 /**
- * Build the fusion stage of one threat over `links` (c2LinksFor). With
- * links, each C2 fuses the delayed reports of its linked sensors, the
- * sensors with no link fuse at the sensors (NO_C2), and the fused track
- * with the highest quality is the step's picture (ties: scenario entity
- * order of the nodes, which is the link order, then the unlinked set).
- * Duplicate links from one sensor to one node count once, with the first
- * link's latency. Without links every current estimate fuses at the
- * sensors. `truthTracks` is the physics switch; see the module comment.
+ * Build the fusion stage of one threat over `links` (c2LinksFor). With links,
+ * each C2 fuses the delayed reports of its linked sensors, the sensors with no
+ * link fuse at the sensors (NO_C2), and the fused track with the highest
+ * quality is the step's picture; ties go to link order, then the unlinked set.
+ * Duplicate links from one sensor to one node count once, with the first link's
+ * latency. Without links every current estimate fuses at the sensors.
  */
 export function createFusionStage(
   links: readonly C2Link[],

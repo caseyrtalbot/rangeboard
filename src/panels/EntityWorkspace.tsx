@@ -18,9 +18,8 @@ const SECTIONS: Array<{ id: EntityWorkspaceSection; label: string }> = [
 ]
 
 /**
- * The Model basis section. It lists the linked instances, so it is the one part of the
- * workspace that reads the entity list; it subscribes here so the header and the tabs
- * do not re-render on an edit to some other entity.
+ * The Model basis section. It lists the linked instances, so it is the one part of
+ * the workspace that subscribes to the entity list.
  */
 function ModelBasis({ entityId, model }: { entityId: string; model: SpecModel }) {
   const scenario = useStore((s) => s.scenario)
@@ -78,8 +77,8 @@ export function EntityWorkspace({
   onOverview: () => void
   onOpenSettings?: () => void
 }) {
-  // The entity and the library are stable references between edits to them, so an
-  // edit elsewhere on the board leaves this shell alone.
+  // Both are stable references between edits, so an edit elsewhere on the board
+  // leaves this shell alone.
   const entity = useStore((s) => s.scenario.entities.find((item) => item.id === entityId))
   const library = useStore((s) => s.scenario.library)
   const model = entity?.specId != null ? library.find((m) => m.id === entity.specId) : undefined

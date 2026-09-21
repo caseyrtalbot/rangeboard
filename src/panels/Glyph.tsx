@@ -1,18 +1,12 @@
 import type { EntityKind } from '../model/types'
 
 /**
- * Shared MIL-STD-2525 symbology. The canvas draws these same constants in
- * Konva (src/canvas/layers/EntityLayer.tsx), so the palette, the library
- * lists and the board can never state different things about one entity.
- *
- * The standard split: the FRAME carries affiliation, an inner ICON carries
- * function.
- *   friend  - rectangle with the standard rounded top: sensor, c2, effector,
- *             asset. All four are blue force.
- *   hostile - diamond: uas. Red air.
- *   neutral - plain square, drawn hollow: marker. Neither side.
- * A function letter sits inside the friend frame, because four blue-force
- * kinds share one affiliation frame and must still be told apart.
+ * Shared MIL-STD-2525 symbology. The canvas draws these same constants in Konva
+ * (src/canvas/layers/EntityLayer.tsx), so the palette, the library lists and the
+ * board agree about one entity. The frame carries affiliation: a rounded-top
+ * rectangle for friend (sensor, c2, effector, asset), a diamond for hostile (uas),
+ * a hollow square for neutral (marker). A function letter inside the friend frame
+ * tells the four blue-force kinds apart.
  */
 type FrameKind = 'friend' | 'hostile' | 'neutral'
 
@@ -37,11 +31,9 @@ export const FUNCTION_LETTER: Record<EntityKind, string> = {
 }
 
 /**
- * Friend frame outline in a 10 x 10 symbol box: flat base, straight sides,
- * arched top, wider than it is tall. Its ink spans x 0.6 to 9.4 and y 2.4 to
- * 8.4, so the centre is (5, 5.4) and the half extents are 4.4 x 3.0 box
- * units. Konva Path and SVG path take the same data string, so the two
- * renderers draw one shape by construction.
+ * Friend frame outline in a 10 x 10 symbol box. Its ink spans x 0.6 to 9.4 and
+ * y 2.4 to 8.4, so the centre is (5, 5.4) and the half extents are 4.4 x 3.0 box
+ * units. Konva Path and SVG path take the same data string.
  */
 export const FRIEND_FRAME_D = 'M0.6 8.4 V5 A4.4 2.6 0 0 1 9.4 5 V8.4 Z'
 /** Ink centre of FRIEND_FRAME_D, box units. Translate by it to centre the frame. */

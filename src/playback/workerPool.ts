@@ -1,43 +1,34 @@
 /**
  * The browser worker pool for a replicate run. One pool holds at most one live
- * run, as `workerSlot.ts` holds one live worker: `start` replaces whatever
- * runs, `cancel` asks every live worker to stop and gives it CANCEL_GRACE_MS,
- * `dispose` terminates now, and the callbacks of a replaced or disposed run
- * are dropped by exact ownership. The pool speaks the replicate protocol of
- * `mcClient.ts` outward (`progress`, `done`, `error`) and the range protocol
- * below to its workers.
+ * run: `start` replaces whatever runs, `cancel` asks every live worker to stop
+ * and gives it CANCEL_GRACE_MS, `dispose` terminates now.
  *
- * Work is handed out by replicate index. The coordinator keeps a cursor over
- * 0..target and gives each worker a contiguous chunk; a worker that finishes a
- * chunk gets the next one, so a slow core never holds the run back. Replicate
- * i is a pure function of i (the keyed draw policy), so the merged partial is
- * the sequential loop's rows whatever order the chunks land in.
+ * Work is handed out by replicate index. A cursor over 0..target gives each
+ * worker a contiguous chunk and refills it when the chunk lands. Replicate i is
+ * a pure function of i, so the merged partial is the sequential loop's rows
+ * whatever order the chunks land in.
  *
- * Chunk size, with `size` workers:
- * - under a half-width target, `max(1, min(25, ceil(stopFloor / size)))`, so
- *   every worker starts busy, the rule is checked several times before the
- *   floor, and a stop wastes at most one chunk per worker;
- * - otherwise `min(ceil(replicates / size), 50)`, so a fixed count is one
- *   round of chunks when it is small and stays streamable when it is large.
- * At the defaults (floor 30, cap 2000, 8 workers) a target run uses chunks of
- * 4; a 1000-replicate fixed run uses chunks of 50; a 40-replicate fixed run on
- * 3 workers uses chunks of 14.
+ * Chunk size, with `size` workers: `max(1, min(25, ceil(stopFloor / size)))`
+ * under a half-width target, so every worker starts busy and the rule is
+ * checked several times before the floor; otherwise
+ * `min(ceil(replicates / size), 50)`.
  *
  * Stop rules. With `targetHalfWidth` null the pool runs exactly `replicates`
  * indices and reports 'replicates'. With a target it runs until
  * `halfWidthReached` holds on the contiguous prefix of the merged indices,
- * checked after every merged chunk, or until `stopCap` indices are done. A
- * half-width stop, and a cancel, cancel the chunks in flight and wait for
- * their partials; the summary is then finished on the contiguous prefix only,
- * so the run is always the replicates 0..m-1 with no holes.
+ * checked after every merged chunk, or until `stopCap` indices are done. The
+ * budget applies to the merged rows and the run's wall clock. Any stop cancels
+ * the chunks in flight and waits for their partials; the summary is finished on
+ * the contiguous prefix only, so a run is always the replicates 0..m-1 with no
+ * holes. A worker still silent after CANCEL_GRACE_MS is terminated.
  */
 import type { McSettings, Scenario } from '../model/types'
 import { runSettings } from '../model/types'
-import type { McPartial, McWorkerMessage, StopRule } from './mcRun'
-import { finishSummary, halfWidthReached } from './mcRun'
+import type { ExecutionBudget, McPartial, McWorkerMessage, StopRule } from './mcRun'
+import { assertSummaryFits, DEFAULT_BUDGET, finishSummary, halfWidthReached } from './mcRun'
 import type { PoolProgress } from './mcTypes'
 import { contiguousPrefix, mergePartials } from './mergeSummaries'
-import { CANCEL_GRACE_MS, CANCEL_TIMEOUT_MESSAGE } from './workerSlot'
+import { CANCEL_GRACE_MS } from './workerSlot'
 
 /** Most workers the pool builds, whatever the machine reports. */
 export const MAX_POOL_WORKERS = 8
@@ -67,7 +58,7 @@ export type PoolRequest = McRangeRequest
 /**
  * Messages of a range run. `done` and `total` count replicates within the
  * range. A cancelled range still posts `range-done` with the partial it
- * reached, so the coordinator can merge the work already paid for.
+ * reached, so the coordinator can merge what it completed.
  */
 export type PoolMessage =
   | { type: 'range-progress'; runId: string; done: number; total: number }
@@ -80,6 +71,8 @@ export interface PoolOptions {
   spawn?: () => Worker
   /** Workers to build, before the replicate count caps it. Default `poolSize()`. */
   size?: number
+  /** The budget on the merged rows and the wall clock. Default `DEFAULT_BUDGET`. */
+  budget?: ExecutionBudget
 }
 
 export interface WorkerPool {
@@ -97,10 +90,10 @@ export interface WorkerPool {
   ) => boolean
   /**
    * Ask every worker holding a chunk to stop at its next checkpoint and give
-   * the pool CANCEL_GRACE_MS to answer. The run then finishes on the
-   * contiguous prefix with `stopped.rule` 'cancelled'. Returns false with no
-   * live run, a cancel already in flight, or a `runId` that is not the live
-   * one.
+   * the pool CANCEL_GRACE_MS to answer; a worker still silent then is
+   * terminated. The run then finishes on the contiguous prefix with
+   * `stopped.rule` 'cancelled'. Returns false with no live run, a cancel
+   * already in flight, or a `runId` that is not the live one.
    */
   cancel: (runId?: string) => boolean
   /** Terminate every worker now. Callbacks already queued are dropped by exact ownership. */
@@ -181,6 +174,7 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
   const spawn =
     options.spawn ??
     (() => new Worker(new URL('./mc.worker.ts', import.meta.url), { type: 'module' }))
+  const budget = options.budget ?? DEFAULT_BUDGET
   let current: Run | null = null
 
   /** Detach and terminate every worker of `run`, and give up ownership. */
@@ -233,7 +227,7 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
   /**
    * Stop handing out work and ask every busy worker to end at its next
    * checkpoint. A worker still silent after CANCEL_GRACE_MS is terminated and
-   * the run reports CANCEL_TIMEOUT_MESSAGE, exactly as the slot does.
+   * the run finishes on the chunks that landed.
    */
   const beginEnding = (run: Run, rule: StopRule): void => {
     run.ending = rule
@@ -242,7 +236,7 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
     }
     run.grace = setTimeout(() => {
       if (current !== run || run.over) return
-      fail(run, CANCEL_TIMEOUT_MESSAGE)
+      finish(run, rule)
     }, CANCEL_GRACE_MS)
   }
 
@@ -295,6 +289,11 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
         halfWidthReached(run.scenario, contiguousPrefix(merged))
       ) {
         beginEnding(run, 'halfWidth')
+      } else if (
+        merged.retained >= budget.retainedNumbers ||
+        performance.now() - run.t0 >= budget.timeMs
+      ) {
+        beginEnding(run, 'budget')
       } else {
         handOut(run, w)
         if (run.over) return
@@ -361,6 +360,12 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
       over: false,
     }
     current = run
+    try {
+      assertSummaryFits(scenario, budget)
+    } catch (error) {
+      fail(run, messageOf(error))
+      return true
+    }
     for (let i = 0; i < size; i += 1) {
       let worker: Worker
       try {

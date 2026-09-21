@@ -3,30 +3,17 @@
  * numbers. Inputs are points x in R^d (the movable positions, meters), the
  * outputs the objective means to minimize with their standard errors.
  *
- * Model. Observations are standardized, z_i = (f_i - c) / s with c the mean
- * and s the sample standard deviation of the observed f (s falls back to 1
- * when it is 0 or not finite, so equal observations still fit). The prior is
- * zero-mean with the squared-exponential kernel
+ * Observations are standardized, z_i = (f_i - c) / s, with s falling back to 1
+ * when it is 0 or not finite. The prior is zero-mean with the
+ * squared-exponential kernel k(x, x') = exp(-|x - x'|^2 / (2 l^2)) at unit
+ * signal variance; no hyperparameter is fitted. The length scale l is the
+ * caller's, in meters. Each observation carries its own noise variance
+ * r_i = (se_i / s)^2 + JITTER.
  *
- *   k(x, x') = exp(-|x - x'|^2 / (2 l^2))
- *
- * at unit signal variance in standardized units, so the only data-driven
- * quantity is the output scale s; no hyperparameter is fitted. The length
- * scale l is the caller's, in meters (`optimizeLoop` sets it from the bounds
- * diagonal). Each observation carries its own noise variance
- * r_i = (se_i / s)^2 + JITTER, the evaluation's standard error in
- * standardized units plus a jitter for conditioning, so K = [k(x_i, x_j)] +
- * diag(r). The fit is one Cholesky factorization K = L L^T; a prediction at
- * x reads mu = k*^T K^-1 z and sigma^2 = 1 - k*^T K^-1 k* (clamped at 0).
- *
- * Expected improvement over the best observed standardized mean f_best,
- * for a minimized objective (Jones, Schonlau and Welch 1998):
- *
- *   EI(x) = (f_best - mu) Phi(u) + sigma phi(u),  u = (f_best - mu) / sigma
- *
- * with Phi the standard normal CDF (erf by Abramowitz and Stegun 7.1.26,
- * absolute error under 1.5e-7) and phi its density; sigma under SIGMA_FLOOR
- * gives max(f_best - mu, 0).
+ * Expected improvement over the best observed standardized mean, for a
+ * minimized objective (Jones, Schonlau and Welch 1998), uses the standard
+ * normal CDF by Abramowitz and Stegun 7.1.26 (absolute error under 1.5e-7);
+ * sigma under SIGMA_FLOOR gives max(f_best - mu, 0).
  */
 
 /** Added to every observation's noise variance, standardized units. */

@@ -41,9 +41,8 @@ interface RingView {
 }
 
 /**
- * Layer state a first run starts from and the fallback for a save that lacks a
- * key. Two rings only: the sensor placard and the effector max range. The other
- * five rings answer a narrower question, so the board opens uncluttered.
+ * Layer state a first run starts from and the fallback for a save that lacks the
+ * key. Two rings only, so the board opens uncluttered.
  */
 export const DEFAULT_LAYERS: LayerVisibility = {
   grid: true,

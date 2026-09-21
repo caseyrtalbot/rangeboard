@@ -97,28 +97,18 @@ function productToken(word: string): boolean {
 }
 
 /**
- * Short board designator for a canvas label. Entity names carry the full
- * vendor string and an instance number ("Anvil interceptor (Anduril) 1"),
- * which is a wall of text with leader lines in a dense picture. This keeps the
- * product name and the instance number in the board's uppercase idiom
- * ("ANVIL 1").
+ * Short board designator for a canvas label: the product name and the instance
+ * number in the board's uppercase idiom, so "Anvil interceptor (Anduril) 1"
+ * becomes "ANVIL 1". Render-time only; Entity.name is never rewritten.
  *
- * Render-time only. Entity.name is never rewritten, so the Inspector and every
- * panel keep showing the full name.
- *
- * Rules, in order:
- *  1. Split off a trailing instance number.
- *  2. Drop every parenthetical, which is where the vendor sits.
- *  3. Keep the whole head when it already fits the budget, so plain names like
- *     "Defended asset 1" survive intact.
- *  4. Otherwise keep the leading run of product tokens. The run stops at the
- *     first plain lowercase word, which is where the description starts
- *     ("tracking radar", "interceptor"), and at the character budget.
- *  5. A head that opens with a plain lowercase word has no product token to
- *     find, so keep its first two words.
+ * The trailing instance number is split off and every parenthetical dropped. A
+ * head within DESIGNATOR_CHARS is kept whole; otherwise the leading run of
+ * product tokens is kept, stopping at the first plain lowercase word or at the
+ * budget. A head that opens with a plain lowercase word keeps its first two words.
  */
 export function boardDesignator(name: string): string {
-  const trimmed = name.trim()
+  // A loaded record can carry a non-string name; the canvas must not throw on it.
+  const trimmed = String(name ?? '').trim()
   if (trimmed.length === 0) return trimmed
   const tail = /^(.*?)\s+(\d+)$/.exec(trimmed)
   const index = tail ? ` ${tail[2]}` : ''
@@ -147,9 +137,8 @@ export function boardDesignator(name: string): string {
 
 /**
  * Lines an anchored name wraps to at the 120px box. Greedy word wrap over the
- * monospace metric, which is how Konva wraps the drawn Text. Callers place
- * anything that sits under the label from this count. Pass whatever string is
- * actually drawn: the canvas draws boardDesignator(entity.name).
+ * monospace metric, matching how Konva wraps the drawn Text. Pass the string
+ * actually drawn, which is boardDesignator(entity.name).
  */
 export function labelLineCount(name: string): number {
   const words = name
@@ -298,10 +287,8 @@ function spokeSide(
   }
   let terminalX = c.cx + dir * c.radius
   if (viewport) terminalX = Math.min(Math.max(terminalX, EDGE_MARGIN), viewport.w - EDGE_MARGIN)
-  // Spoke geometry snaps to whole pixels. A cluster centroid drifts by a
-  // fraction of a pixel per frame while one member flies, and a placement
-  // that snaps to the same pixel is the same placement, so the callouts hold
-  // their identities until a label really moves.
+  // Spoke geometry snaps to whole pixels, so a sub-pixel centroid drift while one
+  // member flies leaves the callout identities unchanged.
   terminalX = Math.round(terminalX)
   sorted.forEach((m, i) => {
     const ly = Math.round(c.cy + (i - (sorted.length - 1) / 2) * SLOT_H + shift)
@@ -351,8 +338,7 @@ export function layoutLabels(
   opts: LayoutOptions = {},
 ): Map<string, LabelPlacement> {
   const out = new Map<string, LabelPlacement>()
-  // Measure what the canvas draws, not what the scenario stores: both layers
-  // render boardDesignator(name), so clustering must use the same metric.
+  // Measure what the canvas draws: both layers render boardDesignator(name).
   const drawn = inputs.map(measure)
   const cs = consolidate(clusters(drawn, opts.sticky).map(geometry))
   for (const c of cs) {

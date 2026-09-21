@@ -2,7 +2,7 @@ import type { ClassificationBand, ClassificationMatrix, SensorSpec } from '../mo
 import type { DrawPolicy } from './policy'
 
 /**
- * Classification by confusion matrix (lane 2.4). A sensor whose spec carries
+ * Classification by confusion matrix. A sensor whose spec carries
  * a `ClassificationMatrix` declares a track's class from the range band the
  * track sits in: with probability `pCorrect` a hostile track is declared
  * hostile after the band's `timeToDeclareS`; a non-hostile track is declared

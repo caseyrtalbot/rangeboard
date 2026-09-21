@@ -1,9 +1,6 @@
 /**
- * Ring names and hints.
- *
- * Four controls name the same seven rings: the View menu, the right-click
- * Rings flyout, the Inspector Rings section and the command palette. This is
- * the one table they read, so a ring name is written once.
+ * Ring names and hints. The View menu, the right-click Rings flyout, the Inspector
+ * Rings section and the command palette all read this table.
  */
 
 import type { RingKey } from '../state/rings'

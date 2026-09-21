@@ -1,10 +1,8 @@
 /**
- * Run: every field of `McSettings`, each with its default beside it and a
- * reset to that default. Every control writes through `patchScenario` and
- * reads through `runSettings`, so the scenario stays the one record of a run.
- *
- * Each label is the plain-language name, then the technical name of the value
- * in force after a middle dot: "Parameter draws · Latin hypercube".
+ * Every field of `McSettings`, each with its default beside it and a reset to that
+ * default. Controls write through `patchScenario` and read through `runSettings`.
+ * Each label is the plain-language name, then the technical name of the value in
+ * force after a middle dot: "Parameter draws · Latin hypercube".
  */
 
 import type { ReactNode } from 'react'
@@ -32,9 +30,9 @@ import { Field, Seg } from '../../ui/kit'
 import { DecimalInput, IntInput, SENSITIVITY_DEPTH_NAME } from './inputs'
 
 /**
- * Run mode and uncertainty of a fresh scenario. `src/model/seed.ts` sets both;
- * `runSettings` keeps the older, quieter reading for a save that names neither,
- * so the tab names the fresh-scenario value as the default here.
+ * Run mode and uncertainty of a fresh scenario, as `src/model/seed.ts` sets them.
+ * `runSettings` reads a save that names neither differently, so these are the
+ * defaults the tab shows.
  */
 const DEFAULT_RUN_MODE: RunMode = 'monte-carlo'
 const DEFAULT_UNCERTAINTY: UncertaintyMode = 'total'
@@ -90,9 +88,8 @@ function halfWidthName(value: number | null): string {
 }
 
 /**
- * One setting: the label, the control, the default and a reset to it. The
- * reset is disabled while the value is the default, so the row also says
- * whether the setting was touched.
+ * One setting: the label, the control, the default and a reset to it. The reset is
+ * disabled while the value is the default.
  */
 function RunRow({
   label,

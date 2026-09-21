@@ -23,19 +23,15 @@ import { createWorkerSlot } from './workerSlot'
 const run = createWorkerSlot()
 
 /**
- * The sensitivity run, on its own slot. A sensitivity run is many replicate
- * loops, so it runs beside a replicate run: neither start cancels the other.
- * A sweep, a Morris screening and a Sobol run share this slot: any start on
- * it replaces what runs there.
+ * The sensitivity run, on its own slot, so it runs beside a replicate run. A
+ * sweep, a Morris screening and a Sobol run share this slot; any start on it
+ * replaces what runs there.
  */
 const sens = createWorkerSlot()
 
 /**
- * The pooled replicate run, on its own coordinator. It speaks the same
- * `McWorkerMessage` protocol as `startMcRun` and adds `PoolProgress`, so a
- * caller reads either the single worker or the pool with one handler. The
- * store's Run button starts here; `startMcRun` stays for the single-worker
- * transport tests.
+ * The pooled replicate run. It posts the same `McWorkerMessage` protocol as
+ * `startMcRun` and adds `PoolProgress`.
  */
 const pool = createWorkerPool()
 
@@ -100,10 +96,8 @@ export function requestMcCancel(runId: string): boolean {
 
 /**
  * Start a pooled replicate run: `min(hardwareConcurrency - 1, 8)` workers over
- * contiguous replicate ranges, merged by index. A pooled run already running
- * is terminated. `onMessage` reads the same protocol as `startMcRun`;
- * `onPool` adds the per-worker counts and the stop rule. Returns false when
- * the environment has no Worker, as `startMcRun` does.
+ * contiguous replicate ranges, merged by index. A pooled run already running is
+ * terminated. `onPool` adds the per-worker counts and the stop rule.
  */
 export function startPooledRun(
   scenario: Scenario,
@@ -122,18 +116,13 @@ export function cancelPooledRun(): void {
 /**
  * Ask the pooled run to stop at the next checkpoint of each worker; its `done`
  * message then carries the summary over the replicates 0..m-1 that finished,
- * with `stopped.rule` 'cancelled'. A pool silent past the grace period is
- * terminated and the run reports an error (see `requestMcCancel`).
+ * with `stopped.rule` 'cancelled'.
  */
 export function requestPooledCancel(runId: string): boolean {
   return pool.cancel(runId)
 }
 
-/**
- * Start a sensitivity run in its own worker; a sensitivity worker already
- * running is terminated. Returns false when the environment has no Worker,
- * as `startMcRun` does.
- */
+/** Start a sensitivity run in its own worker; a sensitivity worker already running is terminated. */
 export function startSensitivity(
   scenario: Scenario,
   runId: string,
@@ -160,11 +149,7 @@ export function requestSensitivityCancel(runId: string): boolean {
   return sens.cancel({ type: 'cancel', runId })
 }
 
-/**
- * Start a sweep on the sensitivity slot; a sensitivity run or sweep already
- * running there is terminated. Returns false when the environment has no
- * Worker, as `startMcRun` does.
- */
+/** Start a sweep on the sensitivity slot; a run already there is terminated. */
 export function startSweep(
   request: McSweepRequest,
   onMessage: (m: McSweepMessage) => void,
@@ -179,11 +164,7 @@ export function startSweep(
   )
 }
 
-/**
- * Start a Morris screening on the sensitivity slot; a run already there is
- * terminated. Returns false when the environment has no Worker, as
- * `startMcRun` does.
- */
+/** Start a Morris screening on the sensitivity slot; a run already there is terminated. */
 export function startMorris(
   request: McMorrisRequest,
   onMessage: (m: McMorrisMessage) => void,
@@ -198,11 +179,7 @@ export function startMorris(
   )
 }
 
-/**
- * Start a Sobol run on the sensitivity slot; a run already there is
- * terminated. Returns false when the environment has no Worker, as
- * `startMcRun` does.
- */
+/** Start a Sobol run on the sensitivity slot; a run already there is terminated. */
 export function startSobol(
   request: McSobolRequest,
   onMessage: (m: McSobolMessage) => void,

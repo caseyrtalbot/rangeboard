@@ -1,9 +1,8 @@
 /**
- * Track contract for Phase 2: the estimated state a sensor track carries, the
- * fused track a C2 node builds from several of them, the classification
- * matrix a declaration reads, and the measurement the tracker consumes. Pure
- * types; the Kalman tracker (lane 2.2), fusion and classification (lane 2.4)
- * fill them. Board meters throughout: +x east, +y south, m/s for velocity.
+ * Track types: the estimated state a sensor track carries, the fused track a
+ * C2 node builds from several of them, the classification matrix a declaration
+ * reads, and the measurement the tracker consumes. Board meters throughout:
+ * +x east, +y south, m/s for velocity.
  */
 
 /** Estimated kinematic state in board meters and m/s, stamped with the update time. */
@@ -36,9 +35,8 @@ export interface TrackEstimate {
   state: TrackState
   covariance: Covariance4
   /**
-   * Track quality in (0, 1], a function of the position covariance: 1 at
-   * zero covariance, falling as the position 1 sigma grows. Lane 2.2 fixes
-   * the exact map.
+   * Track quality in (0, 1], a function of the position covariance: 1 at zero
+   * covariance, falling as the position 1 sigma grows (kalman.ts `quality`).
    */
   quality: number
   /** Measurements that updated the track. */

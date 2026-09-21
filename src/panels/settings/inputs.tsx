@@ -1,7 +1,6 @@
 /**
- * Commit-on-blur number inputs and the sensitivity-depth copy the Run tab and
- * the Fragility screen share. The inputs moved here from ForecastSettings.tsx
- * when the run popover became the Run tab, so one module owns them.
+ * Commit-on-blur number inputs and the sensitivity-depth copy that the Run tab and
+ * the Fragility screen share.
  */
 
 import type { SensitivityDepth } from '../../model/types'
@@ -46,9 +45,8 @@ export function IntInput({
 
 /**
  * A decimal input that commits on blur or Enter, as `IntInput`. Bounds are
- * exclusive: a value at or outside them is ignored. An empty field commits
- * null while `nullable`, which is how the half-width rule is cleared; a
- * setting with no "none" turns it off and keeps its last value instead.
+ * exclusive: a value at or outside them is ignored. An empty field commits null
+ * while `nullable`, which is how the half-width rule is cleared.
  */
 export function DecimalInput({
   value,

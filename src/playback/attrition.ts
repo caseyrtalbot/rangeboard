@@ -85,8 +85,7 @@ import { hpmRechargeS } from './hpm'
  * null there and callers display that, never the partition term.
  *
  * Expenditure splits by effector class independently of the kill channel:
- * shotsFired (kinetic), deSalvos (DE, HPM), jamSalvos (jammer). The events
- * ledger records every salvo for prefix aggregation at any sim time.
+ * shotsFired (kinetic), deSalvos (DE, HPM), jamSalvos (jammer).
  */
 
 function specFor(scenario: Scenario, entity: Entity): SpecModel | undefined {
@@ -185,14 +184,13 @@ function operatorDelayS(
 
 /**
  * Resolve every engagement window into expected kills, leakers and magazine
- * use. Sweeps at the manifest step (clock.ts SweepClock; a lane may request a
- * per-effector fine step on `clock` inside a burst or dwell window); each
- * ready effector fires one salvo per salvoCooldownS
- * at the eligible ship with the highest effective survival (see the header),
- * or holds fire with no magazine spend and no cooldown. Effects still pending
- * when the sweep ends are flushed in tEffect order. `falseLoad` is the
- * replicate's false-track load when the caller already ran that process
- * (the trial, with its sink); the operator queue builds its own otherwise.
+ * use. Sweeps at the manifest step (clock.ts SweepClock), with a per-effector
+ * fine step available inside a burst or dwell window. Each ready effector fires
+ * one salvo per salvoCooldownS at the eligible ship with the highest effective
+ * survival, or holds fire with no magazine spend and no cooldown. Effects still
+ * pending when the sweep ends are flushed in tEffect order. `falseLoad` is the
+ * replicate's false-track load when the caller already ran that process; the
+ * operator queue builds its own otherwise.
  */
 export function resolveEngagements(
   scenario: Scenario,
@@ -206,21 +204,19 @@ export function resolveEngagements(
   const assessments = (precomputed ?? assessAllThreats(scenario, draw)).filter(
     (a) => a.status !== 'no-path',
   )
-  // The engagement clock: the manifest step from t = 0. Lanes 3.5 and 3.6
-  // call `clock.requestFineStep(effectorId, fromS, toS, stepS)` at the salvo
-  // commit (commitSalvo) for a gun burst or a directed-energy dwell; outside
+  // The engagement clock: the manifest step from t = 0. `commitSalvo` may call
+  // `clock.requestFineStep` for a gun burst or a directed-energy dwell; outside
   // a requested window the tick stays at the base step.
   const clock = createSweepClock(runSettings(scenario).sweepStepS, 0)
   const doctrine = effectiveDoctrine(scenario)
   const physics = physicsSwitches(scenario)
   const legacyKineticPk = physics.includes('legacyKineticPk')
   const legacyBeamPk = physics.includes('legacyBeamPk')
-  // Operator queue: inactive (no draw, zero delay) with no c2 spec that
-  // states a median or with the noOperatorQueue switch, so today's timings hold.
+  // Operator queue: inactive, at no draw and zero delay, with no c2 spec that
+  // states a median or with the noOperatorQueue switch.
   const operator = createOperatorQueue(scenario, assessments, draw, falseLoad)
   // The floor stamp: decisions the queue took, and the ones whose raw wait the
-  // floor at 0 discarded. Both stay 0 while the queue is inactive, so the
-  // Board never shows a stamp on a run the queue did not touch.
+  // floor at 0 discarded. Both stay 0 while the queue is inactive.
   let operatorDecisions = 0
   let operatorFlooredDecisions = 0
 

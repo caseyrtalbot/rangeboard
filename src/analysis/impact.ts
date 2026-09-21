@@ -10,21 +10,19 @@ import { deterministicPolicy } from '../playback/policy'
 import { resolvedThresholds } from '../playback/detection'
 
 /**
- * Threat WEZ geometry and leaker engagement-potential (I&W) warnings. Pure functions
- * of ThreatAssessment and AttritionReport; no store imports; nothing is written back.
+ * Threat WEZ geometry and leaker engagement-potential (I&W) warnings.
  *
- * Arrival and CPA are different questions. arrivalS is the defended-boundary crossing;
- * cpaS and cpaDistanceM are how near the track got. Every geometry test here is a CPA
- * test: a standoff shooter holds an asset at risk from a CPA it never arrives at.
+ * arrivalS is the defended-boundary crossing; cpaS and cpaDistanceM are how
+ * near the track got. Every geometry test here is a CPA test: a standoff
+ * shooter holds an asset at risk from a CPA it never arrives at.
  *
- * Fallbacks, never silent zeros:
- * - A model saved before the weapon fields existed falls back through
- *   defaultWeaponProfile / defaultEffectRadiusM (weaponFactors.ts).
- * - warheadKg null: expectedWarheadKg is 0 and severity comes from the ship count
- *   alone; the kg criteria only escalate a tier. Library warhead masses are positive
- *   or null, so 0 kg with ships arriving means unknown.
- * - effect radius null: no circle in threatWezList, but assessLeakerImpacts treats the
- *   asset as inside the WEZ (conservative) and the UI labels the radius unknown.
+ * Missing inputs take a fallback, never a silent zero:
+ * - A model with no weapon fields falls back through defaultWeaponProfile /
+ *   defaultEffectRadiusM (weaponFactors.ts).
+ * - warheadKg null: expectedWarheadKg is 0 and severity comes from the ship
+ *   count alone, since the kg criteria only escalate a tier.
+ * - effect radius null: no circle in threatWezList, but assessLeakerImpacts
+ *   treats the asset as inside the WEZ (conservative).
  */
 
 type WezKind = 'impact' | 'standoff' | 'none'
@@ -40,7 +38,7 @@ export function wezKindFor(model: SpecModel | undefined): WezKind {
 /**
  * effectRadiusM for 'impact', standoffRangeM for 'standoff', null for 'none'.
  * An impact model without an explicit radius falls back to the warhead-mass
- * planning tier; null when that is unknown too (an honest blank).
+ * planning tier; null when that is unknown too.
  */
 export function wezRadiusM(model: SpecModel | undefined): number | null {
   const uas = model?.uas
@@ -63,13 +61,11 @@ export interface ThreatWez {
 }
 
 /**
- * WEZ geometry for every active threat whose radius resolves; playback
- * centers for 'standoff' rings come from liveTracks (the render layer
- * substitutes them), impact circles stay at the plan center. One WEZ per
- * formation, centered on the lead ship: attrition treats the formation as one
- * target, and the warhead mass scales by ship count in the warnings, not in
- * the geometry. Threats with an unknown radius carry no drawable circle and
- * surface through assessLeakerImpacts instead.
+ * WEZ geometry for every active threat whose radius resolves. Impact circles
+ * stay at the plan center; the render layer substitutes live positions for
+ * 'standoff' rings. One WEZ per formation, centered on the lead ship, since
+ * attrition treats the formation as one target. A threat with an unknown
+ * radius carries no circle and surfaces through assessLeakerImpacts instead.
  */
 export function threatWezList(scenario: Scenario): ThreatWez[] {
   const out: ThreatWez[] = []
@@ -116,9 +112,8 @@ export interface LeakerImpact {
   assetName: string | null
   /**
    * Defended-boundary crossing time, null when the track never crosses one or
-   * no asset is placed. This is "over the asset", not "nearest the asset": a
-   * standoff shooter can hold an asset at risk from a CPA it never arrives at,
-   * so read cpaS for the geometry and arrivalS only for the boundary.
+   * no asset is placed. This is "over the asset", never "nearest the asset":
+   * read cpaS for the geometry and arrivalS only for the boundary.
    */
   arrivalS: number | null
   /** Time of closest approach to that asset; populated whenever any asset is placed. */
@@ -159,11 +154,10 @@ export const SEVERITY_LABEL: Record<ImpactSeverity, string> = {
 }
 
 /**
- * Severity tier for one leaker. Boundaries: SEVERE and MODERATE thresholds
- * are inclusive (>=); the LOW floor is exclusive (ships must exceed 0.05).
- * Null when the asset sits outside the WEZ or the ship count is at or below
- * the floor. expectedWarheadKg 0 (unknown warhead) never fires the kg
- * criteria, so severity honestly falls back to ships only.
+ * Severity tier for one leaker. The SEVERE and MODERATE thresholds are
+ * inclusive; the LOW floor is exclusive. Null when the asset sits outside the
+ * WEZ or the ship count is at or below the floor. expectedWarheadKg 0 (an
+ * unknown warhead) never fires the kg criteria, so only ships decide.
  */
 export function severityFor(
   assetInWez: boolean,
@@ -181,12 +175,9 @@ export function severityFor(
  * Engagement potential of every threat with a flight path. 'drift' and
  * 'return-home' jam outcomes already end the approach inside attrition, so
  * those ships never count in expectedShipsArriving. A 'continue' jam-degraded
- * leaker keeps its severity (the warhead is a property of the airframe, not
- * of the guidance link) and the degrade surfaces as jamDegradedProb data.
- *
+ * leaker keeps its severity and reports the degrade as jamDegradedProb.
  * A threat with no arrival still warns when its CPA puts the asset inside its
- * WEZ. That is the point of the warning: engagement potential, not a report
- * that the asset was reached.
+ * WEZ.
  */
 export function assessLeakerImpacts(
   scenario: Scenario,
@@ -243,19 +234,17 @@ export interface EngagementPicture {
 }
 
 /**
- * One shared assessment, attrition and impact computation per scenario, memoized in a
- * WeakMap keyed on the scenario's engine identity (`engineKeyOf`, so a presentation
- * stamp reuses the picture). Every scenario change goes through mutate(), which
- * replaces the object, so identity is a sound cache key.
+ * One shared assessment, attrition and impact computation per scenario, keyed
+ * on the scenario's engine identity (`engineKeyOf`, so a presentation stamp
+ * reuses the picture). Every scenario change replaces the object, so identity
+ * is a sound cache key.
  */
 const pictureCache = new WeakMap<Scenario, EngagementPicture>()
 
 /**
  * Pictures retained at once. The undo history keeps up to 100 scenarios
- * alive, and a WeakMap alone would keep every one's picture with it. The
- * most recently used keys stay cached; an older one is dropped and a deep
- * undo recomputes that one picture. The current scenario is always the most
- * recent, so it is never the one evicted.
+ * alive, and a WeakMap alone would hold every one's picture with it. A deep
+ * undo past the most recent 8 recomputes that one picture.
  */
 const PICTURE_LIMIT = 8
 const recentKeys: Scenario[] = []
@@ -269,19 +258,17 @@ function touchKey(key: Scenario): void {
 }
 
 /**
- * The per-threat assessment memos of the last deterministic run
- * (`ThreatAssessmentMemo`, sim.ts). The picture cache serves a repeated
- * scenario object; this serves the next edit, so a threat whose inputs the
- * edit did not touch keeps its assessment object.
+ * The per-threat assessment memos of the last deterministic run. The picture
+ * cache serves a repeated scenario object; this serves the next edit, so a
+ * threat whose inputs the edit did not touch keeps its assessment object.
  */
 let lastAssessed: Map<string, ThreatAssessmentMemo> | null = null
 
 /**
  * `assessAllThreats` for the deterministic path, reusing the last run's
- * assessment of every threat whose inputs are unchanged. The assessment
- * module owns the dependency set (`assessThreatReusing`); this loop only
- * keeps the memos from one run to the next. The deterministic policy is
- * pure, so one threat's assessment does not depend on another's.
+ * assessment of every threat whose inputs are unchanged. `assessThreatReusing`
+ * owns the dependency set; this loop only carries the memos from one run to
+ * the next.
  */
 function assessThreatsIncremental(scenario: Scenario): ThreatAssessment[] {
   const draw = deterministicPolicy(resolvedThresholds(scenario))

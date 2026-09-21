@@ -9,10 +9,9 @@ import { LAYERS_KEY, RINGS_KEY, RUNSEQ_KEY, UNITS_KEY, VIEW_KEY } from './storag
 
 /**
  * View state that survives a reload but never enters the `Scenario`: camera,
- * basemap, right panel tab and theme. Written eagerly by the store
- * setters, read once at store construction. Every field is optional so a
- * partial or older record still loads. An older record can also carry an
- * `analysis` lens layout or a `workspace`: each is read and dropped, never an error.
+ * basemap, right panel tab and theme. Written eagerly by the store setters, read
+ * once at store construction. Every field is optional, so a partial or older record
+ * still loads and an unknown field is dropped rather than raised.
  */
 export interface SavedView {
   camera?: Camera
@@ -22,9 +21,8 @@ export interface SavedView {
 }
 
 /**
- * One guarded path for every settings key. Browser storage can be absent,
- * blocked or full. A setting is a convenience with a default, so a failed read
- * answers null and a failed write is dropped.
+ * One guarded path for every settings key. Browser storage can be absent, blocked
+ * or full, so a failed read answers null and a failed write is dropped.
  */
 export function readSetting(key: string): string | null {
   try {
@@ -155,10 +153,9 @@ export function writeViewCamera(camera: Camera): void {
 }
 
 /**
- * Run sequence the next startup issues. Written on a manual reset (the fresh
- * run's own number, so a reload shows the same run) and on the first start of
- * a run (that number plus one, so a run that produced telemetry is never
- * reissued after a reload).
+ * Run sequence the next startup issues. A manual reset writes the fresh run's own
+ * number; the first start of a run writes that number plus one, so a run that
+ * produced telemetry is never reissued after a reload.
  */
 export function savedRunSeq(): number {
   const n = Number(readSetting(RUNSEQ_KEY))
@@ -182,9 +179,8 @@ export function writeUnits(v: DisplayUnits): void {
 
 /**
  * Layer visibility from localStorage, spread over DEFAULT_LAYERS so a layer key
- * added after the save still gets a value. An older save carries
- * `sensorFootprints` and `effectorEnvelopes`: they seed the placard and the
- * max-range ring, then both old keys go.
+ * added after the save still gets a value. An older save's `sensorFootprints` and
+ * `effectorEnvelopes` seed the placard and max-range rings, then both keys go.
  */
 export function savedLayers(): LayerVisibility {
   const defaults = { ...DEFAULT_LAYERS }

@@ -9,10 +9,9 @@ import type { ExecutionHorizon } from '../analysis/horizon'
 import { EMPTY_HORIZON, FULL_RUN } from '../analysis/horizon'
 
 /**
- * Store selectors the panels and the canvas subscribe with. Every selector is
- * a pure function of the store state; a panel that subscribes here re-renders
- * only when the value it reads changes, never on a publication that moves a
- * field it does not show.
+ * Store selectors the panels and the canvas subscribe with. Each is a pure
+ * function of the store state, so a subscriber re-renders only when its own value
+ * changes.
  */
 
 /** The published sim time, at the 10 Hz publication cadence. */
@@ -33,9 +32,9 @@ export const selectEffectiveLayers = (s: Store): LayerVisibility =>
 let cachedHorizon: ExecutionHorizon = EMPTY_HORIZON
 
 /**
- * Scrubbing can narrow visibility, but cannot extend the observed horizon.
- * Nothing is observed before the first Play: a scrub before Play moves the
- * phase to 'review', so the start stamp, not the phase, decides emptiness.
+ * Scrubbing can narrow visibility but cannot extend the observed horizon. A scrub
+ * before the first Play moves the phase to 'review', so the start stamp, not the
+ * phase, decides emptiness.
  */
 export function selectExecutionHorizon(s: Store): ExecutionHorizon {
   if (s.ui.boardPhase !== 'execute') return FULL_RUN
@@ -46,9 +45,8 @@ export function selectExecutionHorizon(s: Store): ExecutionHorizon {
 }
 
 /**
- * The observed horizon floored to whole seconds. `formatTime` shows whole
- * seconds, so text built from this reads exactly as the raw value would and
- * moves once per second, never once per publication.
+ * The observed horizon floored to whole seconds, so text built from it changes
+ * once per second rather than once per publication.
  */
 export const selectObservedThroughWholeS = (s: Store): number =>
   Math.floor(s.playback.observedThroughS)
@@ -70,9 +68,8 @@ export function durationOf(scenario: Scenario): number {
 export const selectDurationS = (s: Store): number => durationOf(s.scenario)
 
 /**
- * True once playback has sealed the run and the observed horizon covers the
- * whole duration. Replaces the per-publication `observedThroughS` subscription
- * in the Analysis rail. An empty scenario (duration 0) never reads complete.
+ * True once playback has sealed the run and the observed horizon covers the whole
+ * duration. An empty scenario (duration 0) never reads complete.
  */
 export const selectRunComplete = (s: Store): boolean => {
   const d = durationOf(s.scenario)

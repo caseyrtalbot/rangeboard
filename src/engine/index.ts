@@ -1,12 +1,11 @@
 /**
- * The engine barrel: everything a headless Node runner needs to go from a
- * scenario JSON to a `RunRecord`, with no UI, no store and no DOM. The
- * `no-restricted-imports` override in `.oxlintrc.json` keeps this tree and
- * the playback, analysis and geometry trees free of react, konva, `window`
- * and `document`. Lane 1.1 builds the Node bundle from here.
+ * The engine barrel: everything a headless Node runner needs to go from a scenario
+ * JSON to a `RunRecord`, with no UI, no store and no DOM. The `no-restricted-imports`
+ * override in `.oxlintrc.json` keeps this tree and the playback, analysis and
+ * geometry trees free of react, konva, `window` and `document`.
  */
 
-// Run settings: the contract every runner reads, with the fresh-scenario defaults.
+// Run settings every runner reads, with the fresh-scenario defaults.
 export type {
   C2Spec,
   McSettings,
@@ -85,7 +84,6 @@ export { contiguousPrefix, mergePartials } from '../playback/mergeSummaries'
 export { lhsPermutation, loopEnd, paramDraws } from '../playback/sampling'
 export type { MorrisDesign, MorrisEffects } from '../playback/morris'
 export {
-  fieldGroup,
   keptFields,
   MORRIS_KEPT,
   MORRIS_LEVELS,
@@ -108,7 +106,7 @@ export {
   sobolLoop,
 } from '../playback/sobol'
 
-// Phase 1 result and progress types.
+// Run result and progress types.
 export type {
   BootstrapInterval,
   MorrisFieldResult,
@@ -143,7 +141,7 @@ export type {
 } from '../playback/trialMessages'
 export { runTrial } from '../playback/trial'
 
-// Phase 2 track contract: estimates, fused tracks, the classification matrix and the measurement.
+// The track contract: estimates, fused tracks, the classification matrix and the measurement.
 export type {
   ClassificationBand,
   ClassificationMatrix,
@@ -201,7 +199,7 @@ export {
 } from '../playback/fusion'
 export type { ClassificationDecision, ClassificationKeys } from '../playback/classification'
 export { bandFor, classifyByMatrix, matrixFor } from '../playback/classification'
-// Lane 2.6: the intercept solved from an estimate, and the miss-distance hook for Phase 3.
+// The intercept solved from an estimate, and the miss-distance hook.
 export type {
   EstimateIntercept,
   InterceptResult,
@@ -234,5 +232,5 @@ export { sampleScenario, sampleSpread } from '../analysis/uncertainty'
 // The analysis basis signature a manifest and a run record carry.
 export { analysisBasisSignature } from '../state/analysisBasis'
 
-// The headless load boundary (lane 1.1): the Board's fill without the store.
+// The headless load boundary: the Board's fill without the store.
 export { loadScenario, parseScenarioJson } from './loadScenario'

@@ -44,10 +44,9 @@ function plural(count: number, noun: string): string {
 }
 
 function componentDetail(component: Component): string {
-  // holdSeconds is the clock reading: the elapsed seconds this sensor held at
-  // least one track. trackSeconds is INTEGRATED sensor loading and can exceed
-  // the run length, so it is labeled track-seconds and never given to a clock
-  // formatter.
+  // holdSeconds is elapsed seconds with at least one track held. trackSeconds is
+  // integrated sensor loading and can exceed the run length, so it is labeled
+  // track-seconds and never given to a clock formatter.
   const detail =
     component.kind === 'sensor'
       ? `${component.tracksNow} now · ${component.tracksSeen} seen · ${component.classifications} classified · ${formatTime(component.holdSeconds)} hold · ${Math.round(component.trackSeconds)} track-s`
@@ -116,13 +115,9 @@ function SystemCard({ group, defaultOpen }: { group: Group; defaultOpen: boolean
 }
 
 /**
- * Component telemetry list.
- *
- * The state pill is a SAMPLED INSTANT: it is whatever the component was doing
- * at the cursor time the caller asked for. In an evidence record that instant
- * is the last frame of the run, which is not a run outcome. Set endOfRun so
- * the record names what the column is, rather than letting "SEARCH" or
- * "READY" read as a verdict on the run.
+ * Component telemetry list. The state pill is a sampled instant: what the
+ * component was doing at the cursor time the caller asked for, which in an
+ * evidence record is the last frame. Set `endOfRun` so the column says so.
  */
 export function SystemStatus({
   groups,

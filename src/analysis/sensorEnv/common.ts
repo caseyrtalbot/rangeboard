@@ -4,9 +4,6 @@ import { elevationDeg, radioHorizonM } from '../../geometry/slant'
 /**
  * Shared terms of the sensor physics: the environment factor table, the
  * range-basis rule, the vertical geometry gates and the unit constants.
- * The per-technology laws live beside this file (radar.ts, eoir.ts,
- * acoustic.ts, rf.ts); sensorEnv.ts is the barrel and holds the per-type
- * dispatch (effective ranges, the hold gate).
  *
  * Environment factors follow the COURAGEOUS project findings (Brewczynski
  * et al., Remote Sens. 2024, 16, 3714): rain and fog attenuate radar and

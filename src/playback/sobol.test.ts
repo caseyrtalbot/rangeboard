@@ -91,6 +91,7 @@ describe('sobolLoop', () => {
       next = loop.next()
     }
     const result = next.value
+    if (result == null) throw new Error('sobolLoop returned null')
     expect(checkpoints).toBe(31)
     expect(progress).toHaveLength(32)
     expect(result).toMatchObject({
@@ -111,10 +112,15 @@ describe('sobolLoop', () => {
     }
   }, 30000)
 
-  it('a stop throws', () => {
+  it('a cancel returns null; a budget stop throws and names the budget', () => {
     const s = { ...parseAutosave(JSON.stringify(fixture)), sobolBase: 2 }
-    const loop = sobolLoop(s, uncertainFields(s).slice(0, 1))
-    loop.next()
-    expect(() => loop.next('cancelled')).toThrow(/Sobol cancelled after 1 of 6/)
+    const cancelled = sobolLoop(s, uncertainFields(s).slice(0, 1))
+    cancelled.next()
+    expect(cancelled.next('cancelled')).toEqual({ done: true, value: null })
+    const budget = sobolLoop(s, uncertainFields(s).slice(0, 1))
+    budget.next()
+    expect(() => budget.next('budget')).toThrow(
+      'Sobol stopped at the worker time budget after 1 of 6 rows; the Morris screening stands',
+    )
   })
 })

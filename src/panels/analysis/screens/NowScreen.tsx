@@ -41,7 +41,7 @@ export function NowScreen() {
         : undefined,
     [selection, started],
   )
-  // Index static identities and ledger events once per retained draw, never per cursor tick.
+  // Keyed on the retained draw, so the cursor can move without re-indexing.
   const index = useMemo(() => {
     if (!view) return undefined
     const entities = new Map(view.scenario.entities.map((entity) => [entity.id, entity]))

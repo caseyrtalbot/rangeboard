@@ -9,11 +9,10 @@ import { useStore } from '../state/store'
 export const PUBLISH_PERIOD_MS = 100
 
 /**
- * The cadence decision for one animation frame of the `TimelineBar` loop.
- * `sinceMs` is the wall time since the last publication. Returns the sim time
- * to publish, or null while the period has not elapsed. The step is the
- * measured wall time at playback speed, never a nominal 0.1 s, so the clock
- * does not drift.
+ * The cadence decision for one animation frame of the `TimelineBar` loop. `sinceMs`
+ * is the wall time since the last publication. Returns the sim time to publish, or
+ * null while the period has not elapsed. The step is measured wall time at playback
+ * speed, never a nominal 0.1 s, so the clock does not drift.
  */
 export function nextPublishedTimeS(
   simTimeS: number,
@@ -61,16 +60,11 @@ interface FrameClock {
 
 /**
  * The canvas frame clock. While playback runs, a requestAnimationFrame loop
- * advances the display time between publications; paused, scrubbed, complete
- * or ready, the display time equals the published time. The clock reads the
- * store through `subscribe` and `getState`, not through a selector, so a
- * publication commits nothing here until the next frame: the Konva root
- * commits once per frame, never twice per publication. The wall timestamp and
- * the speed of the last publication live in this closure, not in the store;
- * the speed is captured per publication, so a speed change mid-run cannot move
- * the display backward before the loop has published the span at the old speed.
- * Mount it in a component under the Konva `Stage`, so its frame updates never
- * reach react-dom.
+ * advances the display time between publications; paused, scrubbed, complete or
+ * ready, the display time equals the published time. The wall timestamp and the
+ * speed are captured per publication, so a mid-run speed change cannot move the
+ * display backward. Mount it in a component under the Konva `Stage`, so its frame
+ * updates never reach react-dom.
  */
 export function useFrameClock(durationS: number): FrameClock {
   const [clock, setClock] = useState<FrameClock>(() => {

@@ -64,11 +64,11 @@ function nonNegative(value: number | null | undefined): value is number {
 }
 
 /**
- * Phase 3 kinetic flight profile, or null for the bit-identical legacy path.
- * A null lethal radius / dispersion is the lane's library-data fallback in
- * addition to the caller-supplied physics switch.
+ * The modeled kinetic flight profile, or null for the bit-identical legacy
+ * path. A null lethal radius or dispersion falls back to the library data, as
+ * the caller-supplied physics switch does.
  */
-function phase3FlyoutProfile(
+function flyoutProfile(
   spec: EffectorSpec,
   options: KineticInterceptOptions | undefined,
 ): FlyoutProfile | null {
@@ -124,7 +124,7 @@ function phase3FlyoutProfile(
 
 /** Distance flown by an interceptor under the Phase 3 boost/cruise profile. */
 export function interceptorDistanceM(spec: EffectorSpec, flightS: number): number | null {
-  const profile = phase3FlyoutProfile(spec, { fallback: false })
+  const profile = flyoutProfile(spec, { fallback: false })
   return spec.effectorType === 'interceptor' && profile != null ? profile.distanceAt(flightS) : null
 }
 
@@ -191,7 +191,7 @@ function closesOnSample(
 /** Flight time to a stationary point under the Phase 3 interceptor profile. */
 export function interceptorFlightTimeS(spec: EffectorSpec, slantM: number): number | null {
   if (!Number.isFinite(slantM) || slantM < 0 || spec.effectorType !== 'interceptor') return null
-  const profile = phase3FlyoutProfile(spec, { fallback: false })
+  const profile = flyoutProfile(spec, { fallback: false })
   return profile == null ? null : profileMeetTau(profile, () => slantM)
 }
 
@@ -341,7 +341,7 @@ export interface SelectedIntercept extends InterceptResult {
 /**
  * Predicted intercept for one ship: position and slant sampled at the returned
  * tEffectS. With no kinetic options this keeps the legacy constant-speed path
- * bit for bit. `{ fallback: false }` selects the Phase 3 interceptor profile
+ * bit for bit. `{ fallback: false }` selects the modeled interceptor profile
  * or drag-free last-projectile gun timing when its sentinel fields exist.
  * `membersAt` lets the sweep supply its per-tick geometry cache.
  * `capS` is the end of the in-range interval containing tS: a flight past it is
@@ -367,7 +367,7 @@ export function interceptAt(
     return { pos, slantM: slantRangeM(dist(es.entity.pos, pos), dAltM) }
   }
   const releaseS = tS + es.engageTimeS
-  const profile = phase3FlyoutProfile(es.spec, kineticOptions)
+  const profile = flyoutProfile(es.spec, kineticOptions)
   if (profile != null) {
     const flightReleaseS = releaseS + profile.launchDelayS
     const flightS = profileMeetTau(profile, (tauS) => sampleAt(flightReleaseS + tauS).slantM)
@@ -396,8 +396,7 @@ export function interceptAt(
   // The closed-form time above assumes constant-speed waypoint motion, but the
   // position and feasibility below read the sampled flight. Keep the closed
   // form only when the flyout really closes on the sampled target; otherwise
-  // solve the flyout against that same sampled trajectory, so timing, position
-  // and feasibility all describe one trajectory.
+  // solve against that same sampled trajectory, so all three agree.
   if (v > 0 && tofS != null && !closesOnSample(sampleAt, releaseS, tofS, v)) {
     tofS = profileMeetTau(constantSpeedProfile(v), (tauS) => sampleAt(releaseS + tauS).slantM)
   }
@@ -526,7 +525,7 @@ function interceptFromEstimateProfile(
  * (`source: 'truth'`, zero covariance), this is interceptAt with the same
  * arguments and the same result, plus `predictionSigmaM: null` and
  * `interceptSource: 'truth'`. With a Kalman estimate it propagates that state
- * against the same legacy or caller-selected Phase 3 flight profile.
+ * against the same legacy or caller-selected flight profile.
  */
 export function interceptFor(
   ts: ThreatState,
@@ -547,7 +546,7 @@ export function interceptFor(
     }
   }
   const releaseS = tS + es.engageTimeS
-  const profile = phase3FlyoutProfile(es.spec, kineticOptions)
+  const profile = flyoutProfile(es.spec, kineticOptions)
   const ic =
     profile == null
       ? interceptFromEstimate(

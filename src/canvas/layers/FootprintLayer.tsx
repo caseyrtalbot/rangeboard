@@ -14,7 +14,6 @@ interface Props {
   activeSensorIds: Set<string>
 }
 
-// Fill alphas come from the one style source, never from a literal here.
 const PLACARD_FILL = RING_STYLE.sensorPlacard.fillAlpha ?? 0
 const ENVELOPE_FILL = RING_STYLE.sensorEnvelope.fillAlpha ?? 0
 const CONTOUR_FILL = RING_STYLE.sensorPdContours.fillAlpha ?? 0
@@ -69,7 +68,7 @@ function Ring({
   const { x, y } = entity.pos
   const headingDeg = entity.headingDeg
   // One wedge per ring, shared by the fill and the stroke node: Konva compares
-  // point arrays by identity, so a fresh array per render repaints the layer.
+  // point arrays by identity.
   const wedge = useMemo(
     () =>
       sectorDeg >= 360 || !(radiusM > 0)
@@ -136,11 +135,9 @@ interface RingLabelProps {
 }
 
 /**
- * Ring caption in the entity label font, at a fixed bearing on the ring. The
- * group counter-scales the stage transform, so the inner units are screen px.
- * A north-west anchor reads right so the text runs away from the ring. The
- * label is the only footprint node that reads the zoom, so a wheel step
- * re-renders the labels and none of the rings.
+ * Ring caption in the entity label font, at a fixed bearing on the ring. The group
+ * counter-scales the stage transform, so the inner units are screen px. The label
+ * is the only footprint node that reads the zoom.
  */
 function RingLabel({ pos, radiusM, bearing, text, color }: RingLabelProps) {
   const scale = useStore((s) => s.camera.scale)
@@ -176,8 +173,7 @@ const SensorNode = memo(function SensorNode({
   const e = r.entity
   const strokeOpacity = r.grey ? 0.35 : dim ? 0.3 : 0.7
   const hot = active
-  // The highlight rides the ring that answers "from how far do I see it": the
-  // lower Pd contour when it draws, else the placard ring.
+  // The highlight rides the lower Pd contour when it draws, else the placard ring.
   const hotContour = hot && r.contourLowM != null
   const bandOpacity = fillFor(ENVELOPE_FILL, dim, active)
   return (
@@ -344,12 +340,9 @@ const EffectorNode = memo(function EffectorNode({ r, dim }: { r: EffectorRings; 
 })
 
 /**
- * A jammer footprint is a flashlight beam, not a weapon arc: a solid-edged
- * cone whose fill fades with range the way the jam power density does. The
- * cone length is the effective range against the selected threat (power out
- * and the target's jamResistDb, the figure assessJam and the sim window use),
- * so a derated transmitter or a hardened link draws a shorter beam than the
- * placard.
+ * A jammer footprint: a solid-edged cone whose fill fades with range the way the
+ * jam power density does. The cone length is the effective jam range against the
+ * selected threat, the same figure assessJam and the sim window use.
  */
 const JammerNode = memo(function JammerNode({ r, dim }: { r: JammerRings; dim: boolean }) {
   const e = r.entity
@@ -447,21 +440,10 @@ const AssetNode = memo(function AssetNode({ r, dim }: { r: AssetRings; dim: bool
 })
 
 /**
- * Sensor rings, effector rings and asset defended areas. Never intercepts
- * pointer events. Draw-only: the records come from the ring model
- * (`src/canvas/ringModel.ts`), which the HUD hit-tests over the same result.
- *
- * Seven ring keys, each with a per-entity override (`ringVisible`). Sensor
- * rings answer "who holds THIS threat, and from how far": the placard ring at
- * the reference condition, a fill-only envelope band over the placed threats,
- * the Pd contours for the selected threat, and the classify ring. Effector
- * rings answer "when may I shoot": the max and min range rings, and the
- * doctrinal release and commit-Pk rings for the selected threat. Every dash,
- * width, fill alpha and ink comes from footprintStyle.ts.
- *
- * A ring against a selected threat is the engine's effective range, ground
- * projected to the plan view. The hold gate picks the placard dash, and a
- * label prints the Pd, the release and the commit distance.
+ * Sensor rings, effector rings and asset defended areas. Draw-only and never
+ * listening: the records come from `src/canvas/ringModel.ts`, which the HUD
+ * hit-tests over the same result. A ring against a selected threat is the engine's
+ * effective range, ground projected to the plan view.
  */
 export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: Props) {
   const { rings } = useRingModel()

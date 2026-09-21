@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "3ac0743f2c122022e7a5196b9beeaca4864fef8a277ea00b22580869cf3e2b4d",
-      "reviewedAt": "2026-09-16",
-      "note": "package.json gained Prettier and format scripts; App.tsx and main.tsx were Prettier-rewrapped only. README still names npm run check and the Node version."
+      "sha256": "1c8e212d76e93554816487392fc304a502baa256eee803a7898f6b6b8159e5cd",
+      "reviewedAt": "2026-09-21",
+      "note": "Reviewed after the App.tsx comment sweep; setup and usage text unchanged."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "47b2d273e18addf72cf579879ddbda293d21769a311102370b28e78243809e0e",
-      "reviewedAt": "2026-09-16",
-      "note": "Removed four modules unreachable from the app and engine plus their private tests and CSS; active feature entry points remain unchanged. Forecast series and numerical comparison tests are retained."
+      "sha256": "67763a98c06e2689c528500608f922b7684409f7b5ea55912125effe486d011e",
+      "reviewedAt": "2026-09-21",
+      "note": "Reviewed against the run-crash fixes: board boundary Try again and the canvas notice with Retry; comment sweep across src."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "48af4375aec76b021acc05a0366aef811465d712daee238abdb66dc1195af078",
-      "reviewedAt": "2026-09-16",
-      "note": "Removed stale descriptions of Tornado, AnalysisSection and headlines; documented forecast series as retained numerical test support. No active numerical or runtime behavior changed."
+      "sha256": "01d4bce56435890be987a6120a9d9e59948fba7bce661d7d9ddb472f3b794967",
+      "reviewedAt": "2026-09-21",
+      "note": "Reviewed against the run-crash fixes: pool budget and cancel prefix, sweep in-cell cancel, Sobol null result on cancel, per-adapter save errors and baseline retry, scene boundary; comment sweep across src."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "c83ab2cb42341564c41dc2421456e4e93b3fc5fe1a88924f5f1e6a1c3789d796",
-      "reviewedAt": "2026-09-16",
-      "note": "Commands table gains format and format:check; check includes the formatter. tsconfig.app.json enables strict flags that already passed. Wave completion path is Git history after the 2026-09-16 docs removal. scripts/ were Prettier-rewrapped."
+      "sha256": "e331add265f6c291044549eeded1a903ea3599191cdf2329c84f909318f60ece",
+      "reviewedAt": "2026-09-21",
+      "note": "Reviewed after the run-crash fixes and the comment sweep; the listed suites and checks are unchanged in name and scope."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "cad25682c2d9833bfae8c5ac55e3fa660fab67400dcd2ec62d8f64b1d643a9da",
-      "reviewedAt": "2026-09-16",
-      "note": "Updated base commit, hygiene working-tree ownership, retained forecast-series scope and verified full gate, bundle and browser results; deferred tasks unchanged."
+      "sha256": "54ac201b38ce8c47b963bf609d48e6180971c088245fba0c8dbd6e68509b478d",
+      "reviewedAt": "2026-09-21",
+      "note": "Rewrote the position for the 2026-09-21 run-crash fixes and comment sweep, added Task 4 follow-ups and four landmines."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -107,9 +107,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "c3e1da779fd6dfde2b4b6941eac1f3097ed037ce3c9c53e2bfae7d0a94e3f2e9",
-      "reviewedAt": "2026-09-16",
-      "note": "Removed only Tornado and AnalysisSection exclusive CSS, preserving shared chevrons, outcome metrics and widget toggle rules. Design tokens and active component rules remain unchanged."
+      "sha256": "99288fa3718a51412372e976f1e5a952447470f9c4ac618cdbc9d3e7349ed9f8",
+      "reviewedAt": "2026-09-21",
+      "note": "Reviewed after the comment sweep and the canvas-scene-error rule in index.css; tokens and layout rules unchanged."
     }
   ],
   "historical": [

@@ -1,11 +1,9 @@
 /**
  * One worker slot. A slot holds at most one live worker; `start` replaces
  * whatever runs, `cancel` asks the worker to stop and gives it a grace period,
- * `dispose` terminates it now. The slot owns what every protocol shares:
- * replacement, exact ownership of callbacks, suppression of callbacks from a
- * replaced or disposed worker, and startup failures (construction and post),
- * which land as one terminal error through the protocol's own error shape.
- * Protocols own decoding and identity; see `mcClient.ts` and `trialClient.ts`.
+ * `dispose` terminates it now. A callback from a replaced or disposed worker is
+ * dropped, and a construction or post failure lands as one terminal error in
+ * the protocol's own error shape. The protocol owns decoding and identity.
  */
 
 /** Wall time a cancelled worker gets to post its summary before it is terminated. */

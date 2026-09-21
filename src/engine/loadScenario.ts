@@ -1,11 +1,7 @@
 /**
- * The scenario load boundary for the headless runner. `io/persist.ts` owns
- * the Board's `fillScenario`, but that module imports the zustand store, and
- * the store pulls react into any bundle that carries it. This loader repeats
- * the fill from the same pieces (`validateScenarioShape`, `fillContainers`,
- * `reconcileLibrary`, `reconcileSeeded`, `validateScenarioReferences`) so a
- * scenario JSON fills here as it fills in the browser. Keep the two in step:
- * a field added to `fillScenario` is added here.
+ * The scenario load boundary for the headless runner. It repeats the Board's
+ * `fillScenario` from the same pieces, because that module imports the store and
+ * the store pulls react in. Keep the two in step: a field added there is added here.
  */
 import type { FireDoctrine, Scenario } from '../model/types'
 import { emptyScenario } from '../model/seed'
@@ -34,7 +30,7 @@ export function loadScenario(parsed: unknown): Scenario {
     deletedSeedIds,
     doctrine: fillDoctrine(empty.doctrine as FireDoctrine, parsed.doctrine),
     roe,
-    // Compatibility defaults, as the Board applies them: an old save stays deterministic and aleatory.
+    // Compatibility defaults, as the Board applies them.
     runMode: parsed.runMode ?? 'deterministic',
     uncertainty: parsed.uncertainty ?? 'aleatory',
     targetHalfWidth: parsed.targetHalfWidth === undefined ? null : parsed.targetHalfWidth,

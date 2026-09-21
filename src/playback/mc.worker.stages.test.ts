@@ -106,7 +106,7 @@ it('runs Sobol at base 8 over two kept fields and posts the loop result with pro
   expect(done.result).toEqual(next.value)
 }, 60000)
 
-it('posts a Sobol error when the run is cancelled, and a Morris error when nothing completed', async () => {
+it('posts a null Sobol result when the run is cancelled, and a Morris error when nothing completed', async () => {
   let now = 0
   vi.spyOn(performance, 'now').mockImplementation(() => (now += 100))
   const scenario = laydown()
@@ -116,9 +116,9 @@ it('posts a Sobol error when the run is cancelled, and a Morris error when nothi
   await context.onmessage!({ data: { type: 'cancel', runId: sobol.runId } })
   await run
   expect(posted<McSobolMessage>().at(-1)).toEqual({
-    type: 'sobol-error',
+    type: 'sobol-done',
     runId: sobol.runId,
-    message: 'Sobol cancelled after 1 of 24 rows',
+    result: null,
   })
   context.postMessage.mockClear()
   const morris: McMorrisRequest = { type: 'morris', runId: 'morris-cut', scenario }

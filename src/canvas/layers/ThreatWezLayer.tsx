@@ -108,9 +108,8 @@ function stableWez(next: ThreatWez[], prev: ThreatWez[]): ThreatWez[] {
 }
 
 /**
- * WEZ caption. 'PF' = planning factor (expanded in the Analysis panel's About
- * section): both the impact radii and the stored standoff ranges are planning
- * factors, not study-derived lethality data.
+ * WEZ caption. The impact radii and the stored standoff ranges are planning factors,
+ * which the caption marks 'PF'.
  */
 function wezLabel(
   wez: ThreatWez,
@@ -126,9 +125,8 @@ function wezLabel(
 }
 
 /**
- * Constant-px red warning triangle with '!', optional leaker count and label.
- * Memoized on primitives: only a SEVERE badge takes a pulse, so the other
- * badges re-render on no frame once their fade-in is complete.
+ * Constant-px red warning triangle with '!', optional leaker count and label. Only a
+ * SEVERE badge takes a pulse, so the others re-render on no frame once faded in.
  */
 const Badge = memo(function Badge({
   k,
@@ -200,9 +198,8 @@ const Badge = memo(function Badge({
 })
 
 /**
- * One WEZ: the faint fill, the dashed ring, the impact mark and the caption.
- * Memoized on the zone, its live centre and its caption, so a frame re-renders
- * only the standoff rings that ride a moving track.
+ * One WEZ: the faint fill, the dashed ring, the impact mark and the caption. Memoized
+ * on the zone, its live centre and its caption.
  */
 const WezRing = memo(function WezRing({
   wez,
@@ -272,11 +269,11 @@ export function ThreatWezLayer({
   const show = useStore((s) => selectEffectiveLayers(s).threatWez)
   const units = useStore((s) => s.ui.units)
 
-  // A scenario swap rebuilds the zones; a zone whose fields did not change
-  // keeps its previous object, so its memoized ring re-renders only on a zoom.
+  // A scenario swap rebuilds the zones; a zone whose fields did not change keeps its
+  // previous object.
   const prevWez = useRef<ThreatWez[]>([])
   const wezList = useMemo(
-    // oxlint-disable-next-line react/refs -- the previous zones lend identities; one render stale by design
+    // oxlint-disable-next-line react/refs -- the previous zones lend their identities
     () => stableWez(threatWezList(scenario), prevWez.current),
     [scenario],
   )
@@ -286,8 +283,7 @@ export function ThreatWezLayer({
   const entityById = (id: string | null) =>
     id == null ? undefined : scenario.entities.find((e) => e.id === id)
 
-  // Captions are scenario and unit work, so they are built once per zone list
-  // and never on a frame.
+  // Captions are scenario and unit work, built once per zone list and never on a frame.
   const wezLabels = useMemo(() => {
     const out = new Map<string, string>()
     for (const wez of wezList) {

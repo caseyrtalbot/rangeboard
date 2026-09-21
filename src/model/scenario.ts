@@ -61,7 +61,7 @@ export function pathSpeed(scenario: Scenario, path: FlightPath): number {
   return model?.uas?.cruiseSpeedMps ?? 15
 }
 
-/** Flight time excluding the effective start delay, with Phase 3 limits when available. */
+/** Flight time excluding the effective start delay, with flight limits when available. */
 export function pathDurationS(scenario: Scenario, path: FlightPath): number {
   const speed = pathSpeed(scenario, path)
   if (physicsSwitches(scenario).includes('noFlightLimits')) return pathLength(path.points) / speed

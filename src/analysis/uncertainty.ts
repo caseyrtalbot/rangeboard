@@ -200,7 +200,7 @@ function nominalOf(model: SpecModel, field: string, doctrine: FireDoctrine): num
   if (model.sensor) {
     if (field === 'detectRangeM') return model.sensor.detectRangeM
     if (field === 'trackInitS') return trackInitSFor(model.sensor, doctrine)
-    // The Phase 2 accuracy fields have no resolver: a null stays null.
+    // The accuracy fields have no resolver: a null stays null.
     const v = (model.sensor as unknown as Record<string, unknown>)[field]
     return typeof v === 'number' ? v : NaN
   }

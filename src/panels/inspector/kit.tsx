@@ -1,15 +1,8 @@
 /**
- * Inspector component kit.
- *
- * The right panel is one continuous instrument surface: sections are
- * separated by a hairline and an eyebrow, never enclosed in a card, and a
- * property is always a label on the left with its value right-aligned on the
- * same baseline. Every visual value here comes from a design token in
- * index.css, so a surface, a text step or a status colour is retuned in one
- * place rather than per component.
- *
- * Monospace is reserved for machine data: ids, coordinates, timestamps, units
- * and keys. Everything else is set in the UI sans.
+ * Inspector component kit. Sections are separated by a hairline and an eyebrow; a
+ * property is a label on the left with its value right-aligned on the same
+ * baseline. Every visual value comes from a design token in index.css. Monospace
+ * is reserved for machine data: ids, coordinates, timestamps, units and keys.
  */
 
 import type { ReactNode } from 'react'
@@ -20,10 +13,7 @@ import { spreadText } from './spreadText'
 import { ProvMark, State } from '../../ui/kit'
 import type { StateTone } from '../../ui/kit'
 
-/**
- * One titled block of the Inspector. Renders an uppercase eyebrow, an
- * optional right-aligned note on the same line, then its rows.
- */
+/** One titled block: an eyebrow, an optional right-aligned note, then the rows. */
 export function Section({
   label,
   note,
@@ -45,14 +35,11 @@ export function Section({
 }
 
 /**
- * A read-only property in the key and value grid: key in text 2, value in
- * mono right-aligned, then the provenance mark column. `unit` renders after
- * the number in the secondary text step so it never competes with it, and
- * `muted` drops the value a step for information that is negative or
- * incidental. A string value carries a title attribute so a truncated value
- * stays readable. `tag` is the mark of the value's provenance; a row without
- * one keeps the empty column so the absence reads. A `stacked` row is prose
- * under its key, so it stays sans and carries no mark column.
+ * A read-only property in the key and value grid: key, value in mono, then the
+ * provenance mark column. `unit` renders after the number a text step down;
+ * `muted` drops the value a step. `tag` is the provenance mark, and a row without
+ * one keeps the empty column. A `stacked` row is prose under its key, in sans and
+ * with no mark column.
  */
 export function Row({
   label,
@@ -72,8 +59,7 @@ export function Row({
   title?: string
 }) {
   const empty = value == null || value === '' || value === '—'
-  // A narrow panel truncates both halves of the row, so both carry the full
-  // text on hover. The unit belongs to the value, so the title carries it too.
+  // A narrow panel truncates both halves, so both carry the full text on hover.
   const text =
     typeof value === 'string' || typeof value === 'number'
       ? `${value}${unit ? ` ${unit}` : ''}`
@@ -108,11 +94,10 @@ function spreadTitle(model: SpecModel | undefined, field: string): string {
 }
 
 /**
- * The provenance mark of one spec field. A planning factor is the hollow mark;
- * a datasheet or reference row is the filled sourced mark with its basis,
- * source and date in the title. An absent value, or no model at all, is
- * always a planning factor. Either title names the field's spread, or says
- * the row is pinned, so a total-uncertainty run is readable from the mark.
+ * The provenance mark of one spec field. A planning factor is the hollow mark; a
+ * datasheet or reference row is the filled sourced mark, with its basis, source
+ * and date in the title. An absent value, or no model, is a planning factor. The
+ * title names the field's spread, or says the row is pinned.
  */
 export function PfTag({
   model,
@@ -163,10 +148,7 @@ export function ObjectHeader({
   )
 }
 
-/**
- * Nothing-to-inspect state. Sits at the top of the panel where inspection
- * data will appear, and reads as a state rather than as an error.
- */
+/** Nothing-to-inspect state, at the top of the panel where the data appears. */
 export function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="empty-state">

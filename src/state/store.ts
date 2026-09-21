@@ -64,7 +64,6 @@ import {
   writeView,
   writeViewCamera,
 } from '../io/viewState'
-// Keep worker execution behind analysisRequests; summaries are types, not store runtime dependencies.
 import type { McSweepMessage, McWorkerMessage, SensitivityResponse } from '../playback/mcRun'
 import type { AnalysisSinks, OptimizeSpec, SensitivityMessage, SweepSpec } from './analysisRequests'
 import type { OptimizeWorkerMessage } from '../playback/optimizeTypes'
@@ -82,10 +81,7 @@ import {
   requestSobol,
 } from './analysisRequests'
 
-/**
- * The lens system is gone, so every run is stamped with the old default lens
- * id. `Scenario.observedPresetId` stays for saved-scenario compatibility.
- */
+/** Lens id stamped on every run; `Scenario.observedPresetId` keeps saved scenarios loadable. */
 const OBSERVED_PRESET_ID = 'run-summary'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
@@ -100,10 +96,7 @@ export interface Camera {
   scale: number
 }
 
-/**
- * Armed tactic-builder state. UI only, never part of the scenario and never
- * undoable; commitRaid turns it into scenario changes in one mutate().
- */
+/** Armed tactic-builder state. UI only; commitRaid turns it into scenario changes. */
 export interface RaidDraft {
   tacticId: string
   platformSpecId: string | null
@@ -127,22 +120,21 @@ export interface UiState {
   calibrateA: Vec2 | null
   calibrateB: Vec2 | null
   rightTab: RightTab
-  /** Theme choice. Render state only: ui state, not undoable, kept in the saved view record. */
+  /** Theme choice. Not undoable; kept in the saved view record. */
   theme: Theme
   /** When true the sat underlay is draggable for placement. */
   moveUnderlay: boolean
-  /** Canvas layer visibility, 17 keys. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
+  /** Canvas layer visibility, 17 keys. Not undoable; kept in its own localStorage key. */
   layers: LayerVisibility
-  /** Per-entity ring overrides. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
+  /** Per-entity ring overrides. Not undoable; kept in its own localStorage key. */
   ringOverrides: RingOverrides
-  /** Display units for distances and speeds. Render toggle only: ui state, not undoable, kept in its own localStorage key. */
+  /** Display units for distances and speeds. Not undoable; kept in its own localStorage key. */
   units: DisplayUnits
   /** Open right-click menu; screen px within the canvas host, world meters. */
   contextMenu: { screen: Vec2; world: Vec2; entityId: string | null } | null
   /**
-   * Connect offers after placing or dragging a linkable entity; screen px
-   * within the canvas host. `autoConnected` links were already created
-   * (documented pairs in range wire themselves); `candidates` await a click.
+   * Connect offers after placing or dragging a linkable entity; screen px within
+   * the canvas host. `autoConnected` links already exist; `candidates` await a click.
    */
   connectSuggestion: {
     entityId: string
@@ -156,10 +148,7 @@ export interface UiState {
   locationDialogOpen: boolean
 }
 
-/**
- * Autosave status. Its own slice, not part of `ui`, so a write does not
- * re-render every ui subscriber. Set by persist, never undoable.
- */
+/** Autosave status. Its own slice so a write does not re-render every ui subscriber. */
 interface SaveState {
   /** Epoch ms of the last successful autosave write; null before the first. */
   lastAutosaveAt: number | null
@@ -189,16 +178,13 @@ export interface Store {
 
   // Scenario lifecycle
   /**
-   * Install a scenario as the whole board: history, selection, every draft
-   * and interaction state, and the playback run are reset. The run sequence
-   * is kept (only a manual reset advances it).
+   * Install a scenario as the whole board: history, selection, every draft and
+   * interaction state, and the playback run are reset. The run sequence is kept.
    */
   replaceScenario: (s: Scenario) => void
   /**
-   * The one load path for the startup autosave and a file import: replace
-   * the scenario, then fit the camera to its entities and paths. `fit`
-   * defaults to `if-unsaved` (startup: keep the camera the user left); an
-   * import passes `always`.
+   * Replace the scenario, then fit the camera to its entities and paths. `fit`
+   * defaults to `if-unsaved`, which keeps the camera the user left.
    */
   loadScenario: (s: Scenario, opts?: { fit?: 'always' | 'if-unsaved' }) => void
   setScenarioName: (name: string) => void
@@ -271,10 +257,9 @@ export interface Store {
   duplicateModel: (id: string) => string
   updateModel: (id: string, patch: Partial<SpecModel>) => void
   /**
-   * Edit one named spec field of a model. `editSpecField` owns the field
-   * rules (clear to planning factor, clamps, M-of-N coupling, tuple and mount
-   * height parsing); the store keeps provenance invalidation and one undo
-   * step per edit. A rejected or absent field writes nothing.
+   * Edit one named spec field of a model. `editSpecField` owns the field rules;
+   * the store adds provenance invalidation and one undo step per edit. A
+   * rejected or absent field writes nothing.
    */
   editModel: (id: string, field: SpecEditField, value: SpecEditValue) => void
   deleteModel: (id: string) => void
@@ -332,7 +317,7 @@ export interface Store {
   /** Resolve and apply one playback intent (`src/state/playbackCommands.ts`). */
   playbackCommand: (command: PlaybackCommand) => void
 
-  // Internal trial lifecycle; R5 owns user-facing adoption.
+  // Internal trial lifecycle.
   prepareTrial: () => void
   startTrialRun: () => void
   cancelTrialPreparation: () => void
@@ -344,15 +329,14 @@ export interface Store {
   /** Worker message sink; a message whose runId is not mc.runId is ignored. */
   mcMessage: (m: McWorkerMessage) => void
   /**
-   * Ask a running replicate run to stop at its next checkpoint. The status
-   * stays 'running' until the worker posts the summary of the replicates done,
-   * which arrives as `done` with `stopped.rule` 'cancelled'.
+   * Ask a running replicate run to stop at its next checkpoint. The status stays
+   * 'running' until the worker posts `done` with `stopped.rule` 'cancelled'.
    */
   cancelMonteCarlo: () => void
   /**
    * Launch the sensitivity run for the current scenario and run id (cancels an
-   * older one). Under the full depth it is Morris on `response` (leakers by
-   * default), then Sobol on the fields Morris kept.
+   * older one). Full depth is Morris on `response`, then Sobol on the fields
+   * Morris kept.
    */
   runSensitivity: (response?: SensitivityResponse) => void
   /** Sensitivity slot message sink; a message from another run is ignored. */
@@ -369,26 +353,21 @@ export interface Store {
   /**
    * Answer an override edit, which installs no scenario: a run whose applied
    * overrides no longer match the values in force goes stale and a trial is
-   * dropped, as a configuration change does. The override store's subscription
-   * calls this; nothing else needs to.
+   * dropped, as a configuration change does.
    */
   overridesChanged: () => void
 
   // Baseline
   /**
-   * Keep the current scenario and its finished ensemble as the baseline, with
-   * the overrides the ensemble applied. A no-op without a done summary for the
-   * current run and analysis basis. The label defaults to the scenario name and
-   * the pin time.
+   * Keep the current scenario and its finished ensemble as the baseline, with the
+   * overrides the ensemble applied. A no-op without a done summary for the current
+   * run and analysis basis. The label defaults to the scenario name and pin time.
    */
   pinBaseline: (label?: string) => void
   clearBaseline: () => void
   /** Install a restored baseline; persistence only, never a user action. */
   restoreBaseline: (baseline: PinnedBaseline | null) => void
-  /**
-   * Launch a factor sweep for the current scenario and run id on the
-   * sensitivity slot (a sensitivity run or sweep already there is replaced).
-   */
+  /** Launch a factor sweep on the sensitivity slot, replacing whatever is there. */
   runSweep: (spec: SweepSpec) => void
   /** Sweep worker message sink; a message from another run is ignored. */
   sweepMessage: (m: McSweepMessage) => void
@@ -397,17 +376,16 @@ export interface Store {
 
   // Placement optimization
   /**
-   * Launch a placement optimization for the current scenario and run id on its
-   * own worker slot (an optimization already there is replaced). A no-op under
-   * deterministic mode, with no movable entity, or with no bounds polygon.
+   * Launch a placement optimization on its own worker slot, replacing whatever is
+   * there. A no-op under deterministic mode, with no movable entity, or with no
+   * bounds polygon.
    */
   runOptimize: (spec: OptimizeSpec) => void
   /** Optimize worker message sink; a message from another run is ignored. */
   optimizeMessage: (m: OptimizeWorkerMessage) => void
   /**
-   * Ask a running optimization to stop at its next checkpoint. Its
-   * `optimize-done` then carries the trace so far, so the result reads as a
-   * cut run rather than a cancelled one with nothing in it.
+   * Ask a running optimization to stop at its next checkpoint. Its `optimize-done`
+   * then carries the trace so far, so the result reads as a cut run.
    */
   cancelOptimize: () => void
   /** Drop the placement result, its incumbent and its error. */
@@ -472,11 +450,9 @@ export const useStore = create<Store>()((set, get) => {
   }
 
   /**
-   * Make a Scenario current through `installScenario`, the one place that
-   * decides what every scenario-governed slice does per operation. The store
-   * adds only its `ui` response: the pruned ring overrides are written eagerly,
-   * a restored snapshot invalidates any open connect offer, and a replacement
-   * cancels every in-progress interaction.
+   * Make a Scenario current through `installScenario` and add the `ui` response:
+   * pruned ring overrides are written eagerly, a restored snapshot invalidates any
+   * open connect offer, and a replacement cancels every in-progress interaction.
    */
   function install(op: ScenarioInstall) {
     const st = get()
@@ -582,9 +558,8 @@ export const useStore = create<Store>()((set, get) => {
           headingDeg: 0,
           color: null,
           notes: '',
-          // A threat flies at one altitude, seeded from the model profile so a
-          // fresh drop is not silently at ground level. Null keeps the
-          // threatAltitudeFt fallback (profile, else the band midpoint).
+          // Seeded from the model profile so a fresh drop is not at ground level.
+          // Null keeps the threatAltitudeFt fallback.
           ...(model.kind === 'uas' ? { altitudeFt: model.threatProfile?.altitudeFt ?? null } : {}),
         }
         return { ...s, entities: [...s.entities, entity] }
@@ -592,8 +567,7 @@ export const useStore = create<Store>()((set, get) => {
       if (!screen) return
       const kind = get().scenario.entities.find((e) => e.id === id)?.kind
       if (kind === 'sensor' || kind === 'effector' || kind === 'c2') {
-        // Always: a fresh drop should tell the user what this system CAN
-        // integrate with even when nothing compatible is in range yet.
+        // A fresh drop shows what this system can integrate with, even out of range.
         get().openConnectSuggestion(id, screen, { always: true })
       }
     },
@@ -672,8 +646,7 @@ export const useStore = create<Store>()((set, get) => {
         const to = s.entities.find((e) => e.id === toId)
         const fromSpec = from?.specId ? s.library.find((m) => m.id === from.specId) : undefined
         const toSpec = to?.specId ? s.library.find((m) => m.id === to.specId) : undefined
-        // A researched pairing types the hand-drawn link; anything else keeps
-        // the plain kind-default label.
+        // A researched pairing types the link; anything else keeps the kind default.
         const verdict = fromSpec && toSpec ? evaluateIntegration(fromSpec, toSpec) : null
         const conn: Connection = verdict?.ok
           ? {
@@ -698,9 +671,8 @@ export const useStore = create<Store>()((set, get) => {
 
     openConnectSuggestion: (entityId, screen, opts) => {
       const all = suggestLinksFor(get().scenario, entityId)
-      // Documented pairings inside their medium range wire themselves in one
-      // undoable step; the popup confirms them and only the probable/inferred
-      // remainder still needs a click.
+      // Documented pairings in range wire themselves in one undoable step; the rest
+      // still need a click.
       const autoConnected = all.filter((c) => c.verdict.confidence === 'documented')
       const candidates = all.filter((c) => c.verdict.confidence !== 'documented')
       if (autoConnected.length > 0) {
@@ -709,8 +681,7 @@ export const useStore = create<Store>()((set, get) => {
           return added.length > 0 ? { ...s, connections: [...s.connections, ...added] } : s
         })
       }
-      // Informational mode needs integration facts to show; skip unprofiled
-      // (custom) models so the popup is never an empty box.
+      // Skip unprofiled (custom) models so the popup is never empty.
       const specId = get().scenario.entities.find((e) => e.id === entityId)?.specId ?? null
       const show =
         candidates.length > 0 ||
@@ -753,16 +724,15 @@ export const useStore = create<Store>()((set, get) => {
         const preset = s.systemPresets.find((p) => p.id === presetId)
         if (!preset) return s
         const systemId = newId('sys')
-        // Aligned with preset.components so link indexes stay valid; null when
-        // the referenced model is gone.
+        // Aligned with preset.components so link indexes stay valid; null when the
+        // referenced model is gone.
         const placed: Array<Entity | null> = preset.components.map((comp, i) => {
           const model = s.library.find((m) => m.id === comp.specId)
           if (!model) return null
           const baseName = model.name.split(':').pop()?.trim() ?? model.name
           const dupes = preset.components.filter((c) => c.specId === comp.specId).length
           const nth = preset.components.slice(0, i).filter((c) => c.specId === comp.specId).length
-          // Orient the whole laydown: rotate offsets about the drop point and
-          // slew each component's own facing by the same amount.
+          // Rotate offsets about the drop point and slew each facing by the same amount.
           const off = rotatePoint(comp.offsetM, { x: 0, y: 0 }, headingDeg)
           return {
             id: newId('ent'),
@@ -976,8 +946,7 @@ export const useStore = create<Store>()((set, get) => {
     armRaidDraft: (tacticId) => {
       const raidDraft = raidDraftFor(get().scenario, tacticId)
       if (!raidDraft) return
-      // Arming replaces any in-progress draw draft so the next canvas click
-      // can only mean "place the raid axis".
+      // Arming clears any draw draft so the next canvas click places the raid axis.
       set((st) => ({
         ui: {
           ...st.ui,
@@ -1003,8 +972,7 @@ export const useStore = create<Store>()((set, get) => {
     commitRaid: (axisAnchor) => {
       const { ui, scenario } = get()
       if (!ui.raidDraft) return
-      // Blocked until a UAS platform and a target asset are chosen; the draft
-      // stays armed so the builder card can complete it.
+      // Null until a UAS platform and a target asset are chosen; the draft stays armed.
       const raid = buildRaid(scenario, ui.raidDraft, axisAnchor)
       if (!raid) return
       // ONE mutate: a single Cmd+Z removes the entire raid.
@@ -1015,7 +983,7 @@ export const useStore = create<Store>()((set, get) => {
         raid: { waves: [...(s.raid?.waves ?? []), ...raid.waves] },
       }))
       set((st) => ({ ui: { ...st.ui, raidDraft: null } }))
-      // Bring the raid origins and the target into view (camera is not undoable).
+      // Camera moves are not undoable.
       const cam = fitCameraTo([raid.target.pos, ...raid.starts])
       if (cam) set({ camera: cam })
     },
@@ -1393,8 +1361,7 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, units: v } }))
     },
 
-    // Compatibility wrappers for dev-console callers. UI code uses the
-    // explicit lifecycle actions below so scrub and observation never mix.
+    // Dev-console wrappers. UI code calls the named lifecycle actions below.
     setPlaying: (p) => {
       if (p) get().startRun()
       else get().pauseRun()
@@ -1405,10 +1372,8 @@ export const useStore = create<Store>()((set, get) => {
     startRun: () => get().startTrialRun(),
 
     /**
-     * The one playback interface: `resolvePlayback` (playbackCommands.ts)
-     * turns an intent into a transition; this applies it through `set`, so
-     * no playback change enters undo history. Every lifecycle action below
-     * is a named command.
+     * `resolvePlayback` turns an intent into a transition; this applies it through
+     * `set`, so no playback change enters undo history.
      */
     playbackCommand: (command) => {
       const st = get()

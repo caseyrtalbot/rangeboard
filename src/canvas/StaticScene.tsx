@@ -7,8 +7,7 @@ import { FootprintLayer } from './layers/FootprintLayer'
 import { RangeLayer } from './layers/RangeLayer'
 import { ConnectionLayer } from './layers/ConnectionLayer'
 
-// These three take no props and read the store themselves, so a publication
-// here must not re-render them.
+// These three read the store themselves, so a publication must not reach them.
 const StaticBoundaryLayer = memo(BoundaryLayer)
 const StaticRangeLayer = memo(RangeLayer)
 const StaticConnectionLayer = memo(ConnectionLayer)

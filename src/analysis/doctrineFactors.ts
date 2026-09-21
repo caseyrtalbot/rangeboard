@@ -9,30 +9,14 @@ import type {
 import { TRACK_DROP_MISSES, TRACK_INIT_M, TRACK_INIT_N, defaultSensorRole } from '../model/types'
 
 /**
- * Per-system doctrine planning factors. The scenario-level FireDoctrine
- * numbers are ONE dial for the whole laydown; real systems differ, so with
+ * Per-system doctrine planning factors, never measured performance. The
+ * scenario-level FireDoctrine numbers apply to the whole laydown, so with
  * doctrine enabled the engine derives each system's factors here instead:
- * spec override first, then the role/type table, then the scenario value as
- * the last-resort fallback. All values are planning factors, not measured
- * performance.
+ * spec override first, then the role or type table, then the scenario value.
  *
- * Sources of variation the tables encode:
- *   TRACK INITIATION scales with revisit rate. A dedicated fire-control or
- *   staring track radar confirms a track in a couple of hits; a rotating
- *   early-warning search radar needs several full scan revolutions.
- *   BDA depends on how the kill is observed. A laser operator watches the
- *   burn-through in the same optic (seconds); an interceptor kill is
- *   confirmed by watching the track drop; a net capture needs the capture
- *   aircraft to report before anyone re-engages.
- *   COMMIT PK follows cost per shot. A cheap, fast-recycling shot (DE, gun)
- *   is worth taking early at modest Pk; a counted interceptor holds for a
- *   quality firing solution.
- *   TARGET DWELL is the weapon side of the kill chain between engagement
- *   authority and release-ready: the shooter is assigned, the turret or
- *   launcher slews onto the cue, its own tracker or seeker acquires, and the
- *   firing solution settles. A turreted gun with an auto-tracker is quick; a
- *   launcher-fired interceptor adds the launch sequence; a net or capture
- *   drone must be launched and vectored.
+ * What the tables vary with: track initiation with revisit rate, BDA with how
+ * the kill is observed, commit Pk with cost per shot, and target dwell with
+ * how long the shooter takes to slew, acquire and settle a firing solution.
  */
 
 /** Continuous hold needed to initiate a stable track file, by sensor role, s. */
@@ -56,10 +40,10 @@ const BDA_S: Record<EffectorSpec['effectorType'], number> = {
 }
 
 /**
- * Weapon assignment + firing-solution dwell (TARGET step) by effector type, s.
- * Planning factors: charged after the declaration gate and the kill-chain
- * hop latency, before the first possible release. A jammer is illumination,
- * not a round, and stays on the legacy release path.
+ * Weapon assignment and firing-solution dwell (TARGET step) by effector type,
+ * s. Charged after the declaration gate and the kill-chain hop latency,
+ * before the first possible release. A jammer is illumination, not a round,
+ * and stays on the legacy release path.
  */
 const TARGET_S: Record<EffectorSpec['effectorType'], number> = {
   gun: 4,
@@ -167,11 +151,7 @@ export function targetSFor(spec: EffectorSpec, doctrine: FireDoctrine): number {
   return spec.targetS ?? TARGET_S[spec.effectorType] ?? doctrine.targetS
 }
 
-/**
- * Launch-point policies in display order, one definition for the panel, the
- * headline and any record that names the policy. `hint` is the one-line
- * test-and-evaluation reading of the option.
- */
+/** Launch-point policies in display order, with the one-line reading of each. */
 export const LAUNCH_POLICIES: ReadonlyArray<{ v: LaunchPolicy; label: string; hint: string }> = [
   {
     v: 'max-range',

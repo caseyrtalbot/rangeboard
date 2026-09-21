@@ -1,8 +1,7 @@
 /**
- * The one rule every panel applies before it reads a Monte Carlo summary,
- * and the sub-line formats the tiles share. A summary is current only when
- * the run finished and it belongs to the run id on the playhead; a stale,
- * running or idle slice reads as no summary.
+ * The rule every panel applies before it reads a Monte Carlo summary, and the
+ * sub-line formats the tiles share. A summary is current only when the run
+ * finished and belongs to the run id on the playhead.
  */
 import type {
   BandSeries,
@@ -26,10 +25,9 @@ export function currentSummary(mc: McState, runId: string): McSummary | null {
 }
 
 /**
- * The record Save to history writes for a finished ensemble. Its manifest
- * names the overrides the run applied at launch (`McState.overrides`), never
- * the overrides in force at the save. The caller has checked the run is
- * current and passes the sensitivity companion only when it shares the basis.
+ * The record Save to history writes for a finished ensemble. Its manifest names
+ * the overrides the run applied at launch, never the overrides in force at the
+ * save. The caller checks the run is current.
  */
 export function runRecordOf(
   scenario: Scenario,
@@ -59,7 +57,7 @@ export function currentSweep(mc: McState, runId: string): SweepSummary | null {
   return mc.sweep.status === 'done' && mc.sweep.runId === runId ? mc.sweep.summary : null
 }
 
-/** The summary of a finished sensitivity run for `runId`, else null. Same rule. */
+/** The summary of a finished sensitivity run for `runId`, else null. */
 export function currentSensitivity(mc: McState, runId: string): SensitivitySummary | null {
   const sens = mc.sensitivity
   return sens.status === 'done' && sens.runId === runId ? sens.summary : null
@@ -80,9 +78,9 @@ export function bandMean(band: BandSeries, i: number, n: number): number | null 
 }
 
 /**
- * Mean CI, never the replicate quantile band, printed as its two ends: a
- * count interval is clamped, Wilson or rule of three, so it is not
- * symmetric about the mean. `scale` converts counts to percentages.
+ * Mean CI, never the replicate quantile band, printed as its two ends. A count
+ * interval is clamped, Wilson or rule of three, so it is not symmetric about the
+ * mean. `scale` converts counts to percentages.
  */
 export function countSub(band: BandSeries, i: number, n: number, scale = 1, unit = ''): string {
   if (bandMean(band, i, n) == null) return `MC estimate unavailable · n=${n}`
@@ -99,8 +97,7 @@ const TIME_CI_MIN_N = 30
 
 /**
  * Undefined samples are excluded: time estimates are conditional on a finite time.
- * The Monte Carlo first detection is the first single-scan hit, so the
- * detected and warning subs name it.
+ * First detection is the first single-scan hit.
  */
 type StatQuantity = 'detected' | 'warning'
 const QUANTITY_WORD: Record<StatQuantity, string> = {

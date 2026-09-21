@@ -23,7 +23,7 @@ import { monteCarloPolicy } from './policy'
 /** Bootstrap resamples behind every interval. */
 export const SOBOL_BOOTSTRAP = 200
 
-/** The draw kind of the Saltelli matrices; the policy's kinds are 1 to 5, LHS 6, Morris 7. */
+/** The draw kind of the Saltelli matrices; kinds never collide (policy.ts DRAW_KIND). */
 const SOBOL_KIND = 8
 
 /** Both indices of every factor, each with its bootstrap interval. */
@@ -167,19 +167,19 @@ export function sobolIndices(
 }
 
 /**
- * Sobol indices of `scenario` on `response` over the `kept` fields, with
- * `base` from `sobolBase` and the interval at `confidence`. Each row runs as
- * one aleatory replicate whose index is its base row, so A_r, B_r and every
- * AB_r share their engine draws (common random numbers) and the estimators
- * read paired differences. One checkpoint per row; a stop throws, since the
- * estimators need every row. `onProgress` fires after every row.
+ * Sobol indices of `scenario` on `response` over the `kept` fields, with `base`
+ * from `sobolBase` and the interval at `confidence`. Each row runs as one
+ * aleatory replicate whose index is its base row, so A_r, B_r and every AB_r
+ * share their engine draws and the estimators read paired differences. One
+ * checkpoint per row. The estimators need every row, so a cancel returns null
+ * and a budget stop throws.
  */
 export function* sobolLoop(
   scenario: Scenario,
   kept: UncertainField[],
   response: SensitivityResponse = 'leakers',
   onProgress?: (done: number, total: number) => void,
-): Loop<SobolResult> {
+): Loop<SobolResult | null> {
   const { seed, sobolBase: base, confidence } = runSettings(scenario)
   const studied = studyBase(scenario)
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...studied.requirements }
@@ -193,7 +193,13 @@ export function* sobolLoop(
     onProgress?.(r + 1, total)
     if (r + 1 === total) break
     const stop = yield { done: r + 1, total, retained: 0 }
-    if (stop) throw new Error(`Sobol ${stop} after ${r + 1} of ${total} rows`)
+    if (stop === 'cancelled') return null
+    if (stop) {
+      throw new Error(
+        `Sobol stopped at the worker time budget after ${r + 1} of ${total} rows; ` +
+          'the Morris screening stands',
+      )
+    }
   }
   const indices = sobolFromResponses(y, k, base, seed, SOBOL_BOOTSTRAP, confidence)
   const fields: SobolFieldResult[] = kept.map((field, i) => ({

@@ -27,7 +27,6 @@ export function HudLayer({ stageRef }: Props) {
       setMouseWorld(world)
       setDismissed(false)
 
-      // Get canvas position in browser viewport
       const container = stage.getAttrs().container
       let element: HTMLElement | null = null
       if (container instanceof HTMLElement) {
@@ -55,7 +54,6 @@ export function HudLayer({ stageRef }: Props) {
     }
   }, [stageRef])
 
-  // Calculate screen position from world coordinates
   const hintScreenPos =
     mouseWorld && scale > 0
       ? {

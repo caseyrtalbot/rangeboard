@@ -1,10 +1,8 @@
 /**
- * The smallest in-memory IndexedDB `src/io/runStore.ts` needs: one database
- * per name, object stores keyed by one field, value indexes read through
- * `getAll` in key order, and get/put/delete/getAll/clear. Requests settle on a
- * microtask and a transaction completes on the next macrotask, so a request
- * chained from another request's success still joins the same transaction, as
- * the browser does. A test helper only; the app always uses the real factory.
+ * The smallest in-memory IndexedDB `src/io/runStore.ts` needs. Requests settle on a
+ * microtask and a transaction completes on the next macrotask, so a request chained
+ * from another request's success joins the same transaction, as the browser does.
+ * A test helper only; the app always uses the real factory.
  */
 
 type Row = Record<string, unknown>

@@ -6,20 +6,17 @@ import { jammable } from './sensorEnv'
 import { linkBudgetRangeM, receivedPowerDbm } from './rfLink'
 
 /**
- * EW effectiveness physics (planning factors, expected-value scale). A jammer
- * cannot jam "everything": a jam holds only when
+ * EW effectiveness physics (planning factors, expected-value scale). A jam
+ * holds only when
  *   1. the target depends on RF at all (nav-mode gate, `jammable`),
  *   2. the jammer's transmit bands cover the target's link bands,
  *   3. the target sits inside the transmit cone, discounted off boresight
- *      (directional antennas have mainbeam gain rolloff), and
+ *      for mainbeam gain rolloff, and
  *   4. the power out closes the range: when both radios state power, the
  *      jammer received power must exceed the target link signal plus its
  *      jamResistDb margin. Incomplete radios keep the placard power law.
  * The factors multiply into one Pk multiplier that replaces the kinetic
- * distance/size/evasion penalties for jammers in attrition.ts: airframe size
- * and jinking are aiming problems, not link-denial problems.
- *
- * Pure functions of the specs and the geometry; no store imports.
+ * distance, size and evasion penalties for jammers in attrition.ts.
  */
 
 /** Off-boresight Pk multiplier at the sector edge (mainbeam gain rolloff). */
@@ -118,12 +115,11 @@ export function effectiveJamRangeM(spec: EffectorSpec, uas?: UasSpec): number {
 }
 
 /**
- * Jammer closure range from J/S at the target receiver. The desired signal
- * is the UAS transmitter's received power at its stated control-link range;
- * the jammer must equal that signal plus the target's resistance margin.
- * Both sides use rfLink.ts, hence the same ITU-R P.525 free-space equation
- * and the same band centres. Null means an incomplete radio and selects the
- * exact legacy placard path in effectiveJamRangeM.
+ * Jammer closure range from J/S at the target receiver, meters. The desired
+ * signal is the UAS transmitter's received power at its stated control-link
+ * range; the jammer must equal that signal plus the target's resistance
+ * margin. Both sides use rfLink.ts (ITU-R P.525). Null means an incomplete
+ * radio and selects the placard path in effectiveJamRangeM.
  */
 export function jamToSignalRangeM(spec: EffectorSpec, uas: UasSpec): number | null {
   const jammerPowerW = spec.eirpW ?? spec.ratedEirpW
@@ -155,12 +151,10 @@ export function jamToSignalRangeM(spec: EffectorSpec, uas: UasSpec): number | nu
 
 /**
  * Full jam-physics answer for one jammer against one target position.
- * `uas` undefined (entity with a deleted spec) skips the band gate and keeps
- * the geometry factors, the same as the jammable() gate in sim.ts.
- * `dAltM` is the target altitude minus the jammer mount height, meters; the
- * range, min-range and power falloff use the slant range it implies, the
- * same convention as the envelope gate in attrition.ts and the sim window.
- * The sector test stays in plan view.
+ * `uas` undefined (an entity with a deleted spec) skips the band gate and
+ * keeps the geometry factors. `dAltM` is the target altitude minus the
+ * jammer mount height, meters; the range, min-range and power falloff use
+ * the slant range it implies. The sector test stays in plan view.
  */
 export function assessJam(
   spec: EffectorSpec,

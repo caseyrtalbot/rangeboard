@@ -64,8 +64,8 @@ export interface TrialSnapshot {
   summary?: TrialSummary
 }
 
-// R4 returns only a complete engine result. Optional retained metadata is additive;
-// absent validity stays unavailable and the playback clock is never fabricated here.
+// Optional retained metadata is additive: absent validity stays unavailable and
+// the playback clock is never fabricated here.
 type CapturedResult = TrialResult & {
   observedThroughS?: number
   validity?: RunValidityAssessment | null

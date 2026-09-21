@@ -42,7 +42,7 @@ const machineStyle: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--type-dense-size)',
 }
-// Seven columns in a 350 px panel: the track name and the result word take the slack.
+// Seven columns; the track name and the result word take the slack.
 const columnWidth: Record<SortColumn, string> = {
   track: '23%',
   detect: '10%',
@@ -56,10 +56,9 @@ const timeText = (value: number | null) => (value == null ? '—' : formatTime(v
 
 /**
  * The operator floor stamp of one trial: decisions whose raw operator wait fell
- * below 0 and the floor discarded, against the decisions the C2 queue took
- * (`AttritionTotals`). Null when nothing floored and on a legacy ledger that
- * carries no counts, so the record gains no line. The trial and the ensemble
- * read the same counts, so Play and Run never differ in timing without saying so.
+ * below 0 and the floor discarded, against the decisions the C2 queue took. Null
+ * when nothing floored and on a ledger that carries no counts. The trial and the
+ * ensemble read the same counts.
  */
 function flooredText(totals: TrialResultView['attrition']['totals']): string | null {
   const floored = totals.operatorFlooredDecisions
@@ -147,8 +146,8 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
     const kpis = trialKpisAt(view, view.durationS)
     const rows = trialOutcomeRows(view)
     const systems = trialSystemTelemetryAt(view, view.durationS)
-    // Forecast is retained only for the labeled requirement record and export;
-    // it runs the values the trial ran, the manifest's overrides included.
+    // Retained only for the labeled requirement record and export. It runs the
+    // values the trial ran, the manifest's overrides included.
     const forecast = trialForecast(view)
     const validity = view.validity ?? assessRunValidity(view.scenario, forecast.assessments)
     const aar = buildAarSummary(
@@ -248,9 +247,9 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
 }
 
 /**
- * The Save to history contract. A save needs a finished ensemble for the
- * current analysis basis; the sensitivity companion joins it only when it
- * finished on the same basis. The record is built here, never in the store.
+ * A save needs a finished ensemble for the current analysis basis; the sensitivity
+ * companion joins it only when it finished on the same basis. The record is built
+ * here, never in the store.
  */
 function useRunHistorySave(): RunHistorySave {
   const scenario = useStore((state) => state.scenario)
@@ -275,7 +274,7 @@ function useRunHistorySave(): RunHistorySave {
         mc.sensitivity.status === 'done' && mc.sensitivity.basisSignature === signature
           ? mc.sensitivity.summary
           : null
-      // The record names the overrides the run applied at launch, as the trial manifest does.
+      // The record names the overrides the run applied at launch.
       return saveRun(runRecordOf(scenario, mc, playbackRunId, signature, sensitivity))
     },
   }
@@ -292,7 +291,7 @@ export function OutcomeScreen() {
     selection.status === 'cancelled' ||
     (selection.status === 'ready' && !snapshot)
   ) {
-    // The history does not depend on a trial, so it stays below the placeholder.
+    // The history does not depend on a trial, so it renders below the placeholder.
     return (
       <>
         <p className="muted small">No trial yet. Press Play in Execute to run one.</p>

@@ -24,10 +24,8 @@ export function objectAt(value: unknown, path: string): Record<string, unknown> 
   return value as Record<string, unknown>
 }
 
-// New-image admission uses a conservative 5 MiB storage budget, accounting
-// for UTF-16 code units. Browser quotas/free space vary. Existing saved images
-// remain portable; actual storage failures are authoritative. This does not
-// cap records or guarantee sufficient quota for an admitted image.
+// New-image admission uses a conservative 5 MiB budget in UTF-16 code units. It
+// caps no record, and an actual storage failure is the authoritative answer.
 export const MAX_ARRAY_LENGTH = 2 ** 32 - 1
 export const MAX_IMAGE_CODE_UNITS = (5 * 1024 * 1024) / 2
 export function validateImage(value: string, path: string, newImage = false): void {
@@ -49,9 +47,8 @@ export function validateImage(value: string, path: string, newImage = false): vo
     invalid(path, 'expected an image data URL')
 }
 
-// Every accepted omission comes from `io/compat.ts`, which fills it. Only missing
-// fields get defaults; a present null/string/array is always checked against its
-// actual type.
+// Every accepted omission comes from `io/compat.ts`, which fills it. Only a missing
+// field gets a default; a present value is always checked against its type.
 const legacyMissing: LegacyOmissions = boardLegacyOmissions
 
 /** Validate all known nested fields; retain extension data for forward compatibility. */
@@ -172,6 +169,9 @@ function semantics(o: Record<string, unknown>, owner: string, path: string): voi
     range('y', -limit, limit)
   }
   if (owner === 'RaidWave') range('startDelayS', 0)
+  // Route compilation and the path shape assume a start and an end vertex.
+  if (owner === 'FlightPath' && Array.isArray(o.points) && o.points.length < 2)
+    invalid(`${path}.points`, 'expected at least two points')
   if (owner === 'FormationSpec') range('count', 1, MAX_ARRAY_LENGTH, true)
   if (owner === 'SensorSpec')
     for (const key of ['trackInitN', 'trackInitM', 'trackDropMisses'])
@@ -280,9 +280,8 @@ function semantics(o: Record<string, unknown>, owner: string, path: string): voi
     for (const k of Object.keys(o)) if (typeof o[k] === 'number') range(k, 0, 5)
   if (o.kind === 'lognormal') range('sigmaDb', 0)
   if (o.kind === 'triangular') {
-    // sampleSpread uses nominal * (1 + offset), with the mode at nominal.
-    // Offsets must enclose zero and cannot put positive quantities below zero.
-    // lo = hi = 0 is the sampler's supported fixed-nominal case.
+    // sampleSpread uses nominal * (1 + offset) with the mode at nominal, so offsets
+    // must enclose zero. lo = hi = 0 is the supported fixed-nominal case.
     if (Number(o.lo) > Number(o.hi)) invalid(path, 'triangular lower offset exceeds upper offset')
     range('lo', -1, 0)
     range('hi', 0)

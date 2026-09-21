@@ -1,18 +1,13 @@
 /**
- * The placement optimization contract between the analysis screen, the
- * optimize worker and the run store (Phase 4.1 and 4.5). Every type here is
- * plain data that crosses a worker message: JSON serialisable, no functions,
- * no Maps.
- *
- * Split: `src/model/types.ts` holds what model code and the schema share
- * (`Vec2`, `DEFAULT_SEED`, the calibration record). This file holds only the
- * request and result the worker protocol carries; nothing here enters a
- * `Scenario` or `SpecModel`.
+ * The placement optimization request and result the worker protocol carries.
+ * Every type here is JSON serialisable, with no functions and no Maps. Nothing
+ * here enters a `Scenario` or `SpecModel`; `src/model/types.ts` holds what
+ * model code and the schema share.
  */
 import type { Scenario, Vec2 } from '../model/types'
 import type { SensitivityResponse, Stat } from './mcRun'
 
-/** Evaluations of one optimization run by default: the plan's budget of 60. */
+/** Evaluations of one optimization run by default. */
 export const DEFAULT_OPTIMIZE_EVALUATIONS = 60
 
 /** Replicates per evaluation by default: 40 under common random numbers. */
@@ -65,9 +60,8 @@ export interface OptimizeRequest {
 }
 
 /**
- * One evaluation of one laydown. `objective` is the response `Stat` over
- * the evaluation's replicates, the same shape and interval rule the run
- * summary uses for that response, so a screen reads it as it reads a run.
+ * One evaluation of one laydown. `objective` is the response `Stat` over the
+ * evaluation's replicates, under the same interval rule the run summary uses.
  */
 export interface OptimizeEvaluation {
   /** Order in the trace; 0 is the starting laydown. */

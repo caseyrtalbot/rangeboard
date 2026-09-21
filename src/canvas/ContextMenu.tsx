@@ -61,8 +61,8 @@ function Item({ label, onPick, danger }: { label: string; onPick: () => void; da
   )
 }
 
-// Layer variant of Item: it keeps the menu open so several layers can be
-// switched in one visit. Every other entry closes on pick through Item.
+// Layer variant of Item: it keeps the menu open so several layers can be switched
+// in one visit.
 function ToggleItem({
   label,
   checked,
@@ -86,8 +86,8 @@ function nextOverride(current: boolean | null): boolean | null {
   return current ? false : null
 }
 
-// Ring variant of ToggleItem: the tick is the effective visibility and the
-// trailing word appears only while this entity overrides the global switch.
+// Ring variant of ToggleItem: the trailing word appears only while this entity
+// overrides the global switch.
 function RingItem({
   label,
   checked,
@@ -137,8 +137,7 @@ export function ContextMenu() {
   const st = useStore.getState()
   const entity = menu.entityId ? scenario.entities.find((e) => e.id === menu.entityId) : undefined
 
-  // Layer visibility is view state, so these actions use set, not mutate.
-  // Nothing here is undoable and nothing here enters the scenario.
+  // Layer visibility is view state: set, not mutate, and never undoable.
   function displayFlyout() {
     return (
       <div className="ctx-sub" onMouseEnter={() => setSubmenu('display')}>
@@ -164,8 +163,7 @@ export function ContextMenu() {
     )
   }
 
-  // A ring override is view state too: it goes through setRingOverride, so it
-  // pushes no undo step and it never enters the scenario.
+  // A ring override is view state too, so setRingOverride pushes no undo step.
   function ringsFlyout(entityId: string, keys: readonly RingKey[]) {
     const forced = ui.ringOverrides[entityId] ?? {}
     const anyForced = keys.some((k) => forced[k] != null)

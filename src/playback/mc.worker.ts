@@ -1,16 +1,10 @@
 /// <reference lib="webworker" />
 /**
- * Monte Carlo worker: one run per worker instance. A replicate run streams
- * `progress` and posts `done`; one chunk of a pooled run streams
- * `range-progress` and posts `range-done` with its partial; a sensitivity run
- * streams `sens-progress` and posts `sens-done`; a sweep streams
- * `sweep-progress` and posts `sweep-done`; a Morris screening streams
- * `morris-progress` and posts `morris-done`; a Sobol run streams
- * `sobol-progress` and posts `sobol-done`; a throw posts the error message.
- * Loops run under `DEFAULT_BUDGET` and stop at a checkpoint with
- * `stopped.rule` 'budget'. The
- * driver yields every YIELD_MS so a `cancel` request ends the run at the next
- * checkpoint with 'cancelled'.
+ * Monte Carlo worker: one run per worker instance. Each run kind streams its
+ * own `*-progress` message and posts its own `*-done`; a throw posts the error
+ * message. Loops run under `DEFAULT_BUDGET` and stop at a checkpoint with
+ * `stopped.rule` 'budget'. The driver yields every YIELD_MS, so a `cancel`
+ * request ends the run at the next checkpoint with 'cancelled'.
  */
 import type {
   Checkpoint,

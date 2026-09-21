@@ -15,8 +15,7 @@ function override(value: unknown, path: string): Override {
   const o = objectAt(value, path)
   const date = text(o.date, `${path}.date`)
   if (!Number.isFinite(Date.parse(date))) invalid(`${path}.date`, 'expected an ISO date')
-  // The value is whatever the library field holds: a number, a tuple of numbers
-  // or null. Only its presence is checked; the field's own type decides the rest.
+  // The value is whatever the library field holds. Only its presence is checked.
   if (!Object.hasOwn(o, 'value')) invalid(`${path}.value`, 'expected a value')
   return {
     modelId: text(o.modelId, `${path}.modelId`),
@@ -39,10 +38,8 @@ export function parseOverrideSet(raw: string): OverrideSet {
 const OVERRIDES_ERROR = 'Overrides not saved'
 
 /**
- * The overrides half of the autosave lifecycle in `io/autosave.ts`: its own key,
- * parser and record, following the baseline adapter. It shares the Board save
- * status, and like the baseline it clears only its own error, so the scenario
- * stamp stays the scenario's.
+ * The overrides half of the autosave lifecycle in `io/autosave.ts`. It shares the
+ * Board save status and clears only its own error.
  */
 export const overridesAutosaveAdapter: AutosaveAdapter<OverrideSet> = {
   key: OVERRIDES_KEY,

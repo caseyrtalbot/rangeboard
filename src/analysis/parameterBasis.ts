@@ -15,10 +15,10 @@ const PF_DATE = '2026-09-04'
 const pf = (spread: Spread): PfSpreadRow => ({ spread, source: PF_SOURCE, date: PF_DATE })
 
 /**
- * PF spread by field name, one provenance-style row each (basis 'pf'). Every value is a
- * planning factor. Triangular bounds are fractions of the nominal; the
- * beta `successes` is informational (17 of 20 is a 0.85 nominal), the sampler rescales it
- * to the field's own nominal and keeps `trials` as the pseudo-count.
+ * PF spread by field name, one provenance-style row each (basis 'pf').
+ * Triangular bounds are fractions of the nominal; the beta `successes` is
+ * informational, since the sampler rescales it to the field's own nominal and
+ * keeps `trials` as the pseudo-count.
  */
 export const PF_SPREAD: Record<string, PfSpreadRow> = {
   rcsM2: pf({ kind: 'lognormal', sigmaDb: 6 }), // PF
@@ -36,11 +36,9 @@ export const PF_SPREAD: Record<string, PfSpreadRow> = {
 export type SpreadBasis = 'row' | 'class-prior' | 'pf' | 'fixed'
 
 /**
- * The one spread resolver: the row's spread, else the class prior when a `priors`
- * table is given, else PF_SPREAD by field, else null (fixed). A row with
- * `spread: null` is pinned by the user and is fixed. No caller passes `priors`
- * yet, so every existing result is unchanged; Phase 1 wires the table through
- * McSettings.
+ * The one spread resolver: the row's spread, else the class prior when a
+ * `priors` table is given, else PF_SPREAD by field, else null (fixed). A row
+ * with `spread: null` is pinned by the user and is fixed.
  */
 export function spreadFor(
   model: SpecModel,
@@ -78,11 +76,9 @@ export interface UncertainField {
 }
 
 /**
- * Library field order per kind; the contract order the sampler and Morris
- * walk. Phase 3 (slice 3.a) added the sensor accuracy fields of Phase 2 and
- * the c2 decision latency, so their provenance spreads draw in total mode and
- * Morris screens them. They have no PF_SPREAD row: a model without a spread
- * on the row keeps the field fixed.
+ * Library field order per kind, the order the sampler and Morris walk. The
+ * sensor accuracy fields and the c2 decision latency have no PF_SPREAD row,
+ * so a model with no spread on its provenance row keeps them fixed.
  */
 export const FIELDS_BY_KIND: Partial<Record<Entity['kind'], string[]>> = {
   sensor: [

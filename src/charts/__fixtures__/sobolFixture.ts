@@ -1,17 +1,11 @@
 /**
- * One Morris screening and one Saltelli Sobol result over seed-library fields, for the
- * chart and widget tests. Lane 1.3 produces the real thing; until it merges this is the
- * only sample of the contract shape.
- *
- * Every `spread` is the value `spreadFor` returns today: no seed provenance row carries a
- * spread, so `PF_SPREAD` answers for all six fields. Model ids and field keys are real
- * (`lib-rps42`, `lib-coyote`, `lib-mavic3`, `lib-kurfs` in `seedLibrary.ts`).
- *
- * The numbers are plausible, not measured: every total index sits above its first-order
- * index, every interval brackets its value, and `engageTimeS` carries the negative
- * first-order lower bound a small Saltelli estimate really produces, so the clamp path has
- * a case. `fields` is in library order and `ranking` is by the total index, so the two
- * orders differ and a test can tell them apart.
+ * One Morris screening and one Saltelli Sobol result over seed-library fields, for
+ * the chart and widget tests. Every `spread` is what `spreadFor` returns: no seed
+ * provenance row carries a spread, so `PF_SPREAD` answers for all six fields. Model
+ * ids and field keys are real. The numbers are plausible, not measured: every total
+ * index sits above its first-order index, every interval brackets its value, and
+ * `engageTimeS` carries a negative first-order lower bound so the clamp path has a
+ * case. `fields` is in library order and `ranking` is by the total index.
  */
 import type { UncertainField } from '../../analysis/parameterBasis'
 import type { BootstrapInterval, MorrisResult, SobolResult } from '../../playback/mcTypes'

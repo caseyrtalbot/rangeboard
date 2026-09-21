@@ -45,6 +45,7 @@ describe('ErrorBoundary', () => {
     expect(html).toContain('class="state critical"')
     expect(html).toContain('role="alert"')
     expect(html).toContain('Run results could not be displayed.')
+    expect(html).toContain('>Try again</button>')
     expect(html).toContain('>Export</button>')
     expect(html).toContain('>Reload</button>')
     expect(html).not.toContain('<p>results</p>')
@@ -71,6 +72,21 @@ describe('ErrorBoundary', () => {
     expect(exportRecord).toHaveBeenCalledTimes(2)
     expect(boundary.state.exportError).toBeNull()
     expect(boundary.state.failed).toBe(true)
+  })
+
+  it('renders its children again after Try again, without a reload', () => {
+    const reload = vi.fn()
+    vi.stubGlobal('window', { location: { reload } })
+    const boundary = failedBoundary(
+      vi.fn(() => {
+        throw new Error('Download unavailable')
+      }),
+    )
+    button(boundary.render(), 'Export')!()
+    button(boundary.render(), 'Try again')!()
+    expect(boundary.state).toEqual({ failed: false, exportError: null })
+    expect(boundary.render()).toBe(boundary.props.children)
+    expect(reload).not.toHaveBeenCalled()
   })
 
   it('reloads the page only when Reload is activated', () => {

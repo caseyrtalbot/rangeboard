@@ -1,21 +1,13 @@
 /**
- * Series builders for the chart kit. Every builder is pure: the same scenario
- * object gives the same arrays, and the only cache is the engagement picture
- * that `engagementPicture` already keeps per scenario object.
+ * Series builders for the chart kit. Every builder is pure.
  *
  * Every series is sampled on the engine DT grid from t = 0 through
  * `scenarioDurationS`: `values.length === sampleCount(scenario)`, index i is
  * t = i * DT, NaN where the quantity is undefined. A `step` series holds its
  * value from the first grid step at or after the event that set it.
  *
- * Per-track hues come from `trackSlots`: the first five tracks by first
- * detection take `CHART_SLOT_TOKENS`, the rest fold into `OTHER_TOKEN`. A
- * consumer filters AFTER that map, so a hidden track keeps its slot. Status
- * tokens color marks only, never a series.
- *
- * A builder may return `LadderRow[]` instead: spans are in seconds on the
- * same grid, and an inclusive DT interval [a, b] covers [a, b + DT) on the
- * ladder so a one-sample hold has width DT.
+ * `LadderRow[]` spans are in seconds on the same grid, and an inclusive DT
+ * interval [a, b] covers [a, b + DT) so a one-sample hold has width DT.
  */
 import type { ChartMark, LadderRow, LadderSpan, Series } from '../charts/types'
 import { CHART_SLOT_TOKENS, OTHER_TOKEN } from '../charts/tokens'
@@ -58,7 +50,7 @@ function nameOf(scenario: Scenario, id: string): string {
   return scenario.entities.find((e) => e.id === id)?.name ?? id
 }
 
-/** Track hue slots by first detection. See the module note for the rule. */
+/** Track hue slots by first detection: the first five take `CHART_SLOT_TOKENS`, the rest `OTHER_TOKEN`. */
 export function trackSlots(scenario: Scenario): Map<string, string> {
   const { assessments } = engagementPicture(scenario)
   const order = new Map(scenario.entities.map((e, i) => [e.id, i]))
@@ -122,12 +114,7 @@ const KPI_SPECS: KpiSpec[] = [
   { key: 'leakerShips', label: 'Leaker ships', unit: 'ships', color: 'chart-5' },
 ]
 
-/**
- * One `step` series per `LiveKpis` counter, sampled from one live timeline:
- * `kpi.detected`, `kpi.classified`, `kpi.targetable`, `kpi.engaged`,
- * `kpi.kineticShots`, `kpi.deSalvos`, `kpi.jamSalvos`, `kpi.expectedKills`,
- * `kpi.lateKills`, `kpi.arrivedTracks`, `kpi.leakerShips`.
- */
+/** One `kpi.<counter>` `step` series per `LiveKpis` counter, from one live timeline. */
 export function kpiSeries(scenario: Scenario): Series[] {
   const { assessments, report } = engagementPicture(scenario)
   const tl = buildLiveTimeline(assessments, report)
@@ -173,10 +160,9 @@ function slantOnGrid(
 }
 
 /**
- * Per track this sensor observed: `pd.<uasId>` (single-scan Pd, `line`, only
- * for an observation with a `pdSeries`), `slant.<uasId>` (slant range from
- * the phase center, `line`, meters) and `held.<uasId>` (0/1 hold flag,
- * `step`). Every series takes the track's hue slot.
+ * Per track this sensor observed: `pd.<uasId>` (single-scan Pd, only for an
+ * observation with a `pdSeries`), `slant.<uasId>` (slant range from the
+ * phase center, meters) and `held.<uasId>` (0/1 hold flag).
  */
 export function sensorSeries(scenario: Scenario, sensorId: string): Series[] {
   const sensor = scenario.entities.find((e) => e.id === sensorId)
@@ -226,11 +212,10 @@ export function sensorSeries(scenario: Scenario, sensorId: string): Series[] {
 }
 
 /**
- * Per engaged track: `pk.<uasId>` (latest per-shot Pk of this effector against
- * the track, `step`, track hue slot). `rounds` (`step`, magazine rounds left,
- * only for a finite `magazineSize`) drops by one at each salvo of any channel,
- * as the engine's own round counter does.
- * `salvos` (`step`, accent) counts this effector's events of every channel.
+ * Per engaged track: `pk.<uasId>`, the latest per-shot Pk of this effector
+ * against the track. `rounds` (magazine rounds left, only for a finite
+ * `magazineSize`) drops by one at each salvo of any channel. `salvos` counts
+ * this effector's events of every channel.
  */
 export function effectorSeries(scenario: Scenario, effectorId: string): Series[] {
   const effector = scenario.entities.find((e) => e.id === effectorId)
@@ -293,11 +278,10 @@ export function effectorSeries(scenario: Scenario, effectorId: string): Series[]
 }
 
 /**
- * For one track: `pd.<sensorId>` per radar observation with a `pdSeries`
- * (`line`, colored by observation order), `residual` (`step`, ships: the
- * ship count minus the kill mass landed by t, so it ends at
- * shipCount - expectedKills - expectedLateKills, `chart-1`) and `phase`
- * (`step`, the `PHASE_STYLE` key index 0..6, accent).
+ * For one track: `pd.<sensorId>` per radar observation with a `pdSeries`,
+ * `residual` (ships: the ship count minus the kill mass landed by t, so it
+ * ends at shipCount - expectedKills - expectedLateKills) and `phase` (the
+ * `PHASE_STYLE` key index 0..6).
  */
 export function threatSeries(scenario: Scenario, uasId: string): Series[] {
   const { assessments, report } = engagementPicture(scenario)
@@ -357,12 +341,7 @@ interface LadderStyle {
 /** The span kinds of the sensor track ladder. */
 type TrackLadderKind = 'search' | 'init' | 'track' | 'coast' | 'drop'
 
-/**
- * The one style table of the sensor track ladder. search takes the
- * `PHASE_STYLE.searching` color, init 'warn', track 'danger', coast the
- * mockup COAST grey (`PHASE_STYLE` has no coast entry) and drop 'accent'.
- * Color is a token name or a hex, as `Series.color`.
- */
+/** Style table of the sensor track ladder. Color is a token name or a hex, as `Series.color`. */
 export const TRACK_LADDER_STYLE: Record<TrackLadderKind, LadderStyle> = {
   search: { label: 'Search', color: PHASE_STYLE.searching.color },
   init: { label: 'Init', color: 'warn' },
@@ -455,11 +434,9 @@ function observationSpans(
 }
 
 /**
- * One row per track this sensor observed (assessment order, as `sensorSeries`).
- * Row id = uasId, label = the entity name. Spans partition the observation
- * per `observationSpans` and never overlap; each takes
- * `TRACK_LADDER_STYLE[kind].color` and carries the kind as its label. A track
- * with no path gives no row.
+ * One row per track this sensor observed, id = uasId. Spans partition the
+ * observation per `observationSpans` and never overlap. A track with no path
+ * gives no row.
  */
 export function trackLadderRows(scenario: Scenario, sensorId: string): LadderRow[] {
   const { assessments } = engagementPicture(scenario)
@@ -480,10 +457,8 @@ export function trackLadderRows(scenario: Scenario, sensorId: string): LadderRow
 }
 
 /**
- * Tracks this sensor holds per step: `scanLoad` (`step`, tracks, chart-1),
- * the count of tracks whose hold flag for this one sensor is 1
- * (`heldTracksOnGrid` over the sensor alone). Zeros, never NaN, when the
- * sensor observed nothing or the id is unknown.
+ * `scanLoad`: at step i, the count of tracks this one sensor holds. Zeros,
+ * never NaN, when the sensor observed nothing or the id is unknown.
  */
 export function scanLoadSeries(scenario: Scenario, sensorId: string): Series {
   const { assessments } = engagementPicture(scenario)
@@ -505,9 +480,8 @@ function enabledSensorIds(scenario: Scenario): Set<string> {
 }
 
 /**
- * `tracksHeld` (`step`, tracks, chart-1): at step i, the count of tracks
- * held by at least one enabled sensor (`heldTracksOnGrid`, the rule the
- * Monte Carlo `tracked` band shares).
+ * `tracksHeld`: at step i, the count of tracks held by at least one enabled
+ * sensor, the rule the Monte Carlo `tracked` band shares.
  */
 export function heldTracksSeries(scenario: Scenario): Series {
   const { assessments } = engagementPicture(scenario)
@@ -522,10 +496,9 @@ export function heldTracksSeries(scenario: Scenario): Series {
 }
 
 /**
- * `meanPd` (`line`, Pd, chart-4): at step i, over the held tracks, take per
- * track the largest finite single-scan Pd among the enabled sensors that
- * observed it, then the mean over tracks; NaN when no held track has a
- * finite Pd at that step (`meanHeldPdOnGrid`).
+ * `meanPd`: at step i, take per held track the largest finite single-scan Pd
+ * among the enabled sensors that observed it, then the mean over tracks; NaN
+ * when no held track has a finite Pd at that step.
  */
 export function meanHeldPdSeries(scenario: Scenario): Series {
   const { assessments } = engagementPicture(scenario)
@@ -539,7 +512,7 @@ export function meanHeldPdSeries(scenario: Scenario): Series {
   }
 }
 
-/** `salvosInFlight` (`step`, chart-2): kinetic salvos physically released but not yet effective. */
+/** `salvosInFlight`: kinetic salvos physically released but not yet effective. */
 export function salvosInFlightSeries(scenario: Scenario): Series {
   const { report } = engagementPicture(scenario)
   const n = sampleCount(scenario)
@@ -573,9 +546,8 @@ export function salvosInFlightSeries(scenario: Scenario): Series {
 const finite = (v: number | undefined): v is number => v != null && Number.isFinite(v)
 
 /**
- * One `step` series per threat group (`threatPictureAt` over the whole run):
- * `group.<groupId>`, the element-wise sum of its members' residual ships,
- * colored by group index through `CHART_SLOT_TOKENS`.
+ * One `group.<groupId>` `step` series per threat group: the element-wise sum
+ * of its members' residual ships.
  */
 export function groupResidualSeries(scenario: Scenario): Series[] {
   const { assessments, report } = engagementPicture(scenario)
@@ -685,11 +657,9 @@ export function releaseLadderRows(scenario: Scenario, effectorId: string): Ladde
 }
 
 /**
- * The phase ladder of one track: one row, id = uasId, label 'Phase'.
- * Consecutive steps with the same `trackStatesAt` phase form one span
- * [i * DT, (j + 1) * DT) clamped to the duration; 'undetected' draws no
- * span; every other phase takes the `PHASE_STYLE` color and label. A row
- * with no spans for an unknown id.
+ * The phase ladder of one track: one row, id = uasId. Consecutive steps with
+ * the same `trackStatesAt` phase form one span [i * DT, (j + 1) * DT)
+ * clamped to the duration; 'undetected' draws no span.
  */
 export function phaseLadderRow(scenario: Scenario, uasId: string): LadderRow {
   const row: LadderRow = { id: uasId, label: 'Phase', spans: [] }
@@ -740,9 +710,8 @@ function bandFor(summary: McSummary, id: string, uasId?: string): BandSeries | n
 }
 
 /**
- * Mean lines and replicate quantile bands share the same samples. Unsupported quantities
- * remain explicitly deterministic; a missing or mismatched mean stays unavailable. Each
- * band is drawn only when both of its quantile vectors are finite on the grid: the
+ * Mean lines and replicate quantile bands share the same samples. A band is
+ * drawn only when both of its quantile vectors are finite on the grid: the
  * engine reports NaN quantiles under BAND80_MIN_N and BAND95_MIN_N replicates.
  */
 export function withBands(series: Series[], summary: McSummary | null, uasId?: string): Series[] {

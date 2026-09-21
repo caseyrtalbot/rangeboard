@@ -12,9 +12,8 @@ interface Props {
 }
 
 /**
- * One spoke callout. Memoized on the entity and its placement object, which
- * LiveScene keeps identity-stable while the placement does not move, so a
- * frame re-renders only the callouts whose leader or box moved.
+ * One spoke callout. Memoized on the entity and its placement object, which LiveScene
+ * keeps identity-stable while the placement does not move.
  */
 const Callout = memo(function Callout({ entity, p }: { entity: Entity; p: SpokePlacement }) {
   const drawn = useMemo(() => boardDesignator(entity.name), [entity.name])
@@ -38,11 +37,9 @@ const Callout = memo(function Callout({ entity, p }: { entity: Entity; p: SpokeP
 })
 
 /**
- * Spoke callouts for entity labels that would overlap at the current zoom.
- * Rendered in screen space: the group inverts the stage transform, so all
- * placement coordinates are pixels. The text is the short board designator,
- * the same string EntityLayer anchors and the same string layoutLabels
- * measured when it placed the spoke.
+ * Spoke callouts for entity labels that would overlap at the current zoom. The group
+ * inverts the stage transform, so every placement coordinate is screen px. The text
+ * is the short board designator layoutLabels measured.
  */
 export const CalloutLayer = memo(function CalloutLayer({ placements }: Props) {
   const entities = useStore((s) => s.scenario.entities)

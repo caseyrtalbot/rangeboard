@@ -1,9 +1,6 @@
 /**
- * Shared primitives for the Board panels. Field,
- * segmented control, state and provenance mark exist once, here.
- * The module reads only the classes and tokens in index.css and imports no
- * store. Anything that needs a model, a store or a phase lives in the kit that
- * owns it and wraps one of these.
+ * Shared primitives for the Board panels: field, segmented control, state and
+ * provenance mark. Reads only the classes and tokens in index.css; imports no store.
  */
 
 import type { CSSProperties, ReactNode } from 'react'

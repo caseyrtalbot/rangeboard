@@ -10,21 +10,15 @@ import { engineKeyOf } from '../model/scenario'
 import { engagementIsKinetic, engagementReleaseS } from './engagementTiming'
 
 /**
- * Per-track playback state for the board. buildTrackTimeline prefix-aggregates
- * the whole-run forecast (threat assessments plus the engagement ledger) once
- * per scenario; the query functions then answer "what does this track look
- * like at sim time t" with binary searches, cheap enough for the rAF frame
- * rate. Pure TS: no React, no Konva, no DOM, no store imports.
- *
- * Nothing here is stored. The engine has no discrete kill event and no
- * track-state field, so a ghost is expected residual below the engine's own
- * SHIP_DEAD_BELOW cutoff, a jammed track is the engine's continue-jam
- * probability replayed to time t, and every pulse is a function of sim time so
- * a paused run freezes it.
+ * Per-track playback state for the board. `buildTrackTimeline` prefix-aggregates
+ * the whole-run forecast once per scenario; the query functions then answer
+ * each track's state at sim time t by binary search.
  *
  * Time semantics match the ledger: assignment is tS, physical release is
  * tReleaseS, and effect is tEffectS. Expenditure counts at assignment; kill
  * mass and jam mass count at effect. Unknown legacy release never draws flight.
+ * A ghost is expected residual below SHIP_DEAD_BELOW; a jammed track is the
+ * engine's continue-jam probability replayed to t.
  */
 
 /** Display-only hold for a beam or dwell with no modeled duration. */
@@ -44,10 +38,8 @@ const HOLD_TOLERANCE_S = 0.25
 const JAMMED_AT = 0.5
 
 /**
- * The one EW color: the jam beam, the jammed diamond, and the J badge all
- * read as the same channel. Cyan on purpose: no kill-chain rung in
- * PHASE_STYLE uses the hue, so a jammed track never reads as another rung.
- * 7.9:1 against the board background.
+ * The one EW color for the jam beam, the jammed diamond and the J badge. No
+ * PHASE_STYLE rung uses this hue. Contrast 7.9:1 on the board background.
  */
 export const EW_JAM_COLOR = '#5ad1e0'
 
@@ -60,22 +52,16 @@ export type TrackPhase =
   'undetected' | 'searching' | 'tracked' | 'identified' | 'targeted' | 'engaged' | 'ghost'
 
 /**
- * Canonical phase presentation. One table, so the canvas ring and the
- * telemetry pill can never drift apart. `color` is null for 'undetected',
- * which takes the entity color and draws no ring. Contrast is measured
- * against the board background (--bg #16181a); every value clears the 3:1
- * graphic floor there and on the two darker basemaps.
- *   searching  #82887e  dim grey,   4.89:1. Held once, not held now.
- *   tracked    #d9a441  amber,      7.91:1. A sensor holds it.
- *   identified #c4564a  brick red,  4.05:1. DANGER_INK, so the ring
- *              matches every other hostile mark on the board.
- *   targeted   #bb6499  plum,       4.57:1. The one free hue on this palette,
- *              so a weapon-assigned track reads as neither amber nor red.
- *   engaged    #f2795e  hot coral,  6.50:1. Same family as HOSTILE and 1.6x
- *              brighter, because rounds are in the air. It pulses as well.
- *   ghost      #6a7178  dim steel,  3.60:1. Defeated, and deliberately quiet.
- * HOSTILE and ENGAGED separate by value, TARGETED separates from both by hue,
- * so no pair depends on one channel alone.
+ * Canonical phase presentation, shared by the canvas ring and the telemetry
+ * pill. `color` is null for 'undetected', which takes the entity color and
+ * draws no ring. Contrast against the board background (--bg #16181a), every
+ * value over the 3:1 graphic floor there and on the two darker basemaps:
+ *   searching  #82887e  dim grey,   4.89:1
+ *   tracked    #d9a441  amber,      7.91:1
+ *   identified #c4564a  brick red,  4.05:1 (DANGER_INK)
+ *   targeted   #bb6499  plum,       4.57:1
+ *   engaged    #f2795e  hot coral,  6.50:1
+ *   ghost      #6a7178  dim steel,  3.60:1
  */
 export const PHASE_STYLE = {
   undetected: { label: 'UNDETECTED', color: null },
@@ -129,11 +115,9 @@ export interface TrackFileState {
   /** Probability the track is degraded by a 'continue' jam at t, 0..1. */
   jammedFraction: number
   /**
-   * Effective jamming holds on this track at t: an EW dwell is live now, or
-   * the compounded 'continue' jam probability is at or above JAMMED_AT. Only
-   * dwells the engine actually fired count, and the engine only fires when
-   * the jam physics close (bands, alignment, power; src/analysis/ewPhysics.ts),
-   * so this flag is what the board's jammed symbology keys on.
+   * Effective jamming holds on this track at t: an EW dwell is live now, or the
+   * compounded 'continue' jam probability is at or above JAMMED_AT. Only dwells
+   * the engine fired count.
    */
   jammedNow: boolean
   /** residualFraction < SHIP_DEAD_BELOW. */
@@ -169,13 +153,9 @@ export interface ShotInFlight {
 
 /**
  * How the weapon guides, which drives what the canvas draws.
- * 'semi-active' - the effector keeps illuminating or steering the round, so its
- *   glyph stays FILLED for the whole time of flight and the guidance line stays
- *   bright.
- * 'active' - the round guides itself, so the glyph BLINKS at launch and then
- *   returns to outline while a seeker ring rides the round.
- * 'beam' - continuous directed energy or jamming: no discrete round, a pulsing
- *   dashed beam for the dwell, glyph stays FILLED.
+ * 'semi-active' - the effector keeps illuminating or steering the round.
+ * 'active' - the round guides itself and carries a seeker ring.
+ * 'beam' - continuous directed energy or jamming; no discrete round.
  */
 type EffectorEngagementMode = 'semi-active' | 'active' | 'beam'
 
@@ -251,8 +231,8 @@ interface TrackSeries {
   arrivalS: number | null
   /**
    * Salvo assignment times ascending, split by EngagementEvent.channelClass:
-   * kinetic rounds, directed-energy bursts, and EW dwells are three different
-   * expenditures, so a directed-energy effector never inflates a round count.
+   * kinetic rounds, directed-energy bursts and EW dwells are three separate
+   * expenditures.
    */
   kineticTS: number[]
   deTS: number[]
@@ -270,8 +250,7 @@ interface TrackSeries {
    * Step function of the mean formation 'continue' jam probability:
    * jamStepVal[i] holds from jamStepTS[i] until the next step. Steps rise at
    * dwell effects and drop when a hold's illumination interval ends, matching
-   * the engine's JamHold rule, so the JAMMED cue releases the moment the
-   * track leaves a fixed jam cone.
+   * the engine's JamHold rule.
    */
   jamStepTS: number[]
   jamStepVal: number[]
@@ -298,11 +277,7 @@ interface ShotRecord {
   mode: EffectorEngagementMode
 }
 
-/**
- * One effector's magazine history. Rounds count at assignment, exactly the way
- * the engine spends them and the way systemTelemetry reads capacity, so the
- * board and the side panel call the same weapon empty at the same instant.
- */
+/** One effector's magazine history. Rounds count at assignment, as the engine spends them. */
 interface EffectorSeries {
   effectorId: string
   /** Assignment times ascending. */
@@ -395,12 +370,10 @@ interface TimelineEntry {
 const timelineCache = new WeakMap<ThreatAssessment[], TimelineEntry>()
 
 /**
- * `buildTrackTimeline`, cached by the picture it derives from. The key is the
- * assessments array of `engagementPicture(scenario)`, one per engine identity
- * (`engineKeyOf`), so the timeline lives exactly as long as its picture and
- * the bounded picture cache bounds the timelines too; a key on the scenario
- * would pin every evicted picture through the undo history. The entry checks
- * the scenario and report identities so a fresh picture never reads a stale
+ * `buildTrackTimeline`, cached by the assessments array it derives from, so a
+ * timeline lives exactly as long as its picture; a key on the scenario would
+ * pin every evicted picture through the undo history. The entry checks the
+ * scenario and report identities, so a fresh picture never reads a stale
  * timeline. Never pass a spread or cloned scenario.
  */
 export function trackTimelineOf(
@@ -813,9 +786,8 @@ export function shotsInFlightAt(tl: TrackTimeline, tS: number): ShotInFlight[] {
 }
 
 /**
- * Effector glyph treatment at t, keyed by effector id. Absent means idle.
- * A drawn salvo wins, so the guidance treatment always plays out; a weapon
- * with nothing left to fire then reads 'depleted' for the rest of the run.
+ * Effector glyph treatment at t, keyed by effector id. Absent means idle. A
+ * drawn salvo outranks 'depleted', so the guidance treatment always plays out.
  */
 export function effectorStatesAt(tl: TrackTimeline, tS: number): Map<string, EffectorLiveState> {
   const out = new Map<string, EffectorLiveState>()

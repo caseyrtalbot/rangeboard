@@ -14,21 +14,16 @@ import { acousticRangeFactor } from './sensorEnv/acoustic'
 import { effectiveRfRangeM, rfCanHear, rfDetectable } from './sensorEnv/rf'
 
 /**
- * Sensor performance under environmental covariates and target effects.
+ * Sensor performance under environmental covariates and target effects, and
+ * the per-type dispatch over the technology laws in sensorEnv/.
  *
  * One shape for every technology: the spec range is quoted against a
- * REFERENCE target; the range against another target follows a physical law
+ * reference target; the range against another target follows a physical law
  * (radar: fourth root of the RCS ratio; EO/IR: linear in the span ratio,
  * Johnson criteria; acoustic: spherical spreading plus atmospheric
  * absorption against a reference source level; RF: band overlap, no
- * scaling); then environment multiplies the result. A 'planning' range
- * basis carries no stated target, so no target law runs on it.
- *
- * This file is the barrel: the per-technology laws live in
- * sensorEnv/radar.ts, eoir.ts, acoustic.ts and rf.ts, the shared terms in
- * sensorEnv/common.ts. Every name below stays importable from here; the
- * per-type dispatch (effective ranges, the hold gate) is defined here because
- * it reads every technology.
+ * scaling); then environment multiplies the result. A 'planning' range basis
+ * carries no stated target, so no target law runs on it.
  */
 export {
   FT_TO_M,
@@ -89,9 +84,9 @@ export type { RfMeasurementAccuracy } from './sensorEnv/rf'
 export type SensorHoldGate = 'ok' | 'needs-cue' | 'rf-silent' | 'rf-band' | 'no-range'
 
 /**
- * Why a sensor cannot hold this target regardless of geometry, or 'ok'. One
- * gate for the sweep, the board and the inspector: a sensor gated
- * rf-silent / rf-band / no-range never hits; needs-cue hits only when cued.
+ * Why a sensor cannot hold this target regardless of geometry, or 'ok'. A
+ * sensor gated rf-silent, rf-band or no-range never hits; needs-cue hits
+ * only when cued.
  */
 export function sensorHoldGate(spec: SensorSpec, target: UasSpec | undefined): SensorHoldGate {
   if (!(spec.detectRangeM > 0)) return 'no-range'

@@ -11,9 +11,7 @@ import type { TrackEstimate } from './trackTypes'
 import type { TrialManifest, TrialResult } from './trialTypes'
 import { TRIAL_DRAW_POLICY_VERSION, TRIAL_ENGINE_REVISION } from './trialTypes'
 
-/** Nominal parameters and the existing aleatory policy; no ensemble sampling or caches.
- * Caller owns the captured scenario and accepts transport results by request/run/basis.
- */
+/** One trial at nominal parameters under the aleatory policy; no ensemble sampling, no caches. */
 export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResult {
   if (
     manifest.basis !== 'nominal-aleatory' ||

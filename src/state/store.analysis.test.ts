@@ -788,16 +788,29 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
     })
     const next = launchFull()
     next.morris.send({ type: 'morris-done', runId: next.runId, result: MORRIS_FIXTURE })
-    ControlledWorker.latest().send({
-      type: 'sobol-error',
-      runId: next.runId,
-      message: 'Sobol cancelled',
-    })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({
-      status: 'error',
-      error: 'Sobol cancelled',
-    })
+    const budget = 'Sobol stopped at the worker time budget after 5 of 24 rows'
+    ControlledWorker.latest().send({ type: 'sobol-error', runId: next.runId, message: budget })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({ status: 'error', error: budget })
     expect(useStore.getState().mc.morris).toBe(MORRIS_FIXTURE)
+  })
+
+  it('a cancel during Sobol ends the run done on the Morris result, with no error', () => {
+    const { morris, runId } = launchFull()
+    morris.send({ type: 'morris-done', runId, result: MORRIS_FIXTURE })
+    const sobol = ControlledWorker.latest()
+    sobol.send({ type: 'sobol-progress', runId, done: 42, total: 2560 })
+    sobol.send({ type: 'sobol-done', runId, result: null })
+    const { mc } = useStore.getState()
+    expect(mc.sensitivity).toMatchObject({
+      status: 'done',
+      runId,
+      progress: 0,
+      total: 0,
+      summary: null,
+      error: null,
+    })
+    expect(mc.morris).toBe(MORRIS_FIXTURE)
+    expect(mc.sobol).toBeNull()
   })
 
   it('the quick depth still starts the one-at-a-time run', () => {

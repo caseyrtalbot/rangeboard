@@ -109,10 +109,7 @@ export function DetailTable({ head, rows }: { head: string[]; rows: ReactNode[][
 }
 
 /** One legend entry: a token name or a hex, and its label. */
-/**
- * A ladder row with its span labels removed. The Ladder prints a span label
- * over the bar; the panes name the colors in a legend instead.
- */
+/** A ladder row with its span labels removed; the panes use a legend instead. */
 export function bareSpans(row: LadderRow): LadderRow {
   return { ...row, spans: row.spans.map(({ startS, endS, color }) => ({ startS, endS, color })) }
 }

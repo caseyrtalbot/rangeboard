@@ -1,51 +1,32 @@
 /**
- * Placement optimization: Gaussian process with expected improvement over
- * the positions of the movable entities inside the bounds polygon.
+ * Placement optimization: Gaussian process with expected improvement over the
+ * positions of the movable entities inside the bounds polygon. One laydown is
+ * x in R^(2m) for m movable ids, the (x, y) of each in the meters world frame,
+ * inside `bounds.points`.
  *
- * Search space. One laydown is x in R^(2m) for m movable ids, the (x, y) of
- * each in the meters world frame, every coordinate of each entity inside
- * `bounds.points` (`pointInPolygon`). The starting laydown is the entities'
- * current positions.
+ * A laydown runs `budget.replicates` aleatory replicates at `budget.seed`
+ * through `endOfRunResponses`, so two laydowns evaluated at one seed differ by
+ * placement alone. The objective is `statOf` over the replicates under the
+ * response's own kind. A maximized response is negated inside the search
+ * (f = -mean), so the surrogate always minimizes.
  *
- * Evaluation. A laydown runs `budget.replicates` aleatory replicates of the
- * request scenario with the movable positions replaced, at `budget.seed`,
- * through `endOfRunResponses` (the sensitivity, Morris and Sobol path).
- * Replicate i draws through `monteCarloPolicy(seed, i)`, whose draws are
- * keyed by entity and step, so two laydowns evaluated at one seed differ by
- * placement alone (common random numbers). The objective is `statOf` over
- * the replicates under the response's own kind: leakers and kills count
- * over the raid's ships, salvos an unbounded count, the times a time, the
- * rule `finishSummary` applies to the run summary, at the scenario's
- * confidence. A maximized response is negated inside the search
- * (f = -mean) so the surrogate always minimizes.
+ * Schedule, for a budget of E evaluations: index 0 is the starting laydown;
+ * then SEED_EVALUATIONS space-filling points (at most (E - 1) / 2) from a keyed
+ * Latin hypercube over the bounding box, each row outside the polygon replaced
+ * by a keyed uniform draw inside it; then expected improvement, refitting
+ * `gp.ts` to every finite evaluation and taking the largest EI over
+ * CANDIDATE_CLOUD keyed uniform draws.
  *
- * Schedule, for a budget of E evaluations:
- *   1. index 0, the starting laydown;
- *   2. SEED_EVALUATIONS space-filling points (at most (E - 1) / 2): a
- *      keyed Latin hypercube over the bounding box, one stratum per row per
- *      coordinate, each row outside the polygon replaced by a keyed uniform
- *      draw inside it;
- *   3. the rest by expected improvement: the process (`gp.ts`) is refitted
- *      to every finite evaluation so far and the next laydown is the one of
- *      CANDIDATE_CLOUD keyed uniform draws inside the polygon with the
- *      largest EI (the first on a tie). With no finite evaluation to fit
- *      the proposal falls back to the cloud's first point.
+ * The length scale is LENGTH_SCALE_FRACTION of the bounding-box diagonal. Each
+ * observation's noise is its standard error. Every design draw is `hashU01`
+ * keyed by (seed, evaluation index, OPTIMIZE_KIND, part, coordinate), so a run
+ * reproduces on any thread.
  *
- * Constants. The length scale is LENGTH_SCALE_FRACTION of the bounding-box
- * diagonal: an engagement envelope or a sensor footprint spans a fraction
- * of a range, so the surrogate correlates placements a quarter of the
- * range apart and not beyond. The noise of each observation is its
- * standard error (see `gp.ts`). Every design draw is `hashU01` keyed by
- * (seed, evaluation index, OPTIMIZE_KIND, part, coordinate), so a run
- * reproduces bit for bit on any thread.
- *
- * Result. `trace` holds every completed evaluation in order, `incumbent`
- * marking each that was best so far (index 0 always). `candidates` are the
- * distinct laydowns of the trace, best first by the objective direction
- * (a NaN mean last), at most CANDIDATE_CAP. A stop (cancel or budget)
- * drops the evaluation in progress and returns the trace so far, so
- * `trace.length` under `budget.evaluations` shows a cut run; a stop before
- * the starting laydown finished throws.
+ * `trace` holds every completed evaluation in order, `incumbent` marking each
+ * that was best so far. `candidates` are the distinct laydowns of the trace,
+ * best first by the objective direction (a NaN mean last), at most
+ * CANDIDATE_CAP. A stop drops the evaluation in progress and returns the trace
+ * so far; a stop before the starting laydown finished throws.
  */
 import type { Scenario, Vec2 } from '../../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, runSettings } from '../../model/types'
@@ -85,7 +66,7 @@ export const CANDIDATE_CAP = 5
 /** Uniform draws tried per point before the polygon is declared too thin to sample. */
 const MAX_REJECTIONS = 10_000
 
-/** The draw kind of the design; the policy's kinds are 1 to 11, Morris 7 and Sobol 8 in their own layouts. */
+/** The draw kind of the design; kinds never collide (policy.ts DRAW_KIND). */
 const OPTIMIZE_KIND = 12
 
 /** Design draw parts. */
@@ -116,9 +97,8 @@ export function responseKind(response: SensitivityResponse, raidSize: number): S
 }
 
 /**
- * The raid's ships, as `finishSummary` counts them: the attrition report's
- * ship count per threat with a path, 1 for a threat the report omits. A
- * property of the raid, so one deterministic run of the request scenario.
+ * The raid's ships, as `finishSummary` counts them: the attrition report's ship
+ * count per threat with a path, 1 for a threat the report omits.
  */
 export function raidSizeOf(scenario: Scenario): number {
   const assessments = assessAllThreats(scenario)
@@ -347,9 +327,8 @@ export function startingLaydown(request: OptimizeRequest): Laydown {
 /**
  * The optimization loop: one checkpoint per replicate and one after each
  * evaluation is recorded, `done` counting the evaluations completed of
- * `budget.evaluations`. `onProgress` fires after every evaluation with the
- * incumbent so far. A stop at a checkpoint drops the evaluation in progress
- * (see the module comment). `elapsedMs` is 0 here; the worker fills it.
+ * `budget.evaluations`. A stop at a checkpoint drops the evaluation in
+ * progress. `elapsedMs` is 0 here; the worker fills it.
  */
 export function* optimizeLoop(
   request: OptimizeRequest,

@@ -96,25 +96,33 @@ describe('sweepLoop', () => {
     expect(summary.cells[1].summary.leakers).toEqual(runReplicates(cell).leakers)
   })
 
-  it('a stop lands between cells and keeps the cells done under `stopped`', () => {
+  it('a stop lands at any replicate and keeps the cells done under `stopped`', () => {
     const spec = grid()
     const full = runSweep(spec)
     expect(
       JSON.stringify(runSweep(spec, undefined, { retainedNumbers: Infinity, timeMs: Infinity })),
     ).toBe(JSON.stringify(full))
+    // The wall budget stops at the first checkpoint, inside the first cell.
     const cut = runSweep(spec, undefined, { retainedNumbers: Infinity, timeMs: 0 })
-    expect(cut.stopped).toEqual({ rule: 'budget', at: 1 })
-    expect(cut.cells).toEqual(full.cells.slice(0, 1))
+    expect(cut.stopped).toEqual({ rule: 'budget', at: 0 })
+    expect(cut.cells).toEqual([])
     const loop = sweepLoop(spec)
     let next = loop.next()
     expect(next.done).toBe(false)
     if (next.done) return
-    // The checkpoint carries the numbers the cell held at its peak.
-    expect(next.value).toEqual({ done: 1, total: 4, retained: expect.any(Number) })
+    // The first checkpoint is one replicate into the first cell.
+    expect(next.value).toEqual({ done: 0, total: 4, retained: expect.any(Number) })
     expect(next.value.retained).toBeGreaterThan(0)
-    next = loop.next()
+    // Checkpoints per replicate: three inside each cell of four, one after it.
+    let count = 1
+    while (!next.done && next.value.done < 2) {
+      next = loop.next()
+      count += 1
+    }
+    expect(count).toBe(8)
     expect(next.done).toBe(false)
-    // The stop answers the second cell's checkpoint: two cells stay, the rest never run.
+    // The stop answers a checkpoint inside the third cell: two cells stay.
+    next = loop.next()
     next = loop.next('cancelled')
     expect(next.done).toBe(true)
     if (!next.done) return
@@ -131,7 +139,9 @@ describe('sweepLoop', () => {
     // A raid-size cell holds more threats than the base: the guard runs per cell.
     const raid: Spec = { ...spec, factors: [{ id: 'raidSize', values: [1, 4] }] }
     const loop = sweepLoop(raid, undefined, { retainedNumbers: need, timeMs: Infinity })
-    expect(loop.next().done).toBe(false)
+    let next = loop.next()
+    while (!next.done && next.value.done < 1) next = loop.next()
+    expect(next.done).toBe(false)
     expect(() => loop.next()).toThrow(/over the budget/)
     const drain = (s: Spec) => {
       const l = sweepLoop(s)

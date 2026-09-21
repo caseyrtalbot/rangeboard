@@ -2,9 +2,9 @@
  * Weapon planning factors for T&E laydown work.
  *
  * The threat study (docs/threat) gives no lethal blast radius, fragmentation
- * fan, or aimpoints, so nothing here is lethality data. The tiers are
- * PLANNING FACTORS: coarse effect-circle sizes that draw a WEZ footprint on
- * the canvas for laydown geometry. Not real lethal radii.
+ * fan or aimpoints, so nothing here is lethality data. The tiers are coarse
+ * effect-circle sizes that draw a WEZ footprint for laydown geometry, never
+ * real lethal radii.
  */
 import type { UasSpec } from './types'
 
@@ -23,7 +23,7 @@ export const EFFECT_RADIUS_PLANNING_M: Array<{ maxKg: number; radiusM: number }>
 
 /**
  * Planning-factor effect radius for a warhead mass, meters. Null when the
- * mass is unknown or not positive: an honest blank, never an invented number.
+ * mass is unknown or not positive, never an invented number.
  */
 export function defaultEffectRadiusM(warheadKg: number | null | undefined): number | null {
   if (warheadKg == null || !Number.isFinite(warheadKg) || warheadKg <= 0) return null

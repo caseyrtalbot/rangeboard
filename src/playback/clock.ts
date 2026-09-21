@@ -39,7 +39,7 @@ export interface FineStepRequest {
  * accumulation as the old `t += DT` loop, so every sample time at 0.5 s is
  * bit-identical to the fixed step.
  *
- * Fine step (lanes 3.5 and 3.6): `requestFineStep(effectorId, fromS, toS,
+ * Fine step: `requestFineStep(effectorId, fromS, toS,
  * stepS)` asks for `stepS` (clamped to baseS) on [fromS, toS). It may be
  * called before or during the sweep; it takes effect at the next `next(t)`.
  * Honoured only inside the window: the sweep enters the window at `fromS`

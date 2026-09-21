@@ -92,19 +92,15 @@ function minTime(values: Array<number | null>): number | null {
 
 /**
  * Time each threat's expected residual first falls below the engine's
- * expected-dead cutoff, keyed by uasId. This is the same rule trackState.ts
- * latches its GHOST phase on: residual fraction strictly below
- * SHIP_DEAD_BELOW, prefix-aggregated over the ledger in effect-time order.
- * killDelta is never negative, so residual only falls and the latch is
- * one-way by construction. Threats that never reach the cutoff are absent
- * from the map.
+ * expected-dead cutoff, keyed by uasId: residual fraction strictly below
+ * SHIP_DEAD_BELOW, prefix-aggregated over the ledger in effect-time order,
+ * the same rule trackState.ts latches its GHOST phase on. killDelta is never
+ * negative, so residual only falls and the latch is one-way. A threat that
+ * never reaches the cutoff is absent from the map.
  *
- * Late kill mass counts here exactly like pre-arrival mass. Whether a defeat
- * defended the asset is a CREDIT question (see EngagementEvent.lateEffect);
- * whether the airframe still flies is a survival question, and a late kill
- * still destroys it. Shared by systemTelemetry.targetsNow, liveStats
- * targetable, and targetableNow below, so every telemetry surface stops
- * calling an expected-dead track a target at the same instant.
+ * Late kill mass counts here exactly like pre-arrival mass: whether the
+ * airframe still flies is a survival question, and a late kill still
+ * destroys it.
  */
 export function expectedDeadTimes(report: AttritionReport): Map<string, number> {
   const shipCounts = new Map(report.threats.map((row) => [row.uasId, row.shipCount]))
@@ -224,11 +220,9 @@ export function threatPictureAt(
       (assessment.sensorObservations ?? []).some((observation) =>
         heldAt(observation.intervals, decisionS),
       )
-    // An expected-dead track is not a target. targetableNow is a gauge, so it
-    // drops the instant the residual crosses the cutoff. targetAcquired is a
-    // milestone latch, so it asks the same question at the moment the window
-    // opened: a ghost can never be acquired, and a track that was acquired
-    // while it still flew keeps that history after it is killed.
+    // An expected-dead track is not a target. targetableNow is a gauge and
+    // drops the instant the residual crosses the cutoff; targetAcquired is a
+    // latch and asks the same question at the moment the window opened.
     const deadS = deadAtS.get(assessment.uasId) ?? null
     const targetAcquired =
       tS != null &&

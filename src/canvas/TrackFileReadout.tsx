@@ -25,14 +25,9 @@ const DOCK = 14
 const CARD_ANCHOR_Y = DOCK + 22
 
 /**
- * Compact telemetry for one selected trackfile. It docks at a fixed board
- * corner with a leader line to the track, so it never covers the inbound axis.
- *
- * A DOM overlay and a snapped consumer: it reads the published sim time, not
- * the canvas frame clock, so it repaints at the publication cadence and not
- * once per animation frame.
- *
- * The complete track file is rendered in ThreatDetail from the same resolver.
+ * Compact telemetry for one selected trackfile, docked at a fixed board corner with a
+ * leader line to the track. A DOM overlay and a snapped consumer: it reads the
+ * published sim time, so it repaints at the publication cadence.
  */
 function ReadoutCard({
   entity,
@@ -141,9 +136,8 @@ function ReadoutCard({
 }
 
 /**
- * Selection gate for the track card. It subscribes only to the layer toggle,
- * the selection and the scenario, so nothing time-dependent mounts until one
- * UAS is selected and the telemetry layer is on.
+ * Selection gate for the track card. Nothing time-dependent mounts until one UAS is
+ * selected and the telemetry layer is on.
  */
 export function TrackFileReadout({ trial, horizonS, size, onOpenDetail }: Props) {
   const scenario = useStore((s) => s.scenario)

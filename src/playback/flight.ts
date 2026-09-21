@@ -253,7 +253,7 @@ export function limitedFlightDurationS(points: Vec2[], speedMps: number, uas: Ua
 }
 
 /**
- * Position on the target UAS path with Phase 3 limits. The caller keeps the
+ * Position on the target UAS path under its flight limits. The caller keeps the
  * legacy switch: when no limit is stated, this delegates directly to
  * posAtTime for bit-identical compatibility. Wind is a ground-speed offset
  * while airborne; the returned heading remains the held air heading.

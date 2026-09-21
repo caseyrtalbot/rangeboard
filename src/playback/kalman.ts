@@ -9,28 +9,21 @@ import type { Covariance4, TrackMeasurement, TrackState } from './trackTypes'
  */
 
 /**
- * Process noise spectral density for a small UAS, m^2/s^3. A Group 1 or 2
- * UAS holds a straight leg with accelerations near 1 m/s^2 that persist for
- * about a second (a heading change, a gust), so q = a^2 * tau = 1 m^2/s^3.
- * At the 0.5 s step this puts about 0.7 m/s of velocity random walk per
- * step, enough to follow a turn without inflating a straight track.
+ * Process noise spectral density for a small UAS, m^2/s^3, from
+ * q = a^2 * tau with a near 1 m/s^2 over about 1 s (a heading change, a gust).
  */
 export const PROCESS_NOISE_Q = 1
 
 /**
- * Position 1 sigma at which quality is 0.5, meters. A 50 m error is the
- * scale of a small interceptor's terminal seeker basket and of the sensor
- * resolution cells in the library, so a track at that error is half-useful
- * for a fire-control handoff and one at 5 m is near full quality (0.91).
+ * Position 1 sigma at which quality is 0.5, meters: the scale of a small
+ * interceptor's terminal seeker basket and of the library's resolution cells.
  */
 export const QUALITY_SCALE_M = 50
 
 /**
- * Initial velocity 1 sigma per axis, m/s, when a track opens from one
- * position measurement. A small UAS flies at 10 to 40 m/s in an unknown
- * direction; a 30 m/s speed at a uniform heading has a per-axis rms of
- * 30 / sqrt(2) = 21 m/s, so 20 m/s leaves the first updates free to pull
- * the velocity without trusting it.
+ * Initial velocity 1 sigma per axis, m/s, when a track opens from one position
+ * measurement: a 30 m/s speed at a uniform heading has a per-axis rms of
+ * 30 / sqrt(2) = 21 m/s.
  */
 export const INIT_SPEED_SIGMA_MPS = 20
 

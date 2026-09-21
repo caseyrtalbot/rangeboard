@@ -280,9 +280,8 @@ function LaneMarks({
 }
 
 /**
- * The playhead subscribes separately from the sampled lanes.
- * A linear transition over one publication period carries it
- * between publications without a subscription change.
+ * The playhead subscribes separately from the sampled lanes. A linear transition
+ * over one publication period carries it between publications.
  */
 const Playhead = memo(function Playhead({ w, durationS }: { w: number; durationS: number }) {
   const t = useStore(selectSimTimeS)
@@ -307,10 +306,10 @@ function stripStateText(selection: TrialSelection): string {
 }
 
 /**
- * Engagement timeline lane strip: detection, classification, window, shot, arrival per threat.
- * Under the board it is mounted only while open: the playback bar holds the toggle and `App`
- * holds the open flag. `embedded` (inside a widget frame) only drops the shared element id.
- * Memoized: `App` re-renders on every selection change and the strip reads none of it.
+ * Engagement timeline lane strip: detection, classification, window, shot and
+ * arrival per threat. Under the board it mounts only while open; the playback bar
+ * holds the toggle and `App` holds the open flag. `embedded` drops the shared
+ * element id.
  */
 export const EngagementStrip = memo(function EngagementStrip({
   embedded = false,

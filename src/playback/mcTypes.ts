@@ -1,9 +1,7 @@
 /**
- * The Phase 1 result and progress contract between the engine, the worker
- * pool, the store and the run store. Every type here is plain data: JSON
- * serialisable, no functions, no Maps, because a value crosses a worker
- * message and lands in an IndexedDB run record. Playback code imports the
- * run settings from here so one module names the contract.
+ * Result and progress types shared by the engine, the worker pool and the
+ * stores. Every type here is JSON serialisable, with no functions and no Maps:
+ * a value crosses a worker message and lands in an IndexedDB run record.
  */
 import type { UncertainField } from '../analysis/parameterBasis'
 import type { SensitivityResponse, StopRule } from './mcRun'
@@ -46,11 +44,10 @@ export interface MorrisFieldResult {
 }
 
 /**
- * Morris screening over every uncertain field. `evaluations` is
- * trajectories times (fields + 1) engine runs. `ranking` orders field
- * indices into `fields` by mu star, largest first. `kept` lists the fields
- * that go on to Sobol: the top eight by mu star, taken by group so every
- * group with a field in the top eight keeps its best one.
+ * Morris screening over every uncertain field. `evaluations` is trajectories
+ * times (fields + 1) engine runs. `ranking` orders field indices into `fields`
+ * by mu star, largest first. `kept` is the top eight of that ranking, which go
+ * on to Sobol.
  */
 export interface MorrisResult {
   method: 'morris'

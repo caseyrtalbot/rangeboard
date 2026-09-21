@@ -1,10 +1,8 @@
 import type { Entity, EntityKind, SpecModel } from '../model/types'
 
 /**
- * Board ink. A Konva node cannot read a CSS variable, so the colors the layers
- * share are written once here. The palette glyphs and the detail panels draw
- * from the same values, so the board and the panels never disagree about an
- * entity's color.
+ * Board ink. A Konva node cannot read a CSS variable, so the colors the layers share
+ * are written once here. The palette glyphs and the detail panels read the same values.
  */
 
 /** Kill, depletion, restricted airspace, endurance limit, the hostile ring. */

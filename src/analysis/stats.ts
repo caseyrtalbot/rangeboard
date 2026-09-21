@@ -122,9 +122,16 @@ export function meanInterval(
 
 /** Quantile with linear interpolation between order statistics (type 7). */
 export function quantile(values: number[], q: number): number {
-  const n = values.length
+  return sortedQuantile(
+    [...values].sort((a, b) => a - b),
+    q,
+  )
+}
+
+/** `quantile` over values already in ascending order; no copy and no sort. */
+export function sortedQuantile(sorted: number[], q: number): number {
+  const n = sorted.length
   if (n === 0) return NaN
-  const sorted = [...values].sort((a, b) => a - b)
   const pos = Math.min(Math.max(q, 0), 1) * (n - 1)
   const base = Math.floor(pos)
   const frac = pos - base

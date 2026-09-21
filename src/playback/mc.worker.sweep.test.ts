@@ -63,13 +63,16 @@ it('completes a 2 x 2 sweep of 4 replicates and posts the loop summary with prog
   expect({ ...done.summary, elapsedMs: 0 }).toEqual(runSweep({ ...spec, scenario }))
 })
 
-it('a cancel between cells keeps the cells done and reports the rule', async () => {
-  // Every clock read is 100 ms later, so the driver yields to events after every cell.
+it('a cancel inside a cell keeps the cells done and reports the rule', async () => {
+  // Every clock read is 100 ms later, so the driver yields to events after every replicate.
   let now = 0
   vi.spyOn(performance, 'now').mockImplementation(() => (now += 100))
   const req = request()
   const run = context.onmessage!({ data: req })
-  // The driver is parked at its first yield; the cancel is read when it resumes.
+  // The cancel lands once the first cell is posted; the second cell is dropped.
+  while (!posted().some((m) => m.type === 'sweep-progress')) {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  }
   await context.onmessage!({ data: { type: 'cancel', runId: req.runId } })
   await run
   const done = posted().at(-1)!

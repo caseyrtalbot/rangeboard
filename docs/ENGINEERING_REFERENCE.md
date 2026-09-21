@@ -114,10 +114,13 @@ Breaking one of these breaks the app.
   derives the live-key list and the namespace list from every export of `storageKeys.ts`
   by the `_RECOVERY_PREFIX` name suffix. The scenario and baseline autosaves have their
   own read and error paths; both run through the one lifecycle in `src/io/autosave.ts`,
-  and their adapters keep the keys, the records and the save status separate. The baseline adapter
+  and their adapters keep the keys, the records and the save status separate: a lane's
+  successful write clears only its own error, so another lane's failure stays visible
+  until that lane succeeds. The baseline adapter
   (`baselineAutosaveAdapter`, `src/io/persist.ts`) writes a `BaselineSave` (`schemaVersion`
   1, `baseline` or null; a cleared baseline is written as null, never removed, so a
-  pending pin write cannot revive it). `parseBaselineSave` validates before adoption: the
+  pending pin write cannot revive it). A baseline write that failed is retried on the
+  next autosave pass until it succeeds. `parseBaselineSave` validates before adoption: the
   scenario passes `parseScenarioData`, the `McSummary` passes `validateMcSummary`
   (`src/state/baseline.ts`), and `label`, `pinnedAt` and `scenarioHash` must be nonempty
   strings with an ISO time. JSON has no NaN, so a NaN statistic is saved as null and
@@ -189,7 +192,12 @@ Breaking one of these breaks the app.
   of replicate indices. The coordinator merges the partials by index (`mergeSummaries.ts`),
   applies the half-width rule on the contiguous prefix from `stopFloor`, stops at `stopCap`
   and finishes with `finishSummary`, so the pooled summary equals the single-worker
-  `runReplicates` at one seed (`workerPool.test.ts`). The result lives in the
+  `runReplicates` at one seed (`workerPool.test.ts`). The merged rows live on the main
+  thread, so the pool applies `DEFAULT_BUDGET` there: a summary over the budget is refused
+  at start, and the run ends with rule 'budget' once the merged `retained` count or the
+  wall time reaches it. A worker still silent after `CANCEL_GRACE_MS` is terminated and
+  the run finishes on the contiguous prefix under the rule that began the ending; it fails
+  only when no replicate landed. The result lives in the
   `mc` slice: view state, never persisted, never in `past`. `resetRun` and `replaceScenario`
   clear it; edits, undo and redo use `analysisBasisSignature` to mark mismatched results
   stale, and each run keeps the override list it applied (`AnalysisRunState.overrides`,
@@ -268,7 +276,8 @@ Breaking one of these breaks the app.
   order (the first factor outermost), drives `replicateLoop` to the cell's replicate
   count, applies `assertSummaryFits` per cell when a budget is given, and reports the
   numbers the cell retained at its peak so the budget rule sees the next cell's cost. A
-  stop lands between cells and keeps the cells done under `stopped`; a full run has no
+  stop is read at every replicate checkpoint inside a cell as well as between cells; it
+  drops the cell in flight and keeps the cells done under `stopped`. A full run has no
   `stopped` key. The worker routes `type: 'sweep'` on the sensitivity slot and posts
   `sweep-progress`, `sweep-done` and `sweep-error` with `done` and `total` in cells.
   The store keeps the result in `mc.sweep` (`SweepState`) beside `mc.sensitivity`; a
@@ -355,6 +364,9 @@ Breaking one of these breaks the app.
   uncertain field) then Saltelli Sobol (`sobol.ts`, base `sobolBase`, Jansen total index,
   bootstrap intervals at `confidence`) on the eight kept fields, each design row one
   aleatory replicate under common random numbers; 'quick' keeps the one-at-a-time loop.
+  The Sobol estimators need every row, so a cancel during that stage returns a null
+  result (`sobol-done` with `result: null`) and the run ends done on the Morris result;
+  a budget stop is a `sobol-error` that names the budget.
   `src/engine/index.ts` is the headless barrel; `.oxlintrc.json` forbids react, konva,
   `window` and `document` under `src/playback`, `src/analysis`, `src/geometry` and
   `src/engine`; `scripts/run-engine.mjs` runs the Vite library bundle over `worker_threads`.
@@ -1162,9 +1174,13 @@ owns `.ts`, `.tsx` and `.mjs` layout; oxlint owns lint. Generated modules
 checks remain exact. Application `tsconfig` files enable `strict`, `noImplicitOverride`
 and `noImplicitReturns`. Do not add unused exports or TODO markers.
 
-`src/ui/ErrorBoundary.tsx` isolates the Board root. Its fallback uses `State` with Export
-and Reload. Export reads the Board scenario; a caught render error never clears records.
-`startAutosave` stays outside React in `main.tsx`.
+`src/ui/ErrorBoundary.tsx` isolates the Board root. Its fallback uses `State` with Try
+again, Export and Reload. Try again clears the boundary and renders the children again;
+Export reads the Board scenario; a caught render error never clears records.
+`startAutosave` stays outside React in `main.tsx`. A throw inside the react-konva tree
+does not reach that boundary, so `src/canvas/SceneErrorBoundary.tsx` wraps the layer set
+inside the Stage: it renders nothing on a failure and `CanvasStage.tsx` shows a notice
+with Retry beside the canvas host.
 
 Konva conventions:
 

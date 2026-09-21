@@ -203,6 +203,13 @@ describe('Board runtime acceptance', () => {
     s.paths[0].points[0].x = Number.MAX_VALUE
     expect(() => parseScenarioData(s)).toThrow('points[0].x')
   })
+  it('rejects a flight path with fewer than two points', () => {
+    const s = laydown()
+    s.paths[0].points = []
+    expect(() => parseScenarioData(s)).toThrow('paths[0].points: expected at least two points')
+    s.paths[0].points = [{ x: 0, y: 0 }]
+    expect(() => parseScenarioData(s)).toThrow('paths[0].points: expected at least two points')
+  })
   it('validates libraries through the same model contract and duplicate checks', () => {
     const model = emptyScenario().library[0]
     expect(parseLibraryData({ rangeboardLibrary: 1, models: [model] })).toEqual([model])

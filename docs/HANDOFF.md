@@ -12,42 +12,37 @@ commit, push or merge.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch and
-  is based on `35efbc3` (2026-09-16); the lint/model-field cleanup is committed there.
-- The working tree contains uncommitted repository hygiene changes: removal of four
-  unused modules (`Tornado`, `AnalysisSection`, `OutcomeSummary`, `headlines`) and
-  their tests, exclusive CSS cleanup, and associated comment/documentation corrections.
-  Preserve these edits. The forecast-series module remains for numerical comparisons.
-- Prettier 3.9.6 owns `.ts`, `.tsx` and `.mjs` layout (`prettier.config.mjs`, printWidth
-  100, no semicolons, single quotes). `npm run format` writes; `npm run format:check` is
-  in `npm run check`. Generated modules stay out of the formatter:
-  `*.generated.ts` and `src/io/runtimeSchema.ts`.
-- Application tsconfigs enable `strict`, `noImplicitOverride` and `noImplicitReturns`.
-  `noUncheckedIndexedAccess` (~2,025 errors) and `exactOptionalPropertyTypes` (~112) are
-  not on.
-- Integrated local gate on the working tree based on `35efbc3` (2026-09-17):
-  `npm run check` passed (199 test files, 2,139 tests, plus docs, evidence, engine CLI,
-  library, schema, typecheck, lint, format and build). `npm run check:bundle` passed
-  with the entry at 361,509 bytes gzip against the 364,000 budget; initial JavaScript
-  plus CSS is 377,181 bytes. All 11 Board shell browser checks passed at
-  `http://127.0.0.1:5389`; the temporary server was stopped. Existing lint warnings remain.
-- Open defect, diagnosed and quantified but not fixed: `src/playback/shot.ts:319` charges
-  the assignment-to-release delay as an open-loop coast of the fire-control track, so at
-  the Coyote's `engageTimeS` of 60 s the miss 1 sigma is 282 m against a 10 m lethal
-  radius and the physical kinetic model kills nothing on the firing laydown. The one-site
-  fix is written out in
+- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch. The
+  run-crash investigation of 2026-09-21 is committed on top of `97ce4cf` and pushed.
+- That commit fixes the reported run crashes and sweeps source comments. Root cause of
+  the tab crash: the pooled Monte Carlo run kept every replicate row on the main thread
+  (`src/playback/workerPool.ts`) with no budget, so a large raid at `stopCap` 2000 grew
+  the page heap until the renderer died with no error. The pool now applies
+  `DEFAULT_BUDGET` (refusal at start, rule 'budget' at the merged retained count or wall
+  time) and finishes on the contiguous prefix when a cancelled worker stays silent past
+  `CANCEL_GRACE_MS`. Also fixed: sweep cancel inside a cell, Sobol cancel as a null
+  result, a silent react-konva render failure (`src/canvas/SceneErrorBoundary.tsx`
+  plus a notice with Retry in `CanvasStage.tsx`), a zero-point path refused at load,
+  Try again on the board boundary, per-adapter save errors and a retried baseline pin.
+- Comment sweep: about 930 comment lines removed from `src` (plan and phase history,
+  restating banners, repeated cross-references). Behaviour, exports and string literals
+  unchanged except `fieldGroup` (deleted, unused) and one local rename in
+  `src/playback/intercept.ts`.
+- Gate on that tree: `npm run check` passed (200 test files, 2,153 tests), `npm run
+  check:bundle` passed (entry 362,194 bytes gzip against 364,000), the 11 Board shell
+  browser checks passed, and headless Monte Carlo, trial Play and sensitivity runs on the
+  firing fixture completed clean. Evidence scripts stayed in the session scratchpad.
+- Open defect, unchanged: `src/playback/shot.ts` charges the assignment-to-release delay
+  as an open-loop coast of the fire-control track, so the physical kinetic model kills
+  nothing on the firing laydown. See
   [the zero-kill kinetic record](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md).
-  It is not landed because it moves five pinned values in
-  `src/playback/estimate.parity.test.ts` that cannot be hand derived, and because one of
-  them is contaminated by a second defect: the layered golden fixture runs its
-  interceptors at zero flight time. Until the fix lands, `legacyKineticPk` is the
-  defensible model choice for sizing a kinetic engagement.
+  Until it lands, `legacyKineticPk` is the defensible model choice.
 
 ## Tasking
 
 Each item is one session task with its own gate. Task 2 is the next task retained from
-the prior handoff; it and Task 3 remain unstarted. Do not enable further tsconfig flags
-or start an adjacent refactor as part of either task.
+the prior handoff; Tasks 2, 3 and 4 remain unstarted. Do not enable further tsconfig flags
+or start an adjacent refactor as part of any task.
 
 ### Task 2: Land the kinetic miss horizon and recapture the estimate-path anchors
 
@@ -78,6 +73,44 @@ or start an adjacent refactor as part of either task.
 - Split `src/model/integrationData.ts`, `src/state/store.ts` or
   `src/panels/Inspector.tsx` only with an explicit user ask.
 - `noUncheckedIndexedAccess` as its own gated slice.
+
+### Task 4: Run-path follow-ups from the 2026-09-21 investigation, select one per session
+
+Each item was traced with file and line during the investigation; none is fixed.
+
+- Trial result retention. `src/playback/trial.ts` collects every scan and every per-step
+  track estimate, and `src/state/analysisRequests.ts` retains it all. Measured retained
+  `TrialResult` JSON: 2.2 MB for one threat, 26 MB for 8 threats x 6 ships, 121 MB for
+  30 x 10 with page heap at 692 MB. React keeps the previous result on the alternate
+  fiber after New run, so a landing result doubles the footprint. Bound what the UI
+  reads; parity applies to exported ledgers.
+- `finishSummary` runs on the main thread in the pool (`workerPool.ts` `finish`). About
+  12 s at the budget cap on a 108-track raid. Options: finish in a worker without
+  cloning the rows, or a sorted-input path for `meanInterval` as done for `quantile`.
+- Pool progress counts landed chunks with holes, so the Run line can exceed the summary
+  after a stop (`workerPool.ts` `report` versus `contiguousPrefix`). Cosmetic.
+- Stop is ignored while a half-width stop is in flight (`workerPool.ts` `cancel` returns
+  false when `ending` is set). The button still reads Stop.
+- Sobol full depth is a fixed 2560 rows with no cost estimate before it starts; a
+  29-entity fixture took 499 s of the 600 s worker budget.
+- `blockAutosave` after an unreadable live save whose rescue copy cannot be written
+  pauses autosave for the whole session with no resume path (`src/io/autosave.ts`,
+  `persist.ts`). Every later edit is lost. `reportPaused` also overwrites another
+  adapter's error, and the overrides adapter has no write retry.
+- `saveRun` writes NaN scalars as null and `getRun` rejects them (`src/io/runStore.ts`),
+  so one such record fails the whole SQLite export. Trigger from a clean run is
+  unconfirmed.
+- One reload of a bad autosave leaves two recovery keys (observed, `persist.ts`).
+- `Boundary` has no minimum point count in `src/io/runtimeValidation.ts`; paths now do.
+- A throw inside a zustand subscriber (`Toolbar.tsx`, `App.tsx` selectors) escapes
+  `setState` past every boundary.
+- Unused exports: `selectObservedThroughWholeS` (selectors.ts), `withObservedLens` and
+  `pruneSelection` exports (scenarioInstall.ts), `rangeBounds`, `acceptMorrisMessage`,
+  `acceptSobolMessage` (analysisRequests.ts), `chartPng`, `downloadPng` (exportPng.ts),
+  `bandNote`, `bandStep` (panels/analysis/mc.ts), `TrialOutcomeSummary`,
+  `SavedRunCompare`, `ANALYSIS_KEY` (storageKeys.ts, tests only). `spreadFor` and
+  `spreadBasisFor` take a `priors` argument no app caller supplies, so the class-prior
+  branch is reachable only through the engine barrel.
 
 ## Landmines
 
@@ -110,6 +143,14 @@ or start an adjacent refactor as part of either task.
   does not fail on them.
 - Physics tab: a checked box selects the prior planning fallback; a cleared box selects
   the physical model.
+- The pool's budget is the main thread's: `DEFAULT_BUDGET.retainedNumbers` bounds the
+  merged rows the page holds, not a worker. Raising it or `MAX_REPLICATES` in
+  `RunTab.tsx` brings the tab crash back on large raids.
+- A throw inside the react-konva tree never reaches `src/ui/ErrorBoundary.tsx`; only
+  `SceneErrorBoundary` sees it. Every layer belongs inside that boundary.
+- `sobol-done` carries `result: null` on a cancel. Readers must handle the null.
+- `npm run check` fingerprints `src`, so any source edit needs `npm run docs:review` on
+  the guides before `docs:check` passes.
 - Zero kills from the default physical kinetic model are a defect, not physics.
   `src/playback/shot.ts:319` propagates the track over `engageTimeS` before the Rayleigh
   miss. `kinetic.verify.test.ts` passing at hand-supplied miss sigmas is not evidence the

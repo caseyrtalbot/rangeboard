@@ -40,24 +40,8 @@ import type { PinnedBaseline } from '../state/baseline'
 import { validateMcSummary } from '../state/baseline'
 
 /**
- * The one Board load boundary: validate the shape, then fill fields added after
- * a save was written. `SCENARIO_LEGACY_FIELDS` (`io/compat.ts`) declares which
- * fields a legacy save may omit and what supplies each one, so the validator's
- * accepted omissions and these fills cannot drift apart. Every `container`
- * entry is deep-filled one level from `emptyScenario()`, which stays the source
- * of top-level defaults. Exported for tests.
- *
- * Two fills are named rather than generic. Library and system presets RECONCILE
- * rather than being taken whole from the save: spreading the save over the seeds
- * would let a stale library shadow every model and preset added since, so an
- * existing scenario would never receive new seed content
- * (`src/model/libraryLifecycle.ts` owns that policy). The legacy engageOn policy
- * migrates to an ROE posture ('detected' -> 'free', 'confirmed' -> 'tight').
- */
-/**
  * What a load adopted from the seed library: the stamp the Systems tab prints.
- * Never persisted and never part of the Scenario: a save records the filled
- * library, not the fact that a fill happened.
+ * Never persisted and never part of the Scenario.
  */
 export interface LoadNotice {
   /** Builtin models that took at least one seed key. */
@@ -70,12 +54,8 @@ export interface LoadNotice {
   adopted: SeedAdoption[]
 }
 
-/**
- * Adoption by the model object `fillScenario` built, so the stamp follows the
- * installed library and nothing else: a baseline parse, a rejected import or a
- * New scenario builds other objects and leaves the Board's stamp alone, and an
- * edit that replaces a model object drops its stamp with it.
- */
+/** Adoption keyed by the model object `fillScenario` built, so the stamp follows
+ *  the installed library and nothing else. */
 const SEED_ADOPTION = new WeakMap<SpecModel, SeedAdoption[]>()
 
 /** The seed adoptions of one model object from the load that built it, else []. */
@@ -95,6 +75,13 @@ export function loadNoticeFor(library: readonly SpecModel[]): LoadNotice | null 
   }
 }
 
+/**
+ * The one Board load boundary: validate the shape, then fill fields added after a
+ * save was written. `SCENARIO_LEGACY_FIELDS` (`io/compat.ts`) names which fields a
+ * legacy save may omit and what supplies each. Library and system presets are
+ * reconciled against the seeds rather than taken whole, so a stale save never
+ * shadows seed content added since. Exported for tests.
+ */
 export function fillScenario(parsed: unknown): Scenario {
   validateScenarioShape(parsed)
   const empty = emptyScenario()
@@ -121,8 +108,7 @@ export function fillScenario(parsed: unknown): Scenario {
     // emptyScenario() always sets doctrine; the Scenario type keeps it optional for old saves.
     doctrine: fillDoctrine(empty.doctrine as FireDoctrine, parsed.doctrine),
     roe,
-    // A save that predates a run field keeps the compatibility default, not the
-    // fresh-scenario default: an old board stays deterministic and aleatory.
+    // A save that predates a run field keeps the compatibility default.
     runMode: parsed.runMode ?? 'deterministic',
     uncertainty: parsed.uncertainty ?? 'aleatory',
     targetHalfWidth: parsed.targetHalfWidth === undefined ? null : parsed.targetHalfWidth,
@@ -159,11 +145,9 @@ export function parseScenarioData(value: unknown): Scenario {
   return fillScenario(value)
 }
 
-/**
- * The Board half of the autosave lifecycle in `io/autosave.ts`: the scenario
- * key, the scenario parser, the scenario selection, adoption through
- * `loadScenario` and the Board's epoch-millisecond save status.
- */
+const SCENARIO_ERROR = 'Not saved'
+
+/** The Board half of the autosave lifecycle in `io/autosave.ts`. Save status is epoch ms. */
 export const scenarioAutosaveAdapter: AutosaveAdapter<Scenario> = {
   key: SCENARIO_KEY,
   recoveryPrefix: SCENARIO_RECOVERY_PREFIX,
@@ -175,7 +159,13 @@ export const scenarioAutosaveAdapter: AutosaveAdapter<Scenario> = {
       if (state.scenario === prev.scenario) return
       changed(state.scenario)
     }),
-  reportSaved: () => useStore.getState().setSaveState(Date.now(), null),
+  // The scenario owns the stamp, but it clears only its own error: another
+  // adapter's failure stays visible until that adapter writes.
+  reportSaved: () => {
+    const store = useStore.getState()
+    const error = store.save.error
+    store.setSaveState(Date.now(), error?.startsWith(SCENARIO_ERROR) ? null : error)
+  },
   reportPaused: (message) => {
     const store = useStore.getState()
     store.setSaveState(store.save.lastAutosaveAt, message)
@@ -183,7 +173,10 @@ export const scenarioAutosaveAdapter: AutosaveAdapter<Scenario> = {
   reportWriteFailure: (error) => {
     const store = useStore.getState()
     const reason = error instanceof Error ? error.message || error.name : 'storage error'
-    store.setSaveState(store.save.lastAutosaveAt, `Not saved: ${reason}. Export the scenario.`)
+    store.setSaveState(
+      store.save.lastAutosaveAt,
+      `${SCENARIO_ERROR}: ${reason}. Export the scenario.`,
+    )
   },
 }
 
@@ -250,6 +243,9 @@ function baselineOverrides(value: unknown): Override[] {
 
 const BASELINE_ERROR = 'Baseline not saved'
 
+/** A pin whose write failed is still only in memory, so the record is offered again. */
+let baselineWriteFailed = false
+
 /** The baseline half of the lifecycle: its own key, parser and record, sharing the Board save status. */
 export const baselineAutosaveAdapter: AutosaveAdapter<BaselineSave> = {
   key: BOARD_BASELINE,
@@ -260,11 +256,16 @@ export const baselineAutosaveAdapter: AutosaveAdapter<BaselineSave> = {
   deferred: true,
   subscribe: (changed) =>
     useStore.subscribe((state, prev) => {
-      if (state.baseline === prev.baseline) return
+      // A failed write is retried on the next store change, so storage freed after
+      // a quota failure keeps the pin. Save-status updates are excluded: reporting
+      // the failure would otherwise schedule the retry that reports it again.
+      const retry = baselineWriteFailed && state.save === prev.save
+      if (state.baseline === prev.baseline && !retry) return
       changed({ schemaVersion: 1, baseline: state.baseline })
     }),
   // The scenario stamp stays the scenario's; a baseline write clears only its own error.
   reportSaved: () => {
+    baselineWriteFailed = false
     const store = useStore.getState()
     if (store.save.error?.startsWith(BASELINE_ERROR))
       store.setSaveState(store.save.lastAutosaveAt, null)
@@ -274,11 +275,12 @@ export const baselineAutosaveAdapter: AutosaveAdapter<BaselineSave> = {
     store.setSaveState(store.save.lastAutosaveAt, message)
   },
   reportWriteFailure: (error) => {
+    baselineWriteFailed = true
     const store = useStore.getState()
     const reason = error instanceof Error ? error.message || error.name : 'storage error'
     store.setSaveState(
       store.save.lastAutosaveAt,
-      `${BASELINE_ERROR}: ${reason}. Pin again when storage is available.`,
+      `${BASELINE_ERROR}: ${reason}. The pin retries on the next save.`,
     )
   },
 }
@@ -360,11 +362,7 @@ interface RunExport {
     /** Monte Carlo only: draw noise alone, or parameter spreads too. */
     uncertainty?: UncertaintyMode
   }
-  /**
-   * Whether the run can carry the evidence it looks like it carries, and
-   * every finding behind that call. A detect result from a track that spawned
-   * inside a sensor ring is not a detect result, and the record has to say so.
-   */
+  /** Whether the run can carry the evidence it looks like it carries, with every finding behind that call. */
   validity: RunValidityAssessment
   /** Every model the laydown exercises, with its tier and validation status. */
   models: ModelTag[]
@@ -406,9 +404,8 @@ export function runExportObject(
       throw new Error('Cannot export an incomplete trial run')
     }
   }
-  // A package with no replicate summary carries deterministic numbers, so its
-  // validity and its model list read the envelope even under a Monte Carlo
-  // run setting; the scenario itself is exported unchanged.
+  // A package with no replicate summary carries deterministic numbers, so its validity
+  // and model list read the envelope even under a Monte Carlo run setting.
   const basisScenario: Scenario =
     mc || runSettings(scenario).runMode === 'deterministic'
       ? scenario
@@ -456,8 +453,7 @@ export function runExportObject(
     summary,
   }
   if (mc) out.mcSummary = mc
-  // The sampled field list is what a total-uncertainty replicate drew, so it
-  // reads the scenario the run settings name, never the sampled copy.
+  // The sampled field list reads the scenario the run settings name, never the sampled copy.
   if (mc && runSettings(scenario).uncertainty === 'total') {
     out.sampledFields = uncertainFields(scenario)
   }

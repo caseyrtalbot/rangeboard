@@ -176,8 +176,9 @@ It retains startup recovery notices and lets the user download the exact unreada
 explicitly delete one recovery key. Deletion does not resume a paused autosave. A new
 underlay image has a 5 MiB admission budget. Existing valid saved payloads remain loadable.
 
-The Board boundary isolates render failures. Its Export action reads the scenario, and
-Reload reloads the page. The autosave subscription remains outside React and continues
+The Board boundary isolates render failures. Try again renders the board again without a
+reload, its Export action reads the scenario, and Reload reloads the page. A failure inside
+the canvas layers shows a notice with Retry beside the canvas and leaves the panels usable. The autosave subscription remains outside React and continues
 when a view fails; it carries the scenario and the pinned baseline as two lanes.
 
 ## Execution and persistence

@@ -28,9 +28,8 @@ const ROUND = [0, -8, 6, 6, -6, 6]
 const BEAM_DASH = [2, 4]
 
 /**
- * Salvos between launch and effect: the shot line plus a round riding it. A
- * round in flight is never removed early, so a salvo at a track that already
- * turned ghost still draws to completion.
+ * Salvos between launch and effect: the shot line plus a round riding it. A round in
+ * flight is never removed early.
  */
 export function EngagementLayer({ shots, displayTimeS }: Props) {
   const show = useStore((s) => selectEffectiveLayers(s).engagements)
@@ -46,8 +45,7 @@ export function EngagementLayer({ shots, displayTimeS }: Props) {
         if (s.mode !== 'beam' && s.tEffectS <= s.tReleaseS) return null
         const d = dist(s.from, s.to)
         if (d < 1) return null
-        // Trim both ends the way ConnectionLayer trims its arrows, so the line
-        // never runs through the effector glyph or the target ring.
+        // Trim both ends, so the line never runs through the glyph or the target ring.
         const ux = (s.to.x - s.from.x) / d
         const uy = (s.to.y - s.from.y) / d
         const head = Math.min(TRIM_SOURCE / k, d / 3)
@@ -57,8 +55,7 @@ export function EngagementLayer({ shots, displayTimeS }: Props) {
         const bx = s.to.x - ux * tail
         const by = s.to.y - uy * tail
         const color = s.channel === 'jam' ? JAM : DANGER_INK
-        // No array index: liveShots drops expired salvos off the front, so an
-        // index key would rebuild every surviving Konva node during a volley.
+        // No array index: liveShots drops expired salvos off the front.
         const key = `${s.effectorId}-${s.uasId}-${s.shipIdx}-${s.tS}`
 
         if (s.mode === 'beam') {

@@ -28,13 +28,10 @@ function inkFor(source: TrackEstimate['source']): string {
 }
 
 /**
- * The latest track picture at the horizon: an estimated position marker per
- * track and, where the track carries error, its 1 sigma covariance ellipse.
- * A coasting track takes the dash, an updated track draws solid, and a truth
- * path carries no error so it draws the marker alone.
- *
- * The ellipse is a distance, so its radii ride the world transform; the
- * stroke and the marker are screen furniture and hold their pixel size.
+ * The latest track picture at the horizon: an estimated position marker per track
+ * and, where the track carries error, its 1 sigma covariance ellipse. A coasting
+ * track takes the dash, an updated track draws solid. The ellipse radii are a
+ * distance and ride the world transform; the stroke and the marker hold pixel size.
  */
 export function TrackLayer({ tracks, horizonS }: Props) {
   // Only the scale is read; the stage transform carries the pan.

@@ -82,9 +82,9 @@ interface GateSpec {
 }
 
 /**
- * One gate. A track the run cannot measure is removed from the POPULATION,
- * never scored as a pass and never scored as a fail, and the reason is
- * recorded in caveats. When nothing valid is left the gate is not evaluated.
+ * One gate. A track the run cannot measure is removed from the population,
+ * scored neither pass nor fail, and the reason is recorded in caveats. When
+ * nothing valid is left the gate is not evaluated.
  */
 function buildGate(
   scenario: Scenario,
@@ -152,16 +152,15 @@ function buildGate(
 }
 
 /**
- * Six independent kill-chain requirements. No weighting or compensation:
- * the report passes only when every valid track passes every gate.
+ * Six independent kill-chain requirements. No weighting or compensation: the
+ * report passes only when every valid track passes every gate.
  *
- * Every threshold is TEST-DEFINED (Scenario.requirements), never an engine
- * constant. A gate that reads its pass line from the model it grades cannot
- * fail, so those numbers stay in the scenario where the test engineer sets
- * them.
+ * Every threshold is test-defined (Scenario.requirements), never an engine
+ * constant, because a gate that reads its pass line from the model it grades
+ * cannot fail.
  *
- * Pass envelope `validity` when the caller already ran assessRunValidity, so the
- * spawn-in-ring sweep can be reused. MC-mode callers recompute envelope findings.
+ * Pass `validity` when the caller already ran assessRunValidity, so the
+ * spawn-in-ring sweep can be reused. MC-mode callers recompute the findings.
  */
 export function buildRequirementGateReport(
   scenario: Scenario,
@@ -217,7 +216,7 @@ export function buildRequirementGateReport(
     report.totals.raidSize > 0 ? (report.totals.expectedKills / report.totals.raidSize) * 100 : 0
   // Residual is a leaker count, so it is measurable only against a defended
   // asset. AttritionTotals.reportedLeakers is null when the laydown places
-  // none, and saying so is honest where 0.00 would read as a perfect defence.
+  // none, where 0.00 would read as a perfect defence.
   const residualText =
     report.totals.reportedLeakers == null
       ? 'residual not measurable: no defended asset placed'

@@ -150,8 +150,7 @@ function TacticsSection(props: {
             className={`palette-item ${armedTacticId === t.id ? 'selected' : ''}`}
             type="button"
             onClick={() => {
-              // Clicking the armed tactic again disarms it; any other click
-              // re-arms with that tactic's defaults.
+              // Clicking the armed tactic again disarms it; another click re-arms.
               if (armedTacticId === t.id) {
                 cancelRaidDraft()
                 return

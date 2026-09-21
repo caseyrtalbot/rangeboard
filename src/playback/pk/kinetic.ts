@@ -5,10 +5,9 @@ import { MIL_TO_RAD, projectileCount } from '../ballistics'
 /**
  * Kinetic kill probability: the type-baseline tables, the distance falloff,
  * the size and evasion penalties and the one per-shot Pk, plus the
- * miss-distance hook. Lane 3.5 adds the interceptor speed profile, the miss
- * distance from track error plus guidance noise, Pk from the lethal radius
- * and the gun terms (dispersion, burst, rate of fire, fire control error)
- * here and in ballistics.ts. `kineticPk` remains the bit-identical fallback.
+ * miss-distance model (interceptor speed profile, miss distance from track
+ * error plus guidance noise, Pk from the lethal radius, and the gun terms in
+ * ballistics.ts). `kineticPk` is the bit-identical fallback.
  */
 
 /** Type-baseline single-shot Pk for specs saved before the pk field existed. */
@@ -135,7 +134,7 @@ function validNonNegative(value: number | null | undefined): value is number {
 }
 
 /**
- * Phase 3 probability of effect for an interceptor or projectile effector.
+ * Modeled probability of effect for an interceptor or projectile effector.
  *
  * Interceptor: Rayleigh CDF at the lethal radius, multiplied by the saved
  * base Pk as P(effect | lethal-radius intercept) and by the FPV evasion term.

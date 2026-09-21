@@ -1,13 +1,9 @@
 /**
- * CSV export of the tables inside one saved `RunRecord`: per threat, per
- * effector and the sensitivity rows, one file each. RFC 4180 quoting and one
- * header row whose every column names its unit.
- *
- * Each row repeats the record identity (label, save time, seed, replicates,
- * horizon), so one file stands alone and two files concatenate into one
- * comparable table. A statistic keeps its own interval, its confidence, its
- * interval method and its defined count; an unavailable number is an empty
- * field, never a zero.
+ * CSV export of the tables inside one saved `RunRecord`: per threat, per effector and
+ * the sensitivity rows, one file each. RFC 4180 quoting, and one header row whose
+ * every column names its unit. Each row repeats the record identity, so one file
+ * stands alone. A statistic keeps its own interval, confidence, interval method and
+ * defined count; an unavailable number is an empty field, never a zero.
  */
 import type { RunRecord } from '../model/runRecord'
 import type { SensitivityResponse, SensitivitySummary, Stat } from '../playback/mcRun'
@@ -124,9 +120,8 @@ const RESPONSE_UNIT: Record<SensitivityResponse, string> = {
 }
 
 /**
- * One row per uncertain field and response. A row recorded before the
- * per-response block carries its leakers aliases alone, so it prints that one
- * response and leaves the definedness columns empty rather than assuming them.
+ * One row per uncertain field and response. A row recorded before the per-response
+ * block carries its leakers aliases alone, and leaves the definedness columns empty.
  */
 export function sensitivityCsv(
   summary: SensitivitySummary,

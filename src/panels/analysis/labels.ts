@@ -1,8 +1,6 @@
 /**
- * Analysis outcome names.
- *
- * The three survival words and the KPI tile names are written once here, so
- * the tiles, the threat picture, the projection and the gates cannot drift.
+ * Analysis outcome names: the three survival words and the KPI tile names, written
+ * once so every reader shows the same text.
  */
 
 /** KPI names the outcome summary can show. */

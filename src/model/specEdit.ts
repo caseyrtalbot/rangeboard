@@ -12,12 +12,10 @@ import type {
 import { TRACK_INIT_M, TRACK_INIT_N } from './types'
 
 /**
- * Specification editing by named field. One field name, one raw input value,
- * one new model. The rules a form field used to carry inline live here: which
- * empty value clears back to the planning factor, which value is clamped, how
- * a paired field follows its partner, and how a tuple is rebuilt. Panels pass
- * what the control gives them (a number, a select string, a checkbox set) and
- * read the result back from the store.
+ * Specification editing by named field: one field name, one raw input value,
+ * one new model. The rules live here for which empty value clears back to the
+ * planning factor, which value is clamped, how a paired field follows its
+ * partner, and how a tuple is rebuilt.
  */
 
 /** Synthetic sensor fields: each end of the elevation tuple is edited alone. */

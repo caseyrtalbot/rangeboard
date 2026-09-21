@@ -36,9 +36,9 @@ const LINE_W = 1.6
 const DOT_R = 2.4
 
 /**
- * The grid draws no vertical lines. `vertical={false}` only hides them: Recharts still runs
- * its default generator, which measures the label of every data row in the DOM (one forced
- * layout per row, about a thousand on first mount). A generator with no lines skips that.
+ * The grid draws no vertical lines. `vertical={false}` only hides them: Recharts
+ * still measures every data row's label in the DOM, one forced layout per row. A
+ * generator that returns no lines skips that.
  */
 const NO_VERTICAL_LINES = (): number[] => []
 

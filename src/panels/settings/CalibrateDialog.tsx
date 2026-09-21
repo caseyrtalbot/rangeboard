@@ -169,9 +169,8 @@ function timeRows(
 }
 
 /**
- * The dialog body with its draft controlled by the caller, so the parent (and
- * a test) can hold the draft. Accept writes the override through
- * `acceptCalibration` and closes; Cancel closes with nothing written.
+ * The dialog body with its draft controlled by the caller. Accept writes the
+ * override through `acceptCalibration` and closes; Cancel writes nothing.
  */
 export function CalibrateForm({
   model,

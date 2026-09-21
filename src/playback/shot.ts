@@ -52,7 +52,7 @@ export interface ShotAccepted {
   /**
    * Predicted position 1 sigma at the intercept time, meters, when the
    * intercept was solved from a track estimate; null on the truth path.
-   * Phase 3 turns it into a miss distance (pk.missDistanceSigmaM).
+   * `pk.missDistanceSigmaM` turns it into a miss distance.
    */
   predictionSigmaM: number | null
   /** Which path solved the intercept point (interceptFor). */

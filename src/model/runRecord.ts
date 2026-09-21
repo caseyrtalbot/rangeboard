@@ -1,5 +1,5 @@
 /**
- * The run store record (lane 0.4, IndexedDB under `RUNS_DB_NAME`). A record
+ * The run store record (IndexedDB under `RUNS_DB_NAME`). A record
  * carries enough to reproduce and compare a finished run: its manifest, the
  * scenario snapshot and the replicate summaries.
  */

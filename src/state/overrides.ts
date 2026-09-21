@@ -1,15 +1,12 @@
 import { create } from 'zustand'
 import type { Override, OverrideSet } from '../model/libraryField'
 
-// The record and the rule live store-free in the model, where the engine CLI reads them.
 export { activeOverrides, applyOverrides } from '../model/applyOverrides'
 
 /**
  * User replacements of library field values, in their own store. An override is
- * never scenario content: it stays out of the Board store, out of history and
- * out of the scenario save, so a shared scenario carries the sourced library and
- * this board's replacements travel under their own key
- * (`io/persistOverrides.ts`). A run records them through the trial manifest.
+ * never scenario content: it stays out of the Board store, out of history and out
+ * of the scenario save, and persists under its own key (`io/persistOverrides.ts`).
  */
 export interface OverridesStore {
   overrides: Override[]
@@ -42,8 +39,8 @@ export const useOverrides = create<OverridesStore>()((set) => ({
     })
   },
 
-  // Each reset keeps the same array when it removes nothing, so a reset of a
-  // field that carries no override never wakes the autosave subscription.
+  // The same array is kept when nothing is removed, so the autosave subscription
+  // does not wake for a field that carries no override.
   resetField: (modelId, field) =>
     set((state) => {
       const next = state.overrides.filter((o) => o.modelId !== modelId || o.field !== field)

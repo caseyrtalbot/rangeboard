@@ -53,11 +53,10 @@ export function sweepAt(input: Scenario, timeline: TrackTimeline, tS: number): S
     }
     return slot.sweep
   }
-  // The newest result for the same inputs, else the newest result of all,
-  // lends its identities to every value that did not change, so a memo keyed
-  // on a state object, a hit list or the sensor set holds across publications
-  // where nothing happened and across an edit that changed no hold. The
-  // sweep object itself stays fresh per scenario.
+  // The newest result for the same inputs, else the newest result of all, lends
+  // its identities to every value that did not change, so a memo keyed on a
+  // state object, a hit list or the sensor set holds across a publication where
+  // nothing happened. The sweep object itself stays fresh per scenario.
   const prev = (
     slots.find((slot) => slot.scenario === scenario && slot.timeline === timeline) ?? slots[0]
   )?.sweep

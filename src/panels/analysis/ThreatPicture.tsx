@@ -219,9 +219,8 @@ function ThreatGroupCard({
 }
 
 /**
- * Threat groups with one two-row chip ladder each. Members are collapsed
- * unless `membersOpen`; the card remounts when that prop changes, so a
- * widget param edit takes effect at once.
+ * Threat groups with one two-row chip ladder each. Members are collapsed unless
+ * `membersOpen`; the card remounts when that prop changes.
  */
 export function ThreatPicture({
   groups,

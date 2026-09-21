@@ -13,7 +13,10 @@ interface ErrorBoundaryState {
   exportError: string | null
 }
 
-/** A failed view never resets its record; export reads the current owning store. */
+/**
+ * Export reads the current owning store, and a retry re-renders the children
+ * against it: the record lives outside React, so nothing is lost either way.
+ */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   override state: ErrorBoundaryState = { failed: false, exportError: null }
 
@@ -32,6 +35,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
   }
 
+  private retry = () => {
+    this.setState({ failed: false, exportError: null })
+  }
+
   override render() {
     if (!this.state.failed) return this.props.children
     return (
@@ -40,9 +47,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           {this.props.label} could not be displayed.
         </State>
         <p className="muted small">
-          Your records are still available. Export a copy before reloading.
+          Your records are still available. Try again, or export a copy before reloading.
         </p>
         <div className="inspector-actions">
+          <button type="button" onClick={this.retry}>
+            Try again
+          </button>
           <button type="button" onClick={this.exportRecord}>
             Export
           </button>

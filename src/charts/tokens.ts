@@ -1,15 +1,10 @@
 /**
- * Chart kit tokens.
- *
- * The kit (`ChartFrame`, `TimeSeries`, `Ladder`) draws every color from the
- * CSS custom properties in `src/index.css`. A series names its color by token
- * ('chart-1', 'accent', 'danger', 'ew', 'text-dim') or by a literal hex, and the frame
- * resolves the tokens ONCE per render through `readTokens()`. Static markup and the vitest
- * node environment have no `document`, so every lookup then answers from `TOKEN_FALLBACK`.
- *
- * Per-track series take the five chart hues in first-detection order and keep that slot
- * under filters; the sixth track and beyond fold into `OTHER_TOKEN`. Status colors carry
- * no series. The five hues are validated against the panel surface.
+ * Chart kit tokens. The kit draws every color from the CSS custom properties in
+ * `src/index.css`. A series names its color by token or by a literal hex, and the
+ * frame resolves the tokens once per render through `readTokens()`. Without a
+ * `document` every lookup answers from `TOKEN_FALLBACK`. Per-track series take the
+ * five chart hues in first-detection order and keep that slot under filters; the
+ * sixth track and beyond fold into `OTHER_TOKEN`.
  */
 
 /** The five categorical chart hues, in slot order. Fixed values. */
@@ -67,9 +62,8 @@ export interface ChartTokens {
 }
 
 /**
- * Read the kit tokens. One `getComputedStyle(document.documentElement)` call; each token
- * is read from it at most once. With no `document` every lookup answers from
- * `TOKEN_FALLBACK`. Call it once per chart render, never per point and never at module load.
+ * Read the kit tokens with one `getComputedStyle(document.documentElement)` call.
+ * Call it once per chart render, never per point and never at module load.
  */
 export function readTokens(): ChartTokens {
   const style = typeof document === 'undefined' ? null : getComputedStyle(document.documentElement)

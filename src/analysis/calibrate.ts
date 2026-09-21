@@ -1,5 +1,5 @@
 /**
- * Calibration from typed counts (Phase 4.2). A proportion field takes a beta
+ * Calibration from typed counts. A proportion field takes a beta
  * prior and a beta posterior; a time field takes a normal-gamma prior and a
  * normal-gamma posterior. Accepting a posterior writes one override through
  * `useOverrides.setOverride`, with the prior, the observation and the posterior

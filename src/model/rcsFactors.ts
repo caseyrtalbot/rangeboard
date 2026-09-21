@@ -1,11 +1,10 @@
 /**
  * Radar cross section planning factors for T&E laydown work.
  *
- * The threat study (docs/threat) lists radar cross section by aspect and
- * frequency as NOT consistently available in public high-confidence sources,
- * so nothing here is measured signature data. The tiers are representative X/Ku-band nose-on class values used
- * to scale each radar's quoted detect range to the threat in front of it,
- * so the board and the analysis agree on who sees what, and from how far.
+ * Public high-confidence sources do not consistently give radar cross section
+ * by aspect and frequency, so nothing here is measured signature data. The
+ * tiers are representative X/Ku-band nose-on class values that scale each
+ * radar's quoted detect range to the threat in front of it.
  *
  * Anchors from vendor datasheets that condition a range on an RCS:
  *   Blighter A400/A422: 2.73 km at 0.01 m2 (DJI Phantom-class small drone),

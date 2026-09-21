@@ -103,7 +103,7 @@ export interface TrialJamDecision {
   outcome: number
 }
 
-/** The lifecycle owner retains the captured scenario alongside this current-trial result. */
+/** One trial's result; the caller keeps the captured scenario beside it. */
 export interface TrialResult {
   manifest: TrialManifest
   assessments: ThreatAssessment[]
@@ -114,10 +114,9 @@ export interface TrialResult {
   observations: SensorScanObservation[]
   jamDecisions: TrialJamDecision[]
   /**
-   * Sensor-level track estimates sampled in time order, one entry per track
-   * per sweep step it existed. Absent when the trial ran before Phase 2 or
-   * the sink was not attached. Watch reads the latest entry per track id at
-   * or before its horizon.
+   * Sensor-level track estimates in time order, one entry per track per sweep
+   * step it existed. Absent when no sink was attached. A reader takes the
+   * latest entry per track id at or before its horizon.
    */
   tracks?: readonly TrackEstimate[]
 }

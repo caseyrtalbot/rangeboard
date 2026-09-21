@@ -27,8 +27,8 @@ export function ConnectionLayer() {
         const ux = (to.pos.x - from.pos.x) / d
         const uy = (to.pos.y - from.pos.y) / d
         const selected = selectedId === c.id
-        // Medium shows how the link physically closes: wired solid, radio
-        // dashed, operator-manual dotted; untyped links keep the legacy dash.
+        // Medium: wired solid, radio dashed, operator-manual dotted; untyped keeps
+        // the legacy dash.
         const wired = c.medium === 'cable' || c.medium === 'fiber' || c.medium === 'serial'
         const dash = wired ? undefined : c.medium === 'operator-manual' ? [1, 4] : [3, 4]
         // Unproven evidence reads dimmer than documented or hand-drawn links.
@@ -50,8 +50,7 @@ export function ConnectionLayer() {
             strokeScaleEnabled={false}
             pointerLength={9 / k}
             pointerWidth={7 / k}
-            // With strokeScaleEnabled=false the hit stroke is in screen px;
-            // dividing by scale would inflate it to hundreds of px.
+            // With strokeScaleEnabled=false the hit stroke is already in screen px.
             hitStrokeWidth={12}
             // Wide hit bands must not swallow waypoint clicks while drawing.
             listening={tool === 'select'}
@@ -68,8 +67,7 @@ export function ConnectionLayer() {
         const to = scenario.entities.find((e) => e.id === c.toId)
         if (!from || !to) return null
         return (
-          // Counter-scaled group, so the label font size never changes and
-          // Konva never re-measures the text on a zoom step.
+          // Counter-scaled group, so Konva never re-measures the text on a zoom step.
           <Group
             key={`${c.id}-label`}
             x={(from.pos.x + to.pos.x) / 2}

@@ -1,12 +1,11 @@
 /// <reference lib="webworker" />
 /**
- * Placement optimization worker: one run per worker instance, modeled on
- * `mc.worker.ts`. An `optimize` request streams `optimize-progress` after
- * every evaluation and posts `optimize-done`; a throw posts
- * `optimize-error`. The loop runs under `DEFAULT_BUDGET`'s wall time and
- * stops at a checkpoint when it is reached. The driver yields every
- * YIELD_MS so a `cancel` request ends the run at the next checkpoint; the
- * `optimize-done` then carries the trace so far (see `optimize/loop.ts`).
+ * Placement optimization worker: one run per worker instance. An `optimize`
+ * request streams `optimize-progress` after every evaluation and posts
+ * `optimize-done`; a throw posts `optimize-error`. The loop runs under
+ * `DEFAULT_BUDGET`'s wall time. The driver yields every YIELD_MS, so a `cancel`
+ * ends the run at the next checkpoint and `optimize-done` carries the trace so
+ * far.
  */
 import type { StopRule } from './mcRun'
 import { DEFAULT_BUDGET, overBudget } from './mcRun'

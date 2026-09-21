@@ -41,12 +41,10 @@ import {
 } from './layers/footprintStyle'
 
 /**
- * The ring model: every ring the board draws, prepared once from the
- * scenario, the ring view and the selected threat, and read two ways. The
- * footprint layer draws the records; the HUD asks `hitAt` which ring edge
- * lies under the pointer. Store-free and Konva-free, so a test drives it
- * from a Scenario alone. Every dash, width and ink decision comes from
- * footprintStyle.ts; this module resolves the ranges those decisions apply to.
+ * Every ring the board draws, prepared once from the scenario, the ring view and
+ * the selected threat. The footprint layer draws the records; the HUD asks `hitAt`
+ * which ring edge lies under the pointer. Ranges are meters. Dash, width and ink
+ * come from footprintStyle.ts; this module resolves the ranges they apply to.
  */
 
 /** The ring visibility and unit state the model reads. A narrow slice of `ui`. */
@@ -117,12 +115,7 @@ export interface AssetRings {
 
 export type EntityRings = SensorRings | EffectorRings | JammerRings | AssetRings
 
-/**
- * Every ring the board draws, one record per entity. Pure over the scenario,
- * the ring visibility and the selected threat, so the memo that calls it does
- * no work on a playback frame. Visibility is `ringVisible`: the per-entity
- * override, else ui.layers.
- */
+/** One record per entity. Visibility is `ringVisible`: the per-entity override, else ui.layers. */
 function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | null): EntityRings[] {
   const env = scenario.environment
   const physics = physicsSwitches(scenario)
@@ -135,12 +128,10 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
     : undefined
   const target = selectedUas ? modelFor(scenario, selectedUas)?.uas : undefined
   // The engine range is a slant range to the threat altitude, so a ring on a
-  // plan-view board is its ground projection. The mount height is the only
-  // per-entity term.
+  // plan-view board is its ground projection.
   const targetAltM = selectedUas ? threatAltitudeFt(scenario, selectedUas) * FT_TO_M : null
 
-  // Every threat on the board feeds the envelope band. Each entity carries its
-  // own altitude, so two ships of one model can project to two ranges.
+  // Every threat on the board feeds the envelope band, each at its own altitude.
   const threats = scenario.entities.flatMap((u) => {
     if (u.kind !== 'uas') return []
     const spec = modelFor(scenario, u)?.uas
@@ -178,16 +169,14 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
       if (target) {
         const [low, high] = pdContoursM(spec, env, target, [pdLow, PD_CONTOUR_HIGH], physics)
         pdLowM = project(low)
-        // Only a radar under the Pd model has a second contour. Every other
-        // sensor keeps its scaled range as the lower contour.
+        // Only a radar under the Pd model has a second contour.
         pdHighM = radarPdModeled(spec, target) ? project(high) : null
       }
       const classifySlantM = effectiveClassifyRangeM(spec, env, target, physics)
       const style = sensorRingStyle({
         gate: sensorHoldGate(spec, target),
         on: entityActive(e),
-        // The placard is a reference condition, so it is never target scaled
-        // and never projected.
+        // The placard is a reference condition: never target scaled, never projected.
         placardM: effectiveDetectRangeM(spec, env, undefined, undefined, physics),
         pdLowM,
         pdHighM,
@@ -233,9 +222,8 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
       const off = !entityActive(e)
       const sectorDeg = spec.sectorDeg ?? 360
 
-      // A jammer keeps the flashlight cone: illumination, not a weapon arc.
-      // No danger ink, no ground projection, no doctrinal ring. The min
-      // circle stays under the cone key.
+      // A jammer draws an illumination cone: no danger ink, no ground projection,
+      // no doctrinal ring, and the min circle stays under the cone key.
       if (spec.effectorType === 'jammer') {
         if (!maxOn) continue
         out.push({
@@ -256,8 +244,7 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
       let releaseM: number | null = null
       let commitM: number | null = null
       let commitPk = 0
-      // Legacy release has no launch point, so doctrine off means no
-      // doctrinal ring at all.
+      // Legacy release has no launch point, so doctrine off means no doctrinal ring.
       if (target && doctrinalOn && doctrine.enabled) {
         const basePk = spec.pk ?? DEFAULT_PK[spec.effectorType]
         commitPk = commitPkFor(spec, doctrine)
@@ -299,9 +286,8 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
       continue
     }
 
-    // The defended area is the boundary the engine scores arrival against
-    // (defendedRadiusOf: Entity.defendedRadiusM, else the 500 m default), so
-    // the ring on the board is the same distance the leaker count uses.
+    // The defended area is the boundary the engine scores arrival against, so the
+    // ring is the same distance the leaker count uses.
     if (e.kind === 'asset' && ui.layers.defendedAreas) {
       out.push({
         kind: 'asset',
@@ -466,11 +452,10 @@ export interface RingModel {
 const EMPTY_MODEL: RingModel = { rings: [], hitAt: () => null }
 
 /**
- * Prepare the ring model. The records for one scenario, view and selection
- * are cached on the scenario; `prev` lends its record identities to the
- * records whose fields did not change (section 7), so a memoized node holds
- * across a scenario swap. The edge list is derived on the first `hitAt` and
- * then shared by every hover over the same model.
+ * Prepare the ring model. The records for one scenario, view and selection are
+ * cached on the scenario; `prev` lends its record identities to the records whose
+ * fields did not change, so a memoized node holds across a scenario swap. The edge
+ * list is derived on the first `hitAt` and then shared by every later hover.
  */
 export function prepareRingModel(
   scenario: Scenario,

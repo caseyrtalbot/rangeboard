@@ -15,9 +15,8 @@ function morrisNote(morris: MorrisResult): string {
 }
 
 /**
- * Row label for one uncertain field: the model name and the field key, the pairing the
- * Fragility sensitivity rows already use. A connection id or 'doctrine' is off-library, so
- * the id stands in for a name.
+ * Row label for one uncertain field: model name plus field key. A connection id or
+ * 'doctrine' is off-library, so the id stands in for a name.
  */
 function labelFrom(scenario: Scenario) {
   return (field: UncertainField): string => {
@@ -28,8 +27,7 @@ function labelFrom(scenario: Scenario) {
 
 /**
  * The sensitivity read-out: the Sobol chart when the indices exist, else the Morris
- * screening on its own, else nothing. It takes both results as props and reads no store,
- * so a later slice mounts it in `FragilityScreen` without moving state.
+ * screening on its own, else nothing. Both results arrive as props; it reads no store.
  */
 export function SensitivityWidget({ scenario, morris, sobol }: SensitivityWidgetProps) {
   const labelOf = labelFrom(scenario)

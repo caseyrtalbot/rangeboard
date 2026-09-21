@@ -1,8 +1,6 @@
 /**
- * Read-side helpers for the track estimates a trial captured. Pure board
- * arithmetic: no React, no Konva, no DOM. The board layer (lane 2.3) and any
- * panel that reports a track read the same two functions, so the drawn
- * ellipse and a printed sigma never disagree.
+ * Read-side helpers for the track estimates a trial captured. The board layer
+ * and any panel that reports a track read the same two functions.
  *
  * Board frame throughout: +x east, +y south, angles measured from +x toward
  * +y, meters and seconds.

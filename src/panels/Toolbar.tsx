@@ -153,10 +153,8 @@ interface SpawnWarning {
 const spawnWarningCache = new WeakMap<Scenario, SpawnWarning | null>()
 
 /**
- * One source of truth with the analysis record: the chip reads the same run-validity
- * finding the requirement gates and the run export read, so the toolbar and the evidence
- * can never disagree. Derived live, never stored; cached by scenario identity so the
- * selector costs nothing on a publication that leaves the scenario alone.
+ * The chip reads the same run-validity finding the requirement gates and the run
+ * export read. Derived live, never stored, and cached by scenario identity.
  */
 function selectSpawnWarning(s: Store): SpawnWarning | null {
   const cached = spawnWarningCache.get(s.scenario)
@@ -245,9 +243,8 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
 
 /**
  * The top bar: identity and file actions on the left, the lifecycle tablist in the
- * centre, run status and the view controls on the right. Memoized and given only
- * primitives and stable handlers, so an `App` render never reaches it; it subscribes
- * to the scenario fields it shows, never to the whole scenario.
+ * centre, run status and view controls on the right. It takes only primitives and
+ * stable handlers, and subscribes to the scenario fields it shows.
  */
 export const Toolbar = memo(function Toolbar({
   drawerOpen,
@@ -376,7 +373,7 @@ export const Toolbar = memo(function Toolbar({
   )
 })
 
-/** Canvas-local Board controls, placed over the canvas by App. Memoized: App passes one stable handler. */
+/** Canvas-local Board controls, placed over the canvas by App. */
 export const BoardTools = memo(function BoardTools({
   onSelectTool,
 }: {

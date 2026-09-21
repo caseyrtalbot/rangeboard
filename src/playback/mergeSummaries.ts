@@ -1,9 +1,7 @@
 /**
- * Merge the partials of a replicate run by replicate index. A pool splits
- * 0..n into ranges, runs each on its own worker with `replicateRangeLoop`,
- * merges here and calls `finishSummary`; the result is the summary the
- * sequential loop gives for the same indices, whatever the range order.
- * Plain data only: a partial arrives through a worker message.
+ * Merge the partials of a replicate run by replicate index. The merge of the
+ * ranges of 0..n is the summary the sequential loop gives for the same
+ * indices, whatever order the ranges landed in.
  */
 import type { McPartial } from './mcRun'
 import { emptyPartial } from './mcRun'
@@ -15,13 +13,10 @@ function sameIds(a: string[], b: string[]): boolean {
 
 /**
  * The rows of `partial` for the replicates 0..m-1, where m is the first index
- * the partial is missing. A pool that stops on the half-width rule or on a
- * cancel has chunks in flight past the stop, so the merged partial can hold
- * indices beyond a gap; a summary must read a run with no holes, so the
- * coordinator finishes on this prefix. The partial itself is returned when it
- * has no gap. `retained` and `elapsedMs` are carried over unchanged: they
- * measure what the workers did, not what the summary reads, and the pool
- * passes its own wall clock to `finishSummary`.
+ * the partial is missing; the partial itself when it has no gap. A summary must
+ * read a run with no holes, and a stop leaves chunks in flight past the gap.
+ * `retained` and `elapsedMs` are carried over unchanged: they measure what the
+ * workers did, not what the summary reads.
  */
 export function contiguousPrefix(partial: McPartial): McPartial {
   let m = 0

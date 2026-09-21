@@ -1,8 +1,6 @@
 /**
- * The saved-run package: one `RunRecord` in its own versioned envelope, its
- * parser and the file import that writes it to the run store. Kept out of
- * `persist.ts` so the run store and the record parser load with the analysis
- * panel, not with the entry chunk.
+ * The saved-run package: one `RunRecord` in its own versioned envelope, its parser
+ * and the file import that writes it to the run store.
  */
 import type { RunMode, UncertaintyMode } from '../model/types'
 import type { FidelityTier, Override, PhysicsSwitch } from '../model/libraryField'
@@ -15,9 +13,8 @@ import { saveRun } from './runStore'
 import { invalid, objectAt } from './runtimeValidation'
 
 /**
- * A saved-run package: one `RunRecord` in its own versioned envelope. It is a
- * different document from the debrief `RunExport` above, which carries a
- * deterministic picture and no run manifest.
+ * A saved-run package. A different document from the debrief `RunExport`, which
+ * carries a deterministic picture and no run manifest.
  */
 export interface RunRecordExport {
   rangeboardRunRecord: 1
@@ -192,11 +189,9 @@ function parseSensitivity(value: unknown, path: string): SensitivitySummary | nu
 }
 
 /**
- * Parse a saved-run package or a raw `RunRecord`. The scenario passes the one
- * Board load boundary and the summary passes `validateMcSummary`, so an
- * imported record is exactly what a locally saved one is. A debrief export is
- * refused by name: it carries no run manifest, and a manifest is not something
- * an import may invent.
+ * Parse a saved-run package or a raw `RunRecord`. The scenario passes the one Board
+ * load boundary and the summary passes `validateMcSummary`. A debrief export is
+ * refused by name, because it carries no run manifest.
  */
 export function parseRunRecordPackage(value: unknown): RunRecord {
   const outer = objectAt(value, 'runRecord')

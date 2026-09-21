@@ -38,7 +38,6 @@ import {
   startSobol,
   startSweep,
 } from '../playback/mcClient'
-// The replicate count the loop ends at; sampling.ts brings only the prng into the store.
 import { loopEnd } from '../playback/sampling'
 import { cancelTrial, startTrial } from '../playback/trialClient'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
@@ -50,21 +49,16 @@ import { analysisBasisSignature } from './analysisBasis'
 import { selectTrialSelection } from './trialSelectors'
 
 /**
- * The five worker-backed analyses the store can request. This module owns
- * what a request is: its identity (run id, analysis basis, and for a trial the
- * request token and manifest), the startup order (pending state is published
- * before the worker starts, so a synchronous startup error lands as a terminal
- * error on that state), which messages a request still accepts, and how a
- * request ends early. Callers request, accept and cancel through this module;
- * the envelope, the slot and the adapters are decided here and below.
+ * The worker-backed analyses the store can request. A request is identified by
+ * run id, analysis basis, and for a trial its request token and manifest. The
+ * pending state is published before the worker starts, so a synchronous startup
+ * error lands as a terminal error on that state.
  */
 export type AnalysisKind = 'mc' | 'sensitivity' | 'sweep' | 'trial' | 'optimize'
 
 /**
- * The kinds `requestAnalysis` launches. A placement run cannot be requested
- * without its spec, so it has its own entry point (`requestOptimize`), as the
- * Sobol stage has `requestSobol`; every kind still cancels through
- * `cancelAnalysis` and `requestCancel`.
+ * The kinds `requestAnalysis` launches. A placement run needs its spec, so it has
+ * its own entry point (`requestOptimize`), as the Sobol stage has `requestSobol`.
  */
 export type RequestKind = Exclude<AnalysisKind, 'optimize'>
 
@@ -75,7 +69,7 @@ export interface SweepSpec {
   responses?: SensitivityResponse[]
 }
 
-/** The request defaults of the plan: 40 replicates per cell on the leaker response. */
+/** Sweep defaults: 40 replicates per cell on the leaker response. */
 export const SWEEP_DEFAULTS: Required<Omit<SweepSpec, 'factors'>> = {
   replicatesPerCell: 40,
   responses: ['leakers'],
@@ -83,9 +77,9 @@ export const SWEEP_DEFAULTS: Required<Omit<SweepSpec, 'factors'>> = {
 
 /**
  * What a placement run needs beyond the current scenario and run. `bounds`
- * defaults to the scenario's first range boundary, the budget to the contract
- * constants, and the seed to the scenario's run seed, so every evaluation of
- * one request shares the draw keys the replicate run would use.
+ * defaults to the scenario's first range boundary, the budget to
+ * `OPTIMIZE_DEFAULTS`, and the seed to the scenario's run seed, so every
+ * evaluation of one request shares the draw keys the replicate run would use.
  */
 export interface OptimizeSpec {
   objective: OptimizeObjective
@@ -97,7 +91,7 @@ export interface OptimizeSpec {
   seed?: number
 }
 
-/** The request defaults of the contract: 60 evaluations of 40 replicates. */
+/** Placement defaults: 60 evaluations of 40 replicates. */
 export const OPTIMIZE_DEFAULTS = {
   evaluations: DEFAULT_OPTIMIZE_EVALUATIONS,
   replicates: DEFAULT_OPTIMIZE_REPLICATES,
@@ -146,11 +140,9 @@ interface Launch<M> {
 const UNAVAILABLE = 'Web Worker unavailable'
 
 /**
- * The overrides a launch applies: the list the run keeps as part of its
- * identity, and the values written over the board scenario's library in the
- * scenario the worker runs (`applyOverrides`). The board scenario, its basis
- * signature and history keep the library values; a trial applies the same rule
- * inside `runTrial` from the manifest it records them in.
+ * The overrides a launch applies. The board scenario, its basis signature and
+ * history keep the library values; only the scenario sent to the worker carries
+ * the override values.
  */
 function launchOverrides(scenario: Scenario): Override[] {
   return activeOverrides(useOverrides.getState().overrides, scenario)
@@ -158,12 +150,11 @@ function launchOverrides(scenario: Scenario): Override[] {
 
 /**
  * Request one analysis for the current scenario and run. Publishes the pending
- * state, then starts the worker; the environment without a Worker and every
- * synchronous startup failure end the request through its sink. Nothing is
- * requested for replicates, sensitivity or a sweep under deterministic mode,
- * nor for a sweep without its spec. A sensitivity request reads the scenario's
- * depth: 'quick' is the one-at-a-time run, 'full' is Morris on `response`
- * (leakers by default), and the Sobol stage follows through `requestSobol`.
+ * state, then starts the worker; a missing Worker and every synchronous startup
+ * failure end the request through its sink. Deterministic mode requests no
+ * replicates, sensitivity or sweep. A sensitivity request reads the scenario's
+ * depth: 'quick' is the one-at-a-time run, 'full' is Morris on `response`, and
+ * the Sobol stage follows through `requestSobol`.
  */
 export function requestAnalysis(
   kind: RequestKind,
@@ -186,10 +177,9 @@ export function requestAnalysis(
 }
 
 /**
- * End one kind's request now: the adapter terminates its worker, and queued
- * callbacks from it are dropped by slot ownership. Use this where the request
- * no longer describes the current board (load, reset, a stale basis) or where
- * the caller has already published the ended state itself.
+ * End one kind's request now: the adapter terminates its worker and queued
+ * callbacks from it are dropped. Use it where the request no longer describes the
+ * current board, or where the caller already published the ended state.
  */
 export function cancelAnalysis(kind: AnalysisKind): void {
   switch (kind) {
@@ -208,10 +198,9 @@ export function cancelAnalysis(kind: AnalysisKind): void {
 }
 
 /**
- * Ask a running replicate, sensitivity, sweep or placement run to stop at its
- * next checkpoint, so its `done` message still carries the work already
- * finished. A worker silent past the grace period is terminated. A trial has
- * no graceful stop; cancel it through `cancelAnalysis`.
+ * Ask a run to stop at its next checkpoint, so its `done` message still carries
+ * the work already finished. A worker silent past the grace period is terminated.
+ * A trial has no graceful stop; cancel it through `cancelAnalysis`.
  */
 export function requestCancel(
   kind: 'mc' | 'sensitivity' | 'sweep' | 'optimize',
@@ -245,13 +234,12 @@ function mcLaunch(
       mc: {
         // The total is where the loop ends: the cap under a half-width target.
         ...pendingRun(st, loopEnd(settings), overrides),
-        // A new replicate run starts with no pool progress. The Morris and Sobol
-        // results describe the same board until its basis changes, so they stay.
+        // A new replicate run starts with no pool progress. Morris and Sobol results
+        // describe the same board until its basis changes, so they stay.
         pool: null,
         morris: st.mc.morris,
         sobol: st.mc.sobol,
-        // The sensitivity run, the sweep and the placement run have their own
-        // worker and lifecycle, so a replicate run leaves all three alone.
+        // These three have their own workers, so a replicate run leaves them alone.
         sensitivity: st.mc.sensitivity,
         sweep: st.mc.sweep,
         optimize: st.mc.optimize,
@@ -271,10 +259,8 @@ function sensitivityLaunch(
   const { runMode, sensitivityDepth } = runSettings(st.scenario)
   if (runMode === 'deterministic') return null
   const runId = st.playback.runId
-  // The unit count arrives with the first progress message: a value import of
-  // uncertainFields would pull attrition.ts into the store. A sweep on the
-  // shared slot is replaced; its pending state goes with it. A new sensitivity
-  // run clears the Morris and Sobol results of the last one.
+  // Total starts at 0: the unit count arrives with the first progress message,
+  // because importing uncertainFields by value would pull attrition.ts into the store.
   const overrides = launchOverrides(st.scenario)
   const pending: AnalysisPatch = {
     mc: {
@@ -302,10 +288,10 @@ function sensitivityLaunch(
 }
 
 /**
- * The Sobol stage of a full sensitivity run, after `morris-done` was accepted:
- * the fields Morris kept, on the response it read, on the same slot and run
- * identity. A screening that kept nothing ends the run done with no Sobol
- * result. The caller passes the state after the Morris patch was applied.
+ * The Sobol stage of a full sensitivity run, on the fields Morris kept and the
+ * response it read, on the same slot and run identity. A screening that kept
+ * nothing ends the run done with no Sobol result. The caller passes the state
+ * after the Morris patch was applied.
  */
 export function requestSobol(
   st: AnalysisSlices,
@@ -341,11 +327,9 @@ export function requestSobol(
 }
 
 /**
- * Request one placement optimization for the current scenario and run. It has
- * its own worker slot, so it replaces only an optimization already there.
- * Nothing is requested under deterministic mode, with no movable entity, or
- * with no bounds polygon (the scenario has no range boundary and the spec
- * names none).
+ * Request one placement optimization for the current scenario and run. It has its
+ * own worker slot, so it replaces only an optimization already there. Nothing is
+ * requested under deterministic mode, with no movable entity, or with no bounds.
  */
 export function requestOptimize(
   st: AnalysisSlices,
@@ -440,10 +424,7 @@ function pendingRun<S>(
   }
 }
 
-/**
- * A retry within one run keeps the captured scenario and manifest (the same
- * draw) under a new request token; the first request captures both.
- */
+/** A retry keeps the captured scenario and manifest under a new request token. */
 function trialLaunch(st: AnalysisSlices): Launch<TrialWorkerMessage> {
   const basisSignature = analysisBasisSignature(st.scenario)
   // The record names the overrides in force at launch; a later edit never rewrites it.
@@ -475,10 +456,8 @@ function trialLaunch(st: AnalysisSlices): Launch<TrialWorkerMessage> {
 }
 
 /**
- * A message belongs to a request only while that request is live, on the
- * current playback run, on the board it was requested for. A message from a
- * cancelled or superseded run describes another board; so does a result that
- * was already in flight when the basis changed. Terminal states accept nothing.
+ * A message belongs to a request only while that request is live, on the current
+ * playback run, on the board it was requested for. Terminal states accept nothing.
  */
 function owns(
   st: AnalysisSlices,
@@ -506,9 +485,8 @@ export function acceptMcMessage(st: AnalysisSlices, m: McWorkerMessage): Analysi
 }
 
 /**
- * Accept the pool's progress; null unless a replicate run is live. A late
- * message after a reset must not revive the slice. The pool carries no run
- * id of its own: the coordinator already drops a replaced run's callbacks.
+ * Accept the pool's progress; null unless a replicate run is live. The pool
+ * carries no run id: the coordinator drops a replaced run's callbacks already.
  */
 export function acceptPoolProgress(st: AnalysisSlices, p: PoolProgress): AnalysisPatch | null {
   return st.mc.status === 'running' ? { mc: { ...st.mc, pool: p } } : null
@@ -544,9 +522,8 @@ function acceptOatMessage(st: AnalysisSlices, m: McSensitivityMessage): Analysis
 }
 
 /**
- * Accept a Morris message on the sensitivity run's identity. `morris-done`
- * records the result and keeps the run live with its count reset, so the
- * Sobol stage can follow on the same identity (see `requestSobol`).
+ * Accept a Morris message on the sensitivity run's identity. `morris-done` keeps
+ * the run live with its count reset, so the Sobol stage follows on that identity.
  */
 export function acceptMorrisMessage(st: AnalysisSlices, m: McMorrisMessage): AnalysisPatch | null {
   const sens = st.mc.sensitivity
@@ -564,6 +541,7 @@ export function acceptMorrisMessage(st: AnalysisSlices, m: McMorrisMessage): Ana
 /**
  * Accept a Sobol message on the sensitivity run's identity. `sobol-done`
  * records the result and ends the run; the one-at-a-time summary stays null.
+ * A cancelled stage carries a null result and ends on the Morris result.
  */
 export function acceptSobolMessage(st: AnalysisSlices, m: McSobolMessage): AnalysisPatch | null {
   const sens = st.mc.sensitivity
@@ -576,7 +554,13 @@ export function acceptSobolMessage(st: AnalysisSlices, m: McSobolMessage): Analy
         mc: {
           ...st.mc,
           sobol: m.result,
-          sensitivity: { ...sens, status: 'done', progress: sens.total, error: null },
+          sensitivity: {
+            ...sens,
+            status: 'done',
+            progress: m.result ? sens.total : 0,
+            total: m.result ? sens.total : 0,
+            error: null,
+          },
         },
       }
     case 'sobol-error':
@@ -592,11 +576,10 @@ export function acceptSweepMessage(st: AnalysisSlices, m: McSweepMessage): Analy
 }
 
 /**
- * Accept a placement message; null when it belongs to no live request. The
- * progress count is the evaluations completed and `best` is the incumbent so
- * far. `optimize-done` keeps the requested budget as the total and the trace
- * length as the progress, so a cut run (cancelled or stopped early) still
- * reads as fewer evaluations than it asked for.
+ * Accept a placement message; null when it belongs to no live request. Progress
+ * counts evaluations completed and `best` is the incumbent so far. `optimize-done`
+ * keeps the requested budget as the total and the trace length as the progress,
+ * so a cut run reads as fewer evaluations than it asked for.
  */
 export function acceptOptimizeMessage(
   st: AnalysisSlices,
@@ -669,9 +652,9 @@ function acceptRun<S>(
 }
 
 /**
- * Accept a trial message; null when it belongs to no live request. Beyond the
- * shared identity, a trial answers to its request token, and its result must
- * repeat the retained manifest and pass the shared adapter before it is ready.
+ * Accept a trial message; null when it belongs to no live request. A trial also
+ * answers to its request token, and its result must repeat the retained manifest
+ * and pass the shared adapter before it is ready.
  */
 export function acceptTrialMessage(
   st: AnalysisSlices,

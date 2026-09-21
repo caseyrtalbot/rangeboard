@@ -21,6 +21,7 @@ import { TrackFileReadout } from './TrackFileReadout'
 import { ContextMenu } from './ContextMenu'
 import { ConnectSuggestPopup } from './ConnectSuggestPopup'
 import { IDLE_INTERACTION, routeInteraction } from './interactionRouter'
+import { SceneErrorBoundary } from './SceneErrorBoundary'
 import type { Action } from './interactionRouter'
 
 const MIN_SCALE = 0.0005
@@ -57,9 +58,8 @@ export const CanvasStage = memo(function CanvasStage({
     return () => registerStage(null)
   })
   const [size, setSize] = useState({ w: 800, h: 600 })
-  // The cursor lives in a ref. Only the draft rubber band and the calibrate
-  // line read it, so state is set only while one of those tools is up; a plain
-  // hover must not re-render the stage and repaint every layer.
+  // The cursor lives in a ref. State is set only while the draft rubber band or the
+  // calibrate line is up, so a plain hover repaints no layer.
   const mouseWorldRef = useRef<Vec2 | null>(null)
   const [mouseWorld, setMouseWorld] = useState<Vec2 | null>(null)
   const lastClicks = useRef<Array<{ x: number; y: number; t: number }>>([])
@@ -68,16 +68,19 @@ export const CanvasStage = memo(function CanvasStage({
   const suppressClick = useRef(false)
   // Held modifier keys disable stage panning so the same drag can box-select.
   const [modKey, setModKey] = useState(false)
-  // Palette drag-over cue. Enter/leave depth counter: child elements fire
-  // their own enter/leave pairs, so only depth 0 means the drag truly left.
+  // Palette drag-over cue. Child elements fire their own enter/leave pairs, so only
+  // depth 0 means the drag truly left.
   const [dropActive, setDropActive] = useState(false)
   const dragDepth = useRef(0)
+  // A throw inside the Konva tree lands here; Retry remounts the layers.
+  const [sceneError, setSceneError] = useState<string | null>(null)
+  const [sceneAttempt, setSceneAttempt] = useState(0)
 
   const scenario = useStore((s) => s.scenario)
   const camera = useStore((s) => s.camera)
   const setCamera = useStore((s) => s.setCamera)
-  // Field subscriptions, not the whole `ui` object: a publication that moves an
-  // unrelated ui field must not re-render the stage.
+  // Field subscriptions, not the whole `ui` object, so an unrelated ui field does
+  // not re-render the stage.
   const tool = useStore((s) => s.ui.tool)
   const basemap = useStore((s) => s.ui.basemap)
   const moveUnderlay = useStore((s) => s.ui.moveUnderlay)
@@ -144,11 +147,10 @@ export const CanvasStage = memo(function CanvasStage({
 
   function handleContextMenu(e: KonvaEventObject<MouseEvent>) {
     e.evt.preventDefault()
-    // Ctrl+left-click also fires contextmenu on macOS; the menu is
-    // right-button only so Ctrl-drag stays a clean box select.
+    // Ctrl+left-click also fires contextmenu on macOS; the menu is right-button only.
     if (e.evt.button !== 2) return
-    // Entity nodes open their own menu and cancel bubbling; any other target
-    // (stage, boundary, connection) gets the placement menu.
+    // Entity nodes open their own menu and cancel bubbling; any other target gets
+    // the placement menu.
     const pointer = stageRef.current?.getPointerPosition()
     const world = pointerWorld()
     if (!pointer || !world) return
@@ -280,8 +282,7 @@ export const CanvasStage = memo(function CanvasStage({
     if (pointer && !clickSuppressed) {
       lastClicks.current = [...lastClicks.current.slice(-1), { ...pointer, t: performance.now() }]
     }
-    // Precedence (raid draft ahead of the draw tools, the in-place pair's
-    // second click, select-only deselect) lives in the router.
+    // Precedence lives in the router.
     const action = routeInteraction(
       { kind: 'click-stage', onEmpty, inPlacePair: isInPlacePair() },
       {
@@ -296,16 +297,14 @@ export const CanvasStage = memo(function CanvasStage({
   }
 
   function handleDblClick() {
-    // Konva pairs any two clicks inside its time window into a dblclick, even
-    // far apart. Only a true in-place double-click finishes; rapid waypoint
-    // clicks keep drawing.
+    // Konva pairs any two clicks inside its time window into a dblclick, even far
+    // apart, so only a true in-place double-click finishes.
     if (!isInPlacePair()) return
     if (tool === 'boundary') finishBoundary(true)
     if (tool === 'path') finishPath()
   }
 
-  // A cancelled drag (Esc) may end without a leave; dragend on the source
-  // window clears the cue regardless.
+  // A cancelled drag (Esc) may end without a leave; dragend clears the cue regardless.
   useEffect(() => {
     if (!dropActive) return
     const end = () => {
@@ -324,8 +323,7 @@ export const CanvasStage = memo(function CanvasStage({
   const drawing = tool !== 'select'
   // Tools whose draft geometry follows the cursor.
   const cursorDrawn = tool === 'boundary' || tool === 'path' || tool === 'calibrate'
-  // Picking one of those tools must start from the cursor's current place, not
-  // from wherever the last draft left it.
+  // Picking one of those tools starts from the cursor's current place.
   useEffect(() => {
     if (cursorDrawn) setMouseWorld(mouseWorldRef.current)
   }, [cursorDrawn])
@@ -400,48 +398,72 @@ export const CanvasStage = memo(function CanvasStage({
           }
         }}
       >
-        <Layer listening={false}>
-          <TileLayer size={size} />
-        </Layer>
-        <Layer listening={moveUnderlay}>
-          <UnderlayLayer />
-        </Layer>
-        <Layer listening={false}>
-          <GridLayer size={size} />
-        </Layer>
-        {/* Two Konva Layers, two canvases: the static rings repaint only when
+        <SceneErrorBoundary
+          key={sceneAttempt}
+          onError={(error) => setSceneError(error.message || 'unknown error')}
+        >
+          <Layer listening={false}>
+            <TileLayer size={size} />
+          </Layer>
+          <Layer listening={moveUnderlay}>
+            <UnderlayLayer />
+          </Layer>
+          <Layer listening={false}>
+            <GridLayer size={size} />
+          </Layer>
+          {/* Two Konva Layers, two canvases: the static rings repaint only when
             the scenario, the camera or a sensor hold changes; the live layer
             repaints per animation frame. Child order across the two keeps
             today's z-order. */}
-        <Layer>
-          <StaticScene trial={trial} horizonS={horizonS} />
-        </Layer>
-        <Layer>
-          <LiveScene
-            scenario={scenario}
-            camera={camera}
-            size={size}
-            mouseWorld={mouseWorld}
-            trial={trial}
-            horizonS={horizonS}
-            durationS={durationS}
-          />
-          {marquee && (
-            <Rect
-              x={Math.min(marquee.a.x, marquee.b.x)}
-              y={Math.min(marquee.a.y, marquee.b.y)}
-              width={Math.abs(marquee.b.x - marquee.a.x)}
-              height={Math.abs(marquee.b.y - marquee.a.y)}
-              stroke="#a9b4bd"
-              strokeWidth={1}
-              dash={MARQUEE_DASH}
-              strokeScaleEnabled={false}
-              fill="rgba(169, 180, 189, 0.08)"
-              listening={false}
+          <Layer>
+            <StaticScene trial={trial} horizonS={horizonS} />
+          </Layer>
+          <Layer>
+            <LiveScene
+              scenario={scenario}
+              camera={camera}
+              size={size}
+              mouseWorld={mouseWorld}
+              trial={trial}
+              horizonS={horizonS}
+              durationS={durationS}
             />
-          )}
-        </Layer>
+            {marquee && (
+              <Rect
+                x={Math.min(marquee.a.x, marquee.b.x)}
+                y={Math.min(marquee.a.y, marquee.b.y)}
+                width={Math.abs(marquee.b.x - marquee.a.x)}
+                height={Math.abs(marquee.b.y - marquee.a.y)}
+                stroke="#a9b4bd"
+                strokeWidth={1}
+                dash={MARQUEE_DASH}
+                strokeScaleEnabled={false}
+                fill="rgba(169, 180, 189, 0.08)"
+                listening={false}
+              />
+            )}
+          </Layer>
+        </SceneErrorBoundary>
       </Stage>
+      {sceneError && (
+        <div className="canvas-scene-error" role="alert">
+          <span className="state critical">
+            <i className="state-square" aria-hidden="true" />
+            The board could not be drawn.
+          </span>
+          <p className="muted small">{sceneError}</p>
+          <p className="muted small">Your scenario is still available.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSceneError(null)
+              setSceneAttempt((n) => n + 1)
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {basemap === 'sat' && scenario.geoRef && (
         <div className="tile-attribution">
           Imagery: Esri World Imagery (Esri, Maxar, Earthstar Geographics)

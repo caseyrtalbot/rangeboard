@@ -1,9 +1,7 @@
 /**
- * One autosave lifecycle for both stores. It owns the read, the recovery of an
- * unreadable record, the write gate, the debounce, the browser events and the
- * flush; an adapter supplies the storage key, the parser, the record selection,
- * the adoption and the status format. Settings (`readSetting` and `writeSetting`
- * in `viewState.ts`) are not autosaves: they drop failures by design and stay out.
+ * One autosave lifecycle for both stores: the read, the recovery of an unreadable
+ * record, the write gate, the debounce, the browser events and the flush. An
+ * adapter supplies the key, the parser, the selection, the adoption and the status.
  */
 
 import {
@@ -25,7 +23,7 @@ const READ_PAUSED =
 
 /** Everything one store's autosave does differently. */
 export interface AutosaveAdapter<R> {
-  /** Live storage key. Never renamed: it is the contract with existing saves. */
+  /** Live storage key. Never renamed: existing saves are read by it. */
   key: string
   /** Prefix of a recovery copy of an unreadable record. */
   recoveryPrefix: string
@@ -36,9 +34,8 @@ export interface AutosaveAdapter<R> {
   /** Put a restored record into the owning store. */
   adopt: (record: R) => void
   /**
-   * Subscribe the owning store and report every record worth writing. Returns
-   * the unsubscribe. The comparison that decides "worth writing" belongs here:
-   * the Board watches the scenario, the baseline lane watches the pinned baseline.
+   * Subscribe the owning store and report every record worth writing. Returns the
+   * unsubscribe. The comparison that decides "worth writing" belongs here.
    */
   subscribe: (changed: (record: R) => void) => () => void
   /** Stamp a completed write in the owning store's time format. */
@@ -111,8 +108,8 @@ export function createAutosave<R>(adapter: AutosaveAdapter<R>): Autosave<R> {
       localStorage.setItem(adapter.key, JSON.stringify(record))
       adapter.reportSaved()
     } catch (error) {
-      // Storage full (a large underlay image) or storage unavailable. The saved
-      // stamp must not keep showing a time that is no longer true.
+      // Storage full or unavailable: the saved stamp must not keep showing a
+      // time that is no longer true.
       adapter.reportWriteFailure(error)
     }
   }

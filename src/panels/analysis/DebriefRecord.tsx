@@ -111,11 +111,9 @@ function RunActions({
 }
 
 /**
- * Run-validity banner for the evidence record. A run the test cannot support
- * is not a pass and not a fail, so the record states the validity before it
- * states any result, and lists every finding with the gates it bears on.
- * Findings come from the one assessRunValidity call the record already made,
- * which is also the call the gates read, so the two can never disagree.
+ * Run-validity banner for the evidence record: the validity, then every finding
+ * with the gates it bears on. Findings come from the one `assessRunValidity` call
+ * the record already made, which is also the call the gates read.
  */
 export function RunValidityBanner({ assessment }: { assessment: RunValidityAssessment }) {
   const text = VALIDITY_TEXT[assessment.validity]

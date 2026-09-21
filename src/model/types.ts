@@ -150,8 +150,7 @@ export interface SensorSpec {
   rangeBasis?: RangeBasis
   /**
    * Classification confusion matrix by range band for this sensor. Absent or
-   * null: the rule ladder classifies (today's path). Fills through the library
-   * as an attribute in a later data lane.
+   * null: the rule ladder classifies.
    */
   classification?: ClassificationMatrix | null
 }
@@ -240,8 +239,7 @@ export type JamBehavior = 'drift' | 'return-home' | 'continue'
 
 /**
  * RF bands the EW model reasons about. GNSS is the navigation band; the rest
- * are the common sUAS control/video link bands. Coarse by design: this is a
- * planning-factor model, not a spectrum survey.
+ * are the common sUAS control/video link bands.
  */
 export type JamBand = 'gnss' | 'uhf-433' | 'ism-915' | 'ism-2400' | 'ism-5800'
 
@@ -799,54 +797,44 @@ export type EngagePolicy = 'detected' | 'confirmed'
 export type Roe = 'hold' | 'tight' | 'free'
 
 /**
- * Launch-point policy: WHERE in the effector envelope a shot is released once
- * the doctrinal sequence has authorized it. Every policy still requires a
- * positive predicted Pk, and every policy fires no later than the deadline
- * that preserves `opportunities` engagement cycles before arrival (a closing
- * in-range window is its own deadline). Test-and-evaluation use of each:
- *   'max-range'      release at the first in-envelope opportunity. Exercises
- *                    the maximum engagement range; Pk pays the full falloff.
- *   'range-fraction' release once the intercept point is inside
- *                    launchRangeFraction x max range (planning default 2/3,
- *                    the effective-range rule of thumb). Exercises a
- *                    mid-envelope shot with margin for a re-attack.
- *   'pk-commit'      release once predicted per-shot Pk reaches the
- *                    effector's commit Pk (doctrineFactors PK_COMMIT, spec
- *                    override commitPk). Quality firing solution first.
- *   'latest'         hold to the deadline itself: the last launch that still
- *                    preserves the re-engagement depth. Exercises the
- *                    minimum-range / last-chance shot.
+ * Where in the effector envelope a shot is released once the doctrinal
+ * sequence has authorized it. Every policy requires a positive predicted Pk
+ * and fires no later than the deadline that preserves `opportunities`
+ * engagement cycles before arrival (a closing in-range window is its own
+ * deadline).
+ *   'max-range'      the first in-envelope opportunity.
+ *   'range-fraction' once the intercept point is inside launchRangeFraction
+ *                    x max range.
+ *   'pk-commit'      once predicted per-shot Pk reaches the effector's commit
+ *                    Pk (doctrineFactors PK_COMMIT, spec override commitPk).
+ *   'latest'         the deadline itself, the last launch that still
+ *                    preserves the re-engagement depth.
  */
 export type LaunchPolicy = 'max-range' | 'range-fraction' | 'pk-commit' | 'latest'
 
 /**
- * Doctrinal fire-control settings: detect -> track -> identify -> target ->
- * engage -> assess. Enabled (the default), the engine runs the sequence:
- *   TRACK. A shot needs a STABLE FIRE-CONTROL TRACK (a radar or EO/IR sensor
- *   holding the track continuously for its track initiation time; RF and
- *   acoustic hits cue but cannot build a firing solution).
+ * Doctrinal fire-control settings for the detect -> track -> identify ->
+ * target -> engage -> assess sequence the engine runs when `enabled`:
+ *   TRACK. A radar or EO/IR sensor must hold the track continuously for its
+ *   track initiation time; RF and acoustic hits cue but build no firing
+ *   solution.
  *   IDENTIFY. Hostile identification on the classification ladder, then a
- *   declareHostileS operator dwell after both. ROE 'free' and 'tight' both
- *   require the declaration; 'hold' blocks.
+ *   declareHostileS operator dwell. ROE 'free' and 'tight' both require the
+ *   declaration; 'hold' blocks.
  *   TARGET. The declared track is routed to a shooter (kill-chain hop
- *   latency) and that shooter needs its weapon assignment and firing
- *   solution dwell (targetS; per type in doctrineFactors TARGET_S, spec
- *   override EffectorSpec.targetS). The effector is release-ready only then.
- *   ENGAGE. Shoot-look-shoot: one kill salvo in flight per ship, and among
- *   effectors able to shoot the best predicted per-shot Pk wins. The
- *   launchPolicy decides where in the envelope the shot is released; the
- *   deadline that preserves `opportunities` full engagement cycles (engage
- *   time + BDA) before arrival forces the shot regardless of policy.
- *   ASSESS. A bdaS battle-damage-assessment dwell after each effect before
- *   anyone re-engages that ship.
- * Disabled = instant release: the ROE gate alone opens the window and every
- * ready effector volleys until the target is expected dead. Comparison only,
- * not planning.
+ *   latency), which then needs its targetS assignment and firing-solution
+ *   dwell before it is release-ready.
+ *   ENGAGE. One kill salvo in flight per ship; among effectors able to
+ *   shoot, the best predicted per-shot Pk wins. launchPolicy places the shot
+ *   in the envelope, and the `opportunities` deadline forces it regardless.
+ *   ASSESS. A bdaS dwell after each effect before anyone re-engages.
+ * Disabled, the ROE gate alone opens the window and every ready effector
+ * volleys until the target is expected dead.
  * All values are planning factors, editable per scenario. trackFirmS,
- * targetS, bdaS and pkCommit are the UNIFORM fallbacks: with doctrine
- * enabled the engine derives per-system values instead (spec override, else
- * the role/type tables in src/analysis/doctrineFactors.ts, else these), and
- * links with no latencyS are charged the doctrineFactors default hop latency.
+ * targetS, bdaS and pkCommit are the uniform fallbacks: with doctrine
+ * enabled the engine prefers the spec override, else the role/type tables in
+ * src/analysis/doctrineFactors.ts. Links with no latencyS are charged the
+ * doctrineFactors default hop latency.
  */
 export interface FireDoctrine {
   enabled: boolean
@@ -1000,7 +988,7 @@ export interface AarSummary {
   /** DEFEATS: expectedHardKills + expectedSoftKills. */
   expectedKills: number
   /**
-   * UNDEFEATED ships: the leaker bucket plus the never-arrived bucket. It
+   * Undefeated ships: the leaker bucket plus the never-arrived bucket, so it
    * claims only "not defeated", never "reached an asset". expectedNoArrival
    * splits the second bucket out; AttritionTotals.reportedLeakers is the
    * measurable leaker count.
@@ -1015,9 +1003,8 @@ export interface AarSummary {
   expectedNoArrival?: number
   /**
    * Kill mass whose effect landed strictly after the threat was already over
-   * the defended asset. Real destruction that did not protect the asset, so
-   * it is NEVER a defeat: a sub-measure of the undefeated mass, not a
-   * deduction from it. Absent on older pins.
+   * the defended asset. It is never a defeat: a sub-measure of the undefeated
+   * mass, not a deduction from it. Absent on older pins.
    */
   expectedLateKills?: number
   /** Mean per-ship undefeated fraction over the raid; null when the raid is empty. */
@@ -1048,11 +1035,9 @@ export interface ScorecardSnap {
 }
 
 /**
- * Test-defined pass criteria for the requirement gates. These are the numbers
- * the test asks the system to meet, so they belong to the scenario, not to the
- * engine. A gate threshold must never be an engine constant: the attrition
- * model stops firing at SHIP_DEAD_BELOW, so a requirement set to that same
- * value passes itself by construction.
+ * Test-defined pass criteria for the requirement gates; scenario data, not
+ * engine constants. A threshold set to an engine constant passes itself by
+ * construction: the attrition model stops firing at SHIP_DEAD_BELOW.
  */
 export interface RequirementThresholds {
   /**
@@ -1075,7 +1060,7 @@ export interface RequirementThresholds {
 
 /**
  * Default requirement thresholds for a new scenario. maxResidualPerTrack is
- * deliberately NOT the engine's SHIP_DEAD_BELOW cutoff.
+ * deliberately not the engine's SHIP_DEAD_BELOW cutoff.
  */
 export const DEFAULT_REQUIREMENT_THRESHOLDS: RequirementThresholds = {
   maxResidualPerTrack: 0.1,
@@ -1102,8 +1087,8 @@ export const DEFAULT_REPLICATES = 100
 
 /**
  * Sweep step of a fresh scenario, seconds: the engine DT (playback/clock.ts).
- * The manifest parameter the sweep, the fusion ring and the false-track scan
- * clock read; a per-effector fine step is requested on the SweepClock, not here.
+ * The sweep, the fusion ring and the false-track scan clock read it; a
+ * per-effector fine step is requested on the SweepClock instead.
  */
 export const DEFAULT_SWEEP_STEP_S = DT
 
@@ -1232,7 +1217,7 @@ export function physicsSwitches(s: Scenario): PhysicsSwitch[] {
   return PHYSICS_SWITCH_ORDER.filter((id) => on.includes(id))
 }
 
-/** The run fields of a scenario with their defaults applied; the contract every runner reads. */
+/** The run fields of a scenario with their defaults applied, as every runner reads them. */
 export interface McSettings {
   runMode: RunMode
   seed: number
@@ -1296,12 +1281,10 @@ export function newId(prefix: string): string {
 }
 
 /**
- * Calibration from typed counts (Phase 4.2). A record names one library
- * field by the same `(modelId, field)` pair `Override` and
- * `useOverrides.setOverride` take, holds the prior the user started from,
- * the observation typed in, and the posterior the accept step writes as an
- * override. Plain data: the record lives beside the override set, never in
- * a `Scenario` or `SpecModel`.
+ * A calibration record names one library field by the same `(modelId, field)`
+ * pair `Override` takes, and holds the prior, the typed observation and the
+ * posterior the accept step writes as an override. It lives beside the
+ * override set, never in a `Scenario` or `SpecModel`.
  */
 
 /** Beta(a, b) on a proportion. The Jeffreys prior is a = b = 0.5. */

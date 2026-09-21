@@ -14,10 +14,9 @@ interface SobolChartProps {
 }
 
 /**
- * The gutter holds a model name and a field key:
- * 24 characters of 11 px mono at about 6 px each from a 2 px inset. A longer label is cut
- * in the middle, not at the end, because the field key is the identity and the model name
- * is context; the hidden ranking block below the svg carries every label whole.
+ * The gutter holds a model name and a field key: 24 characters of 11 px mono at
+ * about 6 px each from a 2 px inset. A longer label is cut in the middle, so the
+ * field key stays readable; the hidden ranking block carries every label whole.
  */
 const GUTTER_W = 150
 const LABEL_CHARS = 24
@@ -55,8 +54,8 @@ const clamp01 = (v: number) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v))
 const outOfScale = (i: BootstrapInterval) => i.lo < 0 || i.hi > 1 || i.value < 0 || i.value > 1
 
 /**
- * The method line: what was run and on what. `bootstrap` and `confidence` ride on every
- * interval, so the first ranked field states them for the chart.
+ * The method line. `bootstrap` and `confidence` ride on every interval, so the
+ * first ranked field states them for the chart.
  */
 function sobolCopy(result: SobolResult, clamped: number): string {
   const first = result.fields[result.ranking[0]]?.total
@@ -88,17 +87,11 @@ const HIDDEN = {
 } as const
 
 /**
- * Sobol indices as ranked horizontal bars: one row per field in `result.ranking` order,
- * the total index on top in `chart-1` and the first-order index under it in `chart-2`,
- * each with its bootstrap interval drawn as a whisker on its own centreline.
- *
- * Two bars, not one nested pair: each index carries its own interval, and a whisker has to
- * sit on the centreline of the bar it belongs to. Nested, both whiskers share one 8 px
- * band and the first-order upper bound can run past the end of the total bar, which reads
- * as a drawing error rather than as a bootstrap spread.
- *
- * Plain SVG: Recharts has no row-span primitive and gives a
- * non-Recharts child no width, so the chart owns its shell and measures its host.
+ * Sobol indices as ranked horizontal bars: one row per field in `result.ranking`
+ * order, the total index on top in `chart-1` and the first-order index under it in
+ * `chart-2`. Each index gets its own bar so its bootstrap whisker sits on its own
+ * centreline. Plain SVG: Recharts has no row-span primitive and gives a
+ * non-Recharts child no width, so the chart measures its own host.
  */
 export function SobolChart({ result, labelOf, width, rowHeight = 24 }: SobolChartProps) {
   const tokens = useMemo(() => readTokens(), [])

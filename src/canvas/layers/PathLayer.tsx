@@ -17,11 +17,8 @@ const PATH_DASH = [8, 5]
 const DRAFT_DASH = [6, 4]
 
 /**
- * One committed flight path. The flattened point list is memoized on the
- * path's own points, so a playback frame or a zoom leaves the array identity
- * alone and Konva does not re-set it. Memoized on the path and its caption
- * inputs; the zoom is read here, so an unrelated path edit re-renders only
- * the path that changed.
+ * One committed flight path. The flattened point list is memoized on the path's own
+ * points, so a playback frame or a zoom leaves the array identity alone.
  */
 const FlightPathShape = memo(function FlightPathShape({
   path,
@@ -38,6 +35,7 @@ const FlightPathShape = memo(function FlightPathShape({
 }) {
   const k = useStore((s) => s.camera.scale)
   const flat = useMemo(() => path.points.flatMap((pt) => [pt.x, pt.y]), [path.points])
+  if (path.points.length < 2) return null
   const last = path.points[path.points.length - 1]
   return (
     <Group listening={false}>
@@ -106,8 +104,7 @@ function DraftShape({
 /** Flight paths, in-progress drafts, and calibration markers. */
 export function PathLayer({ mouseWorld }: Props) {
   const scenario = useStore((s) => s.scenario)
-  // Field subscriptions, not the whole `ui`: an unrelated ui action must not
-  // re-render every path.
+  // Field subscriptions, not the whole `ui`, so an unrelated ui action re-renders no path.
   const tool = useStore((s) => s.ui.tool)
   const draftPoints = useStore((s) => s.ui.draftPoints)
   const pathEntityId = useStore((s) => s.ui.pathEntityId)
@@ -118,8 +115,8 @@ export function PathLayer({ mouseWorld }: Props) {
   const units = useStore((s) => s.ui.units)
   const showPaths = useStore((s) => selectEffectiveLayers(s).flightPaths)
 
-  // The flightPaths toggle hides committed paths only. The draft below and the
-  // calibrate markers always draw, or the drawing tools lose their feedback.
+  // The flightPaths toggle hides committed paths only; the draft and the calibrate
+  // markers always draw.
   const paths = (showPaths ? scenario.paths : []).map((p) => {
     const entity = scenario.entities.find((e) => e.id === p.entityId)
     if (!entity) return null

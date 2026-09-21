@@ -68,7 +68,7 @@ export function selectTrialSelection(state: State): TrialSelection {
   return selection
 }
 
-/** Raw cursor in every trial phase. Explicit forecasts keep selectExecutionHorizon. */
+/** The run cursor clamped to the observed horizon of both the run and the trial, seconds. */
 export function selectTrialHorizon(state: State, runCursor: number): number {
   const selection = selectTrialSelection(state)
   if (selection.status !== 'ready' || state.playback.startedAtMs == null) return 0

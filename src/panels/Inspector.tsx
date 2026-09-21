@@ -130,14 +130,12 @@ function referenceTitle(spec: SensorSpec): string | undefined {
 }
 
 /**
- * The detection point the placard range is quoted at. A radar range means
- * nothing without the Pd, the false-alarm probability and the fluctuation
- * case that go with it, because the range against any other Pd follows from
- * them.
+ * The detection point the placard range is quoted at: the Pd, the false-alarm
+ * probability and the fluctuation case, which fix the range against any other Pd.
  */
 function RadarPlacard({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
-  // The rows show the values the engine uses. A recorded value the
-  // calibration replaced (absent, or outside (0, 1)) shows as PF.
+  // The rows show the values the engine uses. A recorded value the calibration
+  // replaced (absent, or outside (0, 1)) shows as a planning factor.
   const scenario = useStore((s) => s.scenario)
   const cal = radarCalibration(spec, physicsSwitches(scenario).includes('singlePulseRadar'))
   return (
@@ -165,18 +163,16 @@ function RadarPlacard({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
 }
 
 /**
- * How the sensor builds a track file. A radar with a recorded scan period,
- * or a Pd-modeled radar on the SCAN_S role period, runs the M-of-N scan
- * model and coasts through a missed scan. Every other sensor initiates on
- * the sensor-role hold time.
+ * How the sensor builds a track file. A radar with a recorded scan period, or a
+ * Pd-modeled radar on the SCAN_S role period, runs the M-of-N scan model and
+ * coasts through a missed scan. Every other sensor initiates on the role hold time.
  */
 function ScanModel({ model, spec }: { model: SpecModel; spec: SensorSpec }) {
   const scenario = useStore((s) => s.scenario)
   if (spec.sensorType !== 'radar') return null
   const period = scanPeriodS(spec, false)
   if (period == null) {
-    // A target with an RCS makes the radar Pd-modeled, so it scans on the role
-    // period. The panel names no threat, so it says which rule applies.
+    // A target with an RCS makes the radar Pd-modeled, so it scans on the role period.
     if (targetScaled(spec))
       return (
         <Row
@@ -289,9 +285,8 @@ const RING_CHOICES: Array<{ v: RingChoice; label: string }> = [
 ]
 
 /**
- * Ring switches for one entity. Each row is tri-state: the ring follows the
- * View menu, or this entity forces it on, or this entity forces it off. An
- * override is view state, so no row here is undoable.
+ * Ring switches for one entity. Each row is tri-state: follow the View menu, force
+ * on, or force off. An override is view state, so no row here is undoable.
  */
 function RingOverrideRows({ entityId, keys }: { entityId: string; keys: readonly RingKey[] }) {
   const overrides = useStore((s) => s.ui.ringOverrides[entityId])
@@ -322,10 +317,9 @@ function RingOverrideRows({ entityId, keys }: { entityId: string; keys: readonly
 }
 
 /**
- * Height above ground of a sensor phase centre or an effector launcher. The
- * field edits the library model, so it applies to every entity placed from
- * that model. The tag says where the value in use comes from: a provenance
- * row, else the planning factor.
+ * Height above ground of a sensor phase centre or an effector launcher. The field
+ * edits the library model, so it applies to every entity placed from it. The tag
+ * names the value's basis: a provenance row, else the planning factor.
  */
 function MountHeight({
   model,
@@ -410,9 +404,8 @@ function PathSpeedField({ path, cruise, max }: { path: FlightPath; cruise: numbe
 }
 
 /**
- * Tactic raid builder, shown in place of the normal Inspector body while a
- * raid draft is armed. Commit happens on the next canvas click (sets the
- * ingress axis) or through "Use default axis".
+ * Tactic raid builder, shown in place of the Inspector body while a raid draft is
+ * armed. Commit happens on the next canvas click or through "Use default axis".
  */
 function RaidBuilderCard({ draft }: { draft: RaidDraft }) {
   const scenario = useStore((s) => s.scenario)
@@ -557,10 +550,7 @@ type IntegrationSummary = ReturnType<typeof integrationSummary>
 
 const integrationCache = new WeakMap<SpecModel[], Map<string | null, IntegrationSummary>>()
 
-/**
- * `integrationSummary` keyed by library identity and spec id. The section mounts on
- * every selection, so a per-render memo would recompute it each time.
- */
+/** `integrationSummary` cached by library identity and spec id, across selections. */
 function cachedIntegrationSummary(specId: string | null, library: SpecModel[]): IntegrationSummary {
   let byId = integrationCache.get(library)
   if (!byId) {
@@ -576,9 +566,8 @@ function cachedIntegrationSummary(specId: string | null, library: SpecModel[]): 
 }
 
 /**
- * What this system is known to integrate with (research-sourced), independent
- * of what is currently on the canvas. Answers "what connects to this?" even
- * when nothing compatible is placed yet.
+ * What this system is known to integrate with, from research rows, independent of
+ * what is on the canvas.
  */
 function IntegrationSection({ entity }: { entity: Entity }) {
   const library = useStore((s) => s.scenario.library)
@@ -589,9 +578,9 @@ function IntegrationSection({ entity }: { entity: Entity }) {
   const shown = showAll ? summary.partners : summary.partners.slice(0, 6)
 
   function suggest() {
-    // Popup coordinates are canvas-host px; clamp so it stays in view even
-    // when the entity sits off-screen.
-    // Read the camera here, not through a subscription: it changes every pan frame.
+    // Popup coordinates are canvas-host px; clamp so it stays in view when the
+    // entity is off-screen. The camera is read here, not subscribed: it changes
+    // every pan frame.
     const camera = useStore.getState().camera
     const host = document.querySelector('[data-testid="canvas-host"]')
     const w = host instanceof HTMLElement ? host.clientWidth : 800
@@ -674,8 +663,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
   const blue = entity.kind === 'sensor' || entity.kind === 'effector' || entity.kind === 'c2'
   const formation = entity.formation
 
-  // "Defended asset · Defended asset" says nothing twice; drop the model name
-  // when it repeats the kind.
+  // Drop the model name when it only repeats the kind.
   const kindLabel = KIND_LABEL[entity.kind]
   const modelName = model?.name ?? 'no model'
   const typeLine =

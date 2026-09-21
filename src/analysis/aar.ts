@@ -10,17 +10,18 @@ import type { AttritionReport, ThreatAttrition } from '../playback/attritionRepo
 import type { LeakerImpact } from './impact'
 
 /**
- * After-action summary: the threat assessments and the attrition report composed into
- * one JSON-serializable object. Pure; no store imports. Names are captured at summary
- * time so a pinned summary still renders after the laydown changes.
+ * After-action summary: the threat assessments and the attrition report as one
+ * JSON-serializable object. Names are captured at summary time so a pinned
+ * summary still renders after the laydown changes.
  *
- * AarSummary is a pinned shape: Scenario.scorecards holds copies made by older builds.
- * Every added field is optional and an existing field never changes meaning.
+ * Scenario.scorecards holds AarSummary copies made by older builds, so every
+ * added field is optional and an existing field never changes meaning.
  * expectedLeakers carries undefeated ships: leakers plus never-arrived.
  *
- * Expenditure splits by effector class, independently of the kill channel: shotsFired
- * (kinetic rounds), deSalvos (directed-energy bursts), jamSalvos (EW salvos).
- * expectedKills is pre-arrival mass; expectedLateKills landed after arrival.
+ * Expenditure splits by effector class, independently of the kill channel:
+ * shotsFired (kinetic rounds), deSalvos (directed-energy bursts), jamSalvos
+ * (EW salvos). expectedKills is pre-arrival mass; expectedLateKills landed
+ * after arrival.
  */
 
 /**
@@ -67,8 +68,7 @@ export function buildAarSummary(
         leakProbability: att?.leakProbability ?? 1,
         outcome: aarOutcome(att),
         killedByName: att ? name(att.killedByEffectorId) : null,
-        // Absent when no impact row exists: old-shape pins and new summaries share
-        // one optional contract.
+        // Absent when no impact row exists, as in an old-shape pin.
         ...(imp
           ? {
               assetName: imp.assetName,

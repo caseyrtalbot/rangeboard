@@ -756,6 +756,16 @@ input[type='color']::-webkit-color-swatch {
   background-image: var(--board-grain);
 }
 
+.canvas-scene-error {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 4;
+  padding: 8px 12px;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-strong);
+}
+
 .canvas-host.drawing {
   cursor: crosshair;
 }

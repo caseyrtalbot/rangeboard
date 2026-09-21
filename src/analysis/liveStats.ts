@@ -4,26 +4,25 @@ import type { AttritionReport } from '../playback/attritionReport'
 import { expectedDeadTimes } from './threatAggregation'
 
 /**
- * Live prefix-aggregation over the engagement ledger. buildLiveTimeline sorts the
- * whole-run forecast once per scenario; liveKpisAt answers "what has happened by t"
- * with binary searches. Pure TS, no DOM, no store imports.
+ * Live prefix-aggregation over the engagement ledger. buildLiveTimeline sorts
+ * the whole-run forecast once per scenario; liveKpisAt answers "what has
+ * happened by t" by binary search.
  *
- * Time semantics match the engine ledger: expenditure counts at assignment time tS;
- * kill mass at effect time tEffectS; a threat is detected at firstDetectS and arrives
- * at arrivalS (the defended-boundary crossing, not the closest approach). All bounds
- * are inclusive.
+ * Time semantics match the engine ledger: expenditure counts at assignment
+ * time tS; kill mass at effect time tEffectS; a threat is detected at
+ * firstDetectS and arrives at arrivalS (the defended-boundary crossing, not
+ * the closest approach). All bounds are inclusive.
  *
- * Arrival rule, the same as attrition.ts applies to the run totals: only kill mass
- * stamped lateEffect: false reduces leakerShips and reports as expectedKills.
- * Post-arrival mass reports apart as lateKills. An arrived threat's leaker mass is
- * fixed at its arrival, so the live leaker count only rises.
+ * Only kill mass stamped lateEffect: false reduces leakerShips and reports as
+ * expectedKills, the same rule attrition.ts applies to the run totals.
+ * Post-arrival mass reports apart as lateKills. An arrived threat's leaker
+ * mass is fixed at its arrival, so the live leaker count only rises.
  *
- * Expenditure splits on EngagementEvent.channelClass (what the salvo cost), never on
- * softShot (how it kills): a DE or HPM burst is a hard kill in deSalvos, not kineticShots.
+ * Expenditure splits on EngagementEvent.channelClass (what the salvo cost),
+ * never on softShot (how it kills).
  *
- * A threat whose expected residual is below SHIP_DEAD_BELOW leaves the targetable count
- * while its ROE window is open, consistent with trackState, systemTelemetry and
- * threatAggregation.
+ * A threat whose expected residual is below SHIP_DEAD_BELOW leaves the
+ * targetable count while its ROE window is open.
  */
 
 /** One ROE-gated usable window, with the time its threat becomes expected dead. */
@@ -214,14 +213,13 @@ export interface LiveKpis {
   /** EW salvos (jammer) assigned by t. */
   jamSalvos: number
   /**
-   * DEFEAT mass: expected kill mass landed by t whose effect was at or before
+   * Defeat mass: expected kill mass landed by t whose effect was at or before
    * its threat's arrival. Converges to AttritionTotals.expectedKills.
    */
   expectedKills: number
   /**
    * Kill mass landed by t whose effect was strictly after its threat's
-   * arrival. Real destruction that arrived too late to defend the asset, so
-   * it is reported apart and never reduces leakerShips. Converges to
+   * arrival. It never reduces leakerShips. Converges to
    * AttritionTotals.expectedLateKills.
    */
   lateKills: number
@@ -229,11 +227,10 @@ export interface LiveKpis {
   arrivedTracks: number
   /**
    * Expected ship mass that reached the asset: per arrived threat, its ship
-   * count minus the PRE-ARRIVAL kill mass landed on it. Fixed at each
-   * threat's arrival, so this count never falls, and it converges exactly to
-   * AttritionTotals.expectedLeakers. A threat that never crosses a defended
-   * boundary leaks nothing here and nothing there: its survivors sit in
-   * AttritionTotals.expectedNoArrival instead.
+   * count minus the pre-arrival kill mass landed on it. Fixed at each threat's
+   * arrival, so this count never falls, and it converges to
+   * AttritionTotals.expectedLeakers. The survivors of a threat that never
+   * crosses a defended boundary sit in AttritionTotals.expectedNoArrival.
    */
   leakerShips: number
 }

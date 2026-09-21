@@ -4,9 +4,8 @@ import type { BandSeries, IntervalMethod, McSummary, Stat, StopRule } from '../p
 import { invalid, objectAt } from '../io/runtimeValidation'
 
 /**
- * One laydown and its finished ensemble, kept for Compare. View state beside
- * the scenario: it never enters `Scenario`, history or the worker graph, and
- * it persists under its own storage key.
+ * One laydown and its finished ensemble, kept for Compare. It never enters
+ * `Scenario`, history or the worker graph, and persists under its own key.
  */
 export interface PinnedBaseline {
   /** ISO time of the pin. */
@@ -188,7 +187,7 @@ export function validateMcSummary(value: unknown, path = 'mc'): McSummary {
       rule: literal(stopped.rule, STOP_RULES, `${path}.stopped.rule`),
       at: finite(stopped.at, `${path}.stopped.at`),
     },
-    // Slice 3.0 stamps: absent on a summary written before them, so carried only when present.
+    // Absent on a summary written before these fields existed, so carried only when present.
     ...(o.operatorDecisions !== undefined
       ? { operatorDecisions: stat(o.operatorDecisions, `${path}.operatorDecisions`) }
       : {}),

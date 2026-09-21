@@ -4,10 +4,8 @@ import { targetScaled } from './common'
 
 /**
  * Acoustic target law: spherical spreading plus atmospheric absorption
- * against a reference source level. The spec range is quoted against a
- * reference source level; a louder source is heard farther by the solved
- * propagation equation. A later lane reads the array noise floor
- * (`noiseFloorDb`) and the bearing accuracy here.
+ * against the reference source level the spec range is quoted at, so a
+ * louder source is heard farther.
  */
 
 /** Atmospheric absorption, dB per km, at 1 kHz on a standard day (planning value). */

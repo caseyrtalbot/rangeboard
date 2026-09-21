@@ -125,11 +125,10 @@ export interface ThreatAssessment {
   /** True when a formation was detected but no detecting sensor could split it. */
   swarmMerged: boolean
   /**
-   * Closest point of approach (CPA) to the nearest defended asset: which
-   * asset, when the sweep sampled it, and how close. Populated whenever any
-   * asset is placed, even for a threat that turns away and never arrives.
-   * CPA is pure geometry: it says how near the track got, never that it got
-   * there. Use arrivalS for the "over the asset" question.
+   * Closest point of approach (CPA) to the nearest defended asset: which asset,
+   * when the sweep sampled it, and how close. Filled whenever any asset is
+   * placed, even for a threat that turns away. CPA is geometry only; use
+   * arrivalS for arrival.
    */
   cpaAssetId: string | null
   cpaS: number | null
@@ -181,10 +180,9 @@ export interface ThreatAssessment {
   /** Per-sensor detection/classification intervals retained for operator telemetry. */
   sensorObservations?: SensorObservation[]
   /**
-   * The fused track at each sweep step where one exists (fusion.ts): the
-   * C2 picture after link latency, or the sensor-level fusion with no C2
-   * node. Per replicate, discarded with the assessment; no summary retains
-   * it. Lane 2.6 and the intercept read the entry at a launch time.
+   * The fused track at each sweep step where one exists (fusion.ts): the C2
+   * picture after link latency, or the sensor-level fusion with no C2 node.
+   * Per replicate, discarded with the assessment; no summary retains it.
    */
   fusedTracks?: FusedTrack[]
   /** Union-of-sensors hold quality from first detection to the decision horizon. */
@@ -575,11 +573,10 @@ export function assessThreat(
   }
   base.engageGateS = gateS
   // A gated interval is usable when its length covers the effector's engage
-  // time plus the route latency (under doctrine the interval opens at the
-  // release-ready time, so only the engage time must fit). The longest
-  // usable interval wins windowS; with none usable, windowS carries the
-  // longest gated interval and the status is window-too-short or
-  // no-fc-uplink.
+  // time plus the route latency; under doctrine the interval already opens at
+  // the release-ready time, so only the engage time must fit. The longest
+  // usable interval wins windowS; with none usable, windowS carries the longest
+  // gated interval.
   let anyUsable = false
   let fcBlockedUsable = false
   if (gateS != null) {
@@ -652,12 +649,10 @@ export function assessThreat(
 
 /**
  * Time the fused track reaches FC_QUALITY_MIN at or after `fromS`: `fromS`
- * itself when the first fused entry at or after it (within half a step)
- * already has the quality, else that later entry's time; null when the
- * fused track never does. A quality condition, not an existence condition
- * at `fromS`: when the M-of-N rule fires on a missed scan the sweep never
- * steps the tracker on that step, so no fused entry carries the firm time
- * and the next entry stands in for it.
+ * itself when the first fused entry at or after it (within half a step) already
+ * has the quality, else that later entry's time; null when the fused track
+ * never does. A quality condition, not an existence condition at `fromS`: a
+ * missed scan leaves no fused entry on that step, so the next entry stands in.
  */
 function fcQualityAtS(
   fusedTracks: readonly FusedTrack[],
@@ -737,13 +732,10 @@ function flightDeviationM(
 
 /**
  * The entity objects one threat's assessment reads, in scenario order: the
- * threat itself, every asset, effector and C2 node, and every sensor that
- * can hit it. A sensor whose technology gate refuses the target, or whose
- * reach ends short of every point of the flight path with the formation's
- * spread and the flight model's deviation added, never hits, so it never
- * cues, never routes and writes no observation, wherever it stands or
- * points. Other threats reach the assessment only through the run duration,
- * which the shared inputs carry as a number. Markers are never read.
+ * threat itself, every asset, effector and C2 node, and every sensor that can
+ * hit it. A sensor whose technology gate refuses the target, or whose reach
+ * ends short of the whole flight path with formation spread and flight-model
+ * deviation added, never hits, so it is left out. Markers are never read.
  */
 function threatEntityInputs(scenario: Scenario, uas: Entity): Entity[] {
   const path = scenario.paths.find((p) => p.entityId === uas.id)
@@ -782,11 +774,11 @@ function threatEntityInputs(scenario: Scenario, uas: Entity): Entity[] {
 
 /**
  * Everything `assessThreat` reads for one threat: the scenario fields the
- * sweep, the kill chain and the gates read, the run duration, then the
- * entities (`threatEntityInputs`). Every scenario change replaces the
- * objects it touches, so identity equality on this list is exact. This list
- * is part of assessThreat's contract: a new scenario read inside
- * assessThreat, or inside anything it calls, joins it in the same change.
+ * sweep, the kill chain and the gates read, the run duration, then the entities
+ * (`threatEntityInputs`). Every scenario change replaces the objects it
+ * touches, so identity equality on this list is exact. A new scenario read
+ * inside `assessThreat`, or inside anything it calls, joins this list in the
+ * same change.
  */
 function threatAssessmentInputs(scenario: Scenario, uasId: string): unknown[] {
   const inputs: unknown[] = [

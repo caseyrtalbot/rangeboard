@@ -1,11 +1,8 @@
 /**
- * Chart PNG export. The kit paints from CSS custom properties (`tokens.ts`),
- * and a `var(--token)` does not survive serialization, so the clone takes the
- * computed paint of every element before it is written out. The markup is then
- * rasterized through an image and a canvas.
- *
- * The DOM pieces arrive as `PngDeps` so the rasterizer runs under a test
- * double; `svgMarkup` needs a real document and is covered by the browser check.
+ * Chart PNG export. A `var(--token)` does not survive serialization, so the clone
+ * takes the computed paint of every element before it is written out, then
+ * rasterizes the markup through an image and a canvas. The DOM pieces arrive as
+ * `PngDeps` so the rasterizer runs under a test double.
  */
 
 export interface PngDeps {

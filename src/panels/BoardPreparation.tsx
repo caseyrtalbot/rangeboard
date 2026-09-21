@@ -31,10 +31,7 @@ function titleCaseStatus(status: string): string {
     .join(' ')
 }
 
-/**
- * One register row. Memoized on the entity and its assessment, so an undo that moves
- * one entity re-renders one row, not the whole register.
- */
+/** One register row, memoized on the entity and its assessment. */
 const EntityRegisterRow = memo(function EntityRegisterRow({
   entity,
   assessment,
@@ -61,10 +58,7 @@ const EntityRegisterRow = memo(function EntityRegisterRow({
   )
 })
 
-/**
- * The three scenario-input disclosures. Each settings form subscribes on its own, so
- * this memoized shell keeps a Prepare re-render from re-creating their elements.
- */
+/** The three scenario-input disclosures; each settings form subscribes on its own. */
 const PrepareSettings = memo(function PrepareSettings() {
   return (
     <div className="prepare-settings">

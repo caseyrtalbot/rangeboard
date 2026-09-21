@@ -1,7 +1,5 @@
 /**
- * The optimize worker adapter: one slot, as `startSobol` and
- * `cancelSensitivity` in `mcClient.ts`. The store reaches it only through
- * `src/state/analysisRequests.ts`. Messages are `OptimizeWorkerMessage`,
+ * The optimize worker adapter: one slot. Messages are `OptimizeWorkerMessage`,
  * tagged by run id; `optimize-done` and `optimize-error` end the run.
  */
 import type { OptimizeRequest, OptimizeWorkerMessage } from '../optimizeTypes'

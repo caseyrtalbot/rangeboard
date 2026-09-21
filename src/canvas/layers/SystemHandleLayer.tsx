@@ -41,8 +41,7 @@ export function SystemHandleLayer() {
   function pointerBearing(e: KonvaEventObject<DragEvent>): number | null {
     const pointer = e.target.getStage()?.getPointerPosition()
     if (!pointer) return null
-    // The camera is read here, not subscribed: this layer redraws on a pan
-    // through the stage transform alone.
+    // Read, not subscribed: this layer redraws on a pan through the stage transform.
     const camera = useStore.getState().camera
     const world = {
       x: (pointer.x - camera.x) / camera.scale,
@@ -86,8 +85,8 @@ export function SystemHandleLayer() {
           if (delta < -180) delta += 360
           lastBearing.current = b
           totalDelta.current += delta
-          // Preview on this group alone. A rotateSystem per pointer move reruns
-          // the whole deterministic picture and pushes an undo entry per frame.
+          // Preview on this group alone: a rotateSystem per pointer move would rerun
+          // the picture and push an undo entry per frame.
           groupRef.current?.rotation(totalDelta.current)
           e.target.position({ x: 0, y: -HANDLE_PX })
         }}

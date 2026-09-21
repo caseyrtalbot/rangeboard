@@ -54,21 +54,10 @@ export type ScenarioInstall =
 export type InstallOp = ScenarioInstall['op']
 
 /**
- * Make one Scenario current and answer for every slice it governs. Returns
- * the input object when there is nothing to do (an edit that returned the
- * same object, an empty history side), so a caller can skip its `set`.
- *
- * Per operation:
- * - history: edit pushes `past` (cap HISTORY_LIMIT) and clears `future`;
- *   undo and redo move one snapshot across; replace clears both.
- * - observed lens: undo and redo carry the current `observedPresetId` stamp
- *   over the restored snapshot; a stamp that already matches replaces nothing.
- * - selection: edit keeps it (the action owns it); undo and redo prune ids
- *   the snapshot no longer holds; replace clears it.
- * - ring overrides: every operation prunes ids the scenario no longer holds.
- * - playback, mc, trial: edit, undo and redo compare the analysis basis and
- *   invalidate only what no longer describes the board; replace cancels every
- *   worker and starts a clean run marked `scenario-loaded`.
+ * Make one Scenario current and answer for every slice it governs. Returns the
+ * input object when there is nothing to do, so a caller can skip its `set`.
+ * `edit`, `undo` and `redo` compare the analysis basis and invalidate only the
+ * runs it changed; `replace` cancels every worker and starts a clean run.
  */
 export function installScenario(
   st: ScenarioSlices,
@@ -158,11 +147,9 @@ function respond(
 type RunSlices = Pick<ScenarioSlices, 'scenario' | 'playback' | 'mc' | 'trial'>
 
 /**
- * The runs' answer to an override edit, which installs no scenario. A run
- * whose applied overrides no longer match the values in force goes stale, and
- * a trial is dropped, by the rule a configuration change applies; a playback
- * that held a dropped trial restarts as a configuration change. Returns the
- * input object when nothing changes.
+ * The runs' answer to an override edit, which installs no scenario. A run whose
+ * applied overrides no longer match the values in force goes stale and a trial is
+ * dropped. Returns the input object when nothing changes.
  */
 export function runsForOverridesChange(st: RunSlices, overrides: readonly Override[]): RunSlices {
   const mc = mcForScenarioChange(st.mc, st.scenario, overrides)
@@ -180,10 +167,8 @@ function pushSnapshot(past: Scenario[], snapshot: Scenario): Scenario[] {
 }
 
 /**
- * Undo and redo restore configuration, not run evidence: the lens stamp
- * belongs to the run in progress, so the restored snapshot carries the
- * current stamp forward. A stamp that already matches replaces nothing; a
- * new stamp is a presentation variant of the restored object.
+ * The lens stamp belongs to the run in progress, so a restored snapshot carries
+ * the current stamp forward as a presentation variant.
  */
 export function withObservedLens(restored: Scenario, current: Scenario): Scenario {
   const stamp = current.observedPresetId ?? null
@@ -208,9 +193,8 @@ export function pruneSelection(sel: Selection, s: Scenario): Selection {
 }
 
 /**
- * A configuration change invalidates the run in progress: the telemetry it
- * produced no longer describes the board. The run keeps its sequence number;
- * only a manual reset issues a new one.
+ * A configuration change invalidates the run in progress. The run keeps its
+ * sequence number; only a manual reset issues a new one.
  */
 function playbackForScenarioChange(playback: PlaybackState, next: Scenario): PlaybackState {
   if (playback.basisSignature == null || playback.basisSignature === analysisBasisSignature(next)) {
@@ -220,11 +204,9 @@ function playbackForScenarioChange(playback: PlaybackState, next: Scenario): Pla
 }
 
 /**
- * The replicates describe the board they ran on and the overrides they
- * applied. A configuration or override change makes them stale: the worker is
- * stopped and the summary is kept for reference, but it is no longer the
- * current answer. Bands read `status === 'done'` only. The sensitivity run
- * carries its own identity, so each side goes stale on its own.
+ * A configuration or override change makes the replicates stale: the worker is
+ * stopped and the summary is kept for reference only, because bands read
+ * `status === 'done'`. Each run carries its own identity and goes stale alone.
  */
 function mcForScenarioChange(mc: McState, next: Scenario, overrides: readonly Override[]): McState {
   const live = (status: McState['status']): boolean => status === 'running' || status === 'done'

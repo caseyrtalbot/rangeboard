@@ -1,10 +1,7 @@
 /**
- * Saved run history: finished `RunRecord`s in IndexedDB under `RUNS_DB_NAME`,
- * object store 'runs' keyed by `id` and indexed on `savedAt`. A record is
- * written through JSON, so an undefined statistic is null on disk exactly as
- * the baseline save writes it; `getRun` restores NaN through
- * `validateMcSummary`. Every entry point takes the IndexedDB factory and the
- * byte cap as options, so a test injects a fake factory and a small cap.
+ * Saved run history: finished `RunRecord`s in IndexedDB under `RUNS_DB_NAME`. A
+ * record is written through JSON, so an undefined statistic is null on disk and
+ * `getRun` restores NaN through `validateMcSummary`.
  */
 import type { RunRecord } from '../model/runRecord'
 import { validateMcSummary } from '../state/baseline'
@@ -72,10 +69,7 @@ function openDb(factory: IndexedDbFactory | undefined): Promise<IDBDatabase> {
   })
 }
 
-/**
- * One transaction per call, closed when it settles. A write resolves only
- * after `oncomplete`, so a caller that reloads the list sees its own write.
- */
+/** One transaction per call. A write resolves only after `oncomplete`. */
 async function withStore<T>(
   options: RunStoreOptions,
   mode: IDBTransactionMode,
@@ -101,9 +95,8 @@ async function withStore<T>(
 }
 
 /**
- * Write one record, evicting oldest first until it fits the cap. Re-saving an
- * id replaces that record, so its own bytes never count against the new write.
- * Returns the evicted ids for the notice the history section shows.
+ * Write one record, evicting oldest first until it fits the cap. Re-saving an id
+ * replaces that record. Returns the evicted ids.
  */
 export async function saveRun(
   record: RunRecord,
@@ -121,7 +114,7 @@ export async function saveRun(
     replicates: record.manifest.replicates,
     scenarioName: record.scenario.name,
     bytes,
-    // JSON round trip: NaN statistics become null on disk, as the baseline save writes them.
+    // JSON round trip: NaN statistics become null on disk.
     record: JSON.parse(json),
   }
   return withStore(options, 'readwrite', async (store) => {

@@ -24,24 +24,22 @@ export interface ComponentTelemetry {
   tracksSeen: number
   classifications: number
   /**
-   * INTEGRATED TRACK-SECONDS: sensor-seconds summed over tracks, so a sensor
-   * holding three tracks for 100 s reports 300. It is a legitimate sensor
-   * loading measure and it is NOT a clock reading; it can exceed the run
-   * length by the number of simultaneous tracks. Use holdSeconds for elapsed
-   * time and never render this one with a clock formatter.
+   * Integrated track-seconds: sensor-seconds summed over tracks, so a sensor
+   * holding three tracks for 100 s reports 300. A sensor loading measure, not
+   * a clock reading: it can exceed the run length by the number of
+   * simultaneous tracks. Use holdSeconds for elapsed time.
    */
   trackSeconds: number
   /**
-   * UNION HOLD TIME: the clock seconds during which this sensor held at least
+   * Union hold time: the clock seconds during which this sensor held at least
    * one track, up to t. Concurrent tracks count once, so it is bounded by the
-   * elapsed run time (plus the one 0.5 s sample width every held sample
-   * carries). This is the figure a clock formatter can read.
+   * elapsed run time plus the one 0.5 s sample width every held sample carries.
    */
   holdSeconds: number
   /**
    * Threats this effector can service right now: gate open, in an engagement
-   * window, route available, and NOT expected dead. A ghost track is not a
-   * target, so it never holds a target slot open (see expectedDeadTimes).
+   * window, route available, and not expected dead. A ghost track never holds
+   * a target slot open (see expectedDeadTimes).
    */
   targetsNow: number
   salvosAssigned: number
@@ -117,8 +115,8 @@ function observationsByTime(a: ThreatAssessment, tS: number): string[] {
 
 /**
  * C2 nodes that receive a track from the selected sensors, plus every active
- * effector reachable downstream. This deliberately retains configured C2
- * traffic even when an effector also has a faster standalone route.
+ * effector reachable downstream. Configured C2 traffic is retained even when
+ * an effector also has a faster standalone route.
  */
 function c2TrackRoutes(scenario: Scenario, sensorIds: Set<string>): Map<string, Set<string>> {
   const active = new Map(
