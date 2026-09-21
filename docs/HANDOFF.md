@@ -18,45 +18,43 @@ Do not start the following row in the same session.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  The flight horizon is `7fdcb1e`. The authorized estimate-path recapture is the
-  commit that carries this handoff, four commits ahead of `origin/main`. An
-  untracked `.cursor/` directory, if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row L. The next rewrite
-  selects row D.
+  The flight horizon is `7fdcb1e`. The authorized estimate-path recapture is
+  `225e027`. The row L docs commit carries this handoff. An untracked `.cursor/`
+  directory, if present, is not part of the queue.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row D. The next rewrite
+  selects row E.
 - The estimate-path expects are the authorized 2026-09-21 recapture. Layered events
   stay 11, layered kill mass stays 1, layered kills mean is 1.115, JIATF leakers mean
   is 0.895, and JIATF kills mean is 0.105. `4.68` is not a pin.
 
 ## Tasking
 
-### Row L: Current docs
+### Row D: Bound trial retention
 
-- Repository `~/Projects/rangeboard`. Base is local `main` with the authorized
-  recapture committed. Leave `docs/Plan.md` unmodified. Do not start row D.
-- Outcome: current docs name live modules only. `docs/ENGINEERING_REFERENCE.md` no
-  longer contains `withBands`, `TRACK_LADDER_STYLE`, or `series.ts`; confirm that and
-  do not restore them. `docs/field-te/model-evidence/uncertainty-crosswalk.md` still
-  cites `KpiTilesWidget`, `OutcomeSummary`, and `withBands` (`series.ts`) in the
-  analysis-panel sentence. Rewrite that sentence to `trialSeries` and `mc.ts`. Leave
-  dated evidence manifests alone. The doctrine link to the pre-deletion
-  `OutcomeSummary` blob in `docs/field-te/model-evidence/track-c2-doctrine.md` can
-  stay as history. This handoff has no bullet that treats run-store NaN as an open
-  export failure; `docs/Plan.md` already records that closure. Do not add one back.
-- Owned files: `docs/field-te/model-evidence/uncertainty-crosswalk.md`, and
-  `docs/ENGINEERING_REFERENCE.md` only if a live-module sentence is still wrong.
-- Exclusions: do not edit `docs/Plan.md`. Do not restore `src/analysis/series.ts`.
-  Do not change the estimate-path expects. Do not pin 4.68. Do not restore 16 events,
-  kill mass 0, or kills mean 0.005. Do not change Coyote `lethalRadiusM`,
-  `guidanceNoiseM`, or `engageTimeS`. Do not add a terminal-homing term.
-- Verified on this tree before row L: `estimate.parity.test.ts`,
-  `sensitivity.parity.test.ts`, `accuracy.verify.test.ts`, and
-  `convergence.verify.test.ts` passed (4 files, 32 tests). `npm run check` was not
-  run.
-- Next action: rewrite the stale analysis-panel sentence in the uncertainty
-  crosswalk, then confirm the engineering reference names only live modules.
-- Completion: the crosswalk cites `trialSeries` and `mc.ts`, and no current guide
-  names `withBands`, `TRACK_LADDER_STYLE`, or `series.ts` as live.
-- Stop when those sentences match the live modules. Do not edit `docs/Plan.md`.
+- Repository `~/Projects/rangeboard`. Base is local `main`. The flight horizon is
+  `7fdcb1e`. The authorized recapture is `225e027`. Leave `docs/Plan.md` unmodified.
+  Do not start row E.
+- Outcome: bound what the UI reads from a retained trial. `src/playback/trial.ts`
+  `runTrial` appends every scan observation and every per-step track estimate.
+  `src/state/analysisRequests.ts` `acceptTrialMessage` stores that whole
+  `TrialResult` on `TrialState.result` in `src/state/runState.ts`. React also keeps
+  the previous result on the alternate fiber after New run. Exported ledgers need
+  parity before and after. Browser memory check on the firing fixture.
+- Owned files: the retention path (`src/playback/trial.ts`, `src/state/runState.ts`,
+  `src/state/analysisRequests.ts`) and the readers that must keep the same ledger.
+  Export parity is `src/io/trialExport.test.ts`.
+- Exclusions: do not edit `docs/Plan.md`. Do not start row E. Do not change the
+  estimate-path expects. Do not pin 4.68. Do not restore 16 events, kill mass 0, or
+  kills mean 0.005. Do not change Coyote `lethalRadiusM`, `guidanceNoiseM`, or
+  `engageTimeS`. Do not add a terminal-homing term. Do not restore
+  `src/analysis/series.ts`.
+- Verified on this tree before row D: row L changed only the uncertainty-crosswalk
+  analysis-panel sentence and this handoff. `npm run check` passed (200 files,
+  2118 tests).
+- Next action: bound retained observations and tracks to what the UI reads, then
+  show ledger parity and a flat firing-fixture heap across New run.
+- Completion: ledger parity held; firing-fixture heap stays flat across New run.
+- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row E.
 
 ## Landmines
 
@@ -77,10 +75,11 @@ Do not start the following row in the same session.
   seeker-equipped round.
 - Physics tab: a checked box selects the prior planning fallback; a cleared box selects
   the physical model when its required fields are present.
-- Row L's frozen plan text still names `withBands`, `TRACK_LADDER_STYLE`, and
-  `series.ts` inside `docs/ENGINEERING_REFERENCE.md`. Those sentences were removed
-  with the adapter. `docs/field-te/model-evidence/uncertainty-crosswalk.md` still cites
-  the old panel names. Dated evidence stays.
+- `docs/Plan.md` row L still names `withBands`, `TRACK_LADDER_STYLE`, and `series.ts`
+  inside `docs/ENGINEERING_REFERENCE.md`. Those sentences are gone from the reference.
+  The crosswalk analysis-panel sentence cites `trialSeries.ts` and `mc.ts`. Dated
+  evidence, including the doctrine link to the pre-deletion `OutcomeSummary` blob,
+  stays. Do not restore `src/analysis/series.ts`.
 - Three property-order-sensitive JSON comparisons remain findings, not fixes, and are
   row N: `dropEditedProvenance` in `src/model/types.ts:589`, `resetBuiltin` in
   `src/model/libraryLifecycle.ts:239`, and `sameAppliedOverrides` in

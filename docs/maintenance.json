@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "ba9bcf5e92ed0157413395ef162490f1b929c133d55e23935e750c5224e32e7d",
+      "sha256": "7a996489bb79b06b1c3307911f81683bf51cf14b9485fc0d75dcfd5c6fb5cd40",
       "reviewedAt": "2026-09-21",
-      "note": "Tasking is row L after the authorized parity recapture commit. The flight horizon remains the landed miss sigma."
+      "note": "Tasking is row D after the uncertainty crosswalk cites trialSeries and mc.ts. npm run check passed."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

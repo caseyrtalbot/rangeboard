@@ -102,7 +102,7 @@ No bias is detectable (the SE of a mean of 100 means is 0.0055). This is one sym
 
 ### Adequacy rule per reported measure
 
-Measures the analysis panels read from a summary: `KpiTilesWidget.tsx` L147 to L205, `OutcomeSummary.tsx` L100 to L142, `TimeSeriesWidget` and `ThreatDetail` through `withBands` (`series.ts`), `SensitivityWidget.tsx`, `LiveStrip.tsx` L83 to L95. Sub-lines come from `mc.ts` (`countSub` L38, `timeStatSub` L53).
+Measures the analysis panels read from a summary come from [trialSeries.ts](../../../src/analysis/trialSeries.ts#L520) (`trialSeriesOf`) and [mc.ts](../../../src/panels/analysis/mc.ts#L85) (`countSub`, `timeStatSub`).
 
 | Measure | Shown | Interval shown | Adequacy rule that would apply | Status |
 | --- | --- | --- | --- | --- |
