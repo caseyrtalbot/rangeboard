@@ -27,3 +27,6 @@ dist-engine
 
 # Claude Code harness
 .claude/
+
+# Local Cursor hook state
+.cursor/

@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "6c745ff9514e8c58f81f26c3d087666ff7cdf890021b6742c97d40ba248de373",
+      "sha256": "b3dff103c0a296585373ef77c74612b1c9467d582a7a56f60f646c0c7759cf44",
       "reviewedAt": "2026-09-21",
-      "note": "Silent-failure gate added: check:silent, check:silent:all, test:silent, hooks:install scripts and a changed-lines CI step; VERIFICATION and WORKFLOW updated, AGENTS and README re-read and unchanged"
+      "note": "Learned preferences now protect estimate-path and Coyote parameters, and forbid reopening closed handoff issues. Learned facts record the deleted series.ts module and the check:silent gate."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "96df8731a3872de3864560df94e0efa351bb7dcf9977f0993c2505ffff575ef5",
+      "sha256": "50d85ee62c22e0fc846397d7663ba6de9c7df5c237ae5463bfbf74056211b2fd",
       "reviewedAt": "2026-09-21",
-      "note": "AGENTS.md gained a learned-preferences section. The Claude redirect is unchanged and still does not duplicate those rules."
+      "note": "AGENTS.md gained learned preferences and workspace facts. The Claude redirect is unchanged and still does not duplicate those rules."
     },
     {
       "document": "README.md",
