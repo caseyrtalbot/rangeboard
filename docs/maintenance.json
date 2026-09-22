@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "4c9cdf4dbdc6faf3ca2ca14cb49db2a6be2f68f27d966be049d35ba8cba32cd9",
+      "sha256": "ca06b21ef643997eae25e923e968874a544df5dc500810d33c4c114a934d6cc4",
       "reviewedAt": "2026-09-22",
-      "note": "The lockfile bump moves markdownlint-cli2 to 0.23.3 and smol-toml to 1.8.0. AGENTS.md does not name that toolchain, and its instructions are unchanged."
+      "note": "Preference lines now say when a row commit is allowed, and that check:silent runs before each commit. AGENTS.md still does not name markdownlint-cli2. The check:silent wording matches the verification guide."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "50d85ee62c22e0fc846397d7663ba6de9c7df5c237ae5463bfbf74056211b2fd",
+      "sha256": "2e67a333b0a45915951319397b0b0bf72e35e238d1cacdad849a19a355221273",
       "reviewedAt": "2026-09-22",
-      "note": "AGENTS.md is unchanged in this commit. CLAUDE.md still only redirects to it and does not duplicate those rules."
+      "note": "AGENTS.md preference wording changed. CLAUDE.md still only redirects to it and does not copy those rules."
     },
     {
       "document": "README.md",

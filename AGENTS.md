@@ -55,7 +55,7 @@ One zustand store holds the Board; persistence is localStorage.
 - Leave `docs/Plan.md` unmodified during row work; rewrite `docs/HANDOFF.md` so it points at the plan and tasks the next row.
 - Prefer a brief, properly formatted `docs/HANDOFF.md` plus an inline kickoff prompt for the next agent—not a chat paste dump.
 - When scope authority is given, choose the option that best preserves realism, performance, and function and proceed.
-- When asked to finish a completed row, commit the owned changes and present the next-phase handoff prompt.
+- When a row kickoff says to commit on completion (or when asked to finish a completed row), commit the owned changes and present the next-phase handoff prompt.
 - Ask before changing estimate-path or parity expected values; treat Coyote engagement parameters (`lethalRadiusM`, `guidanceNoiseM`, `engageTimeS`) and terminal-homing changes as protected unless explicitly authorized.
 - Do not restate closed issues as open handoff work (for example, run-store NaN as an export failure) unless newly evidenced.
 
@@ -63,4 +63,4 @@ One zustand store holds the Board; persistence is localStorage.
 
 - `docs/Plan.md` is the durable multi-row cleanup/refactor plan; `docs/HANDOFF.md` is the mutable current-row tasking and must always reference the plan.
 - `src/analysis/series.ts` is deleted; use trialSeries and mc helpers (`heldTracksOnGrid`, `liveKpisAt`, `residualOnGrid`)—do not restore `series.ts` or retired ENGINEERING_REFERENCE symbols (`withBands`, `TRACK_LADDER_STYLE`).
-- Commits must pass `npm run check:silent` on added lines (empty/silent catch, noop `.catch`, weasel-word phrases); intentional cases need `// silent-ok: <reason>`; rules live under `scripts/silent/rules` (see docs/VERIFICATION.md).
+- Run `npm run check:silent` before each commit (CI checks added lines only); intentional matches need `// silent-ok: <reason>`; `check:silent:all` lists pre-existing tree findings that are out of lane unless owned; rules live under `scripts/silent/rules` (see docs/VERIFICATION.md).
