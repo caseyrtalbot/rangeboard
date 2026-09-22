@@ -18,11 +18,14 @@ Do not start the following row in the same session.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  HEAD contains row H. Its parent is `0d3ec8a` (row G). The flight horizon is
-  `7fdcb1e`. The authorized estimate-path recapture is `225e027`. An untracked
-  `.cursor/` directory, if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row I. The next rewrite
-  selects row M.
+  HEAD contains row I. Its parent is `f95f126` (cleanup after row H at `4348cda`).
+  The flight horizon is `7fdcb1e`. The authorized estimate-path recapture is
+  `225e027`. An untracked `.cursor/` directory, if present, is not part of the queue.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row M. The next rewrite
+  selects row N.
+- Row I: `parseScenarioData` refuses a boundary with zero points and a boundary with
+  one point (`boundaries[0].points: expected at least two points`). A two-point
+  boundary still loads. Sobol code was not edited.
 - The estimate-path expects are the authorized 2026-09-21 recapture. Layered events
   stay 11, layered kill mass stays 1, layered kills mean is 1.115, JIATF leakers mean
   is 0.895, and JIATF kills mean is 0.105. `4.68` is not a pin.
@@ -39,37 +42,35 @@ Do not start the following row in the same session.
 
 ## Tasking
 
-### Row I: Imported boundaries
+### Row M: censorLane
 
-- Repository `~/Projects/rangeboard`. Base is local `main` at the row H commit.
-  Leave `docs/Plan.md` unmodified. Do not start row M.
-- Outcome: drawing a boundary already refuses fewer than two points
-  (`finishBoundary` in `src/state/store.ts`). `src/io/runtimeValidation.ts` refuses
-  a flight path under two points and still accepts an imported `Boundary` whose
-  `points` array is shorter. Add the same minimum on load.
-- Owned files: `src/io/runtimeValidation.ts`, `src/io/runtimeValidation.test.ts`,
-  and guides that fingerprint `src/` if those sources change.
-- Exclusions: do not edit `docs/Plan.md`. Do not start row M. Do not change Sobol
-  indices, Morris rankings, the Sobol row-count warning, or the estimate-path
-  expects. Do not pin 4.68. Do not restore 16 events, kill mass 0, or kills mean
-  0.005. Do not change Coyote `lethalRadiusM`, `guidanceNoiseM`, or `engageTimeS`.
-  Do not add a terminal-homing term. Do not restore `src/analysis/series.ts`. Do
-  not add a handoff bullet that treats run-store NaN as an open export failure.
-  Do not structured-clone the packed grids back onto the page.
-- Verified on this tree before row I: `npm run check` passed (201 files, 2137
-  tests). `npm run check:bundle` passed after that build (entry 363288 bytes,
-  initial JavaScript plus CSS 378987 bytes, gzip -9). `npm run check:silent`
-  passed. Browser, firing scenario, Run sensitivity clicked: at progress 0 the
-  line was `0 of 2560 evaluations · Sobol on 8 fields` with no budget warning.
-  With `sobolBase` 4096 the line was `0 of 40960 evaluations · Sobol on 8 fields ·
-  this count can use most of the 10 min worker budget`, still at progress 0. No
-  page errors. Both runs were cancelled there.
-- Next action: refuse an imported boundary with fewer than two points, beside the
-  existing flight-path rejection.
-- Completion: `parseScenarioData` rejects a boundary with zero points and a
-  boundary with one point. A two-point boundary still loads. Sobol results are
-  unchanged.
-- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row M.
+- Repository `~/Projects/rangeboard`. Base is local `main` at the row I commit.
+  Leave `docs/Plan.md` unmodified. Do not start row N.
+- Outcome: `censorLane` is exported from `src/panels/analysis/EngagementStrip.tsx`
+  under an `only-export-components` suppression so
+  `src/panels/analysis/EngagementStrip.test.tsx` can reach it. `Lane` is the
+  unexported interface just above that function. Move the function and `Lane` to a
+  pure module that exports no component. Point the strip and the test at that
+  module. Delete the suppression in `EngagementStrip.tsx`.
+- Owned files: `src/panels/analysis/EngagementStrip.tsx`,
+  `src/panels/analysis/EngagementStrip.test.tsx`, the new module, and guides that
+  fingerprint `src/` if those sources change.
+- Exclusions: do not edit `docs/Plan.md`. Do not start row N. Do not clear the
+  existing `only-export-components` suppressions in other files (`controls.tsx`,
+  `ThreatWezLayer.tsx`, `LiveScene.tsx`, `StaticScene.tsx`, `runValidityText.tsx`).
+  `npm run lint` does not fail on those warnings. Do not change Sobol indices,
+  Morris rankings, the Sobol row-count warning, or the estimate-path expects. Do
+  not pin 4.68. Do not restore 16 events, kill mass 0, or kills mean 0.005. Do not
+  change Coyote `lethalRadiusM`, `guidanceNoiseM`, or `engageTimeS`. Do not add a
+  terminal-homing term. Do not restore `src/analysis/series.ts`. Do not add a
+  handoff bullet that treats run-store NaN as an open export failure. Do not
+  structured-clone the packed grids back onto the page. Do not relax the two-point
+  boundary or flight-path load check.
+- Next action: move `censorLane` and `Lane` out of the component module.
+- Completion: `EngagementStrip.tsx` no longer carries an `only-export-components`
+  suppression. The censor tests still pass, including the unscoped identity check
+  (`censorLane(lane, FULL_RUN)` returns the same lane).
+- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row N.
 
 ## Landmines
 
@@ -114,6 +115,10 @@ Do not start the following row in the same session.
 - The Fragility Sobol warning is a planning factor from one board: 29 entities at
   2560 rows took 499 s, scaled by entity count and row count, and it fires at half
   of `DEFAULT_BUDGET.timeMs`. It is not a clock reading for the board on screen.
+- Load refuses a flight path or boundary with fewer than two points. In-memory
+  fixtures may still hold an empty `points` array (`scenarioHasWork` in
+  `src/io/persist.test.ts`, `scenarioInstall.test.ts`). Those objects do not pass
+  `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
   touches the entry. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope

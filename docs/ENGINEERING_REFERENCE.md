@@ -90,9 +90,10 @@ Breaking one of these breaks the app.
   Storage notice explaining export and freeing storage.
   Runtime validation
   (`src/io/runtimeValidation.ts`, `validateScenario.ts`) checks shapes, finite and ranged
-  values, ids, references and engine representability before default filling. The shape
-  check runs once, inside `fillScenario`; `parseScenarioData` and `parseAutosave` both
-  reach it through that one call. Missing
+  values, ids, references and engine representability before default filling. A flight
+  path and a boundary each need at least two points. The shape check runs once, inside
+  `fillScenario`; `parseScenarioData` and `parseAutosave` both reach it through that one
+  call. Missing
   legacy fields fill; a malformed present field fails with a path and reason. Unknown
   extension data survives. Reserved object-prototype ids are rejected. Triangular spread
   bounds are fractional offsets around zero. Base64 image syntax follows native decoder

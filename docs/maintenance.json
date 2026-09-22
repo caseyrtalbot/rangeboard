@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "e3ecee389548af510fd40a19750fa141c30c7f1347d0b2bce6b7f99e70ccfff2",
+      "sha256": "e71ce897a2df6fe21648d764b47cb2cf7eecb5658a024e4c569fe7b52fe7ec68",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed canonical interceptor applicability and Sobol count ownership; user-visible behavior and source navigation remain accurate."
+      "note": "Reviewed load validation. The guide still describes import and autosave; the two-point boundary minimum is an engineering invariant, not a new user-facing surface."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "45b32688b6ec035a3c4fe22e3d6c71b4a5c0084fa2ecb4d00395d7308843cc5c",
+      "sha256": "0cca04e56808cd9397f7774ab0ae1ae9aa09f4e6ac79e88892dad57dcc5b4f88",
       "reviewedAt": "2026-09-22",
-      "note": "Documented the shared interceptor applicability gate and reviewed canonical Sobol row counting; numerical behavior is unchanged."
+      "note": "Runtime validation now refuses a boundary with fewer than two points, the same minimum as a flight path. Two points still load."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "87ecffd74aaab963222e92620106412606c05b42af6fbf69495e03b56c341c79",
+      "sha256": "23b060cef2527f38aacca86825550e45f70a0580926d03093f43be01f87eac37",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed after the silent-gate callback rename; exact staged-snapshot and AST-range behavior is unchanged and covered."
+      "note": "Reviewed src/io validation. Commands and the historical boundary export check are unchanged."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "7bcd81f2fc29b10048526aef13653683b3143fa64b253fcc5dede86d5e0d047c",
+      "sha256": "584d33948a6b42cab1759bd347276fcd0b81f391477494374960e63c75dd10e1",
       "reviewedAt": "2026-09-22",
-      "note": "Tasking is row I. Row H shows the Sobol row count before that stage and warns when the measured rate would use half the worker time budget. Plan.md stays frozen."
+      "note": "Tasking is row M. Row I refuses an imported boundary with fewer than two points and still loads two. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

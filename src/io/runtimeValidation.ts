@@ -169,8 +169,12 @@ function semantics(o: Record<string, unknown>, owner: string, path: string): voi
     range('y', -limit, limit)
   }
   if (owner === 'RaidWave') range('startDelayS', 0)
-  // Route compilation and the path shape assume a start and an end vertex.
-  if (owner === 'FlightPath' && Array.isArray(o.points) && o.points.length < 2)
+  // A route and a drawn boundary are both a segment: each needs a start and an end vertex.
+  if (
+    (owner === 'FlightPath' || owner === 'Boundary') &&
+    Array.isArray(o.points) &&
+    o.points.length < 2
+  )
     invalid(`${path}.points`, 'expected at least two points')
   if (owner === 'FormationSpec') range('count', 1, MAX_ARRAY_LENGTH, true)
   if (owner === 'SensorSpec')

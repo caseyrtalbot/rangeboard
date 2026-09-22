@@ -210,6 +210,20 @@ describe('Board runtime acceptance', () => {
     s.paths[0].points = [{ x: 0, y: 0 }]
     expect(() => parseScenarioData(s)).toThrow('paths[0].points: expected at least two points')
   })
+  it('rejects a boundary with fewer than two points and still loads two', () => {
+    const s = laydown()
+    s.boundaries = [
+      { id: 'b', name: 'B', type: 'range', points: [], closed: false, altBandFt: null },
+    ]
+    expect(() => parseScenarioData(s)).toThrow('boundaries[0].points: expected at least two points')
+    s.boundaries[0].points = [{ x: 0, y: 0 }]
+    expect(() => parseScenarioData(s)).toThrow('boundaries[0].points: expected at least two points')
+    s.boundaries[0].points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+    ]
+    expect(parseScenarioData(s).boundaries[0].points).toHaveLength(2)
+  })
   it('validates libraries through the same model contract and duplicate checks', () => {
     const model = emptyScenario().library[0]
     expect(parseLibraryData({ rangeboardLibrary: 1, models: [model] })).toEqual([model])
