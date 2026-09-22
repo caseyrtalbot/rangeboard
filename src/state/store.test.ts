@@ -1331,6 +1331,8 @@ describe('monte carlo slice', () => {
       stopRule: 'replicates',
       elapsedMs: 5,
       perWorkerDone: [2, 1],
+      stopping: false,
+      discarded: 0,
     })
     useStore.getState().setMorrisResult({
       method: 'morris',

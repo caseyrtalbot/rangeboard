@@ -21,8 +21,13 @@
  * the chunks in flight and waits for their partials. The summary is finished
  * on one worker: the page transfers each chunk's packed grids and does not
  * clone them. The worker merges, keeps the contiguous prefix, and calls
- * `finishSummary`, so a run is always the replicates 0..m-1 with no holes. A
- * worker still silent after CANCEL_GRACE_MS is terminated.
+ * `finishSummary`, so a run is always the replicates 0..m-1 with no holes.
+ * Progress `done` is that prefix, so the Run line cannot pass the summary.
+ * When finish drops completed rows past a hole, progress reports `discarded`.
+ * `cancel` returns false once an ending is set, and finish releases the run
+ * before the summary worker replies, so it stays false for that wait. Progress
+ * sets `stopping` for both, and the Run button says Stopping until the summary
+ * lands. A worker still silent after CANCEL_GRACE_MS is terminated.
  */
 import { sampleCount } from '../analysis/projection'
 import type { McSettings, Scenario } from '../model/types'
@@ -132,8 +137,10 @@ export interface WorkerPool {
    * Ask every worker holding a chunk to stop at its next checkpoint and give
    * the pool CANCEL_GRACE_MS to answer; a worker still silent then is
    * terminated. The run then finishes on the contiguous prefix with
-   * `stopped.rule` 'cancelled'. Returns false with no live run, a cancel
-   * already in flight, or a `runId` that is not the live one.
+   * `stopped.rule` 'cancelled'. Returns false with no live run, while an
+   * ending is already set, after finish has released the run for the summary
+   * worker, or for a `runId` that is not the live one. The last progress has
+   * `stopping` set in those waits, so the Run button does not stay on Stop.
    */
   cancel: (runId?: string) => boolean
   /** Terminate every worker now. Callbacks already queued are dropped by exact ownership. */
@@ -276,6 +283,8 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
     for (const w of run.workers) {
       if (w.busy) w.worker.postMessage({ type: 'cancel', runId: run.id })
     }
+    // Nothing landed and nothing left in flight fails in the same turn.
+    if (prefixLength(run.parts) > 0 || run.workers.some((w) => w.busy)) report(run)
     run.grace = setTimeout(() => {
       if (current !== run || run.over) return
       finish(run, rule)
@@ -294,6 +303,10 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
       fail(run, 'The run stopped before any replicate finished')
       return
     }
+    run.ending = rule
+    report(run, true)
+    // A progress callback may have replaced or disposed the run.
+    if (current !== run || run.over) return
     const elapsedMs = Math.round(performance.now() - run.t0)
     const { id, scenario, parts, onMessage } = run
     // Release first: a terminal callback may synchronously start the next run.
@@ -355,17 +368,31 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
     }
   }
 
-  /** Report the replicates merged so far to both callbacks. */
-  const report = (run: Run, done: number): void => {
+  /** Landed replicates, and how many of them sit in the contiguous prefix. */
+  const counts = (parts: McPartial[]): { landed: number; prefix: number } => {
+    let landed = 0
+    for (const part of parts) landed += part.indices.length
+    return { landed, prefix: prefixLength(parts) }
+  }
+
+  /**
+   * Report the contiguous prefix. `commit` is finish keeping that prefix, so
+   * completed rows past the hole are discarded and will not return.
+   */
+  const report = (run: Run, commit = false): void => {
+    const { landed, prefix } = counts(run.parts)
     const { replicates, targetHalfWidth } = run.settings
-    run.onMessage({ type: 'progress', runId: run.id, done, total: run.target })
+    const stopRule = run.ending ?? (targetHalfWidth == null ? 'replicates' : 'halfWidth')
+    run.onMessage({ type: 'progress', runId: run.id, done: prefix, total: run.target })
     run.onPool({
       workers: run.workers.length,
-      done,
+      done: prefix,
       total: targetHalfWidth == null ? replicates : null,
-      stopRule: targetHalfWidth == null ? 'replicates' : 'halfWidth',
+      stopRule,
       elapsedMs: Math.round(performance.now() - run.t0),
       perWorkerDone: run.workers.map((w) => w.settled + w.progress),
+      stopping: run.ending != null,
+      discarded: commit ? landed - prefix : 0,
     })
   }
 
@@ -375,13 +402,9 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
     w.settled += partial.indices.length
     w.progress = 0
     run.parts.push(partial)
-    let landed = 0
     let retained = 0
-    for (const part of run.parts) {
-      landed += part.indices.length
-      retained += part.retained
-    }
-    report(run, landed)
+    for (const part of run.parts) retained += part.retained
+    report(run)
     // A callback may have cancelled or disposed the run.
     if (current !== run || run.over) return
     if (run.ending == null) {

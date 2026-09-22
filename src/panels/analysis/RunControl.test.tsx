@@ -52,6 +52,8 @@ function pool(patch: Partial<PoolProgress>): PoolProgress {
     stopRule: 'replicates',
     elapsedMs: 900,
     perWorkerDone: [10, 10, 10, 10],
+    stopping: false,
+    discarded: 0,
     ...patch,
   }
 }
@@ -174,5 +176,49 @@ describe('RunControl', () => {
 
   it('shows no progress line before the first run', () => {
     expect(render()).not.toContain('run-progress')
+  })
+
+  it('says Stopping and refuses another click once the pool is ending', () => {
+    const cancel = vi.fn()
+    useStore.setState({ cancelMonteCarlo: cancel })
+    setMc({
+      status: 'running',
+      pool: pool({ stopping: true, stopRule: 'cancelled', total: null, done: 12 }),
+    })
+    const html = render()
+    expect(html).toContain('>Stopping<')
+    expect(html).not.toContain('>Stop<')
+    expect(html).toContain('This run is already stopping.')
+    expect(interaction.buttons.get('Stopping')!.disabled).toBe(true)
+    interaction.buttons.get('Stopping')!.onClick()
+    expect(cancel).not.toHaveBeenCalled()
+    expect(html).toContain('12 replicates · stopping · 4 workers')
+  })
+
+  it('names completed rows a stop dropped, on the live line and after the summary', () => {
+    setMc({
+      status: 'running',
+      pool: pool({
+        done: 15,
+        total: null,
+        stopRule: 'budget',
+        stopping: true,
+        discarded: 1,
+        workers: 3,
+      }),
+    })
+    expect(render()).toContain(
+      '15 replicates · stop on the execution budget · 3 workers · 1 completed row dropped',
+    )
+
+    useStore.getState().patchScenario({ targetHalfWidth: null })
+    setMc({
+      status: 'done',
+      summary: summary(15, 'budget'),
+      pool: pool({ done: 15, discarded: 3, stopping: true, stopRule: 'budget' }),
+    })
+    expect(render()).toContain(
+      '15 of 100 replicates · stop on the execution budget · 3 completed rows dropped',
+    )
   })
 })

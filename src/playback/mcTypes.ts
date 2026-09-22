@@ -9,14 +9,16 @@ import type { SensitivityResponse, StopRule } from './mcRun'
 export type { McSettings, SamplingMode, SensitivityDepth } from '../model/types'
 
 /**
- * Progress of a pooled replicate run. `done` and `perWorkerDone` count
- * replicates finished; `total` is the configured replicate count, or null
- * while a stop rule other than 'replicates' decides the end.
+ * Progress of a pooled replicate run. `done` is the contiguous prefix of
+ * landed replicates, the rows the summary keeps. `perWorkerDone` counts
+ * replicates finished on each worker, including rows past a hole. `total` is
+ * the configured replicate count, or null while a stop rule other than
+ * 'replicates' decides the end.
  */
 export interface PoolProgress {
   /** Workers in the pool. */
   workers: number
-  /** Replicates done across the pool. */
+  /** Replicates 0..m-1 present so far. */
   done: number
   /** Configured replicate count; null when `stopRule` ends the run before it. */
   total: number | null
@@ -26,6 +28,16 @@ export interface PoolProgress {
   elapsedMs: number
   /** Replicates done per worker, indexed by worker slot. */
   perWorkerDone: number[]
+  /**
+   * True once the pool has stopped handing out work, including the wait for
+   * the summary worker. `cancel` returns false while this is set.
+   */
+  stopping: boolean
+  /**
+   * Completed replicates outside the prefix. Zero until finish commits the
+   * stop; a hole that can still fill is not a drop.
+   */
+  discarded: number
 }
 
 /**

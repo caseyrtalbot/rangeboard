@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "bf973e7ee66c350329617ca9114fbc7b12219e0f983f32fb078d1a5ad4d94bfa",
-      "reviewedAt": "2026-09-21",
-      "note": "Pool finish now runs on a worker. The guide's Monte Carlo paragraphs do not name that thread and remain accurate."
+      "sha256": "664f74e91c7574308812bdf7318a59c313de20e5b13ee71f9f9c11e23857af05",
+      "reviewedAt": "2026-09-22",
+      "note": "The Run button says Stopping while the pool is ending or the summary worker is in flight. A stop that drops completed rows past a hole prints that count on the progress line."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "5588838f534a2378f1bbcbbbe6b36e70e3df89854eff404dbf27f3be11fda2ad",
-      "reviewedAt": "2026-09-21",
-      "note": "The replicate pool transfers packed grids to one worker for finishSummary. Reviewed the Monte Carlo worker paragraph against workerPool.ts, mc.worker.ts, and mcRun.ts. The LHS range test reads packed rows."
+      "sha256": "beab1b29b6353e8ac4d9c4554abbb20c5d25f337ef55a9e35c82cfe299d3cf98",
+      "reviewedAt": "2026-09-22",
+      "note": "Progress done is the contiguous prefix. A committed hole sets discarded and the Run line prints it. The Run button says Stopping while pool.stopping is set, because cancel returns false during an ending and during the summary worker."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "75c85fa44a8feeae94bda003b01ed23e207e2c739828d09417984c7ad99cedc0",
-      "reviewedAt": "2026-09-21",
-      "note": "Tasking is row G. Row F's finish transfers packed grids; the cap handoff was 31 ms and the summary was 7088 ms on the worker. npm run check passed: 201 files, 2131 tests. check:bundle passed. Plan.md stays frozen."
+      "sha256": "2173ecc9948b96dcb45824f8c388cf0614f04d5122f193863f0c8dd3c9fec3e3",
+      "reviewedAt": "2026-09-22",
+      "note": "Tasking is row H. Row G gate: 201 files, 2134 tests, bundle entry 363187 bytes, initial 378886 bytes. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

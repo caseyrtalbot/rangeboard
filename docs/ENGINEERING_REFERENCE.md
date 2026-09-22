@@ -199,7 +199,11 @@ Breaking one of these breaks the app.
   contiguous prefix of the end-of-run leakers from `stopFloor`, and stops at `stopCap`.
   The summary is finished on one worker: the page transfers those buffers and does not
   clone them; the worker merges, keeps the contiguous prefix, and calls `finishSummary`.
-  The pooled summary equals the single-worker `runReplicates` at one seed
+  Progress `done` counts that prefix. A stop that leaves a hole sets `discarded` to the
+  completed rows the prefix dropped, and the Run line prints the count. `cancel` returns
+  false while an ending is set and after finish releases the run for the summary worker.
+  Progress sets `stopping` for both waits, and the Run button says Stopping until the
+  summary arrives. The pooled summary equals the single-worker `runReplicates` at one seed
   (`workerPool.test.ts`). The chunk grids live on the main thread until that transfer,
   so the pool applies `DEFAULT_BUDGET` there: a summary over the budget is refused
   at start, and the run ends with rule 'budget' once the landed `retained` count or the

@@ -668,6 +668,8 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
     stopRule: 'replicates',
     elapsedMs: 5,
     perWorkerDone: [done, 0, 0],
+    stopping: false,
+    discarded: 0,
   })
 
   it('the Run button starts the pool and its sink writes mc.pool only while the run is live', () => {

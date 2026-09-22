@@ -6,6 +6,7 @@
 import { runSettings } from '../../model/types'
 import type { McSettings } from '../../model/types'
 import type { McSummary, StopRule } from '../../playback/mcRun'
+import type { PoolProgress } from '../../playback/mcTypes'
 import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 
@@ -33,6 +34,12 @@ function loopEndOf(run: McSettings): number {
  * Stat mean times its sample count, so both figures are whole. Null when nothing
  * floored and on a summary written before the stamp existed.
  */
+/** Completed rows finish dropped because a hole kept them out of the prefix. */
+function droppedText(count: number): string | null {
+  if (!(count > 0)) return null
+  return `${count} completed ${count === 1 ? 'row' : 'rows'} dropped`
+}
+
 function flooredText(summary: McSummary): string | null {
   const floored = summary.operatorFlooredDecisions
   const decisions = summary.operatorDecisions
@@ -47,28 +54,38 @@ function flooredText(summary: McSummary): string | null {
  * run reports its own rule and worker count through `mc.pool`; without a pool the
  * count comes from `mc.progress` and the rule from the settings.
  */
+/** The pool's replicate line, with a drop count once finish has committed one. */
+function poolLine(run: McSettings, pool: PoolProgress): string {
+  const workers = `${pool.workers} ${pool.workers === 1 ? 'worker' : 'workers'}`
+  const head =
+    pool.stopRule === 'replicates' && pool.total != null
+      ? `${pool.done} of ${pool.total} replicates · ${workers}`
+      : `${pool.done} replicates · ${stopRuleText(pool.stopRule, run)} · ${workers}`
+  const dropped = droppedText(pool.discarded)
+  return dropped ? `${head} · ${dropped}` : head
+}
+
 function progressText(run: McSettings, mc: McState): string | null {
   const pool = mc.pool
   if (mc.status === 'running') {
-    if (pool) {
-      const workers = `${pool.workers} ${pool.workers === 1 ? 'worker' : 'workers'}`
-      return pool.stopRule === 'replicates' && pool.total != null
-        ? `${pool.done} of ${pool.total} replicates · ${workers}`
-        : `${pool.done} replicates · ${stopRuleText(pool.stopRule, run)} · ${workers}`
-    }
+    if (pool) return poolLine(run, pool)
     return `${mc.progress} of ${mc.total} replicates · ${stopRuleText(settingsStopRule(run), run)}`
   }
   // A finished run keeps the line, so the rule that ended it stays readable.
   const summary = mc.status === 'done' ? mc.summary : null
   if (!summary) return null
-  const floored = flooredText(summary)
   const line = `${summary.replicates} of ${loopEndOf(run)} replicates · ${stopRuleText(summary.stopped.rule, run)}`
-  return floored ? `${line} · ${floored}` : line
+  const dropped = droppedText(pool?.discarded ?? 0)
+  const floored = flooredText(summary)
+  return [line, dropped, floored].filter((part) => part != null).join(' · ')
 }
 
 /** Deterministic mode runs no replicates, so the button says why it is closed. */
 const DETERMINISTIC_TITLE =
   'Deterministic mode computes one expected-value envelope, not replicates. Turn Deterministic off to run.'
+
+/** Shown while the pool will refuse another stop, including the summary wait. */
+const STOPPING_TITLE = 'This run is already stopping.'
 
 export function RunControl() {
   const scenario = useStore((s) => s.scenario)
@@ -77,7 +94,9 @@ export function RunControl() {
   const run = runSettings(scenario)
   const deterministic = run.runMode === 'deterministic'
   const running = mc.status === 'running'
+  const stopping = running && mc.pool?.stopping === true
   const progress = progressText(run, mc)
+  const label = stopping ? 'Stopping' : running ? 'Stop' : 'Run'
   return (
     <div className="run-control" aria-label="Run">
       <label className="run-det">
@@ -94,13 +113,15 @@ export function RunControl() {
       <button
         type="button"
         className="mc-run"
-        disabled={deterministic}
-        title={deterministic ? DETERMINISTIC_TITLE : undefined}
-        onClick={() =>
-          running ? useStore.getState().cancelMonteCarlo() : useStore.getState().runMonteCarlo()
-        }
+        disabled={deterministic || stopping}
+        title={deterministic ? DETERMINISTIC_TITLE : stopping ? STOPPING_TITLE : undefined}
+        onClick={() => {
+          if (stopping) return
+          if (running) useStore.getState().cancelMonteCarlo()
+          else useStore.getState().runMonteCarlo()
+        }}
       >
-        {running ? 'Stop' : 'Run'}
+        {label}
       </button>
       {progress && (
         <span className="run-progress" role="status">

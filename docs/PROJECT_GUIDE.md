@@ -71,7 +71,9 @@ Outcome validity row falls back to forecast requirement validity when a trial ca
 none. Run settings (mode, uncertainty, seed, replicates, stop rule, confidence, sampling,
 sensitivity depth, Sobol base) live on the **Run** tab of Settings, each with its default and
 a reset. One Run button with a Deterministic switch sits on Prepare and Analyze; a run uses
-the worker pool and its progress line names the stop rule and the pool size, plus
+the worker pool and its progress line names the stop rule and the pool size. While the
+pool is ending or its summary worker is in flight the button says Stopping. A stop that
+drops completed rows past a hole prints that count. The line also prints
 "operator wait floored in N of M decisions" when a C2 decision draw fell below its median
 (the Outcome record prints the trial's own count). The Systems tab prints a load notice
 and a `seed v<N>` chip on each field a saved builtin adopted from the data package.

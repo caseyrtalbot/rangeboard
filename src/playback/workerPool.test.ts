@@ -34,38 +34,19 @@ class RangeWorker {
   /** The chunk the coordinator posted and the worker has not run yet. */
   pending: McRangeRequest | null = null
   cancelled = false
+  /** When set, `finish-summary` is held until `releaseFinish`. */
+  static holdFinish = false
+  heldFinish: FinishSummaryRequest | null = null
   postMessage = vi.fn((request: unknown) => {
     const m = request as { type: string }
     if (m.type === 'cancel') this.cancelled = true
     else if (m.type === 'finish-summary') {
       const req = request as FinishSummaryRequest
-      try {
-        const prefix = contiguousPrefix(mergePartials(req.parts))
-        if (prefix.indices.length === 0) {
-          this.send({
-            type: 'summary-error',
-            runId: req.runId,
-            message: 'The run stopped before any replicate finished',
-          })
-        } else {
-          this.send({
-            type: 'summary-done',
-            runId: req.runId,
-            summary: finishSummary(
-              req.scenario,
-              prefix,
-              { rule: req.rule, at: prefix.indices.length },
-              req.elapsedMs,
-            ),
-          })
-        }
-      } catch (error) {
-        this.send({
-          type: 'summary-error',
-          runId: req.runId,
-          message: error instanceof Error ? error.message : String(error),
-        })
+      if (RangeWorker.holdFinish) {
+        this.heldFinish = req
+        return
       }
+      this.finish(req)
     } else this.pending = request as McRangeRequest
   })
   terminate = vi.fn(() => {
@@ -74,6 +55,45 @@ class RangeWorker {
 
   constructor() {
     RangeWorker.instances.push(this)
+  }
+
+  /** Post the summary for a held or immediate finish request. */
+  finish(req: FinishSummaryRequest): void {
+    try {
+      const prefix = contiguousPrefix(mergePartials(req.parts))
+      if (prefix.indices.length === 0) {
+        this.send({
+          type: 'summary-error',
+          runId: req.runId,
+          message: 'The run stopped before any replicate finished',
+        })
+      } else {
+        this.send({
+          type: 'summary-done',
+          runId: req.runId,
+          summary: finishSummary(
+            req.scenario,
+            prefix,
+            { rule: req.rule, at: prefix.indices.length },
+            req.elapsedMs,
+          ),
+        })
+      }
+    } catch (error) {
+      this.send({
+        type: 'summary-error',
+        runId: req.runId,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+
+  /** Deliver a finish the pool posted while `holdFinish` was set. */
+  releaseFinish(): void {
+    const req = this.heldFinish
+    if (req == null) return
+    this.heldFinish = null
+    this.finish(req)
   }
 
   /** Deliver one message as the worker would; a terminated worker is silent. */
@@ -120,6 +140,7 @@ class RangeWorker {
   static install(): void {
     RangeWorker.instances = []
     RangeWorker.ran = []
+    RangeWorker.holdFinish = false
     vi.stubGlobal('Worker', RangeWorker)
   }
 }
@@ -219,6 +240,8 @@ describe('worker pool', () => {
       expect(last.done).toBe(40)
       expect(last.total).toBe(40)
       expect(last.stopRule).toBe('replicates')
+      expect(last.stopping).toBe(true)
+      expect(last.discarded).toBe(0)
       expect(last.perWorkerDone.reduce((sum, n) => sum + n, 0)).toBe(40)
       expect(last.elapsedMs).toBeGreaterThanOrEqual(0)
       // The summary worker is the extra instance, and it is released with the range workers.
@@ -255,8 +278,12 @@ describe('worker pool', () => {
     for (const [start, end] of RangeWorker.ran) for (let i = start; i < end; i += 1) covered.add(i)
     for (let i = 0; i < at; i += 1) expect(covered.has(i)).toBe(true)
     expect(covered.has(at)).toBe(false)
-    expect(pooled.polls.at(-1)!.total).toBeNull()
-    expect(pooled.polls.at(-1)!.stopRule).toBe('halfWidth')
+    const last = pooled.polls.at(-1)!
+    expect(last.total).toBeNull()
+    expect(last.stopRule).toBe('halfWidth')
+    expect(last.stopping).toBe(true)
+    expect(last.done).toBe(at)
+    expect(last.discarded).toBeGreaterThan(0)
   })
 
   it('stops at the cap when the target never holds', () => {
@@ -287,6 +314,7 @@ describe('worker pool', () => {
     expect(RangeWorker.instances[0].step()).toBe(true)
     expect(pooled.pool.cancel(pooled.runId)).toBe(true)
     expect(pooled.pool.cancel(pooled.runId)).toBe(false)
+    expect(pooled.polls.at(-1)).toMatchObject({ stopping: true, stopRule: 'cancelled' })
     RangeWorker.drain()
     const summary = pooled.summary()
     expect(summary.stopped.rule).toBe('cancelled')
@@ -326,12 +354,14 @@ describe('worker pool', () => {
     pooled.pool.cancel()
     vi.advanceTimersByTime(CANCEL_GRACE_MS + 1)
     expect(pooled.messages).toEqual([
+      { type: 'progress', runId: pooled.runId, done: 0, total: 40 },
       {
         type: 'error',
         runId: pooled.runId,
         message: 'The run stopped before any replicate finished',
       },
     ])
+    expect(pooled.polls.at(-1)).toMatchObject({ stopping: true, done: 0, discarded: 0 })
     expect(RangeWorker.instances.every((w) => w.terminated)).toBe(true)
   })
 
@@ -359,11 +389,42 @@ describe('worker pool', () => {
     RangeWorker.drain()
     const summary = pooled.summary()
     expect(summary.stopped).toEqual({ rule: 'budget', at: 15 })
+    expect(pooled.polls.at(-1)).toMatchObject({
+      done: 15,
+      discarded: 1,
+      stopping: true,
+      stopRule: 'budget',
+    })
+    expect(pooled.messages.filter((m) => m.type === 'progress').at(-1)).toEqual({
+      type: 'progress',
+      runId: pooled.runId,
+      done: 15,
+      total: 40,
+    })
     expect(RangeWorker.ran).toEqual([
       [0, 14],
       [14, 15],
       [28, 29],
     ])
+  })
+
+  it('refuses cancel while the summary worker is in flight and keeps Stopping posted', () => {
+    RangeWorker.holdFinish = true
+    const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const pooled = run(scenario, 1)
+    RangeWorker.drain()
+    expect(pooled.messages.at(-1)?.type).toBe('progress')
+    expect(pooled.polls.at(-1)).toMatchObject({
+      done: 40,
+      discarded: 0,
+      stopping: true,
+      stopRule: 'replicates',
+    })
+    expect(pooled.pool.cancel()).toBe(false)
+    const finisher = RangeWorker.instances.at(-1)!
+    finisher.releaseFinish()
+    expect(pooled.summary().stopped).toEqual({ rule: 'replicates', at: 40 })
+    expect(finisher.terminated).toBe(true)
   })
 
   it('ends with the budget rule once the wall time reaches the budget', () => {

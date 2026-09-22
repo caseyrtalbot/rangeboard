@@ -116,7 +116,8 @@ export function cancelPooledRun(): void {
 /**
  * Ask the pooled run to stop at the next checkpoint of each worker; its `done`
  * message then carries the summary over the replicates 0..m-1 that finished,
- * with `stopped.rule` 'cancelled'.
+ * with `stopped.rule` 'cancelled'. Returns false once that stop is in flight
+ * and after the run is released for the summary worker.
  */
 export function requestPooledCancel(runId: string): boolean {
   return pool.cancel(runId)

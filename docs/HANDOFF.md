@@ -18,53 +18,64 @@ Do not start the following row in the same session.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  HEAD is `164cf00`. The flight horizon is `7fdcb1e`. The authorized estimate-path
-  recapture is `225e027`. Row F is in the working tree and is not committed. An
-  untracked `.cursor/` directory, if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row G. The next rewrite
-  selects row H.
+  HEAD contains row G. Its parent is `3491866` (row F). The flight horizon is
+  `7fdcb1e`. The authorized estimate-path recapture is `225e027`. An untracked
+  `.cursor/` directory, if present, is not part of the queue.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row H. The next rewrite
+  selects row I.
 - The estimate-path expects are the authorized 2026-09-21 recapture. Layered events
   stay 11, layered kill mass stays 1, layered kills mean is 1.115, JIATF leakers mean
   is 0.895, and JIATF kills mean is 0.105. `4.68` is not a pin.
 - `releaseRetainedTrial` empties only the page copy from `boundRetainedTrial`.
-- Row F: chunk grids are packed `Float64Array`s. `finish` transfers them to one
-  worker, which merges, keeps the contiguous prefix, and calls `finishSummary`.
-  At the retained cap (108 tracks, 3001 steps, 283 replicates, 95,968,979 numbers)
-  the transfer round trip was 31 ms and `finishSummary` was 7088 ms on the worker.
+- Row F (`3491866`): chunk grids are packed `Float64Array`s. `finish` transfers
+  them to one worker, which merges, keeps the contiguous prefix, and calls
+  `finishSummary`. At the retained cap (108 tracks, 3001 steps, 283 replicates,
+  95,968,979 numbers) the transfer round trip was 31 ms and `finishSummary` was
+  7088 ms on the worker.
+- Row G: progress `done` is the contiguous prefix. `discarded` is the completed
+  rows finish drops when a hole remains. The Run button says Stopping, and is
+  disabled, while `pool.stopping` is set. That covers an ending and the summary
+  worker, because `cancel` returns false in both.
 
 ## Tasking
 
-### Row G: Stop and progress
+### Row H: Sobol cost before start
 
-- Repository `~/Projects/rangeboard`. Base is local `main` plus the uncommitted row F
-  tree. Leave `docs/Plan.md` unmodified. Do not start row H.
-- Outcome: `cancel` returns false while `ending` is set (`src/playback/workerPool.ts`),
-  and Run still says Stop (`src/panels/analysis/RunControl.tsx`). `requestCancel('mc')`
-  in `src/state/analysisRequests.ts` calls `requestPooledCancel`. While the summary
-  worker runs, `finish` has already released the run, so `cancel` returns false and
-  the button still says Stop until `summary-done`. `settle` reports every landed
-  index. `finish` keeps only the contiguous prefix (`prefixLength`, then
-  `contiguousPrefix` on the worker), so the Run line can pass the summary after a
-  stop. Surface how many completed rows the prefix discarded when a budget stop
-  leaves a hole.
-- Owned files: `src/playback/workerPool.ts`, `src/playback/mcClient.ts`,
-  `src/panels/analysis/RunControl.tsx`, the cancel path in `src/state/analysisRequests.ts`
-  and `src/state/store.ts`, and their tests. Guides that fingerprint `src/` if those
-  sources change.
-- Exclusions: do not edit `docs/Plan.md`. Do not start row H. Do not change the
-  estimate-path expects. Do not pin 4.68. Do not restore 16 events, kill mass 0, or
-  kills mean 0.005. Do not change Coyote `lethalRadiusM`, `guidanceNoiseM`, or
-  `engageTimeS`. Do not add a terminal-homing term. Do not restore
-  `src/analysis/series.ts`. Do not add a handoff bullet that treats run-store NaN as
-  an open export failure. Do not structured-clone the packed grids back onto the page.
-- Verified on this tree before row G: `npm run check` passed (201 files, 2131 tests).
-  `npm run check:bundle` passed after that build (entry 362968 bytes, initial
-  JavaScript plus CSS 378667 bytes, gzip -9). `npm run check:silent` passed.
-- Next action: keep Stop honest while a run is ending or its summary worker is in
-  flight, and show how many completed rows a hole dropped. Browser only.
-- Completion: the Run control matches the pool, and a budget stop that leaves a hole
-  shows the discarded completed-row count. No parity change.
-- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row H.
+- Repository `~/Projects/rangeboard`. Base is local `main` at the row G commit.
+  Leave `docs/Plan.md` unmodified. Do not start row I.
+- Outcome: after Morris, `store.ts` calls `requestSobol`, and
+  `src/state/analysisRequests.ts` publishes `sensitivity.total` 0
+  (`requestSobol` pending patch). `FragilityScreen.tsx` then reads
+  `progress of total` as `0 of 0` until the first `sobol-progress`. Show the
+  row count `base × (k + 2)` before that stage starts. `base` is
+  `runSettings(scenario).sobolBase` (`DEFAULT_SOBOL_BASE` 256). `k` is
+  `morris.kept.length`. Warn when that count can consume most of the 600 s
+  worker budget (`DEFAULT_BUDGET.timeMs` in `src/playback/mcRun.ts`). A
+  29-entity fixture took 499 s. No numerical change.
+- Owned files: the Sobol launch in `src/state/store.ts` and
+  `src/state/analysisRequests.ts`, the line in
+  `src/panels/analysis/screens/FragilityScreen.tsx`, and their tests. Guides
+  that fingerprint `src/` if those sources change.
+- Exclusions: do not edit `docs/Plan.md`. Do not start row I. Do not change
+  Sobol indices, Morris rankings, or the estimate-path expects. Do not pin
+  4.68. Do not restore 16 events, kill mass 0, or kills mean 0.005. Do not
+  change Coyote `lethalRadiusM`, `guidanceNoiseM`, or `engageTimeS`. Do not add
+  a terminal-homing term. Do not restore `src/analysis/series.ts`. Do not add a
+  handoff bullet that treats run-store NaN as an open export failure. Do not
+  structured-clone the packed grids back onto the page.
+- Verified on this tree before row H: `npm run check` passed (201 files, 2134
+  tests). `npm run check:bundle` passed after that build (entry 363187 bytes,
+  initial JavaScript plus CSS 378886 bytes, gzip -9). `npm run check:silent`
+  passed. Browser: Analyze Run went Run, then Stop, then Stopping while the
+  summary worker ran, then Run. A cancel on the firing fixture finished 48 of
+  48 with `discarded` 0, so the line did not print a drop. A budget hole of 1
+  completed row is pinned in `workerPool.test.ts`, and the Run line prints it.
+- Next action: show `base × (k + 2)` and the budget warning before Sobol
+  starts. Browser only. No numerical change.
+- Completion: the Fragility line names the Sobol row count before the stage
+  runs, and a count that can use most of the 600 s budget is warned. Sobol
+  results are unchanged.
+- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row I.
 
 ## Landmines
 
@@ -103,6 +114,9 @@ Do not start the following row in the same session.
   value.
 - Chunk grids are packed row-major `Float64Array`s (`i * steps + k`). `finish`
   transfers those buffers. Do not structured-clone them onto the page to summarize.
+  Progress `done` is the prefix, not every landed index. `discarded` is set only
+  when finish commits a hole. The Run button stays Stopping while `pool.stopping`
+  is set; `cancel` returns false for that wait.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
   touches the entry. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
