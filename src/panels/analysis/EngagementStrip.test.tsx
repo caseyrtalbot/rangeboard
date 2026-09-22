@@ -6,7 +6,8 @@ import { trialAssessment } from '../../playback/__fixtures__/trialFixture'
 import { createTrialManifest } from '../../playback/trialTypes'
 import { analysisBasisSignature } from '../../state/analysisBasis'
 import { useStore } from '../../state/store'
-import { censorLane, EngagementStrip } from './EngagementStrip'
+import { EngagementStrip } from './EngagementStrip'
+import { censorLane } from './censorLane'
 
 const lane: Parameters<typeof censorLane>[0] = {
   key: 'threat',

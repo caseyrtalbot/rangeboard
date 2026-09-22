@@ -18,14 +18,14 @@ Do not start the following row in the same session.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  HEAD contains row I. Its parent is `f95f126` (cleanup after row H at `4348cda`).
-  The flight horizon is `7fdcb1e`. The authorized estimate-path recapture is
-  `225e027`. An untracked `.cursor/` directory, if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row M. The next rewrite
-  selects row N.
-- Row I: `parseScenarioData` refuses a boundary with zero points and a boundary with
-  one point (`boundaries[0].points: expected at least two points`). A two-point
-  boundary still loads. Sobol code was not edited.
+  HEAD contains row M. Its parent is `7d12ea7` (row I). The flight horizon is
+  `7fdcb1e`. The authorized estimate-path recapture is `225e027`. An untracked
+  `.cursor/` directory, if present, is not part of the queue.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row N. The next rewrite
+  selects row O.
+- Row M: `censorLane` and `Lane` live in `src/panels/analysis/censorLane.ts`.
+  `EngagementStrip.tsx` exports only the component and carries no
+  `only-export-components` suppression.
 - The estimate-path expects are the authorized 2026-09-21 recapture. Layered events
   stay 11, layered kill mass stays 1, layered kills mean is 1.115, JIATF leakers mean
   is 0.895, and JIATF kills mean is 0.105. `4.68` is not a pin.
@@ -42,35 +42,48 @@ Do not start the following row in the same session.
 
 ## Tasking
 
-### Row M: censorLane
+### Row N: key-order comparisons
 
-- Repository `~/Projects/rangeboard`. Base is local `main` at the row I commit.
-  Leave `docs/Plan.md` unmodified. Do not start row N.
-- Outcome: `censorLane` is exported from `src/panels/analysis/EngagementStrip.tsx`
-  under an `only-export-components` suppression so
-  `src/panels/analysis/EngagementStrip.test.tsx` can reach it. `Lane` is the
-  unexported interface just above that function. Move the function and `Lane` to a
-  pure module that exports no component. Point the strip and the test at that
-  module. Delete the suppression in `EngagementStrip.tsx`.
-- Owned files: `src/panels/analysis/EngagementStrip.tsx`,
-  `src/panels/analysis/EngagementStrip.test.tsx`, the new module, and guides that
-  fingerprint `src/` if those sources change.
-- Exclusions: do not edit `docs/Plan.md`. Do not start row N. Do not clear the
-  existing `only-export-components` suppressions in other files (`controls.tsx`,
-  `ThreatWezLayer.tsx`, `LiveScene.tsx`, `StaticScene.tsx`, `runValidityText.tsx`).
-  `npm run lint` does not fail on those warnings. Do not change Sobol indices,
-  Morris rankings, the Sobol row-count warning, or the estimate-path expects. Do
-  not pin 4.68. Do not restore 16 events, kill mass 0, or kills mean 0.005. Do not
-  change Coyote `lethalRadiusM`, `guidanceNoiseM`, or `engageTimeS`. Do not add a
-  terminal-homing term. Do not restore `src/analysis/series.ts`. Do not add a
-  handoff bullet that treats run-store NaN as an open export failure. Do not
-  structured-clone the packed grids back onto the page. Do not relax the two-point
-  boundary or flight-path load check.
-- Next action: move `censorLane` and `Lane` out of the component module.
-- Completion: `EngagementStrip.tsx` no longer carries an `only-export-components`
-  suppression. The censor tests still pass, including the unscoped identity check
-  (`censorLane(lane, FULL_RUN)` returns the same lane).
-- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row N.
+- Repository `~/Projects/rangeboard`. Base is local `main` at the row M commit.
+  Leave `docs/Plan.md` unmodified. Do not start row O.
+- Outcome: three comparisons treat reordered object keys as the same value, by
+  reusing the key-sorted comparison in `basisJson` (`src/state/analysisBasis.ts`,
+  currently unexported). Array order stays significant.
+  - `dropEditedProvenance` (`src/model/types.ts:589`) compares spec values with
+    `JSON.stringify` at line 594, so a reordered object drops a provenance row.
+    An unchanged value, keys aside, must return `after`.
+  - `resetBuiltin` (`src/model/libraryLifecycle.ts:239`) replaces an equal builtin
+    whose keys were reordered (`JSON.stringify` at line 247). Equal content must
+    return the same array.
+  - `sameAppliedOverrides` (`src/model/applyOverrides.ts:78`) treats reordered
+    object values as different (`JSON.stringify` at line 85) and can invalidate a
+    run. The Systems editor writes numeric and tuple overrides. Restored overrides
+    can carry objects.
+- Owned files: `src/model/types.ts`, `src/model/libraryLifecycle.ts`,
+  `src/model/applyOverrides.ts`, `src/state/analysisBasis.ts` if the comparison is
+  shared from there, `src/model/specFields.test.ts`,
+  `src/model/libraryLifecycle.test.ts`, a regression for
+  `sameAppliedOverrides` (it has no direct test; callers are in
+  `src/state/scenarioInstall.ts`), and guides that fingerprint those sources.
+- Exclusions: do not edit `docs/Plan.md`. Do not start row O. Do not change Sobol
+  indices, Morris rankings, the Sobol row-count warning, or the estimate-path
+  expects. Do not pin 4.68. Do not restore 16 events, kill mass 0, or kills mean
+  0.005. Do not change Coyote `lethalRadiusM`, `guidanceNoiseM`, or `engageTimeS`.
+  Do not add a terminal-homing term. Do not restore `src/analysis/series.ts`. Do
+  not add a handoff bullet that treats run-store NaN as an open export failure. Do
+  not structured-clone the packed grids back onto the page. Do not relax the
+  two-point boundary or flight-path load check. Do not clear the existing
+  `only-export-components` suppressions in other files. Do not put `censorLane`
+  back on `EngagementStrip.tsx`.
+- Next action: reuse the sorted-key comparison and add a regression that reorders
+  keys and expects the original object back. Capture before and after if an
+  override-identity fixture moves.
+- Completion: reordered keys keep object identity for those three comparisons.
+  `dropEditedProvenance` of an equal reordered value returns `after`.
+  `resetBuiltin` of an equal reordered builtin returns the same array.
+  `sameAppliedOverrides` is true for the same triples when an object value's keys
+  are reordered.
+- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row O.
 
 ## Landmines
 
@@ -96,11 +109,9 @@ Do not start the following row in the same session.
   The crosswalk analysis-panel sentence cites `trialSeries.ts` and `mc.ts`. Dated
   evidence, including the doctrine link to the pre-deletion `OutcomeSummary` blob,
   stays. Do not restore `src/analysis/series.ts`.
-- Three property-order-sensitive JSON comparisons remain findings, not fixes, and are
-  row N: `dropEditedProvenance` in `src/model/types.ts:589`, `resetBuiltin` in
-  `src/model/libraryLifecycle.ts:239`, and `sameAppliedOverrides` in
-  `src/model/applyOverrides.ts:78`. `src/state/analysisBasis.ts:21` already sorts object
-  keys and preserves array order. No production `as unknown as` remains in model/state.
+- No production `as unknown as` remains in model or state. Test fixtures still use
+  that cast. `basisJson` sorts object keys and preserves array order; it is the
+  comparison row N reuses.
 - A run's identity is its basis signature and the override list it applied. An override
   edit that changes a value in force reaches the store only through the
   `useOverrides.subscribe` line at the end of `src/state/store.ts`.
@@ -129,7 +140,7 @@ Do not start the following row in the same session.
 - `library:check` and `schema:check` compare generated bytes. Do not hand-edit
   `*.generated.ts` or `src/io/runtimeSchema.ts`.
 - Oxlint `only-export-components` warnings already exist; do not add more. `npm run lint`
-  does not fail on them.
+  does not fail on them. `EngagementStrip.tsx` no longer carries a suppression.
 - The pool's budget is the main thread's: `DEFAULT_BUDGET.retainedNumbers` bounds the
   merged rows the page holds, not a worker. Raising it or `MAX_REPLICATES` in
   `RunTab.tsx` brings the tab crash back on large raids. The check is not a hard cap:

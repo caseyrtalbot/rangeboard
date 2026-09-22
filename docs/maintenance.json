@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "e71ce897a2df6fe21648d764b47cb2cf7eecb5658a024e4c569fe7b52fe7ec68",
+      "sha256": "ff2a872b16fb0b9b6eaa4e77ac46c39431dfc19487e00e1cf16a84ca6d98569b",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed load validation. The guide still describes import and autosave; the two-point boundary minimum is an engineering invariant, not a new user-facing surface."
+      "note": "Reviewed the engagement-strip horizon sentence after censorLane left EngagementStrip.tsx. The guide still describes the horizon censor and does not name the module."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "0cca04e56808cd9397f7774ab0ae1ae9aa09f4e6ac79e88892dad57dcc5b4f88",
+      "sha256": "f47bd2b4e1f9aa49321de618f06350353052350bac9f2f21ac5103149e13139a",
       "reviewedAt": "2026-09-22",
-      "note": "Runtime validation now refuses a boundary with fewer than two points, the same minimum as a flight path. Two points still load."
+      "note": "Lane censoring moved to panels/analysis/censorLane.ts. The analysis-screens sentence names that module. EngagementStrip still clips windows and censors marks, tooltips and labels before grouping."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "584d33948a6b42cab1759bd347276fcd0b81f391477494374960e63c75dd10e1",
+      "sha256": "5b2f20d593a703681b4dbb8ff610a6f3416d25aeb210fb8a8c64a17dcf5e4225",
       "reviewedAt": "2026-09-22",
-      "note": "Tasking is row M. Row I refuses an imported boundary with fewer than two points and still loads two. Plan.md stays frozen."
+      "note": "Tasking is row N, key-order comparisons. Row M moved censorLane and Lane to a pure module. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

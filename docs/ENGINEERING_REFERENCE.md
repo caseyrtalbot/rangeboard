@@ -1038,7 +1038,8 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   the Outcome records rows open in place; the outcome tiles render once, on Outcome.
   Now samples within the execution horizon: event counts include reached assignments,
   while effect times, Pk and kill deltas wait for the effect. EngagementStrip clips
-  windows and censors lane marks, tooltips and labels. Compare findings route to Prepare.
+  windows and censors lane marks, tooltips and labels through `censorLane`
+  (`panels/analysis/censorLane.ts`). Compare findings route to Prepare.
   Run settings live on the Run tab; the Run button and the Deterministic switch sit on
   Prepare and Analyze.
 - **Pinned baseline** (`src/state/baseline.ts`): `PinnedBaseline` is `pinnedAt` (ISO),
