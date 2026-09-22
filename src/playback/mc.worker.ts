@@ -20,15 +20,22 @@ import type {
 import {
   assertSummaryFits,
   DEFAULT_BUDGET,
+  finishSummary,
   overBudget,
   replicateLoop,
   replicateRangeLoop,
   sensitivityLoop,
   sweepLoop,
 } from './mcRun'
+import { contiguousPrefix, mergePartials } from './mergeSummaries'
 import { morrisLoop } from './morris'
 import { sobolLoop } from './sobol'
-import type { PoolMessage, PoolRequest } from './workerPool'
+import type {
+  FinishSummaryMessage,
+  FinishSummaryRequest,
+  PoolMessage,
+  PoolRequest,
+} from './workerPool'
 
 /** Longest stretch of replicates run before the driver lets a message in. */
 const YIELD_MS = 50
@@ -45,6 +52,7 @@ type Posted =
   | McMorrisMessage
   | McSobolMessage
   | PoolMessage
+  | FinishSummaryMessage
 const post = (m: Posted): void => self.postMessage(m)
 const yieldToEvents = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -89,9 +97,36 @@ async function drive<T>(
   }
 }
 
-self.onmessage = async (e: MessageEvent<McRequest | PoolRequest>) => {
+self.onmessage = async (e: MessageEvent<McRequest | PoolRequest | FinishSummaryRequest>) => {
   if (e.data.type === 'cancel') {
     if (e.data.runId === runId) cancelled = true
+    return
+  }
+  if (e.data.type === 'finish-summary') {
+    // The page transferred the packed grids. Merge and summarize here.
+    const { scenario, parts, rule, elapsedMs, runId: id } = e.data
+    try {
+      const prefix = contiguousPrefix(mergePartials(parts))
+      if (prefix.indices.length === 0) {
+        post({
+          type: 'summary-error',
+          runId: id,
+          message: 'The run stopped before any replicate finished',
+        })
+        return
+      }
+      post({
+        type: 'summary-done',
+        runId: id,
+        summary: finishSummary(scenario, prefix, { rule, at: prefix.indices.length }, elapsedMs),
+      })
+    } catch (err) {
+      post({
+        type: 'summary-error',
+        runId: id,
+        message: err instanceof Error ? err.message : String(err),
+      })
+    }
     return
   }
   const { scenario } = e.data

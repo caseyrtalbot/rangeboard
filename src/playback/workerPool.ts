@@ -15,19 +15,22 @@
  *
  * Stop rules. With `targetHalfWidth` null the pool runs exactly `replicates`
  * indices and reports 'replicates'. With a target it runs until
- * `halfWidthReached` holds on the contiguous prefix of the merged indices,
- * checked after every merged chunk, or until `stopCap` indices are done. The
- * budget applies to the merged rows and the run's wall clock. Any stop cancels
- * the chunks in flight and waits for their partials; the summary is finished on
- * the contiguous prefix only, so a run is always the replicates 0..m-1 with no
- * holes. A worker still silent after CANCEL_GRACE_MS is terminated.
+ * `halfWidthOnEnds` holds on the contiguous prefix of the landed indices,
+ * checked after every landed chunk, or until `stopCap` indices are done. The
+ * budget applies to the landed rows and the run's wall clock. Any stop cancels
+ * the chunks in flight and waits for their partials. The summary is finished
+ * on one worker: the page transfers each chunk's packed grids and does not
+ * clone them. The worker merges, keeps the contiguous prefix, and calls
+ * `finishSummary`, so a run is always the replicates 0..m-1 with no holes. A
+ * worker still silent after CANCEL_GRACE_MS is terminated.
  */
+import { sampleCount } from '../analysis/projection'
 import type { McSettings, Scenario } from '../model/types'
 import { runSettings } from '../model/types'
-import type { ExecutionBudget, McPartial, McWorkerMessage, StopRule } from './mcRun'
-import { assertSummaryFits, DEFAULT_BUDGET, finishSummary, halfWidthReached } from './mcRun'
+import type { ExecutionBudget, McPartial, McSummary, McWorkerMessage, StopRule } from './mcRun'
+import { assertSummaryFits, DEFAULT_BUDGET, halfWidthOnEnds } from './mcRun'
 import type { PoolProgress } from './mcTypes'
-import { contiguousPrefix, mergePartials } from './mergeSummaries'
+import { prefixLeakerEnds, prefixLength } from './mergeSummaries'
 import { CANCEL_GRACE_MS } from './workerSlot'
 
 /** Most workers the pool builds, whatever the machine reports. */
@@ -64,6 +67,43 @@ export type PoolMessage =
   | { type: 'range-progress'; runId: string; done: number; total: number }
   | { type: 'range-done'; runId: string; partial: McPartial }
   | { type: 'range-error'; runId: string; message: string }
+
+/** One request to finish the landed chunks. The grids are transferred, not copied. */
+export interface FinishSummaryRequest {
+  type: 'finish-summary'
+  runId: string
+  scenario: Scenario
+  parts: McPartial[]
+  rule: StopRule
+  elapsedMs: number
+}
+
+/** The finish worker's reply. `summary-error` is a throw or an empty prefix. */
+export type FinishSummaryMessage =
+  | { type: 'summary-done'; runId: string; summary: McSummary }
+  | { type: 'summary-error'; runId: string; message: string }
+
+const GRID_KEYS = ['kills', 'leakers', 'detected', 'tracked', 'engaged'] as const
+
+/** ArrayBuffers of the packed grids. Each buffer is listed once. Empty grids are omitted. */
+function gridBuffers(parts: McPartial[]): ArrayBuffer[] {
+  const buffers: ArrayBuffer[] = []
+  const seen = new Set<ArrayBuffer>()
+  const add = (view: Float64Array): void => {
+    const buffer = view.buffer
+    if (!(buffer instanceof ArrayBuffer)) {
+      throw new Error('A grid buffer could not be transferred')
+    }
+    if (view.byteLength === 0 || seen.has(buffer)) return
+    seen.add(buffer)
+    buffers.push(buffer)
+  }
+  for (const part of parts) {
+    for (const key of GRID_KEYS) add(part[key])
+    for (const grid of part.threatResidual) add(grid)
+  }
+  return buffers
+}
 
 /** Construction and sizing hooks; a test passes its own worker and pool size. */
 export interface PoolOptions {
@@ -176,6 +216,8 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
     (() => new Worker(new URL('./mc.worker.ts', import.meta.url), { type: 'module' }))
   const budget = options.budget ?? DEFAULT_BUDGET
   let current: Run | null = null
+  /** The worker computing a summary. `dispose` and the next `start` terminate it. */
+  let finishing: Worker | null = null
 
   /** Detach and terminate every worker of `run`, and give up ownership. */
   const release = (run: Run): void => {
@@ -240,23 +282,77 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
     }, CANCEL_GRACE_MS)
   }
 
-  /** Finish on the contiguous prefix of what landed, or fail when nothing did. */
+  /**
+   * Finish on the contiguous prefix of what landed, or fail when nothing did.
+   * The range workers are released first. A separate worker receives the packed
+   * grids by transfer and posts the summary; the page does not clone the rows
+   * and does not run `finishSummary`.
+   */
   const finish = (run: Run, rule: StopRule): void => {
     if (run.over) return
-    const prefix = run.parts.length > 0 ? contiguousPrefix(mergePartials(run.parts)) : null
-    if (prefix == null || prefix.indices.length === 0) {
+    if (prefixLength(run.parts) === 0) {
       fail(run, 'The run stopped before any replicate finished')
       return
     }
-    const summary = finishSummary(
-      run.scenario,
-      prefix,
-      { rule, at: prefix.indices.length },
-      Math.round(performance.now() - run.t0),
-    )
+    const elapsedMs = Math.round(performance.now() - run.t0)
+    const { id, scenario, parts, onMessage } = run
     // Release first: a terminal callback may synchronously start the next run.
     release(run)
-    run.onMessage({ type: 'done', runId: run.id, summary })
+    let worker: Worker
+    try {
+      worker = spawn()
+    } catch (error) {
+      onMessage({ type: 'error', runId: id, message: messageOf(error) })
+      return
+    }
+    finishing = worker
+    const deliver = (message: FinishSummaryMessage): void => {
+      if (finishing !== worker) return
+      finishing = null
+      worker.onmessage = null
+      worker.onerror = null
+      worker.onmessageerror = null
+      worker.terminate()
+      if (message.type === 'summary-done')
+        onMessage({ type: 'done', runId: id, summary: message.summary })
+      else onMessage({ type: 'error', runId: id, message: message.message })
+    }
+    worker.onmessage = (e: MessageEvent<FinishSummaryMessage>) => {
+      const message = e.data
+      if (
+        message != null &&
+        (message.type === 'summary-done' || message.type === 'summary-error') &&
+        message.runId === id
+      ) {
+        deliver(message)
+      }
+    }
+    worker.onerror = () => {
+      deliver({ type: 'summary-error', runId: id, message: 'Worker failed' })
+    }
+    worker.onmessageerror = () => {
+      deliver({ type: 'summary-error', runId: id, message: 'Worker response could not be decoded' })
+    }
+    const request: FinishSummaryRequest = {
+      type: 'finish-summary',
+      runId: id,
+      scenario,
+      parts,
+      rule,
+      elapsedMs,
+    }
+    try {
+      worker.postMessage(request, gridBuffers(parts))
+    } catch (error) {
+      if (finishing === worker) {
+        finishing = null
+        worker.onmessage = null
+        worker.onerror = null
+        worker.onmessageerror = null
+        worker.terminate()
+      }
+      onMessage({ type: 'error', runId: id, message: messageOf(error) })
+    }
   }
 
   /** Report the replicates merged so far to both callbacks. */
@@ -273,24 +369,27 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
     })
   }
 
-  /** One chunk landed: merge, report, then either hand out more or end the run. */
+  /** One chunk landed: count it, report, then either hand out more or end the run. */
   const settle = (run: Run, w: PoolWorker, partial: McPartial): void => {
     w.busy = false
     w.settled += partial.indices.length
     w.progress = 0
     run.parts.push(partial)
-    const merged = mergePartials(run.parts)
-    report(run, merged.indices.length)
+    let landed = 0
+    let retained = 0
+    for (const part of run.parts) {
+      landed += part.indices.length
+      retained += part.retained
+    }
+    report(run, landed)
     // A callback may have cancelled or disposed the run.
     if (current !== run || run.over) return
     if (run.ending == null) {
-      if (
-        run.settings.targetHalfWidth != null &&
-        halfWidthReached(run.scenario, contiguousPrefix(merged))
-      ) {
+      const ends = prefixLeakerEnds(run.parts, sampleCount(run.scenario))
+      if (ends != null && halfWidthOnEnds(run.scenario, ends.ends, ends.ships)) {
         beginEnding(run, 'halfWidth')
       } else if (
-        merged.retained >= budget.retainedNumbers ||
+        retained >= budget.retainedNumbers ||
         performance.now() - run.t0 >= budget.timeMs
       ) {
         beginEnding(run, 'budget')
@@ -328,6 +427,14 @@ export function createWorkerPool(options: PoolOptions = {}): WorkerPool {
   }
 
   const dispose = (): void => {
+    if (finishing != null) {
+      const worker = finishing
+      finishing = null
+      worker.onmessage = null
+      worker.onerror = null
+      worker.onmessageerror = null
+      worker.terminate()
+    }
     if (current != null) release(current)
   }
 

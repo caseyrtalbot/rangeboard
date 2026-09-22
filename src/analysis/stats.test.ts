@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { betaQuantile, meanInterval, quantile, wilson } from './stats'
+import { betaQuantile, meanInterval, quantile, sortedMeanInterval, wilson } from './stats'
 
 describe('wilson', () => {
   it('reports p-hat 16/20 = 0.80', () => {
@@ -63,6 +63,12 @@ describe('meanInterval', () => {
 
   it('returns NaN fields for an empty sample', () => {
     expect(meanInterval([]).mean).toBeNaN()
+  })
+
+  it('reads a sorted buffer in place', () => {
+    const sorted = Float64Array.from([1, 2, 3, 4])
+    expect(sortedMeanInterval(sorted)).toEqual(meanInterval([1, 2, 3, 4]))
+    expect(Array.from(sorted)).toEqual([1, 2, 3, 4])
   })
 })
 

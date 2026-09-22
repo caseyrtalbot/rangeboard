@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "20c2826ea23419cfe81f6fc3b38e2b1ab4a7d82154ab9a79121db52b3a72d0df",
+      "sha256": "bf973e7ee66c350329617ca9114fbc7b12219e0f983f32fb078d1a5ad4d94bfa",
       "reviewedAt": "2026-09-21",
-      "note": "Recovery resumes a lane once its copy verifies and reuses that rescue on a later load. A failed baseline or overrides write retries on the next Board change, and a pause leaves another lane's error in place."
+      "note": "Pool finish now runs on a worker. The guide's Monte Carlo paragraphs do not name that thread and remain accurate."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "2d43a2064c0703290b44e30a584878192b80571d8826d5a83abedec197d5a19f",
+      "sha256": "5588838f534a2378f1bbcbbbe6b36e70e3df89854eff404dbf27f3be11fda2ad",
       "reviewedAt": "2026-09-21",
-      "note": "A failed rescue stays blocked until a later edit stores the copy, and the same unreadable bytes reuse one rescue key. A pause fills an empty status and leaves another lane's error. A failed overrides write retries on the next Board change."
+      "note": "The replicate pool transfers packed grids to one worker for finishSummary. Reviewed the Monte Carlo worker paragraph against workerPool.ts, mc.worker.ts, and mcRun.ts. The LHS range test reads packed rows."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "e9d08ff0d4b9cd9a8ec27abd13afd86bf55332f0077bbf4033907694df75a783",
+      "sha256": "75c85fa44a8feeae94bda003b01ed23e207e2c739828d09417984c7ad99cedc0",
       "reviewedAt": "2026-09-21",
-      "note": "Tasking is row F. The autosave commit carries this handoff. npm run check passed: 201 files, 2129 tests. check:bundle passed. Plan.md stays frozen."
+      "note": "Tasking is row G. Row F's finish transfers packed grids; the cap handoff was 31 ms and the summary was 7088 ms on the worker. npm run check passed: 201 files, 2131 tests. check:bundle passed. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

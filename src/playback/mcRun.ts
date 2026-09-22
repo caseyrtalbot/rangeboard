@@ -15,7 +15,7 @@ import type { Scenario } from '../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS, entityActive, runSettings } from '../model/types'
 import type { SweepFactor } from './sweepFactors'
 import { applySweepValue, SWEEP_VALUES_MAX, SWEEP_VALUES_MIN } from './sweepFactors'
-import { meanInterval, sortedQuantile, wilson } from '../analysis/stats'
+import { meanInterval, sortedMeanInterval, sortedQuantile, wilson } from '../analysis/stats'
 import { resolveEngagements } from './attrition'
 import type { DrawPolicy } from './policy'
 import { monteCarloPolicy } from './policy'
@@ -351,14 +351,15 @@ function definedOf(n: number, total: number): Stat['defined'] {
  * to [0, max].
  */
 function intervalOf(
-  sorted: number[],
+  sorted: ArrayLike<number>,
   kind: StatKind,
   t: { lo: number; hi: number },
 ): { lo: number; hi: number; interval: IntervalMethod } {
   if (kind.kind === 'time') return { ...t, interval: 't' }
   const { max } = kind
   const n = sorted.length
-  const k = sorted.reduce((s, v) => s + v, 0)
+  let k = 0
+  for (let i = 0; i < n; i += 1) k += sorted[i]
   if (Number.isFinite(max)) {
     const bound = (3 * max) / n
     if (k === 0) return { lo: 0, hi: Math.min(max, bound), interval: 'rule-of-three' }
@@ -374,13 +375,17 @@ function intervalOf(
  * finite filter. `conf` drives the t-interval and is reported as `conf`; the
  * Wilson and rule-of-three paths keep their 0.95 forms (z 1.96, 3 / n).
  */
-export function statOf(samples: number[], kind: StatKind, conf = STAT_CONF): Stat {
+export function statOf(samples: ArrayLike<number>, kind: StatKind, conf = STAT_CONF): Stat {
   const total = samples.length
   // A typed sort is numeric without a comparator; the bands call this per grid step.
   const finite = new Float64Array(total)
   let n = 0
-  for (const v of samples) if (Number.isFinite(v)) finite[n++] = v
-  const sorted = Array.from(finite.subarray(0, n).sort())
+  for (let i = 0; i < total; i += 1) {
+    const v = samples[i]
+    if (Number.isFinite(v)) finite[n++] = v
+  }
+  const sorted = finite.subarray(0, n)
+  sorted.sort()
   const defined = definedOf(n, total)
   if (n === 0) {
     return {
@@ -400,7 +405,7 @@ export function statOf(samples: number[], kind: StatKind, conf = STAT_CONF): Sta
       defined,
     }
   }
-  const { mean, sd, lo, hi } = meanInterval(sorted, conf)
+  const { mean, sd, lo, hi } = sortedMeanInterval(sorted, conf)
   const q = (p: number, min: number) => (n < min ? NaN : sortedQuantile(sorted, p))
   return {
     mean,
@@ -424,12 +429,22 @@ function halfWidthOf(values: number[], ships: number, conf: number): number {
   return (hi - lo) / 2
 }
 
-/** The same count Stat per step over `rows` (one row per replicate, one entry per step). */
-function bandOf(rows: number[][], n: number, max: number, conf: number): BandSeries {
+/**
+ * The same count Stat per step over a packed grid: replicate i, step k is at
+ * `i * steps + k`. `rows` is the replicate count, which can be shorter than
+ * the buffer while a loop is still filling it.
+ */
+function bandOf(
+  packed: Float64Array,
+  rows: number,
+  steps: number,
+  max: number,
+  conf: number,
+): BandSeries {
   const band: BandSeries = { mean: [], lo: [], hi: [], p10: [], p90: [], p025: [], p975: [] }
-  const column = new Array<number>(rows.length)
-  for (let k = 0; k < n; k += 1) {
-    for (let i = 0; i < rows.length; i += 1) column[i] = rows[i][k]
+  const column = new Float64Array(rows)
+  for (let k = 0; k < steps; k += 1) {
+    for (let i = 0; i < rows; i += 1) column[i] = packed[i * steps + k]
     const s = statOf(column, count(max), conf)
     band.mean.push(s.mean)
     band.lo.push(s.lo)
@@ -500,16 +515,21 @@ function drive<T>(loop: Loop<T>, budget?: ExecutionBudget): T {
  * `threatIds`, the track order; per-effector arrays with `effectorIds`, the
  * scenario's effector order. An undefined time is NaN, which structuredClone
  * keeps and JSON does not: a JSON transport must map it.
+ *
+ * Each grid is one Float64Array, row-major: replicate i, step k lives at
+ * `i * steps + k`, and `steps` is `sampleCount(scenario)`. The view covers
+ * `indices.length` rows. `threatResidual` is one such grid per track. The
+ * buffers transfer to the finish worker; a summary reads `indices.length` rows.
  */
 export interface McPartial {
   /** Replicate indices done, ascending. */
   indices: number[]
-  /** Cumulative counts per grid step, one row per replicate (see McSummary). */
-  kills: number[][]
-  leakers: number[][]
-  detected: number[][]
-  tracked: number[][]
-  engaged: number[][]
+  /** Cumulative counts per grid step, packed row-major. */
+  kills: Float64Array
+  leakers: Float64Array
+  detected: Float64Array
+  tracked: Float64Array
+  engaged: Float64Array
   /** Raid scalars per replicate; NaN when undefined. */
   raidFirstDetect: number[]
   raidFirmTrack: number[]
@@ -523,8 +543,8 @@ export interface McPartial {
   threatKilled: number[][]
   threatLeaked: number[][]
   threatFirstDetect: number[][]
-  /** Per track, one residual row (ships alive per step) per replicate. */
-  threatResidual: number[][][]
+  /** Per track, one packed residual grid (ships alive per step). */
+  threatResidual: Float64Array[]
   /** Per track: geometry, identical in every replicate. */
   threatArrival: (number | null)[]
   threatShips: number[]
@@ -543,11 +563,11 @@ export interface McPartial {
 export function emptyPartial(): McPartial {
   return {
     indices: [],
-    kills: [],
-    leakers: [],
-    detected: [],
-    tracked: [],
-    engaged: [],
+    kills: new Float64Array(0),
+    leakers: new Float64Array(0),
+    detected: new Float64Array(0),
+    tracked: new Float64Array(0),
+    engaged: new Float64Array(0),
     raidFirstDetect: [],
     raidFirmTrack: [],
     raidMinWarning: [],
@@ -617,6 +637,8 @@ export function* replicateLoop(
     next = range.next(stop)
     if (stop && next.done && done < end) stopped = { rule: stop, at: done }
   }
+  // Close an early stop so the loop seals its grids before the summary reads them.
+  range.return()
   return finishSummary(scenario, partial, stopped, 0)
 }
 
@@ -636,6 +658,50 @@ export function* replicateRangeLoop(
   const partial = emptyPartial()
   yield* rangeLoopInto(scenario, start, end, partial, onProgress)
   return partial
+}
+
+/**
+ * A row-major grid that doubles as rows arrive. `view` covers the filled rows
+ * and still shares the spare capacity; `seal` copies an exact buffer and drops
+ * the spare so an early stop does not keep it.
+ */
+function growableGrid(steps: number): {
+  write(row: number, step: number, value: number): void
+  setRow(row: number, values: ArrayLike<number>): void
+  view(rows: number): Float64Array
+  seal(rows: number): Float64Array
+} {
+  let capRows = 0
+  let data = new Float64Array(0)
+  const ensure = (rows: number): void => {
+    if (rows <= capRows) return
+    let next = capRows === 0 ? Math.max(rows, 8) : capRows
+    while (next < rows) next *= 2
+    const grown = new Float64Array(next * steps)
+    grown.set(data)
+    data = grown
+    capRows = next
+  }
+  return {
+    write(row, step, value) {
+      ensure(row + 1)
+      data[row * steps + step] = value
+    },
+    setRow(row, values) {
+      ensure(row + 1)
+      data.set(values, row * steps)
+    },
+    view(rows) {
+      return data.subarray(0, rows * steps)
+    },
+    seal(rows) {
+      const used = rows * steps
+      const exact = used === data.length ? data : data.slice(0, used)
+      data = new Float64Array(0)
+      capRows = 0
+      return exact
+    },
+  }
 }
 
 /** The range loop, filling the caller's partial in place so the driver can read it at a checkpoint. */
@@ -658,81 +724,99 @@ function* rangeLoopInto(
   )
   const count = end - start
   const t0 = performance.now()
+  const kills = growableGrid(n)
+  const leakers = growableGrid(n)
+  const detected = growableGrid(n)
+  const engaged = growableGrid(n)
+  const tracked = growableGrid(n)
+  const residual: ReturnType<typeof growableGrid>[] = []
+  // Publish a view before each checkpoint. The close copies an exact buffer.
+  const publish = (rows: number): void => {
+    partial.kills = kills.view(rows)
+    partial.leakers = leakers.view(rows)
+    partial.detected = detected.view(rows)
+    partial.engaged = engaged.view(rows)
+    partial.tracked = tracked.view(rows)
+    partial.threatResidual = residual.map((grid) => grid.view(rows))
+  }
+  try {
+    for (let i = start; i < end; i += 1) {
+      const policy = monteCarloPolicy(seed, i, thresholds)
+      // Under aleatory the sampler never runs.
+      const s = total ? sampleScenario(scenario, draws(policy, i)) : scenario
+      const assessments = assessAllThreats(s, policy)
+      const report = resolveEngagements(s, assessments, policy)
+      const tracks = assessments.filter((a) => a.status !== 'no-path')
+      const row = i - start
 
-  for (let i = start; i < end; i += 1) {
-    const policy = monteCarloPolicy(seed, i, thresholds)
-    // Under aleatory the sampler never runs.
-    const s = total ? sampleScenario(scenario, draws(policy, i)) : scenario
-    const assessments = assessAllThreats(s, policy)
-    const report = resolveEngagements(s, assessments, policy)
-    const tracks = assessments.filter((a) => a.status !== 'no-path')
+      const tl = buildLiveTimeline(assessments, report)
+      for (let k = 0; k < n; k += 1) {
+        const kpi = liveKpisAt(tl, k * DT)
+        kills.write(row, k, kpi.expectedKills)
+        leakers.write(row, k, kpi.leakerShips)
+        detected.write(row, k, kpi.detected)
+        engaged.write(row, k, kpi.engaged)
+      }
+      tracked.setRow(row, heldTracksOnGrid(tracks, enabledSensorIds, n))
 
-    const tl = buildLiveTimeline(assessments, report)
-    const killRow: number[] = []
-    const leakRow: number[] = []
-    const detRow: number[] = []
-    const engRow: number[] = []
-    for (let k = 0; k < n; k += 1) {
-      const kpi = liveKpisAt(tl, k * DT)
-      killRow.push(kpi.expectedKills)
-      leakRow.push(kpi.leakerShips)
-      detRow.push(kpi.detected)
-      engRow.push(kpi.engaged)
+      let firstDetect = NaN
+      let firmTrack = NaN
+      let minWarning = NaN
+      tracks.forEach((a, t) => {
+        if (a.firstDetectS != null) firstDetect = minOf(firstDetect, a.firstDetectS)
+        if (a.stableTrackAtS != null) firmTrack = minOf(firmTrack, a.stableTrackAtS)
+        if (a.warningS != null) minWarning = minOf(minWarning, a.warningS)
+        const att = report.threats.find((x) => x.uasId === a.uasId)
+        if (i === start) {
+          // The first replicate of the range fixes the track order and the geometry.
+          partial.threatIds.push(a.uasId)
+          partial.threatKilled.push([])
+          partial.threatLeaked.push([])
+          partial.threatFirstDetect.push([])
+          residual.push(growableGrid(n))
+          partial.threatArrival.push(a.arrivalS)
+          partial.threatShips.push(att?.shipCount ?? 1)
+        }
+        partial.threatKilled[t].push(att?.expectedKills ?? 0)
+        partial.threatLeaked[t].push(att?.expectedLeakers ?? 0)
+        partial.threatFirstDetect[t].push(a.firstDetectS ?? NaN)
+        residual[t].setRow(row, residualOnGrid(report, a.uasId, n))
+      })
+      partial.indices.push(i)
+      partial.raidFirstDetect.push(firstDetect)
+      partial.raidFirmTrack.push(firmTrack)
+      partial.raidMinWarning.push(minWarning)
+      partial.operatorDecisions.push(report.totals.operatorDecisions ?? 0)
+      partial.operatorFlooredDecisions.push(report.totals.operatorFlooredDecisions ?? 0)
+
+      report.effectors.forEach((ef, e) => {
+        if (i === start) {
+          partial.effectorIds.push(ef.effectorId)
+          partial.effectorSalvos.push([])
+          partial.effectorKills.push([])
+        }
+        partial.effectorSalvos[e].push(ef.shotsFired + ef.deSalvos + ef.jamSalvos)
+        let killed = 0
+        for (const ev of report.events) if (ev.effectorId === ef.effectorId) killed += ev.killDelta
+        partial.effectorKills[e].push(killed)
+      })
+
+      const done = row + 1
+      publish(done)
+      if (done % 10 === 0 || done === count) onProgress?.(done, count)
+      partial.retained += n * (5 + tracks.length)
+      partial.elapsedMs = performance.now() - t0
+      const stop = yield { done, total: count, retained: partial.retained }
+      if (stop && done < count) return
     }
-    partial.indices.push(i)
-    partial.kills.push(killRow)
-    partial.leakers.push(leakRow)
-    partial.detected.push(detRow)
-    partial.engaged.push(engRow)
-    partial.tracked.push(heldTracksOnGrid(tracks, enabledSensorIds, n))
-
-    let firstDetect = NaN
-    let firmTrack = NaN
-    let minWarning = NaN
-    tracks.forEach((a, t) => {
-      if (a.firstDetectS != null) firstDetect = minOf(firstDetect, a.firstDetectS)
-      if (a.stableTrackAtS != null) firmTrack = minOf(firmTrack, a.stableTrackAtS)
-      if (a.warningS != null) minWarning = minOf(minWarning, a.warningS)
-      const att = report.threats.find((x) => x.uasId === a.uasId)
-      if (i === start) {
-        // The first replicate of the range fixes the track order and the geometry.
-        partial.threatIds.push(a.uasId)
-        partial.threatKilled.push([])
-        partial.threatLeaked.push([])
-        partial.threatFirstDetect.push([])
-        partial.threatResidual.push([])
-        partial.threatArrival.push(a.arrivalS)
-        partial.threatShips.push(att?.shipCount ?? 1)
-      }
-      partial.threatKilled[t].push(att?.expectedKills ?? 0)
-      partial.threatLeaked[t].push(att?.expectedLeakers ?? 0)
-      partial.threatFirstDetect[t].push(a.firstDetectS ?? NaN)
-      partial.threatResidual[t].push(residualOnGrid(report, a.uasId, n))
-    })
-    partial.raidFirstDetect.push(firstDetect)
-    partial.raidFirmTrack.push(firmTrack)
-    partial.raidMinWarning.push(minWarning)
-    partial.operatorDecisions.push(report.totals.operatorDecisions ?? 0)
-    partial.operatorFlooredDecisions.push(report.totals.operatorFlooredDecisions ?? 0)
-
-    report.effectors.forEach((ef, e) => {
-      if (i === start) {
-        partial.effectorIds.push(ef.effectorId)
-        partial.effectorSalvos.push([])
-        partial.effectorKills.push([])
-      }
-      partial.effectorSalvos[e].push(ef.shotsFired + ef.deSalvos + ef.jamSalvos)
-      let killed = 0
-      for (const ev of report.events) if (ev.effectorId === ef.effectorId) killed += ev.killDelta
-      partial.effectorKills[e].push(killed)
-    })
-
-    const done = i - start + 1
-    if (done % 10 === 0 || done === count) onProgress?.(done, count)
-    partial.retained += n * (5 + tracks.length)
-    partial.elapsedMs = performance.now() - t0
-    const stop = yield { done, total: count, retained: partial.retained }
-    if (stop && done < count) return
+  } finally {
+    const rows = partial.indices.length
+    partial.kills = kills.seal(rows)
+    partial.leakers = leakers.seal(rows)
+    partial.detected = detected.seal(rows)
+    partial.engaged = engaged.seal(rows)
+    partial.tracked = tracked.seal(rows)
+    partial.threatResidual = residual.map((grid) => grid.seal(rows))
   }
 }
 
@@ -741,12 +825,36 @@ function* rangeLoopInto(
  * under `targetHalfWidth`; never with fewer than `stopFloor` replicates or
  * with no target.
  */
+/** End-of-run leaker of each packed row. `steps` is the grid length. */
+function leakerEnds(leakers: Float64Array, rows: number, steps: number): number[] {
+  const ends = new Array<number>(rows)
+  const last = steps - 1
+  for (let i = 0; i < rows; i += 1) ends[i] = leakers[i * steps + last]
+  return ends
+}
+
 export function halfWidthReached(scenario: Scenario, partial: McPartial): boolean {
-  const { targetHalfWidth, stopFloor, confidence } = runSettings(scenario)
-  if (targetHalfWidth == null || partial.indices.length < stopFloor) return false
   const n = sampleCount(scenario)
-  const ends = partial.leakers.map((row) => row[n - 1])
-  return halfWidthOf(ends, raidSizeOf(partial.threatShips), confidence) < targetHalfWidth
+  return halfWidthOnEnds(
+    scenario,
+    leakerEnds(partial.leakers, partial.indices.length, n),
+    partial.threatShips,
+  )
+}
+
+/**
+ * The same rule as `halfWidthReached` when the caller already holds the
+ * contiguous end-of-run leakers. The pool uses this so a checkpoint does not
+ * merge the grids.
+ */
+export function halfWidthOnEnds(
+  scenario: Scenario,
+  ends: number[],
+  threatShips: number[],
+): boolean {
+  const { targetHalfWidth, stopFloor, confidence } = runSettings(scenario)
+  if (targetHalfWidth == null || ends.length < stopFloor) return false
+  return halfWidthOf(ends, raidSizeOf(threatShips), confidence) < targetHalfWidth
 }
 
 /** Ships over the raid: the support of the kills and leakers counts. */
@@ -767,6 +875,7 @@ export function finishSummary(
 ): McSummary {
   const { seed, confidence: conf } = runSettings(scenario)
   const n = sampleCount(scenario)
+  const rows = partial.indices.length
   // Count supports: ships for kills, leakers and residual; tracks for the
   // detected, tracked and engaged counts; salvos are unbounded.
   const raidSize = raidSizeOf(partial.threatShips)
@@ -780,7 +889,7 @@ export function finishSummary(
       firstDetectS: statOf(partial.threatFirstDetect[t], TIME, conf),
       arrivalS: partial.threatArrival[t],
       shipCount: ships,
-      residual: bandOf(partial.threatResidual[t], n, ships, conf),
+      residual: bandOf(partial.threatResidual[t], rows, n, ships, conf),
     }
   })
   const perEffector: Record<string, McEffectorSummary> = {}
@@ -797,11 +906,11 @@ export function finishSummary(
     // The duration is an integer number of seconds and DT divides one, so
     // the grid recovers it exactly without a store import.
     durationS: (n - 1) * DT,
-    kills: bandOf(partial.kills, n, raidSize, conf),
-    leakers: bandOf(partial.leakers, n, raidSize, conf),
-    detected: bandOf(partial.detected, n, trackCount, conf),
-    tracked: bandOf(partial.tracked, n, trackCount, conf),
-    engaged: bandOf(partial.engaged, n, trackCount, conf),
+    kills: bandOf(partial.kills, rows, n, raidSize, conf),
+    leakers: bandOf(partial.leakers, rows, n, raidSize, conf),
+    detected: bandOf(partial.detected, rows, n, trackCount, conf),
+    tracked: bandOf(partial.tracked, rows, n, trackCount, conf),
+    engaged: bandOf(partial.engaged, rows, n, trackCount, conf),
     firstDetectS: statOf(partial.raidFirstDetect, TIME, conf),
     firmTrackS: statOf(partial.raidFirmTrack, TIME, conf),
     minWarningS: statOf(partial.raidMinWarning, TIME, conf),

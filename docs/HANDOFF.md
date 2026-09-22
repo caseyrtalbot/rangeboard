@@ -18,49 +18,53 @@ Do not start the following row in the same session.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  The flight horizon is `7fdcb1e`. The authorized estimate-path recapture is
-  `225e027`. The autosave commit carries this handoff. An untracked `.cursor/`
-  directory, if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row F. The next rewrite
-  selects row G.
+  HEAD is `164cf00`. The flight horizon is `7fdcb1e`. The authorized estimate-path
+  recapture is `225e027`. Row F is in the working tree and is not committed. An
+  untracked `.cursor/` directory, if present, is not part of the queue.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row G. The next rewrite
+  selects row H.
 - The estimate-path expects are the authorized 2026-09-21 recapture. Layered events
   stay 11, layered kill mass stays 1, layered kills mean is 1.115, JIATF leakers mean
   is 0.895, and JIATF kills mean is 0.105. `4.68` is not a pin.
 - `releaseRetainedTrial` empties only the page copy from `boundRetainedTrial`.
+- Row F: chunk grids are packed `Float64Array`s. `finish` transfers them to one
+  worker, which merges, keeps the contiguous prefix, and calls `finishSummary`.
+  At the retained cap (108 tracks, 3001 steps, 283 replicates, 95,968,979 numbers)
+  the transfer round trip was 31 ms and `finishSummary` was 7088 ms on the worker.
 
 ## Tasking
 
-### Row F: Main-thread finish
+### Row G: Stop and progress
 
-- Repository `~/Projects/rangeboard`. Base is local `main`. The autosave commit
-  carries this handoff. Leave `docs/Plan.md` unmodified. Do not start row G.
-- Outcome: `workerPool.ts` `finish` still calls `finishSummary` on the page thread
-  (`src/playback/workerPool.ts`). Measured about 12 s at the budget cap on a 108-track
-  raid. The sorted quantile path is already in (`sortedQuantile` in
-  `src/analysis/stats.ts`). `meanInterval` still walks its input twice and has no
-  sorted-input path. Finish in a worker without cloning the rows, or give
-  `meanInterval` the same sorted-input path as `quantile`. Summary parity, then a
-  timed run at the cap.
-- Owned files: `src/playback/workerPool.ts`, `finishSummary` in `src/playback/mcRun.ts`,
-  `src/analysis/stats.ts`, and their tests. Guides that fingerprint `src/` if those
+- Repository `~/Projects/rangeboard`. Base is local `main` plus the uncommitted row F
+  tree. Leave `docs/Plan.md` unmodified. Do not start row H.
+- Outcome: `cancel` returns false while `ending` is set (`src/playback/workerPool.ts`),
+  and Run still says Stop (`src/panels/analysis/RunControl.tsx`). `requestCancel('mc')`
+  in `src/state/analysisRequests.ts` calls `requestPooledCancel`. While the summary
+  worker runs, `finish` has already released the run, so `cancel` returns false and
+  the button still says Stop until `summary-done`. `settle` reports every landed
+  index. `finish` keeps only the contiguous prefix (`prefixLength`, then
+  `contiguousPrefix` on the worker), so the Run line can pass the summary after a
+  stop. Surface how many completed rows the prefix discarded when a budget stop
+  leaves a hole.
+- Owned files: `src/playback/workerPool.ts`, `src/playback/mcClient.ts`,
+  `src/panels/analysis/RunControl.tsx`, the cancel path in `src/state/analysisRequests.ts`
+  and `src/state/store.ts`, and their tests. Guides that fingerprint `src/` if those
   sources change.
-- Exclusions: do not edit `docs/Plan.md`. Do not start row G. Do not change the
+- Exclusions: do not edit `docs/Plan.md`. Do not start row H. Do not change the
   estimate-path expects. Do not pin 4.68. Do not restore 16 events, kill mass 0, or
   kills mean 0.005. Do not change Coyote `lethalRadiusM`, `guidanceNoiseM`, or
   `engageTimeS`. Do not add a terminal-homing term. Do not restore
   `src/analysis/series.ts`. Do not add a handoff bullet that treats run-store NaN as
-  an open export failure.
-- Verified on this tree before row F: `npm run check` passed (201 files, 2129 tests).
-  `npm run check:bundle` passed after that build (entry 363776 bytes, initial
-  JavaScript plus CSS 379475 bytes, gzip -9). In the browser, a failed scenario write
-  showed Save failed and left the name unstored; the next name persisted. A failed
-  overrides write stayed out of `rangeboard.overrides.v1` until a later scenario edit
-  stored the new value.
-- Next action: move `finishSummary` off the page thread, or give `meanInterval` a
-  sorted-input path, then show summary parity and a timed run at the cap.
-- Completion: summary parity holds, and a cap run no longer blocks the page for about
-  12 s.
-- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row G.
+  an open export failure. Do not structured-clone the packed grids back onto the page.
+- Verified on this tree before row G: `npm run check` passed (201 files, 2131 tests).
+  `npm run check:bundle` passed after that build (entry 362968 bytes, initial
+  JavaScript plus CSS 378667 bytes, gzip -9). `npm run check:silent` passed.
+- Next action: keep Stop honest while a run is ending or its summary worker is in
+  flight, and show how many completed rows a hole dropped. Browser only.
+- Completion: the Run control matches the pool, and a budget stop that leaves a hole
+  shows the discarded completed-row count. No parity change.
+- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row H.
 
 ## Landmines
 
@@ -97,6 +101,8 @@ Do not start the following row in the same session.
 - The Systems tab is the only view that shows an override; rings, WEZ, telemetry and the
   Prepare forecast read `trial.scenario` or the board scenario, which keep the library
   value.
+- Chunk grids are packed row-major `Float64Array`s (`i * steps + k`). `finish`
+  transfers those buffers. Do not structured-clone them onto the page to summarize.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
   touches the entry. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope

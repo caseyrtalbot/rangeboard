@@ -194,12 +194,15 @@ Breaking one of these breaks the app.
 - **Monte Carlo worker:** `runMonteCarlo` requests the `mc` kind, which posts through
   `src/playback/mcClient.ts` to a pool of `min(hardwareConcurrency - 1, 8)` `mc.worker.ts`
   instances (`workerPool.ts`), each running `replicateRangeLoop` (`mcRun.ts`) over a chunk
-  of replicate indices. The coordinator merges the partials by index (`mergeSummaries.ts`),
-  applies the half-width rule on the contiguous prefix from `stopFloor`, stops at `stopCap`
-  and finishes with `finishSummary`, so the pooled summary equals the single-worker
-  `runReplicates` at one seed (`workerPool.test.ts`). The merged rows live on the main
-  thread, so the pool applies `DEFAULT_BUDGET` there: a summary over the budget is refused
-  at start, and the run ends with rule 'budget' once the merged `retained` count or the
+  of replicate indices. The coordinator keeps each chunk's grids as packed
+  `Float64Array`s (`mergeSummaries.ts`). It applies the half-width rule to the
+  contiguous prefix of the end-of-run leakers from `stopFloor`, and stops at `stopCap`.
+  The summary is finished on one worker: the page transfers those buffers and does not
+  clone them; the worker merges, keeps the contiguous prefix, and calls `finishSummary`.
+  The pooled summary equals the single-worker `runReplicates` at one seed
+  (`workerPool.test.ts`). The chunk grids live on the main thread until that transfer,
+  so the pool applies `DEFAULT_BUDGET` there: a summary over the budget is refused
+  at start, and the run ends with rule 'budget' once the landed `retained` count or the
   wall time reaches it. A worker still silent after `CANCEL_GRACE_MS` is terminated and
   the run finishes on the contiguous prefix under the rule that began the ending; it fails
   only when no replicate landed. The result lives in the
@@ -226,9 +229,12 @@ Breaking one of these breaks the app.
   one ensemble per grid cell over one or two scenario factors. The request is
 
   ```ts
-  interface SweepFactor { id: SweepFactorId; values: number[] | string[] }
-  type SweepFactorId = 'threatAltitudeFt' | 'threatSpeedMps' | 'approachAzimuthDeg'
-    | 'raidSize' | 'environmentPreset'
+  interface SweepFactor {
+    id: SweepFactorId
+    values: number[] | string[]
+  }
+  type SweepFactorId =
+    'threatAltitudeFt' | 'threatSpeedMps' | 'approachAzimuthDeg' | 'raidSize' | 'environmentPreset'
   interface McSweepRequest {
     type: 'sweep'
     runId: string
@@ -240,7 +246,10 @@ Breaking one of these breaks the app.
   interface SweepCell {
     index: number[]
     values: (number | string)[]
-    summary: Pick<McSummary, 'kills' | 'leakers' | 'firstDetectS' | 'minWarningS' | 'perEffector' | 'replicates'>
+    summary: Pick<
+      McSummary,
+      'kills' | 'leakers' | 'firstDetectS' | 'minWarningS' | 'perEffector' | 'replicates'
+    >
   }
   interface SweepSummary {
     factors: SweepFactor[]
@@ -288,6 +297,7 @@ Breaking one of these breaks the app.
   The store keeps the result in `mc.sweep` (`SweepState`) beside `mc.sensitivity`; a
   basis change marks it stale and cancels it with the other analyses. The Fragility
   screen reads it through `currentSweep` (`panels/analysis/mc.ts`).
+
 - **Sampled Play:** `trial.ts` runs nominal parameters with aleatory draws through
   `monteCarloPolicy` → `assessAllThreats` → `resolveEngagements`. Its complete assessments
   and event/attrition ledger remain separate from the deterministic picture and MC summaries.
@@ -693,7 +703,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   declare gate and again at the assignment; `firstC2Of` is the node of a route. It is
   inactive, with no draw and no delay, without a C2 spec that states a median, under the
   `noOperatorQueue` switch, or on a route with no C2 node. `delayS` returns `{ extraS,
-  floored, decided }`: decided only when that C2 drew a latency (a C2 with no median is no
+floored, decided }`: decided only when that C2 drew a latency (a C2 with no median is no
   decision), floored when the raw excess was below 0 (the deterministic median draw gives
   exactly 0 and is not floored). `AttritionTotals.operatorDecisions` and
   `operatorFlooredDecisions` count them per run; `McSummary` carries their per-replicate
@@ -703,8 +713,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `physicsSwitches(scenario)` in `types.ts`): `Scenario.physics` lists the engine
   simplifications a run switched on, and `physicsSwitches` is the one reader: deduplicated
   and in the declaration order `truthTracks, noFalseTracks, noOperatorQueue,
-  singlePulseRadar, noFlightLimits, rfBandGate, eoirSpanRatio, legacyKineticPk,
-  legacyBeamPk`, empty on an old save. The Settings Physics section
+singlePulseRadar, noFlightLimits, rfBandGate, eoirSpanRatio, legacyKineticPk,
+legacyBeamPk`, empty on an old save. The Settings Physics section
   (`panels/settings/PhysicsTab.tsx`) edits the list through `patchScenario` and resets
   it to `[]`; it uses the same reader to keep checkbox state and writes canonical.
   `createRunManifest` (`runRecord.ts`) and
@@ -865,7 +875,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `dropEditedProvenance` (`src/model/types.ts`). "Reset to seed" (`resetModelToSeed`,
   undoable) puts a builtin back to its seed through `resetBuiltin`.
 - **Specification field edits** (`src/model/specEdit.ts`): `editSpecField(model, field,
-  value)` holds the rule of every edited spec field. It owns the value that clears back to
+value)` holds the rule of every edited spec field. It owns the value that clears back to
   the planning factor, the clamps, the M-of-N coupling (N follows M up, M follows N down),
   the elevation and altitude-band tuples, and the mount-height parse. A field name is a
   section key: `sensor.`, `effector.`, `uas.` or `threatProfile.`, plus the synthetic tuple
@@ -927,7 +937,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `de-dwell` and `hpm-field`. A sensor reports
   the tracker and false tracks, a C2 node fusion, classification and the operator.
   `modelsUsed
-  (scenario)` and `modelsForEntity(scenario, id)` read the scenario, never the picture; the
+(scenario)` and `modelsForEntity(scenario, id)` read the scenario, never the picture; the
   Outcome validity row and the detail pane header show the tags, and the export carries
   `models` and `dataBasis.semantics`. `parameter-spread` is reported under Monte Carlo with
   `total` only. `radar-pd` is `datasheet`: `validation.verify.test.ts` checks the range law
@@ -937,7 +947,7 @@ Each fact below has exactly one definition. Read it there; never add a second co
   sample inside an asset's `defendedRadiusM`; null without an asset or a crossing. CPA is
   pure geometry to the nearest asset. Warning time is arrival minus first detection.
 - **Raid partition** (`attrition.ts`): `expectedKills + expectedLeakers + expectedNoArrival
-  === raidSize`, in the deterministic run and in every replicate. `expectedKills` is
+=== raidSize`, in the deterministic run and in every replicate. `expectedKills` is
   pre-arrival mass only; `expectedLateKills` is a sub-measure of the leaker mass. Display
   `totals.reportedLeakers` (null with no asset), never the partition term.
 - **Expenditure channels:** `shotsFired` kinetic, `deSalvos` directed energy, `jamSalvos`
@@ -1116,12 +1126,12 @@ Each fact below has exactly one definition. Read it there; never add a second co
 
 ## 6. Domain and analytical integrity
 
-- **Three kinds of number.** A *sourced* value has a provenance row with basis `datasheet`
+- **Three kinds of number.** A _sourced_ value has a provenance row with basis `datasheet`
   (a manufacturer page, PDF or release that was opened and read) or `reference` (a named
   publication or government document that quotes the manufacturer), a URL and a read date.
-  A *planning factor* (PF) is every other number: a seed value with no source, an engine
+  A _planning factor_ (PF) is every other number: a seed value with no source, an engine
   constant (`SIZE_PENALTY`, `SCAN_S`, `FLYOUT_SPEED_FACTOR`, `EL_EPS_DEG`, the `PF_SPREAD`
-  table), a group tier. A *user value* is a field the user edited; it loses its row and
+  table), a group tier. A _user value_ is a field the user edited; it loses its row and
   becomes PF. The UI tags every one. A blank stays PF; nothing is invented.
 - **Seed value changes** need a `datasheet` or `reference` row in the same unit against a
   small-UAS class; a range band takes the lower bound. Every change is listed in the commit
@@ -1132,14 +1142,14 @@ Each fact below has exactly one definition. Read it there; never add a second co
   seed, with a comment that names the row. Hand-built test threats resolve altitude to the
   `altBandFt` midpoint; pin `altitudeFt` where slant must equal ground range; pin
   `swerling` on a fixed-wing fixture that feeds a Pd expectation; pin `rangeBasis:
-  'planning'` on a radar whose scan time must not move a hand-derived latency; pin
+'planning'` on a radar whose scan time must not move a hand-derived latency; pin
   `doctrine.enabled = false` on a legacy fixture; pin `physics` on a golden fixture whose
   timeline must not move with a new engine model. `detection-outside-rings.json` and
   `layered-acoustic-merops.json` pin `['truthTracks', 'noFalseTracks',
-  'noOperatorQueue']`, so they hold the pre-Phase-2 kill chain.
-- **Deterministic versus stochastic.** The deterministic run is the *planning envelope*:
+'noOperatorQueue']`, so they hold the pre-Phase-2 kill chain.
+- **Deterministic versus stochastic.** The deterministic run is the _planning envelope_:
   threshold detection at `pdDetect`, kills as mass, phases at 0. It carries a `limiting`
-  finding on every gate. The Monte Carlo run is the *estimate*: every headline number is a
+  finding on every gate. The Monte Carlo run is the _estimate_: every headline number is a
   mean with a t-interval, a standard error, the replicate count and, for a conditional
   quantity, the defined fraction with a Wilson interval. Under `aleatory` only the draws
   vary; under `total` the parameter vector is sampled once per replicate too. Pd never
@@ -1149,11 +1159,11 @@ Each fact below has exactly one definition. Read it there; never add a second co
   errors of a hand-derived value named in a comment, at a replicate count that makes the
   failure probability small and stated. Common random numbers are a promise of the draw
   keys; paired comparisons depend on them.
-- **Engagement vocabulary.** A salvo record is an *event* (`report.events`), never a
+- **Engagement vocabulary.** A salvo record is an _event_ (`report.events`), never a
   ledger. `tS` is assignment time: magazine, cooldown and salvo counts land here.
   Newly produced events add `tReleaseS = tS + engageTimeS` using the resolved delay;
   `tEffectS` is the unchanged effect time. `readyS` is the first possible assignment
-  under the doctrine gate; `flightCapped` marks a flight cut at the envelope end; an *infeasible* intercept
+  under the doctrine gate; `flightCapped` marks a flight cut at the envelope end; an _infeasible_ intercept
   (interceptor cannot reach the credited point) is declined and leaves no event. Shot
   eligibility (in-range interval, intercept, reach, effect containment, envelope, jam link)
   is `evaluateShot` in `playback/shot.ts`; both firing passes call it and a rejection names
@@ -1207,7 +1217,7 @@ Konva conventions:
 - Thin-line hit tolerance: `hitStrokeWidth={n}` in screen px (do not divide by
   `camera.scale`).
 - Drawing tools do not use Konva drag: the stage is `draggable` only when `ui.tool ===
-  'select'`; other tools consume plain clicks and keep the rubber-band draft in
+'select'`; other tools consume plain clicks and keep the rubber-band draft in
   `ui.draftPoints`.
 - Each layer reads its flag through `selectEffectiveLayers` and returns `null`;
   `CanvasStage` does no gating.
@@ -1299,7 +1309,7 @@ Design system (`src/index.css`):
   surface, then an armed placement or the open drawer, then the canvas draft and the
   selection.
 - Interaction routing (`src/canvas/interactionRouter.ts`): `routeInteraction(intent,
-  state)` is the one owner of that Escape order and of click precedence. `App.tsx`
+state)` is the one owner of that Escape order and of click precedence. `App.tsx`
   (Escape, arming a placement, a tool change), `CanvasStage.tsx` (stage clicks, drops,
   the placement target) and `layers/EntityLayer.tsx` (entity clicks) build a plain
   `InteractionState` snapshot from the store, the DOM surfaces and their own state, and
@@ -1320,22 +1330,22 @@ The `standard` column of `MODEL_TAGS` in `src/analysis/fidelity.ts` quotes a row
 table where a published method applies. A row here is a reference, not a claim that the
 code implements the method in full.
 
-| Area | Standard or reference |
-| --- | --- |
-| VV&A policy | DoDI 5000.61, DoD M&S Verification, Validation and Accreditation |
-| VV&A documentation | MIL-STD-3022, Documentation of VV&A for Models and Simulations |
-| Credibility assessment | NASA-STD-7009A credibility factors: verification, validation, input pedigree, results uncertainty, results robustness, use history, M&S management, people qualification |
-| Statistical rigor in T&E | DOT&E guidance on scientific test and analysis techniques; STAT COE design of experiments guidance |
-| Geodesy | WGS 84 (NGA.STND.0036), EGM2008 geoid |
-| Atmosphere | US Standard Atmosphere 1976 (ISO 2533); ITU-R P.676 gaseous attenuation; ITU-R P.838 rain attenuation |
-| RF propagation | ITU-R P.2001 wide-range terrestrial model; ITU-R P.526 diffraction; ITU-R P.528 aeronautical paths; NTIA ITM (Longley-Rice) as the cross-check model |
-| Radar | Blake range performance method; Barton radar equations; Swerling cases evaluated with Marcum-Q and Shnidman; Billingsley land clutter; IEEE 686 definitions |
-| EO/IR | NVESD NV-IPM methodology and the Targeting Task Performance metric; Johnson criteria retained as a legacy cross-check |
-| Acoustic | ISO 9613-2 outdoor attenuation; ANSI/ASA S1.26 atmospheric absorption |
-| Navigation | GPS SPS Performance Standard; INS error as random walk plus bias |
-| Tracking | Bar-Shalom and Li, estimation and data association: the constant-velocity Kalman filter and track-to-track fusion are textbook methods there, not a numbered standard; Blackman and Popoli, multi-target tracking |
-| Terrain data | DTED (MIL-PRF-89020B), SRTM, USGS 3DEP |
-| Symbology | MIL-STD-2525 (already in use) |
+| Area                     | Standard or reference                                                                                                                                                                                             |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VV&A policy              | DoDI 5000.61, DoD M&S Verification, Validation and Accreditation                                                                                                                                                  |
+| VV&A documentation       | MIL-STD-3022, Documentation of VV&A for Models and Simulations                                                                                                                                                    |
+| Credibility assessment   | NASA-STD-7009A credibility factors: verification, validation, input pedigree, results uncertainty, results robustness, use history, M&S management, people qualification                                          |
+| Statistical rigor in T&E | DOT&E guidance on scientific test and analysis techniques; STAT COE design of experiments guidance                                                                                                                |
+| Geodesy                  | WGS 84 (NGA.STND.0036), EGM2008 geoid                                                                                                                                                                             |
+| Atmosphere               | US Standard Atmosphere 1976 (ISO 2533); ITU-R P.676 gaseous attenuation; ITU-R P.838 rain attenuation                                                                                                             |
+| RF propagation           | ITU-R P.2001 wide-range terrestrial model; ITU-R P.526 diffraction; ITU-R P.528 aeronautical paths; NTIA ITM (Longley-Rice) as the cross-check model                                                              |
+| Radar                    | Blake range performance method; Barton radar equations; Swerling cases evaluated with Marcum-Q and Shnidman; Billingsley land clutter; IEEE 686 definitions                                                       |
+| EO/IR                    | NVESD NV-IPM methodology and the Targeting Task Performance metric; Johnson criteria retained as a legacy cross-check                                                                                             |
+| Acoustic                 | ISO 9613-2 outdoor attenuation; ANSI/ASA S1.26 atmospheric absorption                                                                                                                                             |
+| Navigation               | GPS SPS Performance Standard; INS error as random walk plus bias                                                                                                                                                  |
+| Tracking                 | Bar-Shalom and Li, estimation and data association: the constant-velocity Kalman filter and track-to-track fusion are textbook methods there, not a numbered standard; Blackman and Popoli, multi-target tracking |
+| Terrain data             | DTED (MIL-PRF-89020B), SRTM, USGS 3DEP                                                                                                                                                                            |
+| Symbology                | MIL-STD-2525 (already in use)                                                                                                                                                                                     |
 
 Phase 3 validation anchors are executable and dated. `flight.verify.test.ts` checks the
 seeded DJI Mavic 3 climb figure while `flight.test.ts` pins the hand-derived turn arc and

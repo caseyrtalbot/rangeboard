@@ -122,7 +122,7 @@ describe('contiguousPrefix', () => {
     const scenario = base('aleatory')
     const late = contiguousPrefix(range(scenario, 3, 8))
     expect(late.indices).toEqual([])
-    expect(late.leakers).toEqual([])
+    expect(late.leakers).toHaveLength(0)
     expect(late.operatorDecisions).toEqual([])
     expect(late.operatorFlooredDecisions).toEqual([])
     expect(late.threatKilled.every((row) => row.length === 0)).toBe(true)

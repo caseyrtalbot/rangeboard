@@ -71,8 +71,11 @@ describe('the range loop under lhs', () => {
     const full = range(s, 0, 24)
     const slice = range(s, 9, 17)
     expect(slice.indices).toEqual([9, 10, 11, 12, 13, 14, 15, 16])
-    expect(slice.leakers).toEqual(full.leakers.slice(9, 17))
-    expect(slice.kills).toEqual(full.kills.slice(9, 17))
+    // Grids are packed row-major, so a replicate slice is a step-strided span.
+    const steps = full.kills.length / full.indices.length
+    const packedRows = (grid: Float64Array): Float64Array => grid.slice(9 * steps, 17 * steps)
+    expect(slice.leakers).toEqual(packedRows(full.leakers))
+    expect(slice.kills).toEqual(packedRows(full.kills))
     expect(slice.raidFirstDetect).toEqual(full.raidFirstDetect.slice(9, 17))
     slice.threatIds.forEach((_, t) => {
       expect(slice.threatKilled[t]).toEqual(full.threatKilled[t].slice(9, 17))

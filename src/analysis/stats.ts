@@ -105,16 +105,37 @@ export function wilson(x: number, n: number, z = 1.96): Interval & { p: number }
  * Mean with a t-based confidence interval. The t quantile is exact from the
  * regularized incomplete beta for every sample size.
  * n = 0 returns NaN fields; n = 1 returns a degenerate interval at the mean.
+ * The sample need not be sorted; `sortedMeanInterval` is the same arithmetic
+ * on a buffer the caller already owns.
  */
 export function meanInterval(
-  values: number[],
+  values: ArrayLike<number>,
   conf = 0.95,
 ): { mean: number; lo: number; hi: number; sd: number; n: number } {
-  const n = values.length
+  return sortedMeanInterval(values, conf)
+}
+
+/**
+ * `meanInterval` over a buffer the caller owns. No copy. Order is not read
+ * for the mean; `statOf` passes the ascending sample so this sum matches the
+ * quantile buffer. Two passes: the mean, then the sample variance.
+ */
+export function sortedMeanInterval(
+  sorted: ArrayLike<number>,
+  conf = 0.95,
+): { mean: number; lo: number; hi: number; sd: number; n: number } {
+  const n = sorted.length
   if (n === 0) return { mean: NaN, lo: NaN, hi: NaN, sd: NaN, n: 0 }
-  const mean = values.reduce((s, v) => s + v, 0) / n
+  let sum = 0
+  for (let i = 0; i < n; i += 1) sum += sorted[i]
+  const mean = sum / n
   if (n === 1) return { mean, lo: mean, hi: mean, sd: 0, n }
-  const sd = Math.sqrt(values.reduce((s, v) => s + (v - mean) ** 2, 0) / (n - 1))
+  let ss = 0
+  for (let i = 0; i < n; i += 1) {
+    const d = sorted[i] - mean
+    ss += d * d
+  }
+  const sd = Math.sqrt(ss / (n - 1))
   const t = tQuantile(1 - (1 - conf) / 2, n - 1)
   const half = (t * sd) / Math.sqrt(n)
   return { mean, lo: mean - half, hi: mean + half, sd, n }
@@ -129,7 +150,7 @@ export function quantile(values: number[], q: number): number {
 }
 
 /** `quantile` over values already in ascending order; no copy and no sort. */
-export function sortedQuantile(sorted: number[], q: number): number {
+export function sortedQuantile(sorted: ArrayLike<number>, q: number): number {
   const n = sorted.length
   if (n === 0) return NaN
   const pos = Math.min(Math.max(q, 0), 1) * (n - 1)

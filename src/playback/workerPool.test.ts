@@ -3,9 +3,15 @@ import fixture from './__fixtures__/detection-outside-rings.json'
 import { parseAutosave } from '../io/persist'
 import type { Scenario, UncertaintyMode } from '../model/types'
 import type { ExecutionBudget, McPartial, McSummary, McWorkerMessage } from './mcRun'
-import { replicateRangeLoop, runReplicates, summaryNumbers } from './mcRun'
+import { finishSummary, replicateRangeLoop, runReplicates, summaryNumbers } from './mcRun'
+import { contiguousPrefix, mergePartials } from './mergeSummaries'
 import type { PoolProgress } from './mcTypes'
-import type { McRangeRequest, PoolMessage } from './workerPool'
+import type {
+  FinishSummaryMessage,
+  FinishSummaryRequest,
+  McRangeRequest,
+  PoolMessage,
+} from './workerPool'
 import { chunkSize, createWorkerPool, poolSize } from './workerPool'
 import { CANCEL_GRACE_MS } from './workerSlot'
 
@@ -31,7 +37,36 @@ class RangeWorker {
   postMessage = vi.fn((request: unknown) => {
     const m = request as { type: string }
     if (m.type === 'cancel') this.cancelled = true
-    else this.pending = request as McRangeRequest
+    else if (m.type === 'finish-summary') {
+      const req = request as FinishSummaryRequest
+      try {
+        const prefix = contiguousPrefix(mergePartials(req.parts))
+        if (prefix.indices.length === 0) {
+          this.send({
+            type: 'summary-error',
+            runId: req.runId,
+            message: 'The run stopped before any replicate finished',
+          })
+        } else {
+          this.send({
+            type: 'summary-done',
+            runId: req.runId,
+            summary: finishSummary(
+              req.scenario,
+              prefix,
+              { rule: req.rule, at: prefix.indices.length },
+              req.elapsedMs,
+            ),
+          })
+        }
+      } catch (error) {
+        this.send({
+          type: 'summary-error',
+          runId: req.runId,
+          message: error instanceof Error ? error.message : String(error),
+        })
+      }
+    } else this.pending = request as McRangeRequest
   })
   terminate = vi.fn(() => {
     this.terminated = true
@@ -186,6 +221,9 @@ describe('worker pool', () => {
       expect(last.stopRule).toBe('replicates')
       expect(last.perWorkerDone.reduce((sum, n) => sum + n, 0)).toBe(40)
       expect(last.elapsedMs).toBeGreaterThanOrEqual(0)
+      // The summary worker is the extra instance, and it is released with the range workers.
+      expect(RangeWorker.instances).toHaveLength(size + 1)
+      expect(RangeWorker.instances.every((w) => w.terminated)).toBe(true)
     },
     15_000,
   )
@@ -419,7 +457,8 @@ describe('mc.worker run-range route', () => {
     onmessage: ((event: { data: unknown }) => Promise<void>) | null
     postMessage: ReturnType<typeof vi.fn>
   }
-  const posted = (): PoolMessage[] => context.postMessage.mock.calls.map((c) => c[0] as PoolMessage)
+  const posted = (): Array<PoolMessage | FinishSummaryMessage> =>
+    context.postMessage.mock.calls.map((c) => c[0] as PoolMessage | FinishSummaryMessage)
 
   /** The partial of the last message, which must be the range's `range-done`. */
   const finished = (): McPartial => {
@@ -474,6 +513,30 @@ describe('mc.worker run-range route', () => {
     await context.onmessage!({ data: { type: 'cancel', runId: 'w' } })
     await running
     expect(finished().indices).toEqual([0])
+  })
+
+  it('finishes a transferred partial on the worker', async () => {
+    const scenario = base({ replicates: 8, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const loop = replicateRangeLoop(scenario, 0, 8)
+    let next = loop.next()
+    while (!next.done) next = loop.next()
+    const whole = runReplicates(scenario)
+    await context.onmessage!({
+      data: {
+        type: 'finish-summary',
+        runId: 'w',
+        scenario,
+        parts: [next.value],
+        rule: 'replicates',
+        elapsedMs: 12,
+      },
+    })
+    const last = posted().at(-1)!
+    expect(last.type).toBe('summary-done')
+    if (last.type !== 'summary-done') return
+    expect(last.runId).toBe('w')
+    expect(timeless(last.summary)).toEqual(timeless(whole))
+    expect(last.summary.elapsedMs).toBe(12)
   })
 
   it('a cancel for another run is ignored', async () => {
