@@ -126,7 +126,9 @@ A sweep runs one ensemble per grid cell on the sensitivity worker slot, so a swe
 sensitivity run replace each other. A pinned baseline keeps the current laydown and its
 finished ensemble under its own storage key; Compare draws its mean dashed and adds
 Baseline and Current minus Baseline columns. The baseline never enters the scenario, the
-undo history or a worker request.
+undo history or a worker request. Under the full depth, the Fragility status line names
+the Sobol row count, base times (kept fields + 2), as soon as Morris finishes, and warns
+when that count can use most of the 10 minute worker budget.
 
 Where to put it runs a placement optimizer on its own worker slot: a Gaussian process
 with expected improvement over the movable positions inside the range polygon, each

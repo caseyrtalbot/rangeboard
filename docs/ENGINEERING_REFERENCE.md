@@ -383,9 +383,13 @@ Breaking one of these breaks the app.
   uncertain field) then Saltelli Sobol (`sobol.ts`, base `sobolBase`, Jansen total index,
   bootstrap intervals at `confidence`) on the eight kept fields, each design row one
   aleatory replicate under common random numbers; 'quick' keeps the one-at-a-time loop.
-  The Sobol estimators need every row, so a cancel during that stage returns a null
-  result (`sobol-done` with `result: null`) and the run ends done on the Morris result;
-  a budget stop is a `sobol-error` that names the budget.
+  When Morris finishes, `requestSobol` publishes the sensitivity total as
+  `sobolBase × (kept + 2)` before the first `sobol-progress`, and the Fragility line
+  names that count. A planning factor scaled from one measurement (29 entities, 2560
+  rows, 499 s) warns on that line when the same rate would use at least half of
+  `DEFAULT_BUDGET.timeMs`. The Sobol estimators need every row, so a cancel during
+  that stage returns a null result (`sobol-done` with `result: null`) and the run ends
+  done on the Morris result; a budget stop is a `sobol-error` that names the budget.
   `src/engine/index.ts` is the headless barrel; `.oxlintrc.json` forbids react, konva,
   `window` and `document` under `src/playback`, `src/analysis`, `src/geometry` and
   `src/engine`; `scripts/run-engine.mjs` runs the Vite library bundle over `worker_threads`.

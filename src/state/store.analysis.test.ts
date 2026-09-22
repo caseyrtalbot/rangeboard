@@ -4,6 +4,7 @@ import { PfTag } from '../panels/inspector/kit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Boundary, Scenario, SpecModel } from '../model/types'
 import { runSettings } from '../model/types'
+import { sobolBudgetWarning, sobolEvaluationCount } from './analysisRequests'
 import { PF_SPREAD } from '../analysis/parameterBasis'
 import { defendedRadiusOf } from '../playback/sim'
 import { threatAltitudeFt } from '../playback/tracks'
@@ -14,7 +15,7 @@ import { analysisBasisSignature } from './analysisBasis'
 import { currentSensitivity, currentSummary } from '../panels/analysis/mc'
 import type { McWorkerMessage, Stat } from '../playback/mcRun'
 import type { OptimizeEvaluation, OptimizeResult } from '../playback/optimizeTypes'
-import { runReplicates, runSensitivity } from '../playback/mcRun'
+import { DEFAULT_BUDGET, runReplicates, runSensitivity } from '../playback/mcRun'
 import type { PoolProgress } from '../playback/mcTypes'
 import { startPooledRun } from '../playback/mcClient'
 import { MORRIS_FIXTURE, SOBOL_FIXTURE } from '../charts/__fixtures__/sobolFixture'
@@ -743,7 +744,10 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
       status: 'running',
       runId,
       progress: 0,
-      total: 0,
+      total: sobolEvaluationCount(
+        runSettings(useStore.getState().scenario).sobolBase,
+        MORRIS_FIXTURE.kept.length,
+      ),
       summary: null,
     })
     sobol.send({ type: 'sobol-progress', runId, done: 3, total: 1536 })
@@ -766,6 +770,31 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
     useStore.getState().runSensitivity()
     expect(useStore.getState().mc.morris).toBeNull()
     expect(useStore.getState().mc.sobol).toBeNull()
+  })
+
+  it('publishes base times (kept + 2) before the Sobol worker reports a row', () => {
+    useStore.getState().patchScenario({ sobolBase: 32 })
+    const { morris, runId } = launchFull()
+    morris.send({ type: 'morris-done', runId, result: MORRIS_FIXTURE })
+    expect(useStore.getState().mc.sensitivity).toMatchObject({
+      status: 'running',
+      progress: 0,
+      total: 32 * (MORRIS_FIXTURE.kept.length + 2),
+    })
+  })
+
+  it('warns when the measured rate would use at least half the worker time budget', () => {
+    const budget = DEFAULT_BUDGET.timeMs
+    // The measured board: 29 entities, 2560 rows, 499 s of the 600 s budget.
+    expect(sobolBudgetWarning(29, 2560, budget)).toBe(true)
+    // 18 entities at that row count is still over half; 17 is just under.
+    expect(sobolBudgetWarning(18, 2560, budget)).toBe(true)
+    expect(sobolBudgetWarning(17, 2560, budget)).toBe(false)
+    // 29 entities at 1536 rows is 299.4 s.
+    expect(sobolBudgetWarning(29, 1536, budget)).toBe(false)
+    // The firing board is 6 entities.
+    expect(sobolBudgetWarning(6, 1536, budget)).toBe(false)
+    expect(sobolBudgetWarning(0, 2560, budget)).toBe(false)
   })
 
   it('a screening that keeps nothing ends the run done with no Sobol result and no error', () => {

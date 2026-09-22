@@ -286,10 +286,48 @@ describe('FragilityScreen', () => {
     })
     const html = render()
     expect(html).toContain('3 of 1536 evaluations · Sobol on 4 fields')
+    expect(html).not.toContain('worker budget')
     expect(html).toContain('data-sensitivity-widget="morris"')
     useStore.getState().patchScenario({ sensitivityDepth: 'quick' })
     useStore.setState({ mc: { ...IDLE_MC, sensitivity: { ...running, progress: 1, total: 2 } } })
     expect(render()).toContain('1 of 2 fields')
+  })
+
+  it('names the Sobol row count before the first progress and warns when that count can use most of the worker budget', () => {
+    const runId = useStore.getState().playback.runId
+    const running = {
+      ...IDLE_SENSITIVITY,
+      status: 'running' as const,
+      runId,
+      progress: 0,
+      total: 1536,
+    }
+    useStore.setState({
+      mc: { ...IDLE_MC, sensitivity: running, morris: MORRIS_FIXTURE },
+    })
+    const quiet = render()
+    expect(quiet).toContain('0 of 1536 evaluations · Sobol on 4 fields')
+    expect(quiet).not.toContain('worker budget')
+
+    const one = useStore.getState().scenario.entities[0]
+    const heavy = {
+      ...MORRIS_FIXTURE,
+      kept: [0, 1, 2, 3, 4, 5, 0, 1],
+    }
+    useStore.setState({
+      scenario: {
+        ...useStore.getState().scenario,
+        entities: Array.from({ length: 29 }, (_, i) => ({ ...one, id: `budget-ent-${i}` })),
+      },
+      mc: {
+        ...IDLE_MC,
+        sensitivity: { ...running, total: 2560 },
+        morris: heavy,
+      },
+    })
+    expect(render()).toContain(
+      '0 of 2560 evaluations · Sobol on 8 fields · this count can use most of the 10 min worker budget',
+    )
   })
 
   it('passes the selected response to the sensitivity launch', () => {

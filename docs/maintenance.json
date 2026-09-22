@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "664f74e91c7574308812bdf7318a59c313de20e5b13ee71f9f9c11e23857af05",
+      "sha256": "b3c820c0cf22d5a361be4ab4acb58f4ae0a848d2cfcedf930002241356163462",
       "reviewedAt": "2026-09-22",
-      "note": "The Run button says Stopping while the pool is ending or the summary worker is in flight. A stop that drops completed rows past a hole prints that count on the progress line."
+      "note": "Fragility names the Sobol row count, base times kept fields plus 2, as soon as Morris finishes, and warns when that count can use most of the 10 minute worker budget."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "beab1b29b6353e8ac4d9c4554abbb20c5d25f337ef55a9e35c82cfe299d3cf98",
+      "sha256": "50280ef3b9a3d8d43399937854952a88a38980cc9d7b26b71bb42d374accad87",
       "reviewedAt": "2026-09-22",
-      "note": "Progress done is the contiguous prefix. A committed hole sets discarded and the Run line prints it. The Run button says Stopping while pool.stopping is set, because cancel returns false during an ending and during the summary worker."
+      "note": "requestSobol publishes sobolBase times (kept + 2) before the first sobol-progress. The Fragility warning scales the 29-entity, 2560-row, 499 s measurement against half of DEFAULT_BUDGET.timeMs."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "2173ecc9948b96dcb45824f8c388cf0614f04d5122f193863f0c8dd3c9fec3e3",
+      "sha256": "7bcd81f2fc29b10048526aef13653683b3143fa64b253fcc5dede86d5e0d047c",
       "reviewedAt": "2026-09-22",
-      "note": "Tasking is row H. Row G gate: 201 files, 2134 tests, bundle entry 363187 bytes, initial 378886 bytes. Plan.md stays frozen."
+      "note": "Tasking is row I. Row H shows the Sobol row count before that stage and warns when the measured rate would use half the worker time budget. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

@@ -289,6 +289,30 @@ function sensitivityLaunch(
 }
 
 /**
+ * Saltelli rows for a Sobol stage: `base` rows of A, of B, and of one AB matrix
+ * per kept field. The same count `sobolDesign` builds.
+ */
+export function sobolEvaluationCount(base: number, kept: number): number {
+  return base * (kept + 2)
+}
+
+/**
+ * Planning factor from one measured board: 29 entities at 2560 rows took 499 s.
+ * Time scales with entities and rows. Warn when that estimate is at least half
+ * of `timeMs`, which is most of the worker budget.
+ */
+const SOBOL_MEASURED_ENTITIES = 29
+const SOBOL_MEASURED_ROWS = 2560
+const SOBOL_MEASURED_S = 499
+
+export function sobolBudgetWarning(entities: number, rows: number, timeMs: number): boolean {
+  if (entities < 1 || rows < 1 || timeMs <= 0) return false
+  const seconds =
+    SOBOL_MEASURED_S * (entities / SOBOL_MEASURED_ENTITIES) * (rows / SOBOL_MEASURED_ROWS)
+  return seconds * 1000 >= timeMs / 2
+}
+
+/**
  * The Sobol stage of a full sensitivity run, on the fields Morris kept and the
  * response it read, on the same slot and run identity. A screening that kept
  * nothing ends the run done with no Sobol result. The caller passes the state
@@ -308,6 +332,7 @@ export function requestSobol(
   }
   const runId = st.playback.runId
   // The stage continues the screening's run, so it applies the overrides that run kept.
+  const rows = sobolEvaluationCount(runSettings(st.scenario).sobolBase, kept.length)
   const request: McSobolRequest = {
     type: 'sobol',
     runId,
@@ -317,8 +342,8 @@ export function requestSobol(
   }
   launch<SensitivityMessage>(
     {
-      // The run stays live on its identity; the evaluation count starts over.
-      pending: { mc: { ...st.mc, sensitivity: { ...sens, progress: 0, total: 0 } } },
+      // The run stays live on its identity. The row count is known before the worker reports.
+      pending: { mc: { ...st.mc, sensitivity: { ...sens, progress: 0, total: rows } } },
       start: (deliver) => startSobol(request, deliver),
       unavailable: { type: 'sobol-error', runId, message: UNAVAILABLE },
     },
@@ -524,7 +549,8 @@ function acceptOatMessage(st: AnalysisSlices, m: McSensitivityMessage): Analysis
 
 /**
  * Accept a Morris message on the sensitivity run's identity. `morris-done` keeps
- * the run live with its count reset, so the Sobol stage follows on that identity.
+ * the run live and clears the count; `requestSobol` then publishes the Saltelli
+ * row count on that identity.
  */
 export function acceptMorrisMessage(st: AnalysisSlices, m: McMorrisMessage): AnalysisPatch | null {
   const sens = st.mc.sensitivity

@@ -10,7 +10,7 @@ import {
 import { formatTime } from '../../../geometry/geo'
 import { scenarioDurationS } from '../../../model/scenario'
 import { entityActive, runSettings } from '../../../model/types'
-import { SENSITIVITY_RESPONSES } from '../../../playback/mcRun'
+import { DEFAULT_BUDGET, SENSITIVITY_RESPONSES } from '../../../playback/mcRun'
 import type { McSummary, SensitivityResponse, SweepSummary } from '../../../playback/mcRun'
 import {
   SWEEP_ENVIRONMENT_PRESETS,
@@ -18,7 +18,7 @@ import {
   SWEEP_VALUES_MIN,
 } from '../../../playback/sweepFactors'
 import type { SweepFactor, SweepFactorId } from '../../../playback/sweepFactors'
-import { SWEEP_DEFAULTS } from '../../../state/analysisRequests'
+import { SWEEP_DEFAULTS, sobolBudgetWarning } from '../../../state/analysisRequests'
 import { useStore } from '../../../state/store'
 import { Field, State } from '../../../ui/kit'
 import { PfTag } from '../../inspector/kit'
@@ -236,9 +236,16 @@ export function FragilityScreen() {
   const stageResults =
     mc.sensitivity.status === 'stale' || mc.sensitivity.runId !== runId ? null : mc
   const sensitivityRunning = mc.sensitivity.status === 'running'
+  const onSobol = sensitivityRunning && depth === 'full' && mc.morris != null
+  // Entity count is the scenario list, matching the 29-entity measurement.
+  const budgetNote =
+    onSobol &&
+    sobolBudgetWarning(scenario.entities.length, mc.sensitivity.total, DEFAULT_BUDGET.timeMs)
+      ? ` · this count can use most of the ${DEFAULT_BUDGET.timeMs / 60_000} min worker budget`
+      : ''
   const stageLine =
     sensitivityRunning && depth === 'full'
-      ? `${mc.sensitivity.progress} of ${mc.sensitivity.total} evaluations · ${mc.morris ? `Sobol on ${mc.morris.kept.length} fields` : 'Morris screening'}`
+      ? `${mc.sensitivity.progress} of ${mc.sensitivity.total} evaluations · ${mc.morris ? `Sobol on ${mc.morris.kept.length} fields` : 'Morris screening'}${budgetNote}`
       : `${mc.sensitivity.progress} of ${mc.sensitivity.total} fields`
   const mapFactors = sweep?.factors ?? (requestedRunId === runId && sweeping ? requested : factors)
   const responseAvailable = hasAsset || (response !== 'leakers' && response !== 'minWarningS')
