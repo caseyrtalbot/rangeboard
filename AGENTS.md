@@ -52,7 +52,7 @@ One zustand store holds the Board; persistence is localStorage.
 ## Learned User Preferences
 
 - Execute one `docs/Plan.md` row per agent turn; do not start the next row until asked.
-- Leave `docs/Plan.md` unmodified during row work; rewrite `docs/HANDOFF.md` so it points at the plan and tasks the next row.
+- Leave `docs/Plan.md` unmodified during row work; rewrite `docs/HANDOFF.md` so it points at the plan; never invent a following order-table row once the queue is complete.
 - Prefer a brief, properly formatted `docs/HANDOFF.md` plus an inline kickoff prompt for the next agent—not a chat paste dump.
 - When scope authority is given, choose the option that best preserves realism, performance, and function and proceed.
 - When a row kickoff says to commit on completion (or when asked to finish a completed row), commit the owned changes and present the next-phase handoff prompt.
@@ -61,6 +61,6 @@ One zustand store holds the Board; persistence is localStorage.
 
 ## Learned Workspace Facts
 
-- `docs/Plan.md` is the durable multi-row cleanup/refactor plan; `docs/HANDOFF.md` is the mutable current-row tasking and must always reference the plan.
+- `docs/Plan.md` is the durable multi-row cleanup/refactor plan; its order table is complete (last row J). `docs/HANDOFF.md` remains mutable current tasking and must reference the plan; Section 4 parked product work is not order-table tasking.
 - `src/analysis/series.ts` is deleted; use trialSeries and mc helpers (`heldTracksOnGrid`, `liveKpisAt`, `residualOnGrid`)—do not restore `series.ts` or retired ENGINEERING_REFERENCE symbols (`withBands`, `TRACK_LADDER_STYLE`).
 - Run `npm run check:silent` before each commit (CI checks added lines only); intentional matches need `// silent-ok: <reason>`; `check:silent:all` lists pre-existing tree findings that are out of lane unless owned; rules live under `scripts/silent/rules` (see docs/VERIFICATION.md).
