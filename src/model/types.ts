@@ -12,6 +12,7 @@ import type {
   PhysicsSwitch,
   RangeType,
 } from './libraryField'
+import { basisJson } from './basisJson'
 import { DT } from '../playback/clock'
 
 export interface Vec2 {
@@ -585,13 +586,14 @@ export function specFields(model: SpecModel): Readonly<Record<string, unknown>> 
 /**
  * `after` without the provenance rows of every spec field whose value differs
  * from `before`: an edited field takes no row and stays a planning factor.
+ * Object key order is not a difference; array order is.
  */
 export function dropEditedProvenance(before: SpecModel, after: SpecModel): SpecModel {
   const rows = after.provenance
   if (!rows || rows.length === 0) return after
   const b = specFields(before)
   const a = specFields(after)
-  const kept = rows.filter((r) => JSON.stringify(a[r.field]) === JSON.stringify(b[r.field]))
+  const kept = rows.filter((r) => basisJson(a[r.field]) === basisJson(b[r.field]))
   return kept.length === rows.length ? after : { ...after, provenance: kept }
 }
 

@@ -5,6 +5,7 @@ import {
   entityActive,
   runSettings,
 } from '../model/types'
+import { basisJson } from '../model/basisJson'
 import { uncertainFields } from '../analysis/parameterBasis'
 import { defaultLinkLatencyS } from '../analysis/doctrineFactors'
 import { defendedRadiusOf } from '../playback/sim'
@@ -15,18 +16,6 @@ function without<T extends object, K extends keyof T>(value: T, keys: K[]): Omit
   const result = { ...value }
   for (const key of keys) delete result[key]
   return result
-}
-
-/** Object key insertion order is not an input; array order (including draw order) is. */
-function basisJson(value: unknown): string {
-  return JSON.stringify(value, (_key, part) => {
-    if (part == null || typeof part !== 'object' || Array.isArray(part)) return part
-    return Object.fromEntries(
-      Object.keys(part)
-        .sort()
-        .map((key) => [key, part[key]]),
-    )
-  })
 }
 
 /**

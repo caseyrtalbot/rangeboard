@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from './seed'
 import type { Override } from './libraryField'
-import { activeOverrides, applyOverrides } from './applyOverrides'
+import { activeOverrides, applyOverrides, sameAppliedOverrides } from './applyOverrides'
 
 const EFFECTOR = 'lib-coyote'
 const SENSOR = 'lib-giraffe1x'
@@ -65,5 +65,28 @@ describe('applyOverrides', () => {
     const applied = applyOverrides(scenario, recorded)
     expect(applied.library.find((m) => m.id === SENSOR)!.sensor!.updateRateS).toBe(2)
     expect(applied.library.find((m) => m.id === EFFECTOR)!.effector!.pk).toBe(0.02)
+  })
+})
+
+describe('sameAppliedOverrides', () => {
+  it('treats reordered object keys as the same value and keeps array order', () => {
+    const value = {
+      sensorType: 'radar',
+      bands: [{ maxRangeM: 1000, pCorrect: 0.8, pFalseHostile: 0.1, timeToDeclareS: 1 }],
+    }
+    const reordered = { bands: value.bands, sensorType: value.sensorType }
+    expect(JSON.stringify(value)).not.toBe(JSON.stringify(reordered))
+    expect(
+      sameAppliedOverrides(
+        [override('lib-x', 'classification', value)],
+        [override('lib-x', 'classification', reordered)],
+      ),
+    ).toBe(true)
+    expect(
+      sameAppliedOverrides(
+        [override('lib-x', 'elevationDeg', [0, 45])],
+        [override('lib-x', 'elevationDeg', [45, 0])],
+      ),
+    ).toBe(false)
   })
 })

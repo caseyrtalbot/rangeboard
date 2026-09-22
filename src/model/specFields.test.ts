@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SEED_LIBRARY } from './seedLibrary'
 import { dropEditedProvenance, specFields } from './types'
-import type { SpecModel } from './types'
+import type { Provenance, SpecModel, SensorSpec } from './types'
 
 describe('specFields', () => {
   it.each(['sensor', 'uas', 'effector', 'c2'] as const)(
@@ -51,4 +51,65 @@ describe('specFields', () => {
     expect(before.provenance).toHaveLength(2)
     expect(before.c2?.decisionLatencyS).toBe(2)
   })
+
+  it('returns after when an object field differs only by key order', () => {
+    const classification = {
+      sensorType: 'radar' as const,
+      bands: [{ maxRangeM: 1000, pCorrect: 0.8, pFalseHostile: 0.1, timeToDeclareS: 1 }],
+    }
+    const before = sensorModel({ ...radar(), classification }, 'classification')
+    const after: SpecModel = {
+      ...before,
+      sensor: {
+        ...before.sensor!,
+        classification: { bands: classification.bands, sensorType: classification.sensorType },
+      },
+    }
+    expect(JSON.stringify(before.sensor?.classification)).not.toBe(
+      JSON.stringify(after.sensor?.classification),
+    )
+    expect(dropEditedProvenance(before, after)).toBe(after)
+  })
+
+  it('drops provenance when a tuple field changes order', () => {
+    const before = sensorModel({ ...radar(), elevationDeg: [0, 45] }, 'elevationDeg')
+    const after: SpecModel = {
+      ...before,
+      sensor: { ...before.sensor!, elevationDeg: [45, 0] },
+    }
+    expect(dropEditedProvenance(before, after)).not.toBe(after)
+    expect(dropEditedProvenance(before, after).provenance).toEqual([])
+  })
 })
+
+function row(field: string): Provenance {
+  return {
+    field,
+    value: 'recorded',
+    source: 'test',
+    date: '2026-09-16',
+    basis: 'reference',
+  }
+}
+
+function radar(): SensorSpec {
+  return {
+    sensorType: 'radar',
+    detectRangeM: 1000,
+    classifyRangeM: null,
+    sectorDeg: 360,
+  }
+}
+
+function sensorModel(sensor: SensorSpec, field: string): SpecModel {
+  return {
+    id: 'sensor',
+    kind: 'sensor',
+    name: 'Sensor',
+    description: '',
+    color: '#000000',
+    builtin: false,
+    sensor,
+    provenance: [row(field)],
+  }
+}

@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "ff2a872b16fb0b9b6eaa4e77ac46c39431dfc19487e00e1cf16a84ca6d98569b",
+      "sha256": "8aa78db498b64b4aac5b334d92fc46247a3875e79dd0d50812e18d01243d8bee",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed the engagement-strip horizon sentence after censorLane left EngagementStrip.tsx. The guide still describes the horizon censor and does not name the module."
+      "note": "Reviewed after basisJson moved beside the model comparisons. The guide still points at analysisBasis.ts for the signature and does not name the helper."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "f47bd2b4e1f9aa49321de618f06350353052350bac9f2f21ac5103149e13139a",
+      "sha256": "7e886f72b304873ef7e506cb3d76b45d9e71d3024307203a557641c5a7c69f06",
       "reviewedAt": "2026-09-22",
-      "note": "Lane censoring moved to panels/analysis/censorLane.ts. The analysis-screens sentence names that module. EngagementStrip still clips windows and censors marks, tooltips and labels before grouping."
+      "note": "Reviewed the key-order comparison. basisJson is the shared comparison for the signature, provenance edits, builtin reset, and applied overrides. Array order stays significant."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "5b2f20d593a703681b4dbb8ff610a6f3416d25aeb210fb8a8c64a17dcf5e4225",
+      "sha256": "27383acab2ecd32c492d428b97cfef36447dfa7dabc332139f1d343266c83fdc",
       "reviewedAt": "2026-09-22",
-      "note": "Tasking is row N, key-order comparisons. Row M moved censorLane and Lane to a pure module. Plan.md stays frozen."
+      "note": "Tasking is row O, unused exports. Row N shared basisJson across provenance, builtin reset, and applied overrides. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

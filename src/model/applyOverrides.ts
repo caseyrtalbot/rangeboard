@@ -1,6 +1,7 @@
 import type { Override } from './libraryField'
 import type { Scenario, SpecModel } from './types'
 import { dropEditedProvenance, specFields } from './types'
+import { basisJson } from './basisJson'
 
 /**
  * How an override reaches a run. `activeOverrides` is the record a manifest
@@ -71,9 +72,10 @@ export function applyOverrides(scenario: Scenario, overrides: readonly Override[
 
 /**
  * Whether two override lists put the same values in force: the same
- * `(modelId, field, value)` triples in the same order. The reason and date are
- * record content; a re-recorded reason changes no run, so a run's identity
- * compares by this and not by the whole record.
+ * `(modelId, field, value)` triples in the same order. Object key order is
+ * not a difference; array order is. The reason and date are record content;
+ * a re-recorded reason changes no run, so a run's identity compares by this
+ * and not by the whole record.
  */
 export function sameAppliedOverrides(a: readonly Override[], b: readonly Override[]): boolean {
   return (
@@ -82,7 +84,7 @@ export function sameAppliedOverrides(a: readonly Override[], b: readonly Overrid
       (o, i) =>
         o.modelId === b[i].modelId &&
         o.field === b[i].field &&
-        JSON.stringify(o.value) === JSON.stringify(b[i].value),
+        basisJson(o.value) === basisJson(b[i].value),
     )
   )
 }

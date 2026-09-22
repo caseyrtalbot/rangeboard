@@ -1,5 +1,6 @@
 import type { SpecModel, SystemPreset } from './types'
 import { dropEditedProvenance } from './types'
+import { basisJson } from './basisJson'
 import { SEED_LIBRARY } from './seedLibrary'
 import { SEED_SYSTEMS } from './seedSystems'
 
@@ -235,6 +236,7 @@ export function importModels(
  * Put one builtin model back to its seed definition, deep-copied so the library
  * never shares the seed object. A custom model, an unknown id and a model that
  * already equals its seed return the same array, so the caller records no edit.
+ * Object key order is not a difference; array order is.
  */
 export function resetBuiltin(
   models: SpecModel[],
@@ -244,7 +246,7 @@ export function resetBuiltin(
   const model = models.find((m) => m.id === id)
   const seed = seeds.find((m) => m.id === id)
   if (!model || !seed || !model.builtin) return models
-  if (JSON.stringify(model) === JSON.stringify(seed)) return models
+  if (basisJson(model) === basisJson(seed)) return models
   const copy: SpecModel = JSON.parse(JSON.stringify(seed))
   return models.map((m) => (m.id === id ? copy : m))
 }

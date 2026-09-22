@@ -18,14 +18,16 @@ Do not start the following row in the same session.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  HEAD contains row M. Its parent is `7d12ea7` (row I). The flight horizon is
+  HEAD contains row N. Its parent is `9b18209` (row M). The flight horizon is
   `7fdcb1e`. The authorized estimate-path recapture is `225e027`. An untracked
-  `.cursor/` directory, if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row N. The next rewrite
-  selects row O.
-- Row M: `censorLane` and `Lane` live in `src/panels/analysis/censorLane.ts`.
-  `EngagementStrip.tsx` exports only the component and carries no
-  `only-export-components` suppression.
+  `.cursor/` directory, if present, is not part of the queue. An uncommitted
+  `AGENTS.md` edit, if present, is not part of the queue.
+- The frozen queue is [Plan.md](Plan.md). This handoff selects row O. The next rewrite
+  selects row J.
+- Row N: `basisJson` lives in `src/model/basisJson.ts`. It sorts object keys and
+  preserves array order. `dropEditedProvenance`, `resetBuiltin`, and
+  `sameAppliedOverrides` use it. A reordered object keeps the caller's object or
+  array. Array order stays significant.
 - The estimate-path expects are the authorized 2026-09-21 recapture. Layered events
   stay 11, layered kill mass stays 1, layered kills mean is 1.115, JIATF leakers mean
   is 0.895, and JIATF kills mean is 0.105. `4.68` is not a pin.
@@ -39,51 +41,61 @@ Do not start the following row in the same session.
   rows finish drops when a hole remains. The Run button says Stopping, and is
   disabled, while `pool.stopping` is set. That covers an ending and the summary
   worker, because `cancel` returns false in both.
+- Row M: `censorLane` and `Lane` live in `src/panels/analysis/censorLane.ts`.
+  `EngagementStrip.tsx` exports only the component and carries no
+  `only-export-components` suppression.
 
 ## Tasking
 
-### Row N: key-order comparisons
+### Row O: unused exports
 
-- Repository `~/Projects/rangeboard`. Base is local `main` at the row M commit.
-  Leave `docs/Plan.md` unmodified. Do not start row O.
-- Outcome: three comparisons treat reordered object keys as the same value, by
-  reusing the key-sorted comparison in `basisJson` (`src/state/analysisBasis.ts`,
-  currently unexported). Array order stays significant.
-  - `dropEditedProvenance` (`src/model/types.ts:589`) compares spec values with
-    `JSON.stringify` at line 594, so a reordered object drops a provenance row.
-    An unchanged value, keys aside, must return `after`.
-  - `resetBuiltin` (`src/model/libraryLifecycle.ts:239`) replaces an equal builtin
-    whose keys were reordered (`JSON.stringify` at line 247). Equal content must
-    return the same array.
-  - `sameAppliedOverrides` (`src/model/applyOverrides.ts:78`) treats reordered
-    object values as different (`JSON.stringify` at line 85) and can invalidate a
-    run. The Systems editor writes numeric and tuple overrides. Restored overrides
-    can carry objects.
-- Owned files: `src/model/types.ts`, `src/model/libraryLifecycle.ts`,
-  `src/model/applyOverrides.ts`, `src/state/analysisBasis.ts` if the comparison is
-  shared from there, `src/model/specFields.test.ts`,
-  `src/model/libraryLifecycle.test.ts`, a regression for
-  `sameAppliedOverrides` (it has no direct test; callers are in
-  `src/state/scenarioInstall.ts`), and guides that fingerprint those sources.
-- Exclusions: do not edit `docs/Plan.md`. Do not start row O. Do not change Sobol
-  indices, Morris rankings, the Sobol row-count warning, or the estimate-path
-  expects. Do not pin 4.68. Do not restore 16 events, kill mass 0, or kills mean
-  0.005. Do not change Coyote `lethalRadiusM`, `guidanceNoiseM`, or `engageTimeS`.
-  Do not add a terminal-homing term. Do not restore `src/analysis/series.ts`. Do
-  not add a handoff bullet that treats run-store NaN as an open export failure. Do
-  not structured-clone the packed grids back onto the page. Do not relax the
-  two-point boundary or flight-path load check. Do not clear the existing
-  `only-export-components` suppressions in other files. Do not put `censorLane`
-  back on `EngagementStrip.tsx`.
-- Next action: reuse the sorted-key comparison and add a regression that reorders
-  keys and expects the original object back. Capture before and after if an
-  override-identity fixture moves.
-- Completion: reordered keys keep object identity for those three comparisons.
-  `dropEditedProvenance` of an equal reordered value returns `after`.
-  `resetBuiltin` of an equal reordered builtin returns the same array.
-  `sameAppliedOverrides` is true for the same triples when an object value's keys
-  are reordered.
-- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row O.
+- Repository `~/Projects/rangeboard`. Base is local `main` at the row N commit.
+  Leave `docs/Plan.md` unmodified. Do not start row J.
+- Outcome: drop exports that no other module needs. Keep the behavior those names
+  implement. Leave `src/engine/index.ts` as it is.
+  - No importer, including tests, for `selectObservedThroughWholeS`
+    (`src/state/selectors.ts`), `bandNote` and `bandStep`
+    (`src/panels/analysis/mc.ts`), or `TrialOutcomeSummary`
+    (`src/panels/analysis/DebriefRecord.tsx`). `noUnusedLocals` is on, so a
+    binding with no remaining reference fails typecheck. Do not delete the
+    functions. The statistics section still cites `bandNote` as the wording of
+    the replicate-quantile rule.
+  - Used only inside their own modules, so drop `export` only:
+    `withObservedLens` and `pruneSelection` (`src/state/scenarioInstall.ts`),
+    `rangeBounds`, `acceptMorrisMessage`, and `acceptSobolMessage`
+    (`src/state/analysisRequests.ts`), `chartPng` and `downloadPng`
+    (`src/charts/exportPng.ts`; `exportChartPng` stays exported and is what
+    Compare calls), and `SavedRunCompare` (`src/panels/analysis/screens/CompareScreen.tsx`).
+    `SavedRunCompareView` stays exported: `CompareScreen.test.tsx` imports it.
+  - `ANALYSIS_KEY` (`src/io/storageKeys.ts`) is imported by name only from
+    `src/io/viewState.test.ts`. `storageManagement.ts` star-imports
+    `storageKeys` and treats every non-prefix export as a live key, so
+    un-exporting `ANALYSIS_KEY` removes `rangeboard.analysis.v1` from the
+    storage readout. Behavior stays unchanged, so that key stays in the readout.
+  - `spreadFor` and `spreadBasisFor` stay exported. App callers pass no `priors`
+    argument. `src/engine/index.ts` re-exports them. Leave that barrel.
+- Owned files: the modules named above, their tests, and guides that fingerprint
+  those sources. The module map names `chartPng`. The statistics section names
+  `bandNote`.
+- Exclusions: do not edit `docs/Plan.md`. Do not start row J. Do not change
+  `src/engine/index.ts`. Do not delete a function to clear an export. Do not
+  change Sobol indices, Morris rankings, the Sobol row-count warning, or the
+  estimate-path expects. Do not pin 4.68. Do not restore 16 events, kill mass 0,
+  or kills mean 0.005. Do not change Coyote `lethalRadiusM`, `guidanceNoiseM`,
+  or `engageTimeS`. Do not add a terminal-homing term. Do not restore
+  `src/analysis/series.ts`. Do not add a handoff bullet that treats run-store
+  NaN as an open export failure. Do not structured-clone the packed grids back
+  onto the page. Do not relax the two-point boundary or flight-path load check.
+  Do not clear the existing `only-export-components` suppressions in other
+  files. Do not put `censorLane` back on `EngagementStrip.tsx`. Do not replace
+  `basisJson` with `JSON.stringify`.
+- Next action: un-export the in-module names and confirm each still runs. For a
+  name with no reference, keep the function without a new lint suppression and
+  without deleting it. Leave the engine barrel and the storage readout's live
+  keys alone.
+- Completion: behavior is unchanged. The engine barrel is unchanged. The storage
+  readout still lists `rangeboard.analysis.v1`. `npm run check` passes.
+- Stop when that gate passes. Do not edit `docs/Plan.md`. Do not start row J.
 
 ## Landmines
 
@@ -110,11 +122,13 @@ Do not start the following row in the same session.
   evidence, including the doctrine link to the pre-deletion `OutcomeSummary` blob,
   stays. Do not restore `src/analysis/series.ts`.
 - No production `as unknown as` remains in model or state. Test fixtures still use
-  that cast. `basisJson` sorts object keys and preserves array order; it is the
-  comparison row N reuses.
+  that cast. `basisJson` (`src/model/basisJson.ts`) sorts object keys and preserves
+  array order. `dropEditedProvenance`, `resetBuiltin`, and `sameAppliedOverrides`
+  use it.
 - A run's identity is its basis signature and the override list it applied. An override
   edit that changes a value in force reaches the store only through the
   `useOverrides.subscribe` line at the end of `src/state/store.ts`.
+  `sameAppliedOverrides` ignores object key order and keeps array order.
 - The Systems tab is the only view that shows an override; rings, WEZ, telemetry and the
   Prepare forecast read `trial.scenario` or the board scenario, which keep the library
   value.
@@ -155,6 +169,8 @@ Do not start the following row in the same session.
   fingerprint `src/`, so a source commit after a docs review invalidates it.
 - `docs/Plan.md` is frozen. Rewrite this handoff for the next row. Do not mark a row
   done inside the plan.
+- `storageManagement.ts` derives live keys from every non-prefix export of
+  `storageKeys.ts`. Un-exporting `ANALYSIS_KEY` changes that readout.
 
 ## Evidence
 

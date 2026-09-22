@@ -53,6 +53,17 @@ function seedModel(): SpecModel {
   }
 }
 
+/** Rotate insertion order so JSON.stringify changes while the values stay. */
+function reorderKeys<T extends object>(value: T): T {
+  const record = value as Record<string, unknown>
+  const keys = Object.keys(record)
+  const first = keys[0]
+  if (first === undefined || keys.length < 2) return value
+  const out: Record<string, unknown> = {}
+  for (const key of [...keys.slice(1), first]) out[key] = record[key]
+  return out as T
+}
+
 /** A second seed, so a reconcile has one entry to append. */
 function otherSeed(): SpecModel {
   return { ...seedModel(), id: 'lib-y', name: 'Y radar', provenance: undefined }
@@ -254,6 +265,25 @@ describe('resetBuiltin', () => {
     const mine = [{ ...seedModel(), name: 'Mine', builtin: false }]
     expect(resetBuiltin(mine, 'lib-x', seeds)).toBe(mine)
     expect(resetBuiltin(same, 'lib-missing', seeds)).toBe(same)
+  })
+
+  it('returns the same array when a builtin matches its seed aside from key order', () => {
+    const seed = seedModel()
+    const sensor = reorderKeys(seed.sensor!)
+    const model: SpecModel = { ...seed, sensor }
+    const models = [model]
+    expect(JSON.stringify(model)).not.toBe(JSON.stringify(seed))
+    expect(resetBuiltin(models, 'lib-x', [seed])).toBe(models)
+    expect(models[0]).toBe(model)
+  })
+
+  it('replaces a builtin whose array order differs from the seed', () => {
+    const seed = seedModel()
+    const model: SpecModel = { ...seed, provenance: [...seed.provenance!].reverse() }
+    const models = [model]
+    const out = resetBuiltin(models, 'lib-x', [seed])
+    expect(out).not.toBe(models)
+    expect(out[0].provenance?.map((r) => r.field)).toEqual(['updateRateS', 'detectRangeM'])
   })
 
   it('reads the seed library by default', () => {

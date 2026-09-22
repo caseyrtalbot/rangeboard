@@ -218,15 +218,19 @@ Breaking one of these breaks the app.
   changes the values in force reaches the store through `useOverrides.subscribe` and
   `overridesChanged` (`runsForOverridesChange` in `scenarioInstall.ts`), which marks the
   replicate, sensitivity, sweep and optimize runs stale, drops a trial whose manifest
-  lists other values, and restarts a started playback as a configuration change. Save
-  to history (`runRecordOf`, `panels/analysis/mc.ts`) and `pinBaseline` write that list,
+  lists other values, and restarts a started playback as a configuration change.
+  `sameAppliedOverrides` is that value comparison: object key order is not a change
+  in force, and array order is. Save to history (`runRecordOf`, `panels/analysis/mc.ts`)
+  and `pinBaseline` write that list,
   never the overrides in force at the click; the Outcome and Compare forecasts and the
   export's requirement validity run `trialForecast`, the picture of the captured
   scenario with the manifest's overrides applied, so a detection-side override raises
   no forecast-trial disagreement. The signature includes domain fields by default, removes named presentation and
   evidence metadata, resolves scenario/entity/link defaults, and uses `uncertainFields`
   for effective spreads and draw identities. Raw model specs are conservatively included;
-  object key order is ignored and array order is preserved. See the input matrix in
+  object key order is ignored and array order is preserved. `basisJson`
+  (`src/model/basisJson.ts`) is that comparison, shared with provenance edits,
+  builtin reset and applied overrides. See the input matrix in
   `docs/field-te/C1_COMPLETION.md` in Git history. A second worker slot runs `runSensitivity` and
   `runSweep` on demand.
   `engagementPicture` stays the deterministic path; the replicate loop never touches its cache.
@@ -409,6 +413,7 @@ Breaking one of these breaks the app.
 ```text
 src/model/     types.ts (domain types, newId, resolvers like mountHeightOf, basisFor,
                physicsSwitches; C2Spec and the ClassificationMatrix),
+               basisJson.ts (key-sorted JSON comparison; array order stays significant),
                scenario.ts (modelFor index, pathSpeed, scenarioDurationS, engineKeyOf and
                markPresentationVariant), seed.ts (emptyScenario, DEFAULT_SEED),
                seedLibrary.ts (re-export of seedLibrary.generated.ts, which
@@ -883,8 +888,11 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   `fillScenario`, copies seed rows onto a saved builtin only for fields the user has not
   edited, and `updateModel` and `editModel` drop the row of a spec field they change; an
   edited field takes no row and stays PF. Both read one field comparison,
-  `dropEditedProvenance` (`src/model/types.ts`). "Reset to seed" (`resetModelToSeed`,
-  undoable) puts a builtin back to its seed through `resetBuiltin`.
+  `dropEditedProvenance` (`src/model/types.ts`), which treats a reordered object as
+  the same value and an array in a different order as an edit. "Reset to seed"
+  (`resetModelToSeed`, undoable) puts a builtin back to its seed through
+  `resetBuiltin`; a builtin that already matches its seed, key order aside, is
+  left in place.
 - **Specification field edits** (`src/model/specEdit.ts`): `editSpecField(model, field,
 value)` holds the rule of every edited spec field. It owns the value that clears back to
   the planning factor, the clamps, the M-of-N coupling (N follows M up, M follows N down),
