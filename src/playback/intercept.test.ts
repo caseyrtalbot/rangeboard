@@ -17,7 +17,7 @@ import {
   predictionSigmaAtS,
 } from './intercept'
 import { kineticPk } from './pk'
-import { kineticEffectProbability } from './pk/kinetic'
+import { interceptorMissModelApplies, kineticEffectProbability } from './pk/kinetic'
 
 const INTERCEPTOR = {
   effectorType: 'interceptor',
@@ -331,16 +331,18 @@ describe('Phase 3 kinetic flight', () => {
     }
     const legacy = kineticPk(context.basePk, spec.maxRangeM, undefined, context.slantM)
     // No cruise speed: the profile does not fly, and Pk stays on the legacy curve.
+    expect(interceptorMissModelApplies(spec)).toBe(false)
     expect(interceptorFlightTimeS(spec, 1000)).toBeNull()
     expect(kineticEffectProbability(spec, context)).toBe(legacy)
     expect(kineticEffectProbability({ ...spec, flyoutSpeedMps: null }, context)).toBe(legacy)
 
     const flying = { ...spec, flyoutSpeedMps: 154 }
+    expect(interceptorMissModelApplies(flying)).toBe(true)
     expect(interceptorFlightTimeS(flying, 1000)).toBeGreaterThan(0)
     expect(kineticEffectProbability(flying, context)).not.toBe(legacy)
   })
 
-  it('loads the layered fixture as a real flight or an explicit legacy Pk', () => {
+  it('uses the canonical interceptor applicability for every layered-fixture flyout', () => {
     const scenario = parseAutosave(JSON.stringify(layeredFixture))
     delete scenario.physics
     expect(scenario.library.find((m) => m.id === 'lib-coyote')?.effector?.flyoutSpeedMps).toBe(154)
@@ -348,17 +350,7 @@ describe('Phase 3 kinetic flight', () => {
     for (const model of scenario.library) {
       const spec = model.effector
       if (spec?.effectorType !== 'interceptor') continue
-      const context = {
-        basePk: spec.pk ?? 0.8,
-        uas: undefined,
-        slantM: 1000,
-        predictionSigmaM: 8,
-        fallback: false,
-      }
-      const legacy = kineticPk(context.basePk, spec.maxRangeM, undefined, context.slantM)
-      const physical = kineticEffectProbability(spec, context) !== legacy
-      const zeroFlight = interceptorFlightTimeS(spec, 1000) == null
-      expect(physical && zeroFlight).toBe(false)
+      expect(interceptorFlightTimeS(spec, 1000) == null).toBe(!interceptorMissModelApplies(spec))
     }
   })
 

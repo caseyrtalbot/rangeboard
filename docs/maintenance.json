@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "b3c820c0cf22d5a361be4ab4acb58f4ae0a848d2cfcedf930002241356163462",
+      "sha256": "e3ecee389548af510fd40a19750fa141c30c7f1347d0b2bce6b7f99e70ccfff2",
       "reviewedAt": "2026-09-22",
-      "note": "Fragility names the Sobol row count, base times kept fields plus 2, as soon as Morris finishes, and warns when that count can use most of the 10 minute worker budget."
+      "note": "Reviewed canonical interceptor applicability and Sobol count ownership; user-visible behavior and source navigation remain accurate."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "50280ef3b9a3d8d43399937854952a88a38980cc9d7b26b71bb42d374accad87",
+      "sha256": "45b32688b6ec035a3c4fe22e3d6c71b4a5c0084fa2ecb4d00395d7308843cc5c",
       "reviewedAt": "2026-09-22",
-      "note": "requestSobol publishes sobolBase times (kept + 2) before the first sobol-progress. The Fragility warning scales the 29-entity, 2560-row, 499 s measurement against half of DEFAULT_BUDGET.timeMs."
+      "note": "Documented the shared interceptor applicability gate and reviewed canonical Sobol row counting; numerical behavior is unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "0dc12f23a16168d249b78fe8b062f33346a44b4cea60dfd80cdac51613b27ce4",
-      "reviewedAt": "2026-09-21",
-      "note": "check-silent.mjs main guard tolerates import without argv; docs unchanged"
+      "sha256": "87ecffd74aaab963222e92620106412606c05b42af6fbf69495e03b56c341c79",
+      "reviewedAt": "2026-09-22",
+      "note": "Reviewed after the silent-gate callback rename; exact staged-snapshot and AST-range behavior is unchanged and covered."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "c1ec0d179a125630174e249f6313659e83b844c81d86920222f1119add5a03c4",
-      "reviewedAt": "2026-09-21",
-      "note": "check-silent.mjs main guard tolerates import without argv; docs unchanged"
+      "sha256": "420be2f0c1b176c436fca5bcbe57fe76f492f02417620c488c9f7605f90b69b4",
+      "reviewedAt": "2026-09-22",
+      "note": "Reviewed after the silent-gate lint-only callback rename; quality workflow remains accurate."
     },
     {
       "document": "docs/Plan.md",

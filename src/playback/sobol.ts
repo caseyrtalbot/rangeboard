@@ -35,6 +35,11 @@ export interface SobolIndices {
   evaluations: number
 }
 
+/** Saltelli rows for `factors`: A, B and one AB matrix per factor. */
+export function sobolEvaluationCount(base: number, factors: number): number {
+  return base * (factors + 2)
+}
+
 /** One keyed uniform of matrix `m` (0 for A, 1 for B) at (row, column). */
 function draw(seed: number, m: number, row: number, col: number): number {
   return hashU01(seed, row, SOBOL_KIND, m, col, 0, 0)
@@ -105,9 +110,10 @@ export function sobolFromResponses(
   bootstrap = SOBOL_BOOTSTRAP,
   confidence = 0.95,
 ): SobolIndices {
-  if (y.length !== base * (k + 2)) {
+  const evaluations = sobolEvaluationCount(base, k)
+  if (y.length !== evaluations) {
     throw new Error(
-      `Sobol takes ${base * (k + 2)} responses for ${k} factors at base ${base}, not ${y.length}`,
+      `Sobol takes ${evaluations} responses for ${k} factors at base ${base}, not ${y.length}`,
     )
   }
   const yA = y.slice(0, base)

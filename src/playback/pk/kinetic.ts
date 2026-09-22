@@ -133,6 +133,28 @@ function validNonNegative(value: number | null | undefined): value is number {
   return value != null && Number.isFinite(value) && value >= 0
 }
 
+/** Interceptor fields guaranteed when the physical miss model applies. */
+export type PhysicalInterceptorSpec = EffectorSpec & {
+  effectorType: 'interceptor'
+  lethalRadiusM: number
+  guidanceNoiseM: number
+  flyoutSpeedMps: number
+}
+
+/** True when the physical interceptor miss model is enabled and fully specified. */
+export function interceptorMissModelApplies(
+  spec: EffectorSpec,
+  disabled = false,
+): spec is PhysicalInterceptorSpec {
+  return (
+    !disabled &&
+    spec.effectorType === 'interceptor' &&
+    validPositive(spec.lethalRadiusM) &&
+    validNonNegative(spec.guidanceNoiseM) &&
+    validPositive(spec.flyoutSpeedMps)
+  )
+}
+
 /**
  * Modeled probability of effect for an interceptor or projectile effector.
  *
@@ -157,21 +179,17 @@ export function kineticEffectProbability(
   context: KineticEffectContext,
 ): number {
   const legacy = kineticPk(context.basePk, spec.maxRangeM, context.uas, context.slantM)
-  if (context.fallback) return legacy
 
   if (spec.effectorType === 'interceptor') {
-    if (
-      !validPositive(spec.lethalRadiusM) ||
-      !validNonNegative(spec.guidanceNoiseM) ||
-      !validPositive(spec.flyoutSpeedMps)
-    )
-      return legacy
+    if (!interceptorMissModelApplies(spec, context.fallback)) return legacy
     const sigmaM = missDistanceSigmaM(context.predictionSigmaM, spec.guidanceNoiseM)
     const intercept = rayleighProbabilityWithin(spec.lethalRadiusM, sigmaM)
     const effectGivenIntercept = Math.min(1, Math.max(0, context.basePk))
     const evasion = context.uas?.airframe === 'fpv' ? EVASION_PENALTY : 1
     return Math.min(1, Math.max(0, intercept * effectGivenIntercept * evasion))
   }
+
+  if (context.fallback) return legacy
 
   if (spec.effectorType === 'gun') {
     const rounds = projectileCount(spec)

@@ -8,6 +8,7 @@ import { DT } from './clock'
 import type { Covariance4, TrackEstimate } from './trackTypes'
 import { positionSigmaM, predict, PROCESS_NOISE_Q } from './kalman'
 import { projectileBurstDurationS } from './ballistics'
+import { interceptorMissModelApplies } from './pk/kinetic'
 
 /** Time tolerance for interval and release comparisons, seconds. */
 export const EPS = 1e-9
@@ -72,12 +73,11 @@ function flyoutProfile(
   spec: EffectorSpec,
   options: KineticInterceptOptions | undefined,
 ): FlyoutProfile | null {
-  if (options == null || options.fallback) return null
+  if (options == null) return null
 
   if (spec.effectorType === 'interceptor') {
-    if (!positive(spec.lethalRadiusM) || !nonNegative(spec.guidanceNoiseM)) return null
+    if (!interceptorMissModelApplies(spec, options.fallback)) return null
     const cruiseMps = spec.flyoutSpeedMps
-    if (!positive(cruiseMps)) return null
     const boostS = spec.boostTimeS
     const peakMps = spec.maxFlyoutSpeedMps
     if (!positive(boostS) || !positive(peakMps)) {
@@ -102,6 +102,8 @@ function flyoutProfile(
         : null,
     }
   }
+
+  if (options.fallback) return null
 
   if (spec.effectorType === 'gun') {
     if (

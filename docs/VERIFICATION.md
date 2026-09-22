@@ -28,7 +28,7 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run evidence:report` | Measure `docs/field-te/evidence`: size by type, duplicate JSON groups, uncompressed JSON over 512 kB |
 | `npm run check:evidence` | Fail on a byte-identical JSON copy or an uncompressed JSON capture over 512 kB, except paths in `scripts/evidence/allowlist.json` |
 | `npm run test:evidence` | Test the evidence gate and the shared capture helper |
-| `npm run check:silent` | Fail on an added line that hides a failure: an empty catch, a catch that returns a substitute without reporting, a no-op promise catch, or a comment or string that says silent, swallow, fallback, fail-open, fail-soft, or best-effort. Diff against `main` (`--base <ref>` overrides, `--staged` checks the index) |
+| `npm run check:silent` | Fail when an added line intersects a hidden failure: an empty catch, a catch that returns a substitute without reporting, a no-op promise catch, or a comment or string that says silent, swallow, fallback, fail-open, fail-soft, or best-effort. Diff against `main` (`--base <ref>` overrides, `--staged` scans the exact index snapshot) |
 | `npm run check:silent:all` | Report the same patterns across every tracked source file without failing |
 | `npm run test:silent` | Run the ast-grep rule cases in `scripts/silent/rule-tests` and the gate script tests |
 | `npm run hooks:install` | Point `core.hooksPath` at `.githooks` so `check:silent --staged` runs before each commit. Opt in per clone |

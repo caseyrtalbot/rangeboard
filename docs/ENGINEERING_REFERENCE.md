@@ -767,8 +767,10 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   flight-horizon sigma with the interceptor's guidance error.
   Kinetic shots use `kineticEffectProbability`: interceptors combine predicted track error
   with guidance error and integrate the Rayleigh miss distribution inside effective radius.
-  An interceptor with no positive `flyoutSpeedMps` returns `kineticPk`, the same missing
-  cruise speed that leaves the flight profile at zero time of flight. Guns compound
+  `interceptorMissModelApplies` is the shared gate for flight, probability and fidelity:
+  the physical path requires finite positive lethal radius and flyout speed plus finite
+  nonnegative guidance error. An interceptor that fails that gate returns `kineticPk` and
+  has no physical flight profile. Guns compound
   independent projectile hits from pointing error, dispersion, rate and burst size.
   `legacyKineticPk` restores `kineticPk(basePk, maxRangeM, uas, slantM)`, which
   `footprintStyle.ts` also imports to invert the commit ring. Optical shots compute diffraction,

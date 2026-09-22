@@ -2,6 +2,7 @@ import { expect, it } from 'vitest'
 import type { EffectorSpec, UasSpec } from '../model/types'
 import { kineticPk, missDistanceSigmaM } from './pk'
 import {
+  interceptorMissModelApplies,
   kineticEffectProbability,
   projectileMissSigmaM,
   rayleighProbabilityWithin,
@@ -27,6 +28,43 @@ it('maps an isotropic miss through the Rayleigh CDF', () => {
   expect(rayleighProbabilityWithin(0, 1)).toBe(0)
   expect(rayleighProbabilityWithin(1, 0)).toBe(1)
   expect(rayleighProbabilityWithin(10, 5)).toBeCloseTo(1 - Math.exp(-2), 12)
+})
+
+it('requires finite physical interceptor fields at their correct numeric boundaries', () => {
+  const interceptor = {
+    effectorType: 'interceptor',
+    minRangeM: 0,
+    maxRangeM: 10000,
+    engageTimeS: 0,
+    lethalRadiusM: 10,
+    guidanceNoiseM: 0,
+    flyoutSpeedMps: 100,
+  } as EffectorSpec
+
+  expect(interceptorMissModelApplies(interceptor)).toBe(true)
+  expect(interceptorMissModelApplies({ ...interceptor, lethalRadiusM: Number.MIN_VALUE })).toBe(
+    true,
+  )
+  expect(interceptorMissModelApplies({ ...interceptor, flyoutSpeedMps: Number.MIN_VALUE })).toBe(
+    true,
+  )
+  expect(interceptorMissModelApplies({ ...interceptor, guidanceNoiseM: null })).toBe(false)
+  expect(interceptorMissModelApplies({ ...interceptor, guidanceNoiseM: -Number.MIN_VALUE })).toBe(
+    false,
+  )
+  expect(interceptorMissModelApplies({ ...interceptor, guidanceNoiseM: Number.NaN })).toBe(false)
+  expect(
+    interceptorMissModelApplies({ ...interceptor, guidanceNoiseM: Number.POSITIVE_INFINITY }),
+  ).toBe(false)
+  expect(interceptorMissModelApplies({ ...interceptor, lethalRadiusM: 0 })).toBe(false)
+  expect(
+    interceptorMissModelApplies({ ...interceptor, lethalRadiusM: Number.POSITIVE_INFINITY }),
+  ).toBe(false)
+  expect(interceptorMissModelApplies({ ...interceptor, flyoutSpeedMps: 0 })).toBe(false)
+  expect(
+    interceptorMissModelApplies({ ...interceptor, flyoutSpeedMps: Number.POSITIVE_INFINITY }),
+  ).toBe(false)
+  expect(interceptorMissModelApplies(interceptor, true)).toBe(false)
 })
 
 it('combines projectile angular error with track error in meters', () => {

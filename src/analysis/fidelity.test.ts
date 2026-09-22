@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
-import type { Entity, Scenario } from '../model/types'
+import type { EffectorSpec, Entity, Scenario } from '../model/types'
 import { DEFAULT_FIRE_DOCTRINE } from '../model/types'
 import { MODEL_TAGS, modelsForEntity, modelsUsed, type ModelId } from './fidelity'
 
@@ -374,4 +374,24 @@ describe('modelsUsed, Phase 3 kinetic tags', () => {
     noCruise.entities.push(entity('e1', 'effector', cruising.id))
     expect(modelsUsed(noCruise).map((t) => t.id)).not.toContain('interceptor-miss')
   })
+
+  it.each([
+    ['zero guidance noise', { guidanceNoiseM: 0 }, true],
+    ['null guidance noise', { guidanceNoiseM: null }, false],
+    ['negative guidance noise', { guidanceNoiseM: -Number.MIN_VALUE }, false],
+    ['non-finite guidance noise', { guidanceNoiseM: Number.NaN }, false],
+    ['zero lethal radius', { lethalRadiusM: 0 }, false],
+    ['non-finite lethal radius', { lethalRadiusM: Number.POSITIVE_INFINITY }, false],
+    ['zero flyout speed', { flyoutSpeedMps: 0 }, false],
+    ['non-finite flyout speed', { flyoutSpeedMps: Number.POSITIVE_INFINITY }, false],
+  ] satisfies Array<[string, Partial<EffectorSpec>, boolean]>)(
+    'reports interceptor miss correctly with %s',
+    (_label, patch, expected) => {
+      const s = radarLaydown()
+      const coyote = s.library.find((m) => m.id === 'lib-coyote')!
+      coyote.effector = { ...coyote.effector!, ...patch }
+      s.entities.push(entity('e1', 'effector', coyote.id))
+      expect(modelsUsed(s).some((tag) => tag.id === 'interceptor-miss')).toBe(expected)
+    },
+  )
 })

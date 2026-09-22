@@ -312,7 +312,7 @@ describe('FragilityScreen', () => {
     const one = useStore.getState().scenario.entities[0]
     const heavy = {
       ...MORRIS_FIXTURE,
-      kept: [0, 1, 2, 3, 4, 5, 0, 1],
+      kept: [0, 1, 2, 3, 4, 5],
     }
     useStore.setState({
       scenario: {
@@ -321,12 +321,12 @@ describe('FragilityScreen', () => {
       },
       mc: {
         ...IDLE_MC,
-        sensitivity: { ...running, total: 2560 },
+        sensitivity: { ...running, total: 2048 },
         morris: heavy,
       },
     })
     expect(render()).toContain(
-      '0 of 2560 evaluations · Sobol on 8 fields · this count can use most of the 10 min worker budget',
+      '0 of 2048 evaluations · Sobol on 6 fields · this count can use most of the 10 min worker budget',
     )
   })
 

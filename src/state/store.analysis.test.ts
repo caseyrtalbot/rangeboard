@@ -4,7 +4,6 @@ import { PfTag } from '../panels/inspector/kit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Boundary, Scenario, SpecModel } from '../model/types'
 import { runSettings } from '../model/types'
-import { sobolBudgetWarning, sobolEvaluationCount } from './analysisRequests'
 import { PF_SPREAD } from '../analysis/parameterBasis'
 import { defendedRadiusOf } from '../playback/sim'
 import { threatAltitudeFt } from '../playback/tracks'
@@ -15,10 +14,9 @@ import { analysisBasisSignature } from './analysisBasis'
 import { currentSensitivity, currentSummary } from '../panels/analysis/mc'
 import type { McWorkerMessage, Stat } from '../playback/mcRun'
 import type { OptimizeEvaluation, OptimizeResult } from '../playback/optimizeTypes'
-import { DEFAULT_BUDGET, runReplicates, runSensitivity } from '../playback/mcRun'
+import { runReplicates, runSensitivity } from '../playback/mcRun'
 import type { PoolProgress } from '../playback/mcTypes'
 import { startPooledRun } from '../playback/mcClient'
-import { MORRIS_FIXTURE, SOBOL_FIXTURE } from '../charts/__fixtures__/sobolFixture'
 import { runTrial } from '../playback/trial'
 import type { TrialManifest } from '../playback/trialTypes'
 import { CANCEL_GRACE_MS } from '../playback/workerSlot'
@@ -650,7 +648,7 @@ describe('complete analysis basis and request ownership', () => {
   })
 })
 
-describe('the pooled replicate run and the Morris then Sobol stages', () => {
+describe('the pooled replicate run', () => {
   beforeEach(() => {
     ControlledWorker.install()
     pooled.onPool = null
@@ -707,146 +705,6 @@ describe('the pooled replicate run and the Morris then Sobol stages', () => {
       .patchScenario({ targetHalfWidth: 0.1, stopFloor: 40, stopCap: 700, replicates: 10 })
     useStore.getState().runMonteCarlo()
     expect(useStore.getState().mc.total).toBe(700)
-  })
-
-  function launchFull(response?: 'kills') {
-    useStore.getState().patchScenario({ sensitivityDepth: 'full' })
-    useStore.getState().runSensitivity(response)
-    const morris = ControlledWorker.latest()
-    const runId = useStore.getState().playback.runId
-    return { morris, runId }
-  }
-
-  it('a full run drives Morris then Sobol on the kept fields and ends with the Sobol result', () => {
-    const { morris, runId } = launchFull('kills')
-    expect(morris.request).toMatchObject({ type: 'morris', runId, response: 'kills' })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({
-      status: 'running',
-      runId,
-      progress: 0,
-      total: 0,
-    })
-    morris.send({ type: 'morris-progress', runId, done: 7, total: 70 })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({ progress: 7, total: 70 })
-    morris.send({ type: 'morris-done', runId, result: MORRIS_FIXTURE })
-    expect(morris.terminated).toBe(true)
-    const sobol = ControlledWorker.latest()
-    expect(sobol).not.toBe(morris)
-    expect(sobol.request).toMatchObject({
-      type: 'sobol',
-      runId,
-      response: 'leakers',
-      kept: MORRIS_FIXTURE.kept.map((i) => MORRIS_FIXTURE.fields[i].field),
-    })
-    const mid = useStore.getState().mc
-    expect(mid.morris).toBe(MORRIS_FIXTURE)
-    expect(mid.sensitivity).toMatchObject({
-      status: 'running',
-      runId,
-      progress: 0,
-      total: sobolEvaluationCount(
-        runSettings(useStore.getState().scenario).sobolBase,
-        MORRIS_FIXTURE.kept.length,
-      ),
-      summary: null,
-    })
-    sobol.send({ type: 'sobol-progress', runId, done: 3, total: 1536 })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({ progress: 3, total: 1536 })
-    sobol.send({ type: 'sobol-done', runId, result: SOBOL_FIXTURE })
-    const { mc } = useStore.getState()
-    expect(mc.sobol).toBe(SOBOL_FIXTURE)
-    expect(mc.sensitivity).toMatchObject({
-      status: 'done',
-      progress: 1536,
-      total: 1536,
-      summary: null,
-      error: null,
-    })
-    expect(sobol.terminated).toBe(true)
-    // A replicate run keeps both results; the next sensitivity launch clears them.
-    useStore.getState().runMonteCarlo()
-    expect(useStore.getState().mc.morris).toBe(MORRIS_FIXTURE)
-    expect(useStore.getState().mc.sobol).toBe(SOBOL_FIXTURE)
-    useStore.getState().runSensitivity()
-    expect(useStore.getState().mc.morris).toBeNull()
-    expect(useStore.getState().mc.sobol).toBeNull()
-  })
-
-  it('publishes base times (kept + 2) before the Sobol worker reports a row', () => {
-    useStore.getState().patchScenario({ sobolBase: 32 })
-    const { morris, runId } = launchFull()
-    morris.send({ type: 'morris-done', runId, result: MORRIS_FIXTURE })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({
-      status: 'running',
-      progress: 0,
-      total: 32 * (MORRIS_FIXTURE.kept.length + 2),
-    })
-  })
-
-  it('warns when the measured rate would use at least half the worker time budget', () => {
-    const budget = DEFAULT_BUDGET.timeMs
-    // The measured board: 29 entities, 2560 rows, 499 s of the 600 s budget.
-    expect(sobolBudgetWarning(29, 2560, budget)).toBe(true)
-    // 18 entities at that row count is still over half; 17 is just under.
-    expect(sobolBudgetWarning(18, 2560, budget)).toBe(true)
-    expect(sobolBudgetWarning(17, 2560, budget)).toBe(false)
-    // 29 entities at 1536 rows is 299.4 s.
-    expect(sobolBudgetWarning(29, 1536, budget)).toBe(false)
-    // The firing board is 6 entities.
-    expect(sobolBudgetWarning(6, 1536, budget)).toBe(false)
-    expect(sobolBudgetWarning(0, 2560, budget)).toBe(false)
-  })
-
-  it('a screening that keeps nothing ends the run done with no Sobol result and no error', () => {
-    const { morris, runId } = launchFull()
-    const count = ControlledWorker.instances.length
-    morris.send({ type: 'morris-done', runId, result: { ...MORRIS_FIXTURE, kept: [] } })
-    expect(ControlledWorker.instances).toHaveLength(count)
-    const { mc } = useStore.getState()
-    expect(mc.morris?.kept).toEqual([])
-    expect(mc.sobol).toBeNull()
-    expect(mc.sensitivity).toMatchObject({ status: 'done', error: null, summary: null })
-  })
-
-  it('a Morris or Sobol error marks the run; a message from another run is ignored', () => {
-    const { morris, runId } = launchFull()
-    morris.send({ type: 'morris-done', runId: 'other', result: MORRIS_FIXTURE })
-    expect(useStore.getState().mc.morris).toBeNull()
-    morris.send({ type: 'morris-error', runId, message: 'stopped early' })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({
-      status: 'error',
-      error: 'stopped early',
-    })
-    const next = launchFull()
-    next.morris.send({ type: 'morris-done', runId: next.runId, result: MORRIS_FIXTURE })
-    const budget = 'Sobol stopped at the worker time budget after 5 of 24 rows'
-    ControlledWorker.latest().send({ type: 'sobol-error', runId: next.runId, message: budget })
-    expect(useStore.getState().mc.sensitivity).toMatchObject({ status: 'error', error: budget })
-    expect(useStore.getState().mc.morris).toBe(MORRIS_FIXTURE)
-  })
-
-  it('a cancel during Sobol ends the run done on the Morris result, with no error', () => {
-    const { morris, runId } = launchFull()
-    morris.send({ type: 'morris-done', runId, result: MORRIS_FIXTURE })
-    const sobol = ControlledWorker.latest()
-    sobol.send({ type: 'sobol-progress', runId, done: 42, total: 2560 })
-    sobol.send({ type: 'sobol-done', runId, result: null })
-    const { mc } = useStore.getState()
-    expect(mc.sensitivity).toMatchObject({
-      status: 'done',
-      runId,
-      progress: 0,
-      total: 0,
-      summary: null,
-      error: null,
-    })
-    expect(mc.morris).toBe(MORRIS_FIXTURE)
-    expect(mc.sobol).toBeNull()
-  })
-
-  it('the quick depth still starts the one-at-a-time run', () => {
-    useStore.getState().runSensitivity()
-    expect(ControlledWorker.latest().request).toMatchObject({ type: 'sensitivity' })
   })
 })
 

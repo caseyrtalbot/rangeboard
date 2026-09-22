@@ -13,6 +13,7 @@ import { expenditureChannel } from '../playback/pk'
 import { radarDwellPulses } from '../playback/radarDwell'
 import { opticalDwellModelApplies } from '../playback/directedEnergy'
 import { hpmFieldModelApplies } from '../playback/hpm'
+import { interceptorMissModelApplies } from '../playback/pk/kinetic'
 import { scanPeriodS } from './doctrineFactors'
 import { radarPdModeled } from './sensorEnv'
 import { eoIfovRadFor } from './sensorEnv/eoir'
@@ -492,13 +493,7 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   const legacyKinetic = switches.includes('legacyKineticPk')
   add(
     'interceptor-miss',
-    !legacyKinetic &&
-      effectors.some(
-        (e) =>
-          e.effectorType === 'interceptor' &&
-          e.lethalRadiusM != null &&
-          (e.flyoutSpeedMps ?? 0) > 0,
-      ),
+    effectors.some((e) => interceptorMissModelApplies(e, legacyKinetic)),
   )
   add(
     'gun-burst',

@@ -39,6 +39,7 @@ import {
   startSweep,
 } from '../playback/mcClient'
 import { loopEnd } from '../playback/sampling'
+import { sobolEvaluationCount } from '../playback/sobol'
 import { cancelTrial, startTrial } from '../playback/trialClient'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
 import { createTrialManifest, sameManifest } from '../playback/trialTypes'
@@ -286,14 +287,6 @@ function sensitivityLaunch(
     start: (deliver) => startMorris(request, deliver),
     unavailable: { type: 'morris-error', runId, message: UNAVAILABLE },
   }
-}
-
-/**
- * Saltelli rows for a Sobol stage: `base` rows of A, of B, and of one AB matrix
- * per kept field. The same count `sobolDesign` builds.
- */
-export function sobolEvaluationCount(base: number, kept: number): number {
-  return base * (kept + 2)
 }
 
 /**

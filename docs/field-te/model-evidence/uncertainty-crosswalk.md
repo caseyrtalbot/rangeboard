@@ -1,6 +1,10 @@
 # Uncertainty coverage crosswalk
 
-Dated evidence dossier, 2026-09-05, against source tree `d8a76f1`. Source and tests decide current behaviour. [Index and verification](README.md). A later uncertainty study was appended on 2026-09-05 against `b7ec949`; line pointers below cite that tree, and its tests are in the tree.
+Dated evidence dossier, 2026-09-05, against source tree `d8a76f1`; the E3 study
+was appended against `b7ec949`. Unless a paragraph is labeled **Current-tree
+note**, findings, measurements, line pointers and status statements below describe
+those captures, not the current implementation. Source and tests decide current
+behaviour. [Index and verification](README.md).
 
 ## Intended quantity and use
 
@@ -12,7 +16,7 @@ Monte Carlo estimates replicate means, quantiles and conditional times under the
 
 Nine field names sample. `PF_SPREAD` has eleven rows; `sizePenalty` and `evasionPenalty` (L31, L32) are on no `FIELDS_BY_KIND` list and are never read by the sampler. Every default row has `source: 'planning factor'`, date 2026-09-04 (L11 to L13). Two seed provenance rows carry their own spread (`lib-leonidas` pk 61 of 61, `lib-stinger` pk 2 of 2; `seedLibrary.ts` L1990 and L2393); no seed row pins a field with `spread: null`.
 
-| Scope/field | Default distribution | Nominal and conditioning (current source) | Where the engine reads it; when the sample is inert |
+| Scope/field | Default distribution | Nominal and conditioning (captured source) | Where the captured engine reads it; when the sample is inert |
 | --- | --- | --- | --- |
 | sensor.detectRangeM | lognormal 3 dB (power ratio) | Spec `detectRangeM`. Library model in use (an active entity references it) with a `sensor` spec. | Pd-modeled radar: the calibration anchor `r0M` ([sensorEnv.ts L154](../../../src/analysis/sensorEnv.ts#L154)); every other sensor: the effective range (L520). Not inert for a sensor that admits the target. |
 | sensor.trackInitS | triangular -30%, +50% | `trackInitSFor` (spec, else the role table, else `doctrine.trackFirmS`). Same conditioning. | [sim.ts L727 to L745](../../../src/playback/sim.ts#L727): continuous-hold initiation for radar and EO/IR sensors WITHOUT a scan state only. Inert for a scan-model radar (M-of-N wrote `trackInitAtS` in the sweep), inert for every RF and acoustic sensor model (L736 skips them), and with doctrine off it moves `stableTrackAtS`, which is informational there (L733). |
@@ -36,7 +40,7 @@ Lognormal is `nominal*10^(sigmaDb*z/10)` (power-ratio dB); nominal is median, no
 
 [policy.ts](../../../src/playback/policy.ts#L72) `monteCarloPolicy` (L72 to L98) draws detect, kill, continue-jam, scan phase and parameters from counter-keyed uniforms. Detect key: sensor, threat, `memberIdx`, step; `memberIdx` is a formation member's rank by slant range, nearest first ([detection.ts L60 to L76, L118](../../../src/playback/detection.ts#L60)), not an entity position. Kill key: effector, threat, ship, salvo index per (effector, threat, ship). Phase shares the sensor key. Stable IDs preserve pairing only while member rank stays stable (R-F-15). No stream is consumed in execution order; the fidelity copy "One seeded stream per replicate" ([fidelity.ts L139](../../../src/analysis/fidelity.ts#L139)) is stale.
 
-[mcRun.ts](../../../src/playback/mcRun.ts#L241) `statOf` (L241 to L268) filters finite samples, reports n and total, t-mean CI at 95%, SD/SE, type-7 quantiles and a Wilson interval on the defined fraction. Times are seconds conditional on the event being defined; no-detection is not a time of zero. The mean CI does not cover 95% of missions; quantiles are sample distribution summaries without their own uncertainty intervals. The shared [stats.ts](../../../src/analysis/stats.ts#L109) `meanInterval` returns a degenerate interval for n=1 and NaNs for n=0; this is arithmetic behavior, not evidence of certainty.
+In the capture, [mcRun.ts](../../../src/playback/mcRun.ts#L241) `statOf` (L241 to L268) filters finite samples, reports n and total, t-mean CI at 95%, SD/SE, type-7 quantiles and a Wilson interval on the defined fraction. Times are seconds conditional on the event being defined; no-detection is not a time of zero. The mean CI does not cover 95% of missions; quantiles are sample distribution summaries without their own uncertainty intervals. The captured [stats.ts](../../../src/analysis/stats.ts#L109) `meanInterval` returns a degenerate interval for n=1 and NaNs for n=0; this is arithmetic behavior, not evidence of certainty.
 
 The optional stop (`STOP_FIRST` 30, `STOP_EVERY` 10, mcRun.ts L58 and L492 to L499) checks the end-of-run leaker mean half-width; it does not target precision of every KPI, tails, conditional times or sensitivity row. `sensitivityLoop` (L612 to L655) is one-at-a-time: each enumerated field at its p10 and p90 sample with every other field nominal, aleatory runs at a common seed and replicate index, stopping disabled; it measures a local, paired leaker-mean swing, not global importance or interactions.
 
@@ -102,7 +106,14 @@ No bias is detectable (the SE of a mean of 100 means is 0.0055). This is one sym
 
 ### Adequacy rule per reported measure
 
-Measures the analysis panels read from a summary come from [trialSeries.ts](../../../src/analysis/trialSeries.ts#L520) (`trialSeriesOf`) and [mc.ts](../../../src/panels/analysis/mc.ts#L85) (`countSub`, `timeStatSub`).
+The table below records the 2026-09-05 capture and its then-open proposals.
+
+**Current-tree note.** [trialSeries.ts](../../../src/analysis/trialSeries.ts#L520)
+`trialSeriesOf` owns retained-trial series. Ensemble measures are carried by
+`McSummary` and produced through `statOf` in
+[mcRun.ts](../../../src/playback/mcRun.ts); [mc.ts](../../../src/panels/analysis/mc.ts)
+selects current summaries and formats them for panels. The retired `series.ts`
+adapter and its symbols remain absent.
 
 | Measure | Shown | Interval shown | Adequacy rule that would apply | Status |
 | --- | --- | --- | --- | --- |
@@ -115,7 +126,7 @@ Measures the analysis panels read from a summary come from [trialSeries.ts](../.
 | Replicates run, stop rule | count and rule name | | informational | n/a |
 | Per-threat killed, leaked, first detection and per-effector salvos, kills | not shown; exported with the run record (`DebriefRecord.tsx`) | t-interval in the export | same rare-count limits as above | not established |
 
-Rare outcomes at small n (measured, one-shot fixture at per-shot Pk 0.0291, n 30): 1 of 30 gives a t-interval of -0.035 to 0.102 on a count whose support starts at 0 (Wilson would give 0.006 to 0.167); 0 of 30 gives a zero-width interval where the rule of three gives an upper bound of 0.1. The `lo >= 0` expectation fails on the committed code and is not in the tree; the passing facts (mean, sd, se, p90 hides the event, the p975 interpolation) are in `mcRun.e3.test.ts`.
+Rare outcomes at small n (measured, one-shot fixture at per-shot Pk 0.0291, n 30): 1 of 30 gives a t-interval of -0.035 to 0.102 on a count whose support starts at 0 (Wilson would give 0.006 to 0.167); 0 of 30 gives a zero-width interval where the rule of three gives an upper bound of 0.1. In the captured code, the `lo >= 0` expectation fails and is not in that tree; the passing facts (mean, sd, se, p90 hides the event, the p975 interpolation) are in `mcRun.e3.test.ts`.
 
 Sensitivity presentation: `runSensitivity` is one-at-a-time (mcRun.ts L590 to L655) and the widget copy says so ("One parameter at p10/p90, all others nominal; paired replicates. Endpoints are parameter perturbations, not uncertainty intervals. Mean CI unavailable.", SensitivityWidget.tsx L67; the module comment L13 reads "One-at-a-time sensitivity"). No panel copy implies a global or interaction method. Two adjacent copy findings: fidelity.ts L139 "One seeded stream per replicate" (stale, counter-based draws); LiveStrip.tsx L57 "the half-width rule" does not name the measure it bounds (end-of-run leakers).
 

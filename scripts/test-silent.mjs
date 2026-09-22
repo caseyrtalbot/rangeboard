@@ -154,6 +154,24 @@ test('gate flags a hidden failure only on added lines and accepts a silent-ok ma
   assert.match(result.text, /No hidden-failure patterns/)
 })
 
+test('gate fails on ast-grep operational errors and includes stderr', (t) => {
+  const { root, put, commit } = repo(t)
+  put('a.ts', CLEAN)
+  commit('base')
+  put('a.ts', `${CLEAN}export const changed = true\n`)
+  assert.throws(
+    () =>
+      runGate(root, parseArgs(['--base', 'HEAD']), {
+        config: join(root, 'missing-sgconfig.yml'),
+      }),
+    (error) => {
+      assert.match(error.message, /ast-grep scan failed with exit code \d+/)
+      assert.match(error.message, /Cannot read configuration/)
+      return true
+    },
+  )
+})
+
 test('staged mode checks the index and ignores unstaged edits', (t) => {
   const { root, git, put, commit } = repo(t)
   put('a.ts', CLEAN)
@@ -165,6 +183,38 @@ test('staged mode checks the index and ignores unstaged edits', (t) => {
   assert.deepEqual(
     result.findings.map((f) => [f.line, f.rule]),
     [[8, 'noop-promise-catch']],
+  )
+})
+
+test('staged mode scans staged blobs instead of working-tree bytes', (t) => {
+  const { root, git, put, commit } = repo(t)
+  put('a.ts', CLEAN)
+  commit('base')
+  put('a.ts', `${CLEAN}p.catch(() => {})\n`)
+  git('add', 'a.ts')
+  put('a.ts', `${CLEAN}export const workingTreeOnly = true\n`)
+  const result = runGate(root, parseArgs(['--staged']))
+  assert.deepEqual(
+    result.findings.map((f) => [f.line, f.rule]),
+    [[8, 'noop-promise-catch']],
+  )
+})
+
+test('gate catches a finding that starts before its added offending line', (t) => {
+  const { root, put, commit } = repo(t)
+  put(
+    'a.ts',
+    'export function a() {\n  try {\n    return x()\n  } catch {\n    const substitute = null\n  }\n}\n',
+  )
+  commit('base')
+  put(
+    'a.ts',
+    'export function a() {\n  try {\n    return x()\n  } catch {\n    const substitute = null\n    return substitute\n  }\n}\n',
+  )
+  const result = runGate(root, parseArgs(['--base', 'HEAD']))
+  assert.deepEqual(
+    result.findings.map((f) => [f.line, f.endLine, f.rule]),
+    [[4, 7, 'silent-catch']],
   )
 })
 

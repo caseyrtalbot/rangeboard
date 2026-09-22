@@ -7,31 +7,11 @@ file changed. The probe that produced every number is
 [`probe-baseline.txt`](probe-baseline.txt) for the committed tree and
 [`probe-fixed.txt`](probe-fixed.txt) for the candidate fix.
 
-## Landed horizon
-
-Landed 2026-09-21 on local `main` at `7fdcb1e`. The miss sigma is
-`predictionSigmaAtS` at the estimate time plus
-`max(0, intercept.tEffectS - (t + engageTimeS))`. `engageTimeS` does not enter
-that call. The assignment-to-release coast in the capture below is not the code.
-
-The estimate-path expects recaptured with that horizon, seed 4821, physics
-stripped, 200 aleatory replicates, each authorized on 2026-09-21:
-
-| Pin | Expect |
-| --- | ---: |
-| Layered trial `report.events` length | 11 |
-| Layered trial kill mass | 1 |
-| Layered 200-replicate kills mean | 1.115 |
-| JIATF 200-replicate leakers mean | 0.895 |
-| JIATF 200-replicate kills mean | 0.105 |
-
-Events 11 and kill mass 1 were already the post-flyout measurement and did not
-move again. `4.68` is the zero-flight candidate recorded below and is not a pin.
-Coyote `lethalRadiusM`, `guidanceNoiseM`, and `engageTimeS` are unchanged. No
-terminal-homing term was added. The before/after measurement is
+This is an archival record. Its findings and measurements describe `31a6d5d` or
+the explicitly identified candidate probes; it does not own current-tree status
+or parity expectations. For the later flight-horizon measurement and current
+verification source, see
 [flight-horizon-2026-09-21.md](../p3-gate-2026-09-10/flight-horizon-2026-09-21.md).
-
-The sections below are the 2026-09-15 capture. Their tables describe `31a6d5d`.
 
 ## Decision
 
@@ -41,9 +21,8 @@ One defect and one model limit together explain the zero kills on the captured t
   assignment-to-release delay as an open-loop coast of the fire-control track. At the
   Coyote's `engageTimeS` of 60 s the process-noise term alone is 90.4% of the miss
   variance and the miss 1 sigma reaches 282 m against a 10 m lethal radius. The correct
-  horizon is the flight, release to effect. The derivation is below. The horizon landed
-  at `7fdcb1e`; see Landed horizon. The five pins that moved are the authorized expects
-  in that section, not the zero-flight candidate.
+  horizon is the flight, release to effect. The derivation and candidate measurements
+  are below; later verification is linked in the archival-scope note above.
 - Model limit: the interceptor model has no terminal-homing term. With the correct
   horizon the Coyote still reaches only Pk 0.034 to 0.050 per shot on this laydown,
   against 0.556 to 0.564 from the planning fallback. A lead-point-only miss model cannot
@@ -255,9 +234,10 @@ the fix's horizon is zero, so the miss sigma collapses to the track's own 7.0 to
 Pk rises to 0.41 to 0.49 per shot, and the fixture's Monte Carlo kills mean goes from
 0.005 to 4.68. That number would pin an interceptor that teleports.
 
-## Flyout semantics, landed
+## Flyout-semantics follow-on probe
 
-Two rules, so a round is never both on the physical miss model and at zero flight time.
+The follow-on probe applied two rules so a round was never both on the physical
+miss model and at zero flight time:
 
 - A saved builtin that omits `flyoutSpeedMps` adopts the seed cruise speed.
   `lib-coyote` is 154 m/s and `lib-merops` is 78 m/s, so those flights are real.
@@ -267,16 +247,16 @@ Two rules, so a round is never both on the physical miss model and at zero fligh
   no seed cruise speed. Inventing one would be a false flight, so they stay at zero
   flight time on the legacy curve.
 
-`src/playback/shot.ts` was still on the assignment-to-release coast when these
-flyout rules landed. The flight horizon landed later, at `7fdcb1e`. The 4.68 kills
-mean above is the zero-flight horizon candidate and is not a pin.
+`src/playback/shot.ts` was still on the assignment-to-release coast for this
+measurement. The 4.68 kills mean above is the zero-flight horizon candidate, not
+a current expectation.
 
 Measured on the estimate path after this change, physics stripped, seed 4821, with
 the assignment-to-release coast still in place. Coyote's per-shot physical Pk stays about 0.00046. The
-kill increase is the no-speed interceptors moving onto the legacy curve. JIATF pins
-did not move. Leakers mean stayed 0 and firm-track mean stayed 1.5 s.
+kill increase is the no-speed interceptors moving onto the legacy curve. JIATF
+outputs did not move. Leakers mean stayed 0 and firm-track mean stayed 1.5 s.
 
-| Pin | Before | After flyout semantics |
+| Captured quantity | Before | After flyout semantics |
 | --- | ---: | ---: |
 | Layered trial `report.events` length | 16 | 11 |
 | Layered trial kill mass | 0 | 1 |
@@ -318,10 +298,9 @@ header stated that "a later physics change moves one of them only with a replace
 named in its slice brief", and no replacement was named then. The layered numbers would
 also have enshrined the zero-flight-time artifact above.
 
-The engine was therefore unchanged on 2026-09-15. That stop is closed. The horizon
-landed at `7fdcb1e` after flyout semantics. The recaptured expects are in Landed
-horizon. The 4.68 mean was not pinned. The candidate snippet above is the call that
-landed.
+The engine was therefore unchanged on 2026-09-15. The 4.68 mean was not adopted.
+Later implementation and verification belong to the
+[2026-09-21 flight-horizon evidence](../p3-gate-2026-09-10/flight-horizon-2026-09-21.md).
 
 ## Model limit: no terminal-homing term
 
@@ -355,30 +334,27 @@ t = 29 s and 3,661 m slant while the physical model waits until t = 313.5 s. Pk 
 still does not clear 0.35, so the horizon fix alone does not restore early engagement.
 Only a terminal-guidance term would.
 
-## Recommendations
+## Capture conclusions
 
-1. Do not change `lethalRadiusM`, `guidanceNoiseM` or `engageTimeS` in the Coyote entry.
-   All three are correctly recorded and graded. None is the cause.
-2. The horizon fix landed at `7fdcb1e` after flyout semantics. The authorized expects
-   are layered kills 1.115, JIATF leakers 0.895, and JIATF kills 0.105. Layered events
-   stayed 11 and kill mass stayed 1. Do not pin 4.68, and do not restore 16 events,
-   kill mass 0, or kills mean 0.005.
+1. The capture found no basis to change `lethalRadiusM`, `guidanceNoiseM` or
+   `engageTimeS` in the Coyote entry; none caused the defect.
+2. Candidate parity values in this record are diagnostic measurements, not current
+   expectations. Use the linked 2026-09-21 evidence for later verification.
 3. The flight horizon does not restore the planning fallback. On this laydown Pk stays
    about 0.03 to 0.05, under `pkCommit` 0.35, because the model has no terminal-homing
    term. `legacyKineticPk` remains the planning choice when the question is advertised
    effectiveness. The fixture should not change.
-4. A laydown that yields a valid physical result today needs a truth-source track
-   (`truthTracks`), which returns a null prediction sigma and Pk 0.85. That is the
-   configuration the protected suites use, and it measures the distance falloff and the
-   base Pk, not the miss model.
-5. Treat `kinetic.verify.test.ts` as validating the Rayleigh closed form, not the
-   integrated path. A datasheet validation of the integrated model needs the miss sigma
-   the engine actually produces.
+4. On the captured tree, a truth-source track (`truthTracks`) returned a null
+   prediction sigma and Pk 0.85. The protected suites therefore measured distance
+   falloff and base Pk, not the miss model.
+5. In this capture, `kinetic.verify.test.ts` validated the Rayleigh closed form, not
+   the integrated path. Integrated validation needs the miss sigma from the path under
+   test.
 
 ## Checks
 
 These checks are the 2026-09-15 capture, before flyout semantics and before the flight
-horizon. They do not describe `7fdcb1e`.
+horizon. They do not describe later trees.
 
 - `npm run check` on the tree as delivered: 202 test files, 2,173 tests, all passed;
   docs, engine CLI, library, schema, typecheck, lint and build passed.
@@ -388,7 +364,7 @@ horizon. They do not describe `7fdcb1e`.
   `convergence.verify.test.ts`, `kinetic.verify.test.ts` and
   `src/playback/__fixtures__/` are unchanged and pass. No pinned value moved.
 
-## Follow-ups, not selected
+## Capture follow-ups, not selected
 
 - `uncertainty-crosswalk.md` describes `effector.engageTimeS` as "release-to-effect time
   for every channel". For a kinetic effector it is assignment-to-release, and the flyout

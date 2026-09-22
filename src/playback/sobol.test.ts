@@ -3,7 +3,7 @@ import fixture from './__fixtures__/detection-outside-rings.json'
 import { parseAutosave } from '../io/persist'
 import { uncertainFields } from '../analysis/uncertainty'
 import type { BootstrapInterval } from './mcTypes'
-import { sobolDesign, sobolIndices, sobolLoop } from './sobol'
+import { sobolDesign, sobolEvaluationCount, sobolIndices, sobolLoop } from './sobol'
 
 /**
  * Ishigami with a 7 and b 0.1 on [-pi, pi]^3: the analytic indices are
@@ -19,9 +19,14 @@ function ishigami(rows: number[][]): number[] {
 const inside = (iv: BootstrapInterval, value: number) => iv.lo <= value && value <= iv.hi
 
 describe('sobolIndices', () => {
+  it('owns the Saltelli evaluation count used by the design', () => {
+    expect(sobolEvaluationCount(256, 4)).toBe(1536)
+    expect(sobolDesign(4, 256, 1)).toHaveLength(sobolEvaluationCount(256, 4))
+  })
+
   it('recovers the Ishigami indices inside their bootstrap intervals at base 1024', () => {
     const out = sobolIndices(ishigami, 3, 1024, 4821)
-    expect(out.evaluations).toBe(1024 * 5)
+    expect(out.evaluations).toBe(sobolEvaluationCount(1024, 3))
     const expectFirst = [0.3139, 0.4424, 0]
     const expectTotal = [0.5576, 0.4424, 0.2437]
     out.firstOrder.forEach((iv, i) => {

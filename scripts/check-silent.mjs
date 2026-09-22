@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
@@ -119,13 +120,31 @@ export function scan(root, files, { bin, config } = {}) {
     ['scan', '-c', config ?? resolve(repoRoot, CONFIG_FILE), '--json=compact', ...files],
     { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
   )
-  if (result.error) throw result.error
+  if (result.error) {
+    const stderr = (result.stderr ?? '').trim()
+    throw new Error(
+      `ast-grep scan could not start: ${result.error.message}${stderr ? `\n${stderr}` : ''}`,
+      { cause: result.error },
+    )
+  }
+  if (result.status !== 0 && result.status !== 1) {
+    const outcome = result.signal
+      ? `signal ${result.signal}`
+      : `exit code ${result.status ?? 'unknown'}`
+    const stderr = (result.stderr ?? '').trim()
+    throw new Error(
+      `ast-grep scan failed with ${outcome} while scanning ${files.join(', ')}.\n${
+        stderr || 'ast-grep produced no stderr output.'
+      }`,
+    )
+  }
   let parsed
   try {
     parsed = JSON.parse(result.stdout || '[]')
   } catch {
     throw new Error(`ast-grep did not return JSON.\n${result.stdout}\n${result.stderr}`)
   }
+  if (!Array.isArray(parsed)) throw new Error('ast-grep JSON output was not an array.')
   return parsed.map((m) => ({
     rule: m.ruleId,
     file: m.file,
@@ -141,13 +160,22 @@ function lineText(sources, file, line) {
   return lines?.[line - 1] ?? ''
 }
 
+function findingTouchesLines(finding, lines) {
+  if (!lines) return false
+  const endLine = finding.endLine ?? finding.line
+  for (let line = finding.line; line <= endLine; line++) {
+    if (lines.has(line)) return true
+  }
+  return false
+}
+
 /** Drop findings outside the added lines, marked silent-ok within their span, or matching a domain or negated phrase. */
 export function filterFindings(findings, added, sources) {
   const seen = new Set()
   const kept = []
   for (const finding of findings) {
     const lines = added?.get(finding.file)
-    if (added && !lines?.has(finding.line)) continue
+    if (added && !findingTouchesLines(finding, lines)) continue
     const key = `${finding.rule}:${finding.file}:${finding.line}`
     if (seen.has(key)) continue
     seen.add(key)
@@ -172,6 +200,42 @@ export function loadSources(root, files) {
     if (existsSync(path)) sources.set(file, readFileSync(path, 'utf8').split('\n'))
   }
   return sources
+}
+
+function indexBlob(root, file) {
+  const result = spawnSync('git', ['show', `:${file}`], {
+    cwd: root,
+    encoding: null,
+    maxBuffer: 64 * 1024 * 1024,
+  })
+  if (result.error)
+    throw new Error(`Could not read staged file ${file}: ${result.error.message}`, {
+      cause: result.error,
+    })
+  if (result.status !== 0) {
+    const stderr = result.stderr?.toString('utf8').trim()
+    throw new Error(
+      `Could not read staged file ${file}: ${stderr || `git exited ${result.status}`}`,
+    )
+  }
+  return result.stdout
+}
+
+function withStagedSnapshot(root, files, inspectSnapshot) {
+  const snapshotRoot = mkdtempSync(join(tmpdir(), 'rangeboard-silent-staged-'))
+  try {
+    for (const file of files) {
+      const destination = resolve(snapshotRoot, file)
+      const localPath = relative(snapshotRoot, destination)
+      if (localPath === '..' || localPath.startsWith(`..${sep}`) || isAbsolute(localPath))
+        throw new Error(`Refusing to materialize staged path outside the snapshot: ${file}`)
+      mkdirSync(dirname(destination), { recursive: true })
+      writeFileSync(destination, indexBlob(root, file))
+    }
+    return inspectSnapshot(snapshotRoot)
+  } finally {
+    rmSync(snapshotRoot, { recursive: true, force: true })
+  }
 }
 
 export function report(findings, { base, mode }) {
@@ -210,7 +274,9 @@ export function runGate(root, args, scanOptions = {}) {
   const added = changedLines(root, { base: base?.sha, staged: args.staged })
   const files = [...added.keys()]
   const mode = args.staged ? 'staged changes' : 'changed lines'
-  const findings = filterFindings(scan(root, files, scanOptions), added, loadSources(root, files))
+  const scanFiles = (sourceRoot) =>
+    filterFindings(scan(sourceRoot, files, scanOptions), added, loadSources(sourceRoot, files))
+  const findings = args.staged ? withStagedSnapshot(root, files, scanFiles) : scanFiles(root)
   return { findings, base, mode, text: report(findings, { base, mode }) }
 }
 
