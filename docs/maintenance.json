@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "b3dff103c0a296585373ef77c74612b1c9467d582a7a56f60f646c0c7759cf44",
-      "reviewedAt": "2026-09-21",
-      "note": "Learned preferences now protect estimate-path and Coyote parameters, and forbid reopening closed handoff issues. Learned facts record the deleted series.ts module and the check:silent gate."
+      "sha256": "4c9cdf4dbdc6faf3ca2ca14cb49db2a6be2f68f27d966be049d35ba8cba32cd9",
+      "reviewedAt": "2026-09-22",
+      "note": "The lockfile bump moves markdownlint-cli2 to 0.23.3 and smol-toml to 1.8.0. AGENTS.md does not name that toolchain, and its instructions are unchanged."
     },
     {
       "document": "CLAUDE.md",
@@ -16,8 +16,8 @@
         "AGENTS.md"
       ],
       "sha256": "50d85ee62c22e0fc846397d7663ba6de9c7df5c237ae5463bfbf74056211b2fd",
-      "reviewedAt": "2026-09-21",
-      "note": "AGENTS.md gained learned preferences and workspace facts. The Claude redirect is unchanged and still does not duplicate those rules."
+      "reviewedAt": "2026-09-22",
+      "note": "AGENTS.md is unchanged in this commit. CLAUDE.md still only redirects to it and does not duplicate those rules."
     },
     {
       "document": "README.md",
@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "914563b28b07fa801ea014d1298703c948d54dc11c47915005c179a2f16fdb6e",
-      "reviewedAt": "2026-09-21",
-      "note": "Silent-failure gate added: check:silent, check:silent:all, test:silent, hooks:install scripts and a changed-lines CI step; VERIFICATION and WORKFLOW updated, AGENTS and README re-read and unchanged"
+      "sha256": "e1fd666110d4d5d2c7b86f237795bad23749de815f474fb01fcbb4e8cf694c60",
+      "reviewedAt": "2026-09-22",
+      "note": "Lockfile now resolves markdownlint-cli2 0.23.3 and smol-toml 1.8.0. README install steps and the Node 22.12 requirement are unchanged and do not name that dev dependency."
     },
     {
       "document": "docs/README.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "23b060cef2527f38aacca86825550e45f70a0580926d03093f43be01f87eac37",
+      "sha256": "7b6ae194cc12c9a9db8a2af1e296e185edbe9426d73b18731e1044b9c5e74686",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed src/io validation. Commands and the historical boundary export check are unchanged."
+      "note": "docs:check still runs markdownlint-cli2. The command table and npm ci instructions do not pin 0.23.2 and remain accurate after the patch bump."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "420be2f0c1b176c436fca5bcbe57fe76f492f02417620c488c9f7605f90b69b4",
+      "sha256": "428736136ba49766756a46696ba6307876786a3e4941bac3e17fd0045d4f451c",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed after the silent-gate lint-only callback rename; quality workflow remains accurate."
+      "note": "Documentation maintenance steps are unchanged. The workflow does not pin markdownlint-cli2; 0.23.3 still implements docs:lint."
     },
     {
       "document": "docs/Plan.md",
