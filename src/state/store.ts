@@ -29,6 +29,7 @@ import type { MorrisResult, PoolProgress, SobolResult } from '../playback/mcType
 import type { ScenarioInstall, Selection } from './scenarioInstall'
 import { EMPTY_SELECTION, installScenario, runsForOverridesChange } from './scenarioInstall'
 import { useOverrides } from './overrides'
+import { reportOverrideFault } from './overrideFault'
 import type { PlaybackCommand } from './playbackCommands'
 import type { PinnedBaseline } from './baseline'
 import { buildBaseline } from './baseline'
@@ -1523,8 +1524,14 @@ export const useStore = create<Store>()((set, get) => {
 })
 
 // An override edit installs no scenario; the runs answer through the store.
+// A throw is reported to the mounted override boundary instead of leaving setState.
 useOverrides.subscribe((state, prev) => {
-  if (state.overrides !== prev.overrides) useStore.getState().overridesChanged()
+  if (state.overrides === prev.overrides) return
+  try {
+    useStore.getState().overridesChanged()
+  } catch (error) {
+    reportOverrideFault(error)
+  }
 })
 
 // New run replaces the trial object, and the previous React fiber still holds it.

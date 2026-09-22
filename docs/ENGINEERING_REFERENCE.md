@@ -219,6 +219,12 @@ Breaking one of these breaks the app.
   `overridesChanged` (`runsForOverridesChange` in `scenarioInstall.ts`), which marks the
   replicate, sensitivity, sweep and optimize runs stale, drops a trial whose manifest
   lists other values, and restarts a started playback as a configuration change.
+  A throw from that subscriber is held for `OverrideSubscriber`
+  (`src/ui/OverrideSubscriber.tsx`) and rethrown during its render, so the throw stays
+  inside that component's `ErrorBoundary` in `main.tsx`. The boundary shell stays
+  mounted while the alert is up, so a later throw does not leave `setState`. A throw
+  before that shell mounts still does. The overrides autosave
+  subscription stays outside that boundary.
   `sameAppliedOverrides` is that value comparison: object key order is not a change
   in force, and array order is. Save to history (`runRecordOf`, `panels/analysis/mc.ts`)
   and `pinBaseline` write that list,
@@ -579,7 +585,7 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                lane block and resume once that copy verifies)
 src/main.tsx   restores the Board autosave (restoreAutosave reads and adopts it), starts
                the autosave subscription, then does the same for the overrides,
-               exposes window.__store in dev
+               mounts the override-subscriber boundary, exposes window.__store in dev
 src/App.tsx    right panel tabs and drawer, keyboard map, resizer; lazy boundaries for
                AnalysisPanel and CommandPalette
 ```
@@ -1223,8 +1229,13 @@ and `noImplicitReturns`. Do not add unused exports or TODO markers.
 `src/ui/ErrorBoundary.tsx` isolates the Board root. Its fallback uses `State` with Try
 again, Export and Reload. Try again clears the boundary and renders the children again;
 Export reads the Board scenario; a caught render error never clears records.
-`startAutosave` stays outside React in `main.tsx`. A throw inside the react-konva tree
-does not reach that boundary, so `src/canvas/SceneErrorBoundary.tsx` wraps the layer set
+`src/ui/OverrideSubscriber.tsx` is a second boundary, mounted beside `App` in `main.tsx`.
+The shell arms containment for its own lifetime. The child rethrows a throw during render;
+while the alert is up that child is unmounted and a later throw stays inside `setState`.
+Try again mounts the child again after the held throw is dropped. Toolbar selectors stay
+under the Board boundary. `startAutosave` and the overrides autosave stay outside React
+in `main.tsx`. A throw inside the react-konva tree
+does not reach the Board boundary, so `src/canvas/SceneErrorBoundary.tsx` wraps the layer set
 inside the Stage: it renders nothing on a failure and `CanvasStage.tsx` shows a notice
 with Retry beside the canvas host.
 

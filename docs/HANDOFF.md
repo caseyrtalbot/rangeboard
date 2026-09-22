@@ -11,20 +11,27 @@ fresh agent starts from this file and the docs index. This file does not authori
 commit, push or merge.
 
 The queue is [Plan.md](Plan.md). That file stays unmodified. This handoff always links
-to it and selects exactly one row. After the selected row's gate passes, rewrite this
-file. Row J is the last row in the order table. After it passes, Tasking says the
-order table is complete. Do not invent a next row. Do not edit `docs/Plan.md`.
-Do not start the following row in the same session.
+to it. The order table is complete. Row J was the last row. Do not invent a following
+row. Do not edit `docs/Plan.md`.
 
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  HEAD contains row O. Its parent is `d712cf1` (row N). The flight horizon is
+  HEAD contains row J. Its parent is `de208aa` (row O). The flight horizon is
   `7fdcb1e`. The authorized estimate-path recapture is `225e027`. An untracked
   `.cursor/` directory, if present, is not part of the queue. An uncommitted
   `AGENTS.md` edit, if present, is not part of the queue.
-- The frozen queue is [Plan.md](Plan.md). This handoff selects row J. There is no
-  following row in the order table.
+- The frozen queue is [Plan.md](Plan.md). The order table is complete. There is no
+  following row.
+- Row J: the override subscriber at the end of `src/state/store.ts` reports a throw
+  to `OverrideSubscriber` (`src/ui/OverrideSubscriber.tsx`). The shell around that
+  boundary stays armed while the alert is up, so a later throw does not leave
+  `setState`. Browser check on 2026-09-21, dev server port 5407: an injected throw
+  showed "Override updates could not be displayed", the list still updated, the
+  Board boundary stayed clear, and Settings stayed mounted. A second edit while
+  that alert was still up did not throw and moved the value from 0.02 to 0.03.
+  Try again cleared the alert. A later edit was contained again. No page error.
+  The overrides autosave subscription stays outside that boundary.
 - Row O: `withObservedLens`, `pruneSelection`, `rangeBounds`, `acceptMorrisMessage`,
   `acceptSobolMessage`, `chartPng`, `downloadPng`, and `SavedRunCompare` are no
   longer exported. Each still runs inside its own module. `exportChartPng` and
@@ -55,47 +62,9 @@ Do not start the following row in the same session.
 
 ## Tasking
 
-### Row J: subscriber throws
-
-- Repository `~/Projects/rangeboard`. Base is local `main` at the row O commit.
-  Leave `docs/Plan.md` unmodified. Do not start another row. J is last in the
-  order table.
-- Outcome: an injected throw from the overrides subscriber stays inside a boundary.
-  The plan names a raw subscriber in `App.tsx` around the overrides subscription
-  that can throw out of `setState`, with no ancestor boundary in `main.tsx`.
-  Toolbar selectors sit under the board boundary.
-  - The live override-edit subscriber is the module-level `useOverrides.subscribe`
-    at the end of `src/state/store.ts`. It calls `overridesChanged` when the
-    override list identity changes. It is not in `App.tsx`.
-  - `App.tsx` subscribes to `useStore` only to clear placement. `main.tsx` renders
-    `App` with no boundary. `App` wraps the board, including `Toolbar`, in
-    `ErrorBoundary` with label `Board`.
-  - `src/io/persistOverrides.ts` has a separate autosave subscription. Do not fold
-    that adapter into the render boundary.
-- Owned files: the subscriber, the boundary that must contain its throw, their
-  tests, and guides that fingerprint those sources. Browser check the injected
-  throw.
-- Exclusions: do not edit `docs/Plan.md`. Do not invent a row after J. Do not
-  change Sobol indices, Morris rankings, the Sobol row-count warning, or the
-  estimate-path expects. Do not pin 4.68. Do not restore 16 events, kill mass 0,
-  or kills mean 0.005. Do not change Coyote `lethalRadiusM`, `guidanceNoiseM`,
-  or `engageTimeS`. Do not add a terminal-homing term. Do not restore
-  `src/analysis/series.ts`. Do not add a handoff bullet that treats run-store
-  NaN as an open export failure. Do not structured-clone the packed grids back
-  onto the page. Do not relax the two-point boundary or flight-path load check.
-  Do not clear the existing `only-export-components` suppressions. Do not put
-  `censorLane` back on `EngagementStrip.tsx`. Do not replace `basisJson` with
-  `JSON.stringify`. Do not re-export the helpers row O made private. Do not
-  delete `selectObservedThroughWholeS`, `bandNote`, `bandStep`, or
-  `TrialOutcomeSummary`. Do not un-export `ANALYSIS_KEY`. Do not change
-  `src/engine/index.ts`.
-- Next action: isolate the override subscriber so a throw it injects is contained
-  by a boundary, and confirm that in the browser. Toolbar selectors already sit
-  under the board boundary.
-- Completion: an injected throw stays inside a boundary. `npm run check` passes.
-  The browser check is recorded.
-- Stop when that gate passes. Do not edit `docs/Plan.md`. Rewrite this handoff so
-  Tasking says the order table is complete.
+The order table in [Plan.md](Plan.md) is complete. Row J was the last row.
+Do not invent a following row. Do not edit `docs/Plan.md`. There is no next action
+in this queue.
 
 ## Landmines
 
@@ -127,8 +96,13 @@ Do not start the following row in the same session.
   use it.
 - A run's identity is its basis signature and the override list it applied. An override
   edit that changes a value in force reaches the store only through the
-  `useOverrides.subscribe` line at the end of `src/state/store.ts`.
-  `sameAppliedOverrides` ignores object key order and keeps array order.
+  `useOverrides.subscribe` line at the end of `src/state/store.ts`. A throw from that
+  line is reported to the override boundary in `main.tsx`. The shell in
+  `OverrideSubscriber.tsx` stays armed while its alert is showing, so a later throw
+  does not leave `setState`. The overrides autosave
+  subscription is separate and stays outside that boundary. A throw before the
+  shell mounts still leaves `setState`. `sameAppliedOverrides` ignores object key
+  order and keeps array order.
 - The Systems tab is the only view that shows an override; rings, WEZ, telemetry and the
   Prepare forecast read `trial.scenario` or the board scenario, which keep the library
   value.
@@ -167,8 +141,8 @@ Do not start the following row in the same session.
 - Every edit to a registered reference needs
   `npm run docs:review -- <document> --note "..."`, or `npm run docs:check` fails. Guides
   fingerprint `src/`, so a source commit after a docs review invalidates it.
-- `docs/Plan.md` is frozen. Rewrite this handoff when row J passes. Do not mark a row
-  done inside the plan. Do not invent a row after J.
+- `docs/Plan.md` is frozen. The order table is complete. Do not invent a row after J.
+  Do not mark a row done inside the plan.
 - `storageManagement.ts` derives live keys from every non-prefix export of
   `storageKeys.ts`. Un-exporting `ANALYSIS_KEY` changes that readout.
 - `selectObservedThroughWholeS`, `bandNote`, `bandStep`, and `TrialOutcomeSummary`

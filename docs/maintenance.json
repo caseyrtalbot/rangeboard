@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "e1fd666110d4d5d2c7b86f237795bad23749de815f474fb01fcbb4e8cf694c60",
+      "sha256": "1f75251486d64a5fc0ca71924cf40103eca7e7525d89812000d57a7bf885fbe1",
       "reviewedAt": "2026-09-22",
-      "note": "Lockfile now resolves markdownlint-cli2 0.23.3 and smol-toml 1.8.0. README install steps and the Node 22.12 requirement are unchanged and do not name that dev dependency."
+      "note": "Reviewed main.tsx. It mounts the override-subscriber boundary beside App. README does not describe that startup sequence."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "df81ca3b126bbcfb1c86a4cf7d5a80a862184abb778e997d119581cbef422431",
+      "sha256": "d7d859c4f1003468b397017d906ff7d1948350fb36e1811f7c56abd4325c6249",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed after un-exporting module-private helpers. Compare still exports a chart PNG through exportPng.ts. The activity table does not name the private helpers."
+      "note": "Reviewed the override subscriber boundary. The shell stays mounted while its alert is up, and the board stays mounted. Autosave and the overrides autosave stay outside React."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "db8ffcd88e22381368c8fdf256b922ee05ccd890e2178ac9f93222519fa2cc0b",
+      "sha256": "9967907bc02dc95834dc181e0b0ebe976d3470bea885841ea2361c87bd897ae1",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed the unused-export cleanup. chartPng stays in exportPng.ts and is no longer exported; Compare still calls exportChartPng. bandNote still words the replicate-quantile rule. The engine barrel is unchanged."
+      "note": "Reviewed the override shell. It arms containment for its lifetime, and the child rethrows during render. A later throw while the alert is up does not leave setState. The overrides autosave stays outside it."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "7ff747ffef36a26a315a329dae37c5f11846d467e719a480588316dbe824164b",
+      "sha256": "4045f8e9b0ab6d2bbd6c65300e2f3462342613265db3e3e6363d1f83f007a457",
       "reviewedAt": "2026-09-22",
-      "note": "Tasking is row J, subscriber throws. Row O un-exported helpers used only inside their modules and left the four unreferenced functions exported. Plan.md stays frozen."
+      "note": "The order table is complete. Row J now keeps the override shell armed while its alert is up. The 2026-09-21 port 5407 check covered a second edit before Try again. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "d79e763783bc17081adfb204f9c4a8669877b7550f800e5b6606afcd7b3146b6",
+      "sha256": "563cea2343a98f8b63db44f08b7a93803d6bbc61ec4f9f77f6f428776d736692",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed src/charts/exportPng.ts. chartPng and downloadPng are now file-private. The design system does not name those helpers or their export status."
+      "note": "Reviewed src/ui/OverrideSubscriber.tsx. The shell reuses ErrorBoundary and adds no tokens, type roles, or sheet rules."
     }
   ],
   "historical": [

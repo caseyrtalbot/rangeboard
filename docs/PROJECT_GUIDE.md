@@ -182,16 +182,21 @@ underlay image has a 5 MiB admission budget. Existing valid saved payloads remai
 
 The Board boundary isolates render failures. Try again renders the board again without a
 reload, its Export action reads the scenario, and Reload reloads the page. A failure inside
-the canvas layers shows a notice with Retry beside the canvas and leaves the panels usable. The autosave subscription remains outside React and continues
-when a view fails; it carries the scenario and the pinned baseline as two lanes.
+the canvas layers shows a notice with Retry beside the canvas and leaves the panels usable.
+The override subscriber has its own boundary beside the board: a throw from that
+subscriber is shown there, the shell stays mounted while the alert is up, and the
+board stays mounted. The autosave subscription remains
+outside React and continues when a view fails; it carries the scenario and the pinned
+baseline as two lanes. The overrides autosave stays outside the override boundary.
 
 ## Execution and persistence
 
 1. [main.tsx](../src/main.tsx) restores the Board autosave synchronously and starts the
    autosave subscription, one [autosave lifecycle](../src/io/autosave.ts) with a scenario
-   adapter and a baseline adapter. [App.tsx](../src/App.tsx) manages the interaction
-   chrome. The analysis panel, the command palette and the recharts plot load behind
-   lazy boundaries.
+   adapter and a baseline adapter. It then restores and watches overrides, and mounts
+   the override-subscriber boundary beside [App.tsx](../src/App.tsx), which manages the
+   interaction chrome. The analysis panel, the command palette and the recharts plot load
+   behind lazy boundaries.
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds
    engagement resolution; explicit forecasts consume those results.
