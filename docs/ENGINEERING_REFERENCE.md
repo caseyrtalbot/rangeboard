@@ -526,7 +526,8 @@ src/charts/    chart kit: types.ts (Series), tokens.ts, timeAxis.ts, seriesData.
                baseline), SweepMap (the CSS-grid factor sweep map), Ladder and SobolChart
                (plain SVG). Props only; never reads the store. exportPng.ts (svgMarkup,
                svgToPng, chartPng, exportChartPng: a recharts SVG to PNG with computed
-               paint baked in)
+               paint baked in; Compare calls `exportChartPng`, and `chartPng` stays in
+               the module)
 src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Layers),
                interactionRouter.ts (store-free intent routing: Escape order, click
                precedence, drop, placement), StaticScene.tsx (boundaries, footprints, range rings and

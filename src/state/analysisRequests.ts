@@ -100,7 +100,7 @@ export const OPTIMIZE_DEFAULTS = {
 } as const
 
 /** The scenario's first range boundary as optimize bounds; null when it has none. */
-export function rangeBounds(scenario: Scenario): OptimizeBounds | null {
+function rangeBounds(scenario: Scenario): OptimizeBounds | null {
   const range = scenario.boundaries.find((b) => b.type === 'range')
   if (!range) return null
   return { boundaryId: range.id, points: range.points.map((p) => ({ x: p.x, y: p.y })) }
@@ -545,7 +545,7 @@ function acceptOatMessage(st: AnalysisSlices, m: McSensitivityMessage): Analysis
  * the run live and clears the count; `requestSobol` then publishes the Saltelli
  * row count on that identity.
  */
-export function acceptMorrisMessage(st: AnalysisSlices, m: McMorrisMessage): AnalysisPatch | null {
+function acceptMorrisMessage(st: AnalysisSlices, m: McMorrisMessage): AnalysisPatch | null {
   const sens = st.mc.sensitivity
   if (!owns(st, { live: sens.status === 'running', ...sens }, m)) return null
   switch (m.type) {
@@ -563,7 +563,7 @@ export function acceptMorrisMessage(st: AnalysisSlices, m: McMorrisMessage): Ana
  * records the result and ends the run; the one-at-a-time summary stays null.
  * A cancelled stage carries a null result and ends on the Morris result.
  */
-export function acceptSobolMessage(st: AnalysisSlices, m: McSobolMessage): AnalysisPatch | null {
+function acceptSobolMessage(st: AnalysisSlices, m: McSobolMessage): AnalysisPatch | null {
   const sens = st.mc.sensitivity
   if (!owns(st, { live: sens.status === 'running', ...sens }, m)) return null
   switch (m.type) {

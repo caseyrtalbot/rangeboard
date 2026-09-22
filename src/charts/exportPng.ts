@@ -106,7 +106,7 @@ function sizeOf(svg: SVGSVGElement): { width: number; height: number } {
 }
 
 /** The first chart SVG inside `container`, rasterized. Rejects when none is mounted. */
-export function chartPng(container: Element | null, options: PngOptions = {}): Promise<string> {
+function chartPng(container: Element | null, options: PngOptions = {}): Promise<string> {
   const svg = container?.querySelector('svg') as SVGSVGElement | null
   if (!svg) return Promise.reject(new Error('No chart is mounted to export.'))
   const { width, height } = sizeOf(svg)
@@ -115,7 +115,7 @@ export function chartPng(container: Element | null, options: PngOptions = {}): P
   return svgToPng(svgMarkup(svg, width, height), width, height, options)
 }
 
-export function downloadPng(dataUrl: string, filename: string): void {
+function downloadPng(dataUrl: string, filename: string): void {
   const a = document.createElement('a')
   a.href = dataUrl
   a.download = filename.endsWith('.png') ? filename : `${filename}.png`

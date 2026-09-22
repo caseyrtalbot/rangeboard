@@ -615,7 +615,7 @@ export function SavedRunCompareView({ runs, a, b, error, onPick }: SavedRunCompa
 }
 
 /** The container: the run list, the two opened records, and nothing until the first read settles. */
-export function SavedRunCompare() {
+function SavedRunCompare() {
   const [load, setLoad] = useState<{
     status: 'loading' | 'ready' | 'error'
     runs: RunSummary[]

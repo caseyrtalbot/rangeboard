@@ -170,7 +170,7 @@ function pushSnapshot(past: Scenario[], snapshot: Scenario): Scenario[] {
  * The lens stamp belongs to the run in progress, so a restored snapshot carries
  * the current stamp forward as a presentation variant.
  */
-export function withObservedLens(restored: Scenario, current: Scenario): Scenario {
+function withObservedLens(restored: Scenario, current: Scenario): Scenario {
   const stamp = current.observedPresetId ?? null
   if ((restored.observedPresetId ?? null) === stamp) return restored
   const stamped = { ...restored, observedPresetId: stamp }
@@ -179,7 +179,7 @@ export function withObservedLens(restored: Scenario, current: Scenario): Scenari
 }
 
 /** Drop selected ids the scenario no longer holds. */
-export function pruneSelection(sel: Selection, s: Scenario): Selection {
+function pruneSelection(sel: Selection, s: Scenario): Selection {
   const entityIds = sel.entityIds.filter((id) => s.entities.some((e) => e.id === id))
   const keep = <T extends { id: string }>(id: string | null, list: T[]) =>
     id != null && list.some((x) => x.id === id) ? id : null

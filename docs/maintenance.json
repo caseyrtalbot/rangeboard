@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "8aa78db498b64b4aac5b334d92fc46247a3875e79dd0d50812e18d01243d8bee",
+      "sha256": "df81ca3b126bbcfb1c86a4cf7d5a80a862184abb778e997d119581cbef422431",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed after basisJson moved beside the model comparisons. The guide still points at analysisBasis.ts for the signature and does not name the helper."
+      "note": "Reviewed after un-exporting module-private helpers. Compare still exports a chart PNG through exportPng.ts. The activity table does not name the private helpers."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "7e886f72b304873ef7e506cb3d76b45d9e71d3024307203a557641c5a7c69f06",
+      "sha256": "db8ffcd88e22381368c8fdf256b922ee05ccd890e2178ac9f93222519fa2cc0b",
       "reviewedAt": "2026-09-22",
-      "note": "Reviewed the key-order comparison. basisJson is the shared comparison for the signature, provenance edits, builtin reset, and applied overrides. Array order stays significant."
+      "note": "Reviewed the unused-export cleanup. chartPng stays in exportPng.ts and is no longer exported; Compare still calls exportChartPng. bandNote still words the replicate-quantile rule. The engine barrel is unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "27383acab2ecd32c492d428b97cfef36447dfa7dabc332139f1d343266c83fdc",
+      "sha256": "7ff747ffef36a26a315a329dae37c5f11846d467e719a480588316dbe824164b",
       "reviewedAt": "2026-09-22",
-      "note": "Tasking is row O, unused exports. Row N shared basisJson across provenance, builtin reset, and applied overrides. Plan.md stays frozen."
+      "note": "Tasking is row J, subscriber throws. Row O un-exported helpers used only inside their modules and left the four unreferenced functions exported. Plan.md stays frozen."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "99288fa3718a51412372e976f1e5a952447470f9c4ac618cdbc9d3e7349ed9f8",
-      "reviewedAt": "2026-09-21",
-      "note": "Reviewed after the comment sweep and the canvas-scene-error rule in index.css; tokens and layout rules unchanged."
+      "sha256": "d79e763783bc17081adfb204f9c4a8669877b7550f800e5b6606afcd7b3146b6",
+      "reviewedAt": "2026-09-22",
+      "note": "Reviewed src/charts/exportPng.ts. chartPng and downloadPng are now file-private. The design system does not name those helpers or their export status."
     }
   ],
   "historical": [
