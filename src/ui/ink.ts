@@ -44,8 +44,16 @@ export interface BoardInk {
   label: string
   /** The caption on a connection. */
   linkCaption: string
-  /** The leader line and dot of a label callout. */
+  /** The leader line and dot of a label callout, and the range button when off. */
   calloutLeader: string
+  /** Text 1: the selection ring, a selected link and a path or boundary draft. */
+  selection: string
+  /** The board tone: the halo under the selection ring. */
+  board: string
+  /** Calibrate marks, the connect ring, the marquee and the range button when on. */
+  tool: string
+  /** The range button fill when off. */
+  control: string
 }
 
 /** Night board ink: the values the layers drew before the paper table existed. */
@@ -57,11 +65,15 @@ export const BOARD_INK_DARK: BoardInk = {
   label: '#b7bdb2',
   linkCaption: '#8a9199',
   calloutLeader: '#82887e',
+  selection: '#ebe9e3',
+  board: '#121313',
+  tool: '#a9b4bd',
+  control: '#1d2023',
 }
 
 /**
  * Paper board ink, measured on the paper board `#eeebe4`: label 6.9:1, link caption
- * 5.5:1, callout leader 3.5:1. The airspace grid has no separate paper tone.
+ * 5.5:1, callout leader 3.5:1, tool 5.3:1. The airspace grid has no separate paper tone.
  */
 export const BOARD_INK_PAPER: BoardInk = {
   gridMinor: '#dcd7cd',
@@ -71,4 +83,8 @@ export const BOARD_INK_PAPER: BoardInk = {
   label: '#4e504b',
   linkCaption: '#5c5f57',
   calloutLeader: '#7b7d73',
+  selection: '#212220',
+  board: '#eeebe4',
+  tool: '#56626c',
+  control: '#f7f5f0',
 }

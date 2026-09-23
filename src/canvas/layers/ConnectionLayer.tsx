@@ -3,7 +3,7 @@ import { Arrow, Group, Text } from 'react-konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useStore } from '../../state/store'
 import { dist } from '../../geometry/geo'
-import { BOARD_INK_PAPER } from '../../ui/ink'
+import { BOARD_INK_DARK } from '../../ui/ink'
 import { useBoardInk } from '../useBoardInk'
 import { captionClear } from '../labelLayout'
 
@@ -48,10 +48,11 @@ export function ConnectionLayer() {
         // Unproven evidence reads dimmer than documented or hand-drawn links.
         const dim = c.confidence === 'probable' || c.confidence === 'inferred'
         const onHover = (e: KonvaEventObject<MouseEvent>) => hoverCaption(e, c.id)
+        // A selected link on the night board keeps its white, a step above text 1.
         const color = selected
-          ? ink === BOARD_INK_PAPER
-            ? '#212220'
-            : '#ffffff'
+          ? ink === BOARD_INK_DARK
+            ? '#ffffff'
+            : ink.selection
           : dim
             ? '#6a7178'
             : ink.linkCaption

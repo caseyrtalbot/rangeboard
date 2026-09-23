@@ -1,5 +1,5 @@
 import { selectEffectiveLayers } from '../../state/selectors'
-import { memo, useMemo, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { Circle, Group, Line, Path, Rect, RegularPolygon, Text } from 'react-konva'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
@@ -14,7 +14,7 @@ import type { TrialSweep } from '../../playback/trialSweepAt'
 import type { TrialMemberState } from '../../playback/trialTrackState'
 import type { TrialTelemetryState } from '../../panels/analysis/threatReadout'
 import { EW_JAM_COLOR, PHASE_STYLE } from '../../playback/trackState'
-import { BOARD_INK_PAPER, DANGER_INK, entityInk, EW_INK } from '../../ui/ink'
+import { DANGER_INK, entityInk, EW_INK } from '../../ui/ink'
 import { useBoardInk } from '../useBoardInk'
 import type { EffectorLiveState, TrackPhase } from '../../playback/trackState'
 import {
@@ -28,6 +28,7 @@ import {
 } from '../../panels/Glyph'
 import { boardDesignator, LABEL_ANCHOR_TOP, LABEL_LINE_H, labelLineCount } from '../labelLayout'
 import { IDLE_INTERACTION, routeInteraction } from '../interactionRouter'
+import { hoverCursor, releaseHover } from '../hoverCursor'
 
 interface Props {
   tracks: Map<string, LiveTrack>
@@ -62,7 +63,7 @@ const FRIEND_SCALE = 2.2
 
 /** Track ring radius. The glyph is r11, so the ring clears it. */
 const RING_R = 14
-/** Selection ring radius. It must stay outside the target brackets. */
+/** Selection ring radius. It must stay outside the target brackets; LABEL_ANCHOR_TOP clears it. */
 const SELECT_R = 28
 const BRACKET_HALF = 19
 const BRACKET_ARM = 6
@@ -371,6 +372,8 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
   const off = !entityActive(entity)
   const ghost = state?.phase === 'ghost'
   const members = entity.kind === 'uas' ? memberPositions(entity, { x, y }, headingDeg) : null
+  // A deleted entity under the pointer gets no mouseleave.
+  useEffect(() => () => releaseHover(entity.id), [entity.id])
 
   const main = (
     <Group
@@ -383,8 +386,8 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
       draggable={tool === 'select'}
       onClick={(e) => handleClick(e, entity)}
       onContextMenu={(e) => handleContextMenu(e, entity)}
-      onMouseEnter={hover}
-      onMouseLeave={hover}
+      onMouseEnter={(e) => hover(e, entity.id)}
+      onMouseLeave={(e) => hover(e, entity.id)}
       onDragStart={(e) => {
         if (e.target === e.currentTarget) useStore.getState().select({ entityIds: [entity.id] })
       }}
@@ -489,10 +492,10 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
  * The hover cue on the Konva nodes alone, so a plain hover re-renders no layer: the
  * pointer cursor and the hover ring, in the tools where a click acts on the entity.
  */
-function hover(e: KonvaEventObject<MouseEvent>) {
+function hover(e: KonvaEventObject<MouseEvent>, id: string) {
   const tool = useStore.getState().ui.tool
   const on = e.type === 'mouseenter' && (tool === 'select' || tool === 'connect')
-  e.target.getStage()!.container().style.cursor = on ? 'pointer' : ''
+  hoverCursor(id, e.target.getStage()!.container(), on)
   ;(e.currentTarget as Konva.Group).findOne('.hover')?.visible(on)
 }
 
@@ -575,7 +578,6 @@ const EntityBody = memo(function EntityBody({
 
   const tickRef = useRef<Konva.Line>(null)
   const ink = useBoardInk()
-  const paper = ink === BOARD_INK_PAPER
   const off = !entityActive(entity)
   const phase: TrackPhase = entity.kind === 'uas' ? (state?.phase ?? 'undetected') : 'undetected'
   const ghost = memberOutcome === 'hard-kill'
@@ -632,18 +634,8 @@ const EntityBody = memo(function EntityBody({
       {/* Selection: a solid 1.5 px ring in text 1 over a 2 px board-tone halo. */}
       {selected && (
         <>
-          <Circle
-            radius={SELECT_R}
-            stroke={paper ? '#eeebe4' : '#121313'}
-            strokeWidth={5.5}
-            listening={false}
-          />
-          <Circle
-            radius={SELECT_R}
-            stroke={paper ? '#212220' : '#ebe9e3'}
-            strokeWidth={1.5}
-            listening={false}
-          />
+          <Circle radius={SELECT_R} stroke={ink.board} strokeWidth={5.5} listening={false} />
+          <Circle radius={SELECT_R} stroke={ink.selection} strokeWidth={1.5} listening={false} />
         </>
       )}
       {cardLinked && (
@@ -655,7 +647,7 @@ const EntityBody = memo(function EntityBody({
           listening={false}
         />
       )}
-      {connectFrom && <Circle radius={16} stroke="#a9b4bd" strokeWidth={2} listening={false} />}
+      {connectFrom && <Circle radius={16} stroke={ink.tool} strokeWidth={2} listening={false} />}
       {bracketed &&
         BRACKETS.map((points, i) => (
           <Line
@@ -777,7 +769,7 @@ const EntityBody = memo(function EntityBody({
       )}
       {selected && entity.kind === 'uas' && tool === 'select' && (
         <Group
-          y={34}
+          y={LABEL_ANCHOR_TOP + labelLines * LABEL_LINE_H + TAG_GAP}
           onClick={(e) => {
             e.cancelBubble = true
             useStore.getState().updateEntity(entity.id, { showRange: !entity.showRange })
@@ -788,8 +780,8 @@ const EntityBody = memo(function EntityBody({
             width={68}
             height={16}
             cornerRadius={8}
-            fill={entity.showRange ? '#a9b4bd' : '#1d2023'}
-            stroke={entity.showRange ? '#a9b4bd' : '#82887e'}
+            fill={entity.showRange ? ink.tool : ink.control}
+            stroke={entity.showRange ? ink.tool : ink.calloutLeader}
             strokeWidth={1}
           />
           <Text
@@ -800,7 +792,7 @@ const EntityBody = memo(function EntityBody({
             align="center"
             text={entity.showRange ? 'RANGE ON' : 'RANGE OFF'}
             fontSize={9}
-            fill={entity.showRange ? '#121415' : '#82887e'}
+            fill={entity.showRange ? ink.board : ink.calloutLeader}
             listening={false}
           />
         </Group>
