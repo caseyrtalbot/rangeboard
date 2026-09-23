@@ -2557,6 +2557,45 @@ select.nu-unit {
   }
 }
 
+/* Undo cue after a delete or a place: holds, then fades out by 4 s. It grows
+   into free space only, so it never squeezes the transport. The name truncates,
+   "Undo ⌘Z" stays, and the scrub keeps 80 px. */
+.undo-cue {
+  flex: 4 1 0;
+  max-width: max-content;
+  min-width: 0;
+  display: inline-flex;
+  justify-content: flex-end;
+  color: var(--text-dim);
+  white-space: pre;
+  animation: undo-cue-fade 4s linear forwards;
+}
+
+.undo-cue span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timeline:has(.undo-cue) .scrub {
+  min-width: 80px;
+}
+
+@keyframes undo-cue-fade {
+  85% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .undo-cue {
+    animation: none;
+  }
+}
+
 /* ---------- Dialog ---------- */
 
 .dialog {

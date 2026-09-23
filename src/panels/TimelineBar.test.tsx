@@ -65,4 +65,8 @@ describe('sampled transport labels', () => {
     expect(html).toContain(`Engagement ${threats}`)
     expect(render(true)).toContain('aria-expanded="true"')
   })
+
+  it('shows no undo cue before an edit lands', () => {
+    expect(render()).not.toContain('undo-cue')
+  })
 })
