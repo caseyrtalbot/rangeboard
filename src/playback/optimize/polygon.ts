@@ -41,11 +41,16 @@ export function polygonAreaM2(points: Vec2[]): number {
 
 /**
  * Why `points` (three or more; the callers hold the count floor) cannot bound
- * a placement run, as a sentence for the user, or null when they can: a
- * degenerate area (collinear points, or a sliver under MIN_AREA_FRACTION of
- * its box that the sampler could not fill). A degenerate area on a boundary
- * whose edges cross is named as the crossing: the shoelace sum of a bow-tie
- * subtracts one lobe from the other, so equal lobes read as no area.
+ * a placement run, as a sentence for the user, or null when they can. A
+ * boundary whose edges cross (two edges that share no vertex cross at a point
+ * inside both) is refused as crossing itself whatever its area: the shoelace
+ * sum of a bow-tie subtracts one lobe from the other, so its area floors say
+ * nothing. Then a degenerate area (collinear points) is refused as collinear,
+ * even when its edges fold back over each other. Then any other contact of two
+ * non-adjacent edges (a vertex on an edge, or a collinear overlap) is refused
+ * as crossing itself. Last, a sliver under MIN_AREA_FRACTION of its box that
+ * the sampler could not fill. A repeated consecutive vertex, the last point
+ * repeating the first included, is one vertex and not a contact.
  * `boundingBoxOf` throws it before the first evaluation, so the worker posts
  * it as the run's error. The Placement screen shows it before launch.
  */
@@ -66,12 +71,12 @@ export function boundsRefusal(points: Vec2[]): string | null {
   }
   const area = Math.abs(twice) / 2
   const thin = area < MIN_AREA_FRACTION * (maxX - minX) * (maxY - minY)
-  if ((area < MIN_AREA_M2 || thin) && edgesCross(points)) {
-    return 'The range boundary crosses itself. A placement run needs a polygon.'
-  }
+  const ring = distinctVertices(points)
+  if (edgesMeet(ring, false)) return CROSSES_ITSELF
   if (area < MIN_AREA_M2) {
     return 'The range boundary points lie on one line and enclose no area. A placement run needs a polygon.'
   }
+  if (edgesMeet(ring, true)) return CROSSES_ITSELF
   if (thin) {
     return 'The range boundary is too thin to sample: its area is under 0.4% of its bounding box.'
   }
@@ -83,13 +88,30 @@ function cross(a: Vec2, b: Vec2, c: Vec2): number {
   return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
 }
 
+const CROSSES_ITSELF = 'The range boundary crosses itself. A placement run needs a polygon.'
+
+/**
+ * The polygon's vertices with each repeat of the vertex before it dropped
+ * (within EDGE_TOLERANCE_M), the closing repeat of the first point included:
+ * a zero-length edge would make its two neighbors non-adjacent at one point.
+ */
+function distinctVertices(points: Vec2[]): Vec2[] {
+  const tol2 = EDGE_TOLERANCE_M * EDGE_TOLERANCE_M
+  const same = (a: Vec2, b: Vec2) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2 <= tol2
+  const ring: Vec2[] = []
+  for (const p of points) if (ring.length === 0 || !same(ring[ring.length - 1], p)) ring.push(p)
+  while (ring.length > 1 && same(ring[ring.length - 1], ring[0])) ring.pop()
+  return ring
+}
+
 /**
  * True when two edges of the closed polygon that share no vertex cross at a
- * point inside both. Collinear overlap and a touch at an end point do not
- * count, so collinear points keep their own reason.
+ * point inside both or, with `touch`, meet at all: a vertex of one within
+ * EDGE_TOLERANCE_M of the other, which a collinear overlap always has.
  */
-function edgesCross(points: Vec2[]): boolean {
+function edgesMeet(points: Vec2[], touch: boolean): boolean {
   const n = points.length
+  const tol2 = EDGE_TOLERANCE_M * EDGE_TOLERANCE_M
   for (let i = 0; i < n; i += 1) {
     const a = points[i]
     const b = points[(i + 1) % n]
@@ -98,6 +120,14 @@ function edgesCross(points: Vec2[]): boolean {
       const c = points[j]
       const d = points[(j + 1) % n]
       if (cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0) return true
+      if (
+        touch &&
+        (distToSegment2(a, c, d) <= tol2 ||
+          distToSegment2(b, c, d) <= tol2 ||
+          distToSegment2(c, a, b) <= tol2 ||
+          distToSegment2(d, a, b) <= tol2)
+      )
+        return true
     }
   }
   return false
