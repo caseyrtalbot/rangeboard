@@ -4,8 +4,21 @@ import {
   estimateTrackHistory,
   trackEstimateFixture,
 } from './__fixtures__/trackEstimateFixture'
+import { mixedTrial } from './__fixtures__/trialFixture'
+import { boundRetainedTrial } from './retainTrial'
 import { latestEstimatesAt, positionEllipse } from './trackEstimateView'
-import type { Covariance4 } from './trackTypes'
+import type { Covariance4, TrackEstimate } from './trackTypes'
+
+/** The fields a bound entry keeps, as JSON, so a ledger row compares to a plain one. */
+const picture = (tracks: TrackEstimate[]) =>
+  JSON.parse(
+    JSON.stringify(
+      tracks.map(({ sensorIds: _sensorIds, covariance, ...track }) => ({
+        ...track,
+        covariance: [covariance[0], covariance[1], covariance[5]],
+      })),
+    ),
+  )
 
 /** A 4x4 block from the three position entries; the rest stays zero. */
 function positionBlock(varX: number, covXY: number, varY: number): Covariance4 {
@@ -109,5 +122,21 @@ describe('latestEstimatesAt', () => {
     expect(
       latestEstimatesAt([{ ...a0, state: { ...a0.state, tS: 9 } }, other], 1).map((t) => t.id),
     ).toEqual(['trk-other'])
+  })
+
+  it('reads a bound ledger as it reads the plain array', () => {
+    const { result } = mixedTrial()
+    const [a0, a1] = estimateTrackHistory()
+    const other = { ...a0, id: 'trk-other', state: { ...a0.state, tS: 0.25 } }
+    // The tracker's time-ordered history, then a hand-built one out of order with a tie.
+    for (const tracks of [trackEstimateFixture(), [a1, other, a0, { ...a0, hits: 9 }]]) {
+      const bound = boundRetainedTrial({ ...result, tracks }).tracks!
+      // Between entries, at the first entry, before any entry, past every entry.
+      for (const horizonS of [2.2, 0.4, 0, -0.1, 9]) {
+        expect(picture(latestEstimatesAt(bound, horizonS))).toEqual(
+          picture(latestEstimatesAt(tracks, horizonS)),
+        )
+      }
+    }
   })
 })

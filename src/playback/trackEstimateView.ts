@@ -8,6 +8,20 @@
 
 import type { Covariance4, TrackEstimate } from './trackTypes'
 
+type HorizonRead = (horizonS: number) => TrackEstimate[]
+
+const horizonReads = new WeakMap<object, HorizonRead>()
+
+/**
+ * Give `tracks` its own horizon read, which `latestEstimatesAt` then uses in
+ * place of the scan. The retained-trial ledger binds one that indexes each
+ * id, so a frame reads one entry per id instead of every entry. The read must
+ * return the rows the scan would.
+ */
+export function bindHorizonRead(tracks: readonly TrackEstimate[], read: HorizonRead): void {
+  horizonReads.set(tracks, read)
+}
+
 /**
  * The latest estimate per track id at or before the horizon, in the order the
  * ids first appear among the entries that pass the horizon. An estimate past
@@ -19,6 +33,8 @@ export function latestEstimatesAt(
   horizonS: number,
 ): TrackEstimate[] {
   if (!tracks || tracks.length === 0) return []
+  const read = horizonReads.get(tracks)
+  if (read) return read(horizonS)
   const order: string[] = []
   const latest = new Map<string, TrackEstimate>()
   for (const track of tracks) {

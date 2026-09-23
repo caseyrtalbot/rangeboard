@@ -4,14 +4,23 @@ import { trialResultOf, trialSnapshotAt } from '../analysis/trialResult'
 import { parseScenarioData } from '../io/persist'
 import { buildTrialResultGroup } from '../io/runResultGroups'
 import { analysisBasisSignature } from '../state/analysisBasis'
+import { trackEstimateFixture } from './__fixtures__/trackEstimateFixture'
 import { mixedTrial } from './__fixtures__/trialFixture'
 import { latestEstimatesAt, positionEllipse } from './trackEstimateView'
+import type { TrackEstimate } from './trackTypes'
 import { runTrial } from './trial'
 import { trialSweepAt } from './trialSweepAt'
 import { createTrialManifest } from './trialTypes'
 import { boundRetainedTrial, releaseRetainedTrial } from './retainTrial'
 
 const round = (value: unknown) => JSON.parse(JSON.stringify(value))
+
+/** The entry the bound copy keeps: no sensor ids and the position block only. */
+const trimmed = ({ covariance, ...track }: TrackEstimate): TrackEstimate => ({
+  ...track,
+  sensorIds: [],
+  covariance: [covariance[0], covariance[1], 0, 0, 0, covariance[5]],
+})
 
 function firingTrial() {
   const scenario = parseScenarioData(structuredClone(firing))
@@ -68,6 +77,26 @@ describe('bounded trial retention', () => {
     expect(trialSnapshotAt(boundView, horizon).counts).toEqual(
       trialSnapshotAt(fullView, horizon).counts,
     )
+    // Every entry reads back every field the input carried, position block only.
+    expect(round(bound.tracks)).toEqual(round(result.tracks!.map(trimmed)))
+    const held = bound.tracks!
+    releaseRetainedTrial(bound)
+    expect(held).toHaveLength(0)
+    expect(latestEstimatesAt(held, horizon)).toEqual([])
+  })
+
+  it('binds a cloned track history to the same entries as the source', () => {
+    const { result } = mixedTrial()
+    const tracks = trackEstimateFixture()
+    const direct = boundRetainedTrial({ ...result, tracks })
+    const cloned = boundRetainedTrial({
+      ...structuredClone(result),
+      tracks: structuredClone(tracks),
+    })
+    expect(cloned.tracks).toHaveLength(tracks.length)
+    expect([...cloned.tracks!]).toEqual([...direct.tracks!])
+    expect(cloned.tracks![3]).toEqual(trimmed(tracks[3]))
+    expect(round(direct.tracks)).toEqual(round(tracks.map(trimmed)))
   })
 
   it('round-trips a hand-built scan ledger and leaves the source trial intact on release', () => {

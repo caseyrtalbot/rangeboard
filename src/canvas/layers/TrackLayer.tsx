@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Ellipse, Group, Line } from 'react-konva'
 import { useStore } from '../../state/store'
 import { latestEstimatesAt, positionEllipse } from '../../playback/trackEstimateView'
@@ -36,8 +37,11 @@ function inkFor(source: TrackEstimate['source']): string {
 export function TrackLayer({ tracks, horizonS }: Props) {
   // Only the scale is read; the stage transform carries the pan.
   const k = useStore((s) => s.camera.scale)
-  if (horizonS == null) return null
-  const latest = latestEstimatesAt(tracks, horizonS)
+  // A zoom re-renders the layer; the picture only changes with the horizon.
+  const latest = useMemo(
+    () => (horizonS == null ? [] : latestEstimatesAt(tracks, horizonS)),
+    [tracks, horizonS],
+  )
   if (latest.length === 0) return null
 
   return (
