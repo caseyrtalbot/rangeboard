@@ -1,6 +1,8 @@
 import { memo, useEffect, useMemo, useRef } from 'react'
 import type { Scenario, Vec2 } from '../model/types'
+import { useStore } from '../state/store'
 import type { Camera } from '../state/store'
+import { modelFor } from '../model/scenario'
 import { liveTracks, memberPositions } from '../playback/tracks'
 import type { LiveTrack } from '../playback/tracks'
 import type { TrialResultView } from '../analysis/trialResult'
@@ -16,7 +18,7 @@ import { ThreatWezLayer } from './layers/ThreatWezLayer'
 import { PathLayer } from './layers/PathLayer'
 import { EngagementLayer } from './layers/EngagementLayer'
 import { TrackLayer } from './layers/TrackLayer'
-import { EntityLayer } from './layers/EntityLayer'
+import { EntityLayer, shownHandleDeg } from './layers/EntityLayer'
 import { CalloutLayer } from './layers/CalloutLayer'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
 
@@ -194,6 +196,19 @@ export function LiveScene(props: Props) {
       })),
     [scenario.entities],
   )
+  const selectedIds = useStore((s) => s.selection.entityIds)
+  const tool = useStore((s) => s.ui.tool)
+  // A shown heading knob moves the label below itself, so its box moves with it.
+  const handleDegs = useMemo(
+    () =>
+      new Map(
+        scenario.entities.flatMap((e) => {
+          const deg = shownHandleDeg(e, modelFor(scenario, e), selectedIds.includes(e.id), tool)
+          return deg == null ? [] : [[e.id, deg] as const]
+        }),
+      ),
+    [scenario, selectedIds, tool],
+  )
   const labelPlacements = useMemo(() => {
     const fresh = layoutLabels(
       labelText.map((e) => {
@@ -204,6 +219,7 @@ export function LiveScene(props: Props) {
           drawn: e.drawn,
           sx: pos.x * camera.scale + camera.x,
           sy: pos.y * camera.scale + camera.y,
+          handleDeg: handleDegs.get(e.id),
         }
       }),
       // oxlint-disable-next-line react/refs -- last frame's spoke set feeds the hysteresis
@@ -211,7 +227,7 @@ export function LiveScene(props: Props) {
     )
     // oxlint-disable-next-line react/refs -- same hysteresis as the sticky set
     return stablePlacements(fresh, prevPlacements.current)
-  }, [labelText, tracks, camera, size])
+  }, [labelText, tracks, camera, size, handleDegs])
   // A moved label changes the placements but seldom the spoke set, which keeps its
   // identity while its ids hold.
   const spokeIds = useMemo(

@@ -20,6 +20,11 @@ export interface LabelInput {
    * layout derives it with `boardDesignator`.
    */
   drawn?: string
+  /**
+   * Heading of the handle knob the entity shows, degrees. Absent when it shows none.
+   * The box then starts where `anchoredLabelTop` puts the drawn label.
+   */
+  handleDeg?: number
 }
 
 /** A label input with its box measured once, so the O(n^2) pass does no string work. */
@@ -28,6 +33,8 @@ interface Measured extends LabelInput {
   w: number
   /** Anchored box height, px. */
   h: number
+  /** Anchored box top, px below the glyph centre: `anchoredLabelTop`. */
+  top: number
 }
 
 export interface SpokePlacement {
@@ -51,12 +58,18 @@ interface LayoutOptions {
 }
 
 export const LABEL_FONT_PX = 11
+/**
+ * Stroke width of the board-tone halo on a label, px. The stroke runs under the fill,
+ * so half of it shows outside each glyph; that half stays under the letter gap, so
+ * over a coverage tint only the letter outlines show, never a filled patch.
+ */
+export const LABEL_HALO_PX = 2.5
 const CHAR_W = LABEL_FONT_PX * 0.6
 const ANCHOR_W = 120
 /**
- * Top of the anchored label box, px below the glyph centre. EntityLayer draws
- * the label at this offset, so the two must move together. It clears the
- * selection ring (r 28) and its halo, which reach y 30.75.
+ * Top of the anchored label box, px below the glyph centre, with no handle in the
+ * way. EntityLayer draws the label at this offset, so the two must move together. It
+ * clears the selection ring (r 28) and its halo, which reach y 30.75.
  */
 export const LABEL_ANCHOR_TOP = 32
 /** Line box height of a wrapped anchored label, px. */
@@ -198,12 +211,13 @@ function measure(m: LabelInput): Measured {
     name,
     w: Math.min(ANCHOR_W, name.length * CHAR_W),
     h: labelLineCount(name) * LABEL_LINE_H,
+    top: anchoredLabelTop(name, m.handleDeg),
   }
 }
 
-/** Footprint of the default anchored label (centered, 120px wrap). */
+/** Footprint of the anchored label (centered, 120px wrap) where EntityLayer draws it. */
 function anchoredRect(m: Measured): Rect {
-  return { x: m.sx - m.w / 2, y: m.sy + LABEL_ANCHOR_TOP, w: m.w, h: m.h }
+  return { x: m.sx - m.w / 2, y: m.sy + m.top, w: m.w, h: m.h }
 }
 
 /** One box over a glyph, its target brackets (19 px) and its anchored label. */
@@ -213,7 +227,7 @@ function markRect(m: Measured): Rect {
     x: m.sx - half,
     y: m.sy - GLYPH_HALF,
     w: half * 2,
-    h: GLYPH_HALF + LABEL_ANCHOR_TOP + m.h,
+    h: GLYPH_HALF + m.top + m.h,
   }
 }
 
