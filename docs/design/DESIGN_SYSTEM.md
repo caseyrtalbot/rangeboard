@@ -47,9 +47,12 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    selection ring, a selected link, the path draft, the calibrate marks, the connect ring,
    the range button and the marquee read the theme. It also holds the dim link ink
    (`#6a7178` night, `#767d84` paper) for a probable or inferred link, and the knob rim
-   (`#121415` night, text 1 on paper) for the heading and system rotation handles. An
-   anchored name draws over a 2 px board-tone halo, so a flight path or a leader line does
-   not run through its text. A heading handle that points down into the label moves the
+   (`#121415` night, text 1 on paper) for the heading and system rotation handles. The
+   system rotation handle and the move-underlay outline take the tool ink (8.8:1 night,
+   5.3:1 paper). An anchored name and a spoke callout draw over a board-tone glyph halo
+   (`LABEL_HALO_PX`, a 2.5 px stroke under the fill, 1.25 px outside each letter), so a
+   flight path, a leader or a coverage tint does not run through the text and no filled
+   patch shows over a tint. A heading handle that points down into the label moves the
    label below its knob (`anchoredLabelTop`); the handle keeps its 34 px reach.
 
 ## 2. Tokens
@@ -131,10 +134,15 @@ and a resize drag 60 px past the minimum also closes it. A closed drawer gives i
 the canvas and holds the board center. A selection does not reopen it. The header is 40 px high. It carries the lifecycle tabs in
 its center and the run status at the start of its right group; the phase row is gone. The
 left group carries identity, the file menu, Settings and Storage; the right group carries the
-run status, the chips and the drawer button, so the tabs hold the bar center at 1600 px with
-all chips shown. Its groups keep a 24 px column gap (`--space-6`). Below 1600 px the status chips fold into the
-ROE button, which shows a `+N` count in mono warning ink and lists them in its panel; a
-failed save stays in the bar. The lifecycle navigation sits outside the scroll body. The
+run status, the chips and the drawer button. The two side tracks are equal, so the tabs hold
+the bar center whatever the groups hold. Each side keeps a floor, and its groups keep a
+24 px column gap (`--space-6`). Below about 1115 px a group at its floor pushes the tabs
+aside and does not cover them. The narrowest supported window is 1024 px. A full right
+group ends the run status in an ellipsis first, then drops whole chips off its single chip
+row. Below 1600 px the status chips fold into the ROE button. At every width the button
+shows a `+N` count of hidden chips in mono warning ink, and its panel lists every chip; a
+failed save stays in the bar. The Storage panel opens under its trigger. On a narrow window
+it shifts left to keep a 14 px right margin. The lifecycle navigation sits outside the scroll body. The
 analysis screen navigation also sits outside it, draws only on the Overview tab, and draws
 no segmented control for a phase with one screen. Labels wrap and no panel text may be
 inaccessible.
@@ -223,7 +231,10 @@ context menu offer no action that starts a tool, and `setBoardPhase` returns the
 Select. After a delete or a place, a `.surface-float` cue at the canvas bottom left, above
 the timeline, shows `<verb> <name> · Undo ⌘Z`. It fades during the last 15 % of 4 s,
 reduced motion cuts it at 4 s, and undo, redo or a load clear it. The name truncates
-first, the cue takes no pointer events, and the timeline scrub keeps its 120 px floor. An empty board shows one hint, a `.surface-float` at
+first, the cue takes no pointer events, and the timeline scrub keeps its 120 px floor. With
+the Library drawer open the cue sits at the canvas bottom right and never under the drawer:
+its width shrinks to the room beside the drawer, and below 160 px of room it stays hidden
+until the drawer closes. An empty board shows one hint, a `.surface-float` at
 the canvas top left with an "Open library (L)" action. Drawer search receives focus on opening; Escape returns it to the
 resource button. Library names and scoped control labels wrap. Scenario input sections
 use native disclosures; menus scroll within the available viewport height. Fire doctrine

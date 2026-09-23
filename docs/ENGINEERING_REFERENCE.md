@@ -65,7 +65,9 @@ Breaking one of these breaks the app.
   in one caller. History holds snapshots only, with no action label:
   `lastUndoableAction` (`src/state/lastAction.ts`) names a delete or a place for the undo
   cue by comparing entity ids of the last `past` snapshot and `scenario`;
-  `actionBeforeMount` names an edit made before the lazy cue chunk loaded. One exception:
+  `actionBeforeMount` names an edit made before the lazy cue chunk loaded. A redo adds the
+  scenario it makes current to `redone` (`src/state/scenarioInstall.ts`, a session-only
+  `WeakSet`), and `actionBeforeMount` names nothing for it. One exception:
   `Scenario.observedPresetId` is stamped through `set` on reset and first play, and undo
   and redo carry the current stamp over a restored snapshot. A stamp that already matches
   replaces nothing. A new stamp is a presentation variant of the current object
@@ -214,10 +216,13 @@ Breaking one of these breaks the app.
   `Float64Array`s (`mergeSummaries.ts`). It applies the half-width rule to the
   contiguous prefix of the end-of-run leakers from `stopFloor`, and stops at `stopCap`.
   The summary is finished on one worker: the page transfers those buffers and does not
-  clone them; the worker merges, keeps the contiguous prefix, and calls `finishSummary`.
-  `mergePartials(parts, { release: true })` empties each part's grids once its last row
-  is copied, and the worker empties the part list, so resident memory stays near one copy
-  plus one chunk. The merged grids are still allocated at full size before the copy.
+  clone them; the worker calls `mergePartials(parts, { release: true, prefix: true })` and
+  then `finishSummary`. With `prefix`, the merge copies only replicates 0..m-1 (m is the
+  first missing index) into grids sized to m rows. With `release`, it empties a part past
+  the hole before it allocates and every other part once its last prefix row is copied.
+  The worker empties the part list, so resident memory stays near one copy plus one chunk.
+  At the retained cap on the 54-entity performance board `finishSummary` takes about
+  1.4 s in that worker (2026-09-23 evidence), off the page thread.
   Progress `done` counts that prefix. A stop that leaves a hole sets `discarded` to the
   completed rows the prefix dropped, and the Run line prints the count. `cancel` returns
   false while an ending is set and after finish releases the run for the summary worker.
@@ -309,8 +314,10 @@ Breaking one of these breaks the app.
     azimuth is returned unchanged.
   - `raidSize` sets the first wave (`raid.waves[0]`, else every threat with a path) to the
     value, a whole number of 1 or more. Fewer members drops the last ones with their
-    paths; more repeats the members in order with fresh ids from `newId`, so their draw
-    keys are their own, and appends them to the first wave.
+    paths; more repeats the members in order and appends them to the first wave. Copy i
+    takes the id `${sourceId}~r${i}` and its path `${pathId}~r${i}` (a taken id gains a
+    further `~`), so each copy's draw keys are its own and a sweep at one seed draws the
+    same uniforms on every run.
   - `environmentPreset` replaces the precipitation, light and EM background covariates
     from `SWEEP_ENVIRONMENT_PRESETS` (six ids, `clear-day` to `urban-night`), sets
     `visibilityM` to null and `apply` to true, and keeps wind, temperature and field
@@ -383,10 +390,12 @@ Breaking one of these breaks the app.
   positions inside the range polygon. `SEED_EVALUATIONS` (8) Latin hypercube laydowns seed
   the GP, each later evaluation picks the best of a `CANDIDATE_CLOUD` (512) of polygon
   samples by expected improvement, and the GP length scale is `LENGTH_SCALE_FRACTION`
-  (0.25) of the polygon extent. `boundsRefusal` (`polygon.ts`) refuses a range under
-  `MIN_AREA_M2` (1 m²) or under `MIN_AREA_FRACTION` (4e-3) of its bounding box, so the
-  rejection sampler cannot exhaust its draws. A refused boundary whose edges cross is
-  named as crossing itself. The Placement screen marks a refused range unavailable, shows
+  (0.25) of the polygon extent. `boundsRefusal` (`polygon.ts`) first merges repeated
+  consecutive vertices (within 1e-6 m). It refuses a range whose non-adjacent edges cross
+  as crossing itself, whatever its net area. It refuses a range under `MIN_AREA_M2`
+  (1 m²) as collinear, then a range whose non-adjacent edges touch or overlap as crossing
+  itself, then a range under `MIN_AREA_FRACTION` (4e-3) of its bounding box, so the
+  rejection sampler cannot exhaust its draws. The Placement screen marks a refused range unavailable, shows
   the reason and disables Run placement; `optimizeLaunch`
   (`src/state/analysisRequests.ts`) reports that reason and starts no worker, and
   `boundingBoxOf` throws it in the worker as a backstop. Every evaluation is one replicate run
@@ -625,7 +634,8 @@ src/main.tsx   restores the Board and overrides autosaves (restoreAutosave and
                subscriptions,
                mounts the override-subscriber boundary, exposes window.__store in dev
 src/App.tsx    right panel tabs and drawer, keyboard map, resizer; lazy boundaries for
-               AnalysisPanel and CommandPalette
+               AnalysisPanel, CommandPalette and UndoCue; CanvasStage holds the one
+               for ContextMenu
 ```
 
 Data flow for a click or drag: Konva event, store action, new scenario, React re-render of
@@ -831,7 +841,9 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   and the `gun-burst` fidelity tag: a gun with nonnegative `dispersionMils` and
   `fireControlErrorMils`, a positive burst count, positive `rateOfFireRpm` and
   `muzzleVelocityMps`, and `legacyKineticPk` off. The probability path also needs a target
-  spec (`context.uas`), which the tag cannot see.
+  spec (`context.uas`, the threat's library `uas` block, set in `attrition.ts`). The tag
+  reports `gun-burst` only when an active UAS entity carries one; otherwise the gun stays
+  under `kinetic-pk`.
   `legacyKineticPk` restores `kineticPk(basePk, maxRangeM, uas, slantM)`, which
   `footprintStyle.ts` also imports to invert the commit ring. Optical shots compute diffraction,
   jitter, atmospheric transmission and a sampled fluence threshold; their effect time includes
@@ -1317,7 +1329,9 @@ Konva conventions:
   a derivation. Rings are one prepared model (`ringModel.ts`): `FootprintLayer` draws its
   records and `HudLayer` hit-tests it; neither derives ring geometry, and the HUD never
   imports a drawing file. Spoke callout geometry snaps to whole pixels in `labelLayout.ts`, so a
-  sub-pixel centroid drift does not change a placement's identity.
+  sub-pixel centroid drift does not change a placement's identity. `LabelInput.handleDeg`
+  carries a shown heading knob, so the collision box starts at `anchoredLabelTop`, where
+  `EntityLayer` draws the label; `LiveScene` derives it with `shownHandleDeg`.
 - Two scene Layers, in this order: `StaticScene` (boundaries, footprints, range rings,
   connections) and `LiveScene` (WEZ, paths, track estimates, engagements, entities,
   system handles, callouts, the marquee). A Konva Layer is one canvas, so a moving glyph repaints the
@@ -1339,7 +1353,10 @@ Konva conventions:
   `camera.x` and `camera.y` through `useStore.getState()`. A pan reaches the layers
   through the stage transform alone and re-renders no layer.
 - The heading handle and the system handle preview a rotation on the Konva nodes during
-  the drag and commit one store action on `dragend`. Drag events bubble from a child to
+  the drag and commit one store action on `dragend`. The heading handle also moves the
+  anchored name on its Konva node on each pointer move. The coverage wedge and the label
+  collision box follow the committed heading, because a live heading would need a store
+  write per move. Drag events bubble from a child to
   the entity group; the group acts only on a drag whose target is itself.
 - The cursor: `CanvasStage` keeps the pointer's world position in a ref and sets state
   only while a boundary, path or calibrate tool or a marquee is active. `HudLayer` reads

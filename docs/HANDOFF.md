@@ -11,74 +11,61 @@ fresh agent starts from this file and the docs index. This file does not authori
 commit, push or merge.
 
 [Plan.md](Plan.md), the design and UX polish plan, is complete. No row of it is
-selected. The polish follow-up run and the third polish run (polish3) that came after it
-are also complete.
+selected. The polish follow-up run, the third polish run (polish3) and the fourth polish
+run (polish4) that came after it are also complete.
 
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  Local `main` and `origin/main` hold the plan commit `0386b3a`, Rows A, B and C (B-int
-  `2028d35`, C-int `d806e33`), the polish follow-up integration `b979358`, and the polish3
-  run: the lane merges of `polish3/cue`, `polish3/canvas`, `polish3/placement` and
-  `polish3/chrome` and the integration commits that hold this handoff. The audit fixes `181c8ec` to `7da197d` and the
-  documentation update after them follow row J (`afaf1ae`) and row O (`de208aa`).
+  `origin/main` holds the plan commit `0386b3a`, Rows A, B and C (B-int `2028d35`, C-int
+  `d806e33`), the polish follow-up integration `b979358` and the polish3 run (`1b39c03`).
+  Local `main` adds the polish4 run: the lane merges of `polish4/placement`,
+  `polish4/cue`, `polish4/fidelity`, `polish4/canvas`, `polish4/chrome`, `polish4/trim`
+  and `polish4/pool`, and the integration commit that holds this handoff. The audit fixes
+  `181c8ec` to `7da197d` and the documentation update after them follow row J (`afaf1ae`)
+  and row O (`de208aa`).
 - The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
   layered kill mass 1, layered kills mean 1.115, JIATF leakers mean 0.895, JIATF kills
   mean 0.105. `4.68` is not a pin.
 - The flight horizon is `7fdcb1e`.
-- Entry gzip at the polish3 gate: 366,536 bytes against 367,000, 464 bytes of headroom.
-  Initial JavaScript and CSS: 382,990 bytes against 400,000.
+- Entry gzip at the polish4 gate: 365,724 bytes against 367,000, 1,276 bytes of headroom.
+  Initial JavaScript and CSS: 382,285 bytes against 400,000.
 
 ## Tasking
 
-No task is open. Do not add a row to [Plan.md](Plan.md). The next task comes from the
-user.
+No task is open and no candidate is open. Do not add a row to [Plan.md](Plan.md). The
+next task comes from the user.
 
-All 36 plan findings are closed or changed by a decision. The polish follow-up run closed
-the four that stayed open after Row C. The polish3 run closed six of its candidates:
+The polish4 run closed all eleven polish3 candidates and two defects it found:
 
-- The undo cue moves to the canvas bottom right, 52 px up, while the Library drawer is
-  open (`.board-library-drawer:not([hidden]) ~ .undo-cue`). `App.tsx` starts the cue chunk
-  import when the module runs, so the window for a redo that reads as an edit is the time
-  before that chunk arrives. `actionBeforeMount` still cannot tell a redo from an edit.
-- `BoardInk` gains `linkDim` and `knobRim`. The dim link, the heading-handle knob rim and
-  the system rotation knob rim read them in both themes.
-- `anchoredLabelTop` (`src/canvas/labelLayout.ts`) moves an anchored label below a heading
-  knob that points down into it. `HANDLE_REACH` (34) and `HANDLE_KNOB_R` (6) live there.
-  An anchored name draws over a 2 px board-tone halo, so a flight path does not run through
-  it.
-- The Placement screen marks a range that `boundsRefusal` refuses as unavailable, shows the
-  reason under the Bounds select and disables Run placement. A refused boundary whose edges
-  cross is refused as crossing itself. `optimizeLaunch` keeps the launch-time refusal.
-- The Inspector ring buttons take `--font-ui`.
-- V12 (D7): Settings and Storage move to the top bar left group, so the tabs sit at the
-  viewport center at 1280, 1440, 1600 and 1920 px with five chips. The fold stays at
-  1600 px.
+- A redo adds the scenario it makes current to `redone` (`src/state/scenarioInstall.ts`,
+  a session-only `WeakSet`). `actionBeforeMount` names nothing for it, so a redo made
+  before the cue chunk loads shows no cue.
+- The Palette sets `--library-w` on `.board-stage`. With the drawer open the undo cue caps
+  its width to the room right of the drawer and moves off screen below 160 px of room.
+- The system rotation handle and the move-underlay outline take the tool ink (5.3:1 on
+  paper). `layoutLabels` takes `handleDeg` and boxes a label where `anchoredLabelTop`
+  draws it. The heading handle moves the label on its Konva node during the drag. Anchored
+  names and spoke callouts draw over a glyph halo (`LABEL_HALO_PX`, 2.5 px stroke).
+- `boundsRefusal` refuses every boundary whose non-adjacent edges cross, touch or overlap,
+  whatever its net area.
+- The top bar grid has equal side tracks, so the tabs hold the center at every width from
+  about 1115 px. Chips drop off whole, and the ROE button counts hidden chips at every
+  width. The Storage panel opens under its trigger and stays inside the viewport. The
+  narrowest supported window is 1024 px.
+- The policy test and the E3 laydown test used wall-clock ids from `newId`; both now use
+  fixed ids. `mergePartials` with `prefix` sizes its grids to the contiguous prefix.
+- The `gun-burst` tag requires an active UAS with a library `uas` spec.
+- `finishSummary` at the retained cap takes a median of 1,438.7 ms in the summary worker
+  (evidence below).
+- A raid-size sweep gives added ships the ids `${sourceId}~r${i}`, so a sweep at one seed
+  is reproducible.
+- The canvas context menu loads as its own chunk, fetched when `CanvasStage.tsx` runs.
 
-### Candidates
-
-These follow-ups stay candidates. None is selected.
-
-- A redo made before the cue chunk loads can still read as "Placed" or "Deleted". A full
-  fix needs `redo()` in `src/state/store.ts` to mark the redo.
-- If the Library drawer is widened past the cue's left edge, the right-side cue sits under
-  it again.
-- The system rotation handle in `SystemHandleLayer.tsx` hard-codes `#a9b4bd` (the dark
-  `tool` ink), about 1.9:1 on paper.
-- `layoutLabels` collision boxes assume `LABEL_ANCHOR_TOP`; a label moved below a
-  downward knob draws 10 px lower than its box. During a heading drag the knob can pass
-  over the label, because the label moves only after the drag commits.
-- The label halo shows as a board-tone patch over a coverage tint. Spoke callout labels
-  have no halo.
-- A self-intersecting boundary whose net area passes both area floors is still admitted.
-- The top bar right group has 24 px of slack at 1600 px; a longer chip label or a sixth
-  chip moves the tabs off center. The right-anchored Storage panel now opens from the left
-  group; it was not captured open.
-- `src/playback/policy.test.ts` "the Monte Carlo policy gives discrete outcomes" failed
-  once under load from parallel lanes and passed on rerun.
-- The merge could size its grids to the contiguous prefix.
-- The fidelity gun-burst tag cannot see `context.uas`.
-- No `finishSummary` cap timing exists after the t-quantile cache.
+These results are decisions, not open work: the coverage wedge and the label collision
+box follow the committed heading during a drag; the gun-burst tag reads the scenario and
+not which pairs engage; `store.trial.test.ts` keeps its store-made run id (0 of 2,000
+probe ids failed).
 
 ## Landmines
 
@@ -130,10 +117,15 @@ These follow-ups stay candidates. None is selected.
   `points` array (`scenarioHasWork` in `src/io/persist.test.ts`,
   `scenarioInstall.test.ts`). Those objects do not pass `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
-  touches the entry. The entry gzip budget is 367,000 bytes with 464 bytes headroom
-  (last measured 366,536 at the polish3 gate). Icons and new components add entry bytes. `sql.js` must stay behind `await import` with its wasm URL.
+  touches the entry. The entry gzip budget is 367,000 bytes with 1,276 bytes headroom
+  (last measured 365,724 at the polish4 gate). Icons and new components add entry bytes. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
+- `newId` embeds `Date.now()`. A test that asserts a seed-dependent Monte Carlo outcome
+  must build its entities with fixed ids, or its random stream changes with the clock.
+- Keep `.board-library-drawer` and `.undo-cue` siblings inside `.board-stage`; the cue
+  reads `--library-w` there. The ROE `+N` count comes from one `ResizeObserver` on
+  `.status-inline` in `Toolbar.tsx`.
 - Lane worktrees share one `git stash` list. A lane must not use `git stash` while a
   sibling worktree exists; two lanes that popped at once swapped their diffs in polish3.
   Measure a baseline with `git diff > file` or a separate worktree at the base.
@@ -167,6 +159,7 @@ These follow-ups stay candidates. None is selected.
 
 ## Evidence
 
+- [finishSummary time at the retained cap, 2026-09-23](field-te/evidence/finish-summary-cap-2026-09-23/README.md)
 - [Flight-horizon measurement, 2026-09-21](field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md)
 - [Zero-kill kinetic finding, 2026-09-15](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md)
 - [Phase 3 estimate-path comparison](field-te/evidence/p3-gate-2026-09-10/comparison.md)

@@ -208,7 +208,8 @@ baseline as two lanes. The overrides autosave stays outside the override boundar
    [autosave lifecycle](../src/io/autosave.ts) with a scenario adapter and a baseline
    adapter, and the overrides autosave. It mounts the override-subscriber boundary beside
    [App.tsx](../src/App.tsx), which manages the interaction chrome. The analysis panel,
-   the command palette and the recharts plot load behind lazy boundaries.
+   the command palette, the undo cue, the canvas context menu and the recharts plot load
+   behind lazy boundaries.
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds
    engagement resolution; explicit forecasts consume those results.

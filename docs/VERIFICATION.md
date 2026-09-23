@@ -46,8 +46,9 @@ does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
 The budget (`scripts/check-bundle.mjs`) is 367,000 bytes gzip for the entry and 400,000
 for initial JavaScript plus CSS. The user raised it from 366,000 on 2026-09-23 at the
 polish follow-up gate, when the board ink fields, the hover release and the
-degenerate-range refusal put the entry at 366,212 (initial 382,637), so the entry
-headroom is 788 bytes. Documentation-only
+degenerate-range refusal put the entry at 366,212 (initial 382,637). The polish4 gate
+measured 365,724 (initial 382,285) after the canvas context menu moved to its own chunk,
+so the entry headroom is 1,276 bytes. Documentation-only
 changes need `docs:check`; maintenance-script changes also need `test:docs`.
 `npm run check` runs the silent-gate tests but not `check:silent` itself; CI runs `check:silent`
 against the pull request base or the pushed-from commit, and a local run diffs against `main`.
@@ -316,7 +317,10 @@ committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 p
   the 36 px bar height, the strip position above the bar, the canvas height change and the
   saved open state, and check that the saved state restores on reload. One header test
   checks the 40 px header, the lifecycle tablist and run status inside it, and that no
-  phase row renders. The
+  phase row renders. A second header test injects three long chips at 1600 px and checks
+  that the tabs hold the viewport center, that chips drop off whole and the ROE count
+  equals the hidden chips, and that the Storage panel opens under its trigger and keeps a
+  14 px right margin at 800 px. The
   debrief check calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
   completion requires a matching ready trial. Start the dev server first.

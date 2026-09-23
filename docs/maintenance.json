@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "55c6af6c58cfadbad5348f849ed88d5356fe343e319fb390415ff3e07cb3e011",
+      "sha256": "2ca932ab31ad6feefd5c20a946c987f7b1aef761151211073734b48a1ecb14ae",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed the polish3 source changes (undo cue placement, BoardInk linkDim and knobRim, anchoredLabelTop, Placement refusal note, toolbar grouping). The README describes none of these details; text stays accurate."
+      "note": "Reviewed the polish4 source changes (redo mark, drawer-width cue cap, lazy context menu, top bar grid). The README describes none of these details; text stays accurate."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "e6c3ac5ce0d4f7805d34404dfd9ab2ce7ae579bb7daf7496454f4387570ce9de",
+      "sha256": "94102c245a18aa16985053cd75f9a66b54fc2867da9a93ff178c0d4b098c1980",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed the polish3 source changes (undo cue placement, BoardInk inks, anchoredLabelTop, Placement refusal note, toolbar grouping). The toolbar Storage section and canvas toolbar text stay accurate; no passage names the changed behavior."
+      "note": "The lazy-boundary list now names the undo cue and the canvas context menu; the rest of the polish4 source changes need no guide text."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "006954d9ea0d07ba36949190fef28f01872434af12b15b89c01d34b085946b14",
+      "sha256": "adc62830d4776a07d4718f0033b1cda1b55ebc374517641979631d1a48646452",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed the polish3 source changes: boundsRefusal names a crossing boundary and the Placement screen shows refusals before launch; Toolbar moves Settings and Storage to the left group. Updated both passages; ink and label layout text stays accurate."
+      "note": "Polish4: redo mark, prefix-sized merge with the finishSummary cap timing, boundsRefusal self-intersection order, gun-burst tag gate, label handleDeg and drag behavior, deterministic raid-size ids, ContextMenu lazy boundary."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "e2c65a9c36d54623e1d43792dc60c39b742d6d3986d4216a96d15ea9309e1bc0",
+      "sha256": "259a2995619b8f9599f28fa4f967851c52c617256676f6549f2070092230a858",
       "reviewedAt": "2026-09-23",
-      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
+      "note": "Polish4 bundle measurement (365,724 entry, 1,276 headroom) and the second header e2e test."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "2674dc239786ba2f334df81a648350d263541aa2f65db191c1687a7c79995fe9",
+      "sha256": "b6b3ce922fa5f124a1e7fef947176d31f4336e3262c83b8c1dfd9eb0e2141cf1",
       "reviewedAt": "2026-09-23",
-      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
+      "note": "Reviewed the polish4 script changes (the e2e header test). The workflow text and budget figures stay accurate."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "9c3e9becc135b8477cb1340deb26c0477c7f5fd0b843c367f857ef744ae86b08",
+      "sha256": "811f7a6d6746cd763888d33dda76f5dab884ab93c7dc255e6f9faa3630a9636e",
       "reviewedAt": "2026-09-23",
-      "note": "Position: the polish3 run is pushed with this commit."
+      "note": "Polish4 run integrated: all eleven polish3 candidates and two found defects closed; no candidate open; entry 365,724."
     },
     {
       "document": "docs/Plan.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "a7c4881aabedad98af53650a60fed29574f242a7d4e8ae933ce0407a1ff49f8a",
+      "sha256": "fcd8938a2a86b4597be460f8b93107bfa0dd2ef629e0a30891a7282538ef174d",
       "reviewedAt": "2026-09-23",
-      "note": "Added the top bar left and right group contents after Settings and Storage moved left, and the BoardInk dim link and knob rim inks, the anchored name halo and anchoredLabelTop to rule 9."
+      "note": "Polish4: equal top bar tracks, whole-chip drop with +N count at every width, Storage panel anchoring, 1024 px floor, cue beside the drawer, tool ink on the rotation handle, glyph halo on names and callouts."
     }
   ],
   "historical": [
