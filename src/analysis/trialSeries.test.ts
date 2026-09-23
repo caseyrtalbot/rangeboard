@@ -8,6 +8,7 @@ import { trialSystemTelemetryAt } from './systemTelemetry'
 import * as forecast from './impact'
 import { createTrialManifest } from '../playback/trialTypes'
 import { analysisBasisSignature } from '../state/analysisBasis'
+import { boundRetainedTrial } from '../playback/retainTrial'
 
 describe('trial series and analysis adapters', () => {
   it('matches realized counts across charts, KPI, threat rows and system telemetry', () => {
@@ -192,4 +193,41 @@ it('keeps a surviving member visible after the separate engine targeting cutoff'
   const set = trialSeriesOf(view, 3)
   expect(set.threats.swarm.find((s) => s.id === 'residual')!.values.at(-1)).toBe(1)
   expect(set.threats.swarm.find((s) => s.id === 'phase')!.values.at(-1)).not.toBe(6)
+})
+
+it('keeps each sensor detection count in ledger order from one ledger pass', () => {
+  const mixed = mixedTrial()
+  const radar = mixed.scenario.entities.find((e) => e.id === 'radar')!
+  const scenario = {
+    ...mixed.scenario,
+    entities: [...mixed.scenario.entities, { ...radar, id: 'eo', name: 'eo' }],
+  }
+  const manifest = createTrialManifest(scenario, 'two-sensors', analysisBasisSignature(scenario))
+  const scan = (sensorId: string, tS: number, detected: boolean[]) => ({
+    ...mixed.result.observations[0],
+    sensorId,
+    tS,
+    members: detected.map((hit, memberIdx) => ({
+      memberIdx,
+      drawIndex: memberIdx,
+      slantM: 40,
+      pd: 0.9,
+      detected: hit,
+      classified: false,
+    })),
+  })
+  const observations = [
+    scan('radar', 0.4, [true, true]),
+    scan('eo', 0.6, [true]),
+    scan('radar', 1.2, [false, false]),
+    scan('eo', 1.4, [false, true]),
+    scan('radar', 2.1, [true]),
+  ]
+  const result = { ...mixed.result, manifest, observations }
+  for (const trial of [result, boundRetainedTrial(result)]) {
+    const set = trialSeriesOf(trialResultOf(scenario, manifest, trial), 2.5)
+    const detections = (id: string) => set.sensors[id].find((s) => s.id === 'detections')!.values
+    expect(detections('radar')).toEqual([0, 2, 2, 2, 2, 3])
+    expect(detections('eo')).toEqual([0, 0, 1, 2, 2, 2])
+  }
 })

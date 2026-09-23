@@ -233,16 +233,26 @@ function indexOf(view: TrialResultView): Index {
           .reduce((sum, track) => sum + track.activeCount, 0),
     )
   })
+  // One pass: each read of the retained ledger allocates, so a per-sensor filter
+  // would rebuild the whole ledger once per sensor.
+  const detectionTimes = new Map<string, number[]>()
+  for (const scan of view.observations) {
+    let n = 0
+    for (const m of scan.members) if (m.detected) n += 1
+    if (n === 0) continue
+    const times = detectionTimes.get(scan.sensorId) ?? []
+    for (let k = 0; k < n; k += 1) times.push(scan.tS)
+    detectionTimes.set(scan.sensorId, times)
+  }
   for (const sensor of view.scenario.entities.filter(
     (e) => e.kind === 'sensor' && entityActive(e),
   )) {
     const list = (columns.sensors[sensor.id] = [])
-    const scans = view.observations.filter((o) => o.sensorId === sensor.id)
     counted(
       list,
       'detections',
       'Detected member scan decisions',
-      scans.flatMap((s) => s.members.filter((m) => m.detected).map(() => s.tS)),
+      detectionTimes.get(sensor.id) ?? [],
       'chart-1',
       'decisions',
     )
