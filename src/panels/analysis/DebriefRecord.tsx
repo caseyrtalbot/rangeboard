@@ -201,7 +201,7 @@ export function DebriefRecord({
     <details className="debrief-record evidence-products" open>
       <summary className="debrief-header" role="status">
         <strong>Evidence products</strong>
-        <span>{formatRunLabel(runSeq)} · COMPLETE</span>
+        <span>{formatRunLabel(runSeq)} · Complete</span>
       </summary>
       {showTrialRecords &&
         (completedTrial ? (

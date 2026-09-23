@@ -487,6 +487,13 @@ button:disabled {
   cursor: default;
 }
 
+/* A panel-body action draws a frame so it reads as a control, not as text.
+   The frame stays on a disabled action. Register rows, table sort headers and
+   danger actions keep their own edges; a segment or tab has no border width. */
+.inspector-body button:not(.board-object, .danger, th > button) {
+  border-color: var(--rule-strong);
+}
+
 /* A toggled control reads as the opaque hover tone plus text 1. The
    inversion is reserved for the segmented control the contract names. */
 button.active {
@@ -1850,6 +1857,12 @@ select.nu-unit {
   color: var(--danger);
 }
 
+/* Comes after the segment colour rules, which match at the same specificity. */
+.seg button:disabled {
+  color: var(--text-disabled);
+  background: transparent;
+}
+
 /* Bar-level controls size to their labels. The child combinator matters: a
    descendant selector also catches the segs inside the View menu panel. */
 .toolbar > .seg {
@@ -1866,6 +1879,13 @@ select.nu-unit {
 .insp-rings .seg {
   width: auto;
   font-size: var(--type-meta-size);
+}
+
+/* Keep "Global" on one line. Four classes outrank the later right-panel rule
+   that lets segment labels wrap. */
+.insp .insp-rings .insp-row-value .seg button {
+  padding: 4px 8px;
+  white-space: nowrap;
 }
 
 /* ---------- Analysis ---------- */
@@ -3299,6 +3319,8 @@ input[type='number'] {
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
   line-height: 1.2;
+  /* Two label lines, so a wrapped label does not drop its value below the row. */
+  min-height: 2.4em;
 }
 
 .tv {
@@ -3864,7 +3886,7 @@ input[type='number'] {
   flex-direction: column;
   gap: 8px;
   padding: 0 0 0 var(--space-2);
-  border-left: 2px solid var(--good);
+  border-left: 2px solid var(--rule);
 }
 
 .debrief-header {
@@ -3886,6 +3908,12 @@ input[type='number'] {
   font-size: var(--type-machine-size);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.evidence-products .debrief-header strong {
+  font-family: inherit;
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
 }
 
 .debrief-meta {
@@ -4341,6 +4369,12 @@ input[type='number'] {
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
+}
+
+.prepare-setting-controls {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .prepare-setting {
