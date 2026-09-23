@@ -21,7 +21,6 @@ export function assertAutosaveAllowed(key: string): void {
 
 /** A rescue already holding these exact bytes, so a later load does not write another key. */
 function rescueHolding(raw: string, prefix: string): string | null {
-  if (typeof localStorage.key !== 'function') return null
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i)
     if (key && key.startsWith(prefix) && localStorage.getItem(key) === raw) return key

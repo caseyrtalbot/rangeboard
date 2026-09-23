@@ -31,7 +31,14 @@ function storage(initial: Record<string, string> = {}, fail?: (key: string) => b
     if (fail?.(key)) throw new DOMException('Storage unavailable', 'QuotaExceededError')
     data.set(key, value)
   })
-  vi.stubGlobal('localStorage', { getItem: (key: string) => data.get(key) ?? null, setItem })
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem,
+    key: (index: number) => [...data.keys()][index] ?? null,
+    get length() {
+      return data.size
+    },
+  })
   return { data, setItem }
 }
 
@@ -329,6 +336,29 @@ describe('autosave lifecycle', () => {
     expect(useStore.getState().save.error).toBeNull()
   })
 
+  it('keeps the scenario failure as the status while the overrides retry fails too', () => {
+    let failing = (_key: string) => true
+    storage({}, (key) => failing(key))
+    const timers = browser()
+    // main.tsx order: the scenario observes first, so its flush runs first in a pass.
+    started(board)
+    const overrides = createAutosave(overridesAutosaveAdapter)
+    running.push(overrides)
+    overrides.restore()
+    overrides.observe()
+    useOverrides.getState().setOverride('lib-giraffe1x', 'detectRangeM', 2, 'under quota')
+    timers.runTimers()
+    expect(useStore.getState().save.error).toContain('Overrides not saved')
+    board.edit('unsaved edit')
+    timers.runTimers()
+    expect(useStore.getState().save.error).toMatch(/^Not saved/)
+    // The scenario write clears its error and the overrides retry reports its own.
+    failing = (key) => key === OVERRIDES_KEY
+    board.edit('saved now')
+    timers.runTimers()
+    expect(useStore.getState().save.error).toContain('Overrides not saved')
+  })
+
   it('retries a failed baseline write on the next scenario edit, without a new pin', () => {
     let failing = true
     const { data } = storage(
@@ -391,6 +421,38 @@ describe('autosave read failures', () => {
     const rescues = [...data.keys()].filter((key) => key.startsWith(lane.prefix))
     expect(rescues).toHaveLength(1)
     expect(data.get(rescues[0]!)).toBe(raw)
+  })
+
+  eachLane('keeps a refused edit pending and writes it on hide once storage has room', (lane) => {
+    let failing = true
+    const raw = lane.corrupt
+    const { data } = storage({ [lane.key]: raw }, () => failing)
+    const timers = browser()
+    started(lane)
+    lane.edit('kept for the close')
+    timers.runTimers()
+    expect(data.get(lane.key)).toBe(raw)
+    expect(timers.scheduled()).toBe(0)
+    // Storage freed in the Storage panel touches no store, so only the hide flushes.
+    failing = false
+    timers.events.get('pagehide')!()
+    expect(lane.written(data.get(lane.key)!)).toBe('kept for the close')
+    const rescues = [...data.keys()].filter((key) => key.startsWith(lane.prefix))
+    expect(rescues).toHaveLength(1)
+    expect(data.get(rescues[0]!)).toBe(raw)
+  })
+
+  eachLane('reuses a rescue that already holds the unreadable bytes', (lane) => {
+    const raw = lane.corrupt
+    const { data } = storage({ [lane.key]: raw, [`${lane.prefix}1`]: raw })
+    const timers = browser()
+    started(lane)
+    lane.edit('after reuse')
+    timers.runTimers()
+    expect(lane.written(data.get(lane.key)!)).toBe('after reuse')
+    const rescues = [...data.keys()].filter((key) => key.startsWith(lane.prefix))
+    expect(rescues).toEqual([`${lane.prefix}1`])
+    expect(getRecoveryNotices().at(-1)?.message).toContain(`${lane.prefix}1`)
   })
 
   eachLane('suppresses later writes after a failed recovery', (lane) => {

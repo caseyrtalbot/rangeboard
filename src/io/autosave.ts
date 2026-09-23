@@ -74,6 +74,18 @@ export function pauseStatus(current: string | null, message: string): string | n
   return current ?? message
 }
 
+/**
+ * The scenario lane's own write failure, the one status that says the Board is
+ * unsaved. A retry lane's failure does not replace it while it stands
+ * (`scenarioFailureStands`); the scenario's next write clears it and the retry
+ * lane reports again in the same pass.
+ */
+export const SCENARIO_ERROR = 'Not saved'
+
+export function scenarioFailureStands(current: string | null): boolean {
+  return current?.startsWith(SCENARIO_ERROR) ?? false
+}
+
 /** Each call owns its own timer, pending record and restore latch. */
 export function createAutosave<R>(adapter: AutosaveAdapter<R>): Autosave<R> {
   let timer: number | undefined
@@ -123,7 +135,12 @@ export function createAutosave<R>(adapter: AutosaveAdapter<R>): Autosave<R> {
       adapter.reportSaved()
     } catch (error) {
       // Storage full or unavailable: the saved stamp must not keep showing a
-      // time that is no longer true.
+      // time that is no longer true. The refused record stays pending for the
+      // next flush (a later edit, a hide or an unload) so freeing storage and
+      // closing the tab still writes it. A record the store offered during the
+      // failed write is newer and wins. No timer is set, so full storage does
+      // not loop.
+      pending ??= record
       adapter.reportWriteFailure(error)
     }
   }

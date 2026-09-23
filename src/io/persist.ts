@@ -22,7 +22,7 @@ import { runResultGroups } from './runResultGroups'
 import type { RunResultGroups } from './runResultGroups'
 import type { TrialResultView } from '../analysis/trialResult'
 import type { AutosaveAdapter } from './autosave'
-import { createAutosave, pauseStatus } from './autosave'
+import { SCENARIO_ERROR, createAutosave, pauseStatus, scenarioFailureStands } from './autosave'
 import { SCENARIO_LEGACY_FIELDS, fillContainers } from './compat'
 import {
   parseLibraryData,
@@ -144,8 +144,6 @@ export function parseAutosave(raw: string): Scenario {
 export function parseScenarioData(value: unknown): Scenario {
   return fillScenario(value)
 }
-
-const SCENARIO_ERROR = 'Not saved'
 
 /** The Board half of the autosave lifecycle in `io/autosave.ts`. Save status is epoch ms. */
 export const scenarioAutosaveAdapter: AutosaveAdapter<Scenario> = {
@@ -281,6 +279,8 @@ export const baselineAutosaveAdapter: AutosaveAdapter<BaselineSave> = {
   reportWriteFailure: (error) => {
     baselineWriteFailed = true
     const store = useStore.getState()
+    // The scenario failure outranks this one: it stays until the scenario writes.
+    if (scenarioFailureStands(store.save.error)) return
     const reason = error instanceof Error ? error.message || error.name : 'storage error'
     store.setSaveState(
       store.save.lastAutosaveAt,
