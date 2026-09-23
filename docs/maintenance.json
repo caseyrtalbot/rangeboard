@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "6cc590b2f177829c3d197e136b56dcd1a67cdffcf338dfd7f3b53e7323855fb0",
+      "sha256": "d0257d33118f352708f352bf3de73523730564d4de9aa65a2c8a40c108b8b686",
       "reviewedAt": "2026-09-23",
-      "note": "Added the Plan.md row for the design and UX polish queue."
+      "note": "Indexed the finishSummary retained-cap timing evidence, 2026-09-23, under Captured checks."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",

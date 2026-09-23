@@ -495,9 +495,11 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
     'interceptor-miss',
     effectors.some((e) => interceptorMissModelApplies(e, legacyKinetic)),
   )
+  // The burst equation needs the threat's library UAS spec (`context.uas`,
+  // attrition.ts); with no such threat the gun runs the legacy curve (`kinetic-pk`).
   add(
     'gun-burst',
-    effectors.some((e) => gunBurstModelApplies(e, legacyKinetic)),
+    targets.length > 0 && effectors.some((e) => gunBurstModelApplies(e, legacyKinetic)),
   )
   add('de-dwell', deModeled.length > 0)
   add('hpm-field', hpmModeled.length > 0)

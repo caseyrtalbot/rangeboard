@@ -361,6 +361,37 @@ describe('modelsUsed, Phase 3 kinetic tags', () => {
     expect(modelsUsed(gun).map((t) => t.id)).not.toContain('gun-burst')
   })
 
+  it('reports gun burst for the gun when a threat carries a UAS spec', () => {
+    const s = radarLaydown()
+    s.entities.push(entity('e1', 'effector', 'lib-skyranger30'))
+    expect(modelsForEntity(s, 'e1').map((t) => t.id)).toEqual([
+      'doctrine',
+      'kinetic-pk',
+      'gun-burst',
+      'flyout',
+    ])
+  })
+
+  it('reports the legacy curve, not gun burst, when no threat carries a UAS spec', () => {
+    const s = radarLaydown()
+    s.entities.push(entity('e1', 'effector', 'lib-skyranger30'))
+    const target = s.library.find((m) => m.id === 'lib-mavic3')!
+    target.uas = undefined
+    expect(modelsUsed(s).map((t) => t.id)).toContain('kinetic-pk')
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('gun-burst')
+    expect(modelsForEntity(s, 'e1').map((t) => t.id)).toEqual(['doctrine', 'kinetic-pk', 'flyout'])
+
+    const noThreat = emptyScenario()
+    noThreat.entities.push(entity('e1', 'effector', 'lib-skyranger30'))
+    expect(modelsUsed(noThreat).map((t) => t.id)).toContain('kinetic-pk')
+    expect(modelsUsed(noThreat).map((t) => t.id)).not.toContain('gun-burst')
+
+    const disabled = radarLaydown()
+    disabled.entities.push(entity('e1', 'effector', 'lib-skyranger30'))
+    disabled.entities.find((e) => e.id === 'u1')!.enabled = false
+    expect(modelsUsed(disabled).map((t) => t.id)).not.toContain('gun-burst')
+  })
+
   it('does not report a model whose lane sentinel is null', () => {
     const s = radarLaydown()
     const coyote = s.library.find((m) => m.id === 'lib-coyote')!

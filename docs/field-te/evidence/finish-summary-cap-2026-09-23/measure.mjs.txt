@@ -1,0 +1,105 @@
+// finishSummary wall time at the retained cap. Preserved with .txt; copy it back to
+// measure.mjs to run. From the repository root, after `npm run engine:build`:
+//   node --expose-gc measure.mjs [board.json] [runs] [out.json]
+// Runs the rows the pool keeps at DEFAULT_BUDGET.retainedNumbers on a worker_threads
+// pool (scripts/engine-worker.mjs), merges them as the summary worker does, then
+// times finishSummary on the merged prefix.
+import { writeFileSync, readFileSync } from 'node:fs'
+import { availableParallelism, cpus, totalmem } from 'node:os'
+import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { Worker } from 'node:worker_threads'
+
+const ROOT = process.cwd()
+const E = await import(pathToFileURL(resolve(ROOT, 'dist-engine/engine.js')).href)
+const board = process.argv[2] ?? 'docs/field-te/evidence/perf-2026-09-06/scenario.json'
+const runs = Number(process.argv[3] ?? 21)
+const out = process.argv[4] ?? 'measure.json'
+
+const scenario = {
+  ...E.parseScenarioJson(readFileSync(resolve(ROOT, board), 'utf8')),
+  runMode: 'monte-carlo',
+  targetHalfWidth: null,
+}
+const perRow = E.summaryNumbers(scenario) / 7
+// The pool stops at the first checkpoint where retained >= the budget.
+const rows = Math.ceil(E.DEFAULT_BUDGET.retainedNumbers / perRow)
+scenario.replicates = rows
+
+/** Replicates 0..rows-1 as partials, several ranges per thread. */
+function runPool(workers) {
+  const size = Math.ceil(rows / (workers * 4))
+  const queue = []
+  for (let start = 0; start < rows; start += size) queue.push([start, Math.min(start + size, rows)])
+  const total = queue.length
+  return new Promise((done, fail) => {
+    const parts = []
+    const threads = []
+    const feed = (t) => {
+      const next = queue.shift()
+      if (next) t.postMessage({ type: 'range', start: next[0], end: next[1] })
+      else if (parts.length === total) {
+        for (const x of threads) x.postMessage({ type: 'close' })
+        done(parts)
+      }
+    }
+    for (let w = 0; w < workers; w += 1) {
+      const t = new Worker(resolve(ROOT, 'scripts/engine-worker.mjs'), { workerData: { scenario } })
+      threads.push(t)
+      t.on('message', (m) => {
+        if (m.type === 'error') return fail(new Error(m.message))
+        parts.push(m.partial)
+        feed(t)
+      })
+      t.on('error', fail)
+      feed(t)
+    }
+  })
+}
+
+const workers = Math.max(1, availableParallelism() - 2)
+const tRun = performance.now()
+const parts = await runPool(workers)
+const runMs = performance.now() - tRun
+const prefix = E.contiguousPrefix(E.mergePartials(parts, { release: true }))
+parts.length = 0
+if (prefix.indices.length !== rows) throw new Error(`prefix ${prefix.indices.length} != ${rows}`)
+
+const gc = globalThis.gc
+const times = []
+let summary
+for (let i = 0; i < runs; i += 1) {
+  gc?.()
+  const t0 = performance.now()
+  summary = E.finishSummary(scenario, prefix, { rule: 'budget', at: rows }, 0)
+  times.push(performance.now() - t0)
+}
+const sorted = [...times].sort((a, b) => a - b)
+const median = sorted[Math.floor(sorted.length / 2)]
+const result = {
+  board,
+  node: process.version,
+  cpu: cpus()[0].model,
+  logicalCores: cpus().length,
+  memoryBytes: totalmem(),
+  workers,
+  seed: E.runSettings(scenario).seed,
+  uncertainty: E.runSettings(scenario).uncertainty,
+  steps: E.summaryNumbers(scenario) / 7 / (5 + prefix.threatIds.length),
+  tracks: prefix.threatIds.length,
+  numbersPerRow: perRow,
+  retainedNumbersBudget: E.DEFAULT_BUDGET.retainedNumbers,
+  rows,
+  retainedNumbers: rows * perRow,
+  replicateRunMs: Math.round(runMs),
+  gcBetweenRuns: gc != null,
+  runs,
+  finishSummaryMs: times.map((t) => Math.round(t * 10) / 10),
+  medianMs: Math.round(median * 10) / 10,
+  maxMs: Math.round(sorted[sorted.length - 1] * 10) / 10,
+  minMs: Math.round(sorted[0] * 10) / 10,
+  summaryReplicates: summary.replicates,
+  leakersEndMean: summary.leakers.mean[summary.leakers.mean.length - 1],
+}
+writeFileSync(out, JSON.stringify(result, null, 2) + '\n')
+console.log(JSON.stringify(result, null, 2))
