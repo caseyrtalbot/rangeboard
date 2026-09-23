@@ -145,7 +145,30 @@ Status: not started.
 
 #### C4. Undo cue
 
-Status: not started.
+- Status: done.
+- Commit: the `row-c/c4-undo` commit that adds this block.
+- Checks: `npx vitest run --dir src src/panels/TimelineBar.test.tsx src/state/lastAction.test.ts`
+  "Tests 11 passed (11)"; `npm run typecheck` exit 0; `npm run lint` exit 0, no finding in
+  owned files; `npm run format:check` "All matched files use Prettier code style!";
+  `npm run check:silent` "No hidden-failure patterns in the checked lines.";
+  `npm run build` exit 0; `npm run check:bundle` "Bundle budget passed".
+- Entry gzip: 365,786 bytes (+64 on `main`). Initial JS and CSS: 382,149 bytes.
+- Browser: fixture `firing-scenario.json`, Prepare, dark and light at 2100 and 1440. The
+  Delete key shows "Deleted Giraffe 1X 3D radar (Saab) 1 · Undo ⌘Z"; a place shows
+  "Placed Coyote Block 2 interceptor 2 · Undo ⌘Z". Opacity is about 0.1 at 3.9 s and the
+  cue is gone at 4.6 s. Undo, redo and a load show no cue. Reduced motion: no animation,
+  opacity 1 at 3 s, gone at 4.3 s. No page errors.
+- For the integrator: the store needs no field. `src/state/lastAction.ts` diffs entity ids
+  between the last `past` snapshot and `scenario`. The cue is `src/panels/UndoCue.tsx`, a new
+  file loaded lazily from `TimelineBar.tsx` to keep it out of the entry chunk.
+  `.board-app input[type='range']` sets `min-width: 0` and so overrides the `.scrub`
+  120 px floor. DESIGN_SYSTEM.md rule: "After a delete or a place, the timeline shows
+  `<verb> <name> · Undo ⌘Z` in `--text-dim`. It fades during the last 15 % of 4 s.
+  Reduced motion cuts it at 4 s. It takes free space only; the name truncates first, and
+  the scrub keeps 80 px while it shows."
+- Open: at 1440 the bar has 188 px free, so a long name truncates to "Del…" and the scrub
+  narrows to 80 px for 4 s. An edit made before the lazy chunk loads, just after page
+  load, shows no cue.
 
 ### Outside the plan
 
