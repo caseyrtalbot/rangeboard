@@ -886,6 +886,28 @@ describe('the placement optimization', () => {
     expect(useStore.getState().mc.optimize.status).toBe('idle')
   })
 
+  it('refuses collinear bounds with the reason on the pending run and starts no worker', () => {
+    // Three points on one line pass the count floor; the polygon check refuses them.
+    const line = {
+      ...RANGE,
+      id: 'bnd-line',
+      points: [0, 1, 2].map((i) => ({ x: -2000 + i * 2000, y: -2000 + i * 2000 })),
+    }
+    useStore.getState().replaceScenario({ ...scenario(), boundaries: [line] })
+    for (const bounds of [undefined, { boundaryId: line.id, points: line.points }]) {
+      useStore.getState().runOptimize({ ...spec, bounds })
+      expect(ControlledWorker.instances).toHaveLength(0)
+      const { mc, playback } = useStore.getState()
+      expect(mc.optimize).toMatchObject({
+        status: 'error',
+        runId: playback.runId,
+        total: 6,
+        error:
+          'The range boundary points lie on one line and enclose no area. A placement run needs a polygon.',
+      })
+    }
+  })
+
   it('asks a running optimization to stop and keeps a replicate run on its own slot', () => {
     useStore.getState().runOptimize(spec)
     const work = ControlledWorker.latest()
