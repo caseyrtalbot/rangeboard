@@ -1,4 +1,5 @@
 import type { Entity, Scenario } from '../model/types'
+import { redone } from './scenarioInstall'
 
 type History = { scenario: Scenario; past: readonly Scenario[]; future: readonly Scenario[] }
 
@@ -24,12 +25,11 @@ export function lastUndoableAction(next: History, prev: History): string | null 
 /**
  * The delete or place a store already holds when the cue mounts: an edit made
  * before the lazy cue chunk loaded. `past` starts empty in a session, so its last
- * snapshot is the latest edit. Null after an undo, which leaves `future` non-empty.
- * A redo that empties `future` reads as the edit it repeats, so App starts loading
- * the chunk before its first render.
+ * snapshot is the latest edit. Null after an undo, which leaves `future` non-empty,
+ * and after a redo, which marks the scenario it makes current.
  */
 export function actionBeforeMount(state: History): string | null {
   const before = state.past[state.past.length - 1]
-  if (!before || state.future[0]) return null
+  if (!before || state.future[0] || redone.has(state.scenario)) return null
   return lastUndoableAction(state, { scenario: before, past: state.past.slice(0, -1), future: [] })
 }

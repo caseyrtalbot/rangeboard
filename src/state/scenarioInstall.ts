@@ -54,6 +54,12 @@ export type ScenarioInstall =
 export type InstallOp = ScenarioInstall['op']
 
 /**
+ * The scenarios a redo made current. Session-only and outside the store, so it
+ * never persists or enters history. Lets `actionBeforeMount` skip a redo.
+ */
+export const redone = new WeakSet<Scenario>()
+
+/**
  * Make one Scenario current and answer for every slice it governs. Returns the
  * input object when there is nothing to do, so a caller can skip its `set`.
  * `edit`, `undo` and `redo` compare the analysis basis and invalidate only the
@@ -96,6 +102,7 @@ export function installScenario(
     case 'redo': {
       if (st.future.length === 0) return st
       const restored = withObservedLens(st.future[0], st.scenario)
+      redone.add(restored)
       return respond(
         st,
         restored,

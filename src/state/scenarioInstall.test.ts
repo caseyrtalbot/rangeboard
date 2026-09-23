@@ -6,7 +6,7 @@ import { createTrialManifest } from '../playback/trialTypes'
 import { analysisBasisSignature } from './analysisBasis'
 import { freshPlayback, IDLE_MC, IDLE_TRIAL } from './runState'
 import type { ScenarioSlices } from './scenarioInstall'
-import { EMPTY_SELECTION, HISTORY_LIMIT, installScenario } from './scenarioInstall'
+import { EMPTY_SELECTION, HISTORY_LIMIT, installScenario, redone } from './scenarioInstall'
 
 vi.mock('../playback/mcClient', () => ({
   cancelPooledRun: vi.fn(),
@@ -169,6 +169,18 @@ describe('installScenario operation matrix', () => {
     const replaced = installScenario(redone, { op: 'replace', next: a })
     expect(replaced.past).toEqual([])
     expect(replaced.future).toEqual([])
+  })
+
+  it('marks the scenario a redo makes current, and not an edit', () => {
+    const a = board()
+    const edited = installScenario(slices(a), { op: 'edit', next: renamed(a) })
+    expect(redone.has(edited.scenario)).toBe(false)
+    const undone = installScenario(edited, { op: 'undo' })
+    expect(redone.has(undone.scenario)).toBe(false)
+    const again = installScenario(undone, { op: 'redo' })
+    expect(redone.has(again.scenario)).toBe(true)
+    const next = installScenario(again, { op: 'edit', next: renamed(again.scenario) })
+    expect(redone.has(next.scenario)).toBe(false)
   })
 
   it('history holds at most HISTORY_LIMIT snapshots', () => {
