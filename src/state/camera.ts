@@ -27,11 +27,14 @@ export function fitCameraTo(points: Vec2[]): Camera | null {
   const maxX = Math.max(...xs)
   const minY = Math.min(...ys)
   const maxY = Math.max(...ys)
-  // 15% margin around the raid extent.
-  const w = Math.max(1, (maxX - minX) * 1.15)
-  const h = Math.max(1, (maxY - minY) * 1.15)
-  const scale = Math.min(FIT_MAX_SCALE, Math.max(FIT_MIN_SCALE, Math.min(vw / w, vh / h)))
+  // A fixed 64 px pad, plus each mark's box: a 120 px wide label, the 20 px brackets
+  // above and the 44 px two-line label below (labelLayout's anchored box).
+  const w = Math.max(1, maxX - minX)
+  const h = Math.max(1, maxY - minY)
+  const fit = Math.min((vw - 248) / w, (vh - 192) / h)
+  const scale = Math.min(FIT_MAX_SCALE, Math.max(FIT_MIN_SCALE, fit))
   const cx = (minX + maxX) / 2
   const cy = (minY + maxY) / 2
-  return { scale, x: vw / 2 - cx * scale, y: vh / 2 - cy * scale }
+  // The label hangs below its mark, so the marks sit 12 px above centre.
+  return { scale, x: vw / 2 - cx * scale, y: vh / 2 - cy * scale - 12 }
 }

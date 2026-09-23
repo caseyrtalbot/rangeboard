@@ -27,11 +27,11 @@ describe('TrackFileReadout', () => {
 
   it('keeps current essentials, integer group counts and the Details action', () => {
     const html = render()
-    expect(html).toContain('class="readout compact"')
+    expect(html).toContain('class="readout compact surface-float"')
     expect(html.match(/class="ro-k"/g)?.length).toBe(3)
-    expect(html).toContain('CURSOR')
-    expect(html).toContain('SPEED / HDG')
-    expect(html).toContain('ALT')
+    expect(html).toContain('>Cursor</div>')
+    expect(html).toContain('>Speed / heading</div>')
+    expect(html).toContain('>Altitude</div>')
     expect(html).toContain('3 active · 1 hard kill · 1 mission kill · 5 members')
     expect(html).toContain('SIMULATED TRIAL · THROUGH T+0:03')
     expect(html).toContain('>Details</button>')

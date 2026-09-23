@@ -6,6 +6,7 @@ import { entityActive } from '../../model/types'
 import { useStore } from '../../state/store'
 import { boardDesignator, LABEL_FONT_PX } from '../labelLayout'
 import type { LabelPlacement, SpokePlacement } from '../labelLayout'
+import { useBoardInk } from '../useBoardInk'
 
 interface Props {
   placements: Map<string, LabelPlacement>
@@ -17,10 +18,11 @@ interface Props {
  */
 const Callout = memo(function Callout({ entity, p }: { entity: Entity; p: SpokePlacement }) {
   const drawn = useMemo(() => boardDesignator(entity.name), [entity.name])
+  const ink = useBoardInk()
   return (
     <Group opacity={entityActive(entity) ? 1 : 0.45}>
-      <Line points={p.points} stroke="#82887e" strokeWidth={1} />
-      <Circle x={p.points[0]} y={p.points[1]} radius={1.8} fill="#82887e" />
+      <Line points={p.points} stroke={ink.calloutLeader} strokeWidth={1} />
+      <Circle x={p.points[0]} y={p.points[1]} radius={1.8} fill={ink.calloutLeader} />
       <Text
         fontFamily="JetBrains Mono"
         x={p.tx}
@@ -28,7 +30,7 @@ const Callout = memo(function Callout({ entity, p }: { entity: Entity; p: SpokeP
         width={p.width}
         text={drawn}
         fontSize={LABEL_FONT_PX}
-        fill="#b7bdb2"
+        fill={ink.label}
         align={p.align}
         wrap="none"
       />

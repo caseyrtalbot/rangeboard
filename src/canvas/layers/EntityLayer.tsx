@@ -14,7 +14,8 @@ import type { TrialSweep } from '../../playback/trialSweepAt'
 import type { TrialMemberState } from '../../playback/trialTrackState'
 import type { TrialTelemetryState } from '../../panels/analysis/threatReadout'
 import { EW_JAM_COLOR, PHASE_STYLE } from '../../playback/trackState'
-import { DANGER_INK, entityInk, EW_INK } from '../../ui/ink'
+import { BOARD_INK_PAPER, DANGER_INK, entityInk, EW_INK } from '../../ui/ink'
+import { useBoardInk } from '../useBoardInk'
 import type { EffectorLiveState, TrackPhase } from '../../playback/trackState'
 import {
   FRAME_EDGE,
@@ -81,7 +82,6 @@ const STRIKE_MAIN = [-10, -10, 10, 10]
 const STRIKE_MEMBER = [-6.5, -6.5, 6.5, 6.5]
 const GHOST_DIAMOND_DASH = [3.5, 3]
 const MEMBER_GHOST_DASH = [3, 2.5]
-const SELECT_DASH = [4, 3]
 const CARD_LINK_DASH = [2, 3]
 const HEADING_LEADER_DASH = [2, 3]
 
@@ -383,6 +383,8 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
       draggable={tool === 'select'}
       onClick={(e) => handleClick(e, entity)}
       onContextMenu={(e) => handleContextMenu(e, entity)}
+      onMouseEnter={hover}
+      onMouseLeave={hover}
       onDragStart={(e) => {
         if (e.target === e.currentTarget) useStore.getState().select({ entityIds: [entity.id] })
       }}
@@ -483,6 +485,17 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
   )
 })
 
+/**
+ * The hover cue on the Konva nodes alone, so a plain hover re-renders no layer: the
+ * pointer cursor and the hover ring, in the tools where a click acts on the entity.
+ */
+function hover(e: KonvaEventObject<MouseEvent>) {
+  const tool = useStore.getState().ui.tool
+  const on = e.type === 'mouseenter' && (tool === 'select' || tool === 'connect')
+  e.target.getStage()!.container().style.cursor = on ? 'pointer' : ''
+  ;(e.currentTarget as Konva.Group).findOne('.hover')?.visible(on)
+}
+
 function handleClick(e: KonvaEventObject<MouseEvent>, entity: Entity) {
   const store = useStore.getState()
   const { tool, connectFromId, pathEntityId, raidDraft } = store.ui
@@ -561,6 +574,8 @@ const EntityBody = memo(function EntityBody({
   })
 
   const tickRef = useRef<Konva.Line>(null)
+  const ink = useBoardInk()
+  const paper = ink === BOARD_INK_PAPER
   const off = !entityActive(entity)
   const phase: TrackPhase = entity.kind === 'uas' ? (state?.phase ?? 'undetected') : 'undetected'
   const ghost = memberOutcome === 'hard-kill'
@@ -604,14 +619,32 @@ const EntityBody = memo(function EntityBody({
     <>
       {/* Invisible hit disc: it alone sets the grab area, because every ring below is a cue. */}
       <Circle radius={hitR} fill="#000" opacity={0} />
+      {/* Hover ring in the entity ink at 60 %; hover() shows it on the node. */}
+      <Circle
+        name="hover"
+        radius={SELECT_R}
+        stroke={color}
+        strokeWidth={1}
+        opacity={0.6}
+        visible={false}
+        listening={false}
+      />
+      {/* Selection: a solid 1.5 px ring in text 1 over a 2 px board-tone halo. */}
       {selected && (
-        <Circle
-          radius={SELECT_R}
-          stroke="#ffffff"
-          strokeWidth={1.3}
-          dash={SELECT_DASH}
-          listening={false}
-        />
+        <>
+          <Circle
+            radius={SELECT_R}
+            stroke={paper ? '#eeebe4' : '#121313'}
+            strokeWidth={5.5}
+            listening={false}
+          />
+          <Circle
+            radius={SELECT_R}
+            stroke={paper ? '#212220' : '#ebe9e3'}
+            strokeWidth={1.5}
+            listening={false}
+          />
+        </>
       )}
       {cardLinked && (
         <Circle
@@ -721,7 +754,7 @@ const EntityBody = memo(function EntityBody({
           width={120}
           text={boardName}
           fontSize={11}
-          fill="#b7bdb2"
+          fill={ink.label}
           align="center"
           listening={false}
         />

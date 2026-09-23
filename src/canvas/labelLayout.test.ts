@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { boardDesignator, LABEL_FONT_PX, labelLineCount, layoutLabels } from './labelLayout'
+import {
+  boardDesignator,
+  LABEL_FONT_PX,
+  labelLineCount,
+  captionClear,
+  layoutLabels,
+} from './labelLayout'
 import type { LabelInput, SpokePlacement } from './labelLayout'
 
 function spokeRect(p: SpokePlacement) {
@@ -170,5 +176,31 @@ describe('boardDesignator', () => {
     expect(boardDesignator(42 as unknown as string)).toBe('42')
     expect(boardDesignator(null as unknown as string)).toBe('')
     expect(boardDesignator({ boom: 1 } as unknown as string)).toBe('[OBJECT OBJECT]')
+  })
+})
+
+describe('captionClear', () => {
+  const entities = [
+    { id: 'radar', name: 'Radar 1', pos: { x: 0, y: 0 } },
+    { id: 'c2', name: 'C2 1', pos: { x: -600, y: 0 } },
+  ]
+
+  it('clears a caption away from every mark', () => {
+    expect(captionClear(-300, -40, 'track data', entities, 1)).toBe(true)
+  })
+
+  it('refuses a caption on a glyph or its brackets', () => {
+    // 66 px wide from x -50 reaches the radar glyph box at -20.
+    expect(captionClear(-50, -14, 'track data', entities, 1)).toBe(false)
+  })
+
+  it('refuses a caption on an anchored label', () => {
+    expect(captionClear(-620, 22, 'track data', entities, 1)).toBe(false)
+  })
+
+  it('reads positions in meters times the zoom', () => {
+    // At k 0.1 the c2 glyph sits at screen x -60.
+    expect(captionClear(-70, -5, 'x', entities, 0.1)).toBe(false)
+    expect(captionClear(-70, -5, 'x', entities, 1)).toBe(true)
   })
 })

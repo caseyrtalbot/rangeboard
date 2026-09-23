@@ -6,8 +6,8 @@
  *
  * Clustering runs in three passes so fans never land on other labels:
  * glyph proximity and label overlap build the initial components; clusters
- * whose fan envelopes intersect merge; anchored singletons whose label falls
- * inside a fan envelope are absorbed into that cluster.
+ * whose fan envelopes intersect merge; anchored singletons whose label or glyph
+ * falls inside a fan envelope are absorbed into that cluster.
  */
 
 export interface LabelInput {
@@ -70,6 +70,8 @@ const STICKY_PAD = 6
 const EDGE_MARGIN = 10
 const MIN_RADIUS = 80
 const RADIUS_PAD = 70
+/** Half side of a glyph box: the target brackets reach 19 px. */
+const GLYPH_HALF = 20
 
 interface Rect {
   x: number
@@ -181,6 +183,17 @@ function anchoredRect(m: Measured): Rect {
   return { x: m.sx - m.w / 2, y: m.sy + LABEL_ANCHOR_TOP, w: m.w, h: m.h }
 }
 
+/** One box over a glyph, its target brackets (19 px) and its anchored label. */
+function markRect(m: Measured): Rect {
+  const half = Math.max(GLYPH_HALF, m.w / 2)
+  return {
+    x: m.sx - half,
+    y: m.sy - GLYPH_HALF,
+    w: half * 2,
+    h: GLYPH_HALF + LABEL_ANCHOR_TOP + m.h,
+  }
+}
+
 function overlaps(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
 }
@@ -242,7 +255,10 @@ function envelope(c: Cluster): Rect {
   return { x: x0, y: c.cy - dy, w: x1 - x0, h: dy * 2 }
 }
 
-/** Merge fanning clusters whose envelopes intersect; absorb anchored singletons caught in a fan. */
+/**
+ * Merge fanning clusters whose envelopes intersect; absorb anchored singletons whose
+ * label or glyph a fan would cover.
+ */
 function consolidate(cs: Cluster[]): Cluster[] {
   let changed = true
   while (changed) {
@@ -255,7 +271,7 @@ function consolidate(cs: Cluster[]): Cluster[] {
         const hit =
           cs[j].members.length >= 2
             ? overlaps(env, envelope(cs[j]))
-            : overlaps(env, anchoredRect(cs[j].members[0]))
+            : overlaps(env, markRect(cs[j].members[0]))
         if (hit) {
           cs[i] = geometry([...cs[i].members, ...cs[j].members])
           cs.splice(j, 1)
@@ -331,6 +347,23 @@ function fanCluster(
   }
   spokeSide(right, 1, c, viewport, out)
   spokeSide(left, -1, c, viewport, out)
+}
+
+/**
+ * True when a caption box whose top-left corner is (x, y) meets no glyph and no anchored
+ * label. Coordinates are the scale-only screen frame: world meters times the zoom `k`.
+ */
+export function captionClear(
+  x: number,
+  y: number,
+  text: string,
+  entities: { id: string; name: string; pos: { x: number; y: number } }[],
+  k: number,
+): boolean {
+  const box = { x, y, w: text.length * CHAR_W, h: LABEL_FONT_PX }
+  return !entities.some((e) =>
+    overlaps(box, markRect(measure({ id: e.id, name: e.name, sx: e.pos.x * k, sy: e.pos.y * k }))),
+  )
 }
 
 export function layoutLabels(
