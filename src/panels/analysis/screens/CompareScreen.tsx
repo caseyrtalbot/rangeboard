@@ -686,7 +686,6 @@ export function CompareScreen() {
   const mcState = useStore((state) => state.mc)
   const runId = useStore((state) => state.playback.runId)
   const scenario = useStore((state) => state.scenario)
-  const runMonteCarlo = useStore((state) => state.runMonteCarlo)
   const complete = useStore(selectRunComplete)
   const horizon = useStore((state) => selectTrialHorizon(state, state.playback.observedThroughS))
   const baseline = useStore((state) => state.baseline)
@@ -722,15 +721,7 @@ export function CompareScreen() {
             ? 'Running ensemble.'
             : mcState.status === 'error'
               ? mcState.error
-              : 'No current ensemble result.'}{' '}
-          <button
-            className="mini"
-            type="button"
-            disabled={mcState.status === 'running'}
-            onClick={runMonteCarlo}
-          >
-            Run Monte Carlo
-          </button>
+              : 'No current ensemble result.'}
         </div>
         <SavedRunCompare />
       </>
