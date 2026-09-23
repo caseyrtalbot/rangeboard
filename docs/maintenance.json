@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "a16ffa8d021e4221abeeace8e1488449b7e9978fc7d518101ab3a692e399d1dd",
+      "sha256": "55c6af6c58cfadbad5348f849ed88d5356fe343e319fb390415ff3e07cb3e011",
       "reviewedAt": "2026-09-23",
-      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
+      "note": "Reviewed the polish3 source changes (undo cue placement, BoardInk linkDim and knobRim, anchoredLabelTop, Placement refusal note, toolbar grouping). The README describes none of these details; text stays accurate."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "dc598aaed33a656aaabc9506970c7ae0f0ad0186d00c6278f85a5562369147a3",
+      "sha256": "e6c3ac5ce0d4f7805d34404dfd9ab2ce7ae579bb7daf7496454f4387570ce9de",
       "reviewedAt": "2026-09-23",
-      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
+      "note": "Reviewed the polish3 source changes (undo cue placement, BoardInk inks, anchoredLabelTop, Placement refusal note, toolbar grouping). The toolbar Storage section and canvas toolbar text stay accurate; no passage names the changed behavior."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "8810c8883635a371e933504a03ce8512bc5da589f7e01ed25a9f3c2da95cbfea",
+      "sha256": "006954d9ea0d07ba36949190fef28f01872434af12b15b89c01d34b085946b14",
       "reviewedAt": "2026-09-23",
-      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
+      "note": "Reviewed the polish3 source changes: boundsRefusal names a crossing boundary and the Placement screen shows refusals before launch; Toolbar moves Settings and Storage to the left group. Updated both passages; ink and label layout text stays accurate."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "cbb1e5c55dc6db8a72c78abd009f4db98721488ff620adccdd0bcb5d36f9c093",
+      "sha256": "35cf28033b58f3affbd24ddca3dd1697ba7b8164d34978efc160633b77aae8b8",
       "reviewedAt": "2026-09-23",
-      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
+      "note": "Rewrote position, tasking and landmines for the polish3 run: six candidates closed, new candidates from lane findings, entry 366,536 bytes, the shared git stash landmine."
     },
     {
       "document": "docs/Plan.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "b43ecd803d61f06e8f5994e48add7b74abeae7a5d597718c877f0b2c9b28c38c",
+      "sha256": "a7c4881aabedad98af53650a60fed29574f242a7d4e8ae933ce0407a1ff49f8a",
       "reviewedAt": "2026-09-23",
-      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
+      "note": "Added the top bar left and right group contents after Settings and Storage moved left, and the BoardInk dim link and knob rim inks, the anchored name halo and anchoredLabelTop to rule 9."
     }
   ],
   "historical": [

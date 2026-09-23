@@ -11,24 +11,24 @@ fresh agent starts from this file and the docs index. This file does not authori
 commit, push or merge.
 
 [Plan.md](Plan.md), the design and UX polish plan, is complete. No row of it is
-selected. The polish follow-up run that came after it is also complete.
+selected. The polish follow-up run and the third polish run (polish3) that came after it
+are also complete.
 
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
   `origin/main` is at `293f7bd`. Local `main` holds the plan commit `0386b3a`, Rows A, B
   and C with their integration commits (B-int `2028d35`, C-int `d806e33`), and the polish
-  follow-up run: the lane merges of `polish2/cue`, `polish2/canvas`, `polish2/panels` and
-  `polish2/logic` and the integration commit that holds this handoff. None of them is
-  pushed. The audit fixes `181c8ec` to `7da197d` and the documentation update after them
+  follow-up run (`b979358`), and the polish3 run: the lane merges of `polish3/cue`,
+  `polish3/canvas`, `polish3/placement` and `polish3/chrome` and the integration commit
+  that holds this handoff. None of them is pushed. The audit fixes `181c8ec` to `7da197d` and the documentation update after them
   follow row J (`afaf1ae`) and row O (`de208aa`).
 - The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
   layered kill mass 1, layered kills mean 1.115, JIATF leakers mean 0.895, JIATF kills
   mean 0.105. `4.68` is not a pin.
 - The flight horizon is `7fdcb1e`.
-- Entry gzip at the polish follow-up gate: 366,212 bytes against 367,000, 788 bytes of
-  headroom. The user raised the budget from 366,000 for this run. Initial JavaScript and
-  CSS: 382,637 bytes against 400,000.
+- Entry gzip at the polish3 gate: 366,536 bytes against 367,000, 464 bytes of headroom.
+  Initial JavaScript and CSS: 382,990 bytes against 400,000.
 
 ## Tasking
 
@@ -36,50 +36,45 @@ No task is open. Do not add a row to [Plan.md](Plan.md). The next task comes fro
 user.
 
 All 36 plan findings are closed or changed by a decision. The polish follow-up run closed
-the four that stayed open after Row C, and most of the follow-ups outside the plan:
+the four that stayed open after Row C. The polish3 run closed six of its candidates:
 
-- U3: the undo cue is a `.surface-float` at the canvas bottom left, above the timeline
-  (`src/panels/UndoCue.tsx`, mounted in `App.tsx` inside `.board-stage`). It takes no
-  pointer events and the name truncates inside a 360 px cue. On mount the lazy cue reads
-  `actionBeforeMount` (`src/state/lastAction.ts`), so an edit made before its chunk loads
-  still shows. The scrub keeps its 120 px floor.
-- C1: `BoardInk` (`src/ui/ink.ts`) gains `selection`, `board`, `tool` and `control`. The
-  path draft, calibrate marks, connect ring, range button, marquee and a selected link read
-  them. In dark, the path draft and a selected link are now text 1, not `#ffffff`.
-- C4: `LABEL_ANCHOR_TOP` (`src/canvas/labelLayout.ts`) is 32, so the 28 px ring and its
-  halo clear the anchored label. The range button sits below the label.
-- U4: `src/canvas/hoverCursor.ts` releases the pointer cursor when the hovered entity
-  unmounts.
-- Capture defects: the ROE label stays on one line; the Compare `BandChart` y-axis, the
-  telemetry charts and the track ladder no longer clip; the Analyze Run control stays
-  right-aligned with the progress line on its own row. The Now kill-chain State column is
-  30 % wide, so "identified" fits at the 320 px panel; the Track and Held names clip
-  harder, with the full text in the cell title.
-- Right-panel segments no longer wrap by default. The ring override is
-  `.insp-rings .seg button { padding: 4px 8px }`.
-- A range with collinear or near-collinear points is refused at launch in
-  `optimizeLaunch` (`src/state/analysisRequests.ts`) with the reason from `boundsRefusal`
-  (`src/playback/optimize/polygon.ts`): under 1 m² or under 4e-3 of its bounding box.
-  `boundingBoxOf` throws the same reason in the worker as a backstop.
-- CI: a push whose `before` is the zero sha checks against `origin/main` on a branch,
-  `HEAD~1` on `main`, and falls back to `check:silent:all` on a root commit.
-- `setBoardPhase` returns the tool to Select outside Prepare. `BoardTools` has no effect.
+- The undo cue moves to the canvas bottom right, 52 px up, while the Library drawer is
+  open (`.board-library-drawer:not([hidden]) ~ .undo-cue`). `App.tsx` starts the cue chunk
+  import when the module runs, so the window for a redo that reads as an edit is the time
+  before that chunk arrives. `actionBeforeMount` still cannot tell a redo from an edit.
+- `BoardInk` gains `linkDim` and `knobRim`. The dim link, the heading-handle knob rim and
+  the system rotation knob rim read them in both themes.
+- `anchoredLabelTop` (`src/canvas/labelLayout.ts`) moves an anchored label below a heading
+  knob that points down into it. `HANDLE_REACH` (34) and `HANDLE_KNOB_R` (6) live there.
+  An anchored name draws over a 2 px board-tone halo, so a flight path does not run through
+  it.
+- The Placement screen marks a range that `boundsRefusal` refuses as unavailable, shows the
+  reason under the Bounds select and disables Run placement. A refused boundary whose edges
+  cross is refused as crossing itself. `optimizeLaunch` keeps the launch-time refusal.
+- The Inspector ring buttons take `--font-ui`.
+- V12 (D7): Settings and Storage move to the top bar left group, so the tabs sit at the
+  viewport center at 1280, 1440, 1600 and 1920 px with five chips. The fold stays at
+  1600 px.
 
 ### Candidates
 
 These follow-ups stay candidates. None is selected.
 
-- A delete made while the Library drawer is open shows no visible cue: the drawer (z 40)
-  covers it (z 5). A redo made before the cue chunk loads reads as "Placed" or "Deleted".
-- Dark-only inks remain: the heading-handle knob stroke `#121415` (`EntityLayer.tsx`) and
-  the dim link ink `#6a7178` (`ConnectionLayer.tsx`).
-- The heading handle at reach 34 can overlap the moved label when it points down. The
-  flight path line runs through the UAS label (this predates the run).
-- The Placement screen Bounds select still lists a degenerate range; a run from it reports
-  the refusal reason. A self-intersecting bow-tie with equal lobes is refused with the
-  collinear wording.
-- The Inspector ring buttons render in mono, inherited from `.insp-row-value`.
-- V12 (D7): at 1600 px with five chips, the tabs sit 135 px left of center.
+- A redo made before the cue chunk loads can still read as "Placed" or "Deleted". A full
+  fix needs `redo()` in `src/state/store.ts` to mark the redo.
+- If the Library drawer is widened past the cue's left edge, the right-side cue sits under
+  it again.
+- The system rotation handle in `SystemHandleLayer.tsx` hard-codes `#a9b4bd` (the dark
+  `tool` ink), about 1.9:1 on paper.
+- `layoutLabels` collision boxes assume `LABEL_ANCHOR_TOP`; a label moved below a
+  downward knob draws 10 px lower than its box. During a heading drag the knob can pass
+  over the label, because the label moves only after the drag commits.
+- The label halo shows as a board-tone patch over a coverage tint. Spoke callout labels
+  have no halo.
+- A self-intersecting boundary whose net area passes both area floors is still admitted.
+- The top bar right group has 24 px of slack at 1600 px; a longer chip label or a sixth
+  chip moves the tabs off center. The right-anchored Storage panel now opens from the left
+  group; it was not captured open.
 - `src/playback/policy.test.ts` "the Monte Carlo policy gives discrete outcomes" failed
   once under load from parallel lanes and passed on rerun.
 - The merge could size its grids to the contiguous prefix.
@@ -136,10 +131,13 @@ These follow-ups stay candidates. None is selected.
   `points` array (`scenarioHasWork` in `src/io/persist.test.ts`,
   `scenarioInstall.test.ts`). Those objects do not pass `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
-  touches the entry. The entry gzip budget is 367,000 bytes with 788 bytes headroom
-  (last measured 366,212 at the polish follow-up gate). Icons and new components add entry bytes. `sql.js` must stay behind `await import` with its wasm URL.
+  touches the entry. The entry gzip budget is 367,000 bytes with 464 bytes headroom
+  (last measured 366,536 at the polish3 gate). Icons and new components add entry bytes. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
+- Lane worktrees share one `git stash` list. A lane must not use `git stash` while a
+  sibling worktree exists; two lanes that popped at once swapped their diffs in polish3.
+  Measure a baseline with `git diff > file` or a separate worktree at the base.
 - Prettier wrapping of JSX text can change React `children`. Keep button labels on one
   line, or tests that compare `props.children` to a string will miss the control. See
   `src/ui/ErrorBoundary.tsx`.

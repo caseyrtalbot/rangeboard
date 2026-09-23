@@ -385,7 +385,9 @@ Breaking one of these breaks the app.
   samples by expected improvement, and the GP length scale is `LENGTH_SCALE_FRACTION`
   (0.25) of the polygon extent. `boundsRefusal` (`polygon.ts`) refuses a range under
   `MIN_AREA_M2` (1 m²) or under `MIN_AREA_FRACTION` (4e-3) of its bounding box, so the
-  rejection sampler cannot exhaust its draws; `optimizeLaunch`
+  rejection sampler cannot exhaust its draws. A refused boundary whose edges cross is
+  named as crossing itself. The Placement screen marks a refused range unavailable, shows
+  the reason and disables Run placement; `optimizeLaunch`
   (`src/state/analysisRequests.ts`) reports that reason and starts no worker, and
   `boundingBoxOf` throws it in the worker as a backstop. Every evaluation is one replicate run
   (`evaluateLaydown` over `placeLaydown`) under common random numbers at the request's
@@ -580,8 +582,8 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                (the hovered entity's pointer cursor, released when that entity unmounts),
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
                style source)
-src/panels/    Toolbar (header: brand, scenario name, ⋯ menu, the lifecycle tabs, run
-               status, settings, storage, status pills, drawer toggle),
+src/panels/    Toolbar (header: brand, scenario name, ⋯ menu, settings, storage, the
+               lifecycle tabs, run status, status pills, drawer toggle),
                ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
                spreadText.ts),
                LibraryEditor, settings/ (RunTab, SystemsTab, PhysicsTab and

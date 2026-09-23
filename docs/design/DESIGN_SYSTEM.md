@@ -45,7 +45,12 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    otherwise it draws on hover. A path caption takes the first clear slot back along its
    last leg. `BoardInk` also holds the selection, board-tone, tool and control inks, so the
    selection ring, a selected link, the path draft, the calibrate marks, the connect ring,
-   the range button and the marquee read the theme.
+   the range button and the marquee read the theme. It also holds the dim link ink
+   (`#6a7178` night, `#767d84` paper) for a probable or inferred link, and the knob rim
+   (`#121415` night, text 1 on paper) for the heading and system rotation handles. An
+   anchored name draws over a 2 px board-tone halo, so a flight path or a leader line does
+   not run through its text. A heading handle that points down into the label moves the
+   label below its knob (`anchoredLabelTop`); the handle keeps its 34 px reach.
 
 ## 2. Tokens
 
@@ -124,8 +129,10 @@ axis and rows, and the KPI sub-line. The Board right panel defaults to 408 px (2
 drawer: the drawer button at the right end of the top bar, or `]`, closes and opens it,
 and a resize drag 60 px past the minimum also closes it. A closed drawer gives its width to
 the canvas and holds the board center. A selection does not reopen it. The header is 40 px high. It carries the lifecycle tabs in
-its center and the run status at the start of its right group; the phase row is gone. Its
-groups keep a 24 px column gap (`--space-6`). Below 1600 px the status chips fold into the
+its center and the run status at the start of its right group; the phase row is gone. The
+left group carries identity, the file menu, Settings and Storage; the right group carries the
+run status, the chips and the drawer button, so the tabs hold the bar center at 1600 px with
+all chips shown. Its groups keep a 24 px column gap (`--space-6`). Below 1600 px the status chips fold into the
 ROE button, which shows a `+N` count in mono warning ink and lists them in its panel; a
 failed save stays in the bar. The lifecycle navigation sits outside the scroll body. The
 analysis screen navigation also sits outside it, draws only on the Overview tab, and draws
