@@ -26,7 +26,14 @@ import {
   FRIEND_FRAME_D,
   FUNCTION_LETTER,
 } from '../../panels/Glyph'
-import { boardDesignator, LABEL_ANCHOR_TOP, LABEL_LINE_H, labelLineCount } from '../labelLayout'
+import {
+  anchoredLabelTop,
+  boardDesignator,
+  HANDLE_KNOB_R,
+  HANDLE_REACH,
+  LABEL_LINE_H,
+  labelLineCount,
+} from '../labelLayout'
 import { IDLE_INTERACTION, routeInteraction } from '../interactionRouter'
 import { hoverCursor, releaseHover } from '../hoverCursor'
 
@@ -255,9 +262,6 @@ function Glyph({ entity, headingDeg, color, ghost, filled = true, tickRef }: Gly
   }
 }
 
-/** Handle offset from the glyph centre, screen px. */
-const HANDLE_REACH = 34
-
 function handlePoint(headingDeg: number): { x: number; y: number } {
   const r = (headingDeg * Math.PI) / 180
   return { x: Math.sin(r) * HANDLE_REACH, y: -Math.cos(r) * HANDLE_REACH }
@@ -267,10 +271,13 @@ function handlePoint(headingDeg: number): { x: number; y: number } {
 function HeadingHandle({
   entity,
   color,
+  rim,
   tickRef,
 }: {
   entity: Entity
   color: string
+  /** The knob rim: `BoardInk.knobRim`. */
+  rim: string
   tickRef: React.RefObject<Konva.Line | null>
 }) {
   const leaderRef = useRef<Konva.Line>(null)
@@ -306,9 +313,9 @@ function HeadingHandle({
       <Circle
         x={hx}
         y={hy}
-        radius={6}
+        radius={HANDLE_KNOB_R}
         fill={color}
-        stroke="#121415"
+        stroke={rim}
         strokeWidth={1.5}
         draggable
         onDragMove={(e) => {
@@ -616,6 +623,9 @@ const EntityBody = memo(function EntityBody({
   const boardName = useMemo(() => boardDesignator(entity.name), [entity])
   const nameLines = useMemo(() => labelLineCount(boardName), [boardName])
   const labelLines = labelDrawn ? nameLines : 0
+  const handleShown = selected && directional && tool === 'select'
+  // The label steps below a knob that points down into it; the handle stays put.
+  const labelTop = anchoredLabelTop(boardName, handleShown ? entity.headingDeg : undefined)
 
   return (
     <>
@@ -742,11 +752,16 @@ const EntityBody = memo(function EntityBody({
         <Text
           fontFamily="JetBrains Mono"
           x={-60}
-          y={LABEL_ANCHOR_TOP}
+          y={labelTop}
           width={120}
           text={boardName}
           fontSize={11}
           fill={ink.label}
+          // A 2 px board-tone halo knocks out a flight path or a leader under the name.
+          stroke={ink.board}
+          strokeWidth={4}
+          lineJoin="round"
+          fillAfterStrokeEnabled
           align="center"
           listening={false}
         />
@@ -755,7 +770,7 @@ const EntityBody = memo(function EntityBody({
         <Text
           fontFamily="JetBrains Mono"
           x={-60}
-          y={LABEL_ANCHOR_TOP + labelLines * LABEL_LINE_H + TAG_GAP}
+          y={labelTop + labelLines * LABEL_LINE_H + TAG_GAP}
           width={120}
           align="center"
           text="HARD KILL"
@@ -764,12 +779,12 @@ const EntityBody = memo(function EntityBody({
           listening={false}
         />
       )}
-      {selected && directional && tool === 'select' && (
-        <HeadingHandle entity={entity} color={color} tickRef={tickRef} />
+      {handleShown && (
+        <HeadingHandle entity={entity} color={color} rim={ink.knobRim} tickRef={tickRef} />
       )}
       {selected && entity.kind === 'uas' && tool === 'select' && (
         <Group
-          y={LABEL_ANCHOR_TOP + labelLines * LABEL_LINE_H + TAG_GAP}
+          y={labelTop + labelLines * LABEL_LINE_H + TAG_GAP}
           onClick={(e) => {
             e.cancelBubble = true
             useStore.getState().updateEntity(entity.id, { showRange: !entity.showRange })

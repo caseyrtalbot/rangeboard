@@ -54,6 +54,10 @@ export interface BoardInk {
   tool: string
   /** The range button fill when off. */
   control: string
+  /** A link drawn from probable or inferred evidence: dimmer than the caption ink. */
+  linkDim: string
+  /** The rim of a drag knob: the heading handle and the system rotation handle. */
+  knobRim: string
 }
 
 /** Night board ink: the values the layers drew before the paper table existed. */
@@ -69,11 +73,15 @@ export const BOARD_INK_DARK: BoardInk = {
   board: '#121313',
   tool: '#a9b4bd',
   control: '#1d2023',
+  linkDim: '#6a7178',
+  knobRim: '#121415',
 }
 
 /**
  * Paper board ink, measured on the paper board `#eeebe4`: label 6.9:1, link caption
- * 5.5:1, callout leader 3.5:1, tool 5.3:1. The airspace grid has no separate paper tone.
+ * 5.5:1, callout leader 3.5:1, tool 5.3:1, dim link 3.5:1. The knob rim is text 1, so a
+ * pale kind ink on a knob still holds 4.2:1 or more against its rim. The airspace grid
+ * has no separate paper tone.
  */
 export const BOARD_INK_PAPER: BoardInk = {
   gridMinor: '#dcd7cd',
@@ -87,4 +95,6 @@ export const BOARD_INK_PAPER: BoardInk = {
   board: '#eeebe4',
   tool: '#56626c',
   control: '#f7f5f0',
+  linkDim: '#767d84',
+  knobRim: '#212220',
 }

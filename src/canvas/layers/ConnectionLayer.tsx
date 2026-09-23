@@ -47,7 +47,7 @@ export function ConnectionLayer() {
         // Unproven evidence reads dimmer than documented or hand-drawn links.
         const dim = c.confidence === 'probable' || c.confidence === 'inferred'
         const onHover = (e: KonvaEventObject<MouseEvent>) => hoverCaption(e, c.id)
-        const color = selected ? ink.selection : dim ? '#6a7178' : ink.linkCaption
+        const color = selected ? ink.selection : dim ? ink.linkDim : ink.linkCaption
         return (
           <Arrow
             key={c.id}
