@@ -13,7 +13,7 @@ import { expenditureChannel } from '../playback/pk'
 import { radarDwellPulses } from '../playback/radarDwell'
 import { opticalDwellModelApplies } from '../playback/directedEnergy'
 import { hpmFieldModelApplies } from '../playback/hpm'
-import { interceptorMissModelApplies } from '../playback/pk/kinetic'
+import { gunBurstModelApplies, interceptorMissModelApplies } from '../playback/pk/kinetic'
 import { scanPeriodS } from './doctrineFactors'
 import { radarPdModeled } from './sensorEnv'
 import { eoIfovRadFor } from './sensorEnv/eoir'
@@ -497,7 +497,7 @@ function usedIds(scenario: Scenario, entity?: Entity): Set<ModelId> {
   )
   add(
     'gun-burst',
-    !legacyKinetic && effectors.some((e) => e.effectorType === 'gun' && e.dispersionMils != null),
+    effectors.some((e) => gunBurstModelApplies(e, legacyKinetic)),
   )
   add('de-dwell', deModeled.length > 0)
   add('hpm-field', hpmModeled.length > 0)

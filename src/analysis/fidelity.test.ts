@@ -394,4 +394,18 @@ describe('modelsUsed, Phase 3 kinetic tags', () => {
       expect(modelsUsed(s).some((tag) => tag.id === 'interceptor-miss')).toBe(expected)
     },
   )
+
+  it.each([
+    ['dispersionMils'],
+    ['fireControlErrorMils'],
+    ['burstRounds'],
+    ['rateOfFireRpm'],
+    ['muzzleVelocityMps'],
+  ] satisfies Array<[keyof EffectorSpec]>)('does not report gun burst with null %s', (field) => {
+    const s = radarLaydown()
+    const gun = s.library.find((m) => m.id === 'lib-skyranger30')!
+    gun.effector = { ...gun.effector!, [field]: null }
+    s.entities.push(entity('e1', 'effector', gun.id))
+    expect(modelsUsed(s).map((t) => t.id)).not.toContain('gun-burst')
+  })
 })

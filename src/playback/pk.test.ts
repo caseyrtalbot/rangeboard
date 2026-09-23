@@ -2,6 +2,7 @@ import { expect, it } from 'vitest'
 import type { EffectorSpec, UasSpec } from '../model/types'
 import { kineticPk, missDistanceSigmaM } from './pk'
 import {
+  gunBurstModelApplies,
   interceptorMissModelApplies,
   kineticEffectProbability,
   projectileMissSigmaM,
@@ -105,4 +106,24 @@ it('uses the explicit fallback unchanged and compounds projectile intercepts by 
   expect(kineticEffectProbability({ ...gun, dispersionMils: null }, context)).toBe(
     kineticPk(context.basePk, gun.maxRangeM, uas, context.slantM),
   )
+
+  expect(gunBurstModelApplies(gun)).toBe(true)
+  expect(gunBurstModelApplies(gun, true)).toBe(false)
+  const legacy = kineticPk(context.basePk, gun.maxRangeM, uas, context.slantM)
+  for (const field of [
+    'dispersionMils',
+    'fireControlErrorMils',
+    'burstRounds',
+    'rateOfFireRpm',
+    'muzzleVelocityMps',
+  ] as const) {
+    const partial = { ...gun, [field]: null }
+    expect(gunBurstModelApplies(partial)).toBe(false)
+    expect(kineticEffectProbability(partial, context)).toBe(legacy)
+  }
+  expect(gunBurstModelApplies({ ...gun, burstRounds: 0 })).toBe(false)
+  expect(gunBurstModelApplies({ ...gun, rateOfFireRpm: 0 })).toBe(false)
+  expect(gunBurstModelApplies({ ...gun, muzzleVelocityMps: Number.POSITIVE_INFINITY })).toBe(false)
+  expect(gunBurstModelApplies({ ...gun, fireControlErrorMils: 0 })).toBe(true)
+  expect(gunBurstModelApplies({ ...gun, dispersionMils: -Number.MIN_VALUE })).toBe(false)
 })

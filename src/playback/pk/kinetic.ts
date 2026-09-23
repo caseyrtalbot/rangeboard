@@ -155,6 +155,28 @@ export function interceptorMissModelApplies(
   )
 }
 
+/** Gun fields guaranteed when the burst model applies. */
+export type BurstGunSpec = EffectorSpec & {
+  effectorType: 'gun'
+  dispersionMils: number
+  fireControlErrorMils: number
+  rateOfFireRpm: number
+  muzzleVelocityMps: number
+}
+
+/** True when the gun burst model is enabled and fully specified. */
+export function gunBurstModelApplies(spec: EffectorSpec, disabled = false): spec is BurstGunSpec {
+  return (
+    !disabled &&
+    spec.effectorType === 'gun' &&
+    validNonNegative(spec.dispersionMils) &&
+    validNonNegative(spec.fireControlErrorMils) &&
+    projectileCount(spec) != null &&
+    validPositive(spec.rateOfFireRpm) &&
+    validPositive(spec.muzzleVelocityMps)
+  )
+}
+
 /**
  * Modeled probability of effect for an interceptor or projectile effector.
  *
@@ -192,16 +214,10 @@ export function kineticEffectProbability(
   if (context.fallback) return legacy
 
   if (spec.effectorType === 'gun') {
+    if (!gunBurstModelApplies(spec) || context.uas == null) return legacy
     const rounds = projectileCount(spec)
-    if (
-      !validNonNegative(spec.dispersionMils) ||
-      !validNonNegative(spec.fireControlErrorMils) ||
-      rounds == null ||
-      !validPositive(spec.rateOfFireRpm) ||
-      !validPositive(spec.muzzleVelocityMps) ||
-      context.uas == null
-    )
-      return legacy
+    // The gate proved the count; this guard only narrows the type.
+    if (rounds == null) return legacy
     const sigmaM = projectileMissSigmaM(
       context.slantM,
       spec.dispersionMils,
