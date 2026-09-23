@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from 'react'
 import { Image as KonvaImage } from 'react-konva'
 import { useStore } from '../../state/store'
+import { useBoardInk } from '../useBoardInk'
 
 /** Calibrated satellite/range image. Visible in sat mode only. */
 export const UnderlayLayer = memo(function UnderlayLayer() {
@@ -8,6 +9,7 @@ export const UnderlayLayer = memo(function UnderlayLayer() {
   const basemap = useStore((s) => s.ui.basemap)
   const moveUnderlay = useStore((s) => s.ui.moveUnderlay)
   const updateUnderlay = useStore((s) => s.updateUnderlay)
+  const ink = useBoardInk()
   const [img, setImg] = useState<HTMLImageElement | null>(null)
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export const UnderlayLayer = memo(function UnderlayLayer() {
       opacity={underlay.opacity}
       draggable={moveUnderlay}
       listening={moveUnderlay}
-      stroke={moveUnderlay ? '#a9b4bd' : undefined}
+      stroke={moveUnderlay ? ink.tool : undefined}
       strokeWidth={2}
       strokeScaleEnabled={false}
       onDragEnd={(e) => updateUnderlay({ pos: { x: e.target.x(), y: e.target.y() } })}
