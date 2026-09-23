@@ -86,7 +86,7 @@ function TipBubble({
   }, [x, label, shortcut])
 
   return (
-    <div ref={ref} className="tooltip" style={{ left, top: y }}>
+    <div ref={ref} className="tooltip surface-float" style={{ left, top: y }}>
       {label}
       {shortcut && <span className="kbd">{shortcut}</span>}
     </div>

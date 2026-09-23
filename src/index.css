@@ -684,8 +684,9 @@ input[type='color']::-webkit-color-swatch {
   line-height: 1.15;
 }
 
-/* Toolbar dropdowns: View and the file overflow. Both float, so both are
-   opaque with one strong rule. Rule 4: depth is stacking order, not shadow. */
+/* Toolbar dropdowns: View and the file overflow. Both float (rule 4): the
+   panel carries the raised tone, rule, radius and entry here, and the element
+   adds .surface-float for --elev-1. */
 .tb-menu-wrap {
   position: relative;
 }
@@ -727,8 +728,10 @@ input[type='color']::-webkit-color-swatch {
   max-height: calc(100vh - 92px);
   padding: 5px;
   overflow-y: auto;
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-surface);
+  animation: surface-enter var(--dur-enter) linear;
 }
 
 .tb-menu-right {
@@ -1722,8 +1725,11 @@ p.muted.small {
   width: max-content;
   max-width: 280px;
   padding: 6px 9px;
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
+  /* A pseudo-element cannot take .surface-float, so it has the tone, rule and
+     radius without the shadow. */
+  background: var(--surface-raised);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-surface);
   color: var(--text);
   font-size: var(--type-body-size);
   font-weight: var(--type-body-weight);
@@ -2490,8 +2496,6 @@ select.nu-unit {
   position: absolute;
   min-width: 200px;
   max-width: 280px;
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
   padding: 4px;
   z-index: 30;
   display: flex;
@@ -2531,6 +2535,24 @@ select.nu-unit {
 
 .ctx-item.danger {
   color: var(--danger);
+}
+
+/* A row with a key hint: the label keeps its ellipsis, the key sits right. */
+.ctx-item.keyed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ctx-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ctx-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--rule);
 }
 
 /* Check-mark gutter for the layer toggles in the Display flyout. */
@@ -2580,15 +2602,26 @@ select.nu-unit {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--text);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
 }
 
 .suggest-x {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0;
   background: none;
   border: none;
   color: var(--text-dim);
   font: inherit;
   cursor: pointer;
-  padding: 0 2px;
 }
 
 .suggest-row {
@@ -2605,6 +2638,11 @@ select.nu-unit {
   gap: 6px;
   color: var(--text-dim);
   font-size: var(--type-meta-size);
+}
+
+/* The 36 px provenance column aligns table values; here it only opens a gap. */
+.suggest-meta .prov-mark {
+  width: 8px;
 }
 
 .suggest-empty {
@@ -2753,8 +2791,6 @@ button.chip {
 .info-pop {
   position: fixed;
   z-index: 300;
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
   padding: 8px 10px;
   font-size: var(--type-body-size);
   line-height: 1.5;
@@ -2780,8 +2816,6 @@ button.chip {
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
   font-size: var(--type-meta-size);
   color: var(--text);
   white-space: nowrap;
@@ -2800,6 +2834,17 @@ button.chip {
   color: var(--text-secondary);
   background: var(--surface-hover);
   white-space: nowrap;
+}
+
+/* A key hint at the right end of a menu or palette row: mono text 3, no chip. */
+.kbd-hint {
+  flex: none;
+  min-width: 0;
+  height: auto;
+  margin-left: auto;
+  padding: 0;
+  color: var(--text-tertiary);
+  background: transparent;
 }
 
 /* Quiet and secondary, and kept at the top of the panel where inspection
@@ -2894,26 +2939,27 @@ input[type='number'] {
 
 /* ---------- Command palette ---------- */
 
-/* A click catcher, not a scrim: the palette is opaque with its own edge and
-   depth comes from stacking order. */
+/* The palette is modal, so its click catcher dims the board with --scrim. */
 .cmdk-backdrop {
   position: fixed;
   inset: 0;
   z-index: 40;
+  background: var(--scrim);
 }
 
+/* Centred by margin, not transform: the .surface-float entry animates transform. */
 .cmdk-panel {
   position: absolute;
   top: 18vh;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
-  width: 480px;
+  width: 560px;
   max-width: calc(100vw - 32px);
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
+  margin: 0 auto;
   overflow: hidden;
+  outline: none;
 }
 
 .cmdk-input {
@@ -2927,16 +2973,24 @@ input[type='number'] {
 }
 
 .cmdk-list {
-  max-height: 290px;
+  max-height: 360px;
   padding: 4px 0;
   overflow-y: auto;
 }
 
+.cmdk-head {
+  padding: 8px 12px 4px;
+  color: var(--text-dim);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+}
+
 .cmdk-item {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 5px 10px;
+  align-items: center;
+  gap: var(--space-3);
+  height: 32px;
+  padding: 0 12px 0 10px;
   border-left: 2px solid transparent;
   cursor: pointer;
   white-space: nowrap;
@@ -2945,11 +2999,6 @@ input[type='number'] {
 .cmdk-item.selected {
   background: var(--hover);
   border-left-color: var(--accent);
-}
-
-.cmdk-cat {
-  flex-shrink: 0;
-  color: var(--text-dim);
 }
 
 .cmdk-label {
@@ -4837,7 +4886,7 @@ input[type='number'] {
 }
 
 .settings-panel::backdrop {
-  background: color-mix(in srgb, var(--surface-board) 72%, transparent);
+  background: var(--scrim);
 }
 
 .settings-panel[open] {

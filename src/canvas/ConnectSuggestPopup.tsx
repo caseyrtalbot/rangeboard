@@ -44,12 +44,17 @@ export function ConnectSuggestPopup() {
   return (
     <div
       ref={ref}
-      className="ctx-menu connect-suggest"
+      className="ctx-menu connect-suggest surface-float"
       style={{ left: suggestion.screen.x, top: suggestion.screen.y }}
     >
       <div className="ctx-head suggest-head">
         <span>Connect {name(suggestion.entityId)}</span>
-        <button className="suggest-x" onClick={dismissConnectSuggestion} title="Dismiss">
+        <button
+          className="suggest-x"
+          onClick={dismissConnectSuggestion}
+          title="Dismiss"
+          aria-label="Dismiss"
+        >
           ×
         </button>
       </div>

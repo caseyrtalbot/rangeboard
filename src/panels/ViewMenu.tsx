@@ -213,7 +213,7 @@ export function ViewMenuPanel() {
   return (
     <div
       id="view-menu-panel"
-      className="tb-menu-panel view-menu-panel"
+      className="tb-menu-panel view-menu-panel surface-float"
       role="dialog"
       aria-label="View controls"
     >
