@@ -33,6 +33,7 @@ import { ENGSTRIP_OPEN_KEY, RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from '
 import { readSetting, savedView, writeSetting } from './io/viewState'
 import { exportScenario } from './io/persist'
 import { ErrorBoundary } from './ui/ErrorBoundary'
+import { IconCommands, IconLibrary, IconObjects } from './ui/icons'
 import { State } from './ui/kit'
 import { nextTabIndex } from './ui/rovingTabs'
 
@@ -115,13 +116,13 @@ const ResourceRail = memo(function ResourceRail({
   libraryTrigger,
   onToggleLibrary,
   onOpenObjects,
-  onOpenKeys,
+  onOpenCommands,
 }: {
   libraryOpen: boolean
   libraryTrigger: React.RefObject<HTMLButtonElement | null>
   onToggleLibrary: () => void
   onOpenObjects: () => void
-  onOpenKeys: () => void
+  onOpenCommands: () => void
 }) {
   return (
     <nav className="board-resource-rail" aria-label="Board resources">
@@ -132,13 +133,16 @@ const ResourceRail = memo(function ResourceRail({
         onClick={onToggleLibrary}
         title="Library (L)"
       >
-        <span aria-hidden="true">⊞</span>Library
+        <IconLibrary />
+        Library
       </button>
       <button onClick={onOpenObjects} title="Board entity register">
-        <span aria-hidden="true">⌖</span>Objects
+        <IconObjects />
+        Objects
       </button>
-      <button className="board-keys" onClick={onOpenKeys} title="Command palette (⌘K)">
-        <span aria-hidden="true">⌘</span>Keys
+      <button className="board-commands" onClick={onOpenCommands} title="Commands (⌘K)">
+        <IconCommands />
+        Commands
       </button>
     </nav>
   )
@@ -400,6 +404,7 @@ export default function App() {
   const selectionKey = useStore(selectSelectionKey)
   const raidDraft = useStore((s) => s.ui.raidDraft)
   const calibrating = useStore((s) => s.ui.tool === 'calibrate')
+  const boardEmpty = useStore((s) => s.scenario.entities.length === 0)
   const [entityView, setEntityView] = useState<{
     key: string
     section: EntityWorkspaceSection
@@ -590,7 +595,7 @@ export default function App() {
       document.querySelector('.prepare-entity-register')?.scrollIntoView(),
     )
   }, [openPhase, setRightOpen])
-  const openKeys = useCallback(() => setPaletteOpen(true), [])
+  const openCommands = useCallback(() => setPaletteOpen(true), [])
   const navigateAnalysis = useCallback(
     (screen: AnalysisScreen) => {
       if (screen === 'fragility' || screen === 'inputs' || screen === 'placement')
@@ -757,16 +762,8 @@ export default function App() {
           libraryTrigger={libraryTrigger}
           onToggleLibrary={toggleLibrary}
           onOpenObjects={openObjects}
-          onOpenKeys={openKeys}
+          onOpenCommands={openCommands}
         />
-        <div id="board-library-drawer" className="board-library-drawer" hidden={!libraryOpen}>
-          <Palette
-            open={libraryOpen}
-            onClose={closeLibrary}
-            onArmPlacement={armPlacement}
-            onPlacementStart={closeLibrary}
-          />
-        </div>
         <div className="center">
           <BoardTools onSelectTool={clearPlacement} />
           {placement && (
@@ -805,7 +802,26 @@ export default function App() {
               </button>
             </div>
           )}
-          <CanvasStage onOpenDetail={openTelemetry} onPlace={placement ? placeAt : undefined} />
+          {/* The drawer overlays the canvas only: the tools row and the timeline stay in reach. */}
+          <div className="board-stage">
+            <div id="board-library-drawer" className="board-library-drawer" hidden={!libraryOpen}>
+              <Palette
+                open={libraryOpen}
+                onClose={closeLibrary}
+                onArmPlacement={armPlacement}
+                onPlacementStart={closeLibrary}
+              />
+            </div>
+            {boardEmpty && !libraryOpen && !placement && (
+              <div className="board-empty-hint surface-float" role="note">
+                <span>Add a system: press L or right-click the board</span>
+                <button className="mini" onClick={toggleLibrary}>
+                  Open library (L)
+                </button>
+              </div>
+            )}
+            <CanvasStage onOpenDetail={openTelemetry} onPlace={placement ? placeAt : undefined} />
+          </div>
           {engagementOpen && <EngagementStrip />}
           <TimelineBar engagementOpen={engagementOpen} onToggleEngagement={toggleEngagement} />
         </div>
@@ -839,11 +855,13 @@ export default function App() {
             onKeyDown={nudgeRightWidth}
           />
           <PanelTabs activeTab={activeTab} setRightTab={setRightTab} />
-          <AnalysisNavigation
-            phase={boardPhase}
-            screen={analysisScreen}
-            onNavigate={navigateAnalysis}
-          />
+          {activeTab === 'analysis' && (
+            <AnalysisNavigation
+              phase={boardPhase}
+              screen={analysisScreen}
+              onNavigate={navigateAnalysis}
+            />
+          )}
           <div
             className="right-panel-body"
             id="insp-tabpanel"

@@ -92,7 +92,7 @@ test('phase switching sets the phase, the analysis tab and aria-selected', async
   assert.deepEqual(errors, [])
 })
 
-test('selection routing opens the entity workspace and Overview returns to analysis', async (t) => {
+test('selection routing opens the entity workspace and the Overview tab returns to analysis', async (t) => {
   const { page, errors } = await open(t)
   const sensor = await page.evaluate(() => {
     const e = window.__store.getState().scenario.entities.find((x) => x.kind === 'sensor')
@@ -102,10 +102,11 @@ test('selection routing opens the entity workspace and Overview returns to analy
   await waitFor(page, () => document.querySelector('.entity-workspace'))
   assert.equal(await read(page, 'ui.rightTab'), 'inspect')
   assert.ok(
-    (await page.textContent('.entity-workspace-header')).includes(sensor.name),
-    'header shows the entity name',
+    (await page.textContent('.entity-workspace')).includes(sensor.name),
+    'the workspace shows the entity name',
   )
-  await page.click('.entity-workspace-header button:has-text("Overview")')
+  assert.equal(await has(page, '.right-panel > .lens'), false, 'no screen navigation')
+  await page.click('#insp-tab-analysis')
   await waitFor(page, () => window.__store.getState().ui.rightTab === 'analysis')
   assert.deepEqual(await read(page, 'selection.entityIds'), [sensor.id])
   await page.evaluate(() => window.__store.getState().clearSelection())
@@ -197,11 +198,8 @@ test('analysis screens follow the phase and no lens bar renders', async (t) => {
   await waitFor(page, () => document.querySelector('[aria-label="Analysis screens"]'))
   assert.deepEqual(await labels(), ['Outcome', 'Compare'])
   await page.click('#board-phase-execute')
-  await waitFor(
-    page,
-    () => document.querySelectorAll('[aria-label="Analysis screens"] button').length === 1,
-  )
-  assert.deepEqual(await labels(), ['Now'])
+  // Execute has one screen, so it draws no screen navigation.
+  await waitFor(page, () => !document.querySelector('[aria-label="Analysis navigation"]'))
   assert.equal(await has(page, '.lens-builtins'), false)
   assert.equal(await has(page, '.lens-layout'), false)
   assert.deepEqual(errors, [])

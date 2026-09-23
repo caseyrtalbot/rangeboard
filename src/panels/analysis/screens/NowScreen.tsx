@@ -7,7 +7,7 @@ import { trialSweepAt } from '../../../playback/trialSweepAt'
 import { resetAnalysisRun } from '../../../playback/runSession'
 import { formatTime } from '../../../geometry/geo'
 import { State } from '../../../ui/kit'
-import { LiveStrip } from '../LiveStrip'
+import { LiveStrip, PlayPrompt } from '../LiveStrip'
 import { stateTone } from '../SystemStatus'
 
 const SettingsPanel = lazy(() =>
@@ -138,7 +138,11 @@ export function NowScreen() {
     selection.status === 'cancelled' ||
     (selection.status === 'ready' && !started)
   ) {
-    return <p className="muted small">No trial yet. Press Play in Execute to run one.</p>
+    return (
+      <p className="muted small">
+        <PlayPrompt />
+      </p>
+    )
   }
   if (!view || !data || !index) {
     return (

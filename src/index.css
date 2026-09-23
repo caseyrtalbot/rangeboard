@@ -455,7 +455,9 @@ button {
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
   line-height: 16px;
-  transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease,
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
     color var(--dur-fast) ease;
 }
 
@@ -540,7 +542,9 @@ select {
   font: inherit;
   font-size: var(--type-meta-size);
   width: 100%;
-  transition: background-color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
 }
 
 input:hover:not(:disabled),
@@ -564,10 +568,15 @@ select:disabled {
 select {
   appearance: none;
   padding-right: 22px;
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-tertiary) 50%),
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-tertiary) 50%),
     linear-gradient(135deg, var(--text-tertiary) 50%, transparent 50%);
-  background-position: calc(100% - 13px) calc(50% + 1px), calc(100% - 9px) calc(50% + 1px);
-  background-size: 4px 4px, 4px 4px;
+  background-position:
+    calc(100% - 13px) calc(50% + 1px),
+    calc(100% - 9px) calc(50% + 1px);
+  background-size:
+    4px 4px,
+    4px 4px;
   background-repeat: no-repeat;
 }
 
@@ -1072,7 +1081,9 @@ input[type='color']::-webkit-color-swatch {
   padding: 5px 10px;
   cursor: grab;
   border-left: 2px solid transparent;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease;
 }
 
 .palette-item:hover {
@@ -1321,7 +1332,6 @@ input[type='color']::-webkit-color-swatch {
   display: flex;
   flex-direction: column;
 }
-
 
 .inspector-body {
   flex: 1;
@@ -4208,8 +4218,6 @@ input[type='number'] {
   color: var(--text-secondary);
 }
 
-
-
 /* Resource drawer frees the laydown from a permanently docked library. */
 .board-app .main {
   position: relative;
@@ -4218,8 +4226,9 @@ input[type='number'] {
 .board-resource-rail {
   display: flex;
   flex-direction: column;
-  flex: 0 0 60px;
-  width: 60px;
+  /* Wide enough for the longest label, Commands, at the meta size. */
+  flex: 0 0 76px;
+  width: 76px;
   padding: var(--space-2) var(--space-1);
   gap: var(--space-3);
   background: var(--surface-panel);
@@ -4235,23 +4244,42 @@ input[type='number'] {
   font-size: var(--type-meta-size);
 }
 
-.board-resource-rail button > span {
-  font-size: var(--type-title-size);
+.board-resource-rail .board-commands {
+  margin-top: auto;
 }
 
-.board-resource-rail .board-keys {
-  margin-top: auto;
+/* The canvas region under the tools row and above the timeline. The Library
+   drawer and the empty-board hint overlay it, so neither covers a control. */
+.board-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
 }
 
 .board-library-drawer {
   position: absolute;
   z-index: 40;
-  left: 60px;
+  left: 0;
   top: 0;
   bottom: 0;
   display: flex;
-  max-width: calc(100% - 60px);
+  max-width: 100%;
   border-right: 1px solid var(--border-strong);
+}
+
+.board-empty-hint {
+  position: absolute;
+  z-index: 5;
+  top: var(--space-3);
+  left: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
 }
 
 .board-library-drawer[hidden],
@@ -4300,6 +4328,11 @@ input[type='number'] {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
+}
+
+/* One row's model basis link at a time: it shows on hover or keyboard focus. */
+.palette-item:not(:hover, :focus-within) .palette-basis {
+  visibility: hidden;
 }
 
 .board-tools {
@@ -4416,20 +4449,10 @@ input[type='number'] {
   min-width: 0;
 }
 
-.entity-workspace-header {
-  padding: var(--space-3) var(--panel-pad) var(--space-2);
-  flex: 0 0 auto;
-}
-
-.entity-workspace-header h3 {
-  margin: var(--space-2) 0;
-  font-size: var(--type-title-size);
-}
-
 .entity-workspace-tabs {
   display: flex;
   flex-wrap: wrap;
-  padding: 0 var(--panel-pad) var(--space-2);
+  padding: var(--space-2) var(--panel-pad);
   gap: var(--space-1);
   border-bottom: 1px solid var(--border-subtle);
   flex: 0 0 auto;
@@ -4455,8 +4478,18 @@ input[type='number'] {
   padding: 0;
 }
 
-.board-app .right-panel :is(.insp-row-label, .insp-row-value, .insp-header-name,
-  .insp-header-sub, .insp-eyebrow-note, .det-n, .det-m, .rv) {
+.board-app
+  .right-panel
+  :is(
+    .insp-row-label,
+    .insp-row-value,
+    .insp-header-name,
+    .insp-header-sub,
+    .insp-eyebrow-note,
+    .det-n,
+    .det-m,
+    .rv
+  ) {
   white-space: normal;
   overflow-wrap: anywhere;
   overflow: visible;
@@ -4603,12 +4636,28 @@ input[type='number'] {
 }
 
 /* Analysis prose, statistical intervals and evidence labels always wrap. */
-.board-app .right-panel :is(.live-state, .ts,
-  .outcome-metric > span, .outcome-metric small, .capacity-row > span,
-  .gate-head strong, .gate-failures div, .system-name, .system-live-summary,
-  .component-copy strong, .component-copy small, .threat-data-title,
-  .threat-data-count, .threat-data-head strong, .threat-data-detail,
-  .debrief-header strong, .event-route strong, .event-route small) {
+.board-app
+  .right-panel
+  :is(
+    .live-state,
+    .ts,
+    .outcome-metric > span,
+    .outcome-metric small,
+    .capacity-row > span,
+    .gate-head strong,
+    .gate-failures div,
+    .system-name,
+    .system-live-summary,
+    .component-copy strong,
+    .component-copy small,
+    .threat-data-title,
+    .threat-data-count,
+    .threat-data-head strong,
+    .threat-data-detail,
+    .debrief-header strong,
+    .event-route strong,
+    .event-route small
+  ) {
   white-space: normal;
   overflow-wrap: anywhere;
   overflow: visible;
@@ -4620,8 +4669,9 @@ input[type='number'] {
   gap: var(--space-2);
 }
 
-.board-app .right-panel :is(.outcome-metric strong, .tv, .gate-count,
-  .system-live-summary, .threat-data-count) {
+.board-app
+  .right-panel
+  :is(.outcome-metric strong, .tv, .gate-count, .system-live-summary, .threat-data-count) {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -4773,7 +4823,6 @@ input[type='number'] {
   font-size: var(--type-title-size);
   overflow-wrap: anywhere;
 }
-
 
 .analysis-settings-context {
   display: flex;
@@ -4980,14 +5029,30 @@ input[type='number'] {
 
 /* Eight columns in the 880 px dialog. `.tb` gives the first column 34 percent
    for the 320 px panel, which leaves nothing for the lineage columns here. */
-.systems-tb th:nth-child(1) { width: 14%; }
-.systems-tb th:nth-child(2) { width: 9%; }
-.systems-tb th:nth-child(3) { width: 12%; }
-.systems-tb th:nth-child(4) { width: 14%; }
-.systems-tb th:nth-child(5) { width: 5%; }
-.systems-tb th:nth-child(6) { width: 17%; }
-.systems-tb th:nth-child(7) { width: 12%; }
-.systems-tb th:nth-child(8) { width: 17%; }
+.systems-tb th:nth-child(1) {
+  width: 14%;
+}
+.systems-tb th:nth-child(2) {
+  width: 9%;
+}
+.systems-tb th:nth-child(3) {
+  width: 12%;
+}
+.systems-tb th:nth-child(4) {
+  width: 14%;
+}
+.systems-tb th:nth-child(5) {
+  width: 5%;
+}
+.systems-tb th:nth-child(6) {
+  width: 17%;
+}
+.systems-tb th:nth-child(7) {
+  width: 12%;
+}
+.systems-tb th:nth-child(8) {
+  width: 17%;
+}
 
 /* A grade is one unbroken word wider than its column, so it wraps rather than
    spilling over the layer beside it. */

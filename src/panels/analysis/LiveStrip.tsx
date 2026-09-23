@@ -4,7 +4,21 @@ import type { TrialResultView } from '../../analysis/trialResult'
 import { trialResultOf, trialSnapshotAt } from '../../analysis/trialResult'
 import { formatTime } from '../../geometry/geo'
 import { State } from '../../ui/kit'
+import { toggleAnalysisRun } from '../../playback/runSession'
 import { selectTrialHorizon, selectTrialSelection } from '../../state/trialSelectors'
+
+/** The pre-Play line inside Execute: the Play control sits in the line itself. */
+export function PlayPrompt() {
+  return (
+    <>
+      {'No trial yet. Press '}
+      <button className="mini" onClick={toggleAnalysisRun}>
+        Play
+      </button>
+      {' to run one.'}
+    </>
+  )
+}
 
 /** One simulated-trial basis and one cursor bound for the whole Execute screen. */
 export function LiveStrip({
@@ -31,6 +45,7 @@ export function LiveStrip({
   )
   const horizon = suppliedHorizon ?? cursor
   const phase = useStore((state) => state.playback.phase)
+  const execute = useStore((state) => state.ui.boardPhase === 'execute')
   const completed = useStore((state) => state.playback.completedAtMs != null)
   const counts = useMemo(
     () => (view ? trialSnapshotAt(view, horizon).counts : undefined),
@@ -39,11 +54,15 @@ export function LiveStrip({
   if (!view || !counts)
     return (
       <p className="muted small" role="status">
-        {selection.status === 'error'
-          ? selection.message
-          : selection.status === 'preparing'
-            ? 'Preparing trial'
-            : 'No trial yet. Press Play in Execute to run one.'}
+        {selection.status === 'error' ? (
+          selection.message
+        ) : selection.status === 'preparing' ? (
+          'Preparing trial'
+        ) : execute ? (
+          <PlayPrompt />
+        ) : (
+          'No trial yet. Press Play in Execute to run one.'
+        )}
       </p>
     )
   const defeated =

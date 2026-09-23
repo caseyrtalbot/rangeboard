@@ -63,7 +63,10 @@ function ModelBasis({ entityId, model }: { entityId: string; model: SpecModel })
   )
 }
 
-/** One selected Board entity, with navigation outside its shared scroll region. */
+/**
+ * One selected Board entity, with navigation outside its shared scroll region. Each
+ * section draws its own object header with the state mark, so the shell draws none.
+ */
 export function EntityWorkspace({
   entityId,
   section,
@@ -86,15 +89,6 @@ export function EntityWorkspace({
 
   return (
     <div className="entity-workspace">
-      <div className="entity-workspace-header">
-        <button className="mini" onClick={onOverview}>
-          ‹ Overview
-        </button>
-        <div>
-          <h3>{entity?.name || (entity ? 'Unnamed entity' : 'Entity unavailable')}</h3>
-          <p>{entity ? `${entity.kind} · ${model?.name ?? 'No linked model'}` : entityId}</p>
-        </div>
-      </div>
       <div className="entity-workspace-tabs" role="tablist" aria-label="Entity workspace sections">
         {SECTIONS.map((item, index) => (
           <button

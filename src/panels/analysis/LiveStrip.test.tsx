@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { useStore } from '../../state/store'
+import { IDLE_TRIAL } from '../../state/runState'
 import { installTrial } from './trialTestState'
 import { LiveStrip } from './LiveStrip'
 
@@ -27,6 +28,17 @@ describe('LiveStrip run line', () => {
     expect(html).toContain('defeated 3/11 members')
     expect(html).not.toContain('<button')
     expect(html).not.toContain('live-strip')
+  })
+
+  it('puts the Play control inline before a trial, and names Execute only outside it', () => {
+    useStore.setState(({ ui }) => ({ trial: IDLE_TRIAL, ui: { ...ui, boardPhase: 'execute' } }))
+    Object.assign(useStore.getInitialState(), useStore.getState())
+    const execute = renderToStaticMarkup(<LiveStrip />)
+    expect(execute).toContain('No trial yet. Press <button class="mini">Play</button>')
+    expect(execute).not.toContain('in Execute')
+    useStore.setState(({ ui }) => ({ ui: { ...ui, boardPhase: 'prepare' } }))
+    Object.assign(useStore.getInitialState(), useStore.getState())
+    expect(renderToStaticMarkup(<LiveStrip />)).toContain('Press Play in Execute to run one.')
   })
 
   it('shows completion and includes late defeats only after their effects', () => {

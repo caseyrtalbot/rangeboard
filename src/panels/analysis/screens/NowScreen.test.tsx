@@ -13,17 +13,17 @@ function render() {
 
 afterEach(() => vi.restoreAllMocks())
 
+// Execute holds the Play control, so the placeholder carries it inline.
+const nowPlay =
+  '<p class="muted small">No trial yet. Press <button class="mini">Play</button> to run one.</p>'
+
 describe('NowScreen cursor telemetry', () => {
   it('ready: retains exactly one pre-Play placeholder', () => {
     installTrial()
     unstartTrial()
-    expect(render()).toBe(
-      '<p class="muted small">No trial yet. Press Play in Execute to run one.</p>',
-    )
+    expect(render()).toBe(nowPlay)
     useStore.setState({ trial: IDLE_TRIAL })
-    expect(render()).toBe(
-      '<p class="muted small">No trial yet. Press Play in Execute to run one.</p>',
-    )
+    expect(render()).toBe(nowPlay)
   })
 
   it('mid-run: shows retained holds, bounded milestones and inventory without scenario inputs', () => {

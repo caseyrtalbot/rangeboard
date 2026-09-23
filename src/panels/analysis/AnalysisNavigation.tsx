@@ -16,17 +16,18 @@ export const AnalysisNavigation = memo(function AnalysisNavigation({
   screen,
   onNavigate,
 }: AnalysisNavigationProps) {
+  const options = PHASE_SCREENS[phase]
+  // Analyze reads a finished ensemble, so the Run control sits beside its screens.
+  // Prepare carries its own in the forecast header; Execute is playback, not a run.
+  const run = phase === 'analyze'
+  // A phase with one screen has nothing to choose, so it draws no navigation.
+  if (options.length < 2 && !run) return null
   return (
     <nav className="lens" aria-label="Analysis navigation">
-      <Seg
-        value={screen}
-        options={PHASE_SCREENS[phase]}
-        onChange={onNavigate}
-        label="Analysis screens"
-      />
-      {/* Analyze reads a finished ensemble, so the Run control sits beside its screens.
-          Prepare carries its own in the forecast header; Execute is playback, not a run. */}
-      {phase === 'analyze' && <RunControl />}
+      {options.length > 1 && (
+        <Seg value={screen} options={options} onChange={onNavigate} label="Analysis screens" />
+      )}
+      {run && <RunControl />}
     </nav>
   )
 })

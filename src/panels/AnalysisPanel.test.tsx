@@ -14,6 +14,9 @@ function render(props?: ComponentProps<typeof AnalysisPanel>): string {
 }
 
 const noTrial = '<p class="muted small">No trial yet. Press Play in Execute to run one.</p>'
+// Execute holds the Play control, so its placeholder carries it inline.
+const nowPlay =
+  '<p class="muted small">No trial yet. Press <button class="mini">Play</button> to run one.</p>'
 const trialScreens = [
   { phase: 'execute', screen: 'now' },
   { phase: 'analyze', screen: 'outcome' },
@@ -60,9 +63,10 @@ describe('AnalysisPanel screens', () => {
           summary: runReplicates({ ...scenario, replicates: 2 }),
         },
       })
-      expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${noTrial}</div>`)
+      const placeholder = props.phase === 'execute' ? nowPlay : noTrial
+      expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${placeholder}</div>`)
       useStore.getState().resetRun()
-      expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${noTrial}</div>`)
+      expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${placeholder}</div>`)
     },
   )
 
