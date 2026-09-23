@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import type { Entity, EntityKind, Scenario, Vec2 } from '../model/types'
-import { DEFAULT_REQUIREMENT_THRESHOLDS, newId } from '../model/types'
+import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../model/types'
 import { hashU01, idHash } from '../geometry/prng'
 import { resolveEngagements } from './attrition'
 import type { ScanSteering } from './detection'
@@ -161,10 +161,13 @@ describe('monteCarloPolicy', () => {
  * the origin, Coyote 2.4 km to the northeast, FAAD C2 600 m west, chain
  * Giraffe -> C2 -> Coyote, ROE free. Mohajer-6 (fixed-wing, Swerling 1
  * pinned because the Giraffe Pd model reads it) inbound from 14 km north at
- * 14000 ft; Mavic 3 inbound from 3 km north.
+ * 14000 ft; Mavic 3 inbound from 3 km north. The ids are fixed: the Monte
+ * Carlo keys hash them, and `newId` reads the wall clock.
  */
 describe('draw policy engine regression', () => {
   const common = { headingDeg: 0, color: null, notes: '' }
+  let serial = 0
+  const fixedId = (prefix: string): string => `${prefix}-${(serial += 1)}`
 
   function ent(
     s: Scenario,
@@ -173,20 +176,21 @@ describe('draw policy engine regression', () => {
     pos: Vec2,
     extra?: Partial<Entity>,
   ): string {
-    const id = newId('e')
+    const id = fixedId('e')
     s.entities.push({ id, name: specId, kind, specId, pos, ...common, ...extra })
     return id
   }
 
   function flight(s: Scenario, entityId: string, from: Vec2, to: Vec2): void {
-    s.paths.push({ id: newId('p'), entityId, points: [from, to], speedMps: 0, startDelayS: 0 })
+    s.paths.push({ id: fixedId('p'), entityId, points: [from, to], speedMps: 0, startDelayS: 0 })
   }
 
   function link(s: Scenario, fromId: string, toId: string): void {
-    s.connections.push({ id: newId('c'), fromId, toId, label: 'track data' })
+    s.connections.push({ id: fixedId('c'), fromId, toId, label: 'track data' })
   }
 
   function laydown(): Scenario {
+    serial = 0
     const s = emptyScenario()
     s.roe = 'free'
     const mohajer = s.library.find((m) => m.id === 'lib-mohajer6')!

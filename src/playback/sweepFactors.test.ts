@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import fixture from './__fixtures__/detection-outside-rings.json'
 import { parseAutosave } from '../io/persist'
 import { bearingDeg, dist } from '../geometry/geo'
@@ -9,6 +9,8 @@ import {
   approachCenter,
   SWEEP_ENVIRONMENT_PRESETS,
 } from './sweepFactors'
+import type { McSweepRequest } from './mcRun'
+import { runSweep } from './mcRun'
 
 /** The JIATF-401 firing laydown: one Mavic 3 at 300 ft, 18 km north of the asset at the origin. */
 function laydown() {
@@ -123,6 +125,38 @@ describe('applySweepValue', () => {
     expect(back.raid!.waves[0].entityIds).toEqual(uasIds(s))
     expect(() => applySweepValue(s, 'raidSize', 0)).toThrow(/1 or more/)
     expect(() => applySweepValue(s, 'raidSize', 1.5)).toThrow(/1 or more/)
+  })
+
+  it('raidSize derives the added ids from the source and copy index, clear of taken ids', () => {
+    const s = laydown()
+    const [source] = uasIds(s)
+    const path = s.paths.find((p) => p.entityId === source)!
+    const three = applySweepValue(s, 'raidSize', 3)
+    expect(uasIds(three)).toEqual([source, `${source}~r1`, `${source}~r2`])
+    expect(three.paths.map((p) => p.id)).toEqual([path.id, `${path.id}~r1`, `${path.id}~r2`])
+    // An id already in the scenario is never reused.
+    const clash = { ...s, entities: [...s.entities, { ...s.entities[0], id: `${source}~r1` }] }
+    const grown = uasIds(applySweepValue(clash, 'raidSize', 2))
+    expect(grown).toContain(`${source}~r1~`)
+    expect(new Set(grown).size).toBe(grown.length)
+  })
+
+  it('a raidSize sweep that adds ships gives the same summary at another wall clock', () => {
+    const spec: Omit<McSweepRequest, 'type' | 'runId'> = {
+      scenario: laydown(),
+      factors: [{ id: 'raidSize', values: [1, 3] }],
+      replicatesPerCell: 8,
+      responses: ['leakers', 'kills'],
+    }
+    const clock = vi.spyOn(Date, 'now')
+    try {
+      clock.mockReturnValue(1_790_000_000_000)
+      const first = JSON.stringify(runSweep(spec))
+      clock.mockReturnValue(1_790_000_000_000 + 86_400_000 * 37 + 12_345)
+      expect(JSON.stringify(runSweep(spec))).toBe(first)
+    } finally {
+      clock.mockRestore()
+    }
   })
 
   it('environmentPreset sets the covariates and keeps the range numbers', () => {

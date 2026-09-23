@@ -27,7 +27,7 @@ import {
   sensitivityLoop,
   sweepLoop,
 } from './mcRun'
-import { contiguousPrefix, mergePartials } from './mergeSummaries'
+import { mergePartials } from './mergeSummaries'
 import { morrisLoop } from './morris'
 import { sobolLoop } from './sobol'
 import type {
@@ -103,12 +103,13 @@ self.onmessage = async (e: MessageEvent<McRequest | PoolRequest | FinishSummaryR
     return
   }
   if (e.data.type === 'finish-summary') {
-    // The page transferred the packed grids. Merge and summarize here. The merge
-    // releases each part as it copies it, and the list is emptied so nothing
-    // keeps the transferred buffers reachable while the summary runs.
+    // The page transferred the packed grids. Merge the contiguous prefix and
+    // summarize here. The merge sizes its grids to the prefix and releases each
+    // part as it copies it, and the list is emptied so nothing keeps the
+    // transferred buffers reachable while the summary runs.
     const { scenario, rule, elapsedMs, runId: id } = e.data
     try {
-      const prefix = contiguousPrefix(mergePartials(e.data.parts, { release: true }))
+      const prefix = mergePartials(e.data.parts, { release: true, prefix: true })
       e.data.parts.length = 0
       if (prefix.indices.length === 0) {
         post({
