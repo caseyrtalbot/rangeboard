@@ -271,7 +271,35 @@ reason. No worker adds a row after the queue is complete.
 
 #### B5. Top bar
 
-Status: not started.
+- Status: done.
+- Commit: this commit, on `row-b/b5-topbar`.
+- Checks:
+  - `npx vitest run --dir src src/panels/Toolbar`: Test Files 1 passed (1), Tests 13 passed (13).
+  - `npm run typecheck`: `tsc --noEmit -p tsconfig.app.json`, exit 0, no errors.
+  - `npm run lint`: exit 0; 29 warnings, all outside `Toolbar.tsx` and present on main.
+  - `npm run format:check`: All matched files use Prettier code style!
+  - `npm run check:silent`: No hidden-failure patterns in the checked lines.
+  - `npm run build && npm run check:bundle`: Bundle budget passed: entry <= 365 kB;
+    initial JavaScript + CSS <= 400 kB (gzip -9).
+- Entry gzip: 364,738 bytes (main 364,438; +300). The first use of `src/ui/icons.tsx`
+  (Stroke, undo, redo) costs 154 of these; a later icon user shares that base.
+- Browser: Playwright headless, fixture `firing-scenario.json` with the scenario renamed
+  to trigger autosave, dark and light, 2100, 1600 and 1440. The groups keep a gap of
+  24 px or more and the tabs are centered (offset 0 px) at every width. At 1440 the WEZ,
+  derate, spawn and saved chips fold into the ROE button (`ROE Tight +1`) and its panel.
+  The spawn chip selects the UAS. Undo and redo draw the SVG icons. No page overflow, no
+  page errors.
+- For the integrator:
+  - `DESIGN_SYSTEM.md`: "The top bar has a 24 px column gap (`--space-6`). Below
+    1600 px the status chips fold into the ROE button, which shows a `+N` count in mono
+    warning ink and lists them in its panel. A failed save stays in the bar."
+  - `DESIGN_SYSTEM.md`: "A status chip that acts is a button with no frame; it keeps
+    the chip look."
+- Open:
+  - With the fixture plus WEZ on and an environment derate (five chips), the right group
+    at 1600 is wider than its half, so the tabs sit 135 px left of center. The groups
+    still keep the 24 px gap. D7 fixes the fold at 1600 px; a higher fold width needs a
+    decision.
 
 ### Outside the plan
 

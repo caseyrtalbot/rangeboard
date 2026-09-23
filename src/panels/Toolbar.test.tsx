@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
+import fixture from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+import { parseAutosave } from '../io/persist'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 import { RangeSetupMenuPanel } from './RangeSetupMenu'
@@ -75,6 +77,31 @@ describe('Board toolbar grouping', () => {
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(html).not.toContain('Calibrate scale')
+  })
+
+  it('writes status chips in sentence case and makes the spawn chip a button', () => {
+    useStore.getState().replaceScenario(parseAutosave(JSON.stringify(fixture)))
+    const html = render(
+      <Toolbar
+        drawerOpen
+        onToggleDrawer={() => {}}
+        boardPhase="prepare"
+        runSeq={1}
+        runPhase="idle"
+        onOpenPhase={() => {}}
+      />,
+    )
+
+    expect(html).toMatch(/<button type="button" class="status-chip"[^>]*>.*Spawn in ring 1</)
+    expect(html).not.toContain('Spawn In Ring')
+    expect(html).not.toContain('WEZ On')
+    expect(html).not.toContain('Env Derate')
+  })
+
+  it('draws undo and redo as icons', () => {
+    const html = render(<BoardTools />)
+    expect(html).toMatch(/aria-label="Undo"[^>]*><svg/)
+    expect(html).toMatch(/aria-label="Redo"[^>]*><svg/)
   })
 
   it('preserves every file action', () => {
