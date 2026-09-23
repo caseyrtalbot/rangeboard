@@ -65,6 +65,16 @@ describe('meanInterval', () => {
     expect(meanInterval([]).mean).toBeNaN()
   })
 
+  it('memoizes the t quantile without moving any bit', () => {
+    const cold = meanInterval([1, 2, 3, 4, 5, 6])
+    const warm = meanInterval([1, 2, 3, 4, 5, 6])
+    expect(Object.is(warm.lo, cold.lo)).toBe(true)
+    expect(Object.is(warm.hi, cold.hi)).toBe(true)
+    const other = meanInterval([1, 2, 3, 4])
+    expect(other.lo).toBeCloseTo(0.44574, 4)
+    expect(other.hi).toBeCloseTo(4.55426, 4)
+  })
+
   it('reads a sorted buffer in place', () => {
     const sorted = Float64Array.from([1, 2, 3, 4])
     expect(sortedMeanInterval(sorted)).toEqual(meanInterval([1, 2, 3, 4]))

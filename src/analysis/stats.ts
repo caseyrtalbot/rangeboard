@@ -82,13 +82,22 @@ export function betaQuantile(p: number, a: number, b: number): number {
   return (lo + hi) / 2
 }
 
+// One-entry memo: a band pass asks for the same (p, df) once per grid step.
+let lastP = NaN
+let lastDf = NaN
+let lastT = NaN
+
 /** Student t quantile from the incomplete beta relation; exact for every df. */
 function tQuantile(p: number, df: number): number {
   if (p === 0.5) return 0
+  if (p === lastP && df === lastDf) return lastT
   const pp = p < 0.5 ? 1 - p : p
   const x = betaQuantile(2 * (1 - pp), df / 2, 0.5)
   const t = Math.sqrt((df * (1 - x)) / x)
-  return p < 0.5 ? -t : t
+  lastP = p
+  lastDf = df
+  lastT = p < 0.5 ? -t : t
+  return lastT
 }
 
 /** Wilson interval, the default binomial interval. n must be positive. */
