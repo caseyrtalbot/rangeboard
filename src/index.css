@@ -540,6 +540,12 @@ button.mini:hover {
   border-color: var(--text-secondary);
 }
 
+button.mini:disabled,
+button.mini:disabled:hover {
+  color: var(--text-disabled);
+  border-color: var(--border-control);
+}
+
 input,
 textarea,
 select {
@@ -4661,12 +4667,6 @@ input[type='number'] {
 
 .board-app .right-panel .seg button {
   white-space: normal;
-}
-
-.entity-workspace-header p {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: var(--type-meta-size);
 }
 
 .entity-model-scope p,

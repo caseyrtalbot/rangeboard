@@ -238,7 +238,7 @@ describe('FragilityScreen', () => {
     expect(html).not.toContain('class="tile"')
     expect(html).toContain('no rate yet')
     expect(html).toContain(
-      'disabled="" title="Pin this laydown and ensemble for Compare">Pin as baseline',
+      'disabled="" title="Run Monte Carlo first to pin a baseline.">Pin as baseline',
     )
     interaction.buttons.get('Run Monte Carlo')!.onClick()
     expect(start).toHaveBeenCalledOnce()

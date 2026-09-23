@@ -43,10 +43,10 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 Run the complete gate for source changes and after integrating lanes. `npm run check`
 does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
 `npm run check:bundle` after `npm run build` for any change that touches the entry chunk.
-The budget (`scripts/check-bundle.mjs`) is 365,000 bytes gzip for the entry and 400,000
-for initial JavaScript plus CSS. It was raised from 364,000 on 2026-09-22, when the
-column-buffer track ledger in `retainTrial.ts` added 682 bytes and the entry measured
-364,422 (initial 380,121), so the entry headroom is under 1 kB. Documentation-only
+The budget (`scripts/check-bundle.mjs`) is 366,000 bytes gzip for the entry and 400,000
+for initial JavaScript plus CSS. The user raised it from 365,000 on 2026-09-23 at the
+Row B design gate, when the board ink, icons and floating surfaces put the entry at
+365,722 (initial 381,985), so the entry headroom is 278 bytes. Documentation-only
 changes need `docs:check`; maintenance-script changes also need `test:docs`.
 `npm run check` runs the silent-gate tests but not `check:silent` itself; CI runs `check:silent`
 against the pull request base or the pushed-from commit, and a local run diffs against `main`.

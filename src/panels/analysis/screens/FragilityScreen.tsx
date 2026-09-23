@@ -325,9 +325,11 @@ export function FragilityScreen() {
           type="button"
           disabled={!summary || mc.status !== 'done'}
           title={
-            baseline
-              ? `Replaces the pinned baseline · ${baseline.label}`
-              : 'Pin this laydown and ensemble for Compare'
+            pinReason
+              ? `${pinReason} to pin a baseline.`
+              : baseline
+                ? `Replaces the pinned baseline · ${baseline.label}`
+                : 'Pin this laydown and ensemble for Compare'
           }
           onClick={() => useStore.getState().pinBaseline()}
         >

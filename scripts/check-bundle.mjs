@@ -9,7 +9,9 @@ import { pathToFileURL } from 'node:url'
 // optimize request wiring in the store and analysisRequests is the remaining addition.
 // Raised to 365 kB on 2026-09-22: the column-buffer track ledger in retainTrial.ts added
 // 682 bytes and the entry measured 364.4 kB. Held here until the engine additions load lazily.
-export const BUNDLE_BUDGET = { entry: 365_000, initial: 400_000 }
+// Raised to 366 kB on 2026-09-23 at the Row B design gate by the user: the board ink, icons
+// and floating surfaces put the merged entry at 365.7 kB.
+export const BUNDLE_BUDGET = { entry: 366_000, initial: 400_000 }
 
 // Match the Wave 3 evidence method: entry + modulepreloaded JS + initial CSS.
 // Report other preloads separately so the total transfer is also visible.

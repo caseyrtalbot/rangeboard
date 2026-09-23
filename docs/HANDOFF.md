@@ -17,8 +17,9 @@ one row of it.
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
   `origin/main` is at `293f7bd`. Local `main` is ahead by the plan commit `0386b3a`, the
-  Row A commit `e744334` and the commit that holds this handoff. None of them is pushed.
-  The audit fixes `181c8ec` to `7da197d` and the documentation
+  Row A commit `e744334`, the Row B protocol commit `1833ce8`, the five Row B lane merges
+  (`0202893` to `1fd0bfc`) and the B-int commit that holds this handoff. None of them is
+  pushed. The audit fixes `181c8ec` to `7da197d` and the documentation
   update after them follow row J (`afaf1ae`) and row O (`de208aa`).
 - The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
   layered kill mass 1, layered kills mean 1.115, JIATF leakers mean 0.895, JIATF kills
@@ -27,34 +28,64 @@ one row of it.
 
 ## Tasking
 
-Row B of [Plan.md](Plan.md#row-b-wave-1): wave 1, lanes B1 to B5, then B-int. Row A is
-complete in `e744334`.
+Row C of [Plan.md](Plan.md#row-c-wave-2): wave 2, lanes C1 to C4, then C-int and the
+final capture. Row B is complete and merged on `main`.
 
 - Base: local `main` at the commit that holds this handoff. Each lane branches from it.
-- Launch B1 to B5 in one message. Each lane runs in its own worktree on its own branch,
-  runs `npm ci` there first, and uses its own dev port. Owned files, CSS blocks, findings
-  and gates are in the Plan row. Then run B-int.
+- Launch C1 to C4 in one message. Each lane runs in its own worktree under
+  `.claude/worktrees/` on its own branch, runs `npm ci` there first, and uses its own dev
+  port. Owned files, findings and decisions are in the Plan row. Then run C-int.
 
-| Lane | Branch | Worker, budget | Dev port |
-| --- | --- | --- | --- |
-| B1 | `row-b/b1-surfaces` | `opus-medium`, 3600 s | 5401 |
-| B2 | `row-b/b2-canvas` | `opus-high`, 5400 s | 5402 |
-| B3 | `row-b/b3-shell` | `opus-high`, 5400 s | 5403 |
-| B4 | `row-b/b4-controls` | `opus-medium`, 3600 s | 5404 |
-| B5 | `row-b/b5-topbar` | `opus-medium`, 2700 s | 5405 |
+| Lane | Branch | Findings | Worker, budget | Dev port |
+| --- | --- | --- | --- | --- |
+| C1 | `row-c/c1-settings` | F4 (D2) | `opus-medium`, 3600 s | 5501 |
+| C2 | `row-c/c2-tools` | F7 (D3) | `opus-medium`, 2700 s | 5502 |
+| C3 | `row-c/c3-run` | F11 (D4) | `opus-medium`, 2700 s | 5503 |
+| C4 | `row-c/c4-undo` | U3 (D8) | `opus-medium`, 3600 s | 5504 |
 
-- D1 is closed (adopt all). D5 and D7 apply in this row. Use the plan defaults unless the
-  user chose otherwise before the row starts. D2 to D4 and D8 wait on Row C.
-- The Row A gate measured the entry at 364,438 bytes gzip: 562 bytes under the 365,000
-  budget. The five lanes share that headroom. Initial JavaScript and CSS: 380,353 bytes
-  against 400,000. A lane never raises a budget.
-- Row A facts for the lanes:
-  - `BOARD_INK_PAPER` gives the airspace grid the plain paper grid values. The plan names
-    no separate paper airspace tone. B2 applies the ink to the layers.
-  - A disabled button inside a `.seg` group, such as undo and redo in the board tools,
-    draws in text 2, not `--text-disabled`: `.seg button` sets the colour after
-    `button:disabled` at the same specificity. B4 owns the `.seg` block.
-  - Light-theme canvas labels stay faint until B2 reads `useBoardInk`.
+- D2, D3, D4 and D8 apply in this row. Use the plan defaults unless the user chose
+  otherwise before the row starts. D7 stays at 1600 px by the user's decision.
+- Each lane gate: scoped tests for its owned files, `npm run typecheck`, `npm run lint`,
+  `npm run format:check`, `npm run check:silent`, then
+  `npm run build && npm run check:bundle`, and a browser check of its change in dark and
+  light at 2100 and 1440.
+- The user raised the entry budget to 366,000 bytes at the Row B gate. B-int measured the
+  entry at 365,722 bytes gzip: 278 bytes of headroom. The four lanes share it. Initial
+  JavaScript and CSS: 381,985 bytes against 400,000. A lane never raises a budget.
+- Row B facts for the lanes:
+  - C1: B4 renamed the Environment action "Apply effects" in `EnvironmentSettings.tsx`.
+    Settings is a `.tb-menu-panel surface-float` with a `--scrim` backdrop.
+  - C2: `Toolbar.tsx` now holds the chip fold below 1600 px, the SVG undo and redo icons
+    and the spawn chip button (B5), and `surface-float` on the ROE and file menus (B-int).
+    No key is bound to a board tool, so the tool buttons show no key hint (U2).
+  - C3: the run button in `RunControl.tsx` is `.mc-run primary` (V2, B-int), and
+    `ForecastSettings.test.tsx` checks that class list. `AnalysisNavigation` shows
+    `RunControl` in Analyze on the Overview tab only.
+  - C4: if the store has no label for the last undoable action, C4 stops and reports;
+    C-int adds the store field.
+
+### Open from Row B
+
+- Finding V12 (D7): with the fixture plus WEZ on and an environment derate (five chips), the right
+  group at 1600 px is wider than its half, and the tabs sit 135 px left of center. The
+  groups keep the 24 px gap. The user kept the fold at 1600 px.
+- Finding U2: the context menu shows its keys; the board tool buttons show none, because no key
+  is bound to a tool.
+- Finding C2 changed: the path caption does not join `layoutLabels`, because that needs
+  `LiveScene.tsx`. `PathLayer` places it clear of the glyphs and anchored labels of the
+  board at rest. Spoke fans and flying entities are not obstacles.
+- Finding C1: the `PathLayer` draft and calibrate marks, the `EntityLayer` connect ring and range
+  button, and the `CanvasStage` marquee still use dark-only inks. The path caption uses
+  the entity ink: `#c98577` is 2.48:1 on paper.
+- Finding C4: the 28 px selection ring crosses the top of the anchored label, which starts at
+  20 px. The geometry is unchanged.
+- Finding U4: when an entity is deleted under the pointer, the pointer cursor stays until the next
+  hover leave.
+- `BoardInk` has no selection or board-tone field; `EntityLayer.tsx` and
+  `ConnectionLayer.tsx` hold those values. Adding `selection` and `board` to
+  `src/ui/ink.ts` would remove them.
+- `.board-app .right-panel .seg button { white-space: normal }` wraps every right-panel
+  segment. The ring override needs a four-class selector to keep "Global" on one line.
 
 ### Handoff updates
 
@@ -62,248 +93,68 @@ Every worker updates this file for the next phase, and only after its own checks
 The worker runs each check, reads its output and records the summary line. A report
 without that output is a claim, not a result.
 
-A lane worker (B1 to B5):
+A lane worker (C1 to C4):
 
-1. Runs the lane gate in its Plan row, then `npm run build && npm run check:bundle`.
+1. Runs its lane gate, then `npm run build && npm run check:bundle`.
 2. When every check passes, replaces the `Status: not started.` line of its own block
    under "Lane results" with the fields below. It edits no other line of this file, so
-   the five branches merge without a conflict here.
+   the four branches merge without a conflict here.
 3. Does not run `docs:review` on this file and does not run `docs:check`. Every lane would
-   change the same `docs/maintenance.json` line, and any source edit invalidates the two
-   guides. B-int records the reviews once, after the merge.
+   change the same `docs/maintenance.json` line, and any source edit invalidates the
+   guides. C-int records the reviews once, after the merge.
 4. Commits its owned paths and this file on its lane branch. It does not push or merge.
 5. If a check fails and the fix is outside its owned files, sets `Status: blocked`,
    records the command and its failing summary line, commits, and stops.
 
 Block fields: `Status` (done or blocked); `Commit`; `Checks` (each command with its
 summary line); `Entry gzip` (bytes from `check:bundle`); `Browser` (screens, themes,
-widths, result); `For the integrator` (a needed edit in an unowned CSS block or file, and
-the rule or token text for `DESIGN_SYSTEM.md`); `Open` (each lane finding not closed, with
-the reason).
+widths, result); `For the integrator` (a needed edit in an unowned file, and the rule or
+token text for `DESIGN_SYSTEM.md`); `Open` (each lane finding not closed, with the
+reason).
 
-The integrator (B-int):
+The integrator (C-int):
 
-1. Treats each lane block as a claim. Merges B1 to B5 in that order. Resolves
-   `index.css` by block ownership. Resolves a `docs/maintenance.json` conflict by taking
-   `main` and recording the review again.
-2. Runs the B-int checks in the Plan row: `npm run check`,
-   `npm run build && npm run check:bundle`, `npm run test:e2e`, and the recapture of every
-   stage and overlay in dark and light at 2100 and 1440. Edits `DESIGN_SYSTEM.md` for each
-   reported rule.
+1. Treats each lane block as a claim. Merges C1 to C4 in that order. Resolves a
+   `docs/maintenance.json` conflict by taking `main` and recording the review again.
+   Measures the merged entry before any fix: lanes that pass alone can fail together.
+2. Runs `npm run check`, `npm run build && npm run check:bundle`, `npm run test:e2e`
+   against a dev server on a free port, and the final capture of every stage and overlay
+   in dark and light at 2100 and 1440. Compares the capture against the 36 findings.
+   Edits `DESIGN_SYSTEM.md` for each reported rule.
 3. When every check passes, rewrites this file in place: Position, the entry gzip bytes
-   and headroom, and Tasking set to Row C with lane blocks C1 to C4 and this same
-   protocol. It carries each open lane item forward and deletes the Row B lane blocks;
-   git history keeps them. It runs `docs:review` on every changed reference and on this
-   file, then `npm run docs:check`.
-4. Commits on `main`, removes the Row B worktrees and lane branches, and does not push.
-
-Row C and C-int follow the same protocol. After C-int, Tasking states that no Plan row
-stays open and lists each finding that is closed, changed by a decision, or open with its
-reason. No worker adds a row after the queue is complete.
+   and headroom, and Tasking stating that no Plan row stays open, with each finding
+   closed, changed by a decision, or open with its reason. It deletes the lane blocks.
+   It runs `docs:review` on every changed reference and on this file, then
+   `npm run docs:check`.
+4. Commits on `main`, removes the Row C worktrees and lane branches, and does not push.
+   No worker adds a row after the queue is complete.
 
 ### Lane results
 
-#### B1. Floating surfaces and the palette
+#### C1. Fire doctrine and Environment editor
 
-- Status: done.
-- Commit: this commit on `row-b/b1-surfaces`.
-- Checks:
-  - `npx vitest run --dir src src/panels/CommandPalette.test.tsx src/panels/Toolbar.test.tsx src/canvas src/panels/analysis src/ui`: "Test Files 41 passed (41)", "Tests 385 passed (385)".
-  - `npm run typecheck`: exit 0, no errors.
-  - `npm run lint`: exit 0; 29 warnings, the same count as `main` at 1833ce8.
-  - `npm run format:check`: "All matched files use Prettier code style!"
-  - `npm run check:silent`: "No hidden-failure patterns in the checked lines."
-  - `npm run build && npm run check:bundle`: "Bundle budget passed: entry <= 365 kB; initial JavaScript + CSS <= 400 kB (gzip -9)."
-- Entry gzip: 364,514 bytes (+76 over Row A); initial 380,494.
-- Browser: Playwright headless on port 5401 with the firing fixture, 1600 × 1000, dark
-  and light. Palette, context menu and Display flyout, connect popover, View, Range
-  setup, Storage and a tool tooltip each compute the raised tone, 6 px radius,
-  `--rule-strong` border, `--elev-1` and the `surface-enter` animation. Palette: 560 px,
-  32 px rows, 8 group headers, 3 key hints, `--scrim` backdrop. A click on a group
-  header keeps focus in the input and Escape then closes the palette. Connect dismiss
-  is 20 × 20 with 14 px to the title. Settings has the tone, rule, radius, entry and
-  `--scrim`, without the shadow. No console errors.
-- For the integrator:
-  - `src/panels/SettingsPanel.tsx` and `src/panels/Toolbar.tsx` (ROE menu, file
-    overflow): add `surface-float` to each `tb-menu-panel` class list for `--elev-1`.
-    `.tb-menu-panel` now carries the tone, rule, radius and entry, so they already match
-    in every other way.
-  - `DESIGN_SYSTEM.md` rule 4: "`.tb-menu-panel` carries the raised tone, rule, radius
-    and entry, and the element adds `.surface-float` for the shadow. The `.help-dot`
-    bubble is a pseudo-element: tone, rule and radius, no shadow. A modal surface (the
-    palette, Settings) dims the board with `--scrim`."
-  - `DESIGN_SYSTEM.md` keys: "A key hint at the right end of a menu or palette row is
-    `<kbd class="kbd kbd-hint">`: mono, text 3, no chip. A separator above Delete is
-    `.ctx-sep`, 1 px `--rule`."
-- Open:
-  - U2 tool buttons: the board tools live in `Toolbar.tsx` (B5), and the App binds no
-    tool keys, so no key exists to show.
-  - V1 info popover: `.info-pop` takes `.surface-float`; the browser pass did not open one.
+Status: not started.
 
-#### B2. Canvas legibility
+#### C2. Editing tools during Execute
 
-- Status: blocked. Only `check:bundle` fails. C1 (apply), C2, C3, C4, C5, U4, V5
-  (readout keys) and V1 (readout surface) are done. The orchestrator ruled not to trim
-  scope for the budget, so the budget is for the user to decide.
-- Commit: this commit.
-- Checks:
-  - `npx vitest run --dir src src/canvas src/state/camera.test.ts` (includes
-    `labelLayout.test.ts`, `EntityLayer.test.tsx`, `CanvasStage.test.tsx`,
-    `TrackFileReadout.test.tsx`): "Test Files 15 passed (15)", "Tests 136 passed (136)".
-  - `npm run typecheck`: exit 0, no output from `tsc --noEmit -p tsconfig.app.json`.
-  - `npm run lint`: exit 0, 29 warnings before and after, none in a changed file.
-  - `npm run format:check`: "All matched files use Prettier code style!"
-  - `npm run check:silent`: "No hidden-failure patterns in the checked lines."
-  - `npm run build`: exit 0.
-  - `npm run check:bundle`: FAILS, "Entry exceeds 365000 bytes gzip-9: 365142".
-- Entry gzip: 365,142 bytes, +704 against the Row A 364,438. Initial JS and CSS:
-  381,082. About 400 bytes of the +704 are Row A's `useBoardInk` and the two
-  `BoardInk` tables. Tree shaking removed them until a layer read them.
-- Browser: Playwright headless against the dev server on 5402, fixture
-  `firing-scenario.json`, at 2100 × 1325 and 1440 × 900, dark and light. At the
-  origin cluster no drawn text overlaps another text or a glyph box. The fit puts the
-  cluster 64 px plus the label box inside the canvas edge. Paper labels `#4e504b` are
-  6.86:1 on the board; dark labels are 9.69:1. Hover sets the pointer cursor and shows
-  the ring, and leaving clears both. A hidden link caption shows on hover. The
-  selection ring is solid with a halo. The readout keys fit on one line. The readout
-  is `.surface-float`, and its leader is solid in text 2 at 60 %. No console errors.
-- For the integrator:
-  - `DESIGN_SYSTEM.md`, rule 9, add: "Board selection is a solid 1.5 px ring in text 1
-    over a 2 px board-tone halo. Hover shows the pointer cursor and a 1 px ring in the
-    entity ink at 60 %. A link caption draws only on a link of 80 screen px or more
-    whose caption box clears every glyph and anchored label; otherwise it draws on
-    hover. A path caption takes the first clear slot back along its last leg."
-  - `DESIGN_SYSTEM.md`, canvas readout line: "The canvas readout is a floating surface
-    with the keys Cursor, Speed / heading and Altitude, and a solid leader in text 2 at
-    60 %."
-  - `BoardInk` has no selection or board-tone field. `EntityLayer.tsx` and
-    `ConnectionLayer.tsx` hold the text 1 and board-tone hex values for each theme.
-    Adding `selection` and `board` to `src/ui/ink.ts` would remove them.
-  - `src/state/camera.test.ts` changed with `camera.ts`. The Plan row does not name
-    that test.
-- Open:
-  - The entry budget, as above.
-  - C2 changed: the path caption does not join `layoutLabels`, because that needs
-    `LiveScene.tsx`. `PathLayer` instead places it clear of the glyphs and anchored labels
-    of the board at rest. Spoke fans and flying entities are not obstacles. The
-    link-caption test does not compare one caption with another caption.
-  - Owned files still hold dark-only inks outside C1: the `PathLayer` draft and
-    calibrate marks, the `EntityLayer` connect ring and range button, and the
-    `CanvasStage` marquee. The path caption uses the entity ink: `#c98577` is 2.48:1 on
-    paper.
-  - The 28 px selection ring crosses the top of the anchored label, which starts at
-    20 px. The geometry is unchanged; the solid ring makes the crossing more visible.
-  - When an entity is deleted under the pointer, the pointer cursor stays until the
-    next hover leave.
+Status: not started.
 
-#### B3. Right panel and board shell
+#### C3. Analyze run control
 
-- Status: done. F2, F5, F6, F8, F9, F10, V8, U1 (D5 default) and V13 (rail) are closed.
-- Commit: this commit on `row-b/b3-shell`.
-- Checks:
-  - `npx vitest run --dir src` on EntityWorkspace, AnalysisNavigation, LiveStrip, Palette,
-    NowScreen and AnalysisPanel tests: `Test Files 6 passed (6)`, `Tests 35 passed (35)`.
-  - `npm run typecheck`: exit 0.
-  - `npm run lint`: exit 0, 29 warnings, the same count as the base.
-  - `npm run format:check`: `All matched files use Prettier code style!`
-  - `npm run check:silent`: `No hidden-failure patterns in the checked lines.`
-  - `E2E_URL=http://localhost:5403 npm run test:e2e`: `# tests 11`, `# pass 11`, `# fail 0`.
-  - `npm run build && npm run check:bundle`: `Bundle budget passed: entry <= 365 kB;
-    initial JavaScript + CSS <= 400 kB (gzip -9).`
-- Entry gzip: 364,737 bytes, +299 against 364,438. The rail icons are 221 of that in this
-  lane alone. With the B5 undo and redo icons present, they add 109, so the post-merge
-  B3 delta is about 187 bytes. Initial JavaScript and CSS: 380,700.
-- Browser: Playwright headless, fixture `firing-scenario.json`, dark and light, 2100 and
-  1440. Prepare, Execute and Analyze with and without a selection; the empty board; the
-  drawer. The drawer top meets the tools row bottom and its bottom meets the timeline
-  top. Execute draws no screen navigation. The inline Play starts a trial. No console
-  errors.
-- For the integrator:
-  - F10 changed the Execute placeholder, so this lane also edited two unowned tests:
-    `src/panels/analysis/screens/NowScreen.test.tsx` and
-    `src/panels/AnalysisPanel.test.tsx` (expected strings only).
-  - `index.css`: the unowned rule `.entity-workspace-header p` is now dead; remove it.
-  - `docs/ENGINEERING_REFERENCE.md`, Analysis screens: `AnalysisNavigation` draws on
-    the Overview tab only and draws no `Seg` for a phase with one screen (Execute).
-  - `DESIGN_SYSTEM.md`: the rail is 76 px wide so that "Commands" fits at the meta size.
-    The empty-board hint is a `.surface-float` at the canvas top left. A library row
-    shows its Model basis action only on hover or keyboard focus.
-- Open: none.
+Status: not started.
 
-#### B4. Panel controls and forms
+#### C4. Undo cue
 
-- Status: done. V2, V5 (COMPLETE), V6, V7, V9, V11, F12 closed; F3 closed with one
-  limit under Open.
-- Commit: this commit on `row-b/b4-controls`.
-- Checks:
-  - `npx vitest run --dir src src/panels`: Test Files 31 passed (31), Tests 264 passed
-    (264).
-  - `npm run typecheck`: `tsc --noEmit -p tsconfig.app.json`, exit 0.
-  - `npm run lint`: exit 0; 25 existing `only-export-components` warnings, none in B4
-    files.
-  - `npm run format:check`: All matched files use Prettier code style!
-  - `npm run check:silent`: No hidden-failure patterns in the checked lines.
-  - `npm run build && npm run check:bundle`: Bundle budget passed: entry <= 365 kB;
-    initial JavaScript + CSS <= 400 kB (gzip -9).
-- Entry gzip: 364,432 bytes (6 under the Row A 364,438). Initial 380,424.
-- Browser: Playwright headless on port 5404 at 1600 × 1000, dark and light, firing
-  fixture. Fragility before and after a 30-replicate run, Inputs with Environment and
-  Fire doctrine open, Settings Scenario, Giraffe 1X rings, Outcome tiles and Evidence
-  products after a full play. Every visible panel-body action has a 1 px `--rule-strong`
-  frame; every disabled Fragility action shows a muted reason; "Global" stays on one
-  line (24 px rows); disabled undo and redo read `--text-disabled`; 0 page errors.
-- For the integrator:
-  - `.board-app .right-panel .seg button { white-space: normal }` (B3 area) wraps every
-    right-panel segment. B4 outranks it for rings with a four-class selector. Scoping
-    that rule would allow a plain `.insp-rings .seg button`.
-  - The Inputs "Run" (`.mc-run`) is that screen's main run action. Its file is not
-    B4's; `.primary` there completes V2.
-  - `DESIGN_SYSTEM.md` rules: "A panel-body action (`.inspector-body button`) draws a
-    1 px `--rule-strong` frame, disabled included; register rows, table sort headers
-    and danger actions keep their own edges. The main run action on a screen is
-    `.primary`." "A disabled segment draws in `--text-disabled`." "A tile label
-    reserves two lines (`min-height: 2.4em`) so values in a row align." "A disabled
-    action states its reason in its title and in a muted line beside it."
-- Open:
-  - F3: the disabled "Pin as baseline" keeps its action title, because the unowned
-    `FragilityScreen.test.tsx` asserts that exact title. The muted line states "Run
-    Monte Carlo first to pin a baseline."
-
-#### B5. Top bar
-
-- Status: done.
-- Commit: this commit, on `row-b/b5-topbar`.
-- Checks:
-  - `npx vitest run --dir src src/panels/Toolbar`: Test Files 1 passed (1), Tests 13 passed (13).
-  - `npm run typecheck`: `tsc --noEmit -p tsconfig.app.json`, exit 0, no errors.
-  - `npm run lint`: exit 0; 29 warnings, all outside `Toolbar.tsx` and present on main.
-  - `npm run format:check`: All matched files use Prettier code style!
-  - `npm run check:silent`: No hidden-failure patterns in the checked lines.
-  - `npm run build && npm run check:bundle`: Bundle budget passed: entry <= 365 kB;
-    initial JavaScript + CSS <= 400 kB (gzip -9).
-- Entry gzip: 364,738 bytes (main 364,438; +300). The first use of `src/ui/icons.tsx`
-  (Stroke, undo, redo) costs 154 of these; a later icon user shares that base.
-- Browser: Playwright headless, fixture `firing-scenario.json` with the scenario renamed
-  to trigger autosave, dark and light, 2100, 1600 and 1440. The groups keep a gap of
-  24 px or more and the tabs are centered (offset 0 px) at every width. At 1440 the WEZ,
-  derate, spawn and saved chips fold into the ROE button (`ROE Tight +1`) and its panel.
-  The spawn chip selects the UAS. Undo and redo draw the SVG icons. No page overflow, no
-  page errors.
-- For the integrator:
-  - `DESIGN_SYSTEM.md`: "The top bar has a 24 px column gap (`--space-6`). Below
-    1600 px the status chips fold into the ROE button, which shows a `+N` count in mono
-    warning ink and lists them in its panel. A failed save stays in the bar."
-  - `DESIGN_SYSTEM.md`: "A status chip that acts is a button with no frame; it keeps
-    the chip look."
-- Open:
-  - With the fixture plus WEZ on and an environment derate (five chips), the right group
-    at 1600 is wider than its half, so the tabs sit 135 px left of center. The groups
-    still keep the 24 px gap. D7 fixes the fold at 1600 px; a higher fold width needs a
-    decision.
+Status: not started.
 
 ### Outside the plan
 
 These audit follow-ups stay candidates outside the plan:
+
+- The B-int capture found two defects that predate Row B. On Now, the kill-chain table
+  State word "identified" runs into the Held cell with no gap. In the selected-object
+  telemetry, the Pd and slant-range charts cut their end marker at the right edge and
+  their `0:00` axis labels at the bottom, and the track ladder cuts its label on the left.
 
 - Three collinear range points pass the store's three-point floor and still throw in the
   optimize worker: `polygon.ts` when they are axis-aligned, else the rejection sampler in
@@ -364,8 +215,8 @@ These audit follow-ups stay candidates outside the plan:
   `points` array (`scenarioHasWork` in `src/io/persist.test.ts`,
   `scenarioInstall.test.ts`). Those objects do not pass `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
-  touches the entry. The entry gzip budget is 365,000 bytes with 562 bytes headroom
-  (last measured 364,438 at the Row A gate). Icons and new components add entry bytes. `sql.js` must stay behind `await import` with its wasm URL.
+  touches the entry. The entry gzip budget is 366,000 bytes with 278 bytes headroom
+  (last measured 365,722 at the Row B gate). Icons and new components add entry bytes. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
 - Prettier wrapping of JSX text can change React `children`. Keep button labels on one

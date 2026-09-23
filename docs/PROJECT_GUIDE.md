@@ -20,8 +20,9 @@ keyboard-accessible entity register in [BoardPreparation](../src/panels/BoardPre
 Each validity finding appears once with its gates. Setup findings that cost a measurement
 come first, with a Select button for a threat that starts inside detection coverage.
 The [analysis navigation](../src/panels/analysis/AnalysisNavigation.tsx) is one segmented
-control of the current phase's screens. It stays outside the scrolling panel, including
-while an object is selected. Selected-object configuration and the model library remain
+control of the current phase's screens. It stays outside the scrolling panel, draws only
+on the Overview tab, and draws nothing for Execute, which has one screen. Selected-object
+configuration and the model library remain
 available in the panel tabs.
 
 The Library resource opens a drawer with model/system placement, drag-and-drop, model-basis

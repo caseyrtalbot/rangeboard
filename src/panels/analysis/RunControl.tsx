@@ -115,7 +115,7 @@ export function RunControl() {
       </label>
       <button
         type="button"
-        className="mc-run"
+        className="mc-run primary"
         disabled={deterministic || stopping}
         title={deterministic ? DETERMINISTIC_TITLE : stopping ? STOPPING_TITLE : undefined}
         onClick={() => {

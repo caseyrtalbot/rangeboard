@@ -110,6 +110,6 @@ describe('ForecastSettings run control', () => {
   })
 
   it('closes the run button under the deterministic mode', () => {
-    expect(render()).toContain('<button type="button" class="mc-run" disabled=""')
+    expect(render()).toContain('<button type="button" class="mc-run primary" disabled=""')
   })
 })

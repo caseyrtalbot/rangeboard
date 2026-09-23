@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "1f75251486d64a5fc0ca71924cf40103eca7e7525d89812000d57a7bf885fbe1",
-      "reviewedAt": "2026-09-22",
-      "note": "Reviewed main.tsx. It mounts the override-subscriber boundary beside App. README does not describe that startup sequence."
+      "sha256": "6275bd6fe9d63f8cf9ec8c3c14cba5c18c601032390fd55e704efed53b8be4ac",
+      "reviewedAt": "2026-09-23",
+      "note": "Row B integration: no README fact changed; source fingerprints re-read after the design polish merge."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "9295cfe293f76ccc26b47656623506949309504281e99fc7a79952d751b038d1",
+      "sha256": "f4d6d3b6a34c71cf8a9d480cc993ffa8362cb90076ca9e4892eec82ad90ed45d",
       "reviewedAt": "2026-09-23",
-      "note": "Row A adds tokens, the board ink tables, useBoardInk and icons.tsx with no user-facing feature change; the guide needs no edit."
+      "note": "Row B: analysis navigation draws only on the Overview tab and not for Execute."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "e35979e481a871148bf8d66526bf8b758be2af68aa7144a2d2219074a834c3cf",
+      "sha256": "daf9c78afbf8f2620758b3ff8599430da139b98c51522e8b70cf4715df188bdd",
       "reviewedAt": "2026-09-23",
-      "note": "Row A: source map lists the board ink tables in ink.ts, icons.tsx and useBoardInk.ts. No invariant changed."
+      "note": "Row B: AnalysisNavigation shows on the Overview tab only with no Seg for a one-screen phase; radius and elevation facts match the Row A tokens."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "59bc95587c250948f72268620f78c334adab3edebc9eb6ee944efb268a16e979",
+      "sha256": "4510614d5863393f433584a9b1276093037556a8dc06fe31475f46628fe8c121",
       "reviewedAt": "2026-09-23",
-      "note": "check-silent.mjs now applies the domain-term and negation exemptions to weasel-word-tsx as well; removed the sentence that described the gap. The Placement row already lists state/store.analysis.test.ts, which now holds the two-point range case."
+      "note": "Row B gate: user raised the entry budget to 366,000; measured 365,722 entry, 381,985 initial, 278 bytes headroom."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "18531d291082754224fadb0ba62f88a067483b6e6f1f763eb65b3b8d612258a9",
+      "sha256": "71810e74b664a75f94bdd5de9c1b50c9443e9170e6b62d77d804ae0c79aff25b",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed the Plan.md removal. The session-state row and the handoff section now say a task message selects work and a plan file, when one exists, stays unmodified and linked from the handoff."
+      "note": "Row B gate: entry budget is 366,000 bytes gzip."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "bec8b281eb993d00a4c54eba02be810c25311ddfb9af99b421f8161eb3fbb6b8",
+      "sha256": "2f4805bd9ebece6c2ed2256fbbbd1e374d3846ec141e854593622a0b1600d944",
       "reviewedAt": "2026-09-23",
-      "note": "Tasking selects Plan.md row B with lane branches, ports, the handoff-update protocol for lanes and integrators, and one result block per lane; Position states local main is ahead of origin and not pushed."
+      "note": "B-int passed; entry 365,722 of 366,000 (278 headroom); Tasking selects Plan.md row C with lanes C1 to C4, the same protocol, and the open Row B items carried forward."
     },
     {
       "document": "docs/Plan.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "89404d0e507c9846fc9416ad6ac79fa97a4f84eb2bebd3641374752efcb72648",
+      "sha256": "518b9475b264f6d19c32468a19783f2827a118397bdea232ba196f2d50f96cfa",
       "reviewedAt": "2026-09-23",
-      "note": "Row A: rules 2 to 5 rewritten for two radii, one elevation, four surfaces and the scrim; rule 9 canvas ink follows the theme; token table, paper palette, motion and icon set checked against index.css, ink.ts, useBoardInk.ts and icons.tsx."
+      "note": "Row B rules: panel-body action frame, top-bar menus take surface-float, key hints, status chips, disabled segments and mini buttons, tile labels, 24 px bar gap and chip fold, 76 px rail, drawer bounds, empty-board hint, board selection and hover, link and path captions, readout surface."
     }
   ],
   "historical": [

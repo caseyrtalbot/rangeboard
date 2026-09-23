@@ -7,8 +7,9 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
 ## 1. Surface rules
 
 1. **Almost nothing is enclosed.** Separation comes from alignment, one hairline rule and
-   space. A border marks an input, a segmented group, a `.mini` button or a floating
-   surface. A plain button has a transparent border and shows the hover tone.
+   space. A border marks an input, a segmented group, a `.mini` button, a panel-body
+   action or a floating surface. A plain chrome button has a transparent border and shows
+   the hover tone.
 2. **Two radii.** A control (button, input, segmented group, checkbox) uses
    `--radius-control`, 4 px. A floating surface uses `--radius-surface`, 6 px. No other
    `border-radius` is non-zero. Docked containers are square.
@@ -19,8 +20,12 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    takes `.surface-float`: the raised tone, a 1 px `--rule-strong` border, the 6 px
    radius and `--elev-1`. It is the only element with a `box-shadow`. It enters over
    `--dur-enter` (opacity and a 4 px rise). A modal surface dims the board with
-   `--scrim`. The sheet has no `backdrop-filter`. Docked panels cast no shadow: the right
-   panel is separated from the board by one 1 px rule.
+   `--scrim`; the palette and Settings are modal. A top-bar menu (`.tb-menu-panel`: the
+   View, Range setup, ROE and file menus and Settings) carries the raised tone, rule,
+   radius and entry and also takes `.surface-float` for the shadow. The `.help-dot`
+   bubble is a pseudo-element: tone, rule and radius, no shadow. The sheet has no
+   `backdrop-filter`. Docked panels cast no shadow: the right panel is separated from the
+   board by one 1 px rule.
 5. **Four surfaces.** Board, panel, one sunken tone for an input and one raised tone for a
    floating surface. The board carries an inline SVG noise grain at 3.5 percent opacity
    (`--board-grain`).
@@ -33,7 +38,13 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    label, link caption and callout leader inks come from `useBoardInk()`
    (`src/canvas/useBoardInk.ts`), which resolves `ui.theme` and `prefers-color-scheme` the
    way the sheet does and returns `BOARD_INK_DARK` or `BOARD_INK_PAPER` from
-   `src/ui/ink.ts`. A layer never hard-codes a theme-dependent ink.
+   `src/ui/ink.ts`. A layer never hard-codes a theme-dependent ink. Board selection is a
+   solid 1.5 px ring in text 1 over a 2 px board-tone halo. Hover shows the pointer
+   cursor and a 1 px ring in the entity ink at 60 %. A link caption draws only on a link
+   of 80 screen px or more whose caption box clears every glyph and anchored label;
+   otherwise it draws on hover. A path caption takes the first clear slot back along its
+   last leg. `BoardInk` has no selection or board-tone field, so `EntityLayer.tsx` and
+   `ConnectionLayer.tsx` hold those two values for each theme.
 
 ## 2. Tokens
 
@@ -112,19 +123,33 @@ axis and rows, and the KPI sub-line. The Board right panel defaults to 408 px (2
 drawer: the drawer button at the right end of the top bar, or `]`, closes and opens it,
 and a resize drag 60 px past the minimum also closes it. A closed drawer gives its width to
 the canvas and holds the board center. A selection does not reopen it. The header is 40 px high. It carries the lifecycle tabs in
-its center and the run status at the start of its right group; the phase row is gone. Its lifecycle and
-analysis navigation sit outside the scroll body. Labels wrap and no panel text may be inaccessible.
+its center and the run status at the start of its right group; the phase row is gone. Its
+groups keep a 24 px column gap (`--space-6`). Below 1600 px the status chips fold into the
+ROE button, which shows a `+N` count in mono warning ink and lists them in its panel; a
+failed save stays in the bar. The lifecycle navigation sits outside the scroll body. The
+analysis screen navigation also sits outside it, draws only on the Overview tab, and draws
+no segmented control for a phase with one screen. Labels wrap and no panel text may be
+inaccessible.
 
 ## 4. Components
 
 - **Buttons.** 28 px high (5 px pad, 16 px line, 1 px border), 4 px radius, label size and
   weight. Default: transparent border, hover tone on hover, inverted on active. `.primary`:
-  filled text 1 on ink. `.danger`: critical text, border on hover. `.mini`: bordered in
-  rule strong, meta size. `.active`: hover tone plus text 1. Disabled drops to
-  `--text-disabled`.
+  filled text 1 on ink; the main run action on a screen is `.primary`. `.danger`: critical
+  text, border on hover. `.mini`: bordered in rule strong, meta size. `.active`: hover
+  tone plus text 1. Disabled drops to `--text-disabled`. A panel-body action
+  (`.inspector-body button`) draws a 1 px `--rule-strong` frame, disabled included;
+  register rows, table sort headers and danger actions keep their own edges. A disabled
+  action states its reason in its title and in a muted line beside it.
 - **Segmented control** (`Seg` in `src/ui/kit.tsx`, `.seg`). One bordered group with
-  hairline dividers drawn as marks; the pressed segment inverts to text 1 on ink;
-  `role="group"` with an `aria-label`.
+  hairline dividers drawn as marks; the pressed segment inverts to text 1 on ink; a
+  disabled segment draws in `--text-disabled`; `role="group"` with an `aria-label`.
+- **Key hints.** A key at the right end of a menu or palette row is
+  `<kbd class="kbd kbd-hint">`: mono, text 3, no chip. A separator above Delete is
+  `.ctx-sep`, 1 px `--rule`. The command palette is 560 px wide with 32 px rows under
+  one group header per category.
+- **Status chips.** A top-bar status chip that acts is a button with no frame; it keeps
+  the chip look.
 - **Icons** (`src/ui/icons.tsx`). One inline SVG set for chrome glyphs: library, objects,
   commands, undo, redo, close and caret. Each is a 16 px viewBox with a 1.5 px round
   stroke in `currentColor` and `aria-hidden`; the button that holds it carries the label
@@ -152,6 +177,7 @@ analysis navigation sit outside the scroll body. Labels wrap and no panel text m
   like every other trial surface.
 - **KPI tiles** (`.tiles.c2`, `.tiles.c3`, `.tile`). Two or three columns, no borders.
   Label in text 3 (`.tl`), value in mono at value size with a small denominator (`.tv`).
+  A tile label reserves two lines (`min-height: 2.4em`) so the values in a row align.
 - **Inspector rows** (`.insp-row`). Flex rows, 28 px minimum height, baseline aligned,
   bleeding to the panel padding line.
 - **Per-threat table** (`.tb.tb-dense`, the kill-chain table on Now and the outcome table
@@ -179,17 +205,20 @@ analysis navigation sit outside the scroll body. Labels wrap and no panel text m
   scale, the replicates per cell and that the thirds are relative, never a requirement.
   Each cell title carries the factor values, response, replicates, horizon and interval.
 
-The Board has a 60 px resource rail and an overlaid Library drawer (306 px default,
-existing saved width retained). Drawing tools and the View and Range setup disclosures
-sit above the canvas. Drawer search receives focus on opening; Escape returns it to the
+The Board has a 76 px resource rail, wide enough for "Commands" at the meta size, and an
+overlaid Library drawer (306 px default, existing saved width retained). The drawer starts
+below the canvas tools row and stops above the timeline. A library row shows its Model
+basis action only on hover or keyboard focus. Drawing tools and the View and Range setup
+disclosures sit above the canvas. An empty board shows one hint, a `.surface-float` at
+the canvas top left with an "Open library (L)" action. Drawer search receives focus on opening; Escape returns it to the
 resource button. Library names and scoped control labels wrap. Scenario input sections
 use native disclosures; menus scroll within the available viewport height.
 
 The selected entity workspace keeps its Telemetry / Configure / Model basis tabs outside
 one content scroller. Long names, values, source records and statistical subtitles wrap;
 source rows disclose labeled fields instead of squeezing evidence into a narrow table.
-The canvas readout is 252 px wide, with cursor, speed/heading, altitude and a Details
-control. Complete telemetry stays in the canonical pane, including full-path scope labels.
+The canvas readout is a floating surface, 252 px wide, with the keys Cursor, Speed /
+heading and Altitude, a Details control and a solid leader in text 2 at 60 %. Complete telemetry stays in the canonical pane, including full-path scope labels.
 In Execute, Planned path uses the existing detail section header and rows for Planned
 arrival and Planned CPA; times retain the machine-data role.
 

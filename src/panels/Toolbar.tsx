@@ -109,7 +109,7 @@ function RoeMenu({ folded, children }: { folded: number; children: ReactNode }) 
       {open && (
         <div
           id="roe-menu-panel"
-          className="tb-menu-panel tb-menu-right roe-menu-panel"
+          className="tb-menu-panel surface-float tb-menu-right roe-menu-panel"
           role="dialog"
           aria-label="Rules of engagement"
         >
@@ -207,7 +207,7 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
   return (
     <div
       id="file-actions-panel"
-      className="tb-menu-panel tb-menu-right"
+      className="tb-menu-panel surface-float tb-menu-right"
       role="dialog"
       aria-label="File actions"
     >

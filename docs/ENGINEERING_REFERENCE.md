@@ -1075,8 +1075,9 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   `fragility`, `inputs` and `placement` (Where to put it), Execute `now`, Analyze
   `outcome` and `compare`. `AnalysisPanel`
   takes the phase and the screen, falls back to the phase's first screen, and renders
-  `BoardPreparation` for `inputs`. `AnalysisNavigation` is one `Seg` of the phase's
-  screens, kept outside the content scroller. Each screen has one owner component and one
+  `BoardPreparation` for `inputs`. `AnalysisNavigation` draws on the Overview tab only,
+  outside the content scroller: one `Seg` of the phase's screens when the phase has more
+  than one, and the Run control in Analyze. Execute has one screen and draws none. Each screen has one owner component and one
   result basis: Fragility the current `McSummary`, `SensitivitySummary` and `SweepSummary`
   through `currentSummary`, `currentSensitivity` and `currentSweep`; Now the retained
   trial through `trialSweepAt` and `trialSystemTelemetryAt` at the cursor horizon;
@@ -1360,12 +1361,12 @@ Design system (`src/index.css`):
   [VERIFICATION](VERIFICATION.md) "Harness setup"): no panel content may be clipped or
   inaccessible. Lifecycle views are local UI composition;
   they do not advance playback or change the analysis basis. The screen control
-  (`AnalysisNavigation`) remains outside the scrolling content, including during object
-  inspection.
+  (`AnalysisNavigation`) remains outside the scrolling content and draws only on the
+  Overview tab; the Selected object tab does not show it.
 - **Separators, not cards.** Hierarchy comes from surface tone, spacing, typography, a 1 px
-  rule and interaction state. `--radius-control` (2 px) is the only non-zero radius and
-  applies to controls; containers are square. The sheet has no `box-shadow`,
-  `backdrop-filter` or `rgba(` tint. The full rule set, token table and component list are
+  rule and interaction state. `--radius-control` (4 px) applies to controls and
+  `--radius-surface` (6 px) to floating surfaces; docked containers are square. The only
+  `box-shadow` is `--elev-1` on `.surface-float`; the sheet has no `backdrop-filter`. The full rule set, token table and component list are
   in the [design system](design/DESIGN_SYSTEM.md).
 - **Charts:** `src/charts/tokens.ts` resolves CSS variables once per chart render.
   `tokens.test.ts` checks the five chart slot hues against the sheet. Other
@@ -1399,8 +1400,8 @@ state)` is the one owner of that Escape order and of click precedence. `App.tsx`
   click is owned by connect and select; path owns only the UAS that starts a draft;
   boundary, calibrate and a raid draft bubble it to the stage. The matrix is
   table-tested in `interactionRouter.test.ts`. The screen control in `AnalysisNavigation.tsx`
-  is one `Seg` (`role="group"`, one pressed segment) that stays rendered in every phase
-  and tab; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
+  is one `Seg` (`role="group"`, one pressed segment) on the Overview tab for a phase with
+  more than one screen; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
 
 ## 8. Standards referenced by model tags
 

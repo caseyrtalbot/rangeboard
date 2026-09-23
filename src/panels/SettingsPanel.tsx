@@ -42,7 +42,7 @@ export function SettingsPanel({
     <dialog
       ref={dialogRef}
       id="settings-panel"
-      className="tb-menu-panel settings-panel"
+      className="tb-menu-panel surface-float settings-panel"
       role="dialog"
       aria-modal="true"
       aria-labelledby="settings-title"
