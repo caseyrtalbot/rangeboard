@@ -383,12 +383,12 @@ body,
    outer tracks are equal, so the tablist sits at the bar centre whatever the
    groups hold. A group that runs out of room shrinks inside its track: the
    scenario name narrows, the run status ends in an ellipsis and the inline
-   chips clip, and the ROE panel lists every chip. Below about 1120 px the left
-   group reaches its floor and pushes the tablist right instead of covering it.
+   chips drop off whole, and the ROE button counts them. Below about 1120 px a
+   group reaches its floor and pushes the tablist aside instead of covering it.
    The column gap keeps the three groups apart at every width. */
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(min-content, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(min-content, 1fr) auto minmax(min-content, 1fr);
   column-gap: var(--space-6);
   align-items: stretch;
   height: 40px;
@@ -415,10 +415,26 @@ body,
   flex: 0 0 auto;
 }
 
-.toolbar-right > .board-run-context,
+/* Unwrapped labels make the left track's min-content floor its used width. */
+.toolbar-left > button,
+.toolbar-left > .tb-menu-wrap > button {
+  white-space: nowrap;
+}
+
+/* The run status fills the free space from a zero basis, so it adds nothing to
+   the right track's floor; the pills keep the ROE button as theirs. */
+.toolbar-right > .board-run-context {
+  flex: 1 1 0;
+  width: 0;
+  text-align: right;
+}
+
 .toolbar-right > .status-pills,
 .status-inline {
   flex-shrink: 1;
+}
+
+.status-inline {
   min-width: 0;
 }
 
@@ -1158,8 +1174,17 @@ input[type='color']::-webkit-color-swatch {
   gap: var(--space-2);
 }
 
+/* One row: a chip that does not fit wraps below and is hidden whole. The empty
+   first item lets even the first chip wrap. */
 .status-inline {
-  overflow-x: clip;
+  flex-wrap: wrap;
+  height: 24px;
+  overflow: hidden;
+}
+
+.status-inline::before {
+  content: '';
+  margin-right: calc(-1 * var(--space-2));
 }
 
 /* The spawn chip is a button so it can select the UAS; it keeps the chip look. */
@@ -1168,8 +1193,8 @@ input[type='color']::-webkit-color-swatch {
 }
 
 /* D7: below 1600 px the WEZ, derate, spawn and saved chips fold into the ROE
-   button, which counts them. Its panel lists them at every width, so a chip
-   clipped by a full bar stays reachable. A failed save stays. */
+   button. The button counts the chips the bar hides at any width, and its panel
+   lists them all. A failed save stays. */
 .status-fold {
   display: flex;
   align-items: center;
@@ -1190,12 +1215,6 @@ input[type='color']::-webkit-color-swatch {
   margin-top: var(--space-1);
   padding: var(--space-2);
   border-top: 1px solid var(--border);
-}
-
-@media (min-width: 1600px) {
-  .status-fold-count {
-    display: none;
-  }
 }
 
 @media (max-width: 1599.98px) {

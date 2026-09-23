@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { dismissRecoveryNotice, getRecoveryNotices, subscribeRecoveryNotices } from '../io/recovery'
 import { deleteRecoveryCopy, downloadRecoveryCopy, readStorageUsage } from '../io/storageManagement'
 import { State } from './kit'
@@ -6,6 +6,7 @@ import { State } from './kit'
 /** Storage is sampled on open, refresh and cross-tab changes; no autosave polling. */
 export function StoragePanel({ onRequestClose }: { onRequestClose: () => void }) {
   const refreshRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
   const [readout, setReadout] = useState(readStorageUsage)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
@@ -18,6 +19,19 @@ export function StoragePanel({ onRequestClose }: { onRequestClose: () => void })
     setReadout(readStorageUsage())
     setPendingDelete(null)
   }
+  // The panel opens under its trigger; on a narrow window it shifts left so its
+  // right edge keeps the 14 px margin its width cap assumes.
+  useLayoutEffect(() => {
+    const el = panelRef.current!
+    const place = () => {
+      el.style.left = ''
+      const over = el.getBoundingClientRect().right - (window.innerWidth - 14)
+      if (over > 0) el.style.left = `${-over}px`
+    }
+    place()
+    window.addEventListener('resize', place)
+    return () => window.removeEventListener('resize', place)
+  }, [])
   useEffect(() => {
     // The panel may arrive after the popover's open effect because its chunk is lazy.
     refreshRef.current?.focus()
@@ -40,6 +54,7 @@ export function StoragePanel({ onRequestClose }: { onRequestClose: () => void })
   const total = readout.entries.reduce((sum, entry) => sum + entry.bytes, 0)
   return (
     <section
+      ref={panelRef}
       id="storage-panel"
       role="dialog"
       aria-label="Storage"
