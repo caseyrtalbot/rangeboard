@@ -17,11 +17,10 @@ are also complete.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  `origin/main` is at `b979358`, the polish follow-up integration, which holds the plan
-  commit `0386b3a` and Rows A, B and C (B-int `2028d35`, C-int `d806e33`). Local `main`
-  adds the polish3 run: the lane merges of `polish3/cue`, `polish3/canvas`,
-  `polish3/placement` and `polish3/chrome` and the integration commits that hold this
-  handoff. The polish3 run is not pushed. The audit fixes `181c8ec` to `7da197d` and the
+  Local `main` and `origin/main` hold the plan commit `0386b3a`, Rows A, B and C (B-int
+  `2028d35`, C-int `d806e33`), the polish follow-up integration `b979358`, and the polish3
+  run: the lane merges of `polish3/cue`, `polish3/canvas`, `polish3/placement` and
+  `polish3/chrome` and the integration commits that hold this handoff. The audit fixes `181c8ec` to `7da197d` and the
   documentation update after them follow row J (`afaf1ae`) and row O (`de208aa`).
 - The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
   layered kill mass 1, layered kills mean 1.115, JIATF leakers mean 0.895, JIATF kills

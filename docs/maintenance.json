@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "d7aba81867ee84248e1f550300411bd25c76295cd37d24e882e5c349ddc679a5",
+      "sha256": "9c3e9becc135b8477cb1340deb26c0477c7f5fd0b843c367f857ef744ae86b08",
       "reviewedAt": "2026-09-23",
-      "note": "Corrected the position: origin/main is at b979358; only the polish3 run is unpushed."
+      "note": "Position: the polish3 run is pushed with this commit."
     },
     {
       "document": "docs/Plan.md",
