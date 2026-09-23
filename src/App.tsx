@@ -46,6 +46,7 @@ const AnalysisPanel = lazy(() =>
 const CommandPalette = lazy(() =>
   import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })),
 )
+const UndoCue = lazy(() => import('./panels/UndoCue').then((m) => ({ default: m.UndoCue })))
 
 /** One fallback for every panel boundary: the panel body is empty for one frame. */
 function PanelLoading({ label }: { label: string }) {
@@ -823,6 +824,9 @@ export default function App() {
               </div>
             )}
             <CanvasStage onOpenDetail={openTelemetry} onPlace={placement ? placeAt : undefined} />
+            <Suspense fallback={null}>
+              <UndoCue />
+            </Suspense>
           </div>
           {engagementOpen && <EngagementStrip />}
           <TimelineBar engagementOpen={engagementOpen} onToggleEngagement={toggleEngagement} />

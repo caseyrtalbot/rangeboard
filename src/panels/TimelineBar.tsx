@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../state/store'
 import type { Store } from '../state/store'
@@ -15,8 +15,6 @@ import { resetAnalysisRun, toggleAnalysisRun } from '../playback/runSession'
 import { nextPublishedTimeS } from '../canvas/frameClock'
 
 const SPEEDS = [1, 2, 5, 10, 30]
-
-const UndoCue = lazy(() => import('./UndoCue').then((module) => ({ default: module.UndoCue })))
 
 /** Threats the engagement strip lists: `uas` entities that have a flight path. */
 function selectThreatCount(s: Store): number {
@@ -213,9 +211,6 @@ export const TimelineBar = memo(function TimelineBar({
         </button>
       </div>
 
-      <Suspense fallback={null}>
-        <UndoCue />
-      </Suspense>
       <button
         type="button"
         id="engagement-toggle"

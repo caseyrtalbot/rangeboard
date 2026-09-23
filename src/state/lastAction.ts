@@ -20,3 +20,14 @@ export function lastUndoableAction(next: History, prev: History): string | null 
   if (!list[0] || (added[0] && now.length - added.length < before.entities.length)) return null
   return `${added[0] ? 'Placed' : 'Deleted'} ${list[1] ? `${list.length} entities` : list[0].name}`
 }
+
+/**
+ * The delete or place a store already holds when the cue mounts: an edit made
+ * before the lazy cue chunk loaded. `past` starts empty in a session, so its last
+ * snapshot is the latest edit. Null after an undo, which leaves `future` non-empty.
+ */
+export function actionBeforeMount(state: History): string | null {
+  const before = state.past[state.past.length - 1]
+  if (!before || state.future[0]) return null
+  return lastUndoableAction(state, { scenario: before, past: state.past.slice(0, -1), future: [] })
+}

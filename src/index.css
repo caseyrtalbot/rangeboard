@@ -2557,28 +2557,30 @@ select.nu-unit {
   }
 }
 
-/* Undo cue after a delete or a place: holds, then fades out by 4 s. It grows
-   into free space only, so it never squeezes the transport. The name truncates,
-   "Undo ⌘Z" stays, and the scrub keeps 80 px. */
+/* Undo cue after a delete or a place: a floating status over the canvas bottom
+   left, above the cursor readout. It enters, holds, then fades out by 4 s. The
+   timeline keeps its full width. The name truncates and "Undo ⌘Z" stays. It
+   takes no pointer events, so the board stays in reach under it. */
 .undo-cue {
-  flex: 4 1 0;
-  max-width: max-content;
-  min-width: 0;
-  display: inline-flex;
-  justify-content: flex-end;
+  position: absolute;
+  z-index: 5;
+  left: var(--space-3);
+  bottom: 30px;
+  display: flex;
+  max-width: min(360px, calc(100% - 2 * var(--space-3)));
+  padding: var(--space-1) var(--space-2);
   color: var(--text-dim);
   white-space: pre;
-  animation: undo-cue-fade 4s linear forwards;
+  pointer-events: none;
+  animation:
+    surface-enter var(--dur-enter) linear,
+    undo-cue-fade 4s linear forwards;
 }
 
 .undo-cue span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.timeline:has(.undo-cue) .scrub {
-  min-width: 80px;
 }
 
 @keyframes undo-cue-fade {
@@ -4609,8 +4611,12 @@ input[type='number'] {
   padding: var(--space-1) var(--space-2);
 }
 
-.board-app input[type='range'] {
+/* The timeline scrub keeps its 120 px floor (.scrub). */
+.board-app input[type='range']:not(.scrub) {
   min-width: 0;
+}
+
+.board-app input[type='range'] {
   max-width: 100%;
   margin-right: 0;
   margin-left: 0;

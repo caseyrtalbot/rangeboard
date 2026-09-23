@@ -66,7 +66,7 @@ describe('sampled transport labels', () => {
     expect(render(true)).toContain('aria-expanded="true"')
   })
 
-  it('shows no undo cue before an edit lands', () => {
+  it('keeps the undo cue out of the timeline row', () => {
     expect(render()).not.toContain('undo-cue')
   })
 })
