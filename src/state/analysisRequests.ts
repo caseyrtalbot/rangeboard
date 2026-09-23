@@ -543,7 +543,8 @@ function acceptOatMessage(st: AnalysisSlices, m: McSensitivityMessage): Analysis
 /**
  * Accept a Morris message on the sensitivity run's identity. `morris-done` keeps
  * the run live and clears the count; `requestSobol` then publishes the Saltelli
- * row count on that identity.
+ * row count on that identity. A cancelled screening ends the run on the
+ * trajectories done, the same end state as a cancelled Sobol stage.
  */
 function acceptMorrisMessage(st: AnalysisSlices, m: McMorrisMessage): AnalysisPatch | null {
   const sens = st.mc.sensitivity
@@ -552,6 +553,15 @@ function acceptMorrisMessage(st: AnalysisSlices, m: McMorrisMessage): AnalysisPa
     case 'morris-progress':
       return { mc: { ...st.mc, sensitivity: { ...sens, progress: m.done, total: m.total } } }
     case 'morris-done':
+      if (m.stopped != null) {
+        return {
+          mc: {
+            ...st.mc,
+            morris: m.result,
+            sensitivity: { ...sens, status: 'done', progress: 0, total: 0, error: null },
+          },
+        }
+      }
       return { mc: { ...st.mc, morris: m.result, sensitivity: { ...sens, progress: 0, total: 0 } } }
     case 'morris-error':
       return { mc: { ...st.mc, sensitivity: { ...sens, status: 'error', error: m.message } } }

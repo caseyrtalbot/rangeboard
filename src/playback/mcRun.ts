@@ -265,7 +265,7 @@ export type McSweepMessage =
 /** Messages of a Morris run; `done` and `total` count engine evaluations (rows). */
 export type McMorrisMessage =
   | { type: 'morris-progress'; runId: string; done: number; total: number }
-  | { type: 'morris-done'; runId: string; result: MorrisResult }
+  | { type: 'morris-done'; runId: string; result: MorrisResult; stopped?: 'cancelled' }
   | { type: 'morris-error'; runId: string; message: string }
 
 /** Messages of a Sobol run; `done` and `total` count engine evaluations (rows). */

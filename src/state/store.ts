@@ -1461,8 +1461,9 @@ export const useStore = create<Store>()((set, get) => {
       const patch = acceptSensitivityMessage(get(), m)
       if (patch == null) return
       set(patch)
-      // An accepted screening hands its kept fields to the Sobol stage.
-      if (m.type === 'morris-done') requestSobol(get(), set, sinks, m.result)
+      // A completed screening hands its kept fields to the Sobol stage; a
+      // cancelled one ended the run in `acceptMorrisMessage`.
+      if (m.type === 'morris-done' && m.stopped == null) requestSobol(get(), set, sinks, m.result)
     },
 
     cancelSensitivityRun: () => {

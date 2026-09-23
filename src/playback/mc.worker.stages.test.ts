@@ -67,6 +67,7 @@ it('screens two Morris trajectories with progress per row and posts the cut resu
   const done = messages.at(-1)!
   if (done.type !== 'morris-done') throw new Error(done.type)
   expect(done.runId).toBe(req.runId)
+  expect(done.stopped).toBe('cancelled')
   expect(done.result).toMatchObject({
     method: 'morris',
     trajectories: 2,

@@ -165,6 +165,26 @@ describe('the Morris then Sobol sensitivity stages', () => {
     expect(mc.sobol).toBeNull()
   })
 
+  it('ends a cancelled Morris screening without starting Sobol', () => {
+    const { morris, runId } = launchFull()
+    morris.send({ type: 'morris-progress', runId, done: 7, total: 70 })
+    useStore.getState().cancelSensitivityRun()
+    const count = ControlledWorker.instances.length
+    morris.send({ type: 'morris-done', runId, result: MORRIS_FIXTURE, stopped: 'cancelled' })
+    expect(ControlledWorker.instances).toHaveLength(count)
+    const { mc } = useStore.getState()
+    expect(mc.sensitivity).toMatchObject({
+      status: 'done',
+      runId,
+      progress: 0,
+      total: 0,
+      summary: null,
+      error: null,
+    })
+    expect(mc.morris).toBe(MORRIS_FIXTURE)
+    expect(mc.sobol).toBeNull()
+  })
+
   it('keeps quick depth on the one-at-a-time path', () => {
     useStore.getState().runSensitivity()
     expect(ControlledWorker.latest().request).toMatchObject({ type: 'sensitivity' })

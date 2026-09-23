@@ -190,7 +190,14 @@ self.onmessage = async (e: MessageEvent<McRequest | PoolRequest | FinishSummaryR
         post({ type: 'morris-progress', runId: id, done, total }),
       )
       const result = await drive(loop, 1, () => {})
-      post({ type: 'morris-done', runId: id, result })
+      // A cancelled screening returns the trajectories done; the marker keeps
+      // the page from handing them to the Sobol stage.
+      post({
+        type: 'morris-done',
+        runId: id,
+        result,
+        ...(cancelled ? { stopped: 'cancelled' } : {}),
+      })
     } catch (err) {
       post({
         type: 'morris-error',
