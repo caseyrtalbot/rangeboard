@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "ae26ed3ac033dcb296868256e6281822453405e095f6d476f9ec27a1882319d2",
+      "sha256": "a5ccc811301dcfca1369f51666323d4a108c3349d246e88e5701ee952f31c625",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed the Plan.md removal. The plan-row preferences now apply only when a plan exists, and the workspace fact records that no plan queue is open; package inputs unchanged."
+      "note": "Workspace fact now names docs/Plan.md as the open design and UX polish queue; handoff selects its row."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "9eaa076b1302987982f887c803eb7aee9f66b2b7d4b24a1f895c92db9e6eeeac",
+      "sha256": "9abe469a862ce878a37ab705cb3a4cc9ffa766d50d82ac627a2001114b376971",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed the AGENTS.md edit for the Plan.md removal. CLAUDE.md still only redirects to AGENTS.md; text unchanged."
+      "note": "Reviewed the AGENTS.md workspace-fact edit for the new Plan.md queue. CLAUDE.md still only redirects to AGENTS.md; text unchanged."
     },
     {
       "document": "README.md",
@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "4bb2d238b5fcea673b1869dd51807c6234f4d19679aadf8b80cfc5a934b2b036",
+      "sha256": "6cc590b2f177829c3d197e136b56dcd1a67cdffcf338dfd7f3b53e7323855fb0",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed the Plan.md removal and the dropped historical entries (CodeReview.md, IMPLEMENTATION_PLAN.md, te-plan.md, none present). Removed the Plan.md row and reworded the handoff row and the removed-plans lines."
+      "note": "Added the Plan.md row for the design and UX polish queue."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -95,9 +95,16 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "88b768480416b6212c07924a141a9fb67165edbbf9c1afec909ba57139072057",
+      "sha256": "40c97855d9dd88e64e4214a8756428fbef8fea29fab5dbfae02abccf2d8d3c3b",
       "reviewedAt": "2026-09-23",
-      "note": "Position now states main as pushed to origin, which holds once this documentation commit is pushed with the audit fixes 181c8ec to 7da197d. The collinear follow-up names both throw sites: polygon.ts for axis-aligned points and the loop.ts sampler otherwise."
+      "note": "Tasking selects Plan.md row A; D1 adopted 2026-09-23; base is the plan commit after 293f7bd, not pushed."
+    },
+    {
+      "document": "docs/Plan.md",
+      "inputs": [],
+      "sha256": "5183821fb90e87839dbb44d43fde98dfd7885fa1587eb16864109dfe80bdf87c",
+      "reviewedAt": "2026-09-23",
+      "note": "Registered the frozen design and UX polish queue from the 2026-09-23 review: 36 findings, 8 decisions, rows A to C with parallel lanes. Sessions advance only by rewriting HANDOFF.md."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

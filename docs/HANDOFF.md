@@ -10,7 +10,8 @@ commit log. This file holds only the position, the current task and the landmine
 fresh agent starts from this file and the docs index. This file does not authorize a
 commit, push or merge.
 
-No plan queue is open; a task message selects the next work.
+The open queue is [Plan.md](Plan.md), the design and UX polish plan. This file selects
+one row of it.
 
 ## Position
 
@@ -24,7 +25,19 @@ No plan queue is open; a task message selects the next work.
 
 ## Tasking
 
-None open. These audit follow-ups are candidates, not tasking:
+Row A of [Plan.md](Plan.md#row-a-foundation): the foundation tokens, the floating
+surface class, the board ink table and hook, the icon set and the design-system rules.
+
+- Base: local `main` at the plan commit that follows `293f7bd`. It is not pushed.
+- Decision D1 is closed: the user adopted all rule changes on 2026-09-23. D2 to D8 stay
+  open with the defaults in the plan.
+- Row A is serial: run it in the main checkout. Row B lanes branch worktrees from the
+  Row A commit.
+- Owned files, work, gate and stop condition are in the row. Record the entry gzip bytes
+  and headroom here after the gate, then select Row B.
+- Rows B and C run parallel lanes with disjoint files and `index.css` blocks.
+
+These audit follow-ups stay candidates outside the plan:
 
 - Three collinear range points pass the store's three-point floor and still throw in the
   optimize worker: `polygon.ts` when they are axis-aligned, else the rejection sampler in
