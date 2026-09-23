@@ -11,94 +11,78 @@ fresh agent starts from this file and the docs index. This file does not authori
 commit, push or merge.
 
 [Plan.md](Plan.md), the design and UX polish plan, is complete. No row of it is
-selected.
+selected. The polish follow-up run that came after it is also complete.
 
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  `origin/main` is at `293f7bd`. Local `main` is ahead by the plan commit `0386b3a`, the
-  Row A commit `e744334`, the Row B protocol commit `1833ce8`, the five Row B lane merges
-  (`0202893` to `1fd0bfc`), the B-int commit `2028d35`, the four Row C lane merges and the
-  C-int commit that holds this handoff. None of them is pushed. The audit fixes `181c8ec`
-  to `7da197d` and the documentation update after them follow row J (`afaf1ae`) and row O
-  (`de208aa`).
+  `origin/main` is at `293f7bd`. Local `main` holds the plan commit `0386b3a`, Rows A, B
+  and C with their integration commits (B-int `2028d35`, C-int `d806e33`), and the polish
+  follow-up run: the lane merges of `polish2/cue`, `polish2/canvas`, `polish2/panels` and
+  `polish2/logic` and the integration commit that holds this handoff. None of them is
+  pushed. The audit fixes `181c8ec` to `7da197d` and the documentation update after them
+  follow row J (`afaf1ae`) and row O (`de208aa`).
 - The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
   layered kill mass 1, layered kills mean 1.115, JIATF leakers mean 0.895, JIATF kills
   mean 0.105. `4.68` is not a pin.
 - The flight horizon is `7fdcb1e`.
-- Entry gzip at the C-int gate: 365,894 bytes against 366,000, 106 bytes of headroom.
-  Initial JavaScript and CSS: 382,274 bytes against 400,000.
+- Entry gzip at the polish follow-up gate: 366,212 bytes against 367,000, 788 bytes of
+  headroom. The user raised the budget from 366,000 for this run. Initial JavaScript and
+  CSS: 382,637 bytes against 400,000.
 
 ## Tasking
 
-No row of [Plan.md](Plan.md) stays open. Rows A, B and C are merged on `main`. Do not add
-a row. The next task comes from the user.
+No task is open. Do not add a row to [Plan.md](Plan.md). The next task comes from the
+user.
 
-Row C used the plan defaults for D2, D3, D4 and D8. The C-int capture covered every stage
-and overlay in dark and light at 2100 and 1440 on the fixture
-`docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json`, with no page error.
-The state of the 36 findings:
+All 36 plan findings are closed or changed by a decision. The polish follow-up run closed
+the four that stayed open after Row C, and most of the follow-ups outside the plan:
 
-- Closed: V1 to V4, V6 to V11, V13, V14, F1 to F3, F5, F6, F8 to F12, U1, U5, C3, C5.
-- Closed in Row C:
-  - F4 (D2): Prepare > Inputs is the one editor. Settings > Scenario holds a framed
-    "Open Prepare > Inputs" action. It calls App's `openPreparation('doctrine')` through
-    `OpenInputsContext` (`src/panels/settings/openInputs.ts`), so it opens the right panel
-    on Inputs with Fire doctrine open.
-  - F7 (D3): the board editing tools and Range setup show only in Prepare. Outside Prepare
-    `BoardTools` returns the tool to Select. The palette drops its Tool group, and the
-    Inspector and context menu drop "Draw flight path" and "Connect from here".
-  - F11 (D4): Compare has no body "Run Monte Carlo" button. The header Run control is on
-    every Analyze screen of the Overview tab.
-  - U3 (D8): `src/state/lastAction.ts` names a delete or a place from the last `past`
-    snapshot. The store has no new field. The lazy `src/panels/UndoCue.tsx` shows
-    "Deleted `name` · Undo ⌘Z" and clears it after 4 s.
-- Changed by a decision:
-  - V5: the finding words LIMITS, INVALIDATES and PENDING stay (D6).
-  - V12 (D7): the chips fold below 1600 px. At 1600 px with five chips the right group
-    is wider than its half, and the tabs sit 135 px left of center.
-  - U2: the context menu shows its keys. No key is bound to a board tool, so the tool
-    buttons show none.
-  - C2: the path caption does not join `layoutLabels`, because that needs
-    `LiveScene.tsx`. `PathLayer` places it clear of the glyphs and anchored labels of the
-    board at rest.
-- Open:
-  - U3 at 1440: the timeline has about 188 px free, so a long name truncates to "Del…"
-    and the scrub narrows to 80 px for 4 s. An edit made before the lazy cue chunk
-    loads shows no cue. A wider cue needs a placement decision outside the timeline row.
-  - C1: the `PathLayer` draft and calibrate marks, the `EntityLayer` connect ring and
-    range button, and the `CanvasStage` marquee still use dark-only inks.
-  - C4: the 28 px selection ring crosses the top of the anchored label, which starts at
-    20 px.
-  - U4: when an entity is deleted under the pointer, the pointer cursor stays until the
-    next hover leave.
+- U3: the undo cue is a `.surface-float` at the canvas bottom left, above the timeline
+  (`src/panels/UndoCue.tsx`, mounted in `App.tsx` inside `.board-stage`). It takes no
+  pointer events and the name truncates inside a 360 px cue. On mount the lazy cue reads
+  `actionBeforeMount` (`src/state/lastAction.ts`), so an edit made before its chunk loads
+  still shows. The scrub keeps its 120 px floor.
+- C1: `BoardInk` (`src/ui/ink.ts`) gains `selection`, `board`, `tool` and `control`. The
+  path draft, calibrate marks, connect ring, range button, marquee and a selected link read
+  them. In dark, the path draft and a selected link are now text 1, not `#ffffff`.
+- C4: `LABEL_ANCHOR_TOP` (`src/canvas/labelLayout.ts`) is 32, so the 28 px ring and its
+  halo clear the anchored label. The range button sits below the label.
+- U4: `src/canvas/hoverCursor.ts` releases the pointer cursor when the hovered entity
+  unmounts.
+- Capture defects: the ROE label stays on one line; the Compare `BandChart` y-axis, the
+  telemetry charts and the track ladder no longer clip; the Analyze Run control stays
+  right-aligned with the progress line on its own row. The Now kill-chain State column is
+  30 % wide, so "identified" fits at the 320 px panel; the Track and Held names clip
+  harder, with the full text in the cell title.
+- Right-panel segments no longer wrap by default. The ring override is
+  `.insp-rings .seg button { padding: 4px 8px }`.
+- A range with collinear or near-collinear points is refused at launch in
+  `optimizeLaunch` (`src/state/analysisRequests.ts`) with the reason from `boundsRefusal`
+  (`src/playback/optimize/polygon.ts`): under 1 m² or under 4e-3 of its bounding box.
+  `boundingBoxOf` throws the same reason in the worker as a backstop.
+- CI: a push whose `before` is the zero sha checks against `origin/main` on a branch,
+  `HEAD~1` on `main`, and falls back to `check:silent:all` on a root commit.
+- `setBoardPhase` returns the tool to Select outside Prepare. `BoardTools` has no effect.
 
-### Outside the plan
+### Candidates
 
-These follow-ups stay candidates outside the plan:
+These follow-ups stay candidates. None is selected.
 
-- Row C capture: in Fire doctrine at the 320 px right panel, the "ROE" label wraps to
-  "R / OE". At 1440 the Compare `BandChart` cuts its y-axis labels at the left edge. With
-  a progress line, the Analyze Run control row wraps to the left of the panel.
-- `BoardTools` resets the tool in an effect. A reset inside `setBoardPhase` would remove
-  the effect.
-- `.board-app input[type='range']` sets `min-width: 0` and overrides the 120 px `.scrub`
-  floor.
-- `BoardInk` has no selection or board-tone field; `EntityLayer.tsx` and
-  `ConnectionLayer.tsx` hold those values. Adding `selection` and `board` to
-  `src/ui/ink.ts` would remove them.
-- `.board-app .right-panel .seg button { white-space: normal }` wraps every right-panel
-  segment. The ring override needs a four-class selector to keep "Global" on one line.
-- The B-int capture found two defects that predate Row B. On Now, the kill-chain table
-  State word "identified" runs into the Held cell with no gap. In the selected-object
-  telemetry, the Pd and slant-range charts cut their end marker at the right edge and
-  their `0:00` axis labels at the bottom, and the track ladder cuts its label on the left.
-- Three collinear range points pass the store's three-point floor and still throw in the
-  optimize worker: `polygon.ts` when they are axis-aligned, else the rejection sampler in
-  `loop.ts`.
+- A delete made while the Library drawer is open shows no visible cue: the drawer (z 40)
+  covers it (z 5). A redo made before the cue chunk loads reads as "Placed" or "Deleted".
+- Dark-only inks remain: the heading-handle knob stroke `#121415` (`EntityLayer.tsx`) and
+  the dim link ink `#6a7178` (`ConnectionLayer.tsx`).
+- The heading handle at reach 34 can overlap the moved label when it points down. The
+  flight path line runs through the UAS label (this predates the run).
+- The Placement screen Bounds select still lists a degenerate range; a run from it reports
+  the refusal reason. A self-intersecting bow-tie with equal lobes is refused with the
+  collinear wording.
+- The Inspector ring buttons render in mono, inherited from `.insp-row-value`.
+- V12 (D7): at 1600 px with five chips, the tabs sit 135 px left of center.
+- `src/playback/policy.test.ts` "the Monte Carlo policy gives discrete outcomes" failed
+  once under load from parallel lanes and passed on rerun.
 - The merge could size its grids to the contiguous prefix.
-- A CI push to `main` with a zero `before` sha checks nothing
-  (`.github/workflows/quality.yml`).
 - The fidelity gun-burst tag cannot see `context.uas`.
 - No `finishSummary` cap timing exists after the t-quantile cache.
 
@@ -152,8 +136,8 @@ These follow-ups stay candidates outside the plan:
   `points` array (`scenarioHasWork` in `src/io/persist.test.ts`,
   `scenarioInstall.test.ts`). Those objects do not pass `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
-  touches the entry. The entry gzip budget is 366,000 bytes with 106 bytes headroom
-  (last measured 365,894 at the Row C gate). Icons and new components add entry bytes. `sql.js` must stay behind `await import` with its wasm URL.
+  touches the entry. The entry gzip budget is 367,000 bytes with 788 bytes headroom
+  (last measured 366,212 at the polish follow-up gate). Icons and new components add entry bytes. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
 - Prettier wrapping of JSX text can change React `children`. Keep button labels on one

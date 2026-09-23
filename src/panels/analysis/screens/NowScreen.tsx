@@ -14,11 +14,12 @@ const SettingsPanel = lazy(() =>
   import('../../SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
 )
 const columns = ['Track', 'State', 'Held', 'ID', 'Eng', 'Arr'] as const
-// Six columns in a 350 px panel: the three times hold their width, the names clip.
+// Six columns in a 350 px panel: the three times and the state word hold their
+// width, the names clip.
 const columnWidth: Record<Column, string> = {
-  Track: '24%',
-  State: '17%',
-  Held: '23%',
+  Track: '19%',
+  State: '30%',
+  Held: '15%',
   ID: '12%',
   Eng: '12%',
   Arr: '12%',

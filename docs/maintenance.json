@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "06e1a9f08911e90cf461d00c82518e9387a95014afe03a5a5d6199389477511e",
+      "sha256": "a16ffa8d021e4221abeeace8e1488449b7e9978fc7d518101ab3a692e399d1dd",
       "reviewedAt": "2026-09-23",
-      "note": "Row C (C1-C4, C-int) changed Settings, Toolbar tools, Compare and the undo cue; README text unaffected."
+      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "c609daf2a4dd12424f75ab762e9f8f11dfc20c58e1ac15ec9fdd1a16c8ad16ab",
+      "sha256": "dc598aaed33a656aaabc9506970c7ae0f0ad0186d00c6278f85a5562369147a3",
       "reviewedAt": "2026-09-23",
-      "note": "Row C: Compare starts runs from the header Run control; Inputs is the one doctrine and environment editor; editing tools only in Prepare; undo cue."
+      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "842c8c7e8d43a7fd41f5788729a9cb12ca1b4ca3819b30eb35f83858618fe2d4",
+      "sha256": "8810c8883635a371e933504a03ce8512bc5da589f7e01ed25a9f3c2da95cbfea",
       "reviewedAt": "2026-09-23",
-      "note": "Row C: lastUndoableAction names delete and place from history snapshots for the undo cue."
+      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "4510614d5863393f433584a9b1276093037556a8dc06fe31475f46628fe8c121",
+      "sha256": "e2c65a9c36d54623e1d43792dc60c39b742d6d3986d4216a96d15ea9309e1bc0",
       "reviewedAt": "2026-09-23",
-      "note": "Row B gate: user raised the entry budget to 366,000; measured 365,722 entry, 381,985 initial, 278 bytes headroom."
+      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "71810e74b664a75f94bdd5de9c1b50c9443e9170e6b62d77d804ae0c79aff25b",
+      "sha256": "2674dc239786ba2f334df81a648350d263541aa2f65db191c1687a7c79995fe9",
       "reviewedAt": "2026-09-23",
-      "note": "Row B gate: entry budget is 366,000 bytes gzip."
+      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "13b305bfca4183850c3eab9972263f2e933048839d4fd7d0f74a3b97732cbaae",
+      "sha256": "cbb1e5c55dc6db8a72c78abd009f4db98721488ff620adccdd0bcb5d36f9c093",
       "reviewedAt": "2026-09-23",
-      "note": "C-int: Row C merged; plan complete; findings closed, changed by decision or open with reasons."
+      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
     },
     {
       "document": "docs/Plan.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "54cc32b94db74060605b37222ebbb3ad009397deb7bec7647e3900c9379e903e",
+      "sha256": "b43ecd803d61f06e8f5994e48add7b74abeae7a5d597718c877f0b2c9b28c38c",
       "reviewedAt": "2026-09-23",
-      "note": "Row C rules: one doctrine/environment editor, editing tools only in Prepare, one Analyze run control, the timeline undo cue."
+      "note": "Polish follow-up gate 2026-09-23: floating undo cue, board ink fields, label anchor 32, hover release, capture defect fixes, degenerate-range refusal, CI zero-sha fallback, setBoardPhase tool reset, entry budget 367,000."
     }
   ],
   "historical": [

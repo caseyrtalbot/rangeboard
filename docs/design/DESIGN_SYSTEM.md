@@ -43,8 +43,9 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    cursor and a 1 px ring in the entity ink at 60 %. A link caption draws only on a link
    of 80 screen px or more whose caption box clears every glyph and anchored label;
    otherwise it draws on hover. A path caption takes the first clear slot back along its
-   last leg. `BoardInk` has no selection or board-tone field, so `EntityLayer.tsx` and
-   `ConnectionLayer.tsx` hold those two values for each theme.
+   last leg. `BoardInk` also holds the selection, board-tone, tool and control inks, so the
+   selection ring, a selected link, the path draft, the calibrate marks, the connect ring,
+   the range button and the marquee read the theme.
 
 ## 2. Tokens
 
@@ -211,10 +212,11 @@ below the canvas tools row and stops above the timeline. A library row shows its
 basis action only on hover or keyboard focus. Drawing tools and the View and Range setup
 disclosures sit above the canvas. The board editing tools (Select, Boundary, Connect, Path
 and Range setup) show only in Prepare. Outside Prepare the palette, the Inspector and the
-context menu offer no action that starts a tool, and the tool returns to Select. After a
-delete or a place, the timeline shows `<verb> <name> · Undo ⌘Z` in `--text-dim`. It fades
-during the last 15 % of 4 s, reduced motion cuts it at 4 s, and undo, redo or a load clear
-it. It takes free space only: the name truncates first, and the scrub keeps 80 px. An empty board shows one hint, a `.surface-float` at
+context menu offer no action that starts a tool, and `setBoardPhase` returns the tool to
+Select. After a delete or a place, a `.surface-float` cue at the canvas bottom left, above
+the timeline, shows `<verb> <name> · Undo ⌘Z`. It fades during the last 15 % of 4 s,
+reduced motion cuts it at 4 s, and undo, redo or a load clear it. The name truncates
+first, the cue takes no pointer events, and the timeline scrub keeps its 120 px floor. An empty board shows one hint, a `.surface-float` at
 the canvas top left with an "Open library (L)" action. Drawer search receives focus on opening; Escape returns it to the
 resource button. Library names and scoped control labels wrap. Scenario input sections
 use native disclosures; menus scroll within the available viewport height. Fire doctrine

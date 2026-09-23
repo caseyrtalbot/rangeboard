@@ -64,7 +64,8 @@ Breaking one of these breaks the app.
   worker). A rule for "a new Scenario is current" belongs there, keyed by operation, never
   in one caller. History holds snapshots only, with no action label:
   `lastUndoableAction` (`src/state/lastAction.ts`) names a delete or a place for the undo
-  cue by comparing entity ids of the last `past` snapshot and `scenario`. One exception:
+  cue by comparing entity ids of the last `past` snapshot and `scenario`;
+  `actionBeforeMount` names an edit made before the lazy cue chunk loaded. One exception:
   `Scenario.observedPresetId` is stamped through `set` on reset and first play, and undo
   and redo carry the current stamp over a restored snapshot. A stamp that already matches
   replaces nothing. A new stamp is a presentation variant of the current object
@@ -382,7 +383,11 @@ Breaking one of these breaks the app.
   positions inside the range polygon. `SEED_EVALUATIONS` (8) Latin hypercube laydowns seed
   the GP, each later evaluation picks the best of a `CANDIDATE_CLOUD` (512) of polygon
   samples by expected improvement, and the GP length scale is `LENGTH_SCALE_FRACTION`
-  (0.25) of the polygon extent. Every evaluation is one replicate run
+  (0.25) of the polygon extent. `boundsRefusal` (`polygon.ts`) refuses a range under
+  `MIN_AREA_M2` (1 m²) or under `MIN_AREA_FRACTION` (4e-3) of its bounding box, so the
+  rejection sampler cannot exhaust its draws; `optimizeLaunch`
+  (`src/state/analysisRequests.ts`) reports that reason and starts no worker, and
+  `boundingBoxOf` throws it in the worker as a backstop. Every evaluation is one replicate run
   (`evaluateLaydown` over `placeLaydown`) under common random numbers at the request's
   one seed, read through `endOfRunResponses` and `statOf` (`mcRun.ts`) with the
   response's `StatKind`. `rankCandidates` returns at most `CANDIDATE_CAP` (5) candidates,
@@ -571,7 +576,8 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                record from Scenario, RingView and the selected threat, and hitAt finds the
                ring edge under a world point over the same records), useRingModel.ts (the
                store-bound hook FootprintLayer and HudLayer share), useBoardInk.ts
-               (the board ink table for ui.theme and prefers-color-scheme),
+               (the board ink table for ui.theme and prefers-color-scheme), hoverCursor.ts
+               (the hovered entity's pointer cursor, released when that entity unmounts),
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
                style source)
 src/panels/    Toolbar (header: brand, scenario name, ⋯ menu, the lifecycle tabs, run

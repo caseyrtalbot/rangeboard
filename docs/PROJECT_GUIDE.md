@@ -143,7 +143,9 @@ with expected improvement over the movable positions inside the range polygon, e
 evaluation a replicate run under common random numbers at one seed (defaults 60
 evaluations of 40 replicates). A range boundary with fewer than three vertices cannot
 bound the run; the screen leaves it out of the choice and prints how many it skipped,
-and the store starts no placement run on one. Apply copies the scenario through the existing replace
+and the store starts no placement run on one. A range whose points lie on one line, or
+enclose under 1 m² or under 4e-3 of their bounding box, is refused at launch with that
+reason, and no worker starts. Apply copies the scenario through the existing replace
 action, so the candidate is a new scenario and the optimize result is cleared with the
 other analyses on install. Calibrate, a button per field on the Systems tab, opens a
 dialog that turns typed counts or times into a posterior (beta with the Jeffreys prior
