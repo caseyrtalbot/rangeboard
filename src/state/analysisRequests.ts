@@ -42,6 +42,7 @@ import { loopEnd } from '../playback/sampling'
 import { sobolEvaluationCount } from '../playback/sobol'
 import { cancelTrial, startTrial } from '../playback/trialClient'
 import type { TrialWorkerMessage } from '../playback/trialMessages'
+import type { TrialResult } from '../playback/trialTypes'
 import { createTrialManifest, sameManifest } from '../playback/trialTypes'
 import { boundRetainedTrial } from '../playback/retainTrial'
 import { activeOverrides, applyOverrides, useOverrides } from './overrides'
@@ -714,16 +715,25 @@ export function acceptTrialMessage(
   // The envelope and retained manifest must identify the very same draw.
   const received = m.result.manifest
   if (!sameManifest(manifest, received)) return failed('Trial manifest mismatch')
-  const ready: TrialState = {
+  // Validate the raw result before the ledger binds it: the typed-array store
+  // coerces member values the adapter must see and reject as sent.
+  const full: TrialResult = { ...m.result, manifest }
+  const probe: TrialState = {
     ...trial,
     status: 'ready',
     error: null,
     startWhenReady: false,
-    result: boundRetainedTrial({ ...m.result, manifest }),
+    result: full,
   }
-  // Validate the shared adapter once before exposing a ready trial or starting its clock.
-  if (selectTrialSelection({ ...st, trial: ready }).status !== 'ready') {
+  if (selectTrialSelection({ ...st, trial: probe }).status !== 'ready') {
     return failed('Invalid trial result')
   }
-  return { trial: ready }
+  // The ledger rejects a scan outside its tables; that ends the request as an error.
+  let bound: TrialResult
+  try {
+    bound = boundRetainedTrial(full)
+  } catch {
+    return failed('Invalid trial result')
+  }
+  return { trial: { ...probe, result: bound } }
 }

@@ -301,6 +301,44 @@ describe('sampled trial preparation and playback lifecycle', () => {
     expect(useStore.getState().playback.playing).toBe(true)
   })
 
+  type Scan = Record<string, unknown>
+  it.each<[string, (scan: Scan) => void]>([
+    ['null members', (scan) => void (scan.members = null)],
+    ['unknown gate', (scan) => void (scan.gate = 'bogus')],
+    ['negative drawIndex', (scan) => void ((scan.members as Scan[])[0].drawIndex = -1)],
+  ])('a malformed scan (%s) ends the request as an error inside setState', (_, mutate) => {
+    toggleAnalysisRun()
+    const worker = latest()
+    const message = done()
+    if (message.type !== 'trial-done') throw new Error('expected result')
+    mutate(message.result.observations[0] as unknown as Scan)
+    expect(() => worker.send(message)).not.toThrow()
+    expect(useStore.getState().trial).toMatchObject({
+      status: 'error',
+      error: 'Invalid trial result',
+      startWhenReady: false,
+    })
+  })
+
+  it('New run releases the replaced ledger; a same-result patch leaves it intact', () => {
+    useStore.getState().startTrialRun()
+    finish()
+    const result = useStore.getState().trial.result!
+    const held = result.observations
+    const events = result.report.events
+    const counts = [held.length, events.length]
+    expect(counts[0]).toBeGreaterThan(0)
+    expect(counts[1]).toBeGreaterThan(0)
+    useStore.setState({ trial: { ...useStore.getState().trial, startWhenReady: false } })
+    expect(useStore.getState().trial.result).toBe(result)
+    expect([held.length, events.length]).toEqual(counts)
+    resetAnalysisRun()
+    expect([held.length, events.length]).toEqual([0, 0])
+    toggleAnalysisRun()
+    finish()
+    expect(useStore.getState().trial.result!.observations.length).toBeGreaterThan(0)
+  })
+
   it('synchronous construction failure and missing Worker leave an actionable error', () => {
     ControlledWorker.constructionError = 'constructor failed'
     useStore.getState().startTrialRun()
