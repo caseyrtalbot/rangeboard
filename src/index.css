@@ -2577,6 +2577,15 @@ select.nu-unit {
     undo-cue-fade 4s linear forwards;
 }
 
+/* The open Library drawer (z 40) covers the bottom left, so the cue moves to the
+   bottom right, above the scale and the tile attribution. The drawer width is
+   resizable, so no left offset clears it. */
+.board-library-drawer:not([hidden]) ~ .undo-cue {
+  left: auto;
+  right: var(--space-3);
+  bottom: 52px;
+}
+
 .undo-cue span {
   min-width: 0;
   overflow: hidden;
