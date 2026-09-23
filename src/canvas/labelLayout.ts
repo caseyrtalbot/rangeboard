@@ -56,9 +56,9 @@ const ANCHOR_W = 120
 /**
  * Top of the anchored label box, px below the glyph centre. EntityLayer draws
  * the label at this offset, so the two must move together. It clears the
- * target brackets, which reach y 19.8 at a bracket half of 19.
+ * selection ring (r 28) and its halo, which reach y 30.75.
  */
-export const LABEL_ANCHOR_TOP = 20
+export const LABEL_ANCHOR_TOP = 32
 /** Line box height of a wrapped anchored label, px. */
 export const LABEL_LINE_H = 12
 const SLOT_H = 15

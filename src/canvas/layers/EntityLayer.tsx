@@ -62,7 +62,7 @@ const FRIEND_SCALE = 2.2
 
 /** Track ring radius. The glyph is r11, so the ring clears it. */
 const RING_R = 14
-/** Selection ring radius. It must stay outside the target brackets. */
+/** Selection ring radius. It must stay outside the target brackets; LABEL_ANCHOR_TOP clears it. */
 const SELECT_R = 28
 const BRACKET_HALF = 19
 const BRACKET_ARM = 6
@@ -766,7 +766,7 @@ const EntityBody = memo(function EntityBody({
       )}
       {selected && entity.kind === 'uas' && tool === 'select' && (
         <Group
-          y={34}
+          y={LABEL_ANCHOR_TOP + labelLines * LABEL_LINE_H + TAG_GAP}
           onClick={(e) => {
             e.cancelBubble = true
             useStore.getState().updateEntity(entity.id, { showRange: !entity.showRange })
