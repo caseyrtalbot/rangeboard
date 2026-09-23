@@ -382,10 +382,12 @@ body,
    lifecycle tablist, the view controls. The two outer tracks share the space
    evenly, so the tablist sits at the bar centre. The right track never falls
    below its content, and the left track gives width back first, so a long
-   scenario name shrinks instead of the controls colliding or being hidden. */
+   scenario name shrinks instead of the controls colliding or being hidden. The
+   column gap keeps the three groups apart at every width. */
 .toolbar {
   display: grid;
   grid-template-columns: minmax(min-content, 1fr) auto minmax(max-content, 1fr);
+  column-gap: var(--space-6);
   align-items: stretch;
   height: 40px;
   padding: 0 10px;
@@ -675,13 +677,15 @@ input[type='color']::-webkit-color-swatch {
   border: 0;
 }
 
-/* Undo and redo carry a glyph, not a word. The title text names them. */
+/* Undo and redo carry an icon, not a word. The title text names them. */
 .toolbar > .seg button.tb-glyph,
 .board-tools > .seg button.tb-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 26px;
-  padding: 4px 6px;
-  font-size: var(--type-body-size);
-  line-height: 1.15;
+  padding: 4px 5px;
+  line-height: 1;
 }
 
 /* Toolbar dropdowns: View and the file overflow. Both float, so both are
@@ -1109,7 +1113,54 @@ input[type='color']::-webkit-color-swatch {
 .status-pills {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+}
+
+/* The spawn chip is a button so it can select the UAS; it keeps the chip look. */
+.status-chip {
+  padding: 2px 0;
+}
+
+/* D7: below 1600 px the WEZ, derate, spawn and saved chips fold into the ROE
+   button, which counts them and lists them in its panel. A failed save stays. */
+.status-fold {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.status-fold-count {
+  color: var(--status-warning);
+  font-family: var(--font-mono);
+  font-size: var(--type-meta-size);
+}
+
+.status-fold-chips {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 1600px) {
+  .status-fold-count,
+  .status-fold-chips {
+    display: none;
+  }
+}
+
+@media (max-width: 1599.98px) {
+  .status-pills > :not(.tb-menu-wrap, [role='alert']) {
+    display: none;
+  }
+
+  .status-fold {
+    padding: 3px var(--space-2);
+    border: 1px solid var(--border-control);
+  }
 }
 
 /* ---------- State square and provenance mark ---------- */

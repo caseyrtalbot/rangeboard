@@ -1,5 +1,6 @@
 import { selectEffectiveLayers } from '../state/selectors'
 import { lazy, memo, Suspense, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
 import type { StateTone } from '../ui/kit'
@@ -17,6 +18,7 @@ import { StorageMenu } from '../ui/StorageMenu'
 import type { BoardPhase } from '../state/runState'
 import { formatRunLabel } from '../state/labels'
 import { nextTabIndex } from '../ui/rovingTabs'
+import { IconRedo, IconUndo } from '../ui/icons'
 
 const PHASES: { id: BoardPhase; label: string }[] = [
   { id: 'prepare', label: 'Prepare' },
@@ -80,7 +82,11 @@ const ROE_OPTIONS: { v: Roe; label: string }[] = [
   { v: 'free', label: 'Free' },
 ]
 
-function RoeMenu() {
+/**
+ * The ROE chip and its menu. Below 1600 px the CSS hides the other chips; this
+ * button then counts them, and its panel lists them with the autosave time.
+ */
+function RoeMenu({ folded, children }: { folded: number; children: ReactNode }) {
   const roe = useStore((s) => s.scenario.roe ?? 'tight')
   const wrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -90,6 +96,7 @@ function RoeMenu() {
       <button
         ref={buttonRef}
         type="button"
+        className="status-fold"
         title="ROE · click to change"
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -97,6 +104,7 @@ function RoeMenu() {
         onClick={toggle}
       >
         <State tone={ROE_PILLS[roe].tone}>{ROE_PILLS[roe].label}</State>
+        {folded > 0 && <span className="status-fold-count">+{folded}</span>}
       </button>
       {open && (
         <div
@@ -121,6 +129,7 @@ function RoeMenu() {
               {ROE_PILLS[v].hint}
             </p>
           ))}
+          <div className="status-fold-chips">{children}</div>
         </div>
       )}
     </div>
@@ -146,7 +155,7 @@ function activeDerates(env: EnvironmentSpec): string[] {
 }
 
 interface SpawnWarning {
-  count: number
+  uasIds: string[]
   hint: string
 }
 
@@ -160,7 +169,7 @@ function selectSpawnWarning(s: Store): SpawnWarning | null {
   const cached = spawnWarningCache.get(s.scenario)
   if (cached !== undefined) return cached
   const finding = assessRunValidity(s.scenario, []).findings.find((f) => f.id === 'spawn-in-ring')
-  const warning = finding ? { count: finding.uasIds.length, hint: finding.message } : null
+  const warning = finding ? { uasIds: finding.uasIds, hint: finding.message } : null
   spawnWarningCache.set(s.scenario, warning)
   return warning
 }
@@ -269,6 +278,36 @@ export const Toolbar = memo(function Toolbar({
   const { setScenarioName } = useStore.getState()
 
   const derates = activeDerates(environment)
+  // One chip set: inline from 1600 px, and inside the ROE panel below it.
+  const chips = (
+    <>
+      {threatWez && (
+        <State tone="critical" title="Threat weapon engagement zones are drawn on the canvas">
+          WEZ on
+        </State>
+      )}
+      {derates.length > 0 && (
+        <State tone="warning" title={`Sensor ranges derated: ${derates.join(', ')}`}>
+          Env derate
+        </State>
+      )}
+      {spawnWarning && (
+        <button
+          type="button"
+          className="status-chip"
+          title={spawnWarning.hint}
+          onClick={() => useStore.getState().select({ entityIds: spawnWarning.uasIds })}
+        >
+          <State tone="warning">Spawn in ring {spawnWarning.uasIds.length}</State>
+        </button>
+      )}
+      {save.error == null && save.lastAutosaveAt != null && (
+        <State tone="inactive" title="Last autosave to browser storage">
+          Saved {clockHHMM(save.lastAutosaveAt)}
+        </State>
+      )}
+    </>
+  )
 
   return (
     <header className="toolbar">
@@ -316,32 +355,15 @@ export const Toolbar = memo(function Toolbar({
         <StorageMenu />
 
         <div className="status-pills" aria-label="Status">
-          <RoeMenu />
-          {threatWez && (
-            <State tone="critical" title="Threat weapon engagement zones are drawn on the canvas">
-              WEZ On
-            </State>
-          )}
-          {derates.length > 0 && (
-            <State tone="warning" title={`Sensor ranges derated: ${derates.join(', ')}`}>
-              Env Derate
-            </State>
-          )}
-          {spawnWarning && (
-            <State tone="warning" title={spawnWarning.hint}>
-              Spawn In Ring {spawnWarning.count}
-            </State>
-          )}
-          {save.error != null ? (
+          <RoeMenu folded={[threatWez, derates.length, spawnWarning].filter(Boolean).length}>
+            {chips}
+          </RoeMenu>
+          {chips}
+          {/* A failed save stays in the bar at every width: it is an alert. */}
+          {save.error != null && (
             <State tone="critical" title={save.error} role="alert">
               Save failed
             </State>
-          ) : (
-            save.lastAutosaveAt != null && (
-              <State tone="inactive" title="Last autosave to browser storage">
-                Saved {clockHHMM(save.lastAutosaveAt)}
-              </State>
-            )
           )}
         </div>
 
@@ -430,7 +452,7 @@ export const BoardTools = memo(function BoardTools({
           onClick={undo}
           disabled={!canUndo}
         >
-          ↶
+          <IconUndo />
         </button>
         <button
           type="button"
@@ -440,7 +462,7 @@ export const BoardTools = memo(function BoardTools({
           onClick={redo}
           disabled={!canRedo}
         >
-          ↷
+          <IconRedo />
         </button>
       </div>
     </div>
