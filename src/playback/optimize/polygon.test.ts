@@ -104,6 +104,37 @@ describe('boundsRefusal', () => {
       ]),
     ).toBeNull()
   })
+
+  it('names a crossing boundary instead of calling it collinear', () => {
+    // A bow-tie with equal lobes: the shoelace sum cancels to exactly 0.
+    const bowTie = [
+      { x: 0, y: 0 },
+      { x: 1000, y: 1000 },
+      { x: 1000, y: 0 },
+      { x: 0, y: 1000 },
+    ]
+    expect(polygonAreaM2(bowTie)).toBe(0)
+    expect(boundsRefusal(bowTie)).toBe(
+      'The range boundary crosses itself. A placement run needs a polygon.',
+    )
+    expect(() => boundingBoxOf(bowTie)).toThrow(/crosses itself/)
+    // Four collinear points whose edges overlap along the line keep the collinear reason.
+    const folded = [
+      { x: 0, y: 0 },
+      { x: 1000, y: 0 },
+      { x: 500, y: 0 },
+      { x: 1500, y: 0 },
+    ]
+    expect(boundsRefusal(folded)).toMatch(/enclose no area/)
+    // A bow-tie with unequal lobes still has area to sample and is admitted as before.
+    const lopsided = [
+      { x: 0, y: 0 },
+      { x: 1000, y: 1000 },
+      { x: 1000, y: 0 },
+      { x: 0, y: 2000 },
+    ]
+    expect(boundsRefusal(lopsided)).toBeNull()
+  })
 })
 
 describe('pointInPolygon', () => {

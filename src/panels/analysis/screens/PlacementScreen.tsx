@@ -11,6 +11,7 @@ import { SWEEP_RESPONSE_LABELS } from '../../../charts/SweepMap'
 import { entityActive, runSettings } from '../../../model/types'
 import type { Entity, Scenario } from '../../../model/types'
 import { SENSITIVITY_RESPONSES } from '../../../playback/mcRun'
+import { boundsRefusal } from '../../../playback/optimize/polygon'
 import type { SensitivityResponse, Stat } from '../../../playback/mcRun'
 import type { Laydown, OptimizeObjective, OptimizeResult } from '../../../playback/optimizeTypes'
 import { analysisBasisSignature } from '../../../state/analysisBasis'
@@ -115,7 +116,14 @@ export function PlacementScreen() {
   const allRanges = scenario.boundaries.filter((b) => b.type === 'range')
   const ranges = allRanges.filter((b) => b.points.length >= 3)
   const skippedRanges = allRanges.length - ranges.length
-  const bounds = ranges.find((b) => b.id === boundaryId) ?? ranges[0] ?? null
+  // A range the run would refuse stays listed with its reason; the default is the first usable one.
+  const refusals = new Map(ranges.map((b) => [b.id, boundsRefusal(b.points)]))
+  const bounds =
+    ranges.find((b) => b.id === boundaryId) ??
+    ranges.find((b) => refusals.get(b.id) == null) ??
+    ranges[0] ??
+    null
+  const refusal = bounds ? refusals.get(bounds.id) : null
   const movableIds = checked.filter((id) => movable.some((e) => e.id === id))
   const evaluations = Number(evaluationsText)
   const replicates = Number(replicatesText)
@@ -221,6 +229,7 @@ export function PlacementScreen() {
               {ranges.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name} · {b.points.length} points
+                  {refusals.get(b.id) != null && ' · unavailable'}
                 </option>
               ))}
             </select>
@@ -232,6 +241,7 @@ export function PlacementScreen() {
             </p>
           )
         )}
+        {refusal != null && <p className="muted small">{refusal}</p>}
         {skippedRanges > 0 && (
           <p className="muted small">
             {skippedRanges === 1
@@ -280,7 +290,12 @@ export function PlacementScreen() {
           <button
             type="button"
             disabled={
-              !enabled || running || movableIds.length === 0 || bounds == null || !budgetValid
+              !enabled ||
+              running ||
+              movableIds.length === 0 ||
+              bounds == null ||
+              refusal != null ||
+              !budgetValid
             }
             onClick={() =>
               startOptimize({
