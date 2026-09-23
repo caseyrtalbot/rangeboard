@@ -31,6 +31,7 @@ import {
   boardDesignator,
   HANDLE_KNOB_R,
   HANDLE_REACH,
+  LABEL_HALO_PX,
   LABEL_LINE_H,
   labelLineCount,
 } from '../labelLayout'
@@ -267,18 +268,46 @@ function handlePoint(headingDeg: number): { x: number; y: number } {
   return { x: Math.sin(r) * HANDLE_REACH, y: -Math.cos(r) * HANDLE_REACH }
 }
 
+/**
+ * Heading of the handle knob an entity shows, or undefined when it shows none. A
+ * directional sensor or effector shows one while selected under the select tool.
+ * LiveScene feeds this to the label layout, so the collision box starts where the
+ * label draws.
+ */
+// oxlint-disable-next-line react/only-export-components
+export function shownHandleDeg(
+  entity: Entity,
+  model: SpecModel | undefined,
+  selected: boolean,
+  tool: string,
+): number | undefined {
+  if (!selected || tool !== 'select') return undefined
+  const sectorDeg =
+    entity.kind === 'sensor'
+      ? model?.sensor?.sectorDeg
+      : entity.kind === 'effector'
+        ? (model?.effector?.sectorDeg ?? 360)
+        : undefined
+  return sectorDeg != null && sectorDeg < 360 ? entity.headingDeg : undefined
+}
+
 /** Drag handle that points a directional sensor/effector. Child drag does not move the group. */
 function HeadingHandle({
   entity,
   color,
   rim,
   tickRef,
+  labelRef,
+  boardName,
 }: {
   entity: Entity
   color: string
   /** The knob rim: `BoardInk.knobRim`. */
   rim: string
   tickRef: React.RefObject<Konva.Line | null>
+  /** The anchored name, so it steps below the knob while the knob sweeps over it. */
+  labelRef: React.RefObject<Konva.Text | null>
+  boardName: string
 }) {
   const leaderRef = useRef<Konva.Line>(null)
   /** Heading under the pointer, held until the gesture commits it. */
@@ -328,12 +357,14 @@ function HeadingHandle({
           const p = handlePoint(deg)
           tickRef.current?.rotation(deg)
           leaderRef.current?.points([0, 0, p.x, p.y])
+          labelRef.current?.y(anchoredLabelTop(boardName, deg))
           e.target.position(p)
         }}
         onDragEnd={(e) => {
           const deg = draft.current
           draft.current = null
           e.target.position(handlePoint(deg ?? entity.headingDeg))
+          labelRef.current?.y(anchoredLabelTop(boardName, deg ?? entity.headingDeg))
           // One mutation, so the gesture is one undo entry.
           if (deg != null && deg !== entity.headingDeg) {
             useStore.getState().updateEntity(entity.id, { headingDeg: deg })
@@ -584,6 +615,7 @@ const EntityBody = memo(function EntityBody({
   })
 
   const tickRef = useRef<Konva.Line>(null)
+  const labelRef = useRef<Konva.Text>(null)
   const ink = useBoardInk()
   const off = !entityActive(entity)
   const phase: TrackPhase = entity.kind === 'uas' ? (state?.phase ?? 'undetected') : 'undetected'
@@ -605,16 +637,6 @@ const EntityBody = memo(function EntityBody({
     effectorState === 'beam' ||
     (effectorState === 'active' && blink)
 
-  const sectorDeg = useMemo(
-    () =>
-      entity.kind === 'sensor'
-        ? model?.sensor?.sectorDeg
-        : entity.kind === 'effector'
-          ? (model?.effector?.sectorDeg ?? 360)
-          : undefined,
-    [entity, model],
-  )
-  const directional = sectorDeg != null && sectorDeg < 360
   // Konva hit-tests a stroke-only Circle over its whole disc. The selection
   // (r16) and card-link (r19) rings are cues, so the hit disc carries their radii.
   const hitR = cardLinked ? 19 : selected ? 16 : 13
@@ -623,9 +645,10 @@ const EntityBody = memo(function EntityBody({
   const boardName = useMemo(() => boardDesignator(entity.name), [entity])
   const nameLines = useMemo(() => labelLineCount(boardName), [boardName])
   const labelLines = labelDrawn ? nameLines : 0
-  const handleShown = selected && directional && tool === 'select'
+  const handleDeg = shownHandleDeg(entity, model, selected, tool)
+  const handleShown = handleDeg != null
   // The label steps below a knob that points down into it; the handle stays put.
-  const labelTop = anchoredLabelTop(boardName, handleShown ? entity.headingDeg : undefined)
+  const labelTop = anchoredLabelTop(boardName, handleDeg)
 
   return (
     <>
@@ -750,6 +773,7 @@ const EntityBody = memo(function EntityBody({
       )}
       {labelDrawn && (
         <Text
+          ref={labelRef}
           fontFamily="JetBrains Mono"
           x={-60}
           y={labelTop}
@@ -757,9 +781,9 @@ const EntityBody = memo(function EntityBody({
           text={boardName}
           fontSize={11}
           fill={ink.label}
-          // A 2 px board-tone halo knocks out a flight path or a leader under the name.
+          // A board-tone glyph halo knocks out a flight path or a leader under the name.
           stroke={ink.board}
-          strokeWidth={4}
+          strokeWidth={LABEL_HALO_PX}
           lineJoin="round"
           fillAfterStrokeEnabled
           align="center"
@@ -780,7 +804,14 @@ const EntityBody = memo(function EntityBody({
         />
       )}
       {handleShown && (
-        <HeadingHandle entity={entity} color={color} rim={ink.knobRim} tickRef={tickRef} />
+        <HeadingHandle
+          entity={entity}
+          color={color}
+          rim={ink.knobRim}
+          tickRef={tickRef}
+          labelRef={labelRef}
+          boardName={boardName}
+        />
       )}
       {selected && entity.kind === 'uas' && tool === 'select' && (
         <Group

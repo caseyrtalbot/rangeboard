@@ -4,7 +4,7 @@ import { Circle, Group, Line, Text } from 'react-konva'
 import type { Entity } from '../../model/types'
 import { entityActive } from '../../model/types'
 import { useStore } from '../../state/store'
-import { boardDesignator, LABEL_FONT_PX } from '../labelLayout'
+import { boardDesignator, LABEL_FONT_PX, LABEL_HALO_PX } from '../labelLayout'
 import type { LabelPlacement, SpokePlacement } from '../labelLayout'
 import { useBoardInk } from '../useBoardInk'
 
@@ -31,6 +31,11 @@ const Callout = memo(function Callout({ entity, p }: { entity: Entity; p: SpokeP
         text={drawn}
         fontSize={LABEL_FONT_PX}
         fill={ink.label}
+        // The same glyph halo as an anchored name, so a tint or a leader stays legible.
+        stroke={ink.board}
+        strokeWidth={LABEL_HALO_PX}
+        lineJoin="round"
+        fillAfterStrokeEnabled
         align={p.align}
         wrap="none"
       />

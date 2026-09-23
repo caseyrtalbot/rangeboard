@@ -140,6 +140,17 @@ describe('layoutLabels', () => {
     }
   })
 
+  it('boxes a label where a downward heading knob moves it', () => {
+    // b's label starts 4 px under a's default box; a's knob points down, so a's label
+    // steps 10 px lower and the two boxes overlap.
+    const a: LabelInput = { id: 'a', name: 'RPS-42 1', sx: 300, sy: 200 }
+    const b: LabelInput = { id: 'b', name: 'FS-LIDS 1', sx: 350, sy: 216 }
+    expect(layoutLabels([a, b]).get('a')).toEqual({ mode: 'anchored' })
+    const out = layoutLabels([{ ...a, handleDeg: 180 }, b])
+    expect(out.get('a')?.mode).toBe('spoke')
+    expect(out.get('b')?.mode).toBe('spoke')
+  })
+
   it('keeps a barely separated pair spoked when sticky', () => {
     const inputs: LabelInput[] = [
       { id: 'a', name: 'Alpha', sx: 100, sy: 100 },
