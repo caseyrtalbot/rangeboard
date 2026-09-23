@@ -1,5 +1,5 @@
 import { selectEffectiveLayers } from '../../state/selectors'
-import { memo, useMemo, useRef } from 'react'
+import { memo, useEffect, useMemo, useRef } from 'react'
 import { Circle, Group, Line, Path, Rect, RegularPolygon, Text } from 'react-konva'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
@@ -28,6 +28,7 @@ import {
 } from '../../panels/Glyph'
 import { boardDesignator, LABEL_ANCHOR_TOP, LABEL_LINE_H, labelLineCount } from '../labelLayout'
 import { IDLE_INTERACTION, routeInteraction } from '../interactionRouter'
+import { hoverCursor, releaseHover } from '../hoverCursor'
 
 interface Props {
   tracks: Map<string, LiveTrack>
@@ -371,6 +372,8 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
   const off = !entityActive(entity)
   const ghost = state?.phase === 'ghost'
   const members = entity.kind === 'uas' ? memberPositions(entity, { x, y }, headingDeg) : null
+  // A deleted entity under the pointer gets no mouseleave.
+  useEffect(() => () => releaseHover(entity.id), [entity.id])
 
   const main = (
     <Group
@@ -383,8 +386,8 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
       draggable={tool === 'select'}
       onClick={(e) => handleClick(e, entity)}
       onContextMenu={(e) => handleContextMenu(e, entity)}
-      onMouseEnter={hover}
-      onMouseLeave={hover}
+      onMouseEnter={(e) => hover(e, entity.id)}
+      onMouseLeave={(e) => hover(e, entity.id)}
       onDragStart={(e) => {
         if (e.target === e.currentTarget) useStore.getState().select({ entityIds: [entity.id] })
       }}
@@ -489,10 +492,10 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
  * The hover cue on the Konva nodes alone, so a plain hover re-renders no layer: the
  * pointer cursor and the hover ring, in the tools where a click acts on the entity.
  */
-function hover(e: KonvaEventObject<MouseEvent>) {
+function hover(e: KonvaEventObject<MouseEvent>, id: string) {
   const tool = useStore.getState().ui.tool
   const on = e.type === 'mouseenter' && (tool === 'select' || tool === 'connect')
-  e.target.getStage()!.container().style.cursor = on ? 'pointer' : ''
+  hoverCursor(id, e.target.getStage()!.container(), on)
   ;(e.currentTarget as Konva.Group).findOne('.hover')?.visible(on)
 }
 
