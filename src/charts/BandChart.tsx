@@ -19,6 +19,11 @@ interface BandChartProps {
   height?: number
 }
 
+/** The y-axis holds a two-decimal tick such as `0.75` in 11 px mono. */
+const Y_AXIS_W = 38
+/** Right plot margin, px. */
+const RIGHT = 8
+
 /** Mean intervals use lo/hi, never the replicate-quantile arrays. */
 export function BandChart({
   ensemble,
@@ -72,7 +77,7 @@ export function BandChart({
           data={rows}
           width={width}
           height={height}
-          margin={{ top: 12, right: 8, bottom: 16, left: 0 }}
+          margin={{ top: 12, right: RIGHT, bottom: 18, left: 0 }}
         >
           <CartesianGrid
             stroke="var(--rule)"
@@ -83,7 +88,7 @@ export function BandChart({
             dataKey="t"
             type="number"
             domain={[0, durationS]}
-            ticks={timeTicks(durationS, (width ?? 312) - 38)}
+            ticks={timeTicks(durationS, (width ?? 312) - Y_AXIS_W - RIGHT)}
             tickFormatter={formatTime}
             tick={ticks}
             axisLine={false}
@@ -96,7 +101,7 @@ export function BandChart({
             tick={ticks}
             axisLine={false}
             tickLine={false}
-            width={30}
+            width={Y_AXIS_W}
           />
           <Area
             dataKey="band"

@@ -22,15 +22,17 @@ interface LadderProps {
 
 /**
  * The gutter holds a board designator such as `DJI MAVIC 3 1`: 13 characters of
- * 10 px mono at about 6 px each, plus the 6 px inset. A longer label is cut to the
+ * 11 px mono at 6.6 px each, plus the 6 px inset. A longer label is cut to the
  * budget with an ellipsis rather than clipped by the SVG edge.
  */
-const GUTTER_W = 84
+const GUTTER_W = 96
 const LABEL_CHARS = 13
 const RIGHT_PAD = 8
 const SPAN_H = 6
 const SPAN_MIN_W = 1.5
-const TICK_H = 16
+/** The tick row; its baseline sits 4 px up so descenders stay inside the SVG. */
+const TICK_H = 18
+const TICK_BASELINE = 4
 const FALLBACK_W = 312
 
 /** A gutter label cut to LABEL_CHARS, ellipsis included. */
@@ -150,7 +152,7 @@ export function Ladder({
           data-role="playhead"
         />
         {ticks.map((t) => (
-          <text key={t} x={x(t)} y={h - 2} textAnchor="middle" style={font}>
+          <text key={t} x={x(t)} y={h - TICK_BASELINE} textAnchor="middle" style={font}>
             {formatTime(t)}
           </text>
         ))}
