@@ -33,6 +33,7 @@ import { ENGSTRIP_OPEN_KEY, RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from '
 import { readSetting, savedView, writeSetting } from './io/viewState'
 import { exportScenario } from './io/persist'
 import { ErrorBoundary } from './ui/ErrorBoundary'
+import { OpenInputsContext } from './panels/settings/openInputs'
 import { IconCommands, IconLibrary, IconObjects } from './ui/icons'
 import { State } from './ui/kit'
 import { nextTabIndex } from './ui/rovingTabs'
@@ -628,6 +629,7 @@ export default function App() {
     },
     [setBoardPhase, setRightTab, setRightOpen],
   )
+  const openDoctrine = useCallback(() => openPreparation('doctrine'), [openPreparation])
 
   const [rightW, setRightW] = useState(savedRightWidth)
 
@@ -913,7 +915,7 @@ export default function App() {
       label="Board"
       onExport={() => exportScenario(useStore.getState().scenario)}
     >
-      {board}
+      <OpenInputsContext.Provider value={openDoctrine}>{board}</OpenInputsContext.Provider>
     </ErrorBoundary>
   )
 }

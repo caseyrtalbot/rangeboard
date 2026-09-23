@@ -28,6 +28,9 @@ available in the panel tabs.
 The Library resource opens a drawer with model/system placement, drag-and-drop, model-basis
 editing, tactics and library import/export. `L` toggles it and Escape returns focus to its
 button. Prepare groups run configuration, environment, doctrine and requirement inputs.
+Prepare > Inputs is the one editor for Fire doctrine and Environment; Settings links to it.
+The board editing tools and Range setup show only in Prepare. After a delete or a place the
+timeline shows the action and "Undo ⌘Z" for 4 s.
 The canvas toolbar separates View preferences (theme, layers, units and basemap) from
 Range setup (location, calibrated image, image movement and saved opacity). Existing
 scenario actions govern changes and undo; automatic documented connections remain their
@@ -123,7 +126,7 @@ never advance observation. Charts, engagement strips, WEZ impact badges, selecte
 details and the Now screen censor outcomes at that horizon, including tooltips and
 accessibility text. Chart accessibility text identifies the shown horizon separately from
 a forward preview playhead. Outcome and Compare wait for a completed trial; Compare also
-needs an ensemble for the current run and offers Run Monte Carlo without one.
+needs an ensemble for the current run; the header Run control of Analyze starts one.
 
 A sweep runs one ensemble per grid cell on the sensitivity worker slot, so a sweep and a
 sensitivity run replace each other. A pinned baseline keeps the current laydown and its

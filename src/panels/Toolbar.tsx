@@ -36,7 +36,7 @@ function SettingsButton() {
     <>
       <button
         type="button"
-        title="Settings (all scenario, run and view settings)"
+        title="Settings (requirements, run, systems, physics and view)"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="settings-panel"

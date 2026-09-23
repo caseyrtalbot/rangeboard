@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { CommandPalette } from './CommandPalette'
+import { useStore } from '../state/store'
 
 type Props = Record<string, unknown>
 
@@ -51,6 +52,17 @@ describe('CommandPalette', () => {
     const panel = seen.get('cmdk-panel surface-float') as { onKeyDown: (e: unknown) => void }
     panel.onKeyDown({ key: 'Escape', preventDefault() {}, stopPropagation() {} })
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('offers the board editing tools only in Prepare (D3)', () => {
+    const head = 'class="cmdk-head">Tool<'
+    const renderIn = (phase: 'prepare' | 'execute') => {
+      useStore.getState().setBoardPhase(phase)
+      Object.assign(useStore.getInitialState(), useStore.getState())
+      return renderToStaticMarkup(<CommandPalette onClose={() => {}} />)
+    }
+    expect(renderIn('execute')).not.toContain(head)
+    expect(renderIn('prepare')).toContain(head)
   })
 
   it('draws one header per category and the App keys', () => {

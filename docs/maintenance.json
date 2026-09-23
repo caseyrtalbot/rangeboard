@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "6275bd6fe9d63f8cf9ec8c3c14cba5c18c601032390fd55e704efed53b8be4ac",
+      "sha256": "06e1a9f08911e90cf461d00c82518e9387a95014afe03a5a5d6199389477511e",
       "reviewedAt": "2026-09-23",
-      "note": "Row B integration: no README fact changed; source fingerprints re-read after the design polish merge."
+      "note": "Row C (C1-C4, C-int) changed Settings, Toolbar tools, Compare and the undo cue; README text unaffected."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "f4d6d3b6a34c71cf8a9d480cc993ffa8362cb90076ca9e4892eec82ad90ed45d",
+      "sha256": "c609daf2a4dd12424f75ab762e9f8f11dfc20c58e1ac15ec9fdd1a16c8ad16ab",
       "reviewedAt": "2026-09-23",
-      "note": "Row B: analysis navigation draws only on the Overview tab and not for Execute."
+      "note": "Row C: Compare starts runs from the header Run control; Inputs is the one doctrine and environment editor; editing tools only in Prepare; undo cue."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "daf9c78afbf8f2620758b3ff8599430da139b98c51522e8b70cf4715df188bdd",
+      "sha256": "842c8c7e8d43a7fd41f5788729a9cb12ca1b4ca3819b30eb35f83858618fe2d4",
       "reviewedAt": "2026-09-23",
-      "note": "Row B: AnalysisNavigation shows on the Overview tab only with no Seg for a one-screen phase; radius and elevation facts match the Row A tokens."
+      "note": "Row C: lastUndoableAction names delete and place from history snapshots for the undo cue."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "2f4805bd9ebece6c2ed2256fbbbd1e374d3846ec141e854593622a0b1600d944",
+      "sha256": "13b305bfca4183850c3eab9972263f2e933048839d4fd7d0f74a3b97732cbaae",
       "reviewedAt": "2026-09-23",
-      "note": "B-int passed; entry 365,722 of 366,000 (278 headroom); Tasking selects Plan.md row C with lanes C1 to C4, the same protocol, and the open Row B items carried forward."
+      "note": "C-int: Row C merged; plan complete; findings closed, changed by decision or open with reasons."
     },
     {
       "document": "docs/Plan.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "518b9475b264f6d19c32468a19783f2827a118397bdea232ba196f2d50f96cfa",
+      "sha256": "54cc32b94db74060605b37222ebbb3ad009397deb7bec7647e3900c9379e903e",
       "reviewedAt": "2026-09-23",
-      "note": "Row B rules: panel-body action frame, top-bar menus take surface-float, key hints, status chips, disabled segments and mini buttons, tile labels, 24 px bar gap and chip fold, 76 px rail, drawer bounds, empty-board hint, board selection and hover, link and path captions, readout surface."
+      "note": "Row C rules: one doctrine/environment editor, editing tools only in Prepare, one Analyze run control, the timeline undo cue."
     }
   ],
   "historical": [

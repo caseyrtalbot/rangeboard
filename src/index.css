@@ -4560,6 +4560,11 @@ input[type='number'] {
   gap: var(--space-2);
 }
 
+/* The Settings link to Prepare > Inputs is a panel-body action (V2). */
+.settings-body .prepare-setting-controls button {
+  border-color: var(--rule-strong);
+}
+
 .prepare-setting {
   border-top: 1px solid var(--border-subtle);
 }

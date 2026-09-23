@@ -213,6 +213,7 @@ export function ContextMenu() {
     const blue = entity.kind === 'sensor' || entity.kind === 'effector' || entity.kind === 'c2'
     const active = entityActive(entity)
     const multi = selection.entityIds.length > 1
+    const prepare = ui.boardPhase === 'prepare'
     return (
       <>
         <div className="ctx-head">{entity.name}</div>
@@ -238,7 +239,7 @@ export function ContextMenu() {
             onPick={() => st.updateEntity(entity.id, { enabled: !active })}
           />
         )}
-        {entity.kind === 'uas' && (
+        {prepare && entity.kind === 'uas' && (
           <Item
             label={
               scenario.paths.some((p) => p.entityId === entity.id)
@@ -264,13 +265,15 @@ export function ContextMenu() {
             }
           />
         )}
-        <Item
-          label="Connect from here"
-          onPick={() => {
-            st.setTool('connect')
-            st.beginConnect(entity.id)
-          }}
-        />
+        {prepare && (
+          <Item
+            label="Connect from here"
+            onPick={() => {
+              st.setTool('connect')
+              st.beginConnect(entity.id)
+            }}
+          />
+        )}
         {blue && (
           <Item
             label="Suggest connections"

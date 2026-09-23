@@ -209,10 +209,17 @@ The Board has a 76 px resource rail, wide enough for "Commands" at the meta size
 overlaid Library drawer (306 px default, existing saved width retained). The drawer starts
 below the canvas tools row and stops above the timeline. A library row shows its Model
 basis action only on hover or keyboard focus. Drawing tools and the View and Range setup
-disclosures sit above the canvas. An empty board shows one hint, a `.surface-float` at
+disclosures sit above the canvas. The board editing tools (Select, Boundary, Connect, Path
+and Range setup) show only in Prepare. Outside Prepare the palette, the Inspector and the
+context menu offer no action that starts a tool, and the tool returns to Select. After a
+delete or a place, the timeline shows `<verb> <name> · Undo ⌘Z` in `--text-dim`. It fades
+during the last 15 % of 4 s, reduced motion cuts it at 4 s, and undo, redo or a load clear
+it. It takes free space only: the name truncates first, and the scrub keeps 80 px. An empty board shows one hint, a `.surface-float` at
 the canvas top left with an "Open library (L)" action. Drawer search receives focus on opening; Escape returns it to the
 resource button. Library names and scoped control labels wrap. Scenario input sections
-use native disclosures; menus scroll within the available viewport height.
+use native disclosures; menus scroll within the available viewport height. Fire doctrine
+and Environment have one editor, Prepare > Inputs. Settings > Scenario links to it with a
+framed panel-body action.
 
 The selected entity workspace keeps its Telemetry / Configure / Model basis tabs outside
 one content scroller. Long names, values, source records and statistical subtitles wrap;
@@ -221,6 +228,9 @@ The canvas readout is a floating surface, 252 px wide, with the keys Cursor, Spe
 heading and Altitude, a Details control and a solid leader in text 2 at 60 %. Complete telemetry stays in the canonical pane, including full-path scope labels.
 In Execute, Planned path uses the existing detail section header and rows for Planned
 arrival and Planned CPA; times retain the machine-data role.
+
+Analyze has one run control, the header Run button beside the screen tabs. A screen body
+in Analyze does not draw its own run button.
 
 Each analysis screen is one labeled section with one basis line (`.analysis-scope`)
 under its heading and one caveat per section header, never on a tile. Tiles are `.tiles.c3` with the denominator and horizon inside the tile. Records,

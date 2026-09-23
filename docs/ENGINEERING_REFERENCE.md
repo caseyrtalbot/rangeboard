@@ -62,7 +62,9 @@ Breaking one of these breaks the app.
   decides per operation what history, selection, ring overrides, playback, `mc` and
   `trial` do (`edit` pushes, `undo`/`redo` walk, `replace` clears history and cancels every
   worker). A rule for "a new Scenario is current" belongs there, keyed by operation, never
-  in one caller. One exception:
+  in one caller. History holds snapshots only, with no action label:
+  `lastUndoableAction` (`src/state/lastAction.ts`) names a delete or a place for the undo
+  cue by comparing entity ids of the last `past` snapshot and `scenario`. One exception:
   `Scenario.observedPresetId` is stamped through `set` on reset and first play, and undo
   and redo carry the current stamp over a restored snapshot. A stamp that already matches
   replaces nothing. A new stamp is a presentation variant of the current object

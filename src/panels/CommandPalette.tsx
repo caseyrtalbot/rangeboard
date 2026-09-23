@@ -149,6 +149,7 @@ const ACTIONS: Command[] = [
 /** Cmd+K command palette. Mounted only while open. */
 export function CommandPalette({ onClose }: { onClose: () => void }) {
   const library = useStore((s) => s.scenario.library)
+  const prepare = useStore((s) => s.ui.boardPhase === 'prepare')
   const [query, setQuery] = useState('')
   const [highlight, setHighlight] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -164,8 +165,9 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         st.setRightTab('library')
       },
     }))
-    return [...ACTIONS, ...models]
-  }, [library])
+    // Board editing tools exist only in Prepare (D3).
+    return [...(prepare ? ACTIONS : ACTIONS.filter((c) => c.category !== 'Tool')), ...models]
+  }, [library, prepare])
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()

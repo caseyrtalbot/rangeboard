@@ -645,6 +645,7 @@ function IntegrationSection({ entity }: { entity: Entity }) {
 function EntityInspector({ entity }: { entity: Entity }) {
   const scenario = useStore((s) => s.scenario)
   const units = useStore((s) => s.ui.units)
+  const prepare = useStore((s) => s.ui.boardPhase === 'prepare')
   const {
     updateEntity,
     editModel,
@@ -1251,9 +1252,11 @@ function EntityInspector({ entity }: { entity: Entity }) {
               </Actions>
             </>
           ) : (
-            <Actions>
-              <button onClick={() => beginPath(entity.id)}>Draw flight path</button>
-            </Actions>
+            prepare && (
+              <Actions>
+                <button onClick={() => beginPath(entity.id)}>Draw flight path</button>
+              </Actions>
+            )
           )}
         </Section>
       )}
@@ -1308,14 +1311,16 @@ function EntityInspector({ entity }: { entity: Entity }) {
       </Section>
 
       <Actions>
-        <button
-          onClick={() => {
-            select({ entityIds: [entity.id] })
-            setTool('connect')
-          }}
-        >
-          Connect from here
-        </button>
+        {prepare && (
+          <button
+            onClick={() => {
+              select({ entityIds: [entity.id] })
+              setTool('connect')
+            }}
+          >
+            Connect from here
+          </button>
+        )}
         <button
           className="danger"
           onClick={() => {

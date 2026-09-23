@@ -41,7 +41,7 @@ describe('Board toolbar grouping', () => {
     expect(html).toContain('aria-label="Scenario name"')
     expect(html).toContain('aria-label="More actions"')
     expect(html).toContain('aria-label="Status"')
-    expect(html).toContain('title="Settings (all scenario, run and view settings)"')
+    expect(html).toContain('title="Settings (requirements, run, systems, physics and view)"')
     expect(html).toContain('title="ROE · click to change"')
     expect(html).toContain(
       'aria-controls="board-workspace-panel" aria-expanded="true" aria-label="Workspace drawer"',

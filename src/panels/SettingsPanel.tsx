@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { useStore } from '../state/store'
 import { RequirementSettings } from './analysis/RequirementSettings'
 import { ThemeSettings, UnitsSettings, BasemapSettings, LayerSettings } from './ViewMenu'
 import { RunTab } from './settings/RunTab'
+import { OpenInputsContext } from './settings/openInputs'
 import { SystemsTab } from './settings/SystemsTab'
 import { PhysicsTab } from './settings/PhysicsTab'
 
@@ -28,12 +29,14 @@ export function SettingsPanel({
   const dialogRef = useRef<HTMLDialogElement>(null)
   const setBoardPhase = useStore((state) => state.setBoardPhase)
   const setRightTab = useStore((state) => state.setRightTab)
+  const openPreparation = useContext(OpenInputsContext)
 
   // Prepare > Inputs is the one editor for Fire doctrine and Environment.
   function openInputs() {
+    onRequestClose()
+    if (openPreparation) return openPreparation()
     setBoardPhase('prepare')
     setRightTab('analysis')
-    onRequestClose()
   }
 
   useEffect(() => {
