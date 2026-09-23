@@ -875,6 +875,17 @@ describe('the placement optimization', () => {
     expect(useStore.getState().mc.optimize.status).toBe('idle')
   })
 
+  it('requests nothing when the range boundary has fewer than three points', () => {
+    const line = { ...RANGE, id: 'bnd-line', closed: false, points: RANGE.points.slice(0, 2) }
+    useStore.getState().replaceScenario({ ...scenario(), boundaries: [line] })
+    useStore.getState().runOptimize(spec)
+    useStore
+      .getState()
+      .runOptimize({ ...spec, bounds: { boundaryId: line.id, points: line.points } })
+    expect(ControlledWorker.instances).toHaveLength(0)
+    expect(useStore.getState().mc.optimize.status).toBe('idle')
+  })
+
   it('asks a running optimization to stop and keeps a replicate run on its own slot', () => {
     useStore.getState().runOptimize(spec)
     const work = ControlledWorker.latest()

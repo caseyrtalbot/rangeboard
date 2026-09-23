@@ -111,7 +111,10 @@ export function PlacementScreen() {
   const settings = runSettings(scenario)
   const basis = useMemo(() => analysisBasisSignature(scenario), [scenario])
   const movable = scenario.entities.filter((e) => MOVABLE_KINDS.includes(e.kind) && entityActive(e))
-  const ranges = scenario.boundaries.filter((b) => b.type === 'range')
+  // Optimize bounds need a polygon; a drawn range boundary may have only two vertices.
+  const allRanges = scenario.boundaries.filter((b) => b.type === 'range')
+  const ranges = allRanges.filter((b) => b.points.length >= 3)
+  const skippedRanges = allRanges.length - ranges.length
   const bounds = ranges.find((b) => b.id === boundaryId) ?? ranges[0] ?? null
   const movableIds = checked.filter((id) => movable.some((e) => e.id === id))
   const evaluations = Number(evaluationsText)
@@ -223,8 +226,17 @@ export function PlacementScreen() {
             </select>
           </Field>
         ) : (
+          allRanges.length === 0 && (
+            <p className="muted small">
+              No range boundary. Draw one on the board before a placement run.
+            </p>
+          )
+        )}
+        {skippedRanges > 0 && (
           <p className="muted small">
-            No range boundary. Draw one on the board before a placement run.
+            {skippedRanges === 1
+              ? '1 range boundary has fewer than three vertices and cannot bound a placement run.'
+              : `${skippedRanges} range boundaries have fewer than three vertices and cannot bound a placement run.`}
           </p>
         )}
       </section>

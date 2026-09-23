@@ -100,9 +100,9 @@ export const OPTIMIZE_DEFAULTS = {
   replicates: DEFAULT_OPTIMIZE_REPLICATES,
 } as const
 
-/** The scenario's first range boundary as optimize bounds; null when it has none. */
+/** The first range boundary with three or more points as optimize bounds; null when none. */
 function rangeBounds(scenario: Scenario): OptimizeBounds | null {
-  const range = scenario.boundaries.find((b) => b.type === 'range')
+  const range = scenario.boundaries.find((b) => b.type === 'range' && b.points.length >= 3)
   if (!range) return null
   return { boundaryId: range.id, points: range.points.map((p) => ({ x: p.x, y: p.y })) }
 }
@@ -367,7 +367,7 @@ function optimizeLaunch(
   const settings = runSettings(st.scenario)
   if (settings.runMode === 'deterministic') return null
   const bounds = spec.bounds ?? rangeBounds(st.scenario)
-  if (bounds == null || spec.movableIds.length === 0) return null
+  if (bounds == null || bounds.points.length < 3 || spec.movableIds.length === 0) return null
   const runId = st.playback.runId
   const overrides = launchOverrides(st.scenario)
   const budget: OptimizeBudget = {
