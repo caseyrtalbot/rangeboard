@@ -43,15 +43,39 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 Run the complete gate for source changes and after integrating lanes. `npm run check`
 does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
 `npm run check:bundle` after `npm run build` for any change that touches the entry chunk.
-The budget (`scripts/check-bundle.mjs`) is 364,000 bytes gzip for the entry and 400,000
-for initial JavaScript plus CSS; the Phase 4 gate measured 360,308 and 375,965, so the
-entry headroom is under 4 kB. Documentation-only
+The budget (`scripts/check-bundle.mjs`) is 365,000 bytes gzip for the entry and 400,000
+for initial JavaScript plus CSS. It was raised from 364,000 on 2026-09-22, when the
+column-buffer track ledger in `retainTrial.ts` added 682 bytes and the entry measured
+364,422 (initial 380,121), so the entry headroom is under 1 kB. Documentation-only
 changes need `docs:check`; maintenance-script changes also need `test:docs`.
 `npm run check` runs the silent-gate tests but not `check:silent` itself; CI runs `check:silent`
 against the pull request base or the pushed-from commit, and a local run diffs against `main`.
 A finding is accepted with `// silent-ok: <reason>` on the line, the line above, or inside the
 matched block. Domain terms `RF silent` and `jam-degraded`, and comments that negate the
-pattern (`never silent`), are exempt. Rules live in `scripts/silent/rules`. Update a
+pattern (`never silent`), are exempt. An exemption covers only the line it sits on: every
+other line of the matched block that holds a weasel word must carry its own. These two
+exemptions apply to `weasel-word` and `weasel-word-tsx` alike. The weasel-word regex lives
+in `scripts/silent/rules/weasel-word.yml` and in the `WEASEL_WORD` constant of
+`check-silent.mjs`; change both together.
+
+Rules live in `scripts/silent/rules`. Each rule has a `-tsx` twin (`empty-catch-tsx`,
+`silent-catch-tsx`, `noop-promise-catch-tsx`, `weasel-word-tsx`), so `.ts` and `.tsx` files
+are both scanned. `silent-catch` flags a catch that returns, continues, breaks, assigns or
+evaluates `void` without a call or throw; a `new` or `await` substitute is no longer exempt,
+and assigning the caught error itself (`lastError = e`, `this.error = e`) counts as recording.
+`noop-promise-catch` flags an arrow or function-expression handler in `.catch()` and a no-op
+second (rejection) argument to `.then()`.
+
+The gate pins its `git diff` options (`core.quotePath=false`, `-U0`,
+`--inter-hunk-context=0`, `--no-color`, `--no-ext-diff`, `--no-renames`, `--no-relative`,
+fixed `a/` and `b/` prefixes), so user git config does not change the result. Tracked and
+untracked files are listed with `-z` and read raw. A path that git still quotes in diff
+output (a double quote, backslash or control character) stops the gate with an error. A
+`--base` ref with no merge-base, or no `main` or `origin/main` ref in changed-lines mode,
+is an error; the gate no longer falls back to a diff against `HEAD`. A scan of a missing
+file is an error, and `check:silent:all` skips tracked files deleted from the working tree.
+
+Update a
 source-review fingerprint only after reading the affected document and changed inputs,
 following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
 

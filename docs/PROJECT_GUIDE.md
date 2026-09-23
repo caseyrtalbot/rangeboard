@@ -72,7 +72,9 @@ none. Run settings (mode, uncertainty, seed, replicates, stop rule, confidence, 
 sensitivity depth, Sobol base) live on the **Run** tab of Settings, each with its default and
 a reset. One Run button with a Deterministic switch sits on Prepare and Analyze; a run uses
 the worker pool and its progress line names the stop rule and the pool size. While the
-pool is ending or its summary worker is in flight the button says Stopping. A stop that
+pool is ending or its summary worker is in flight the button says Stopping; the Fragility
+screen's Cancel Monte Carlo button also says Stopping and is disabled in that state. After
+a cancelled run finishes, the progress line names the stop as "stopped by the user". A stop that
 drops completed rows past a hole prints that count. The line also prints
 "operator wait floored in N of M decisions" when a C2 decision draw fell below its median
 (the Outcome record prints the trial's own count). The Systems tab prints a load notice
@@ -128,12 +130,16 @@ finished ensemble under its own storage key; Compare draws its mean dashed and a
 Baseline and Current minus Baseline columns. The baseline never enters the scenario, the
 undo history or a worker request. Under the full depth, the Fragility status line names
 the Sobol row count, base times (kept fields + 2), as soon as Morris finishes, and warns
-when that count can use most of the 10 minute worker budget.
+when that count can use most of the 10 minute worker budget. The Sobol stage follows
+Morris unless the screening was cancelled or kept no field; a cancel during Morris ends
+the run done on the trajectories completed.
 
 Where to put it runs a placement optimizer on its own worker slot: a Gaussian process
 with expected improvement over the movable positions inside the range polygon, each
 evaluation a replicate run under common random numbers at one seed (defaults 60
-evaluations of 40 replicates). Apply copies the scenario through the existing replace
+evaluations of 40 replicates). A range boundary with fewer than three vertices cannot
+bound the run; the screen leaves it out of the choice and prints how many it skipped,
+and the store starts no placement run on one. Apply copies the scenario through the existing replace
 action, so the candidate is a new scenario and the optimize result is cleared with the
 other analyses on install. Calibrate, a button per field on the Systems tab, opens a
 dialog that turns typed counts or times into a posterior (beta with the Jeffreys prior

@@ -126,7 +126,15 @@ Breaking one of these breaks the app.
   1, `baseline` or null; a cleared baseline is written as null, never removed, so a
   pending pin write cannot revive it). A baseline write that failed is retried on the
   next autosave pass until it succeeds. A failed overrides write is retried on the next
-  Board change until it succeeds. `parseBaselineSave` validates before adoption: the
+  Board change until it succeeds. In every lane a refused write stays pending in that
+  lane's `createAutosave` instance and the next flush writes it, including a pagehide or
+  visibilitychange flush; no timer is set, so full storage does not loop, and freeing
+  storage then closing the tab still writes the edit. A record offered during the failed
+  write is newer and wins. The scenario failure (`SCENARIO_ERROR`, 'Not saved', in
+  `src/io/autosave.ts`) is the status of record while it stands: a baseline or overrides
+  write failure sets its retry flag but does not replace that string
+  (`scenarioFailureStands`). The scenario's next successful write clears it, and a retry
+  lane that fails again in the same pass reports its own error. `parseBaselineSave` validates before adoption: the
   scenario passes `parseScenarioData`, the `McSummary` passes `validateMcSummary`
   (`src/state/baseline.ts`), and `label`, `pinnedAt` and `scenarioHash` must be nonempty
   strings with an ISO time. JSON has no NaN, so a NaN statistic is saved as null and
@@ -195,11 +203,16 @@ Breaking one of these breaks the app.
 - **Monte Carlo worker:** `runMonteCarlo` requests the `mc` kind, which posts through
   `src/playback/mcClient.ts` to a pool of `min(hardwareConcurrency - 1, 8)` `mc.worker.ts`
   instances (`workerPool.ts`), each running `replicateRangeLoop` (`mcRun.ts`) over a chunk
-  of replicate indices. The coordinator keeps each chunk's grids as packed
+  of replicate indices. A range chunk sizes its grids to the chunk length up front; the
+  sequential `replicateLoop` starts at 8 rows and doubles, because its loop end is the
+  stop cap. The coordinator keeps each chunk's grids as packed
   `Float64Array`s (`mergeSummaries.ts`). It applies the half-width rule to the
   contiguous prefix of the end-of-run leakers from `stopFloor`, and stops at `stopCap`.
   The summary is finished on one worker: the page transfers those buffers and does not
   clone them; the worker merges, keeps the contiguous prefix, and calls `finishSummary`.
+  `mergePartials(parts, { release: true })` empties each part's grids once its last row
+  is copied, and the worker empties the part list, so resident memory stays near one copy
+  plus one chunk. The merged grids are still allocated at full size before the copy.
   Progress `done` counts that prefix. A stop that leaves a hole sets `discarded` to the
   completed rows the prefix dropped, and the Run line prints the count. `cancel` returns
   false while an ending is set and after finish releases the run for the summary worker.
@@ -334,7 +347,9 @@ Breaking one of these breaks the app.
   `trialClient.ts` owns a third independent worker slot (over `workerSlot.ts`), released at
   completion, error, replacement or cancellation. Adapter and `acceptTrialMessage` require
   the current request token, run id, basis and matching manifest; terminal deliveries
-  cannot revive a request.
+  cannot revive a request. `acceptTrialMessage` validates the raw worker result through
+  the shared adapter before `boundRetainedTrial` binds it, and a ledger bind throw ends
+  the request as trial status 'error' with 'Invalid trial result'.
   `prepareTrial` captures a detached scenario and prepares without starting the clock.
   Ordinary Play calls `startTrialRun` and waits for that result before playing. Repeated
   Play reuses the pending preparation. Pause, scrub and frame
@@ -401,6 +416,10 @@ Breaking one of these breaks the app.
   `DEFAULT_BUDGET.timeMs`. The Sobol estimators need every row, so a cancel during
   that stage returns a null result (`sobol-done` with `result: null`) and the run ends
   done on the Morris result; a budget stop is a `sobol-error` that names the budget.
+  A cancel during Morris ends the run 'done' on the trajectories completed: the worker
+  marks that `morris-done` with `stopped: 'cancelled'`, `acceptMorrisMessage` ends the
+  run, and the store does not call `requestSobol`. A cancel before the first trajectory
+  still ends in 'error' (`morris-error`).
   `src/engine/index.ts` is the headless barrel; `.oxlintrc.json` forbids react, konva,
   `window` and `document` under `src/playback`, `src/analysis`, `src/geometry` and
   `src/engine`; `scripts/run-engine.mjs` runs the Vite library bundle over `worker_threads`.
@@ -487,7 +506,7 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex, stepCount, createSweepClock: the
                Morris and Sobol protocol adapters), mergeSummaries.ts (partial merge by
                replicate index), sampling.ts (LHS strata), morris.ts, sobol.ts,
                trial.ts (one retained nominal/aleatory trial), retainTrial.ts
-               (page copy: compact scans, ellipse estimates, release on New run),
+               (page copy: scan and track column ledgers, release on New run),
                trialTypes.ts + trialMessages.ts
                (manifest/result/transport contracts), trial.worker.ts + trialClient.ts
                (the trial protocol adapter), optimizeTypes.ts (OptimizeRequest,
@@ -685,10 +704,14 @@ Each fact below has exactly one definition. Read it there; never add a second co
   `runTrial` attaches the sink that fills `TrialResult.tracks`, so the ensemble path
   allocates no estimate history. The page does not keep that return. `acceptTrialMessage`
   stores `boundRetainedTrial`: fused tracks are omitted once the ledger is resolved,
-  scans stay in a compact ledger that still exports the same records, and each stored
-  estimate keeps the position block the board ellipse reads. `releaseRetainedTrial`
-  empties that copy when New run or a scenario load drops it, so the previous
-  React fiber does not keep the buffers. An engine return, or a trial the page
+  and scans and track estimates each stay in a column ledger that still exports the same
+  records. The track ledger keeps interned ids, a Float64 state and position block,
+  Uint32 hits and misses and Uint8 flags, plus a per-id index. Both ledgers read through
+  the same materializing Proxy, so `tracks[i]` returns a fresh, equal object on each read;
+  each estimate carries no sensor ids and the position block the board ellipse reads.
+  Only a ledger this module built counts as bound; any plain tracks array is bound anew.
+  `releaseRetainedTrial` empties both ledgers through one `releases` map when New run or
+  a scenario load drops the copy, so the previous React fiber does not keep the buffers. An engine return, or a trial the page
   did not bind, is left intact.
 - **Fusion and classification** (`src/playback/fusion.ts`, `classification.ts`, `sim.ts`):
   `fuseTracks` is information-form track-to-track fusion, the sum of the member inverse
@@ -785,6 +808,11 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   nonnegative guidance error. An interceptor that fails that gate returns `kineticPk` and
   has no physical flight profile. Guns compound
   independent projectile hits from pointing error, dispersion, rate and burst size.
+  `gunBurstModelApplies` (type guard to `BurstGunSpec`) is the gun gate for probability
+  and the `gun-burst` fidelity tag: a gun with nonnegative `dispersionMils` and
+  `fireControlErrorMils`, a positive burst count, positive `rateOfFireRpm` and
+  `muzzleVelocityMps`, and `legacyKineticPk` off. The probability path also needs a target
+  spec (`context.uas`), which the tag cannot see.
   `legacyKineticPk` restores `kineticPk(basePk, maxRangeM, uas, slantM)`, which
   `footprintStyle.ts` also imports to invert the commit ring. Optical shots compute diffraction,
   jitter, atmospheric transmission and a sampled fluence threshold; their effect time includes
@@ -839,7 +867,9 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   interval `lo` and `hi` at `conf` with its `interval` method, the quantiles, `n` finite
   samples of `total` run, and the `defined` fraction with a Wilson interval, built from
   `meanInterval`, `quantile` and `wilson` in `src/analysis/stats.ts` (import a statistic
-  from there, never copy it). `statOf` takes
+  from there, never copy it). The private `tQuantile` holds a one-entry memo of its last
+  (p, df) result, since a band pass asks for the same pair at every grid step; the result
+  is deterministic and bit-identical. `statOf` takes
   the statistic's kind: a time keeps the t-interval; a count clamps it to
   [0, max] (ships, tracks, or unbounded for salvos); a 0/1 count (max 1) takes the Wilson
   interval; a count with a finite max at 0 of n reports the rule-of-three upper bound
@@ -1019,7 +1049,10 @@ value)` holds the rule of every edited spec field. It owns the value that clears
 - **Track picture** (`src/playback/trackEstimateView.ts`,
   `src/canvas/layers/TrackLayer.tsx`): `latestEstimatesAt` is the one reader of a trial's
   track history, the latest entry per track id at or before the horizon and nothing past
-  it; `positionEllipse` is the one error ellipse, the eigenpair of the position block of
+  it. A list with a read bound through `bindHorizonRead` uses that read in place of the
+  scan; the retained-trial ledger binds one binary search per id over its per-id index,
+  and a plain array is scanned. `TrackLayer` memoizes the picture on `[tracks, horizonS]`,
+  so a zoom does not re-read it; `positionEllipse` is the one error ellipse, the eigenpair of the position block of
   a `Covariance4`. `TrackLayer` draws the 1 sigma ellipse and a position marker on the
   live Layer: a coasting track dashes, an updated track draws solid, a truth track has no
   error so it draws the marker alone, and a false track takes the muted ink. The ellipse

@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "d7d859c4f1003468b397017d906ff7d1948350fb36e1811f7c56abd4325c6249",
-      "reviewedAt": "2026-09-22",
-      "note": "Reviewed the override subscriber boundary. The shell stays mounted while its alert is up, and the board stays mounted. Autosave and the overrides autosave stay outside React."
+      "sha256": "84b42c7d27f6b620746f1b7331289f91d097e1557ac4ae9673283d1f9a81595a",
+      "reviewedAt": "2026-09-23",
+      "note": "Reviewed rangeBounds and optimizeLaunch in analysisRequests.ts: the store now starts no placement run on a range boundary under three points, matching the Placement screen. Added that clause to the Where to put it paragraph."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "9967907bc02dc95834dc181e0b0ebe976d3470bea885841ea2361c87bd897ae1",
-      "reviewedAt": "2026-09-22",
-      "note": "Reviewed the override shell. It arms containment for its lifetime, and the child rethrows during render. A later throw while the alert is up does not leave setState. The overrides autosave stays outside it."
+      "sha256": "68a9470006dd259497d83bf9c76a6d321be434bff947855fd6aad091a7a8b6c3",
+      "reviewedAt": "2026-09-23",
+      "note": "Reviewed the range-bounds guard in analysisRequests.ts and the weasel-word-tsx exemption in check-silent.mjs. No section describes either detail; text unchanged."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "7b6ae194cc12c9a9db8a2af1e296e185edbe9426d73b18731e1044b9c5e74686",
-      "reviewedAt": "2026-09-22",
-      "note": "docs:check still runs markdownlint-cli2. The command table and npm ci instructions do not pin 0.23.2 and remain accurate after the patch bump."
+      "sha256": "59bc95587c250948f72268620f78c334adab3edebc9eb6ee944efb268a16e979",
+      "reviewedAt": "2026-09-23",
+      "note": "check-silent.mjs now applies the domain-term and negation exemptions to weasel-word-tsx as well; removed the sentence that described the gap. The Placement row already lists state/store.analysis.test.ts, which now holds the two-point range case."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "428736136ba49766756a46696ba6307876786a3e4941bac3e17fd0045d4f451c",
-      "reviewedAt": "2026-09-22",
-      "note": "Documentation maintenance steps are unchanged. The workflow does not pin markdownlint-cli2; 0.23.3 still implements docs:lint."
+      "sha256": "502c1c65c9fb6efe9fe9da228f3a3b3294f642a43579f68a92f199ffcdf3f223",
+      "reviewedAt": "2026-09-23",
+      "note": "Reviewed the weasel-word-tsx exemption change in check-silent.mjs and test-silent.mjs. The CI description of check:silent is still accurate; text unchanged."
     },
     {
       "document": "docs/Plan.md",
@@ -102,9 +102,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "4045f8e9b0ab6d2bbd6c65300e2f3462342613265db3e3e6363d1f83f007a457",
-      "reviewedAt": "2026-09-22",
-      "note": "The order table is complete. Row J now keeps the override shell armed while its alert is up. The 2026-09-21 port 5407 check covered a second edit before Try again. Plan.md stays frozen."
+      "sha256": "d6e5f9aef0080cf01e6cf365f80666dab0a3523264ca104dc9780eb004d673ef",
+      "reviewedAt": "2026-09-23",
+      "note": "Position only: row F finishSummary 7088 ms marked stale after the tQuantile memo, the merge now releases transferred parts, and the retained copy keeps tracks in a column ledger. No tasking, no plan row; Plan.md untouched."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "563cea2343a98f8b63db44f08b7a93803d6bbc61ec4f9f77f6f428776d736692",
-      "reviewedAt": "2026-09-22",
-      "note": "Reviewed src/ui/OverrideSubscriber.tsx. The shell reuses ErrorBoundary and adds no tokens, type roles, or sheet rules."
+      "sha256": "e627e460bcecb2ede23e42a736bb48ee905f6fef83e9d2b404284fdd5ffeb5ff",
+      "reviewedAt": "2026-09-23",
+      "note": "Reviewed src/ui/OverrideSubscriber.test.tsx, the only changed design input: a test type narrowing. No token, type role or sheet rule changed; the Fragility Stopping button reuses the existing disabled button style."
     }
   ],
   "historical": [

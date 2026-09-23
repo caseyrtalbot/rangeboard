@@ -42,12 +42,17 @@ row. Do not edit `docs/Plan.md`.
 - The estimate-path expects are the authorized 2026-09-21 recapture. Layered events
   stay 11, layered kill mass stays 1, layered kills mean is 1.115, JIATF leakers mean
   is 0.895, and JIATF kills mean is 0.105. `4.68` is not a pin.
-- `releaseRetainedTrial` empties only the page copy from `boundRetainedTrial`.
+- `releaseRetainedTrial` empties only the page copy from `boundRetainedTrial`. That
+  copy keeps scans and track estimates in column ledgers; `tracks[i]` returns a fresh
+  object on each read.
 - Row F (`3491866`): chunk grids are packed `Float64Array`s. `finish` transfers
   them to one worker, which merges, keeps the contiguous prefix, and calls
-  `finishSummary`. At the retained cap (108 tracks, 3001 steps, 283 replicates,
-  95,968,979 numbers) the transfer round trip was 31 ms and `finishSummary` was
-  7088 ms on the worker.
+  `finishSummary`. The merge now releases each transferred part as it copies it.
+  At the retained cap (108 tracks, 3001 steps, 283 replicates, 95,968,979 numbers)
+  the row F capture measured a 31 ms transfer round trip and 7088 ms for
+  `finishSummary`. That 7088 ms is stale: about 4.8 s of it was repeated t-quantile
+  work, which the one-entry `tQuantile` memo in `stats.ts` removes. No new cap timing
+  is recorded.
 - Row G: progress `done` is the contiguous prefix. `discarded` is the completed
   rows finish drops when a hole remains. The Run button says Stopping, and is
   disabled, while `pool.stopping` is set. That covers an ending and the summary
