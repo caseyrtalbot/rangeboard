@@ -197,12 +197,12 @@ baseline as two lanes. The overrides autosave stays outside the override boundar
 
 ## Execution and persistence
 
-1. [main.tsx](../src/main.tsx) restores the Board autosave synchronously and starts the
-   autosave subscription, one [autosave lifecycle](../src/io/autosave.ts) with a scenario
-   adapter and a baseline adapter. It then restores and watches overrides, and mounts
-   the override-subscriber boundary beside [App.tsx](../src/App.tsx), which manages the
-   interaction chrome. The analysis panel, the command palette and the recharts plot load
-   behind lazy boundaries.
+1. [main.tsx](../src/main.tsx) restores the Board autosave and the overrides
+   synchronously, then starts both subscriptions: one
+   [autosave lifecycle](../src/io/autosave.ts) with a scenario adapter and a baseline
+   adapter, and the overrides autosave. It mounts the override-subscriber boundary beside
+   [App.tsx](../src/App.tsx), which manages the interaction chrome. The analysis panel,
+   the command palette and the recharts plot load behind lazy boundaries.
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds
    engagement resolution; explicit forecasts consume those results.

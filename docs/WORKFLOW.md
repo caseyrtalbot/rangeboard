@@ -51,7 +51,7 @@ the same change; do not retain competing active descriptions or mark an active g
 | Current references | Root `README.md`, this workflow, project/engineering/verification guides, `docs/README.md`, the design system, and the [handoff](HANDOFF.md). Each is registered in [maintenance.json](maintenance.json). |
 | Historical evidence | `docs/field-te/`, including dated captures and model dossiers. Dates, measurements and limitations describe the capture, not the current tree. Preserve evidence paths used by tests and scripts. An identical repeat is recorded as a manifest `sameAs` entry, and a large capture is stored as `.json.gz`. |
 | Source material | `docs/te-compilation/`, `docs/inventory/` and `docs/threat/`. Preserve unique source content and distinguish original intent from implemented behavior. |
-| Session state | A task message selects work. The frozen queue is [Plan.md](Plan.md); it stays unmodified. The central [handoff](HANDOFF.md) holds the position, the current plan row and the landmines, and always links to the plan. Rewrite the handoff in place after the selected row passes its gate so the next row is selected. Completed work is recorded in the evidence index and commits, never in the plan or the handoff. Temporary logs, screenshots and scratch scripts stay outside tracked documentation. |
+| Session state | A task message selects work. When a plan file exists, it stays unmodified and the handoff links to it. The central [handoff](HANDOFF.md) holds the position, the current task if any and the landmines. Rewrite it in place, never as a journal. Completed work is recorded in the evidence index and commits, never in the plan or the handoff. Temporary logs, screenshots and scratch scripts stay outside tracked documentation. |
 
 Every Markdown file must have a direct link in [the index](README.md), except the index
 itself. Add a current reference only when no existing document owns the subject; register
@@ -86,11 +86,10 @@ pretend an old capture is current. Use Git history to retrieve its original byte
 ## Handoffs and orchestration
 
 A task handoff carries exactly one session task. The central `docs/HANDOFF.md` has fixed
-sections: Position, Tasking, Landmines and Evidence. It lists the current row, never
-completed work; archived wave plans cannot select a new task. The frozen queue is
-[Plan.md](Plan.md). That file is not edited as rows complete. The handoff always links
-to it and selects exactly one row. After that row's gate passes, rewrite the handoff so
-Tasking is the next row in the plan's order table and the link remains. Point to current
+sections: Position, Tasking, Landmines and Evidence. It holds the current task if any,
+never completed work; archived wave plans cannot select a new task. A task message
+selects work. When a plan file exists, it stays unmodified as rows complete, and the
+handoff links to it. Rewrite the handoff in place after each task. Point to current
 source and docs instead of copying them. For each task in the Tasking section, include:
 
 - Repository, branch/base commit and dirty paths relevant to the next task.

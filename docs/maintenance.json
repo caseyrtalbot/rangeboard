@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "b1132626a7a17b624cdacaa53f5d0584a2576780b2c7a2d5175de2b9f95e813a",
-      "reviewedAt": "2026-09-22",
-      "note": "Learned lines now record that the order table ended at row J and that a following row must not be invented. Section 4 parked work is not order-table tasking. AGENTS.md still does not name markdownlint-cli2."
+      "sha256": "ae26ed3ac033dcb296868256e6281822453405e095f6d476f9ec27a1882319d2",
+      "reviewedAt": "2026-09-23",
+      "note": "Reviewed the Plan.md removal. The plan-row preferences now apply only when a plan exists, and the workspace fact records that no plan queue is open; package inputs unchanged."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "16742b7679cd85a965c74253e609f0df5175ca212bf8ac999ff4b43377ffc97b",
-      "reviewedAt": "2026-09-22",
-      "note": "AGENTS.md learned lines now record that the plan order table is complete. CLAUDE.md still only redirects to it and does not copy those rules."
+      "sha256": "9eaa076b1302987982f887c803eb7aee9f66b2b7d4b24a1f895c92db9e6eeeac",
+      "reviewedAt": "2026-09-23",
+      "note": "Reviewed the AGENTS.md edit for the Plan.md removal. CLAUDE.md still only redirects to AGENTS.md; text unchanged."
     },
     {
       "document": "README.md",
@@ -34,27 +34,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "e2b6e488d1fc626cf53c1874a1ae90a01101f849827aea4f1a28d9f6b767ff89",
-      "reviewedAt": "2026-09-21",
-      "note": "Indexed the 2026-09-21 flight-horizon measurement beside the Phase 3 comparison."
+      "sha256": "4bb2d238b5fcea673b1869dd51807c6234f4d19679aadf8b80cfc5a934b2b036",
+      "reviewedAt": "2026-09-23",
+      "note": "Reviewed the Plan.md removal and the dropped historical entries (CodeReview.md, IMPLEMENTATION_PLAN.md, te-plan.md, none present). Removed the Plan.md row and reworded the handoff row and the removed-plans lines."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "84b42c7d27f6b620746f1b7331289f91d097e1557ac4ae9673283d1f9a81595a",
+      "sha256": "2252feca46d28b5e1ec67d8f039f2e26a766a8373fa9abbf434cd0515c98665a",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed rangeBounds and optimizeLaunch in analysisRequests.ts: the store now starts no placement run on a range boundary under three points, matching the Placement screen. Added that clause to the Where to put it paragraph."
+      "note": "Checked the execution list against src/main.tsx: both autosaves restore synchronously before both subscriptions start. Rewrote step 1 to match that order."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "68a9470006dd259497d83bf9c76a6d321be434bff947855fd6aad091a7a8b6c3",
+      "sha256": "025f0f79b5a0ec818fa3fb5bcc8f99310c5473695706a48745907defa67a24af",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed the range-bounds guard in analysisRequests.ts and the weasel-word-tsx exemption in check-silent.mjs. No section describes either detail; text unchanged."
+      "note": "Checked the updated claims against source: sampleFlightPath in tracks.ts, ten DrawPolicy methods with fluence as kind 11, doctrine migrated outside the container fill, stopFloor, 38 sensors with three accuracy fields and 19 radars with falseAlarmRatePerScan, fixture physics pins, AnalysisNavigation and the kit exports. selectExecutionHorizon is read only by selectors.test.ts."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -88,23 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "502c1c65c9fb6efe9fe9da228f3a3b3294f642a43579f68a92f199ffcdf3f223",
+      "sha256": "18531d291082754224fadb0ba62f88a067483b6e6f1f763eb65b3b8d612258a9",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed the weasel-word-tsx exemption change in check-silent.mjs and test-silent.mjs. The CI description of check:silent is still accurate; text unchanged."
-    },
-    {
-      "document": "docs/Plan.md",
-      "inputs": [],
-      "sha256": "78939889383acd20eeecabccdcb230c396e825030412fa33b7da171685d16c8d",
-      "reviewedAt": "2026-09-21",
-      "note": "Registered the frozen debug and cleanup queue. Sessions advance only by rewriting HANDOFF.md."
+      "note": "Reviewed the Plan.md removal. The session-state row and the handoff section now say a task message selects work and a plan file, when one exists, stays unmodified and linked from the handoff."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "d6e5f9aef0080cf01e6cf365f80666dab0a3523264ca104dc9780eb004d673ef",
+      "sha256": "88b768480416b6212c07924a141a9fb67165edbbf9c1afec909ba57139072057",
       "reviewedAt": "2026-09-23",
-      "note": "Position only: row F finishSummary 7088 ms marked stale after the tQuantile memo, the merge now releases transferred parts, and the retained copy keeps tracks in a column ledger. No tasking, no plan row; Plan.md untouched."
+      "note": "Position now states main as pushed to origin, which holds once this documentation commit is pushed with the audit fixes 181c8ec to 7da197d. The collinear follow-up names both throw sites: polygon.ts for axis-aligned points and the loop.ts sampler otherwise."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -114,18 +107,15 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "e627e460bcecb2ede23e42a736bb48ee905f6fef83e9d2b404284fdd5ffeb5ff",
+      "sha256": "1f9a14fc7a00408b6900b921cf3f962bb89c94149a064ed004a524867e389d2c",
       "reviewedAt": "2026-09-23",
-      "note": "Reviewed src/ui/OverrideSubscriber.test.tsx, the only changed design input: a test type narrowing. No token, type role or sheet rule changed; the Fragility Stopping button reuses the existing disabled button style."
+      "note": "Checked the track picture against LiveScene.tsx and TrackLayer.tsx: the layer draws from the sampled trial result, so the text now says during a sampled trial instead of in Watch."
     }
   ],
   "historical": [
-    "docs/CodeReview.md",
-    "docs/IMPLEMENTATION_PLAN.md",
     "docs/field-te/",
     "docs/te-compilation/",
     "docs/inventory/",
-    "docs/threat/",
-    "docs/te-plan.md"
+    "docs/threat/"
   ]
 }

@@ -1,8 +1,8 @@
 # Extraction brief: RangeBoard T&E Operations module
 
 > Dated source document (August 2026). This folder holds the research compilation behind
-> `docs/te-plan.md` and `src/te/`. `MASTER-CALCULATIONS.md` is the fixture source of the
-> `src/te/calc/` tests. Source and tests decide current behaviour.
+> the T&E Operations module, which commit 06b1989 removed. Source and tests decide
+> current behaviour.
 
 ## Mission context
 

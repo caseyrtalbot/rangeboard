@@ -116,14 +116,15 @@ analysis navigation sit outside the scroll body. Labels wrap and no panel text m
   dashed for probable, a circle for inferred; `absent` keeps the column and drops the
   mark. The hover title carries the word and source line. `PfTag` in
   `src/panels/inspector/kit.tsx` maps a spec field's provenance row onto it.
-- **Track picture** (`TrackLayer.tsx`, constants in `footprintStyle.ts`). In Watch each
-  sensor track draws its estimated position as a 3 px screen cross (`TRACK_MARKER_PX`)
-  and, when the track carries error, its 1 sigma covariance ellipse in world meters with
-  a 1 px screen stroke. Ink is the sage asset ink (`TRACK_ESTIMATE_INK`, `KIND_INK.asset`);
-  a false track takes the muted grey of an inert ring (`TRACK_FALSE_INK`). An updated
-  track draws solid; a coasting track takes the even `[4, 4]` dash (`TRACK_ELLIPSE_DASH`),
-  distinct from every ring dash. A truth-path track draws the cross alone. The layer is
-  censored at the observed horizon like every other trial surface.
+- **Track picture** (`TrackLayer.tsx`, constants in `footprintStyle.ts`). During a sampled
+  trial each sensor track draws its estimated position as a 3 px screen cross
+  (`TRACK_MARKER_PX`) and, when the track carries error, its 1 sigma covariance ellipse
+  in world meters with a 1 px screen stroke. Ink is the sage asset ink
+  (`TRACK_ESTIMATE_INK`, `KIND_INK.asset`); a false track takes the muted grey of an
+  inert ring (`TRACK_FALSE_INK`). An updated track draws solid; a coasting track takes
+  the even `[4, 4]` dash (`TRACK_ELLIPSE_DASH`), distinct from every ring dash. A
+  truth-path track draws the cross alone. The layer is censored at the observed horizon
+  like every other trial surface.
 - **KPI tiles** (`.tiles.c2`, `.tiles.c3`, `.tile`). Two or three columns, no borders.
   Label in text 3 (`.tl`), value in mono at value size with a small denominator (`.tv`).
 - **Inspector rows** (`.insp-row`). Flex rows, 28 px minimum height, baseline aligned,

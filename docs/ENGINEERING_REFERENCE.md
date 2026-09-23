@@ -17,8 +17,10 @@ Breaking one of these breaks the app.
 - **Single source of truth:** the `Scenario` object in `src/state/store.ts` (zustand). The
   Konva tree and every panel are pure views of it. Never write derived state (positions at
   time t, detections, assessments, Monte Carlo results) into the scenario.
-- **Playback is derived:** position at sim time comes from `posAtTime` in
-  `src/geometry/geo.ts`, which `src/playback/sim.ts` imports. `playback.simTimeS` is the
+- **Playback is derived:** position at sim time comes from `sampleFlightPath` in
+  `src/playback/tracks.ts`, which `src/playback/sim.ts` imports: `posAtTime`
+  (`src/geometry/geo.ts`) under `noFlightLimits` or with no UAS spec, else
+  `limitedPosAtTime` (`src/playback/flight.ts`). `playback.simTimeS` is the
   simulation clock; the playback slice also owns speed, flags, run identity and basis state.
   `TimelineBar` owns the requestAnimationFrame loop that publishes `simTimeS` every 100 ms of
   wall time at every speed (10 Hz, `PUBLISH_PERIOD_MS` in `src/canvas/frameClock.ts`); each
@@ -44,13 +46,13 @@ Breaking one of these breaks the app.
   checks and leading sample counts. `selectExecutionHorizon` returns the
   full-run constant in Prepare and Analyze, the empty constant when `startedAtMs == null`
   (including a scrub before first Play), otherwise a stable object for the minimum of
-  quantized cursor and observed time. `useExecutionHorizon` and `useRunCursor.horizon`
-  expose that scope; scrubbing can narrow it but never advances observation. Changing
-  navigation alone never changes scenario, history or playback.
+  quantized cursor and observed time. Scrubbing can narrow that scope but never advances
+  observation. Changing navigation alone never changes scenario, history or playback.
   Sampled consumers use `trialSelectors.ts`: `selectTrialSelection` validates the retained
   run and basis, and `selectTrialHorizon` bounds the raw cursor by observed time and the
   retained result in every phase. `useTrialResult.ts` exposes no snapshot before Play.
-  `selectExecutionHorizon` remains the scope for explicit forecast consumers.
+  `selectExecutionHorizon` has no panel or canvas consumer; only `selectors.test.ts`
+  reads it.
 - **Undo model:** `mutate(fn)` pushes a full scenario snapshot to `past` (cap 100) and
   clears `future`. Only scenario changes are undoable. A scenario-touching action goes
   through `mutate`; view state (camera, selection, ui, layers, ring overrides, analysis
@@ -73,7 +75,7 @@ Breaking one of these breaks the app.
   exist without a fill. `fillScenario`
   (`src/io/persist.ts`) validates the shape, spreads a save over `emptyScenario()` and
   deep-fills one level into every `container` entry
-  (`environment`, `requirements`, `doctrine`, `mcdaWeights`, `underlay`, `raid`).
+  (`environment`, `requirements`, `mcdaWeights`, `underlay`, `raid`).
   `library` and `systemPresets` reconcile against the current seeds; `doctrine` and `roe`
   carry named migrations. A new
   top-level field, or a field inside one of those, needs only a default in
@@ -431,7 +433,9 @@ Breaking one of these breaks the app.
 - **No invented values:** every unsourced number is a planning factor (PF) and is labeled
   as one. Never invent a value to fill a blank; record the blank as an open item instead.
 - **No `Math.random` under `src/`.** Every draw goes through `DrawPolicy` (section 5). The
-  engine draws in exactly five places; a sixth changes the draw keys and the CRN tests.
+  engine draws only through the ten `DrawPolicy` methods, each under its own `DRAW_KIND`
+  (kind 6 is the LHS shuffle in `sampling.ts`). A new draw point takes a new kind, so no
+  existing draw key or CRN test moves.
 
 ## 4. Architecture map
 
@@ -487,8 +491,9 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex, stepCount, createSweepClock: the
                bandFor, classifyByMatrix), falseTracks.ts (prepareFalseTracks: Poisson
                false tracks per radar scan), operator.ts (createOperatorQueue: the C2
                decision latency and its overload factor), pk.ts (barrel over pk/kinetic.ts:
-               Pk model, missDistanceSigmaM, and pk/beam.ts: expenditure channels; lane
-               3.6 adds the beam physics), intercept.ts (time of flight,
+               Pk model, missDistanceSigmaM, and pk/beam.ts: expenditure channels and
+               beamEffect, the DE dwell and HPM field models that shot.ts calls),
+               intercept.ts (time of flight,
                intercept, launch releases, predictedStateAt, interceptFromEstimate and
                the interceptFor selector),
                shot.ts (evaluateShot: per-ship shot eligibility shared by both
@@ -602,8 +607,9 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                listRuns, getRun, deleteRun, clearRuns, RUN_STORE_CAP_BYTES) with
                fakeIndexedDb.ts for tests, storageKeys.ts, recovery.ts (rescue copy,
                lane block and resume once that copy verifies)
-src/main.tsx   restores the Board autosave (restoreAutosave reads and adopts it), starts
-               the autosave subscription, then does the same for the overrides,
+src/main.tsx   restores the Board and overrides autosaves (restoreAutosave and
+               restoreOverrides read and adopt them), then starts both autosave
+               subscriptions,
                mounts the override-subscriber boundary, exposes window.__store in dev
 src/App.tsx    right panel tabs and drawer, keyboard map, resizer; lazy boundaries for
                AnalysisPanel and CommandPalette
@@ -772,10 +778,10 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   route-aware (a firm track from a sensor routed to that effector, hostile ID, the
   declaration dwell); `readyS` = gate + route latency + target dwell is the first possible
   assignment. Fire distribution is shoot-look-shoot with a BDA dwell; the launch point follows
-  `doctrine.launchPolicy`. `tEffect = t + engageTimeS + timeOfFlightS(spec, interceptSlant)`
-  from `flyoutSpeedMps` (kinetic only; no speed means no flyout term), charged at
-  `flyoutSpeedMps` times `FLYOUT_SPEED_FACTOR` (0.7, PF, `intercept.ts`) because a
-  stated speed is a maximum. `interceptAt` is the one predicted
+  `doctrine.launchPolicy`. `tEffect = t + engageTimeS + tofS`, where `tofS` is the flight
+  time `interceptAt` solves, from `flyoutSpeedMps` (kinetic only; no speed means no flyout
+  term), charged at `flyoutSpeedMps` times `FLYOUT_SPEED_FACTOR` (0.7, PF,
+  `intercept.ts`) because a stated speed is a maximum. `interceptAt` is the one predicted
   intercept: the exact constant-speed meeting time along the path (`analyticTofS`:
   the target holds the first point before its delay and the last point after the path ends,
   and on each straight segment the formation member moves at constant velocity, so the
@@ -853,8 +859,9 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   kill by effector, threat, ship and `salvoIdx`, the salvos that effector already committed
   at that ship, jam by effector, threat and step, phase by sensor, param by model id and
   field, noise by sensor, threat, axis and step, classify by sensor, threat and step,
-  falseAlarm by sensor, draw index and step, latency by C2, threat and step.
-  `DRAW_KIND` names the kinds (1 to 5 and 7 to 10; kind 6 is the LHS stratum shuffle in
+  falseAlarm by sensor, draw index and step, latency by C2, threat, decision index and
+  step, fluence by effector, threat, ship, salvo and step.
+  `DRAW_KIND` names the kinds (1 to 5 and 7 to 11; kind 6 is the LHS stratum shuffle in
   `sampling.ts`) and `stepIndex` (`clock.ts`, beside `DT`) is the one
   draw-step index, so common random numbers hold across laydowns. A change to a key part
   (`memberIdx`, `salvoIdx`, `stepIndex`) silently breaks pairing; only the CRN tests in
@@ -878,13 +885,14 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   `p10`/`p90` are NaN under `BAND80_MIN_N` (10) samples and `p025`/`p975` under
   `BAND95_MIN_N` (40). `McSummary.firmTrackS` is the earliest `stableTrackAtS`
   per replicate; `firstDetectS` is the first single-scan hit. The replicate loop
-  stops after 30 replicates, and every 10 after that, when the half-width of the displayed
-  interval on the end-of-run leaker mean (the leakers `Stat` through `statOf` over the
-  raid's ships) is under `targetHalfWidth`; `McSummary.stopped` records the
-  rule and the replicate. Panels read a time `Stat` through `timeStatSub(stat, quantity)`
-  (names the single-scan-hit basis, shows the defined fraction's Wilson interval, withholds
-  the mean CI under `TIME_CI_MIN_N` 30 defined) and a band step through
-  `countSub` (the interval as its two ends, since a count interval is not symmetric)
+  stops after `stopFloor` replicates (default 30), and every 10 after that, when the
+  half-width of the displayed interval on the end-of-run leaker mean (the leakers `Stat`
+  through `statOf` over the raid's ships) is under `targetHalfWidth`;
+  `McSummary.stopped` records the rule and the replicate. Panels read a time `Stat`
+  through `timeStatSub(stat, quantity)` (names the single-scan-hit basis, shows the
+  defined fraction's Wilson interval, withholds the mean CI under `TIME_CI_MIN_N` 30
+  defined) and a band step through `countSub` (the interval as its two ends, since a count
+  interval is not symmetric)
   (`panels/analysis/mc.ts`). Bands and tile subs read current `McSummary` through
   `currentSummary`, only when `mc.status` is `done` for the current run
   id; `currentSensitivity` and `currentSweep` apply the same rule to their slices. The compare
@@ -900,7 +908,8 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   grade, layer, range type, condition, source and spread; categorical spec keys are bare
   `attributes`. A file's `spec` names the block its fields compile into and now admits
   `'c2'`: eight C2 models carry `decisionLatencyS`, `decisionLatencySigmaDb` and
-  `operatorTrackCapacity`, and all 38 sensors carry the four tracker accuracy fields.
+  `operatorTrackCapacity`, and all 38 sensors carry the three tracker accuracy fields, and
+  the 19 radars also carry `falseAlarmRatePerScan`.
   `scripts/build-library.mjs` compiles the package into
   `src/model/seedLibrary.generated.ts`; `scripts/check-library.mjs` is the health check
   (grade, layer, unit, range type and condition, L1 source and date, L2 estimator, index
@@ -1205,8 +1214,8 @@ value)` holds the rule of every edited spec field. It owns the value that clears
 'planning'` on a radar whose scan time must not move a hand-derived latency; pin
   `doctrine.enabled = false` on a legacy fixture; pin `physics` on a golden fixture whose
   timeline must not move with a new engine model. `detection-outside-rings.json` and
-  `layered-acoustic-merops.json` pin `['truthTracks', 'noFalseTracks',
-'noOperatorQueue']`, so they hold the pre-Phase-2 kill chain.
+  `layered-acoustic-merops.json` pin every switch except `singlePulseRadar`, so they hold
+  the pre-Phase-2 kill chain.
 - **Deterministic versus stochastic.** The deterministic run is the _planning envelope_:
   threshold detection at `pdDetect`, kills as mass, phases at 0. It carries a `limiting`
   finding on every gate. The Monte Carlo run is the _estimate_: every headline number is a
@@ -1347,8 +1356,9 @@ Design system (`src/index.css`):
   the browser harness at 1400 by 900 with a saved 320 px panel width (see
   [VERIFICATION](VERIFICATION.md) "Harness setup"): no panel content may be clipped or
   inaccessible. Lifecycle views are local UI composition;
-  they do not advance playback or change the analysis basis. The five built-in analysis
-  destinations remain outside the scrolling content, including during object inspection.
+  they do not advance playback or change the analysis basis. The screen control
+  (`AnalysisNavigation`) remains outside the scrolling content, including during object
+  inspection.
 - **Separators, not cards.** Hierarchy comes from surface tone, spacing, typography, a 1 px
   rule and interaction state. `--radius-control` (2 px) is the only non-zero radius and
   applies to controls; containers are square. The sheet has no `box-shadow`,
@@ -1362,7 +1372,7 @@ Design system (`src/index.css`):
   `vertical={false}` only hides the lines, and the default generator still measures the
   label of every data row in the DOM, one forced layout per row.
 - **Inspector kit** `src/panels/inspector/kit.tsx`: `Section`, `Row`, `ObjectHeader`,
-  `EmptyState`, `Kbd`, `ShortcutList`, `Actions`, `PfTag`. A read-only property is a
+  `EmptyState`, `Actions`, `PfTag`. A read-only property is a
   `Row`. The tab bar in `App.tsx` follows the ARIA tabs pattern; `.right-resizer` is a
   keyboard-operable separator.
 - Keyboard map (`App.tsx`): Cmd+Z / Shift+Cmd+Z, Delete, Esc (cancel draft, tool to

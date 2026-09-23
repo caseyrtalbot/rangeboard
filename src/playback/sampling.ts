@@ -19,7 +19,7 @@ export function loopEnd(settings: McSettings): number {
   return settings.targetHalfWidth != null ? settings.stopCap : settings.replicates
 }
 
-/** The draw kind of the stratum shuffle; the policy's kinds are 1 to 5 and 7 to 10 (policy.ts DRAW_KIND). */
+/** The draw kind of the stratum shuffle; the policy's kinds are 1 to 5 and 7 to 11 (policy.ts DRAW_KIND). */
 const LHS_KIND = 6
 
 /**

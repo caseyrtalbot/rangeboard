@@ -2,7 +2,7 @@
 
 Source and tests decide current behavior. Current references must be maintained with the
 implementation. Historical records and extracted sources retain their capture context;
-their phase labels, open items and instructions are not current tasking. Old plans and
+their phase labels, open items and instructions are not current tasking. Earlier plans and
 handoffs were cancelled on 2026-09-06 and remain in Git history.
 
 ## Current references
@@ -17,8 +17,7 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [VERIFICATION.md](VERIFICATION.md) | Commands, tests, parity and browser procedures |
 | [WORKFLOW.md](WORKFLOW.md) | Bounded work, documentation maintenance, handoffs and orchestration |
 | [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Implemented visual rules, tokens and shared components |
-| [Plan.md](Plan.md) | Frozen debug and cleanup queue; sessions advance only in the handoff |
-| [HANDOFF.md](HANDOFF.md) | Position, the current plan row and landmines; rewritten in place, never a journal |
+| [HANDOFF.md](HANDOFF.md) | Position and landmines; rewritten in place, never a journal |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
 Run `npm run docs:check`; follow the [workflow](WORKFLOW.md#documentation-maintenance) when
@@ -39,7 +38,7 @@ Proposals preserve design decisions as issued; the records below them show what 
 
 ### Completion and integration records
 
-Cancelled plans, the central handoff and wave completion write-ups were removed on
+Earlier plans, earlier handoffs and the wave completion write-ups were removed on
 2026-09-16 and remain in Git history.
 
 - [Phase 3 review fixes CR-01 to CR-04, 2026-09-14](field-te/evidence/cr-fixes-2026-09-14/README.md)
