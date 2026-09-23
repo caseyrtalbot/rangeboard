@@ -73,6 +73,24 @@ describe('mergePartials', () => {
     expect(mergePartials([part, range(scenario, 8, 8)])).toEqual(part)
   })
 
+  it('a release merge equals the plain merge and empties each part once copied', () => {
+    const scenario = base('aleatory')
+    const plain = mergePartials([range(scenario, 0, 7), range(scenario, 7, 12)])
+    const lo = range(scenario, 0, 7)
+    const hi = range(scenario, 7, 12)
+    const released = mergePartials([hi, lo], { release: true })
+    const { elapsedMs: _a, ...plainRows } = plain
+    const { elapsedMs: _b, ...releasedRows } = released
+    expect(releasedRows).toEqual(plainRows)
+    for (const part of [lo, hi]) {
+      expect(part.kills).toHaveLength(0)
+      expect(part.leakers).toHaveLength(0)
+      expect(part.threatResidual[0]).toHaveLength(0)
+      // The scalar rows stay: only the grids are dropped.
+      expect(part.indices).toHaveLength(part.raidFirstDetect.length)
+    }
+  })
+
   it('carries the operator decision counts one row per replicate, in index order', () => {
     const scenario = base('aleatory')
     const whole = range(scenario, 0, 20)

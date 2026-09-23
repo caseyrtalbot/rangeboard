@@ -103,10 +103,13 @@ self.onmessage = async (e: MessageEvent<McRequest | PoolRequest | FinishSummaryR
     return
   }
   if (e.data.type === 'finish-summary') {
-    // The page transferred the packed grids. Merge and summarize here.
-    const { scenario, parts, rule, elapsedMs, runId: id } = e.data
+    // The page transferred the packed grids. Merge and summarize here. The merge
+    // releases each part as it copies it, and the list is emptied so nothing
+    // keeps the transferred buffers reachable while the summary runs.
+    const { scenario, rule, elapsedMs, runId: id } = e.data
     try {
-      const prefix = contiguousPrefix(mergePartials(parts))
+      const prefix = contiguousPrefix(mergePartials(e.data.parts, { release: true }))
+      e.data.parts.length = 0
       if (prefix.indices.length === 0) {
         post({
           type: 'summary-error',

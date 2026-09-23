@@ -619,7 +619,8 @@ export function* replicateLoop(
   const { targetHalfWidth, stopFloor } = settings
   const end = loopEnd(settings)
   const partial = emptyPartial()
-  const range = rangeLoopInto(scenario, 0, end, partial, onProgress)
+  // `end` is the stop cap under a half-width target, so start small and grow.
+  const range = rangeLoopInto(scenario, 0, end, partial, onProgress, Math.min(end, 8))
   let stopped: McSummary['stopped'] = { rule: 'replicates', at: end }
   let next = range.next()
   while (!next.done) {
@@ -661,18 +662,22 @@ export function* replicateRangeLoop(
 }
 
 /**
- * A row-major grid that doubles as rows arrive. `view` covers the filled rows
- * and still shares the spare capacity; `seal` copies an exact buffer and drops
- * the spare so an early stop does not keep it.
+ * A row-major grid sized for `initialRows` that doubles past them. `view`
+ * covers the filled rows and still shares the spare capacity; `seal` returns
+ * the buffer itself when the rows fill it and otherwise copies an exact one so
+ * an early stop does not keep the spare.
  */
-function growableGrid(steps: number): {
+function growableGrid(
+  steps: number,
+  initialRows: number,
+): {
   write(row: number, step: number, value: number): void
   setRow(row: number, values: ArrayLike<number>): void
   view(rows: number): Float64Array
   seal(rows: number): Float64Array
 } {
-  let capRows = 0
-  let data = new Float64Array(0)
+  let capRows = initialRows
+  let data = new Float64Array(initialRows * steps)
   const ensure = (rows: number): void => {
     if (rows <= capRows) return
     let next = capRows === 0 ? Math.max(rows, 8) : capRows
@@ -704,13 +709,18 @@ function growableGrid(steps: number): {
   }
 }
 
-/** The range loop, filling the caller's partial in place so the driver can read it at a checkpoint. */
+/**
+ * The range loop, filling the caller's partial in place so the driver can read
+ * it at a checkpoint. The grids are sized for `initialRows` (the whole range
+ * by default); a caller that expects an early stop passes fewer.
+ */
 function* rangeLoopInto(
   scenario: Scenario,
   start: number,
   end: number,
   partial: McPartial,
   onProgress?: (done: number, total: number) => void,
+  initialRows = end - start,
 ): Loop<void> {
   const settings = runSettings(scenario)
   const { seed, uncertainty } = settings
@@ -724,11 +734,11 @@ function* rangeLoopInto(
   )
   const count = end - start
   const t0 = performance.now()
-  const kills = growableGrid(n)
-  const leakers = growableGrid(n)
-  const detected = growableGrid(n)
-  const engaged = growableGrid(n)
-  const tracked = growableGrid(n)
+  const kills = growableGrid(n, initialRows)
+  const leakers = growableGrid(n, initialRows)
+  const detected = growableGrid(n, initialRows)
+  const engaged = growableGrid(n, initialRows)
+  const tracked = growableGrid(n, initialRows)
   const residual: ReturnType<typeof growableGrid>[] = []
   // Publish a view before each checkpoint. The close copies an exact buffer.
   const publish = (rows: number): void => {
@@ -773,7 +783,7 @@ function* rangeLoopInto(
           partial.threatKilled.push([])
           partial.threatLeaked.push([])
           partial.threatFirstDetect.push([])
-          residual.push(growableGrid(n))
+          residual.push(growableGrid(n, initialRows))
           partial.threatArrival.push(a.arrivalS)
           partial.threatShips.push(att?.shipCount ?? 1)
         }

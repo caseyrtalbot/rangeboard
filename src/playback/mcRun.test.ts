@@ -862,6 +862,33 @@ describe('runReplicates', () => {
       expect(halfWidthReached({ ...scenario, targetHalfWidth: 10 }, partialTo(30))).toBe(true)
       expect(halfWidthReached({ ...scenario, targetHalfWidth: null }, partialTo(70))).toBe(false)
     })
+
+    it('a range loop sizes each grid to its row count once and seals it without a copy', () => {
+      const { scenario } = build(0.5, { x: -1210, y: 0 }, true)
+      const n = sampleCount(scenario)
+      const real = Float64Array
+      const made: Float64Array[] = []
+      globalThis.Float64Array = new Proxy(real, {
+        construct(target, args, newTarget) {
+          const grid = Reflect.construct(target, args, newTarget) as Float64Array
+          made.push(grid)
+          return grid
+        },
+      })
+      try {
+        const loop = replicateRangeLoop(scenario, 0, 36)
+        let next = loop.next()
+        while (!next.done) next = loop.next()
+        const partial = next.value
+        // Five raid grids and one residual grid, each allocated once at 36 rows.
+        expect(made.filter((g) => g.length === 36 * n)).toHaveLength(6)
+        expect(made.some((g) => g.length === 64 * n)).toBe(false)
+        expect(partial.kills).toHaveLength(36 * n)
+        expect(made).toContain(partial.kills)
+      } finally {
+        globalThis.Float64Array = real
+      }
+    })
   })
 
   describe('execution budget and cancel', () => {

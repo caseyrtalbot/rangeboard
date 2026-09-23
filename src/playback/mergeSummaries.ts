@@ -98,14 +98,26 @@ export function prefixLeakerEnds(
   return { ends, ships }
 }
 
+/** Drop a part's grids once its rows are copied, so the merge peaks near one copy. */
+function releaseGrids(part: McPartial): void {
+  part.kills = new Float64Array(0)
+  part.leakers = new Float64Array(0)
+  part.detected = new Float64Array(0)
+  part.tracked = new Float64Array(0)
+  part.engaged = new Float64Array(0)
+  part.threatResidual = part.threatResidual.map(() => new Float64Array(0))
+}
+
 /**
  * One partial over every replicate of `parts`, rows in ascending index
  * order. Throws on an empty list, on an index present twice, and when two
  * non-empty partials disagree on their track or effector lists (they ran
  * different scenarios). `retained` and `elapsedMs` are summed over the parts;
- * a pool passes its own wall clock to `finishSummary`.
+ * a pool passes its own wall clock to `finishSummary`. With `release`, each
+ * part's grids are emptied as soon as its last row is copied: the summary
+ * worker owns the transferred buffers and reads only the merge.
  */
-export function mergePartials(parts: McPartial[]): McPartial {
+export function mergePartials(parts: McPartial[], options: { release?: boolean } = {}): McPartial {
   if (parts.length === 0) throw new Error('mergePartials needs at least one partial')
   const filled = parts.filter((p) => p.indices.length > 0)
   const first = filled[0]
@@ -148,6 +160,9 @@ export function mergePartials(parts: McPartial[]): McPartial {
   out.threatResidual = first.threatIds.map(() => new Float64Array(count * steps))
   out.effectorSalvos = first.effectorIds.map(() => [])
   out.effectorKills = first.effectorIds.map(() => [])
+  // Rows still to copy per part; a part is released when its count reaches 0.
+  const pending = new Map<McPartial, number>()
+  if (options.release) for (const part of filled) pending.set(part, part.indices.length)
   rows.forEach(({ part, k }, r) => {
     out.indices.push(part.indices[k])
     copyRow(out.kills, part.kills, k, r, steps)
@@ -169,6 +184,11 @@ export function mergePartials(parts: McPartial[]): McPartial {
     for (const e of first.effectorIds.keys()) {
       out.effectorSalvos[e].push(part.effectorSalvos[e][k])
       out.effectorKills[e].push(part.effectorKills[e][k])
+    }
+    if (options.release) {
+      const left = (pending.get(part) ?? 1) - 1
+      pending.set(part, left)
+      if (left === 0) releaseGrids(part)
     }
   })
   for (const part of parts) {
