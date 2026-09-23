@@ -4,7 +4,14 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { addedLines, filterFindings, parseArgs, resolveBase, runGate } from './check-silent.mjs'
+import {
+  addedLines,
+  filterFindings,
+  parseArgs,
+  resolveBase,
+  runGate,
+  scan,
+} from './check-silent.mjs'
 
 function repo(t) {
   const root = mkdtempSync(join(tmpdir(), 'rangeboard-silent-test-'))
@@ -65,6 +72,15 @@ test('addedLines reads hunk headers into line sets per file', () => {
   assert.equal(added.has('src/gone.ts'), false)
 })
 
+test('addedLines throws on a quoted path it cannot read back', () => {
+  assert.throws(() => addedLines('+++ "b/a\\"b.ts"\n@@ -0,0 +1 @@\n+x'), /quoted path/)
+})
+
+test('addedLines strips the tab git appends to a path with a space', () => {
+  const added = addedLines('+++ b/my file.ts\t\n@@ -0,0 +1 @@\n+x')
+  assert.deepEqual([...added.keys()], ['my file.ts'])
+})
+
 test('filterFindings keeps only added lines and drops marked, domain, and negated lines', () => {
   const findings = [
     { rule: 'empty-catch', file: 'a.ts', line: 2, text: 'catch {}', message: 'm' },
@@ -96,6 +112,33 @@ test('filterFindings keeps only added lines and drops marked, domain, and negate
   )
 })
 
+test('filterFindings reads domain terms on any line of a block comment', () => {
+  const finding = {
+    rule: 'weasel-word',
+    file: 'a.ts',
+    line: 12,
+    endLine: 14,
+    text: '/**\n * RF silent threat\n */',
+    message: 'm',
+  }
+  const source = [...Array(11).fill(''), '/**', ' * RF silent threat', ' */']
+  assert.deepEqual(filterFindings([finding], null, new Map([['a.ts', source]])), [])
+})
+
+test('filterFindings keeps a block comment when one weasel line has no exemption', () => {
+  const finding = { rule: 'weasel-word', file: 'a.ts', line: 2, endLine: 5, text: '', message: 'm' }
+  const domain = [
+    '',
+    '/**',
+    ' * RF-silent threats are tracked by radar.',
+    ' * On error the fallback value is used.',
+    ' */',
+  ]
+  const negated = ['', '/**', ' * Never silently drop X.', ' * Uses a fallback default.', ' */']
+  for (const source of [domain, negated])
+    assert.equal(filterFindings([finding], null, new Map([['a.ts', source]])).length, 1)
+})
+
 test('filterFindings with no added map reports every finding once', () => {
   const findings = [
     { rule: 'empty-catch', file: 'b.ts', line: 1, text: 'catch {}', message: 'm' },
@@ -119,6 +162,15 @@ test('resolveBase prefers the given ref, then main, and ignores a zero sha', (t)
   assert.deepEqual(resolveBase(root, null), { sha: base, reason: 'main' })
   assert.deepEqual(resolveBase(root, '0'.repeat(40)), { sha: base, reason: 'main' })
   assert.equal(resolveBase(root, 'HEAD').reason, 'given')
+})
+
+test('resolveBase throws on an unreachable given base or with no main ref', (t) => {
+  const { root, git, put, commit } = repo(t)
+  put('a.ts', CLEAN)
+  commit('base')
+  assert.throws(() => resolveBase(root, 'f'.repeat(40)), /has no merge-base with HEAD/)
+  git('branch', '-m', 'topic')
+  assert.throws(() => runGate(root, parseArgs([])), /No base to diff against/)
 })
 
 test('gate flags a hidden failure only on added lines and accepts a silent-ok marker', (t) => {
@@ -227,4 +279,63 @@ test('all mode reports pre-existing findings across tracked files', (t) => {
     result.findings.map((f) => [f.file, f.line, f.rule]),
     [['old.ts', 4, 'empty-catch']],
   )
+})
+
+const HIDDEN = 'export function b() {\n  try {\n    y()\n  } catch {}\n}\n'
+
+test('gate checks a renamed file that was edited', (t) => {
+  const { root, git, put, commit } = repo(t)
+  put('a.ts', CLEAN)
+  commit('base')
+  git('mv', 'a.ts', 'b.ts')
+  put('b.ts', CLEAN + HIDDEN)
+  git('add', '-A')
+  for (const argv of [['--staged'], ['--base', 'HEAD']]) {
+    const result = runGate(root, parseArgs(argv))
+    assert.deepEqual(
+      result.findings.map((f) => [f.file, f.line, f.rule]),
+      [['b.ts', 11, 'empty-catch']],
+    )
+  }
+})
+
+test('gate ignores user diff config that changes the diff text', (t) => {
+  const { root, git, put, commit } = repo(t)
+  put('a.ts', CLEAN)
+  commit('base')
+  put('a.ts', CLEAN + HIDDEN)
+  git('add', '-A')
+  git('config', 'diff.external', 'true')
+  git('config', 'diff.mnemonicPrefix', 'true')
+  git('config', 'diff.interHunkContext', '10')
+  for (const argv of [['--staged'], ['--base', 'HEAD']]) {
+    const result = runGate(root, parseArgs(argv))
+    assert.deepEqual(
+      result.findings.map((f) => [f.file, f.line, f.rule]),
+      [['a.ts', 11, 'empty-catch']],
+    )
+  }
+})
+
+test('gate checks paths with a space or a non-ASCII byte', (t) => {
+  const { root, git, put, commit } = repo(t)
+  put('a.ts', CLEAN)
+  commit('base')
+  put('my file.ts', HIDDEN)
+  put('café.ts', HIDDEN)
+  const expected = [
+    ['café.ts', 4, 'empty-catch'],
+    ['my file.ts', 4, 'empty-catch'],
+  ]
+  const found = (argv) =>
+    runGate(root, parseArgs(argv)).findings.map((f) => [f.file, f.line, f.rule])
+  assert.deepEqual(found(['--base', 'HEAD']), expected)
+  git('add', '-A')
+  assert.deepEqual(found(['--staged']), expected)
+  assert.deepEqual(found(['--base', 'HEAD']), expected)
+})
+
+test('scan throws on a missing path', (t) => {
+  const { root } = repo(t)
+  assert.throws(() => scan(root, ['gone.ts']), /Cannot scan missing file\(s\): gone\.ts/)
 })

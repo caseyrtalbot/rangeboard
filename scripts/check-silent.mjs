@@ -20,6 +20,10 @@ export const DOMAIN_TERMS = [/\bRF[- ]silent\b/i, /\bjam-degraded\b/i]
 export const NEGATED =
   /\b(never|not|no|without|instead of)\s+(be(ing)?\s+|is\s+|a\s+)?(silent|silently|swallow)/i
 
+/** The weasel-word rule regex, kept in step with scripts/silent/rules/weasel-word.yml. */
+export const WEASEL_WORD =
+  /\b(silent|silently|swallow(s|ed|ing)?|fail[- ]?soft|fail[- ]?open|best[- ]effort|fallback|graceful(ly)?[- ]degrad\w*|degrade[sd]?\s+gracefully)\b/i
+
 const ZERO_SHA = /^0{40}$/
 
 export function parseArgs(argv) {
@@ -52,7 +56,10 @@ export function addedLines(diffText) {
   let file = null
   for (const line of diffText.split('\n')) {
     if (line.startsWith('+++ ')) {
-      const path = line.slice(4)
+      // git appends a tab to the header when the path holds a space.
+      const path = line.slice(4).replace(/\t$/, '')
+      // A quoted path holds characters core.quotePath=false still escapes; it cannot be read back.
+      if (path.startsWith('"')) throw new Error(`Cannot check a quoted path in git diff: ${path}`)
       file = path === '/dev/null' ? null : path.replace(/^b\//, '')
       if (file && !added.has(file)) added.set(file, new Set())
       continue
@@ -79,22 +86,41 @@ export function resolveBase(root, explicit) {
   for (const candidate of candidates) {
     const merge = git(root, 'merge-base', candidate.ref, 'HEAD')
     if (merge.ok) return { sha: merge.out, reason: candidate.reason }
+    // A given base that cannot be reached must not turn into a diff against HEAD.
+    if (candidate.reason === 'given')
+      throw new Error(
+        `Base ${candidate.ref} has no merge-base with HEAD: ${merge.err || 'git merge-base failed'}`,
+      )
   }
-  const head = git(root, 'rev-parse', 'HEAD')
-  return { sha: head.ok ? head.out : null, reason: 'HEAD (no main ref found)' }
+  throw new Error(
+    'No base to diff against: neither main nor origin/main resolves. Pass --base <ref>.',
+  )
 }
+
+// Pin every option that user git config can change in the diff text the parser reads.
+const DIFF_ARGS = [
+  '-c',
+  'core.quotePath=false',
+  'diff',
+  '-U0',
+  '--inter-hunk-context=0',
+  '--no-color',
+  '--no-ext-diff',
+  '--no-renames',
+  '--no-relative',
+  '--src-prefix=a/',
+  '--dst-prefix=b/',
+  '--diff-filter=AM',
+]
 
 /** Added lines for the working tree against a base commit, plus every line of untracked files. */
 export function changedLines(root, { base, staged }) {
-  const diffArgs = staged
-    ? ['diff', '-U0', '--no-color', '--cached', '--diff-filter=AM']
-    : ['diff', '-U0', '--no-color', '--diff-filter=AM', base]
-  const diff = git(root, ...diffArgs, '--')
+  const diff = git(root, ...DIFF_ARGS, staged ? '--cached' : base, '--')
   if (!diff.ok) throw new Error(`git diff failed: ${diff.err}`)
   const added = new Map([...addedLines(diff.out)].filter(([file]) => SCAN_FILE.test(file)))
   if (!staged) {
-    const untracked = git(root, 'ls-files', '--others', '--exclude-standard')
-    for (const file of untracked.out.split('\n').filter((f) => f && SCAN_FILE.test(f))) {
+    const untracked = git(root, 'ls-files', '-z', '--others', '--exclude-standard')
+    for (const file of untracked.out.split('\0').filter((f) => f && SCAN_FILE.test(f))) {
       const count = readFileSync(resolve(root, file), 'utf8').split('\n').length
       added.set(file, new Set(Array.from({ length: count }, (_, i) => i + 1)))
     }
@@ -103,8 +129,8 @@ export function changedLines(root, { base, staged }) {
 }
 
 export function trackedFiles(root) {
-  const list = git(root, 'ls-files')
-  return list.out.split('\n').filter((f) => f && SCAN_FILE.test(f))
+  const list = git(root, 'ls-files', '-z')
+  return list.out.split('\0').filter((f) => f && SCAN_FILE.test(f))
 }
 
 export function astGrepBin(repoRoot) {
@@ -114,6 +140,9 @@ export function astGrepBin(repoRoot) {
 /** Run ast-grep over the given files and return its findings as plain objects. */
 export function scan(root, files, { bin, config } = {}) {
   if (files.length === 0) return []
+  // ast-grep exits 0 with no findings for a missing path, so check first.
+  const missing = files.filter((file) => !existsSync(resolve(root, file)))
+  if (missing.length > 0) throw new Error(`Cannot scan missing file(s): ${missing.join(', ')}`)
   const repoRoot = resolve(SCRIPT_DIR, '..')
   const result = spawnSync(
     bin ?? astGrepBin(repoRoot),
@@ -179,14 +208,15 @@ export function filterFindings(findings, added, sources) {
     const key = `${finding.rule}:${finding.file}:${finding.line}`
     if (seen.has(key)) continue
     seen.add(key)
-    const current = lineText(sources, finding.file, finding.line)
     const span = []
     for (let n = finding.line - 1; n <= (finding.endLine ?? finding.line); n++)
       span.push(lineText(sources, finding.file, n))
     if (span.some((line) => OK_MARKER.test(line))) continue
     if (finding.rule === 'weasel-word') {
-      if (DOMAIN_TERMS.some((term) => term.test(current))) continue
-      if (NEGATED.test(current)) continue
+      // Each matching line of the span, without the line above, must carry its own exemption.
+      const matching = span.slice(1).filter((line) => WEASEL_WORD.test(line))
+      const exempt = (line) => DOMAIN_TERMS.some((term) => term.test(line)) || NEGATED.test(line)
+      if (matching.length > 0 && matching.every(exempt)) continue
     }
     kept.push(finding)
   }
@@ -261,7 +291,8 @@ export function report(findings, { base, mode }) {
 /** Run the gate. Returns findings and the text report; the caller decides the exit code. */
 export function runGate(root, args, scanOptions = {}) {
   if (args.all) {
-    const files = trackedFiles(root)
+    // A tracked file deleted from the working tree has nothing to scan.
+    const files = trackedFiles(root).filter((file) => existsSync(resolve(root, file)))
     const findings = filterFindings(scan(root, files, scanOptions), null, loadSources(root, files))
     return {
       findings,
