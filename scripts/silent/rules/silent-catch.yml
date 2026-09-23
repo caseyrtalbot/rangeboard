@@ -4,22 +4,38 @@ severity: error
 language: TypeScript
 rule:
   kind: catch_clause
-  has:
-    kind: statement_block
-    has:
-      kind: return_statement
-      stopBy: end
-    not:
-      any:
+  all:
+    # Bind $ERR to the caught error so that storing it counts as recording.
+    # Without a parameter, $ERR binds to the clause, which no assignment can equal.
+    - any:
         - has:
-            kind: call_expression
-            stopBy: end
-        - has:
-            kind: throw_statement
-            stopBy: end
-        - has:
-            kind: new_expression
-            stopBy: end
-        - has:
-            kind: await_expression
-            stopBy: end
+            field: parameter
+            pattern: $ERR
+        - pattern: $ERR
+          not:
+            has:
+              field: parameter
+              regex: .
+    - has:
+        kind: statement_block
+        has:
+          stopBy: end
+          any:
+            - kind: return_statement
+            - kind: continue_statement
+            - kind: break_statement
+            - kind: assignment_expression
+              not:
+                has:
+                  field: right
+                  pattern: $ERR
+            - kind: unary_expression
+              regex: ^void\b
+        not:
+          any:
+            - has:
+                kind: call_expression
+                stopBy: end
+            - has:
+                kind: throw_statement
+                stopBy: end

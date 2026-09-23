@@ -125,6 +125,12 @@ test('filterFindings reads domain terms on any line of a block comment', () => {
   assert.deepEqual(filterFindings([finding], null, new Map([['a.ts', source]])), [])
 })
 
+test('filterFindings exempts a negated comment in a .tsx file the same way', () => {
+  const finding = { rule: 'weasel-word-tsx', file: 'a.tsx', line: 2, text: '', message: 'm' }
+  const source = ['', '// Never silently drop a row.']
+  assert.deepEqual(filterFindings([finding], null, new Map([['a.tsx', source]])), [])
+})
+
 test('filterFindings keeps a block comment when one weasel line has no exemption', () => {
   const finding = { rule: 'weasel-word', file: 'a.ts', line: 2, endLine: 5, text: '', message: 'm' }
   const domain = [
@@ -282,6 +288,19 @@ test('all mode reports pre-existing findings across tracked files', (t) => {
 })
 
 const HIDDEN = 'export function b() {\n  try {\n    y()\n  } catch {}\n}\n'
+
+test('gate flags a hidden failure in a staged .tsx file', (t) => {
+  const { root, git, put, commit } = repo(t)
+  put('a.ts', CLEAN)
+  commit('base')
+  put('view.tsx', `${HIDDEN}export const View = () => <div />\n`)
+  git('add', 'view.tsx')
+  const result = runGate(root, parseArgs(['--staged']))
+  assert.deepEqual(
+    result.findings.map((f) => [f.file, f.line, f.rule]),
+    [['view.tsx', 4, 'empty-catch-tsx']],
+  )
+})
 
 test('gate checks a renamed file that was edited', (t) => {
   const { root, git, put, commit } = repo(t)

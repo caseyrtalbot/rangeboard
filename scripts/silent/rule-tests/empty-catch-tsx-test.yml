@@ -1,0 +1,10 @@
+id: empty-catch-tsx
+valid:
+  - 'try { x() } catch (error) { report(error) }'
+  - 'try { x() } catch { throw new Error("x failed") }'
+  - 'try { x() } catch { return null }'
+invalid:
+  - 'try { x() } catch {}'
+  - 'try { x() } catch (error) {}'
+  - 'try { x() } catch (error) { /* ignored */ }'
+  - 'function A() { try { x() } catch {} return <div /> }'

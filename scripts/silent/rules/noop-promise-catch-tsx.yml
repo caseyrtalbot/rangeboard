@@ -1,0 +1,47 @@
+id: noop-promise-catch-tsx
+message: Promise .catch() discards the rejection without reporting or recording it.
+severity: error
+language: Tsx
+utils:
+  noop-handler:
+    any:
+      - kind: arrow_function
+      - kind: function_expression
+    not:
+      any:
+        - has:
+            kind: call_expression
+            stopBy: end
+        - has:
+            kind: throw_statement
+            stopBy: end
+        - has:
+            kind: new_expression
+            stopBy: end
+rule:
+  kind: call_expression
+  any:
+    - all:
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              regex: ^catch$
+        - has:
+            field: arguments
+            has:
+              matches: noop-handler
+    # A no-op fulfillment handler is fine; only the rejection handler counts.
+    - all:
+        - has:
+            field: function
+            kind: member_expression
+            has:
+              field: property
+              regex: ^then$
+        - has:
+            field: arguments
+            has:
+              matches: noop-handler
+              nthChild: 2

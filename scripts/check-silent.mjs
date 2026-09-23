@@ -20,7 +20,7 @@ export const DOMAIN_TERMS = [/\bRF[- ]silent\b/i, /\bjam-degraded\b/i]
 export const NEGATED =
   /\b(never|not|no|without|instead of)\s+(be(ing)?\s+|is\s+|a\s+)?(silent|silently|swallow)/i
 
-/** The weasel-word rule regex, kept in step with scripts/silent/rules/weasel-word.yml. */
+/** The weasel-word rule regex, kept in step with scripts/silent/rules/weasel-word.yml and weasel-word-tsx.yml. */
 export const WEASEL_WORD =
   /\b(silent|silently|swallow(s|ed|ing)?|fail[- ]?soft|fail[- ]?open|best[- ]effort|fallback|graceful(ly)?[- ]degrad\w*|degrade[sd]?\s+gracefully)\b/i
 
@@ -212,7 +212,7 @@ export function filterFindings(findings, added, sources) {
     for (let n = finding.line - 1; n <= (finding.endLine ?? finding.line); n++)
       span.push(lineText(sources, finding.file, n))
     if (span.some((line) => OK_MARKER.test(line))) continue
-    if (finding.rule === 'weasel-word') {
+    if (finding.rule === 'weasel-word' || finding.rule === 'weasel-word-tsx') {
       // Each matching line of the span, without the line above, must carry its own exemption.
       const matching = span.slice(1).filter((line) => WEASEL_WORD.test(line))
       const exempt = (line) => DOMAIN_TERMS.some((term) => term.test(line)) || NEGATED.test(line)

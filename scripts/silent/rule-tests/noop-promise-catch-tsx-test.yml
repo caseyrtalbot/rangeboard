@@ -1,0 +1,15 @@
+id: noop-promise-catch-tsx
+valid:
+  - 'p.catch((error) => report(error))'
+  - 'p.catch(() => { throw new Error("x") })'
+  - 'p.catch(onError)'
+  - 'p.catch(function (error) { report(error) })'
+  - 'p.then(() => {})'
+  - 'p.then(ok, (error) => report(error))'
+invalid:
+  - 'p.catch(() => {})'
+  - 'p.catch(() => null)'
+  - 'p.catch((error) => undefined)'
+  - 'p.catch(function () {})'
+  - 'p.then(ok, () => {})'
+  - 'const a = <button onClick={() => p.catch(() => {})} />'
