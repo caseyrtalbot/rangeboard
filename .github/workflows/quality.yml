@@ -27,7 +27,24 @@ jobs:
       - run: npm ci
       - run: npm run check
       - name: Silent-failure gate on changed lines
-        run: npm run check:silent -- --base "${{ github.event.pull_request.base.sha || github.event.before }}"
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # A push whose `before` is the zero sha (a new branch, or the first push of
+          # main) has no previous tip. A new branch diffs against its merge-base with
+          # main. A fresh main diffs its tip against the parent commit; a root commit
+          # with no parent gets the whole-tree report (`--all` lists, never fails).
+          if [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              BASE=origin/main
+            elif git rev-parse --verify -q HEAD~1 > /dev/null; then
+              BASE=HEAD~1
+            else
+              npm run check:silent:all
+              exit $?
+            fi
+          fi
+          npm run check:silent -- --base "$BASE"
       - run: npm run check:bundle
       - run: npx playwright install --with-deps chromium
       - name: Board shell browser spec
