@@ -1320,8 +1320,19 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, theme: t } }))
     },
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
+    // Editing tools belong to Prepare: leaving it drops any drawing tool back to Select.
     setBoardPhase: (boardPhase) =>
-      set((st) => (st.ui.boardPhase === boardPhase ? st : { ui: { ...st.ui, boardPhase } })),
+      set((st) =>
+        st.ui.boardPhase === boardPhase
+          ? st
+          : {
+              ui: {
+                ...st.ui,
+                boardPhase,
+                tool: boardPhase === 'prepare' ? st.ui.tool : 'select',
+              },
+            },
+      ),
     setLayer: (key, v) => {
       const st = get()
       const layers = { ...selectEffectiveLayers(st), [key]: v }

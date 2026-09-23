@@ -1,5 +1,5 @@
 import { selectBoardPhase, selectEffectiveLayers } from '../state/selectors'
-import { lazy, memo, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, memo, Suspense, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
@@ -407,11 +407,6 @@ export const BoardTools = memo(function BoardTools({
   const canRedo = useStore((s) => s.future.length > 0)
   const editing = useStore(selectBoardPhase) === 'prepare'
   const { setTool, setBoundaryType, undo, redo } = useStore.getState()
-
-  // Editing tools belong to Prepare; leaving it drops any drawing tool back to Select.
-  useEffect(() => {
-    if (!editing && tool !== 'select') setTool('select')
-  }, [editing, tool, setTool])
 
   return (
     <div className="board-tools" role="toolbar" aria-label="Board tools">
