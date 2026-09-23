@@ -194,15 +194,18 @@ describe('Declutter selection', () => {
 })
 
 describe('Settings sections', () => {
-  it('opens Scenario by default with the existing scenario forms', () => {
+  it('opens Scenario by default and links Fire doctrine and Environment to Prepare > Inputs', () => {
     const html = render(<SettingsPanel onRequestClose={() => {}} />)
     expect(html).toContain('role="dialog" aria-modal="true" aria-labelledby="settings-title"')
-    const positions = ['Fire doctrine', 'Environment', 'Requirement inputs'].map((label) =>
+    const positions = ['Fire doctrine and Environment', 'Requirement inputs'].map((label) =>
       html.indexOf(`aria-label="${label}"`),
     )
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(html).toContain('data-role="roe"')
+    // Prepare > Inputs is the one editor; Settings holds only the link.
+    expect(html).toContain('Open Prepare &gt; Inputs')
+    expect(html).not.toContain('data-role="roe"')
+    expect(html).not.toContain('Apply effects')
   })
 
   it('opens Run directly with the canonical run controls', () => {

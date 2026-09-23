@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { FireDoctrineSettings } from './analysis/FireDoctrineSettings'
-import { EnvironmentSettings } from './analysis/EnvironmentSettings'
+import { useStore } from '../state/store'
 import { RequirementSettings } from './analysis/RequirementSettings'
 import { ThemeSettings, UnitsSettings, BasemapSettings, LayerSettings } from './ViewMenu'
 import { RunTab } from './settings/RunTab'
@@ -27,6 +26,15 @@ export function SettingsPanel({
 }) {
   const [section, setSection] = useState(initialSection)
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const setBoardPhase = useStore((state) => state.setBoardPhase)
+  const setRightTab = useStore((state) => state.setRightTab)
+
+  // Prepare > Inputs is the one editor for Fire doctrine and Environment.
+  function openInputs() {
+    setBoardPhase('prepare')
+    setRightTab('analysis')
+    onRequestClose()
+  }
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -86,15 +94,17 @@ export function SettingsPanel({
         <div id="settings-body" className="settings-body" key={section}>
           {section === 'scenario' && (
             <>
-              <section className="settings-block prepare-setting-body" aria-label="Fire doctrine">
-                <h3>Fire doctrine</h3>
-                <p>ROE and doctrine govern modeled engagement eligibility and timing.</p>
-                <FireDoctrineSettings />
-              </section>
-              <section className="settings-block prepare-setting-body" aria-label="Environment">
-                <h3>Environment</h3>
-                <p>Conditions affect modeled performance when effects are enabled.</p>
-                <EnvironmentSettings />
+              <section
+                className="settings-block prepare-setting-body"
+                aria-label="Fire doctrine and Environment"
+              >
+                <h3>Fire doctrine and Environment</h3>
+                <p>Edit ROE, doctrine and conditions in Prepare &gt; Inputs.</p>
+                <div className="prepare-setting-controls">
+                  <button type="button" onClick={openInputs}>
+                    Open Prepare &gt; Inputs
+                  </button>
+                </div>
               </section>
               <section
                 className="settings-block prepare-setting-body"
