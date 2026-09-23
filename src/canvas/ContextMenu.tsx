@@ -46,17 +46,29 @@ const LAYER_ITEMS: { key: LayerKey; label: string }[] = [
   { key: 'trackTelemetry', label: 'Track telemetry' },
 ]
 
-function Item({ label, onPick, danger }: { label: string; onPick: () => void; danger?: boolean }) {
+function Item({
+  label,
+  onPick,
+  danger,
+  keys,
+}: {
+  label: string
+  onPick: () => void
+  danger?: boolean
+  /** The App shortcut for the same action, shown right-aligned. */
+  keys?: string
+}) {
   const closeContextMenu = useStore((s) => s.closeContextMenu)
   return (
     <button
-      className={`ctx-item ${danger ? 'danger' : ''}`}
+      className={`ctx-item${danger ? ' danger' : ''}${keys ? ' keyed' : ''}`}
       onClick={() => {
         onPick()
         closeContextMenu()
       }}
     >
-      {label}
+      {keys ? <span className="ctx-label">{label}</span> : label}
+      {keys && <kbd className="kbd kbd-hint">{keys}</kbd>}
     </button>
   )
 }
@@ -143,7 +155,7 @@ export function ContextMenu() {
       <div className="ctx-sub" onMouseEnter={() => setSubmenu('display')}>
         <button className="ctx-item">Display ▸</button>
         {submenu === 'display' && (
-          <div className="ctx-menu ctx-flyout">
+          <div className="ctx-menu ctx-flyout surface-float">
             <div className="ctx-head">Presets</div>
             {PRESET_ITEMS.map((p) => (
               <Item key={p.key} label={p.label} onPick={() => st.applyLayerPreset(p.key)} />
@@ -171,7 +183,7 @@ export function ContextMenu() {
       <div className="ctx-sub" onMouseEnter={() => setSubmenu('rings')}>
         <button className="ctx-item">Rings ▸</button>
         {submenu === 'rings' && (
-          <div className="ctx-menu ctx-flyout">
+          <div className="ctx-menu ctx-flyout surface-float">
             {keys.map((k) => (
               <RingItem
                 key={k}
@@ -285,8 +297,10 @@ export function ContextMenu() {
         {entity.kind === 'sensor' && ringsFlyout(entity.id, SENSOR_RING_KEYS)}
         {entity.kind === 'effector' && ringsFlyout(entity.id, EFFECTOR_RING_KEYS)}
         {displayFlyout()}
+        <div className="ctx-sep" role="separator" />
         <Item
           danger
+          keys="Del"
           label="Delete"
           onPick={() => {
             st.select({ entityIds: [entity.id] })
@@ -305,7 +319,7 @@ export function ContextMenu() {
           <div className="ctx-sub" onMouseEnter={() => setSubmenu('systems')}>
             <button className="ctx-item">Place system ▸</button>
             {submenu === 'systems' && (
-              <div className="ctx-menu ctx-flyout">
+              <div className="ctx-menu ctx-flyout surface-float">
                 {scenario.systemPresets.map((p) => (
                   <Item
                     key={p.id}
@@ -324,7 +338,7 @@ export function ContextMenu() {
             <div key={g.kind} className="ctx-sub" onMouseEnter={() => setSubmenu(g.kind)}>
               <button className="ctx-item">Place {g.title.toLowerCase()} ▸</button>
               {submenu === g.kind && (
-                <div className="ctx-menu ctx-flyout">
+                <div className="ctx-menu ctx-flyout surface-float">
                   {models.map((m) => (
                     <Item
                       key={m.id}
@@ -348,7 +362,7 @@ export function ContextMenu() {
   return (
     <div
       ref={ref}
-      className="ctx-menu"
+      className="ctx-menu surface-float"
       style={{ left: menu.screen.x, top: menu.screen.y }}
       onContextMenu={(e) => e.preventDefault()}
     >

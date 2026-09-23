@@ -43,7 +43,7 @@ export function StoragePanel({ onRequestClose }: { onRequestClose: () => void })
       id="storage-panel"
       role="dialog"
       aria-label="Storage"
-      className="tb-menu-panel tb-menu-right"
+      className="tb-menu-panel tb-menu-right surface-float"
       style={{
         width: 'min(520px, calc(100vw - 28px))',
         maxHeight: '75vh',

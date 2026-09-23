@@ -105,7 +105,40 @@ reason. No worker adds a row after the queue is complete.
 
 #### B1. Floating surfaces and the palette
 
-Status: not started.
+- Status: done.
+- Commit: this commit on `row-b/b1-surfaces`.
+- Checks:
+  - `npx vitest run --dir src src/panels/CommandPalette.test.tsx src/panels/Toolbar.test.tsx src/canvas src/panels/analysis src/ui`: "Test Files 41 passed (41)", "Tests 385 passed (385)".
+  - `npm run typecheck`: exit 0, no errors.
+  - `npm run lint`: exit 0; 29 warnings, the same count as `main` at 1833ce8.
+  - `npm run format:check`: "All matched files use Prettier code style!"
+  - `npm run check:silent`: "No hidden-failure patterns in the checked lines."
+  - `npm run build && npm run check:bundle`: "Bundle budget passed: entry <= 365 kB; initial JavaScript + CSS <= 400 kB (gzip -9)."
+- Entry gzip: 364,514 bytes (+76 over Row A); initial 380,494.
+- Browser: Playwright headless on port 5401 with the firing fixture, 1600 × 1000, dark
+  and light. Palette, context menu and Display flyout, connect popover, View, Range
+  setup, Storage and a tool tooltip each compute the raised tone, 6 px radius,
+  `--rule-strong` border, `--elev-1` and the `surface-enter` animation. Palette: 560 px,
+  32 px rows, 8 group headers, 3 key hints, `--scrim` backdrop. A click on a group
+  header keeps focus in the input and Escape then closes the palette. Connect dismiss
+  is 20 × 20 with 14 px to the title. Settings has the tone, rule, radius, entry and
+  `--scrim`, without the shadow. No console errors.
+- For the integrator:
+  - `src/panels/SettingsPanel.tsx` and `src/panels/Toolbar.tsx` (ROE menu, file
+    overflow): add `surface-float` to each `tb-menu-panel` class list for `--elev-1`.
+    `.tb-menu-panel` now carries the tone, rule, radius and entry, so they already match
+    in every other way.
+  - `DESIGN_SYSTEM.md` rule 4: "`.tb-menu-panel` carries the raised tone, rule, radius
+    and entry, and the element adds `.surface-float` for the shadow. The `.help-dot`
+    bubble is a pseudo-element: tone, rule and radius, no shadow. A modal surface (the
+    palette, Settings) dims the board with `--scrim`."
+  - `DESIGN_SYSTEM.md` keys: "A key hint at the right end of a menu or palette row is
+    `<kbd class="kbd kbd-hint">`: mono, text 3, no chip. A separator above Delete is
+    `.ctx-sep`, 1 px `--rule`."
+- Open:
+  - U2 tool buttons: the board tools live in `Toolbar.tsx` (B5), and the App binds no
+    tool keys, so no key exists to show.
+  - V1 info popover: `.info-pop` takes `.surface-float`; the browser pass did not open one.
 
 #### B2. Canvas legibility
 

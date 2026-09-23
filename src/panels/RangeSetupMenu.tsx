@@ -44,7 +44,7 @@ export function RangeSetupMenuPanel({
   return (
     <div
       id="range-setup-menu-panel"
-      className="tb-menu-panel range-setup-menu-panel"
+      className="tb-menu-panel range-setup-menu-panel surface-float"
       role="dialog"
       aria-label="Range setup"
     >

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { useStore } from '../state/store'
 import { RING_KEYS } from '../state/rings'
 import { toggleAnalysisRun } from '../playback/runSession'
@@ -17,10 +17,28 @@ import {
 
 interface Command {
   id: string
-  /** Dim prefix shown before the label, e.g. 'Tool'. */
+  /** Group header the row sits under, e.g. 'Tool'. */
   category: string
   label: string
+  /** The App shortcut that runs the same action, shown right-aligned. */
+  keys?: string
   run: () => void
+}
+
+/** A list click keeps focus in the input, so Escape still reaches the palette. */
+function holdInputFocus(e: Pick<ReactMouseEvent, 'preventDefault'>) {
+  e.preventDefault()
+}
+
+/** Stable grouping by first appearance, so ranking survives inside each group. */
+function groupCommands(commands: Command[]): Array<{ category: string; items: Command[] }> {
+  const groups = new Map<string, Command[]>()
+  for (const c of commands) {
+    const items = groups.get(c.category)
+    if (items) items.push(c)
+    else groups.set(c.category, [c])
+  }
+  return [...groups].map(([category, items]) => ({ category, items }))
 }
 
 const TOOLS: Array<[Tool, string]> = [
@@ -77,10 +95,23 @@ const ACTIONS: Command[] = [
     id: 'play-pause',
     category: 'Playback',
     label: 'Play / pause',
+    keys: 'Space',
     run: toggleAnalysisRun,
   },
-  { id: 'undo', category: 'Edit', label: 'Undo', run: () => useStore.getState().undo() },
-  { id: 'redo', category: 'Edit', label: 'Redo', run: () => useStore.getState().redo() },
+  {
+    id: 'undo',
+    category: 'Edit',
+    label: 'Undo',
+    keys: '⌘Z',
+    run: () => useStore.getState().undo(),
+  },
+  {
+    id: 'redo',
+    category: 'Edit',
+    label: 'Redo',
+    keys: '⇧⌘Z',
+    run: () => useStore.getState().redo(),
+  },
   {
     id: 'new-scenario',
     category: 'Scenario',
@@ -150,12 +181,16 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     return [...prefix, ...rest]
   }, [commands, query])
 
+  // Arrow keys walk the rows in the grouped order the list draws.
+  const groups = useMemo(() => groupCommands(visible), [visible])
+  const rows = useMemo(() => groups.flatMap((g) => g.items), [groups])
+
   // Keep the highlight on a real row as the query narrows the list.
-  const active = visible.length === 0 ? -1 : Math.min(highlight, visible.length - 1)
+  const active = rows.length === 0 ? -1 : Math.min(highlight, rows.length - 1)
 
   useEffect(() => {
     listRef.current?.querySelector('.cmdk-item.selected')?.scrollIntoView({ block: 'nearest' })
-  }, [active, visible])
+  }, [active, rows])
 
   function runCommand(c: Command) {
     onClose()
@@ -177,20 +212,25 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     }
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
-      if (visible.length === 0) return
+      if (rows.length === 0) return
       const delta = e.key === 'ArrowDown' ? 1 : -1
-      setHighlight((active + delta + visible.length) % visible.length)
+      setHighlight((active + delta + rows.length) % rows.length)
       return
     }
     if (e.key === 'Enter') {
       e.preventDefault()
-      if (active >= 0) runCommand(visible[active])
+      if (active >= 0) runCommand(rows[active])
     }
   }
 
   return (
     <div className="cmdk-backdrop" onMouseDown={onClose}>
-      <div className="cmdk-panel" onMouseDown={(e) => e.stopPropagation()} onKeyDown={onKeyDown}>
+      <div
+        className="cmdk-panel surface-float"
+        tabIndex={-1}
+        onMouseDown={(e) => e.stopPropagation()}
+        onKeyDown={onKeyDown}
+      >
         <input
           className="cmdk-input"
           autoFocus
@@ -201,19 +241,27 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
             setHighlight(0)
           }}
         />
-        <div className="cmdk-list" ref={listRef}>
-          {visible.map((c, i) => (
-            <div
-              key={c.id}
-              className={`cmdk-item${i === active ? ' selected' : ''}`}
-              onMouseEnter={() => setHighlight(i)}
-              onClick={() => runCommand(c)}
-            >
-              <span className="cmdk-cat">{c.category}:</span>
-              <span className="cmdk-label">{c.label}</span>
+        <div className="cmdk-list" ref={listRef} onMouseDown={holdInputFocus}>
+          {groups.map((g) => (
+            <div key={g.category} className="cmdk-group">
+              <div className="cmdk-head">{g.category}</div>
+              {g.items.map((c) => {
+                const i = rows.indexOf(c)
+                return (
+                  <div
+                    key={c.id}
+                    className={`cmdk-item${i === active ? ' selected' : ''}`}
+                    onMouseEnter={() => setHighlight(i)}
+                    onClick={() => runCommand(c)}
+                  >
+                    <span className="cmdk-label">{c.label}</span>
+                    {c.keys && <kbd className="kbd kbd-hint">{c.keys}</kbd>}
+                  </div>
+                )
+              })}
             </div>
           ))}
-          {visible.length === 0 && <div className="cmdk-empty">No matching commands</div>}
+          {rows.length === 0 && <div className="cmdk-empty">No matching commands</div>}
         </div>
       </div>
     </div>

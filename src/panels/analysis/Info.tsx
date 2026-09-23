@@ -103,7 +103,7 @@ function InfoPop({
   }, [onClose, btnRef])
 
   return (
-    <div ref={ref} className="info-pop" style={{ ...pos, width: POP_WIDTH_PX }}>
+    <div ref={ref} className="info-pop surface-float" style={{ ...pos, width: POP_WIDTH_PX }}>
       {children}
     </div>
   )
