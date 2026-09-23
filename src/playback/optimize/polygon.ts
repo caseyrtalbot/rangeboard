@@ -43,8 +43,11 @@ export function polygonAreaM2(points: Vec2[]): number {
  * Why `points` (three or more; the callers hold the count floor) cannot bound
  * a placement run, as a sentence for the user, or null when they can: a
  * degenerate area (collinear points, or a sliver under MIN_AREA_FRACTION of
- * its box that the sampler could not fill). `boundingBoxOf` throws it before
- * the first evaluation, so the worker posts it as the run's error.
+ * its box that the sampler could not fill). A degenerate area on a boundary
+ * whose edges cross is named as the crossing: the shoelace sum of a bow-tie
+ * subtracts one lobe from the other, so equal lobes read as no area.
+ * `boundingBoxOf` throws it before the first evaluation, so the worker posts
+ * it as the run's error. The Placement screen shows it before launch.
  */
 export function boundsRefusal(points: Vec2[]): string | null {
   const n = points.length
@@ -62,13 +65,42 @@ export function boundsRefusal(points: Vec2[]): string | null {
     twice += points[j].x * p.y - p.x * points[j].y
   }
   const area = Math.abs(twice) / 2
+  const thin = area < MIN_AREA_FRACTION * (maxX - minX) * (maxY - minY)
+  if ((area < MIN_AREA_M2 || thin) && edgesCross(points)) {
+    return 'The range boundary crosses itself. A placement run needs a polygon.'
+  }
   if (area < MIN_AREA_M2) {
     return 'The range boundary points lie on one line and enclose no area. A placement run needs a polygon.'
   }
-  if (area < MIN_AREA_FRACTION * (maxX - minX) * (maxY - minY)) {
+  if (thin) {
     return 'The range boundary is too thin to sample: its area is under 0.4% of its bounding box.'
   }
   return null
+}
+
+/** Twice the signed area of the triangle `abc`: positive when it turns left. */
+function cross(a: Vec2, b: Vec2, c: Vec2): number {
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
+}
+
+/**
+ * True when two edges of the closed polygon that share no vertex cross at a
+ * point inside both. Collinear overlap and a touch at an end point do not
+ * count, so collinear points keep their own reason.
+ */
+function edgesCross(points: Vec2[]): boolean {
+  const n = points.length
+  for (let i = 0; i < n; i += 1) {
+    const a = points[i]
+    const b = points[(i + 1) % n]
+    // Edge j skips the two edges next to edge i: j = i + 1, and j = n - 1 when i = 0.
+    for (let j = i + 2; j < (i === 0 ? n - 1 : n); j += 1) {
+      const c = points[j]
+      const d = points[(j + 1) % n]
+      if (cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0) return true
+    }
+  }
+  return false
 }
 
 /** The box of `points`; throws with fewer than three points, a non-finite point, or `boundsRefusal`'s reason. */

@@ -243,6 +243,33 @@ describe('PlacementScreen', () => {
     expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
   })
 
+  it('marks a range the run would refuse, shows the reason and blocks the run from it', () => {
+    const flat: Boundary = {
+      ...RANGE,
+      id: 'bnd-flat',
+      name: 'Flat range',
+      points: [
+        { x: -3000, y: 0 },
+        { x: 0, y: 0 },
+        { x: 3000, y: 0 },
+      ],
+    }
+    useStore.getState().patchScenario({ boundaries: [flat, RANGE] })
+    render()
+    check('Move Coyote 1', true)
+    // The default skips the refused range for the first usable one.
+    const usable = render()
+    expect(usable).toContain('Flat range · 3 points · unavailable')
+    expect(usable).toContain('Main range · 4 points</option>')
+    expect(usable).not.toContain('enclose no area')
+    expect(interaction.buttons.get('Run placement')!.disabled).toBe(false)
+    const refused = change('Range boundary', flat.id)
+    expect(refused).toContain(
+      'The range boundary points lie on one line and enclose no area. A placement run needs a polygon.',
+    )
+    expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
+  })
+
   it('counts the evaluations and names the incumbent while running, and cancels on demand', () => {
     const cancel = vi.fn()
     useStore.setState({ cancelOptimize: cancel })
