@@ -2582,12 +2582,16 @@ select.nu-unit {
 }
 
 /* The open Library drawer (z 40) covers the bottom left, so the cue moves to the
-   bottom right, above the scale and the tile attribution. The drawer width is
-   resizable, so no left offset clears it. */
+   bottom right, above the scale and the tile attribution. `--room` is the stage
+   width right of the drawer (`--library-w`, set by the palette) less both gaps; the
+   cue caps its width to it, so it never reaches under the drawer. With less than
+   160 px of room the cue moves off screen until the drawer closes. */
 .board-library-drawer:not([hidden]) ~ .undo-cue {
+  --room: calc(100% - var(--library-w) - 1px - 2 * var(--space-3));
   left: auto;
-  right: var(--space-3);
+  right: clamp(-1e6px, (var(--room) - 160px) * 1e6, var(--space-3));
   bottom: 52px;
+  max-width: min(360px, var(--room));
 }
 
 .undo-cue span {
