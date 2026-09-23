@@ -133,7 +133,36 @@ The integrator (C-int):
 
 #### C1. Fire doctrine and Environment editor
 
-Status: not started.
+Status: done. Settings > Scenario no longer edits Fire doctrine or Environment. It shows one
+"Open Prepare > Inputs" button that sets the phase to Prepare, the right tab to Analysis, and
+closes Settings. Requirement inputs stay in Settings (outside F4).
+Commit: the C1 commit on `row-c/c1-settings` (see `git log -1 row-c/c1-settings`).
+Checks:
+- `npx vitest run --dir src src/panels/Toolbar.test.tsx src/panels/BoardPreparation.test.tsx src/panels/settings`: Test Files 6 passed (6), Tests 39 passed (39).
+- `npm run typecheck`: exit 0, no output.
+- `npm run lint`: exit 0; no warning in a changed file.
+- `npm run format:check`: All matched files use Prettier code style!
+- `npm run check:silent`: No hidden-failure patterns in the checked lines.
+- `npm run build && npm run check:bundle`: Bundle budget passed: entry <= 366 kB; initial JavaScript + CSS <= 400 kB (gzip -9).
+Entry gzip: 365,714 bytes (8 bytes below the Row B 365,722). Initial 381,977.
+Browser: Settings > Scenario and Prepare > Inputs (Environment and Fire doctrine open), dark
+and light, 2100 and 1440, empty board. Settings holds no ROE control; the button closes
+Settings and selects Prepare and the Analysis tab; Inputs holds the one ROE control. No page
+errors. The first trip lands on Fragility, because the Prepare screen is App state.
+For the integrator:
+- `src/App.tsx` owns the Prepare screen (`prepareScreen`) and `rightOpen`, so Settings cannot
+  select Inputs or open a closed right panel. Pass `openPreparation('doctrine')` from `App`
+  through `Toolbar` (`SettingsButton`) and `NowScreen` as a Settings prop, or move the Prepare
+  screen into the store. Then call it from `openInputs` in `SettingsPanel.tsx`.
+- `src/panels/Toolbar.test.tsx` (C2 file): C1 changed only the first "Settings sections"
+  test to the link. Keep that hunk when C2 merges.
+- `Toolbar.tsx` Settings title "all scenario, run and view settings" no longer holds; C2 or
+  C-int may reword it.
+- `DESIGN_SYSTEM.md`: "Fire doctrine and Environment have one editor, Prepare > Inputs.
+  Settings links to it." No token change; the button reuses `.prepare-setting-controls`.
+Open:
+- In Fire doctrine at the 320 px panel the "ROE" label wraps to "R / OE" (all themes and
+  widths). It predates C1 and is outside F4.
 
 #### C2. Editing tools during Execute
 
