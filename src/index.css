@@ -378,17 +378,17 @@ body,
 
 /* ---------- Toolbar ---------- */
 
-/* The board bar holds one 40 px row at 1400px. Three columns: identity and
-   the Settings and Storage menus, the lifecycle tablist, the run status and
-   chips. The two outer tracks share the space evenly, so the tablist sits at
-   the bar centre; each group stays under half the bar at 1600 px with all
-   five chips shown. The right track never falls below its content, and the
-   left track gives width back first, so a long scenario name shrinks instead
-   of the controls colliding or being hidden. The column gap keeps the three
-   groups apart at every width. */
+/* The board bar holds one 40 px row. Three columns: identity and the Settings
+   and Storage menus, the lifecycle tablist, the run status and chips. The two
+   outer tracks are equal, so the tablist sits at the bar centre whatever the
+   groups hold. A group that runs out of room shrinks inside its track: the
+   scenario name narrows, the run status ends in an ellipsis and the inline
+   chips clip, and the ROE panel lists every chip. Below about 1120 px the left
+   group reaches its floor and pushes the tablist right instead of covering it.
+   The column gap keeps the three groups apart at every width. */
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(min-content, 1fr) auto minmax(max-content, 1fr);
+  grid-template-columns: minmax(min-content, 1fr) auto minmax(0, 1fr);
   column-gap: var(--space-6);
   align-items: stretch;
   height: 40px;
@@ -413,6 +413,13 @@ body,
 .toolbar-left > *,
 .toolbar-right > * {
   flex: 0 0 auto;
+}
+
+.toolbar-right > .board-run-context,
+.toolbar-right > .status-pills,
+.status-inline {
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .brand {
@@ -1144,10 +1151,15 @@ input[type='color']::-webkit-color-swatch {
 
 /* ---------- Status pills ---------- */
 
-.status-pills {
+.status-pills,
+.status-inline {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.status-inline {
+  overflow-x: clip;
 }
 
 /* The spawn chip is a button so it can select the UAS; it keeps the chip look. */
@@ -1156,7 +1168,8 @@ input[type='color']::-webkit-color-swatch {
 }
 
 /* D7: below 1600 px the WEZ, derate, spawn and saved chips fold into the ROE
-   button, which counts them and lists them in its panel. A failed save stays. */
+   button, which counts them. Its panel lists them at every width, so a chip
+   clipped by a full bar stays reachable. A failed save stays. */
 .status-fold {
   display: flex;
   align-items: center;
@@ -1180,14 +1193,13 @@ input[type='color']::-webkit-color-swatch {
 }
 
 @media (min-width: 1600px) {
-  .status-fold-count,
-  .status-fold-chips {
+  .status-fold-count {
     display: none;
   }
 }
 
 @media (max-width: 1599.98px) {
-  .status-pills > :not(.tb-menu-wrap, [role='alert']) {
+  .status-inline {
     display: none;
   }
 
@@ -4271,6 +4283,8 @@ input[type='number'] {
 }
 
 .board-run-context {
+  overflow-x: clip;
+  text-overflow: ellipsis;
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--type-meta-size);
@@ -4286,10 +4300,6 @@ input[type='number'] {
   margin: 0;
   font-size: var(--type-title-size);
   font-weight: var(--type-title-weight);
-}
-
-.board-app > .toolbar {
-  flex-wrap: wrap;
 }
 
 .board-app .right-panel {

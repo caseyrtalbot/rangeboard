@@ -84,7 +84,7 @@ const ROE_OPTIONS: { v: Roe; label: string }[] = [
 
 /**
  * The ROE chip and its menu. Below 1600 px the CSS hides the other chips; this
- * button then counts them, and its panel lists them with the autosave time.
+ * button then counts them. Its panel lists them at every width.
  */
 function RoeMenu({ folded, children }: { folded: number; children: ReactNode }) {
   const roe = useStore((s) => s.scenario.roe ?? 'tight')
@@ -253,7 +253,7 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
 /**
  * The top bar: identity, file actions, Settings and Storage on the left, the
  * lifecycle tablist in the centre, run status, chips and the drawer on the right.
- * The two sides stay near equal width, so the tablist holds the bar centre. It
+ * The two side tracks are equal, so the tablist holds the bar centre. It
  * takes only primitives and stable handlers, and subscribes to the scenario fields
  * it shows.
  */
@@ -359,7 +359,7 @@ export const Toolbar = memo(function Toolbar({
           <RoeMenu folded={[threatWez, derates.length, spawnWarning].filter(Boolean).length}>
             {chips}
           </RoeMenu>
-          {chips}
+          <span className="status-inline">{chips}</span>
           {/* A failed save stays in the bar at every width: it is an alert. */}
           {save.error != null && (
             <State tone="critical" title={save.error} role="alert">

@@ -314,3 +314,39 @@ test('header: the lifecycle tabs and run status sit in the 40 px header and no p
   await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
   assert.deepEqual(errors, [])
 })
+
+test('header: the tabs hold the viewport center with a sixth chip, and Storage opens inside the viewport', async (t) => {
+  const { page, errors } = await open(t)
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.evaluate(() => {
+    const inline = document.querySelector('.status-inline')
+    const chip = document.createElement('span')
+    chip.textContent = 'Sixth chip with a long injected label'
+    inline.append(chip)
+    document.querySelector('.board-run-context').append(' · a long run phase label')
+  })
+  const bar = await page.evaluate(() => {
+    const box = (sel) => document.querySelector(sel).getBoundingClientRect()
+    const tabs = box('.board-phases')
+    return {
+      offset: tabs.left + tabs.width / 2 - innerWidth / 2,
+      gapL: tabs.left - box('.toolbar-left > :last-child').right,
+      gapR: box('.board-run-context').left - tabs.right,
+      scroll: document.documentElement.scrollWidth - innerWidth,
+    }
+  })
+  assert.ok(Math.abs(bar.offset) < 1, `the tabs sit at the viewport center: ${bar.offset}`)
+  assert.ok(bar.gapL >= 0 && bar.gapR >= 0, `no group covers the tabs: ${bar.gapL}, ${bar.gapR}`)
+  assert.equal(bar.scroll, 0, 'the page does not scroll sideways')
+  await page.click('.toolbar [aria-controls="storage-panel"]')
+  await waitFor(page, () => document.querySelector('#storage-panel'))
+  const panel = await page.evaluate(() => {
+    const p = document.querySelector('#storage-panel').getBoundingClientRect()
+    const b = document.querySelector('[aria-controls="storage-panel"]').getBoundingClientRect()
+    return { left: p.left, right: p.right, top: p.top, trigger: b.left, bottom: b.bottom }
+  })
+  assert.ok(Math.abs(panel.left - panel.trigger) < 1, 'the Storage panel opens under its trigger')
+  assert.ok(panel.left >= 0 && panel.right <= 1600, `the Storage panel is inside: ${panel.left}`)
+  assert.ok(panel.top >= panel.bottom, 'the Storage panel opens below the bar')
+  assert.deepEqual(errors, [])
+})
