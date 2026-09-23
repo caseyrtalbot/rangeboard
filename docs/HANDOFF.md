@@ -198,7 +198,37 @@ reason. No worker adds a row after the queue is complete.
 
 #### B3. Right panel and board shell
 
-Status: not started.
+- Status: done. F2, F5, F6, F8, F9, F10, V8, U1 (D5 default) and V13 (rail) are closed.
+- Commit: this commit on `row-b/b3-shell`.
+- Checks:
+  - `npx vitest run --dir src` on EntityWorkspace, AnalysisNavigation, LiveStrip, Palette,
+    NowScreen and AnalysisPanel tests: `Test Files 6 passed (6)`, `Tests 35 passed (35)`.
+  - `npm run typecheck`: exit 0.
+  - `npm run lint`: exit 0, 29 warnings, the same count as the base.
+  - `npm run format:check`: `All matched files use Prettier code style!`
+  - `npm run check:silent`: `No hidden-failure patterns in the checked lines.`
+  - `E2E_URL=http://localhost:5403 npm run test:e2e`: `# tests 11`, `# pass 11`, `# fail 0`.
+  - `npm run build && npm run check:bundle`: `Bundle budget passed: entry <= 365 kB;
+    initial JavaScript + CSS <= 400 kB (gzip -9).`
+- Entry gzip: 364,737 bytes, +299 against 364,438. The rail icons are 221 of that in this
+  lane alone. With the B5 undo and redo icons present, they add 109, so the post-merge
+  B3 delta is about 187 bytes. Initial JavaScript and CSS: 380,700.
+- Browser: Playwright headless, fixture `firing-scenario.json`, dark and light, 2100 and
+  1440. Prepare, Execute and Analyze with and without a selection; the empty board; the
+  drawer. The drawer top meets the tools row bottom and its bottom meets the timeline
+  top. Execute draws no screen navigation. The inline Play starts a trial. No console
+  errors.
+- For the integrator:
+  - F10 changed the Execute placeholder, so this lane also edited two unowned tests:
+    `src/panels/analysis/screens/NowScreen.test.tsx` and
+    `src/panels/AnalysisPanel.test.tsx` (expected strings only).
+  - `index.css`: the unowned rule `.entity-workspace-header p` is now dead; remove it.
+  - `docs/ENGINEERING_REFERENCE.md`, Analysis screens: `AnalysisNavigation` draws on
+    the Overview tab only and draws no `Seg` for a phase with one screen (Execute).
+  - `DESIGN_SYSTEM.md`: the rail is 76 px wide so that "Commands" fits at the meta size.
+    The empty-board hint is a `.surface-float` at the canvas top left. A library row
+    shows its Model basis action only on hover or keyboard focus.
+- Open: none.
 
 #### B4. Panel controls and forms
 
