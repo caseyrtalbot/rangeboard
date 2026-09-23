@@ -46,7 +46,10 @@ const AnalysisPanel = lazy(() =>
 const CommandPalette = lazy(() =>
   import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })),
 )
-const UndoCue = lazy(() => import('./panels/UndoCue').then((m) => ({ default: m.UndoCue })))
+// The cue chunk starts loading as this module runs, before the first render: the store
+// cannot tell a redo made before it mounts from an edit.
+const undoCue = import('./panels/UndoCue')
+const UndoCue = lazy(() => undoCue.then((m) => ({ default: m.UndoCue })))
 
 /** One fallback for every panel boundary: the panel body is empty for one frame. */
 function PanelLoading({ label }: { label: string }) {

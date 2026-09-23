@@ -25,6 +25,8 @@ export function lastUndoableAction(next: History, prev: History): string | null 
  * The delete or place a store already holds when the cue mounts: an edit made
  * before the lazy cue chunk loaded. `past` starts empty in a session, so its last
  * snapshot is the latest edit. Null after an undo, which leaves `future` non-empty.
+ * A redo that empties `future` reads as the edit it repeats, so App starts loading
+ * the chunk before its first render.
  */
 export function actionBeforeMount(state: History): string | null {
   const before = state.past[state.past.length - 1]
