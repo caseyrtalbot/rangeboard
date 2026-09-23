@@ -125,11 +125,9 @@ describe('CompareScreen', () => {
   )
 
   it.each(['idle', 'stale', 'running', 'wrong-run'] as const)(
-    'shows only the launch line with no current ensemble (%s)',
+    'shows only the status line with no current ensemble, and no body run button (%s)',
     (status) => {
-      const run = vi.fn()
       useStore.setState({
-        runMonteCarlo: run,
         mc: {
           ...useStore.getState().mc,
           status: status === 'wrong-run' ? 'done' : status,
@@ -137,14 +135,15 @@ describe('CompareScreen', () => {
         },
       })
       const html = render()
-      expect(html).toContain('Run Monte Carlo')
+      expect(html).toContain(
+        status === 'running' ? 'Running ensemble.' : 'No current ensemble result.',
+      )
+      // The header Run control starts a run (D4); Compare draws no button of its own.
+      expect(html).not.toContain('Run Monte Carlo')
+      expect(interaction.buttons.has('Run Monte Carlo')).toBe(false)
       expect(html).not.toContain('<section')
       expect(html).not.toContain('<table')
       expect(html).not.toContain('No pinned baseline')
-      if (status !== 'running') {
-        interaction.buttons.get('Run Monte Carlo')!()
-        expect(run).toHaveBeenCalledOnce()
-      } else expect(html).toContain('disabled=""')
     },
   )
 

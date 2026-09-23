@@ -141,7 +141,31 @@ Status: not started.
 
 #### C3. Analyze run control
 
-Status: not started.
+- Status: done.
+- Commit: see the `row-c/c3-run` tip; the commit that records this block.
+- Checks:
+  - `npx vitest run --dir src` on `CompareScreen.test.tsx`, `RunControl.test.tsx`,
+    `AnalysisNavigation.test.tsx`, `ForecastSettings.test.tsx`: 4 files, 43 tests passed.
+  - `npm run typecheck`: `tsc --noEmit -p tsconfig.app.json` exits 0, no output.
+  - `npm run lint`: oxlint exits 0; 29 warnings, none in C3 files.
+  - `npm run format:check`: "All matched files use Prettier code style!"
+  - `npm run check:silent`: "No hidden-failure patterns in the checked lines."
+  - `npm run build && npm run check:bundle`: "Bundle budget passed: entry <= 366 kB;
+    initial JavaScript + CSS <= 400 kB (gzip -9)."
+- Entry gzip: 365,722 bytes (no change; `CompareScreen` is not in the entry). Initial
+  JavaScript and CSS: 381,985 bytes.
+- Browser: fixture `firing-scenario.json`, trial played to complete, Analyze Outcome and
+  Compare in dark and light at 2100 and 1440. The header Run control shows on both
+  screens; Compare has no body "Run Monte Carlo" button and reads "Monte Carlo · No
+  current ensemble result." A click on the header Run from Compare (dark, 1440) ran 30
+  replicates and Compare drew the chart and the table. No page errors.
+- For the integrator: no edit in an unowned file. `AnalysisNavigation` renders
+  `RunControl` for every Analyze screen of the Overview tab, so Compare reaches it. No
+  `index.css` change. `DESIGN_SYSTEM.md` rule: "Analyze has one run control, the header
+  Run button beside the screen tabs. A screen body does not draw its own run button."
+- Open: F11 closed. Observed, outside C3: the Compare `BandChart` cuts its y-axis labels
+  at the left edge at 1440 ("0.75" shows as ".75"), and with a progress line the Run
+  control row wraps to the left of the panel.
 
 #### C4. Undo cue
 
