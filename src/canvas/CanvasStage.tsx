@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, memo, useEffect, useMemo, useRef, useState } from 'react'
 import { Layer, Rect, Stage } from 'react-konva'
 import { registerStage } from './frameCapture'
 import type Konva from 'konva'
@@ -18,13 +18,17 @@ import { LiveScene, renderedTrialGeometry } from './LiveScene'
 import { StaticScene } from './StaticScene'
 import { HudLayer } from './layers/HudLayer'
 import { TrackFileReadout } from './TrackFileReadout'
-import { ContextMenu } from './ContextMenu'
 import { ConnectSuggestPopup } from './ConnectSuggestPopup'
 import { IDLE_INTERACTION, routeInteraction } from './interactionRouter'
 import { SceneErrorBoundary } from './SceneErrorBoundary'
 import { useBoardInk } from './useBoardInk'
 import { withAlpha } from '../ui/ink'
 import type { Action } from './interactionRouter'
+
+// The menu chunk starts loading as this module runs, so it is in place well before the
+// first right-click; the entry stays under its budget without it.
+const contextMenu = import('./ContextMenu')
+const ContextMenu = lazy(() => contextMenu.then((m) => ({ default: m.ContextMenu })))
 
 const MIN_SCALE = 0.0005
 const MAX_SCALE = 20
@@ -474,7 +478,9 @@ export const CanvasStage = memo(function CanvasStage({
       )}
       <HudLayer stageRef={stageRef} />
       <TrackFileReadout onOpenDetail={onOpenDetail} trial={trial} horizonS={horizonS} size={size} />
-      <ContextMenu />
+      <Suspense fallback={null}>
+        <ContextMenu />
+      </Suspense>
       <ConnectSuggestPopup />
       {onPlace && (
         <button
