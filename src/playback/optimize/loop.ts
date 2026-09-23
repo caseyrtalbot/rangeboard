@@ -63,7 +63,11 @@ export const LENGTH_SCALE_FRACTION = 0.25
 /** Candidates reported, best first. */
 export const CANDIDATE_CAP = 5
 
-/** Uniform draws tried per point before the polygon is declared too thin to sample. */
+/**
+ * Uniform draws tried per point before the polygon is declared too thin to
+ * sample. `boundsRefusal` (polygon.ts) refuses a region whose acceptance rate
+ * makes this reachable, so `boundingBoxOf` throws before any draw.
+ */
 const MAX_REJECTIONS = 10_000
 
 /** The draw kind of the design; kinds never collide (policy.ts DRAW_KIND). */

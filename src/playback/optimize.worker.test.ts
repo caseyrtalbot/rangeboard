@@ -87,3 +87,23 @@ it('a cancel for another run id is ignored and a bad request posts an error', as
     },
   ])
 })
+
+it('collinear bounds post one error with the reason and no progress', async () => {
+  // Three points on one line: the worker posts the refusal and never samples.
+  const points = [
+    { x: -7000, y: -3000 },
+    { x: -3000, y: 1500 },
+    { x: 1000, y: 6000 },
+  ]
+  await context.onmessage!({
+    data: placementRequest({ runId: 'line', bounds: { boundaryId: null, points } }),
+  })
+  expect(posted()).toEqual([
+    {
+      type: 'optimize-error',
+      runId: 'line',
+      message:
+        'The range boundary points lie on one line and enclose no area. A placement run needs a polygon.',
+    },
+  ])
+})

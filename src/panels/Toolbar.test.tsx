@@ -80,9 +80,13 @@ describe('Board toolbar grouping', () => {
     expect(html).not.toContain('Calibrate scale')
   })
 
-  it('hides the editing tools outside Prepare and keeps view and history', () => {
+  it('hides the editing tools outside Prepare, returns the tool to Select, and keeps view and history', () => {
     for (const phase of ['execute', 'analyze'] as const) {
+      // A drawing tool chosen in Prepare does not survive the phase change.
+      useStore.getState().setBoardPhase('prepare')
+      useStore.getState().setTool('boundary')
       useStore.getState().setBoardPhase(phase)
+      expect(useStore.getState().ui.tool).toBe('select')
       const html = render(<BoardTools />)
 
       expect(html).toContain('aria-label="Board tools"')

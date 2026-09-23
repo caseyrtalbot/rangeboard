@@ -25,6 +25,7 @@ import {
   DEFAULT_OPTIMIZE_REPLICATES,
 } from '../playback/optimizeTypes'
 import { cancelOptimize, startOptimize } from '../playback/optimize/client'
+import { boundsRefusal } from '../playback/optimize/polygon'
 import {
   cancelPooledRun,
   cancelSensitivity,
@@ -385,13 +386,16 @@ function optimizeLaunch(
     bounds,
     budget,
   }
+  // Three points on one line pass the count floor but bound no run: the reason
+  // lands on the pending run as its error and no worker starts.
+  const refusal = boundsRefusal(bounds.points)
   return {
     // A new run starts with no incumbent; the first progress message brings one.
     pending: {
       mc: { ...st.mc, optimize: pendingRun(st, budget.evaluations, overrides), optimizeBest: null },
     },
-    start: (deliver) => startOptimize(request, deliver),
-    unavailable: { type: 'optimize-error', runId, message: UNAVAILABLE },
+    start: (deliver) => refusal == null && startOptimize(request, deliver),
+    unavailable: { type: 'optimize-error', runId, message: refusal ?? UNAVAILABLE },
   }
 }
 
