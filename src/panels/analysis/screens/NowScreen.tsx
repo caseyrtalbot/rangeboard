@@ -194,7 +194,7 @@ export function NowScreen() {
           {rows.map((row) => (
             <tr key={row.key}>
               <td title={row.Track}>{row.Track}</td>
-              <td>
+              <td title={row.State}>
                 <State
                   tone={
                     row.State === 'engaged'
