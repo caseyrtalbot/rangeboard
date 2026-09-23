@@ -1,5 +1,14 @@
 import { selectBoardPhase, selectEffectiveLayers } from '../state/selectors'
-import { lazy, memo, Suspense, useRef, useState } from 'react'
+import {
+  lazy,
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import type { ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
@@ -83,8 +92,8 @@ const ROE_OPTIONS: { v: Roe; label: string }[] = [
 ]
 
 /**
- * The ROE chip and its menu. Below 1600 px the CSS hides the other chips; this
- * button then counts them, and its panel lists them with the autosave time.
+ * The ROE chip and its menu. It counts the chips the bar hides: all of them below
+ * 1600 px, and those that drop off a full row above it. Its panel lists them.
  */
 function RoeMenu({ folded, children }: { folded: number; children: ReactNode }) {
   const roe = useStore((s) => s.scenario.roe ?? 'tight')
@@ -253,7 +262,7 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
 /**
  * The top bar: identity, file actions, Settings and Storage on the left, the
  * lifecycle tablist in the centre, run status, chips and the drawer on the right.
- * The two sides stay near equal width, so the tablist holds the bar centre. It
+ * The two side tracks are equal, so the tablist holds the bar centre. It
  * takes only primitives and stable handlers, and subscribes to the scenario fields
  * it shows.
  */
@@ -278,6 +287,26 @@ export const Toolbar = memo(function Toolbar({
   const threatWez = useStore((s) => selectEffectiveLayers(s).threatWez)
   const save = useStore((s) => s.save)
   const { setScenarioName } = useStore.getState()
+  // Chips that wrap off the one clipped row are hidden whole; count them. -1
+  // means the row is folded away below 1600 px.
+  const inlineRef = useRef<HTMLSpanElement>(null)
+  const [hidden, setHidden] = useState(0)
+  const measure = useCallback(() => {
+    const el = inlineRef.current
+    if (!el) return
+    const box = el.getBoundingClientRect()
+    setHidden(
+      box.height
+        ? [...el.children].filter((c) => c.getBoundingClientRect().top >= box.bottom).length
+        : -1,
+    )
+  }, [])
+  useLayoutEffect(measure)
+  useEffect(() => {
+    const ro = new ResizeObserver(measure)
+    ro.observe(inlineRef.current!)
+    return () => ro.disconnect()
+  }, [measure])
 
   const derates = activeDerates(environment)
   // One chip set: inline from 1600 px, and inside the ROE panel below it.
@@ -356,10 +385,16 @@ export const Toolbar = memo(function Toolbar({
         </span>
 
         <div className="status-pills" aria-label="Status">
-          <RoeMenu folded={[threatWez, derates.length, spawnWarning].filter(Boolean).length}>
+          <RoeMenu
+            folded={
+              hidden < 0 ? [threatWez, derates.length, spawnWarning].filter(Boolean).length : hidden
+            }
+          >
             {chips}
           </RoeMenu>
-          {chips}
+          <span className="status-inline" ref={inlineRef}>
+            {chips}
+          </span>
           {/* A failed save stays in the bar at every width: it is an alert. */}
           {save.error != null && (
             <State tone="critical" title={save.error} role="alert">
