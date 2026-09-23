@@ -8,7 +8,7 @@
  */
 import { bearingDeg, rotatePoint } from '../geometry/geo'
 import type { Entity, EnvironmentSpec, FlightPath, Scenario, Vec2 } from '../model/types'
-import { entityActive, newId } from '../model/types'
+import { entityActive } from '../model/types'
 
 /** The factors a sweep can vary. */
 export type SweepFactorId =
@@ -167,8 +167,10 @@ function withAzimuth(s: Scenario, azimuthDeg: number): Scenario {
 /**
  * Set the first wave to `size` members. The first wave is `raid.waves[0]`,
  * else every threat with a path (the implicit single wave). Fewer members
- * drops the last ones with their paths; more repeats the members in order
- * with fresh ids from the one id allocator, so their draw keys are their own.
+ * drops the last ones with their paths; more repeats the members in order.
+ * Copy i of a member takes the id `${sourceId}~r${i}` and its path
+ * `${pathId}~r${i}`, so its draw keys are its own and the same sweep draws
+ * the same uniforms on every run. A taken id gains a further `~`.
  * Repeated members keep the original geometry and formation.
  */
 function withRaidSize(s: Scenario, size: number): Scenario {
@@ -196,16 +198,23 @@ function withRaidSize(s: Scenario, size: number): Scenario {
   const entities = [...s.entities]
   const paths = [...s.paths]
   const added: string[] = []
+  const taken = new Set([...s.paths.map((p) => p.id), ...s.entities.map((e) => e.id)])
+  const copyId = (base: string, i: number): string => {
+    let id = `${base}~r${i}`
+    while (taken.has(id)) id += '~'
+    taken.add(id)
+    return id
+  }
   for (let i = members.length; i < size; i += 1) {
     const sourceId = members[i % members.length]
     const source = s.entities.find((e) => e.id === sourceId)!
-    const id = newId('ent')
+    const id = copyId(sourceId, i)
     entities.push({ ...source, id, name: `${source.name} ${Math.floor(i / members.length) + 1}` })
     for (const p of s.paths) {
       if (p.entityId !== sourceId) continue
       paths.push({
         ...p,
-        id: newId('pth'),
+        id: copyId(p.id, i),
         entityId: id,
         points: p.points.map((q) => ({ ...q })),
       } satisfies FlightPath)
