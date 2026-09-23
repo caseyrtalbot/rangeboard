@@ -176,6 +176,24 @@ describe('optimizeLoop', () => {
       ),
     ).toThrow(/at least 3 points/)
   })
+
+  it('refuses collinear bounds before the first evaluation instead of throwing in the sampler', () => {
+    // Axis-aligned: the box has no height. Diagonal: the box has area, the polygon none.
+    const flat = [
+      { x: -7000, y: -3000 },
+      { x: -3000, y: -3000 },
+      { x: 1000, y: -3000 },
+    ]
+    const diagonal = [
+      { x: -7000, y: -3000 },
+      { x: -3000, y: 1500 },
+      { x: 1000, y: 6000 },
+    ]
+    for (const points of [flat, diagonal]) {
+      const loop = optimizeLoop(placementRequest({ bounds: { boundaryId: null, points } }))
+      expect(() => loop.next()).toThrow(/enclose no area/)
+    }
+  })
 })
 
 describe('rankCandidates', () => {
