@@ -4,7 +4,7 @@ import { parseAutosave } from '../io/persist'
 import type { Scenario, UncertaintyMode } from '../model/types'
 import type { ExecutionBudget, McPartial, McSummary, McWorkerMessage } from './mcRun'
 import { finishSummary, replicateRangeLoop, runReplicates, summaryNumbers } from './mcRun'
-import { contiguousPrefix, mergePartials } from './mergeSummaries'
+import { mergePartials } from './mergeSummaries'
 import type { PoolProgress } from './mcTypes'
 import type {
   FinishSummaryMessage,
@@ -63,7 +63,7 @@ class RangeWorker {
   /** Post the summary for a held or immediate finish request. */
   finish(req: FinishSummaryRequest): void {
     try {
-      const prefix = contiguousPrefix(mergePartials(req.parts))
+      const prefix = mergePartials(req.parts, { prefix: true })
       if (prefix.indices.length === 0) {
         this.send({
           type: 'summary-error',

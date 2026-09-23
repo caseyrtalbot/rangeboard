@@ -115,9 +115,15 @@ function releaseGrids(part: McPartial): void {
  * different scenarios). `retained` and `elapsedMs` are summed over the parts;
  * a pool passes its own wall clock to `finishSummary`. With `release`, each
  * part's grids are emptied as soon as its last row is copied: the summary
- * worker owns the transferred buffers and reads only the merge.
+ * worker owns the transferred buffers and reads only the merge. With `prefix`,
+ * only the replicates 0..m-1 before the first missing index are copied, and the
+ * grids hold m rows: the result equals `contiguousPrefix` of the full merge.
+ * The checks still read every row.
  */
-export function mergePartials(parts: McPartial[], options: { release?: boolean } = {}): McPartial {
+export function mergePartials(
+  parts: McPartial[],
+  options: { release?: boolean; prefix?: boolean } = {},
+): McPartial {
   if (parts.length === 0) throw new Error('mergePartials needs at least one partial')
   const filled = parts.filter((p) => p.indices.length > 0)
   const first = filled[0]
@@ -143,8 +149,23 @@ export function mergePartials(parts: McPartial[], options: { release?: boolean }
     }
   }
 
+  // The sorted indices are distinct, so row r holds replicate r up to the first hole.
+  if (options.prefix) {
+    let m = 0
+    while (m < rows.length && rows[m].part.indices[rows[m].k] === m) m += 1
+    rows.length = m
+  }
+
   const steps = gridSteps(first)
   const count = rows.length
+  // Rows still to copy per part; a part is released when its count reaches 0.
+  // A part with no row to copy is released before the merge allocates.
+  const pending = new Map<McPartial, number>()
+  if (options.release) {
+    for (const part of filled) pending.set(part, 0)
+    for (const { part } of rows) pending.set(part, (pending.get(part) ?? 0) + 1)
+    for (const [part, left] of pending) if (left === 0) releaseGrids(part)
+  }
   out.threatIds = [...first.threatIds]
   out.threatArrival = [...first.threatArrival]
   out.threatShips = [...first.threatShips]
@@ -160,9 +181,6 @@ export function mergePartials(parts: McPartial[], options: { release?: boolean }
   out.threatResidual = first.threatIds.map(() => new Float64Array(count * steps))
   out.effectorSalvos = first.effectorIds.map(() => [])
   out.effectorKills = first.effectorIds.map(() => [])
-  // Rows still to copy per part; a part is released when its count reaches 0.
-  const pending = new Map<McPartial, number>()
-  if (options.release) for (const part of filled) pending.set(part, part.indices.length)
   rows.forEach(({ part, k }, r) => {
     out.indices.push(part.indices[k])
     copyRow(out.kills, part.kills, k, r, steps)

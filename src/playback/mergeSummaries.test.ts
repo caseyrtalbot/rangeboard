@@ -149,3 +149,71 @@ describe('contiguousPrefix', () => {
     expect(late.effectorIds).toEqual(range(scenario, 3, 8).effectorIds)
   })
 })
+
+/** Every field of a partial, each packed grid as its bytes. */
+function bytes(partial: McPartial): Record<string, unknown> {
+  const raw = (a: Float64Array) => Array.from(new Uint8Array(a.buffer, a.byteOffset, a.byteLength))
+  return Object.fromEntries(
+    Object.entries(partial).map(([key, value]) => [
+      key,
+      value instanceof Float64Array
+        ? raw(value)
+        : key === 'threatResidual'
+          ? (value as Float64Array[]).map(raw)
+          : value,
+    ]),
+  )
+}
+
+/** The packed grids of a partial. */
+function grids(partial: McPartial): Float64Array[] {
+  const { kills, leakers, detected, tracked, engaged, threatResidual } = partial
+  return [kills, leakers, detected, tracked, engaged, ...threatResidual]
+}
+
+describe('mergePartials with prefix', () => {
+  it.each([
+    [
+      'a hole at 7 and a chunk past it',
+      [
+        [12, 15],
+        [0, 4],
+        [16, 18],
+        [4, 7],
+      ],
+      7,
+    ],
+    [
+      'no hole',
+      [
+        [7, 12],
+        [0, 7],
+      ],
+      12,
+    ],
+    [
+      'index 0 missing',
+      [
+        [3, 8],
+        [9, 10],
+      ],
+      0,
+    ],
+  ] as const)(
+    '%s: the result is byte-equal to contiguousPrefix of the full merge',
+    (_name, bounds, m) => {
+      const scenario = base('aleatory')
+      const parts = bounds.map(([start, end]) => range(scenario, start, end))
+      const old = contiguousPrefix(mergePartials(structuredClone(parts), { release: true }))
+      const given = structuredClone(parts)
+      const merged = mergePartials(given, { release: true, prefix: true })
+      expect(merged.indices).toEqual(Array.from({ length: m }, (_, i) => i))
+      expect(bytes(merged)).toEqual(bytes(old))
+      // The merge allocates m rows per grid, not one per landed replicate.
+      const steps = parts[0].kills.length / parts[0].indices.length
+      for (const grid of grids(merged)) expect(grid.buffer.byteLength).toBe(m * steps * 8)
+      // Release empties every part, the ones past the hole included.
+      for (const part of given) for (const grid of grids(part)) expect(grid).toHaveLength(0)
+    },
+  )
+})
