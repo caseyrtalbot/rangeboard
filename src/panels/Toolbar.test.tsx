@@ -22,6 +22,7 @@ describe('Board toolbar grouping', () => {
     useStore.getState().replaceScenario(emptyScenario())
     useStore.getState().setTool('select')
     useStore.getState().setTheme('system')
+    useStore.getState().setBoardPhase('prepare')
   })
 
   it('keeps Board identity, scenario, file trigger and status in the top bar', () => {
@@ -77,6 +78,28 @@ describe('Board toolbar grouping', () => {
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(html).not.toContain('Calibrate scale')
+  })
+
+  it('hides the editing tools outside Prepare and keeps view and history', () => {
+    for (const phase of ['execute', 'analyze'] as const) {
+      useStore.getState().setBoardPhase(phase)
+      const html = render(<BoardTools />)
+
+      expect(html).toContain('aria-label="Board tools"')
+      for (const hidden of [
+        'Drawing tools',
+        'Select',
+        'Boundary',
+        'Connect',
+        'Path',
+        'Range setup',
+      ]) {
+        expect(html).not.toContain(hidden)
+      }
+      for (const kept of ['View', 'Declutter', 'aria-label="Undo"', 'aria-label="Redo"']) {
+        expect(html).toContain(kept)
+      }
+    }
   })
 
   it('writes status chips in sentence case and makes the spawn chip a button', () => {

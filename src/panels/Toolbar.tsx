@@ -1,5 +1,5 @@
-import { selectEffectiveLayers } from '../state/selectors'
-import { lazy, memo, Suspense, useRef, useState } from 'react'
+import { selectBoardPhase, selectEffectiveLayers } from '../state/selectors'
+import { lazy, memo, Suspense, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
@@ -405,42 +405,50 @@ export const BoardTools = memo(function BoardTools({
   const boundaryType = useStore((s) => s.ui.boundaryType)
   const canUndo = useStore((s) => s.past.length > 0)
   const canRedo = useStore((s) => s.future.length > 0)
+  const editing = useStore(selectBoardPhase) === 'prepare'
   const { setTool, setBoundaryType, undo, redo } = useStore.getState()
+
+  // Editing tools belong to Prepare; leaving it drops any drawing tool back to Select.
+  useEffect(() => {
+    if (!editing && tool !== 'select') setTool('select')
+  }, [editing, tool, setTool])
 
   return (
     <div className="board-tools" role="toolbar" aria-label="Board tools">
-      <div className="seg" role="group" aria-label="Drawing tools">
-        {BOARD_TOOLS.map((item) => (
-          <Tip key={item.id} label={item.hint}>
-            <button
-              type="button"
-              aria-pressed={tool === item.id}
-              className={tool === item.id ? 'active' : ''}
-              onClick={() => {
-                onSelectTool?.()
-                setTool(item.id)
-              }}
+      {editing && (
+        <div className="seg" role="group" aria-label="Drawing tools">
+          {BOARD_TOOLS.map((item) => (
+            <Tip key={item.id} label={item.hint}>
+              <button
+                type="button"
+                aria-pressed={tool === item.id}
+                className={tool === item.id ? 'active' : ''}
+                onClick={() => {
+                  onSelectTool?.()
+                  setTool(item.id)
+                }}
+              >
+                {item.label}
+              </button>
+            </Tip>
+          ))}
+          {tool === 'boundary' && (
+            <select
+              value={boundaryType}
+              onChange={(e) => setBoundaryType(e.target.value as BoundaryType)}
+              aria-label="Boundary type"
+              title="Boundary type"
             >
-              {item.label}
-            </button>
-          </Tip>
-        ))}
-        {tool === 'boundary' && (
-          <select
-            value={boundaryType}
-            onChange={(e) => setBoundaryType(e.target.value as BoundaryType)}
-            aria-label="Boundary type"
-            title="Boundary type"
-          >
-            {BOUNDARY_TYPES.map((boundary) => (
-              <option key={boundary} value={boundary}>
-                {boundary}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-      <RangeSetupMenu onSelectTool={onSelectTool} />
+              {BOUNDARY_TYPES.map((boundary) => (
+                <option key={boundary} value={boundary}>
+                  {boundary}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+      {editing && <RangeSetupMenu onSelectTool={onSelectTool} />}
       <ViewMenu />
       <DeclutterControl />
       <div className="seg" role="group" aria-label="History">
