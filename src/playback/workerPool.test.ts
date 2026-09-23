@@ -36,12 +36,15 @@ class RangeWorker {
   cancelled = false
   /** When set, `finish-summary` is held until `releaseFinish`. */
   static holdFinish = false
+  /** When set, posting `finish-summary` throws, as a failed transfer would. */
+  static throwFinishPost = false
   heldFinish: FinishSummaryRequest | null = null
   postMessage = vi.fn((request: unknown) => {
     const m = request as { type: string }
     if (m.type === 'cancel') this.cancelled = true
     else if (m.type === 'finish-summary') {
       const req = request as FinishSummaryRequest
+      if (RangeWorker.throwFinishPost) throw new Error('DataCloneError')
       if (RangeWorker.holdFinish) {
         this.heldFinish = req
         return
@@ -141,6 +144,7 @@ class RangeWorker {
     RangeWorker.instances = []
     RangeWorker.ran = []
     RangeWorker.holdFinish = false
+    RangeWorker.throwFinishPost = false
     vi.stubGlobal('Worker', RangeWorker)
   }
 }
@@ -507,6 +511,95 @@ describe('worker pool', () => {
     expect(RangeWorker.instances[0].terminated).toBe(true)
     expect(pool.cancel()).toBe(false)
   })
+
+  it('a spawn that throws for the summary worker ends the run with an error', () => {
+    const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const messages: McWorkerMessage[] = []
+    let built = 0
+    const pool = createWorkerPool({
+      size: 1,
+      spawn: () => {
+        built += 1
+        if (built === 2) throw new Error('Worker blocked')
+        return spawn()
+      },
+    })
+    pool.start(
+      scenario,
+      'fin',
+      (m) => messages.push(m),
+      () => {},
+    )
+    RangeWorker.drain()
+    expect(messages.at(-1)).toEqual({ type: 'error', runId: 'fin', message: 'Worker blocked' })
+    expect(pool.cancel()).toBe(false)
+  })
+
+  /** A one-worker run drained to a held finish, with its summary worker. */
+  function heldFinish() {
+    RangeWorker.holdFinish = true
+    const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const pooled = run(scenario, 1)
+    RangeWorker.drain()
+    return { ...pooled, scenario, finisher: RangeWorker.instances.at(-1)! }
+  }
+
+  it('a summary worker error ends the run and frees the pool for the next start', () => {
+    const { pool, messages, runId, scenario, finisher } = heldFinish()
+    finisher.onerror!({ message: 'x' })
+    expect(messages.at(-1)).toEqual({ type: 'error', runId, message: 'Worker failed' })
+    expect(finisher.terminated).toBe(true)
+    expect(
+      pool.start(
+        scenario,
+        'next',
+        () => {},
+        () => {},
+      ),
+    ).toBe(true)
+  })
+
+  it('a summary-error reply ends the run and terminates the summary worker', () => {
+    const { messages, runId, finisher } = heldFinish()
+    finisher.send({ type: 'summary-error', runId, message: 'boom' })
+    expect(messages.at(-1)).toEqual({ type: 'error', runId, message: 'boom' })
+    expect(finisher.terminated).toBe(true)
+  })
+
+  it('an undecodable summary reply ends the run and terminates the summary worker', () => {
+    const { messages, runId, finisher } = heldFinish()
+    finisher.onmessageerror!()
+    expect(messages.at(-1)).toEqual({
+      type: 'error',
+      runId,
+      message: 'Worker response could not be decoded',
+    })
+    expect(finisher.terminated).toBe(true)
+  })
+
+  it('a finish post that throws ends the run and the next start builds fresh workers', () => {
+    RangeWorker.throwFinishPost = true
+    const scenario = base({ replicates: 40, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const pooled = run(scenario, 1)
+    RangeWorker.drain()
+    const finisher = RangeWorker.instances.at(-1)!
+    expect(pooled.messages.at(-1)).toEqual({
+      type: 'error',
+      runId: pooled.runId,
+      message: 'DataCloneError',
+    })
+    expect(finisher.terminated).toBe(true)
+    expect(
+      pooled.pool.start(
+        scenario,
+        'next',
+        () => {},
+        () => {},
+      ),
+    ).toBe(true)
+    expect(RangeWorker.instances).toHaveLength(3)
+    expect(RangeWorker.instances[2].terminated).toBe(false)
+  })
 })
 
 /**
@@ -598,6 +691,47 @@ describe('mc.worker run-range route', () => {
     expect(last.runId).toBe('w')
     expect(timeless(last.summary)).toEqual(timeless(whole))
     expect(last.summary.elapsedMs).toBe(12)
+  })
+
+  /** The finished partial of replicates [start, end). */
+  const partial = (scenario: Scenario, start: number, end: number): McPartial => {
+    const loop = replicateRangeLoop(scenario, start, end)
+    let next = loop.next()
+    while (!next.done) next = loop.next()
+    return next.value
+  }
+
+  const finishRequest = (scenario: Scenario, parts: McPartial[]) => ({
+    data: { type: 'finish-summary', runId: 'w', scenario, parts, rule: 'cancelled', elapsedMs: 0 },
+  })
+
+  it('a finish with no replicate at the start posts one summary-error', async () => {
+    const scenario = base({ replicates: 8, targetHalfWidth: null, uncertainty: 'aleatory' })
+    await context.onmessage!(finishRequest(scenario, [partial(scenario, 3, 6)]))
+    expect(posted()).toEqual([
+      {
+        type: 'summary-error',
+        runId: 'w',
+        message: 'The run stopped before any replicate finished',
+      },
+    ])
+  })
+
+  it('a finish whose merge throws posts the merge error', async () => {
+    const scenario = base({ replicates: 8, targetHalfWidth: null, uncertainty: 'aleatory' })
+    const second = partial(scenario, 2, 4)
+    const parts = [
+      partial(scenario, 0, 2),
+      { ...second, threatIds: [...second.threatIds, 'extra'] },
+    ]
+    await context.onmessage!(finishRequest(scenario, parts))
+    expect(posted()).toEqual([
+      {
+        type: 'summary-error',
+        runId: 'w',
+        message: 'mergePartials: the partials list different tracks',
+      },
+    ])
   })
 
   it('a cancel for another run is ignored', async () => {
