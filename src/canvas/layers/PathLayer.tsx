@@ -1,12 +1,13 @@
 import { selectEffectiveLayers } from '../../state/selectors'
 import { memo, useMemo } from 'react'
 import { Arrow, Circle, Group, Line, Text } from 'react-konva'
-import type { FlightPath, Vec2 } from '../../model/types'
+import type { Entity, FlightPath, Vec2 } from '../../model/types'
 import type { UiState } from '../../state/store'
 import { useStore } from '../../state/store'
 import { modelFor, pathDurationS } from '../../model/scenario'
 import { dist, formatDistance, pathLength } from '../../geometry/geo'
 import { entityInk } from '../../ui/ink'
+import { captionClear } from '../labelLayout'
 
 interface Props {
   mouseWorld: Vec2 | null
@@ -26,17 +27,30 @@ const FlightPathShape = memo(function FlightPathShape({
   lengthM,
   etaS,
   units,
+  entities,
 }: {
   path: FlightPath
   color: string
   lengthM: number
   etaS: number
   units: UiState['units']
+  entities: Entity[]
 }) {
   const k = useStore((s) => s.camera.scale)
   const flat = useMemo(() => path.points.flatMap((pt) => [pt.x, pt.y]), [path.points])
   if (path.points.length < 2) return null
-  const last = path.points[path.points.length - 1]
+  const a = path.points[path.points.length - 2]
+  const b = path.points[path.points.length - 1]
+  const leg = dist(a, b) * k || 1
+  const text = `${formatDistance(lengthM, units)} · ${Math.round(etaS)} s`
+  // The caption takes the first slot back along the last leg, 48 px apart, that clears
+  // every glyph and anchored label; with none clear it does not draw.
+  const slot = [0, 48, 96, 144]
+    .map((px) => ({
+      x: (b.x + ((a.x - b.x) * px) / leg) * k + 8,
+      y: (b.y + ((a.y - b.y) * px) / leg) * k - 5.5,
+    }))
+    .find((p) => captionClear(p.x, p.y, text, entities, k))
   return (
     <Group listening={false}>
       <Arrow
@@ -54,15 +68,11 @@ const FlightPathShape = memo(function FlightPathShape({
       ))}
       {/* Counter-scaled group, so the caption font size never changes and Konva
           never re-measures the text on a zoom step. */}
-      <Group x={last.x} y={last.y} scaleX={1 / k} scaleY={1 / k}>
-        <Text
-          fontFamily="JetBrains Mono"
-          x={8}
-          text={`${formatDistance(lengthM, units)} · ${Math.round(etaS)} s`}
-          fontSize={11}
-          fill={color}
-        />
-      </Group>
+      {slot && (
+        <Group x={slot.x / k} y={slot.y / k} scaleX={1 / k} scaleY={1 / k}>
+          <Text fontFamily="JetBrains Mono" text={text} fontSize={11} fill={color} />
+        </Group>
+      )}
     </Group>
   )
 })
@@ -129,6 +139,7 @@ export function PathLayer({ mouseWorld }: Props) {
         lengthM={lengthM}
         etaS={pathDurationS(scenario, p)}
         units={units}
+        entities={scenario.entities}
       />
     )
   })

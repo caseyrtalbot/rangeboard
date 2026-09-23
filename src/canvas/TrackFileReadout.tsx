@@ -67,12 +67,12 @@ function ReadoutCard({
     })
   }, [scenario, entity, trial, horizonS, simTimeS, tObs, horizon, units])
   const compactRows = [
-    { label: 'CURSOR', value: readout.cursorText },
+    { label: 'Cursor', value: readout.cursorText },
     {
-      label: 'SPEED / HDG',
+      label: 'Speed / heading',
       value: readout.rows.find((row) => row.id === 'speedHeading')!.value,
     },
-    { label: 'ALT', value: readout.altitudeText },
+    { label: 'Altitude', value: readout.altitudeText },
   ]
   const pill = PHASE_STYLE[readout.phase]
   const sx = readout.anchorPosition.x * camera.scale + camera.x
@@ -81,18 +81,9 @@ function ReadoutCard({
   return (
     <div className="ro-host">
       <svg className="ro-leader" width={size.w} height={size.h} aria-hidden="true">
-        <line
-          x1={sx}
-          y1={sy}
-          x2={size.w - DOCK - CARD_W}
-          y2={CARD_ANCHOR_Y}
-          stroke="#a9b4bd"
-          strokeOpacity={0.45}
-          strokeWidth={1}
-          strokeDasharray="3 3"
-        />
+        <line x1={sx} y1={sy} x2={size.w - DOCK - CARD_W} y2={CARD_ANCHOR_Y} />
       </svg>
-      <div className="readout compact">
+      <div className="readout compact surface-float">
         <div className="ro-head">
           <span className="ro-name">{entity.name}</span>
           <span

@@ -889,14 +889,19 @@ input[type='color']::-webkit-color-swatch {
   left: 0;
 }
 
+/* A solid leader in text 2 at 60 %, so it reads on both board tones. */
+.ro-leader line {
+  stroke: var(--text-secondary);
+  stroke-opacity: 0.6;
+  stroke-width: 1;
+}
+
 .readout {
   position: absolute;
   top: 14px;
   right: 14px;
   width: 292px;
   padding: 9px 11px 8px;
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
 }
 
 .ro-head {
@@ -4599,7 +4604,7 @@ input[type='number'] {
 }
 
 .readout.compact .ro-grid {
-  grid-template-columns: 66px minmax(0, 1fr);
+  grid-template-columns: 96px minmax(0, 1fr);
 }
 
 .detail-ghost {

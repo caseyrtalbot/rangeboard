@@ -142,7 +142,59 @@ reason. No worker adds a row after the queue is complete.
 
 #### B2. Canvas legibility
 
-Status: not started.
+- Status: blocked. Only `check:bundle` fails. C1 (apply), C2, C3, C4, C5, U4, V5
+  (readout keys) and V1 (readout surface) are done. The orchestrator ruled not to trim
+  scope for the budget, so the budget is for the user to decide.
+- Commit: this commit.
+- Checks:
+  - `npx vitest run --dir src src/canvas src/state/camera.test.ts` (includes
+    `labelLayout.test.ts`, `EntityLayer.test.tsx`, `CanvasStage.test.tsx`,
+    `TrackFileReadout.test.tsx`): "Test Files 15 passed (15)", "Tests 136 passed (136)".
+  - `npm run typecheck`: exit 0, no output from `tsc --noEmit -p tsconfig.app.json`.
+  - `npm run lint`: exit 0, 29 warnings before and after, none in a changed file.
+  - `npm run format:check`: "All matched files use Prettier code style!"
+  - `npm run check:silent`: "No hidden-failure patterns in the checked lines."
+  - `npm run build`: exit 0.
+  - `npm run check:bundle`: FAILS, "Entry exceeds 365000 bytes gzip-9: 365142".
+- Entry gzip: 365,142 bytes, +704 against the Row A 364,438. Initial JS and CSS:
+  381,082. About 400 bytes of the +704 are Row A's `useBoardInk` and the two
+  `BoardInk` tables. Tree shaking removed them until a layer read them.
+- Browser: Playwright headless against the dev server on 5402, fixture
+  `firing-scenario.json`, at 2100 × 1325 and 1440 × 900, dark and light. At the
+  origin cluster no drawn text overlaps another text or a glyph box. The fit puts the
+  cluster 64 px plus the label box inside the canvas edge. Paper labels `#4e504b` are
+  6.86:1 on the board; dark labels are 9.69:1. Hover sets the pointer cursor and shows
+  the ring, and leaving clears both. A hidden link caption shows on hover. The
+  selection ring is solid with a halo. The readout keys fit on one line. The readout
+  is `.surface-float`, and its leader is solid in text 2 at 60 %. No console errors.
+- For the integrator:
+  - `DESIGN_SYSTEM.md`, rule 9, add: "Board selection is a solid 1.5 px ring in text 1
+    over a 2 px board-tone halo. Hover shows the pointer cursor and a 1 px ring in the
+    entity ink at 60 %. A link caption draws only on a link of 80 screen px or more
+    whose caption box clears every glyph and anchored label; otherwise it draws on
+    hover. A path caption takes the first clear slot back along its last leg."
+  - `DESIGN_SYSTEM.md`, canvas readout line: "The canvas readout is a floating surface
+    with the keys Cursor, Speed / heading and Altitude, and a solid leader in text 2 at
+    60 %."
+  - `BoardInk` has no selection or board-tone field. `EntityLayer.tsx` and
+    `ConnectionLayer.tsx` hold the text 1 and board-tone hex values for each theme.
+    Adding `selection` and `board` to `src/ui/ink.ts` would remove them.
+  - `src/state/camera.test.ts` changed with `camera.ts`. The Plan row does not name
+    that test.
+- Open:
+  - The entry budget, as above.
+  - C2 changed: the path caption does not join `layoutLabels`, because that needs
+    `LiveScene.tsx`. `PathLayer` instead places it clear of the glyphs and anchored labels
+    of the board at rest. Spoke fans and flying entities are not obstacles. The
+    link-caption test does not compare one caption with another caption.
+  - Owned files still hold dark-only inks outside C1: the `PathLayer` draft and
+    calibrate marks, the `EntityLayer` connect ring and range button, and the
+    `CanvasStage` marquee. The path caption uses the entity ink: `#c98577` is 2.48:1 on
+    paper.
+  - The 28 px selection ring crosses the top of the anchored label, which starts at
+    20 px. The geometry is unchanged; the solid ring makes the crossing more visible.
+  - When an entity is deleted under the pointer, the pointer cursor stays until the
+    next hover leave.
 
 #### B3. Right panel and board shell
 

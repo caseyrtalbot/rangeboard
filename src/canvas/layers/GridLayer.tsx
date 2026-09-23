@@ -3,6 +3,7 @@ import { memo } from 'react'
 import { Line } from 'react-konva'
 import { useStore } from '../../state/store'
 import { gridStepM } from '../../geometry/geo'
+import { useBoardInk } from '../useBoardInk'
 
 interface Props {
   size: { w: number; h: number }
@@ -16,6 +17,7 @@ export const GridLayer = memo(function GridLayer({ size }: Props) {
   const show = useStore((s) => selectEffectiveLayers(s).grid)
   const hasImage = useStore((s) => Boolean(s.scenario.underlay.dataUrl))
   const hasGeoRef = useStore((s) => Boolean(s.scenario.geoRef))
+  const ink = useBoardInk()
 
   if (!show) return null
   if (basemap === 'sat' && (hasImage || hasGeoRef)) return null
@@ -26,8 +28,8 @@ export const GridLayer = memo(function GridLayer({ size }: Props) {
   const right = left + size.w / camera.scale
   const bottom = top + size.h / camera.scale
 
-  const stroke = basemap === 'airspace' ? '#232729' : '#26292c'
-  const major = basemap === 'airspace' ? '#2e3336' : '#323639'
+  const stroke = basemap === 'airspace' ? ink.airspaceGridMinor : ink.gridMinor
+  const major = basemap === 'airspace' ? ink.airspaceGridMajor : ink.gridMajor
 
   const lines = []
   for (let x = Math.floor(left / step) * step; x <= right; x += step) {

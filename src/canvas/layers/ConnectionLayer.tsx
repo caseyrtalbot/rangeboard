@@ -1,7 +1,20 @@
 import { selectEffectiveLayers } from '../../state/selectors'
 import { Arrow, Group, Text } from 'react-konva'
+import type { KonvaEventObject } from 'konva/lib/Node'
 import { useStore } from '../../state/store'
 import { dist } from '../../geometry/geo'
+import { BOARD_INK_PAPER } from '../../ui/ink'
+import { useBoardInk } from '../useBoardInk'
+import { captionClear } from '../labelLayout'
+
+/**
+ * A hover shows a hidden caption on its Konva node alone, so it re-renders no layer.
+ * The node keeps its layout verdict in the `shown` attribute.
+ */
+function hoverCaption(e: KonvaEventObject<MouseEvent>, id: string) {
+  const node = e.target.getLayer()?.findOne('.cap' + id)
+  node?.visible(e.type === 'mouseenter' || node.getAttr('shown'))
+}
 
 /** Kill-chain links between entities (sensor -> C2 -> effector). */
 export function ConnectionLayer() {
@@ -12,6 +25,7 @@ export function ConnectionLayer() {
   const k = useStore((s) => s.camera.scale)
   const tool = useStore((s) => s.ui.tool)
   const show = useStore((s) => selectEffectiveLayers(s).connections)
+  const ink = useBoardInk()
   if (!show) return null
 
   return (
@@ -33,7 +47,14 @@ export function ConnectionLayer() {
         const dash = wired ? undefined : c.medium === 'operator-manual' ? [1, 4] : [3, 4]
         // Unproven evidence reads dimmer than documented or hand-drawn links.
         const dim = c.confidence === 'probable' || c.confidence === 'inferred'
-        const color = selected ? '#ffffff' : dim ? '#6a7178' : '#8a9199'
+        const onHover = (e: KonvaEventObject<MouseEvent>) => hoverCaption(e, c.id)
+        const color = selected
+          ? ink === BOARD_INK_PAPER
+            ? '#212220'
+            : '#ffffff'
+          : dim
+            ? '#6a7178'
+            : ink.linkCaption
         return (
           <Arrow
             key={c.id}
@@ -58,6 +79,8 @@ export function ConnectionLayer() {
               e.cancelBubble = true
               select({ connectionId: c.id })
             }}
+            onMouseEnter={onHover}
+            onMouseLeave={onHover}
           />
         )
       })}
@@ -66,12 +89,21 @@ export function ConnectionLayer() {
         const from = scenario.entities.find((e) => e.id === c.fromId)
         const to = scenario.entities.find((e) => e.id === c.toId)
         if (!from || !to) return null
+        const x = (from.pos.x + to.pos.x) / 2
+        const y = (from.pos.y + to.pos.y) / 2
+        // A link under 80 screen px, or a caption on a glyph or a label, captions on hover.
+        const shown =
+          dist(from.pos, to.pos) * k >= 80 &&
+          captionClear(x * k, y * k - 14, c.label, scenario.entities, k)
         return (
           // Counter-scaled group, so Konva never re-measures the text on a zoom step.
           <Group
             key={`${c.id}-label`}
-            x={(from.pos.x + to.pos.x) / 2}
-            y={(from.pos.y + to.pos.y) / 2}
+            name={'cap' + c.id}
+            shown={shown}
+            visible={shown}
+            x={x}
+            y={y}
             scaleX={1 / k}
             scaleY={1 / k}
             listening={false}
@@ -80,8 +112,8 @@ export function ConnectionLayer() {
               fontFamily="JetBrains Mono"
               y={-14}
               text={c.label}
-              fontSize={10}
-              fill="#8a9199"
+              fontSize={11}
+              fill={ink.linkCaption}
               listening={false}
             />
           </Group>
