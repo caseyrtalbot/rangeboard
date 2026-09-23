@@ -46,12 +46,10 @@ export interface BoardInk {
   linkCaption: string
   /** The leader line and dot of a label callout, and the range button when off. */
   calloutLeader: string
-  /** Text 1: the selection ring and a selected link. */
+  /** Text 1: the selection ring, a selected link and a path or boundary draft. */
   selection: string
   /** The board tone: the halo under the selection ring. */
   board: string
-  /** A path or boundary draft. */
-  draft: string
   /** Calibrate marks, the connect ring, the marquee and the range button when on. */
   tool: string
   /** The range button fill when off. */
@@ -69,7 +67,6 @@ export const BOARD_INK_DARK: BoardInk = {
   calloutLeader: '#82887e',
   selection: '#ebe9e3',
   board: '#121313',
-  draft: '#ffffff',
   tool: '#a9b4bd',
   control: '#1d2023',
 }
@@ -88,7 +85,6 @@ export const BOARD_INK_PAPER: BoardInk = {
   calloutLeader: '#7b7d73',
   selection: '#212220',
   board: '#eeebe4',
-  draft: '#212220',
   tool: '#56626c',
   control: '#f7f5f0',
 }

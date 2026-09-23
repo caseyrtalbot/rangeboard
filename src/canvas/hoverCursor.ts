@@ -12,7 +12,5 @@ export function hoverCursor(id: string, el: HTMLElement, on: boolean): void {
 
 /** Clears the cursor if `id` is the hovered entity. Call when its node unmounts. */
 export function releaseHover(id: string): void {
-  if (hovered?.id !== id) return
-  hovered.el.style.cursor = ''
-  hovered = null
+  if (hovered?.id === id) hoverCursor(id, hovered.el, false)
 }

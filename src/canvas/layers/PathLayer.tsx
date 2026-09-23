@@ -100,14 +100,14 @@ function DraftShape({
     <Group listening={false}>
       <Line
         points={flat}
-        stroke={ink.draft}
+        stroke={ink.selection}
         strokeWidth={1.5}
         dash={DRAFT_DASH}
         strokeScaleEnabled={false}
         opacity={0.8}
       />
       {pts.map((p, i) => (
-        <Circle key={i} x={p.x} y={p.y} radius={3.5 / k} fill={ink.draft} />
+        <Circle key={i} x={p.x} y={p.y} radius={3.5 / k} fill={ink.selection} />
       ))}
     </Group>
   )
