@@ -22,6 +22,8 @@ import { ContextMenu } from './ContextMenu'
 import { ConnectSuggestPopup } from './ConnectSuggestPopup'
 import { IDLE_INTERACTION, routeInteraction } from './interactionRouter'
 import { SceneErrorBoundary } from './SceneErrorBoundary'
+import { useBoardInk } from './useBoardInk'
+import { withAlpha } from '../ui/ink'
 import type { Action } from './interactionRouter'
 
 const MIN_SCALE = 0.0005
@@ -86,6 +88,7 @@ export const CanvasStage = memo(function CanvasStage({
   const moveUnderlay = useStore((s) => s.ui.moveUnderlay)
   const raidDraft = useStore((s) => s.ui.raidDraft)
   const durationS = useStore(selectDurationS)
+  const ink = useBoardInk()
   const clearSelection = useStore((s) => s.clearSelection)
   const select = useStore((s) => s.select)
   const addEntityFromModel = useStore((s) => s.addEntityFromModel)
@@ -434,11 +437,11 @@ export const CanvasStage = memo(function CanvasStage({
                 y={Math.min(marquee.a.y, marquee.b.y)}
                 width={Math.abs(marquee.b.x - marquee.a.x)}
                 height={Math.abs(marquee.b.y - marquee.a.y)}
-                stroke="#a9b4bd"
+                stroke={ink.tool}
                 strokeWidth={1}
                 dash={MARQUEE_DASH}
                 strokeScaleEnabled={false}
-                fill="rgba(169, 180, 189, 0.08)"
+                fill={withAlpha(ink.tool, 0.08)}
                 listening={false}
               />
             )}

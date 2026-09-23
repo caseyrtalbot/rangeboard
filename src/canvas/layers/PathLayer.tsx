@@ -7,6 +7,7 @@ import { useStore } from '../../state/store'
 import { modelFor, pathDurationS } from '../../model/scenario'
 import { dist, formatDistance, pathLength } from '../../geometry/geo'
 import { entityInk } from '../../ui/ink'
+import { useBoardInk } from '../useBoardInk'
 import { captionClear } from '../labelLayout'
 
 interface Props {
@@ -89,6 +90,7 @@ function DraftShape({
   mouseWorld: Vec2 | null
   k: number
 }) {
+  const ink = useBoardInk()
   const pts = useMemo(() => (start ? [start, ...draftPoints] : draftPoints), [start, draftPoints])
   const flat = useMemo(
     () => (mouseWorld ? [...pts, mouseWorld] : pts).flatMap((p) => [p.x, p.y]),
@@ -98,14 +100,14 @@ function DraftShape({
     <Group listening={false}>
       <Line
         points={flat}
-        stroke="#ffffff"
+        stroke={ink.draft}
         strokeWidth={1.5}
         dash={DRAFT_DASH}
         strokeScaleEnabled={false}
         opacity={0.8}
       />
       {pts.map((p, i) => (
-        <Circle key={i} x={p.x} y={p.y} radius={3.5 / k} fill="#ffffff" />
+        <Circle key={i} x={p.x} y={p.y} radius={3.5 / k} fill={ink.draft} />
       ))}
     </Group>
   )
@@ -124,6 +126,7 @@ export function PathLayer({ mouseWorld }: Props) {
   const k = useStore((s) => s.camera.scale)
   const units = useStore((s) => s.ui.units)
   const showPaths = useStore((s) => selectEffectiveLayers(s).flightPaths)
+  const ink = useBoardInk()
 
   // The flightPaths toggle hides committed paths only; the draft and the calibrate
   // markers always draw.
@@ -159,12 +162,12 @@ export function PathLayer({ mouseWorld }: Props) {
     const b = calibrateB ?? mouseWorld
     calibrate = (
       <Group listening={false}>
-        {a && <CalMark p={a} k={k} label="A" />}
+        {a && <CalMark p={a} k={k} label="A" color={ink.tool} />}
         {a && b && (
           <>
             <Line
               points={[a.x, a.y, b.x, b.y]}
-              stroke="#a9b4bd"
+              stroke={ink.tool}
               strokeWidth={1.5}
               strokeScaleEnabled={false}
             />
@@ -174,12 +177,12 @@ export function PathLayer({ mouseWorld }: Props) {
                 y={-16}
                 text={formatDistance(dist(a, b), units)}
                 fontSize={12}
-                fill="#a9b4bd"
+                fill={ink.tool}
               />
             </Group>
           </>
         )}
-        {calibrateB && <CalMark p={calibrateB} k={k} label="B" />}
+        {calibrateB && <CalMark p={calibrateB} k={k} label="B" color={ink.tool} />}
       </Group>
     )
   }
@@ -193,16 +196,16 @@ export function PathLayer({ mouseWorld }: Props) {
   )
 }
 
-function CalMark({ p, k, label }: { p: Vec2; k: number; label: string }) {
+function CalMark({ p, k, label, color }: { p: Vec2; k: number; label: string; color: string }) {
   const r = 8 / k
   const across = useMemo(() => [p.x - r, p.y, p.x + r, p.y], [p, r])
   const down = useMemo(() => [p.x, p.y - r, p.x, p.y + r], [p, r])
   return (
     <Group listening={false}>
-      <Line points={across} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
-      <Line points={down} stroke="#a9b4bd" strokeWidth={1.5} strokeScaleEnabled={false} />
+      <Line points={across} stroke={color} strokeWidth={1.5} strokeScaleEnabled={false} />
+      <Line points={down} stroke={color} strokeWidth={1.5} strokeScaleEnabled={false} />
       <Group x={p.x} y={p.y} scaleX={1 / k} scaleY={1 / k}>
-        <Text fontFamily="JetBrains Mono" x={8} y={8} text={label} fontSize={12} fill="#a9b4bd" />
+        <Text fontFamily="JetBrains Mono" x={8} y={8} text={label} fontSize={12} fill={color} />
       </Group>
     </Group>
   )
