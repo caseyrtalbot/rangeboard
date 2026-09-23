@@ -378,12 +378,14 @@ body,
 
 /* ---------- Toolbar ---------- */
 
-/* The board bar holds one 40 px row at 1400px. Three columns: identity, the
-   lifecycle tablist, the view controls. The two outer tracks share the space
-   evenly, so the tablist sits at the bar centre. The right track never falls
-   below its content, and the left track gives width back first, so a long
-   scenario name shrinks instead of the controls colliding or being hidden. The
-   column gap keeps the three groups apart at every width. */
+/* The board bar holds one 40 px row at 1400px. Three columns: identity and
+   the Settings and Storage menus, the lifecycle tablist, the run status and
+   chips. The two outer tracks share the space evenly, so the tablist sits at
+   the bar centre; each group stays under half the bar at 1600 px with all
+   five chips shown. The right track never falls below its content, and the
+   left track gives width back first, so a long scenario name shrinks instead
+   of the controls colliding or being hidden. The column gap keeps the three
+   groups apart at every width. */
 .toolbar {
   display: grid;
   grid-template-columns: minmax(min-content, 1fr) auto minmax(max-content, 1fr);
@@ -1959,9 +1961,11 @@ select.nu-unit {
   font-size: var(--type-meta-size);
 }
 
-/* Each ring label keeps room on both sides of its word. */
+/* Each ring label keeps room on both sides of its word. The button is chrome,
+   so it takes the UI face, not the mono the value cell sets for data. */
 .insp-rings .seg button {
   padding: 4px 8px;
+  font-family: var(--font-ui);
 }
 
 /* ---------- Analysis ---------- */

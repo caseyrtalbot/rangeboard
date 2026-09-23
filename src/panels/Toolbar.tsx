@@ -251,9 +251,11 @@ export function FileActions({ onRequestClose }: { onRequestClose: () => void }) 
 }
 
 /**
- * The top bar: identity and file actions on the left, the lifecycle tablist in the
- * centre, run status and view controls on the right. It takes only primitives and
- * stable handlers, and subscribes to the scenario fields it shows.
+ * The top bar: identity, file actions, Settings and Storage on the left, the
+ * lifecycle tablist in the centre, run status, chips and the drawer on the right.
+ * The two sides stay near equal width, so the tablist holds the bar centre. It
+ * takes only primitives and stable handlers, and subscribes to the scenario fields
+ * it shows.
  */
 export const Toolbar = memo(function Toolbar({
   drawerOpen,
@@ -321,6 +323,8 @@ export const Toolbar = memo(function Toolbar({
           title="Scenario name"
         />
         <OverflowMenu />
+        <SettingsButton />
+        <StorageMenu />
       </div>
 
       <nav className="board-phases" role="tablist" aria-label="Lifecycle views">
@@ -350,9 +354,6 @@ export const Toolbar = memo(function Toolbar({
         <span className="board-run-context">
           <span className="num">{formatRunLabel(runSeq)}</span> · {runPhase}
         </span>
-
-        <SettingsButton />
-        <StorageMenu />
 
         <div className="status-pills" aria-label="Status">
           <RoeMenu folded={[threatWez, derates.length, spawnWarning].filter(Boolean).length}>
