@@ -174,6 +174,15 @@ describe('RunControl', () => {
     expect(render()).not.toContain('operator wait floored')
   })
 
+  it('says stopped by the user once a cancelled run has finished', () => {
+    useStore.getState().patchScenario({ targetHalfWidth: null })
+    setMc({ status: 'done', summary: summary(12, 'cancelled') })
+    const html = render()
+    expect(html).toContain('>Run<')
+    expect(html).toContain('12 of 100 replicates · stopped by the user')
+    expect(html).not.toContain('stopping')
+  })
+
   it('shows no progress line before the first run', () => {
     expect(render()).not.toContain('run-progress')
   })

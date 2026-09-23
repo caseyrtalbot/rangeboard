@@ -10,11 +10,14 @@ import type { PoolProgress } from '../../playback/mcTypes'
 import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 
-/** Why the loop ends, in words. The floor and the cap come from the settings, not the run. */
-function stopRuleText(rule: StopRule, run: McSettings): string {
+/**
+ * Why the loop ends, in words. The floor and the cap come from the settings, not the run.
+ * A cancelled run reads as stopping while it runs and as stopped once finished.
+ */
+function stopRuleText(rule: StopRule, run: McSettings, finished: boolean): string {
   if (rule === 'halfWidth') return `stop on half-width, floor ${run.stopFloor}, cap ${run.stopCap}`
   if (rule === 'budget') return 'stop on the execution budget'
-  if (rule === 'cancelled') return 'stopping'
+  if (rule === 'cancelled') return finished ? 'stopped by the user' : 'stopping'
   return 'stop on the replicate count'
 }
 
@@ -60,7 +63,7 @@ function poolLine(run: McSettings, pool: PoolProgress): string {
   const head =
     pool.stopRule === 'replicates' && pool.total != null
       ? `${pool.done} of ${pool.total} replicates · ${workers}`
-      : `${pool.done} replicates · ${stopRuleText(pool.stopRule, run)} · ${workers}`
+      : `${pool.done} replicates · ${stopRuleText(pool.stopRule, run, false)} · ${workers}`
   const dropped = droppedText(pool.discarded)
   return dropped ? `${head} · ${dropped}` : head
 }
@@ -69,12 +72,12 @@ function progressText(run: McSettings, mc: McState): string | null {
   const pool = mc.pool
   if (mc.status === 'running') {
     if (pool) return poolLine(run, pool)
-    return `${mc.progress} of ${mc.total} replicates · ${stopRuleText(settingsStopRule(run), run)}`
+    return `${mc.progress} of ${mc.total} replicates · ${stopRuleText(settingsStopRule(run), run, false)}`
   }
   // A finished run keeps the line, so the rule that ended it stays readable.
   const summary = mc.status === 'done' ? mc.summary : null
   if (!summary) return null
-  const line = `${summary.replicates} of ${loopEndOf(run)} replicates · ${stopRuleText(summary.stopped.rule, run)}`
+  const line = `${summary.replicates} of ${loopEndOf(run)} replicates · ${stopRuleText(summary.stopped.rule, run, true)}`
   const dropped = droppedText(pool?.discarded ?? 0)
   const floored = flooredText(summary)
   return [line, dropped, floored].filter((part) => part != null).join(' · ')
@@ -85,7 +88,7 @@ const DETERMINISTIC_TITLE =
   'Deterministic mode computes one expected-value envelope, not replicates. Turn Deterministic off to run.'
 
 /** Shown while the pool will refuse another stop, including the summary wait. */
-const STOPPING_TITLE = 'This run is already stopping.'
+export const STOPPING_TITLE = 'This run is already stopping.'
 
 export function RunControl() {
   const scenario = useStore((s) => s.scenario)

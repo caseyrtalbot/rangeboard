@@ -246,6 +246,33 @@ describe('FragilityScreen', () => {
     expect(html).toContain('Morris screening, then Sobol indices on the fields it keeps')
   })
 
+  it('closes the cancel button while the pool is already stopping', () => {
+    const cancel = vi.fn()
+    useStore.setState({ cancelMonteCarlo: cancel })
+    const pool = { workers: 4, done: 12, total: null, stopRule: 'cancelled' as const }
+    useStore.setState({
+      mc: {
+        ...IDLE_MC,
+        status: 'running',
+        progress: 12,
+        total: 100,
+        pool: {
+          ...pool,
+          elapsedMs: 900,
+          perWorkerDone: [3, 3, 3, 3],
+          stopping: true,
+          discarded: 0,
+        },
+      },
+    })
+    const html = render()
+    expect(interaction.buttons.get('Stopping')?.disabled).toBe(true)
+    expect(interaction.buttons.has('Cancel Monte Carlo')).toBe(false)
+    expect(html).toContain('This run is already stopping.')
+    interaction.buttons.get('Stopping')!.onClick()
+    expect(cancel).not.toHaveBeenCalled()
+  })
+
   it('mounts the Sobol chart on the Morris and Sobol results of the current sensitivity run', () => {
     const runId = useStore.getState().playback.runId
     const done = { ...IDLE_SENSITIVITY, status: 'done' as const, runId }

@@ -36,6 +36,7 @@ import {
   timeStatSub,
 } from '../mc'
 import { FindingThreatActions, SEVERITY_PILL, VALIDITY_TEXT } from '../runValidityText'
+import { STOPPING_TITLE } from '../RunControl'
 import { useEnsembleBasis } from './ensembleBasis'
 
 const wrap = {
@@ -236,6 +237,8 @@ export function FragilityScreen() {
   const stageResults =
     mc.sensitivity.status === 'stale' || mc.sensitivity.runId !== runId ? null : mc
   const sensitivityRunning = mc.sensitivity.status === 'running'
+  // The pool refuses another cancel once it is stopping, so the button closes too.
+  const mcStopping = mc.status === 'running' && mc.pool?.stopping === true
   const onSobol = sensitivityRunning && depth === 'full' && mc.morris != null
   // Entity count is the scenario list, matching the 29-entity measurement.
   const budgetNote =
@@ -283,8 +286,15 @@ export function FragilityScreen() {
             <span role="status">
               {mc.progress} of {mc.total} replicates
             </span>
-            <button type="button" onClick={() => useStore.getState().cancelMonteCarlo()}>
-              Cancel Monte Carlo
+            <button
+              type="button"
+              disabled={mcStopping}
+              title={mcStopping ? STOPPING_TITLE : undefined}
+              onClick={() => {
+                if (!mcStopping) useStore.getState().cancelMonteCarlo()
+              }}
+            >
+              {mcStopping ? 'Stopping' : 'Cancel Monte Carlo'}
             </button>
           </>
         )}
