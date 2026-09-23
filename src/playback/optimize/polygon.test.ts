@@ -126,14 +126,65 @@ describe('boundsRefusal', () => {
       { x: 1500, y: 0 },
     ]
     expect(boundsRefusal(folded)).toMatch(/enclose no area/)
-    // A bow-tie with unequal lobes still has area to sample and is admitted as before.
+  })
+
+  it('refuses a bow-tie whose net area passes both floors', () => {
+    // Unequal lobes: a net area of 500,000 m^2 in a 2,000,000 m^2 box.
     const lopsided = [
       { x: 0, y: 0 },
       { x: 1000, y: 1000 },
       { x: 1000, y: 0 },
       { x: 0, y: 2000 },
     ]
-    expect(boundsRefusal(lopsided)).toBeNull()
+    expect(polygonAreaM2(lopsided)).toBe(500000)
+    expect(boundsRefusal(lopsided)).toBe(
+      'The range boundary crosses itself. A placement run needs a polygon.',
+    )
+    expect(() => boundingBoxOf(lopsided)).toThrow(/crosses itself/)
+  })
+
+  it('refuses a vertex on a non-adjacent edge and a collinear overlap', () => {
+    // Two squares that meet at (1000, 500): the pinch vertex lies on the bottom-left edge x = 1000.
+    const pinched = [
+      { x: 0, y: 0 },
+      { x: 1000, y: 0 },
+      { x: 1000, y: 1000 },
+      { x: 0, y: 1000 },
+      { x: 0, y: 600 },
+      { x: 1000, y: 500 },
+      { x: 0, y: 400 },
+    ]
+    expect(polygonAreaM2(pinched)).toBeGreaterThan(1)
+    expect(boundsRefusal(pinched)).toMatch(/crosses itself/)
+    // A spur that runs back along its own edge: (500, 0) to (1000, 0) overlaps edge (0, 0) to (1500, 0).
+    const spur = [
+      { x: 0, y: 0 },
+      { x: 1500, y: 0 },
+      { x: 500, y: 0 },
+      { x: 1000, y: 0 },
+      { x: 1000, y: 1000 },
+      { x: 0, y: 1000 },
+    ]
+    expect(polygonAreaM2(spur)).toBe(1000000)
+    expect(boundsRefusal(spur)).toMatch(/crosses itself/)
+  })
+
+  it('admits a concave polygon and a repeated vertex', () => {
+    // A U shape: its notch vertices come near the far edges but touch none of them.
+    const u = [
+      { x: 0, y: 0 },
+      { x: 3000, y: 0 },
+      { x: 3000, y: 3000 },
+      { x: 2000, y: 3000 },
+      { x: 2000, y: 1000 },
+      { x: 1000, y: 1000 },
+      { x: 1000, y: 3000 },
+      { x: 0, y: 3000 },
+    ]
+    expect(boundsRefusal(u)).toBeNull()
+    expect(boundsRefusal(L)).toBeNull()
+    // A doubled vertex and a closing point that repeats the first are one vertex each.
+    expect(boundsRefusal([L[0], ...L.slice(0, 3), L[2], ...L.slice(3), L[0]])).toBeNull()
   })
 })
 
