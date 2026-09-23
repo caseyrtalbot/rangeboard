@@ -68,4 +68,14 @@ describe('last undoable action', () => {
     useStore.getState().undo()
     expect(actionBeforeMount(useStore.getState())).toBeNull()
   })
+
+  it('names no redo made before the cue mounted, and an edit after it', () => {
+    place()
+    useStore.getState().undo()
+    useStore.getState().redo()
+    expect(useStore.getState().future).toHaveLength(0)
+    expect(actionBeforeMount(useStore.getState())).toBeNull()
+    place()
+    expect(actionBeforeMount(useStore.getState())).toMatch(/^Placed /)
+  })
 })

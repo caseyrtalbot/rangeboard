@@ -46,8 +46,8 @@ const AnalysisPanel = lazy(() =>
 const CommandPalette = lazy(() =>
   import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })),
 )
-// The cue chunk starts loading as this module runs, before the first render: the store
-// cannot tell a redo made before it mounts from an edit.
+// The cue chunk starts loading as this module runs, before the first render, so an
+// edit made early shows its cue soon after.
 const undoCue = import('./panels/UndoCue')
 const UndoCue = lazy(() => undoCue.then((m) => ({ default: m.UndoCue })))
 

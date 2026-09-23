@@ -6,7 +6,7 @@ import { actionBeforeMount, lastUndoableAction } from '../state/lastAction'
  * The floating status over the canvas bottom left after a delete or a place:
  * "Deleted KuRFS 1 · Undo ⌘Z". It fades out by 4 s. Undo, redo and a scenario load
  * clear it. It takes no pointer events. Loaded lazily to keep it out of the entry
- * chunk; an edit made before the chunk loaded shows on mount.
+ * chunk; an edit made before the chunk loaded shows on mount, a redo does not.
  */
 export function UndoCue() {
   const [cue, setCue] = useState<{ text: string; n: number } | null>(null)

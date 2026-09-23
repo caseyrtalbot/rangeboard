@@ -204,10 +204,18 @@ export const Palette = memo(function Palette({
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(savedCollapsed)
   const dragFrom = useRef<{ x: number; w: number } | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const asideRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (open) searchRef.current?.focus()
   }, [open])
+
+  // The undo cue beside the drawer reads the width to stay clear of it.
+  useEffect(() => {
+    asideRef.current
+      ?.closest<HTMLElement>('.board-stage')
+      ?.style.setProperty('--library-w', `${width}px`)
+  }, [width])
 
   const q = filter.trim().toLowerCase()
   // A live filter overrides the collapse state so matches are always visible.
@@ -274,7 +282,13 @@ export const Palette = memo(function Palette({
   }
 
   return (
-    <aside className="palette" style={{ width }} hidden={!open} aria-label="Model library">
+    <aside
+      ref={asideRef}
+      className="palette"
+      style={{ width }}
+      hidden={!open}
+      aria-label="Model library"
+    >
       <div className="palette-header">
         <div className="panel-title">Library</div>
         <button
