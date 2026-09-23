@@ -17,7 +17,7 @@ function ApplyEffectsCheck() {
         checked={apply}
         onChange={(event) => updateEnvironment({ apply: event.target.checked })}
       />
-      apply
+      Apply effects
     </label>
   )
 }

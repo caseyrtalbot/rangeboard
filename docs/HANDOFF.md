@@ -232,7 +232,42 @@ reason. No worker adds a row after the queue is complete.
 
 #### B4. Panel controls and forms
 
-Status: not started.
+- Status: done. V2, V5 (COMPLETE), V6, V7, V9, V11, F12 closed; F3 closed with one
+  limit under Open.
+- Commit: this commit on `row-b/b4-controls`.
+- Checks:
+  - `npx vitest run --dir src src/panels`: Test Files 31 passed (31), Tests 264 passed
+    (264).
+  - `npm run typecheck`: `tsc --noEmit -p tsconfig.app.json`, exit 0.
+  - `npm run lint`: exit 0; 25 existing `only-export-components` warnings, none in B4
+    files.
+  - `npm run format:check`: All matched files use Prettier code style!
+  - `npm run check:silent`: No hidden-failure patterns in the checked lines.
+  - `npm run build && npm run check:bundle`: Bundle budget passed: entry <= 365 kB;
+    initial JavaScript + CSS <= 400 kB (gzip -9).
+- Entry gzip: 364,432 bytes (6 under the Row A 364,438). Initial 380,424.
+- Browser: Playwright headless on port 5404 at 1600 × 1000, dark and light, firing
+  fixture. Fragility before and after a 30-replicate run, Inputs with Environment and
+  Fire doctrine open, Settings Scenario, Giraffe 1X rings, Outcome tiles and Evidence
+  products after a full play. Every visible panel-body action has a 1 px `--rule-strong`
+  frame; every disabled Fragility action shows a muted reason; "Global" stays on one
+  line (24 px rows); disabled undo and redo read `--text-disabled`; 0 page errors.
+- For the integrator:
+  - `.board-app .right-panel .seg button { white-space: normal }` (B3 area) wraps every
+    right-panel segment. B4 outranks it for rings with a four-class selector. Scoping
+    that rule would allow a plain `.insp-rings .seg button`.
+  - The Inputs "Run" (`.mc-run`) is that screen's main run action. Its file is not
+    B4's; `.primary` there completes V2.
+  - `DESIGN_SYSTEM.md` rules: "A panel-body action (`.inspector-body button`) draws a
+    1 px `--rule-strong` frame, disabled included; register rows, table sort headers
+    and danger actions keep their own edges. The main run action on a screen is
+    `.primary`." "A disabled segment draws in `--text-disabled`." "A tile label
+    reserves two lines (`min-height: 2.4em`) so values in a row align." "A disabled
+    action states its reason in its title and in a muted line beside it."
+- Open:
+  - F3: the disabled "Pin as baseline" keeps its action title, because the unowned
+    `FragilityScreen.test.tsx` asserts that exact title. The muted line states "Run
+    Monte Carlo first to pin a baseline."
 
 #### B5. Top bar
 

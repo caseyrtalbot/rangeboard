@@ -46,6 +46,7 @@ const wrap = {
   gap: 'var(--space-2)',
 } as const
 const smallBlock = { display: 'block' } as const
+const stack = { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' } as const
 const fractionText = (n: number) => (Number.isFinite(n) ? `${(n * 100).toFixed(1)}%` : '—')
 const numberText = (n: number | null) => (n != null && Number.isFinite(n) ? formatCount(n) : '—')
 
@@ -231,7 +232,6 @@ export function FragilityScreen() {
   // The Run tab sets the depth; the button and the sentence above it name what it will do.
   const depth = run.sensitivityDepth
   const sweeping = mc.sweep.status === 'running' && mc.sweep.runId === runId
-  const sharedBusy = sweeping || mc.sensitivity.status === 'running'
   // The Morris and Sobol results ride the sensitivity run's identity: a basis
   // change marks that slice stale and a reset clears it, so they read through it.
   const stageResults =
@@ -261,8 +261,31 @@ export function FragilityScreen() {
     0,
     ...ranked.map((row) => row.responses?.[response].swing ?? 0).filter(Number.isFinite),
   )
+  // A disabled action names why in its title and in a muted line beside it.
+  const modeReason = enabled ? undefined : 'Choose Monte Carlo mode in the Inputs tab'
+  const busyReason = sweeping
+    ? 'A sweep is running'
+    : sensitivityRunning
+      ? 'Sensitivity is running'
+      : undefined
+  const mcReason = modeReason ?? (mc.status === 'running' ? 'Monte Carlo is running' : undefined)
+  const pinReason = !summary
+    ? 'Run Monte Carlo first'
+    : mc.status !== 'done'
+      ? 'Wait for Monte Carlo to finish'
+      : undefined
+  const sweepReason =
+    modeReason ?? busyReason ?? (factors ? undefined : 'Enter valid factor values')
+  const sensitivityReason =
+    modeReason ?? busyReason ?? (fields.length === 0 ? 'Add a spread to a field first' : undefined)
   const runButton = (
-    <button type="button" disabled={!enabled || mc.status === 'running'} onClick={() => startMc()}>
+    <button
+      type="button"
+      className="primary"
+      disabled={mcReason != null}
+      title={mcReason}
+      onClick={() => startMc()}
+    >
       Run Monte Carlo
     </button>
   )
@@ -311,9 +334,9 @@ export function FragilityScreen() {
           Pin as baseline
         </button>
         <span className="muted small">
-          {enabled
-            ? 'Run settings are in the Inputs tab.'
-            : 'Choose Monte Carlo mode in the Inputs tab to run analyses.'}
+          {modeReason
+            ? `${modeReason} to run analyses.`
+            : `${pinReason ? `${pinReason} to pin a baseline. ` : ''}Run settings are in the Inputs tab.`}
         </span>
       </div>
       {mc.error && <p role="alert">{mc.error}</p>}
@@ -328,33 +351,35 @@ export function FragilityScreen() {
               : `${Math.ceil((count * SWEEP_DEFAULTS.replicatesPerCell) / rate)} s at ${formatCount(rate)} replicates/s`}
             .
           </p>
-          <div style={wrap}>
-            <FactorPicker draft={x} onChange={setX} axis="Column" disabled={sweeping} />
-            {twoFactors && (
-              <FactorPicker draft={y} onChange={setY} axis="Row" disabled={sweeping} />
-            )}
+          <div style={stack}>
+            <div style={wrap}>
+              <FactorPicker draft={x} onChange={setX} axis="Column" disabled={sweeping} />
+              {twoFactors && (
+                <FactorPicker draft={y} onChange={setY} axis="Row" disabled={sweeping} />
+              )}
+            </div>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={twoFactors}
+                disabled={sweeping}
+                onChange={(e) => setTwoFactors(e.target.checked)}
+              />
+              Two factors
+            </label>
+            <Field label="Sweep response">
+              <select
+                value={sweepResponse}
+                onChange={(e) => setSweepResponse(e.target.value as SensitivityResponse)}
+              >
+                {SENSITIVITY_RESPONSES.map((r) => (
+                  <option key={r} value={r}>
+                    {SWEEP_RESPONSE_LABELS[r]}
+                  </option>
+                ))}
+              </select>
+            </Field>
           </div>
-          <label>
-            <input
-              type="checkbox"
-              checked={twoFactors}
-              disabled={sweeping}
-              onChange={(e) => setTwoFactors(e.target.checked)}
-            />
-            Two factors
-          </label>
-          <Field label="Sweep response">
-            <select
-              value={sweepResponse}
-              onChange={(e) => setSweepResponse(e.target.value as SensitivityResponse)}
-            >
-              {SENSITIVITY_RESPONSES.map((r) => (
-                <option key={r} value={r}>
-                  {SWEEP_RESPONSE_LABELS[r]}
-                </option>
-              ))}
-            </select>
-          </Field>
         </header>
         {!factors && (
           <p className="muted small">
@@ -365,7 +390,8 @@ export function FragilityScreen() {
         <div style={wrap}>
           <button
             type="button"
-            disabled={!enabled || sharedBusy || !factors}
+            disabled={sweepReason != null}
+            title={sweepReason}
             onClick={() => {
               if (!factors) return
               setRequested(factors)
@@ -379,6 +405,7 @@ export function FragilityScreen() {
           >
             Run sweep
           </button>
+          {sweepReason && <span className="muted small">{sweepReason}.</span>}
           {sweeping && (
             <button type="button" onClick={() => cancelSweep()}>
               Cancel sweep
@@ -519,11 +546,15 @@ export function FragilityScreen() {
         )}
         {sensitivityRunning && <p role="status">{stageLine}</p>}
         <p className="muted small">{SENSITIVITY_DEPTH_SENTENCE[depth]}</p>
-        <button
-          type="button"
-          disabled={!enabled || sharedBusy || fields.length === 0}
-          onClick={() => startSensitivity(response)}
-        >{`Run sensitivity · ${SENSITIVITY_DEPTH_NAME[depth]}`}</button>
+        <div style={wrap}>
+          <button
+            type="button"
+            disabled={sensitivityReason != null}
+            title={sensitivityReason}
+            onClick={() => startSensitivity(response)}
+          >{`Run sensitivity · ${SENSITIVITY_DEPTH_NAME[depth]}`}</button>
+          {sensitivityReason && <span className="muted small">{sensitivityReason}.</span>}
+        </div>
         {mc.sensitivity.error && <p role="alert">{mc.sensitivity.error}</p>}
       </section>
       <section aria-label="Validity">
