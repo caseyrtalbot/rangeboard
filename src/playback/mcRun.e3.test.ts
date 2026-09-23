@@ -9,7 +9,7 @@ import type {
   SpecModel,
   Vec2,
 } from '../model/types'
-import { MOUNT_HEIGHT_M, newId } from '../model/types'
+import { MOUNT_HEIGHT_M } from '../model/types'
 import { FT_TO_M } from '../analysis/sensorEnv'
 import { bandMean, countSub, statMean, timeStatSub } from '../panels/analysis/mc'
 import { wilson } from '../analysis/stats'
@@ -25,9 +25,14 @@ import type { McSummary } from './mcRun'
  * the comment above it.
  */
 
-/** Regression laydown, as mcRun.test.ts: Giraffe 1X, Coyote, FAAD C2, Mohajer-6, Mavic 3. */
+/**
+ * Regression laydown, as mcRun.test.ts: Giraffe 1X, Coyote, FAAD C2, Mohajer-6, Mavic 3.
+ * The ids are fixed: the Monte Carlo keys hash them, and `newId` reads the wall clock.
+ */
 function laydown(): Scenario {
   const common = { headingDeg: 0, color: null, notes: '' }
+  let serial = 0
+  const fixedId = (prefix: string): string => `${prefix}-${(serial += 1)}`
   const s = emptyScenario()
   s.physics = [
     'singlePulseRadar',
@@ -44,15 +49,15 @@ function laydown(): Scenario {
   s.targetHalfWidth = null
   s.roe = 'free'
   const ent = (kind: EntityKind, specId: string, pos: Vec2, extra?: Partial<Entity>) => {
-    const id = newId('e')
+    const id = fixedId('e')
     s.entities.push({ id, name: specId, kind, specId, pos, ...common, ...extra })
     return id
   }
   const flight = (entityId: string, from: Vec2, to: Vec2) => {
-    s.paths.push({ id: newId('p'), entityId, points: [from, to], speedMps: 0, startDelayS: 0 })
+    s.paths.push({ id: fixedId('p'), entityId, points: [from, to], speedMps: 0, startDelayS: 0 })
   }
   const link = (fromId: string, toId: string) => {
-    s.connections.push({ id: newId('c'), fromId, toId, label: 'track data' })
+    s.connections.push({ id: fixedId('c'), fromId, toId, label: 'track data' })
   }
   const mohajer = s.library.find((m) => m.id === 'lib-mohajer6')!
   mohajer.uas = { ...mohajer.uas!, swerling: 1 }
