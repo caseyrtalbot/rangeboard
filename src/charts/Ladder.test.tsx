@@ -28,11 +28,11 @@ describe('Ladder horizon', () => {
   it('clips crossing spans and their labels and removes later spans', () => {
     const html = render(30)
     expect(html.match(/<rect /g)).toHaveLength(1)
-    expect(html).toContain('x="134" y="6" width="100"')
+    expect(html).toContain('x="144" y="6" width="96"')
     expect(html).toContain('0:10–0:30')
     expect(html).not.toContain('0:50')
     expect(html).not.toContain('later span')
-    expect(html).toContain('x1="309" y1="2" x2="309"')
+    expect(html).toContain('x1="312" y1="2" x2="312"')
     expect(html).toContain('data-role="playhead"')
   })
 

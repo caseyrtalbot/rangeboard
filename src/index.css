@@ -1959,11 +1959,9 @@ select.nu-unit {
   font-size: var(--type-meta-size);
 }
 
-/* Keep "Global" on one line. Four classes outrank the later right-panel rule
-   that lets segment labels wrap. */
-.insp .insp-rings .insp-row-value .seg button {
+/* Each ring label keeps room on both sides of its word. */
+.insp-rings .seg button {
   padding: 4px 8px;
-  white-space: nowrap;
 }
 
 /* ---------- Analysis ---------- */
@@ -2099,9 +2097,11 @@ select.nu-unit {
 }
 
 .roe-label {
+  flex: none;
   color: var(--text-dim);
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
+  white-space: nowrap;
 }
 
 /* The ROE control sits in a widget header: compact, never full width. */
@@ -4711,14 +4711,6 @@ input[type='number'] {
   min-width: 0;
 }
 
-.board-app .right-panel .seg {
-  flex-wrap: wrap;
-}
-
-.board-app .right-panel .seg button {
-  white-space: normal;
-}
-
 .entity-model-scope p,
 .entity-model-scope ul {
   margin-top: var(--space-2);
@@ -4748,6 +4740,19 @@ input[type='number'] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* A state word clips inside its cell like the other cells, so the cell's right
+   padding stays the gap to the next column. A flex row cannot ellipsize its
+   word, so the state is a block here and the square carries the gap. */
+.board-app .right-panel .tb.tb-dense .state {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board-app .right-panel .tb.tb-dense .state-square {
+  margin-right: 5px;
 }
 
 .board-app .right-panel .wg-m {
@@ -5339,8 +5344,15 @@ input[type='number'] {
 }
 
 .lens .run-control {
+  justify-content: flex-end;
   margin-left: auto;
   padding-block: 0;
+}
+
+/* In the lens the progress line takes its own row, so the switch and the button
+   hold the right edge while a run reports. */
+.lens .run-progress {
+  flex-basis: 100%;
 }
 
 .run-det {

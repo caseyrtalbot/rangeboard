@@ -29,9 +29,10 @@ import { resolveColor, type ChartTokens } from './tokens'
 import type { ChartMark, Series } from './types'
 
 /** Plot margin, px. Top leaves room for the playhead and mark labels. */
-const MARGIN = { top: 12, right: 8, bottom: 0, left: 0 }
+const MARGIN = { top: 16, right: 8, bottom: 0, left: 0 }
 const Y_AXIS_W = 30
-const X_AXIS_H = 16
+/** Holds the 11 px mono time ticks, descenders included, below `tickMargin`. */
+const X_AXIS_H = 20
 const LINE_W = 1.6
 const DOT_R = 2.4
 
@@ -106,6 +107,15 @@ export function SeriesTip({ series, tokens, label, active, horizonS = Infinity }
       })}
     </div>
   )
+}
+
+/**
+ * Anchor of a label centred above a vertical line. Near either end of the run a centred
+ * label runs past the chart edge, so it starts or ends at the line there.
+ */
+function topLabelAnchor(tS: number, durationS: number): 'start' | 'middle' | 'end' {
+  const at = durationS > 0 ? tS / durationS : 0
+  return at > 0.85 ? 'end' : at < 0.1 ? 'start' : 'middle'
 }
 
 /** Shared axis tick style: mono, dim ink, at the 11 px type floor (`--type-dense-size`). */
@@ -248,7 +258,13 @@ export function TimeSeriesPlot({
               x={m.tS}
               stroke={color}
               strokeDasharray="2 3"
-              label={{ value: m.label, position: 'top', ...ticks, fill: color }}
+              label={{
+                value: m.label,
+                position: 'top',
+                ...ticks,
+                fill: color,
+                textAnchor: topLabelAnchor(m.tS, durationS),
+              }}
             />
           )
         })}
@@ -258,7 +274,13 @@ export function TimeSeriesPlot({
           stroke={accent}
           strokeWidth={1}
           data-role="playhead"
-          label={{ value: playheadLabel, position: 'top', ...ticks, fill: accent }}
+          label={{
+            value: playheadLabel,
+            position: 'top',
+            ...ticks,
+            fill: accent,
+            textAnchor: topLabelAnchor(tS, durationS),
+          }}
         />
       ) : null}
       <Tooltip
