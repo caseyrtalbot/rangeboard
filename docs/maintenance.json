@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "37a03f6a440075495be2184b87a8218333cbfeb6ad195333a298473f2795f11b",
+      "sha256": "bec8b281eb993d00a4c54eba02be810c25311ddfb9af99b421f8161eb3fbb6b8",
       "reviewedAt": "2026-09-23",
-      "note": "Row A gate passed; entry gzip 364,438 bytes, 562 bytes headroom; Tasking selects Plan.md row B."
+      "note": "Tasking selects Plan.md row B with lane branches, ports, the handoff-update protocol for lanes and integrators, and one result block per lane; Position states local main is ahead of origin and not pushed."
     },
     {
       "document": "docs/Plan.md",

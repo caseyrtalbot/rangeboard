@@ -15,8 +15,10 @@ one row of it.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch and
-  is pushed to `origin`. The audit fixes `181c8ec` to `7da197d` and the documentation
+- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
+  `origin/main` is at `293f7bd`. Local `main` is ahead by the plan commit `0386b3a`, the
+  Row A commit `e744334` and the commit that holds this handoff. None of them is pushed.
+  The audit fixes `181c8ec` to `7da197d` and the documentation
   update after them follow row J (`afaf1ae`) and row O (`de208aa`).
 - The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
   layered kill mass 1, layered kills mean 1.115, JIATF leakers mean 0.895, JIATF kills
@@ -25,26 +27,103 @@ one row of it.
 
 ## Tasking
 
-Row B of [Plan.md](Plan.md#row-b-wave-1): wave 1, lanes B1 to B5, then B-int.
+Row B of [Plan.md](Plan.md#row-b-wave-1): wave 1, lanes B1 to B5, then B-int. Row A is
+complete in `e744334`.
 
-- Base: local `main` at the Row A commit that follows `0386b3a`. It is not pushed.
-- Row A is complete. The tokens (`--surface-raised`, `--radius-control` 4 px,
-  `--radius-surface` 6 px, `--elev-1`, `--scrim`, `--text-disabled`, `--dur-enter`),
-  `.surface-float` with `@keyframes surface-enter`, `BOARD_INK_DARK` and
-  `BOARD_INK_PAPER` in `src/ui/ink.ts`, `useBoardInk()` in `src/canvas/useBoardInk.ts`
-  and `src/ui/icons.tsx` exist and are documented in `design/DESIGN_SYSTEM.md`. No
-  component uses them yet except through the global tokens.
-- Row A gate entry gzip: 364,438 bytes against the 365,000 budget, 562 bytes headroom.
-  Initial JavaScript and CSS: 380,353 bytes against 400,000.
-- Launch B1 to B5 in one message, each in its own worktree from the Row A commit, with
-  the owned files, CSS blocks, workers and budgets in the row. Then run B-int.
-- Decision D1 is closed (adopt all). D5 and D7 apply in this row; use the plan defaults
-  unless the user chose otherwise before the row starts. D2 to D4 and D8 wait on Row C.
-- `BOARD_INK_PAPER` gives the airspace grid the plain paper grid values; the plan names
-  no separate paper airspace tone. B2 applies the ink to the layers.
-- A disabled button inside a `.seg` group, such as undo and redo in the board tools,
-  draws in text 2, not `--text-disabled`: `.seg button` sets the colour after
-  `button:disabled` at the same specificity. B4 owns the `.seg` block.
+- Base: local `main` at the commit that holds this handoff. Each lane branches from it.
+- Launch B1 to B5 in one message. Each lane runs in its own worktree on its own branch,
+  runs `npm ci` there first, and uses its own dev port. Owned files, CSS blocks, findings
+  and gates are in the Plan row. Then run B-int.
+
+| Lane | Branch | Worker, budget | Dev port |
+| --- | --- | --- | --- |
+| B1 | `row-b/b1-surfaces` | `opus-medium`, 3600 s | 5401 |
+| B2 | `row-b/b2-canvas` | `opus-high`, 5400 s | 5402 |
+| B3 | `row-b/b3-shell` | `opus-high`, 5400 s | 5403 |
+| B4 | `row-b/b4-controls` | `opus-medium`, 3600 s | 5404 |
+| B5 | `row-b/b5-topbar` | `opus-medium`, 2700 s | 5405 |
+
+- D1 is closed (adopt all). D5 and D7 apply in this row. Use the plan defaults unless the
+  user chose otherwise before the row starts. D2 to D4 and D8 wait on Row C.
+- The Row A gate measured the entry at 364,438 bytes gzip: 562 bytes under the 365,000
+  budget. The five lanes share that headroom. Initial JavaScript and CSS: 380,353 bytes
+  against 400,000. A lane never raises a budget.
+- Row A facts for the lanes:
+  - `BOARD_INK_PAPER` gives the airspace grid the plain paper grid values. The plan names
+    no separate paper airspace tone. B2 applies the ink to the layers.
+  - A disabled button inside a `.seg` group, such as undo and redo in the board tools,
+    draws in text 2, not `--text-disabled`: `.seg button` sets the colour after
+    `button:disabled` at the same specificity. B4 owns the `.seg` block.
+  - Light-theme canvas labels stay faint until B2 reads `useBoardInk`.
+
+### Handoff updates
+
+Every worker updates this file for the next phase, and only after its own checks pass.
+The worker runs each check, reads its output and records the summary line. A report
+without that output is a claim, not a result.
+
+A lane worker (B1 to B5):
+
+1. Runs the lane gate in its Plan row, then `npm run build && npm run check:bundle`.
+2. When every check passes, replaces the `Status: not started.` line of its own block
+   under "Lane results" with the fields below. It edits no other line of this file, so
+   the five branches merge without a conflict here.
+3. Does not run `docs:review` on this file and does not run `docs:check`. Every lane would
+   change the same `docs/maintenance.json` line, and any source edit invalidates the two
+   guides. B-int records the reviews once, after the merge.
+4. Commits its owned paths and this file on its lane branch. It does not push or merge.
+5. If a check fails and the fix is outside its owned files, sets `Status: blocked`,
+   records the command and its failing summary line, commits, and stops.
+
+Block fields: `Status` (done or blocked); `Commit`; `Checks` (each command with its
+summary line); `Entry gzip` (bytes from `check:bundle`); `Browser` (screens, themes,
+widths, result); `For the integrator` (a needed edit in an unowned CSS block or file, and
+the rule or token text for `DESIGN_SYSTEM.md`); `Open` (each lane finding not closed, with
+the reason).
+
+The integrator (B-int):
+
+1. Treats each lane block as a claim. Merges B1 to B5 in that order. Resolves
+   `index.css` by block ownership. Resolves a `docs/maintenance.json` conflict by taking
+   `main` and recording the review again.
+2. Runs the B-int checks in the Plan row: `npm run check`,
+   `npm run build && npm run check:bundle`, `npm run test:e2e`, and the recapture of every
+   stage and overlay in dark and light at 2100 and 1440. Edits `DESIGN_SYSTEM.md` for each
+   reported rule.
+3. When every check passes, rewrites this file in place: Position, the entry gzip bytes
+   and headroom, and Tasking set to Row C with lane blocks C1 to C4 and this same
+   protocol. It carries each open lane item forward and deletes the Row B lane blocks;
+   git history keeps them. It runs `docs:review` on every changed reference and on this
+   file, then `npm run docs:check`.
+4. Commits on `main`, removes the Row B worktrees and lane branches, and does not push.
+
+Row C and C-int follow the same protocol. After C-int, Tasking states that no Plan row
+stays open and lists each finding that is closed, changed by a decision, or open with its
+reason. No worker adds a row after the queue is complete.
+
+### Lane results
+
+#### B1. Floating surfaces and the palette
+
+Status: not started.
+
+#### B2. Canvas legibility
+
+Status: not started.
+
+#### B3. Right panel and board shell
+
+Status: not started.
+
+#### B4. Panel controls and forms
+
+Status: not started.
+
+#### B5. Top bar
+
+Status: not started.
+
+### Outside the plan
 
 These audit follow-ups stay candidates outside the plan:
 
