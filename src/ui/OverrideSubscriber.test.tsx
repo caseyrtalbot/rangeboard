@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { isValidElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -27,12 +28,13 @@ describe('OverrideSubscriberBoundary', () => {
     const element = OverrideSubscriberBoundary()
     const boundary = element.props.children
     expect(isValidElement(boundary)).toBe(true)
-    if (!isValidElement(boundary)) return
+    if (!isValidElement<{ label: string; children: ReactNode }>(boundary)) return
     expect(boundary.type).toBe(ErrorBoundary)
     expect(boundary.props.label).toBe('Override updates')
     expect(isValidElement(boundary.props.children)).toBe(true)
     if (!isValidElement(boundary.props.children)) return
-    expect(boundary.props.children.type.name).toBe('OverrideSubscriber')
+    const child = boundary.props.children.type
+    expect(typeof child === 'function' && child.name).toBe('OverrideSubscriber')
   })
 
   it('rethrows a held subscriber throw during render', () => {

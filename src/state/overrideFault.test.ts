@@ -4,7 +4,6 @@ import {
   armOverrideFault,
   clearOverrideFault,
   readOverrideFault,
-  reportOverrideFault,
   subscribeOverrideFault,
 } from './overrideFault'
 import { useStore } from './store'
