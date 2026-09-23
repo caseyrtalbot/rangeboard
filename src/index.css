@@ -47,12 +47,19 @@
      retune moves every rule that reads an alias with the token.
      --------------------------------------------------------------- */
 
-  /* Three surfaces and no fourth (rule 5). The board is the canvas
-     ground and carries the grain; the panel is every panel, flyout,
-     drawer and card; the sunken tone is for an input only. */
+  /* Four surfaces and no fifth (rule 5). The board is the canvas
+     ground and carries the grain; the panel is every docked panel,
+     drawer and card; the sunken tone is for an input only; the raised
+     tone is for a floating surface only (.surface-float). */
   --surface-board: #121313;
   --surface-panel: #191a1a;
   --surface-sunken: #0e0f0f;
+  --surface-raised: #202121;
+
+  /* One elevation (rule 4). Only a floating surface casts it. The scrim
+     dims the board under a modal surface such as the palette. */
+  --elev-1: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --scrim: rgba(0, 0, 0, 0.32);
 
   /* The board grain, so the ground reads as a material and not as flat
      paint. An inline SVG turbulence at 3.5 percent: no file, no
@@ -78,11 +85,12 @@
   --border-focus: var(--text-primary);
 
   /* Text ramp. Three steps: values and titles, body and meta, labels at
-     12 px weight 500. A disabled control drops to the control-rule ink. */
+     12 px weight 500. Disabled text has its own ink: 3.42:1 on the panel
+     and 3.16:1 on the raised tone, so a disabled label stays readable. */
   --text-primary: #ebe9e3;
   --text-secondary: #a9a9a3;
   --text-tertiary: #74766f;
-  --text-disabled: var(--rule-strong);
+  --text-disabled: #6c6f69;
 
   /* Ink on a filled control. A pressed control inverts to text 1 on ink. */
   --ink: #121313;
@@ -103,9 +111,11 @@
   --space-6: 24px;
   --panel-pad: 14px;
 
-  /* Motion. Short and linear: this is tooling, not a landing page. */
+  /* Motion. Short and linear: this is tooling, not a landing page.
+     A floating surface enters over --dur-enter. */
   --dur-fast: 120ms;
   --dur: 140ms;
+  --dur-enter: 120ms;
 
   /* Typography. Sans carries the interface; mono carries machine data
      only (ids, coordinates, timestamps, units, keys). */
@@ -134,9 +144,11 @@
      and the KPI sub-line. The density control of step 6 will drive it. */
   --type-dense-size: 11px;
 
-  /* The one radius (rule 2). A container is square; a button, an input, a
-     segmented group and a checkbox are 2 px; nothing else is rounded. */
-  --radius-control: 2px;
+  /* Two radii (rule 2). A button, an input, a segmented group and a
+     checkbox are 4 px; a floating surface is 6 px; a docked container is
+     square. */
+  --radius-control: 4px;
+  --radius-surface: 6px;
 
   /* ---- Aliases used across the rest of this sheet ---- */
   --bg: var(--surface-board);
@@ -194,6 +206,9 @@
   --paper-board: #eeebe4;
   --paper-panel: #f7f5f0;
   --paper-sunken: #e4e0d8;
+  --paper-raised: #fbfaf7;
+  --paper-elev-1: 0 8px 24px rgba(33, 34, 32, 0.12);
+  --paper-scrim: rgba(33, 34, 32, 0.2);
 
   /* Two rules and no third, at the same two steps of separation. */
   --paper-rule: #d8d3c9;
@@ -204,6 +219,8 @@
   --paper-text-1: #212220;
   --paper-text-2: #4e504b;
   --paper-text-3: #7b7d73;
+  /* Disabled text, 3.28:1 on the paper panel. */
+  --paper-text-disabled: #8c877d;
 
   /* State inks, same hue, darkened to 4.4, 4.4 and 4.4 to 1 on the paper
      panel. Hue 144, 37 and 6 degrees, unchanged from the night set. */
@@ -218,11 +235,15 @@
   --surface-board: var(--paper-board);
   --surface-panel: var(--paper-panel);
   --surface-sunken: var(--paper-sunken);
+  --surface-raised: var(--paper-raised);
+  --elev-1: var(--paper-elev-1);
+  --scrim: var(--paper-scrim);
   --rule: var(--paper-rule);
   --rule-strong: var(--paper-rule-strong);
   --text-primary: var(--paper-text-1);
   --text-secondary: var(--paper-text-2);
   --text-tertiary: var(--paper-text-3);
+  --text-disabled: var(--paper-text-disabled);
   --ink: var(--paper-board);
   --status-nominal: var(--paper-nominal);
   --status-warning: var(--paper-warning);
@@ -236,16 +257,42 @@
     --surface-board: var(--paper-board);
     --surface-panel: var(--paper-panel);
     --surface-sunken: var(--paper-sunken);
+    --surface-raised: var(--paper-raised);
+    --elev-1: var(--paper-elev-1);
+    --scrim: var(--paper-scrim);
     --rule: var(--paper-rule);
     --rule-strong: var(--paper-rule-strong);
     --text-primary: var(--paper-text-1);
     --text-secondary: var(--paper-text-2);
     --text-tertiary: var(--paper-text-3);
+    --text-disabled: var(--paper-text-disabled);
     --ink: var(--paper-board);
     --status-nominal: var(--paper-nominal);
     --status-warning: var(--paper-warning);
     --status-critical: var(--paper-critical);
     color-scheme: light;
+  }
+}
+
+/* A floating surface: a menu, popover, palette, readout or tooltip that sits
+   over the board or a panel (rule 4). It is the only rule that casts
+   --elev-1. The reduced-motion block below cuts its entry to 1 ms. */
+.surface-float {
+  background: var(--surface-raised);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--elev-1);
+  animation: surface-enter var(--dur-enter) linear;
+}
+
+@keyframes surface-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

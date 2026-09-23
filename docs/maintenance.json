@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "2252feca46d28b5e1ec67d8f039f2e26a766a8373fa9abbf434cd0515c98665a",
+      "sha256": "9295cfe293f76ccc26b47656623506949309504281e99fc7a79952d751b038d1",
       "reviewedAt": "2026-09-23",
-      "note": "Checked the execution list against src/main.tsx: both autosaves restore synchronously before both subscriptions start. Rewrote step 1 to match that order."
+      "note": "Row A adds tokens, the board ink tables, useBoardInk and icons.tsx with no user-facing feature change; the guide needs no edit."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "025f0f79b5a0ec818fa3fb5bcc8f99310c5473695706a48745907defa67a24af",
+      "sha256": "e35979e481a871148bf8d66526bf8b758be2af68aa7144a2d2219074a834c3cf",
       "reviewedAt": "2026-09-23",
-      "note": "Checked the updated claims against source: sampleFlightPath in tracks.ts, ten DrawPolicy methods with fluence as kind 11, doctrine migrated outside the container fill, stopFloor, 38 sensors with three accuracy fields and 19 radars with falseAlarmRatePerScan, fixture physics pins, AnalysisNavigation and the kit exports. selectExecutionHorizon is read only by selectors.test.ts."
+      "note": "Row A: source map lists the board ink tables in ink.ts, icons.tsx and useBoardInk.ts. No invariant changed."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "40c97855d9dd88e64e4214a8756428fbef8fea29fab5dbfae02abccf2d8d3c3b",
+      "sha256": "37a03f6a440075495be2184b87a8218333cbfeb6ad195333a298473f2795f11b",
       "reviewedAt": "2026-09-23",
-      "note": "Tasking selects Plan.md row A; D1 adopted 2026-09-23; base is the plan commit after 293f7bd, not pushed."
+      "note": "Row A gate passed; entry gzip 364,438 bytes, 562 bytes headroom; Tasking selects Plan.md row B."
     },
     {
       "document": "docs/Plan.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "1f9a14fc7a00408b6900b921cf3f962bb89c94149a064ed004a524867e389d2c",
+      "sha256": "89404d0e507c9846fc9416ad6ac79fa97a4f84eb2bebd3641374752efcb72648",
       "reviewedAt": "2026-09-23",
-      "note": "Checked the track picture against LiveScene.tsx and TrackLayer.tsx: the layer draws from the sampled trial result, so the text now says during a sampled trial instead of in Watch."
+      "note": "Row A: rules 2 to 5 rewritten for two radii, one elevation, four surfaces and the scrim; rule 9 canvas ink follows the theme; token table, paper palette, motion and icon set checked against index.css, ink.ts, useBoardInk.ts and icons.tsx."
     }
   ],
   "historical": [

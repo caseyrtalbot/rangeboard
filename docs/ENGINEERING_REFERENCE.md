@@ -544,7 +544,9 @@ src/analysis/  classPriors.ts (classOfModel, classPriorFor over the generated CL
 src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark that the
                Board panels render; reads index.css classes only, no store.
                ink.ts: the Konva ink table (danger red, entity kind fallback colors) that
-               the layers, the palette glyphs, the detail panels and trackState share.
+               the layers, the palette glyphs, the detail panels and trackState share,
+               and the BOARD_INK_DARK and BOARD_INK_PAPER tables that useBoardInk picks.
+               icons.tsx: the 16 px stroke icon set for chrome controls.
                usePopover.ts: the one dismissal rule for the toolbar dropdowns (outside
                pointer, capture-phase Escape, focus in on open and back on close).
                rovingTabs.ts: nextTabIndex, the one arrow-key mapping for every
@@ -566,7 +568,8 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                ringModel.ts (store-free, Konva-free: prepareRingModel resolves every ring
                record from Scenario, RingView and the selected threat, and hitAt finds the
                ring edge under a world point over the same records), useRingModel.ts (the
-               store-bound hook FootprintLayer and HudLayer share),
+               store-bound hook FootprintLayer and HudLayer share), useBoardInk.ts
+               (the board ink table for ui.theme and prefers-color-scheme),
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
                style source)
 src/panels/    Toolbar (header: brand, scenario name, ⋯ menu, the lifecycle tabs, run

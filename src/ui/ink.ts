@@ -31,3 +31,44 @@ export function withAlpha(hex: string, alpha: number): string {
   const n = parseInt(hex.slice(1), 16)
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`
 }
+
+/** The board ink that changes with the theme. `useBoardInk` picks one table. */
+export interface BoardInk {
+  /** Minor and major grid lines on the plain canvas. */
+  gridMinor: string
+  gridMajor: string
+  /** Minor and major grid lines on the airspace basemap. */
+  airspaceGridMinor: string
+  airspaceGridMajor: string
+  /** Entity names and callout labels. */
+  label: string
+  /** The caption on a connection. */
+  linkCaption: string
+  /** The leader line and dot of a label callout. */
+  calloutLeader: string
+}
+
+/** Night board ink: the values the layers drew before the paper table existed. */
+export const BOARD_INK_DARK: BoardInk = {
+  gridMinor: '#26292c',
+  gridMajor: '#323639',
+  airspaceGridMinor: '#232729',
+  airspaceGridMajor: '#2e3336',
+  label: '#b7bdb2',
+  linkCaption: '#8a9199',
+  calloutLeader: '#82887e',
+}
+
+/**
+ * Paper board ink, measured on the paper board `#eeebe4`: label 6.9:1, link caption
+ * 5.5:1, callout leader 3.5:1. The airspace grid has no separate paper tone.
+ */
+export const BOARD_INK_PAPER: BoardInk = {
+  gridMinor: '#dcd7cd',
+  gridMajor: '#c9c3b8',
+  airspaceGridMinor: '#dcd7cd',
+  airspaceGridMajor: '#c9c3b8',
+  label: '#4e504b',
+  linkCaption: '#5c5f57',
+  calloutLeader: '#7b7d73',
+}

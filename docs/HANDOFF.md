@@ -25,17 +25,26 @@ one row of it.
 
 ## Tasking
 
-Row A of [Plan.md](Plan.md#row-a-foundation): the foundation tokens, the floating
-surface class, the board ink table and hook, the icon set and the design-system rules.
+Row B of [Plan.md](Plan.md#row-b-wave-1): wave 1, lanes B1 to B5, then B-int.
 
-- Base: local `main` at the plan commit that follows `293f7bd`. It is not pushed.
-- Decision D1 is closed: the user adopted all rule changes on 2026-09-23. D2 to D8 stay
-  open with the defaults in the plan.
-- Row A is serial: run it in the main checkout. Row B lanes branch worktrees from the
-  Row A commit.
-- Owned files, work, gate and stop condition are in the row. Record the entry gzip bytes
-  and headroom here after the gate, then select Row B.
-- Rows B and C run parallel lanes with disjoint files and `index.css` blocks.
+- Base: local `main` at the Row A commit that follows `0386b3a`. It is not pushed.
+- Row A is complete. The tokens (`--surface-raised`, `--radius-control` 4 px,
+  `--radius-surface` 6 px, `--elev-1`, `--scrim`, `--text-disabled`, `--dur-enter`),
+  `.surface-float` with `@keyframes surface-enter`, `BOARD_INK_DARK` and
+  `BOARD_INK_PAPER` in `src/ui/ink.ts`, `useBoardInk()` in `src/canvas/useBoardInk.ts`
+  and `src/ui/icons.tsx` exist and are documented in `design/DESIGN_SYSTEM.md`. No
+  component uses them yet except through the global tokens.
+- Row A gate entry gzip: 364,438 bytes against the 365,000 budget, 562 bytes headroom.
+  Initial JavaScript and CSS: 380,353 bytes against 400,000.
+- Launch B1 to B5 in one message, each in its own worktree from the Row A commit, with
+  the owned files, CSS blocks, workers and budgets in the row. Then run B-int.
+- Decision D1 is closed (adopt all). D5 and D7 apply in this row; use the plan defaults
+  unless the user chose otherwise before the row starts. D2 to D4 and D8 wait on Row C.
+- `BOARD_INK_PAPER` gives the airspace grid the plain paper grid values; the plan names
+  no separate paper airspace tone. B2 applies the ink to the layers.
+- A disabled button inside a `.seg` group, such as undo and redo in the board tools,
+  draws in text 2, not `--text-disabled`: `.seg button` sets the colour after
+  `button:disabled` at the same specificity. B4 owns the `.seg` block.
 
 These audit follow-ups stay candidates outside the plan:
 
@@ -98,8 +107,8 @@ These audit follow-ups stay candidates outside the plan:
   `points` array (`scenarioHasWork` in `src/io/persist.test.ts`,
   `scenarioInstall.test.ts`). Those objects do not pass `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
-  touches the entry. The entry gzip budget is 365,000 bytes with about 0.5 kB headroom
-  (last measured 364,435). `sql.js` must stay behind `await import` with its wasm URL.
+  touches the entry. The entry gzip budget is 365,000 bytes with 562 bytes headroom
+  (last measured 364,438 at the Row A gate). Icons and new components add entry bytes. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
 - Prettier wrapping of JSX text can change React `children`. Keep button labels on one
