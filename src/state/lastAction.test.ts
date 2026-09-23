@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyScenario } from '../model/seed'
 import { useStore } from './store'
-import { lastUndoableAction } from './lastAction'
+import { actionBeforeMount, lastUndoableAction } from './lastAction'
 
 /** Runs one store action and returns the action a new edit recorded, if any. */
 function cueAfter(action: () => void): string | null {
@@ -54,5 +54,18 @@ describe('last undoable action', () => {
     expect(cueAfter(() => useStore.getState().undo())).toBeNull()
     expect(cueAfter(() => useStore.getState().redo())).toBeNull()
     expect(cueAfter(() => useStore.getState().replaceScenario(emptyScenario()))).toBeNull()
+  })
+
+  it('names an edit made before the cue mounted, and no undo', () => {
+    expect(actionBeforeMount(useStore.getState())).toBeNull()
+    place()
+    const { name } = useStore.getState().scenario.entities[0]
+    expect(actionBeforeMount(useStore.getState())).toBe(`Placed ${name}`)
+    useStore
+      .getState()
+      .updateEntity(useStore.getState().scenario.entities[0].id, { name: 'Renamed' })
+    expect(actionBeforeMount(useStore.getState())).toBeNull()
+    useStore.getState().undo()
+    expect(actionBeforeMount(useStore.getState())).toBeNull()
   })
 })
