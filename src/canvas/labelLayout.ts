@@ -61,6 +61,12 @@ const ANCHOR_W = 120
 export const LABEL_ANCHOR_TOP = 32
 /** Line box height of a wrapped anchored label, px. */
 export const LABEL_LINE_H = 12
+/** Heading-handle knob: its centre sits this far from the glyph centre, px. */
+export const HANDLE_REACH = 34
+/** Heading-handle knob radius, px. */
+export const HANDLE_KNOB_R = 6
+/** Knob radius plus its 1.5 px rim and a 1.25 px gap: the label keeps this from the centre. */
+const KNOB_CLEAR = HANDLE_KNOB_R + 2
 const SLOT_H = 15
 const TERMINAL_LEN = 30
 const TEXT_GAP = 5
@@ -165,6 +171,23 @@ export function labelLineCount(name: string): number {
     }
   }
   return lines
+}
+
+/**
+ * Top of the anchored label box, px below the glyph centre. A heading handle whose knob
+ * meets the box (it points within 45 degrees of straight down) moves the label
+ * below the knob; otherwise the label stays at LABEL_ANCHOR_TOP. Pass the drawn string.
+ */
+export function anchoredLabelTop(drawn: string, handleDeg?: number): number {
+  if (handleDeg == null) return LABEL_ANCHOR_TOP
+  const r = (handleDeg * Math.PI) / 180
+  const hx = Math.sin(r) * HANDLE_REACH
+  const hy = -Math.cos(r) * HANDLE_REACH
+  const half = Math.min(ANCHOR_W, drawn.length * CHAR_W) / 2
+  if (Math.abs(hx) >= half + KNOB_CLEAR || hy + KNOB_CLEAR <= LABEL_ANCHOR_TOP) {
+    return LABEL_ANCHOR_TOP
+  }
+  return Math.ceil(hy + KNOB_CLEAR)
 }
 
 /** One label measured: the drawn designator and its anchored box. */

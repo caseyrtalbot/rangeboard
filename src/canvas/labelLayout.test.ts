@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  anchoredLabelTop,
   boardDesignator,
+  HANDLE_KNOB_R,
+  HANDLE_REACH,
+  LABEL_ANCHOR_TOP,
   LABEL_FONT_PX,
   labelLineCount,
   captionClear,
@@ -202,5 +206,22 @@ describe('captionClear', () => {
     // At k 0.1 the c2 glyph sits at screen x -60.
     expect(captionClear(-70, -5, 'x', entities, 0.1)).toBe(false)
     expect(captionClear(-70, -5, 'x', entities, 1)).toBe(true)
+  })
+})
+
+describe('anchoredLabelTop', () => {
+  it('keeps the anchor with no handle or a handle clear of the label', () => {
+    expect(anchoredLabelTop('RPS-42 1')).toBe(LABEL_ANCHOR_TOP)
+    expect(anchoredLabelTop('RPS-42 1', 0)).toBe(LABEL_ANCHOR_TOP)
+    expect(anchoredLabelTop('RPS-42 1', 90)).toBe(LABEL_ANCHOR_TOP)
+    // At 140 degrees the knob sits 22 px right, past a short label's half width.
+    expect(anchoredLabelTop('S 1', 140)).toBe(LABEL_ANCHOR_TOP)
+  })
+
+  it('puts the label below a knob that points down into it', () => {
+    const top = anchoredLabelTop('RPS-42 1', 180)
+    expect(top).toBeGreaterThan(HANDLE_REACH + HANDLE_KNOB_R + 0.75)
+    expect(anchoredLabelTop('RPS-42 1', 200)).toBeGreaterThan(LABEL_ANCHOR_TOP)
+    expect(anchoredLabelTop('RPS-42 1', 160)).toBe(anchoredLabelTop('RPS-42 1', 200))
   })
 })

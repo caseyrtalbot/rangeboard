@@ -4,6 +4,7 @@ import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useStore } from '../../state/store'
 import { bearingDeg } from '../../geometry/geo'
+import { useBoardInk } from '../useBoardInk'
 
 const RING_PX = 48
 const HANDLE_PX = 68
@@ -24,6 +25,7 @@ export function SystemHandleLayer() {
   const scale = useStore((s) => s.camera.scale)
   const rotateSystem = useStore((s) => s.rotateSystem)
   const groupRef = useRef<Konva.Group>(null)
+  const ink = useBoardInk()
   const lastBearing = useRef<number | null>(null)
   /** Slew accumulated over the gesture, committed once on release. */
   const totalDelta = useRef(0)
@@ -70,7 +72,7 @@ export function SystemHandleLayer() {
         y={-HANDLE_PX}
         radius={7}
         fill="#a9b4bd"
-        stroke="#121415"
+        stroke={ink.knobRim}
         strokeWidth={1.5}
         draggable
         onDragStart={(e) => {
