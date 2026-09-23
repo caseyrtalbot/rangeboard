@@ -137,7 +137,22 @@ Status: not started.
 
 #### C2. Editing tools during Execute
 
-Status: not started.
+- Status: done.
+- Commit: `ed21ba5` on `row-c/c2-tools` (source and test); this block is the next commit.
+- Checks:
+  - `npx vitest run --dir src src/panels/Toolbar.test.tsx`: Test Files 1 passed (1), Tests 14 passed (14).
+  - `npm run typecheck`: exit 0, no errors.
+  - `npm run lint`: exit 0; 29 warnings, the same count as `main`.
+  - `npm run format:check`: All matched files use Prettier code style!
+  - `npm run check:silent`: No hidden-failure patterns in the checked lines.
+  - `npm run build && npm run check:bundle`: Bundle budget passed: entry <= 366 kB; initial JavaScript + CSS <= 400 kB (gzip -9).
+- Entry gzip: 365,765 bytes (43 bytes over the B-int 365,722; 235 bytes of headroom left). Initial 382,028.
+- Browser: fixture `firing-scenario.json`, Prepare, Execute and Analyze, dark and light, 2100 and 1440. Prepare shows Select, Boundary, Connect, Path, Range setup, View, Declutter and history. Execute and Analyze show View, Declutter and history only. Boundary chosen in Prepare is Select after the switch to Execute. A `setTool('path')` call during Execute returns to Select. No console errors.
+- For the integrator:
+  - `BoardTools` resets the tool with the existing `setTool('select')` in an effect. No store change was needed. A reset inside `setBoardPhase` in `store.ts` would remove the effect.
+  - Unowned entry points still offer editing tools outside Prepare: the tool commands in `CommandPalette.tsx:64`, Connect in `Inspector.tsx:1314` and in `ContextMenu.tsx:270`. The effect returns each one to Select at once, so the command does nothing visible. Hide or disable them outside Prepare.
+  - `DESIGN_SYSTEM.md`: "The board editing tools (Select, Boundary, Connect, Path, Range setup) show only in Prepare." No token change and no CSS change.
+- Open: none.
 
 #### C3. Analyze run control
 
