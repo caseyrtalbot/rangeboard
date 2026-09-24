@@ -9,6 +9,7 @@ import { IDLE_TRIAL } from '../../../state/runState'
 import { installTrial, observeTrial, unstartTrial } from '../trialTestState'
 import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { formatTime } from '../../../geometry/geo'
+import { modelsForEntity } from '../../../analysis/fidelity'
 import { emptyScenario } from '../../../model/seed'
 import type { Connection, Entity, EntityKind } from '../../../model/types'
 import { useStore } from '../../../state/store'
@@ -177,43 +178,72 @@ describe('DetailPane', () => {
     expect(html).toContain('<span class="state inactive" style="color:')
     expect(html).toContain('quad')
     expectSections(html, [
-      ['file', 'Track file'],
+      ['track', 'Track'],
+      ['engagement', 'Engagement'],
+      ['path', 'Path'],
       ['phase', 'Phase'],
       ['pd', 'Pd by sensor'],
       ['survival', 'Survival'],
     ])
-    const file = section(html, 'file')
-    for (const label of [
-      'Platform',
-      'Navigation',
-      'Position',
-      'Speed / heading',
-      'Held by',
-      'Classification',
-      'EW',
-      'Salvos',
-      'Effects',
-      'Residual',
-      'Reached arrival',
-      'Altitude (constant)',
-      'Slant range',
-      'Bearing',
-      'Engage status',
-      'Warning',
-      'First detect',
-      'RCS',
-      'Swerling',
-    ]) {
-      expect(file).toContain(`<span class="rl">${label}</span>`)
+    const rows: Array<[string, string[]]> = [
+      [
+        'track',
+        [
+          'Position',
+          'Speed / heading',
+          'Altitude',
+          'Classification',
+          'Held by',
+          'Navigation',
+          'First detect',
+          'RCS',
+          'Swerling',
+        ],
+      ],
+      ['engagement', ['Salvos', 'Effects', 'Residual', 'EW', 'Engage status', 'Warning']],
+      ['path', ['Planned CPA', 'Planned arrival', 'Reached arrival', 'Slant range', 'Bearing']],
+    ]
+    for (const [key, labels] of rows) {
+      const body = section(html, key)
+      for (const label of labels) expect(body).toContain(`<span class="rl">${label}</span>`)
+      expect(body.match(/<div class="row">/g)?.length).toBe(labels.length)
     }
-    expect(file.match(/<div class="row">/g)?.length).toBe(19)
-    expect(file).toContain('T+0:00 observed')
-    expect(file).toContain('Group 1 · quad')
-    expect(file).toContain('GPS and RF mixed')
-    expect(file).toContain('0 landed · 0 hard kill · 0 mission kill')
-    expect(file).toContain('1 active · 0 hard kill · 0 mission kill · 1 members')
-    expect(section(html, 'planned-path')).toContain('no defended asset placed')
+    const track = section(html, 'track')
+    expect(track).toContain('T+0:00 observed')
+    expect(track).toContain('GPS and RF mixed')
+    expect(track).toContain('aria-label="About altitude"')
+    expect(html).toMatch(/<span class="det-m">[^<]* · Group 1 · quad<\/span>/)
+    const engagement = section(html, 'engagement')
+    expect(engagement).toContain('0 landed · 0 hard kill · 0 mission kill')
+    expect(engagement).toContain('1 active · 0 hard kill · 0 mission kill · 1 members')
+    expect(section(html, 'path')).toContain('no defended asset placed')
     expectNoControls(html)
+  })
+
+  it('opens Track and collapses Engagement, Path and Phase behind mono summaries', () => {
+    const html = render(entityOf('uas').id)
+    expect(section(html, 'track')).toContain('aria-expanded="true"')
+    for (const key of ['engagement', 'path', 'phase']) {
+      expect(section(html, key)).toContain('aria-expanded="false"')
+      expect(section(html, key)).toContain(`id="det-s-${key}" hidden=""`)
+    }
+    expect(section(html, 'engagement')).toContain(
+      '<span class="wg-m det-sum">0 kinetic · 0 landed · 0 kills</span>',
+    )
+    expect(section(html, 'path')).toContain(
+      '<span class="wg-m det-sum">no defended asset placed</span>',
+    )
+  })
+
+  it('folds the model tags into one Model basis row whose (i) lists each source', () => {
+    const uas = entityOf('uas')
+    const html = render(uas.id)
+    const tags = modelsForEntity(useStore.getState().scenario, uas.id)
+    expect(tags.length).toBeGreaterThan(0)
+    expect(html).not.toContain('class="fid-tags"')
+    expect(html).toContain('<span class="rl">Model basis</span>')
+    const lines = tags.map((tag) => `${tag.label} · ${tag.tier} · ${tag.validation}`)
+    expect(html).toContain(`aria-label="About model basis" title="${lines.join('\n')}"`)
   })
 
   it('does not substitute a full-run route diagnosis for reached trial status', () => {
@@ -225,7 +255,7 @@ describe('DetailPane', () => {
       })),
     })
     captureTrial()
-    const file = section(render(entityOf('uas').id), 'file')
+    const file = section(render(entityOf('uas').id), 'engagement')
     expect(file).toContain('Engage status</span><span class="rv num">—')
     expect(file).not.toContain('no fire-control source')
     expect(file).not.toContain('full run')
@@ -261,7 +291,7 @@ describe('DetailPane', () => {
       const preview = render(entityOf(kind).id)
       const telemetry =
         kind === 'uas'
-          ? ['file']
+          ? ['track', 'engagement']
           : kind === 'sensor'
             ? ['load', 'gates']
             : kind === 'effector'
@@ -275,9 +305,10 @@ describe('DetailPane', () => {
       }
       expect(preview).not.toContain('EXPECTED DEFEAT')
       if (kind === 'uas') {
-        expect(section(preview, 'planned-path')).toContain('Planned arrival')
-        expect(section(preview, 'planned-path')).toContain('Planned CPA')
-        expect(section(preview, 'file')).not.toContain('full path')
+        expect(section(preview, 'path')).toContain('Planned arrival')
+        expect(section(preview, 'path')).toContain('Planned CPA')
+        expect(section(preview, 'track')).not.toContain('full path')
+        expect(section(preview, 'engagement')).not.toContain('full path')
       }
     },
   )
@@ -289,10 +320,11 @@ describe('DetailPane', () => {
       store.setBoardPhase('execute')
       unstartTrial()
       const html = render(entityOf(kind).id)
-      expect(html).toContain('Simulated trial · ready')
+      if (kind !== 'uas') expect(html).toContain('Simulated trial · ready')
       expect(html).not.toContain('EXPECTED DEFEAT')
       if (kind === 'uas') {
-        const file = section(html, 'file')
+        expect(html).not.toContain('Simulated trial ·')
+        const file = section(html, 'track') + section(html, 'engagement')
         expect(file).not.toMatch(/T\+\d/)
         expect(file).toContain('0 sensors')
         expect(file).toContain('0 landed · 0 hard kill · 0 mission kill')
@@ -402,7 +434,7 @@ describe('DetailPane', () => {
     expect(section(sensorHtml, 'ladder')).toContain('No track observed.')
     expect(section(sensorHtml, 'slant')).toContain('No track observed.')
     expect(section(render(c2.id), 'hops')).toContain('No route through this node.')
-    expect(section(render(entityOf('uas').id), 'file')).not.toContain('T+2:')
+    expect(section(render(entityOf('uas').id), 'track')).not.toContain('T+2:')
     expect(section(render(entityOf('uas').id), 'pd')).toContain(
       'No radar Pd model observed this track.',
     )
@@ -418,13 +450,13 @@ describe('DetailPane', () => {
 it('shows realized mixed-member effects at the observed boundary, never forecast E[k]', () => {
   installTrial(3)
   const html = render('swarm')
-  const file = section(html, 'file')
-  expect(file).toContain('T+0:03 observed')
+  expect(section(html, 'track')).toContain('T+0:03 observed')
+  const file = section(html, 'engagement')
   expect(file).toContain('3 landed · 1 hard kill · 1 mission kill')
   expect(file).toContain('3 active · 1 hard kill · 1 mission kill · 5 members')
   expect(file).not.toMatch(/E\[k\]|Expected|expected/)
   observeTrial(1.99)
-  const before = section(render('swarm'), 'file')
+  const before = section(render('swarm'), 'engagement')
   expect(before).toContain('0 hard kill · 0 mission kill')
   expect(before).toContain('5 active')
 })

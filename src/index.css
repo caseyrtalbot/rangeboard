@@ -2510,6 +2510,88 @@ select.nu-unit {
   border-bottom: 0;
 }
 
+/* A collapsible section: the whole header is the disclosure button, and the
+   mono summary stays visible while the body is hidden. */
+.det-s-toggle {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: var(--h-default);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.det-s-chev {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-dim);
+}
+
+.det-s-toggle .det-sum {
+  max-width: 60%;
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+/* The Model basis row under the object header: value in text 2, then a (i). */
+.det-basis {
+  align-items: center;
+  border-top: 0;
+}
+
+.det-basis-v {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.det-info {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--h-dense);
+  height: var(--h-dense);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.det-info:hover {
+  color: var(--text-primary);
+}
+
+.rv > .det-drill-btn {
+  min-height: var(--h-dense);
+  font-family: var(--font-ui);
+}
+
+.det-drill {
+  margin: 0 0 var(--space-1);
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  text-align: right;
+}
+
+.det-drill li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .rows {
   display: flex;
   flex-direction: column;

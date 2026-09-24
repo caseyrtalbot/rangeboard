@@ -1,5 +1,5 @@
 import type { LadderRow } from '../../../charts/types'
-import { useMemo, type ReactNode } from 'react'
+import { Fragment, useMemo, type ReactNode } from 'react'
 import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { readTokens, resolveColor } from '../../../charts/tokens'
 import { scenarioDurationS } from '../../../model/scenario'
@@ -61,21 +61,31 @@ export interface DetailRow {
   value: string
   unit?: string
   tag?: ReactNode
+  /** Hover text of the value. A multi-clause value, which may clip, defaults to itself. */
+  title?: string
+  /** A drill-in under the row, such as the expanded list behind a `.mini` count. */
+  more?: ReactNode
 }
 
-/** A stack of label and value rows. */
+/** A stack of label and value rows. Every value holds one line. */
 export function Rows({ rows }: { rows: DetailRow[] }) {
   return (
     <div className="rows">
       {rows.map((row) => (
-        <div className="row" key={row.label}>
-          <span className="rl">{row.label}</span>
-          <span className="rv num">
-            {row.value}
-            {row.unit ? <em>{row.unit}</em> : null}
-            {row.tag}
-          </span>
-        </div>
+        <Fragment key={row.label}>
+          <div className="row">
+            <span className="rl">{row.label}</span>
+            <span
+              className="rv num"
+              title={row.title ?? (row.value.includes(' · ') ? row.value : undefined)}
+            >
+              {row.value}
+              {row.unit ? <em>{row.unit}</em> : null}
+              {row.tag}
+            </span>
+          </div>
+          {row.more}
+        </Fragment>
       ))}
     </div>
   )
