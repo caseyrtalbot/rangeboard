@@ -2465,6 +2465,12 @@ select.nu-unit {
   padding: 2px 0 var(--space-3);
 }
 
+/* A collapsed detail section hides its body through the attribute; the flex
+   display above would otherwise override it. */
+.wg-b[hidden] {
+  display: none;
+}
+
 /* ---------- Analysis: selection detail ---------- */
 
 /* One selected entity replaces the widget stack. The pane reuses the widget

@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-09-24T23:46:07.503Z",
+  "capturedAt": "2026-09-24T23:51:16.342Z",
   "viewport": "1440x900 dark",
   "shots": {
     "prepare-fragility-help-off": {
@@ -436,17 +436,6 @@
         16,
         16,
         16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
         16
       ],
       "fieldHelpLines": 0,
@@ -521,7 +510,7 @@
       },
       "mutedSentences": [
         "State shows the final sampled instant, not the run outcome; cumulative counts cover the run.",
-        "Giraffe 1X 3D radar (Saab) 1 · surveillance · 1 now · 1 seen · 0 classified · 5:50 hold · 350 track-s",
+        "Giraffe 1X 3D radar (Saab) 1 · surveillance · 1 now · 1 seen · 0 classified · 5:51 hold · 352 track-s",
         "FAAD C2 (Northrop Grumman) 1 · command and control · 1 now · 1 routed · 1 effector",
         "Coyote Block 2 interceptor 1 · interceptor · 1 target · 2 salvos · 2 effects · 0 trial defeats · 2/4 remaining",
         "KuRFS fire-control radar (Raytheon) 1 · fire control · 1 now · 1 seen · 1 classified · 8:21 hold · 501 track-s",

@@ -29,7 +29,7 @@
       ],
       "sha256": "76dff04d93dabe16c3f5088e4def97eeea8193b1293c13f9ee27768e72a04ecc",
       "reviewedAt": "2026-09-24",
-      "note": "Row C review fixes: Field keeps one root once error is passed, Panel options drive the detail toggles, the screen group is .insp-tab-group with no ARIA role, the e2e asserts Run monitor; final capture chrome-2026-09-24."
+      "note": "Row C canvas comparison fix: a collapsed detail section hides its body (.wg-b[hidden]); capture re-run."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "16e9f7dee9d9e5ac4cb4114fd8e20c04df43843ad83cc281e040b2ad5db8f552",
+      "sha256": "bcf1f1856c71beee8db3798b3b0123faf49366a13bd3a619ec848094bf9a5f97",
       "reviewedAt": "2026-09-24",
-      "note": "Row C review fixes: Field keeps one root once error is passed, Panel options drive the detail toggles, the screen group is .insp-tab-group with no ARIA role, the e2e asserts Run monitor; final capture chrome-2026-09-24."
+      "note": "Row C canvas comparison fix: a collapsed detail section hides its body (.wg-b[hidden]); capture re-run."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "75e0309a47ec2994d9db3bd570caa86ee3d5de3ec77c5865fe097e1d0ea94d1b",
+      "sha256": "31baafd7ad43fdf25faeed247e11c8a1797af743d4d709358e4e5b6c3c3b641e",
       "reviewedAt": "2026-09-24",
-      "note": "Row C review fixes: Field keeps one root once error is passed, Panel options drive the detail toggles, the screen group is .insp-tab-group with no ARIA role, the e2e asserts Run monitor; final capture chrome-2026-09-24."
+      "note": "Row C canvas comparison fix: a collapsed detail section hides its body (.wg-b[hidden]); capture re-run."
     },
     {
       "document": "docs/VERIFICATION.md",
