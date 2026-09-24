@@ -252,12 +252,16 @@ test('drawer: a selection keeps it closed and a resize drag past the minimum clo
 
 test('playback bar: the Engagement toggle opens the strip above the bar and pushes the canvas up', async (t) => {
   const { page, errors } = await open(t)
+  // D9: the transport renders in Execute and Analyze only.
+  assert.equal(await has(page, '.timeline'), false, 'no transport in Prepare')
+  await page.click('#board-phase-execute')
+  await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
   const hostHeight = () => page.evaluate(() => document.querySelector('.canvas-host').clientHeight)
   const barBox = () => page.locator('.timeline').boundingBox()
   const openFlag = () => page.evaluate(() => localStorage.getItem('rangeboard.engstrip.open'))
   const h0 = await hostHeight()
   const bar0 = await barBox()
-  assert.equal(Math.round(bar0.height), 36, 'the merged bar is 36 px high')
+  assert.equal(Math.round(bar0.height), 28, 'the transport is 28 px high')
   assert.equal(await has(page, '#engagement-strip'), false, 'the strip starts closed')
   assert.equal(await page.getAttribute('#engagement-toggle', 'aria-expanded'), 'false')
   await page.click('#engagement-toggle')
@@ -270,11 +274,49 @@ test('playback bar: the Engagement toggle opens the strip above the bar and push
   assert.ok(gap <= 1, `the strip bottom meets the bar top: ${gap}`)
   const h1 = await hostHeight()
   assert.ok(h1 < h0, `the strip takes canvas height: ${h1} vs ${h0}`)
-  assert.equal(Math.round(bar1.height), 36, 'the bar keeps its height')
+  assert.equal(Math.round(bar1.height), 28, 'the bar keeps its height')
   await page.click('#engagement-toggle')
   await waitFor(page, () => !document.querySelector('#engagement-strip'))
   assert.equal(await openFlag(), '0')
   assert.equal(await hostHeight(), h0, 'the canvas takes the strip height back')
+  assert.deepEqual(errors, [])
+})
+
+test('status bar: 24 px, run id first, extra chips fold into a counted ROE chip', async (t) => {
+  const { page, errors } = await open(t)
+  const bar = await page.locator('.status-bar').boundingBox()
+  assert.equal(Math.round(bar.height), 24, 'the status bar is 24 px high')
+  const runText = (await page.textContent('.status-bar')).trim()
+  assert.ok(runText.startsWith('RUN-'), `the status bar starts with the run id: ${runText}`)
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.evaluate(() => {
+    const inline = document.querySelector('.status-bar .status-inline')
+    for (const n of [1, 2, 3]) {
+      const chip = document.createElement('span')
+      chip.textContent = `Injected chip ${n} with a long label`
+      inline.append(chip)
+    }
+    // A re-render re-measures the row, as a real chip change does.
+    window.__store.setState((s) => ({ save: { ...s.save } }))
+  })
+  await sleep(100)
+  const row = await page.evaluate(() => {
+    const box = document.querySelector('.status-bar .status-inline').getBoundingClientRect()
+    const chips = [...document.querySelectorAll('.status-bar .status-inline > *')].map((c) =>
+      c.getBoundingClientRect(),
+    )
+    const el = document.querySelector('.status-bar')
+    return {
+      hidden: chips.filter((c) => c.top >= box.bottom).length,
+      count: document.querySelector('.status-bar .status-fold-count')?.textContent,
+      overflow: el.scrollWidth - el.clientWidth,
+      scroll: document.documentElement.scrollWidth - innerWidth,
+    }
+  })
+  assert.ok(row.hidden > 0, 'the full row hides whole chips')
+  assert.equal(row.count, `+${row.hidden}`, 'the ROE button counts the hidden chips')
+  assert.equal(row.overflow, 0, 'the status bar does not scroll sideways')
+  assert.equal(row.scroll, 0, 'the page does not scroll sideways')
   assert.deepEqual(errors, [])
 })
 
