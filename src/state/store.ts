@@ -124,6 +124,8 @@ export interface UiState {
   rightTab: RightTab
   /** Theme choice. Not undoable; kept in the saved view record. */
   theme: Theme
+  /** Field help lines shown as text. Not undoable; kept in the saved view record. */
+  showFieldHelp: boolean
   /** When true the sat underlay is draggable for placement. */
   moveUnderlay: boolean
   /** Canvas layer visibility, 17 keys. Not undoable; kept in its own localStorage key. */
@@ -294,6 +296,7 @@ export interface Store {
   setBasemap: (b: BasemapMode) => void
   setBoundaryType: (t: BoundaryType) => void
   setRightTab: (t: RightTab) => void
+  setShowFieldHelp: (v: boolean) => void
   setTheme: (t: Theme) => void
   setMoveUnderlay: (v: boolean) => void
   setBoardPhase: (phase: BoardPhase) => void
@@ -512,6 +515,7 @@ export const useStore = create<Store>()((set, get) => {
       calibrateB: null,
       rightTab: view.rightTab ?? 'inspect',
       theme: view.theme ?? 'system',
+      showFieldHelp: view.showFieldHelp ?? false,
       moveUnderlay: false,
       layers: savedLayers(),
       ringOverrides: savedRingOverrides(),
@@ -1314,6 +1318,11 @@ export const useStore = create<Store>()((set, get) => {
       if (get().ui.rightTab === t) return
       writeView({ rightTab: t })
       set((st) => ({ ui: { ...st.ui, rightTab: t } }))
+    },
+    setShowFieldHelp: (v) => {
+      if (get().ui.showFieldHelp === v) return
+      writeView({ showFieldHelp: v })
+      set((st) => ({ ui: { ...st.ui, showFieldHelp: v } }))
     },
     setTheme: (t) => {
       writeView({ theme: t })

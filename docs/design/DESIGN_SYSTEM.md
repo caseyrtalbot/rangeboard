@@ -22,8 +22,9 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    `--dur-enter` (opacity and a 4 px rise). A modal surface dims the board with
    `--scrim`; the palette and Settings are modal. A top-bar menu (`.tb-menu-panel`: the
    View, Range setup, ROE and file menus and Settings) carries the raised tone, rule,
-   radius and entry and also takes `.surface-float` for the shadow. The `.help-dot`
-   bubble is a pseudo-element: tone, rule and radius, no shadow. The sheet has no
+   radius and entry and also takes `.surface-float` for the shadow. A field's method
+   note is the native `title` of its `.field-info` button, so it draws no surface of
+   its own. The sheet has no
    `backdrop-filter`. Docked panels cast no shadow: the right panel is separated from the
    board by one 1 px rule.
 5. **Four surfaces.** Board, panel, one sunken tone for an input and one raised tone for a
@@ -54,11 +55,18 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    flight path, a leader or a coverage tint does not run through the text and no filled
    patch shows over a tint. A heading handle that points down into the label moves the
    label below its knob (`anchoredLabelTop`); the handle keeps its 34 px reach.
+10. **Gray text has four jobs.** Status, rule, method note and first-run instruction.
+    Each job has its own home. Status becomes control state. A rule becomes a placeholder
+    and an error line that shows only when the field is invalid. A method note goes behind
+    a 24 px (i) button. A first-run instruction becomes an empty-state row that the first
+    result replaces. A per-panel "Show field help" switch (`ui.showFieldHelp`) renders
+    every help sentence as a `.field-help` line. No full sentence is set in muted gray.
 
 ## 2. Tokens
 
-Warm graphite, not blue-black. Chrome is monochrome so red, blue and orange stay free to
-mean threat, sensor and effector on the board. Components read the semantic names; the
+Warm graphite, not blue-black. The chrome has one accent, for the primary action and the
+active mark. Red, blue and orange stay free to mean threat, sensor and effector on the
+board, and the board channel inks are unchanged. Components read the semantic names; the
 short aliases (`--bg`, `--text`, `--border`, `--accent`, `--danger`, `--good`, `--warn`)
 map onto them.
 
@@ -72,17 +80,24 @@ map onto them.
 | `--rule-strong` | `#454846` | section separators, control borders (`--border-control`), floating edges |
 | `--text-primary` | `#ebe9e3` | values, titles; 14.4:1 on panel, measured 2026-09-05 |
 | `--text-secondary` | `#a9a9a3` | body, meta; 7.4:1 |
-| `--text-tertiary` | `#74766f` | labels at 12 px weight 500; 3.8:1 |
+| `--text-tertiary` | `#8c8e88` | labels at 12 px weight 500; 5.27:1 on panel, 4.87:1 on raised |
 | `--text-disabled` | `#6c6f69` | disabled controls; 3.42:1 on panel, 3.16:1 on raised |
-| `--ink` | `#121313` | text on a pressed or primary control |
+| `--ink` | `#121313` | text on a pressed control |
+| `--accent` | `#7ba7e8` | the `.primary` fill and the active mark |
+| `--accent-ink` | `#121313` | text on the accent; 7.56:1 |
 | `--status-nominal` | `#7fc39a` | state ink; 8.5:1 |
 | `--status-warning` | `#e2ad55` | state ink |
 | `--status-critical` | `#e46f62` | state ink |
+| `--status-limit` | `#e0894b` | the LIMITS tag on a validity count; 6.52:1 |
 | `--status-inactive` | text 3 | state ink |
 | `--ew`, `--de`, `--ghost` | `#7da7c4`, `#9aa8b0`, `#6a7178` | jam channel, directed-energy channel, defeated track |
 | `--chart-1` to `--chart-5` | `#3987e5`, `#d95926`, `#199e70`, `#c98500`, `#d55181` | chart series slots, assigned by first detection |
 | `--radius-control` | 4 px | buttons, inputs, segmented groups, checkboxes |
 | `--radius-surface` | 6 px | floating surfaces |
+| `--h-dense` | 24 px | `.mini` control height |
+| `--h-default` | 28 px | default control height |
+| `--h-primary` | 32 px | `.primary` control height |
+| `--type-lead-size` | 15 px | the panel title and the clock |
 | `--elev-1` | `0 8px 24px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3)` | the one shadow, floating surfaces only |
 | `--scrim` | `rgba(0,0,0,.32)` | the board under a modal floating surface |
 
@@ -96,7 +111,9 @@ to 1 ms. A pressed control inverts to text 1 on ink. Focus is a 2 px outline in
 `#f7f5f0`, sunken `#e4e0d8`, raised `#fbfaf7`, rule `#d8d3c9`, rule strong `#b0aa9e`,
 text 1 `#212220` (14.4:1), text 2 `#4e504b` (7.5:1), text 3 `#7b7d73` (3.8:1), disabled
 `#8c877d` (3.28:1), ink is the paper board, nominal `#378154`, warning `#98691b`, critical
-`#d43725` (4.4:1 each), elevation `0 8px 24px rgba(33,34,32,.12)`, scrim
+`#d43725` (4.4:1 each), accent `#2862b0` with accent ink the paper board (5.09:1 under the ink, 5.56:1 on the
+paper panel), limit
+`#a85a1c` (4.65:1 on the paper panel), elevation `0 8px 24px rgba(33,34,32,.12)`, scrim
 `rgba(33,34,32,.2)`. Two blocks map the
 palette onto the semantic tokens: `:root[data-theme='light']` for the manual switch and
 `@media (prefers-color-scheme: light)` for the OS setting, with `data-theme='dark'` as the
@@ -124,6 +141,7 @@ tabular-nums` is set on `:root`.
 | label | `--type-label-*` | 12 / 500, text 3, sentence case |
 | machine | `--type-machine-*` | 12 / 400, mono |
 | dense | `--type-dense-size` | 11 |
+| lead | `--type-lead-size` | 15, the panel title and the clock |
 
 The floor is 11 px. No `font-size` rule in the sheet is below it. Only dense machine rows
 reach it: the detail and register tables, the event ledger, the phase chips, the timeline
@@ -149,11 +167,15 @@ inaccessible.
 
 ## 4. Components
 
-- **Buttons.** 28 px high (5 px pad, 16 px line, 1 px border), 4 px radius, label size and
-  weight. Default: transparent border, hover tone on hover, inverted on active. `.primary`:
-  filled text 1 on ink; the main run action on a screen is `.primary`. `.danger`: critical
-  text, border on hover. `.mini`: bordered in rule strong, meta size. `.active`: hover
-  tone plus text 1. Disabled drops to `--text-disabled`. A panel-body action
+- **Buttons.** Three heights and no fourth, 4 px radius, label size and weight. `.mini`
+  is 24 px (`--h-dense`: 3 px pad, 16 px line, 1 px border), bordered in rule strong, meta
+  size. The default button is 28 px (`--h-default`: 5 px pad, 16 px line, 1 px border):
+  transparent border, hover tone on hover, inverted on active. `.primary` is 32 px
+  (`--h-primary`: 7 px by 12 px pad): the `--accent` fill with `--accent-ink` text at
+  weight 500. Its hover keeps the fill at `brightness(1.08)` and its press at
+  `brightness(0.92)`, so the ink stays legible. The main run action on a screen is
+  `.primary`. `.danger`: critical text, border on hover. `.active`: hover tone plus
+  text 1. Disabled drops to `--text-disabled`. A panel-body action
   (`.inspector-body button`) draws a 1 px `--rule-strong` frame, disabled included;
   register rows, table sort headers and danger actions keep their own edges. A disabled
   action states its reason in its title and in a muted line beside it.
@@ -167,14 +189,21 @@ inaccessible.
 - **Status chips.** A top-bar status chip that acts is a button with no frame; it keeps
   the chip look.
 - **Icons** (`src/ui/icons.tsx`). One inline SVG set for chrome glyphs: library, objects,
-  commands, undo, redo, close and caret. Each is a 16 px viewBox with a 1.5 px round
+  commands, undo, redo, close, caret, settings, more, drawer, entities, layers, frames,
+  play, pause, reset, info, chevron down, chevron right, plus, search and pencil. Each is a 16 px viewBox with a 1.5 px round
   stroke in `currentColor` and `aria-hidden`; the button that holds it carries the label
   or title. A chrome control uses this set, not a text glyph.
 - **Inputs.** Sunken fill, rule strong border, text 2 border on hover, 2 px focus outline.
   A unit sits inside the field in mono text 2 (`.nu-unit`). Only a field that accepts
   input carries a frame.
-- **Field** (`Field`, `.field`). Label above the control in label size; an optional help
-  dot after the label; an optional unit after the control.
+- **Field** (`Field`, `.field`). Label above the control in label size. `unit` renders
+  in `.nu-unit` inside the frame, after the control. `help` ends the label row in a
+  24 px (i) button (`.field-info`, `aria-label="About <label>"`) whose title holds the
+  text. The text also renders as a `.field-help` line (12 px, text 2) under the control
+  when `FieldHelpProvider` is true; the inspector mounts that provider from
+  `ui.showFieldHelp`, so kit imports no store. `error` renders a `.field-error` line (11 px, critical)
+  under the control and sets `aria-invalid` on it. With `help` or `error` the frame is a
+  div and the child must be one React element, which takes the label's `id`.
 - **State** (`State`, `.state`). A solid 8 px square and a word in one state ink. `hollow`
   outlines the square for an undecided or qualifying count; `live` clips it to a circle.
 - **Provenance mark** (`ProvMark`, `.prov-mark`). One 8 px shape in a fixed 36 px column

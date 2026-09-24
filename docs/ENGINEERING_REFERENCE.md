@@ -559,8 +559,9 @@ src/analysis/  classPriors.ts (classOfModel, classPriorFor over the generated CL
                integer counts), trialSeries.ts (observation-bounded trial chart adapters),
                calibrate.ts (familyFor, the beta and normal-gamma posteriors,
                overrideReason and acceptCalibration over CalibrationRecord)
-src/ui/        kit.tsx: the shared primitives Field, Seg, State and ProvMark that the
-               Board panels render; reads index.css classes only, no store.
+src/ui/        kit.tsx: the shared primitives Field, FieldHelpProvider, Seg, State and
+               ProvMark that the Board panels render; reads index.css classes only, no
+               store (a store import there splits the store into its own chunk).
                ink.ts: the Konva ink table (danger red, entity kind fallback colors) that
                the layers, the palette glyphs, the detail panels and trackState share,
                and the BOARD_INK_DARK and BOARD_INK_PAPER tables that useBoardInk picks.

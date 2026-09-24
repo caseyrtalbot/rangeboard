@@ -1100,6 +1100,20 @@ describe('view state', () => {
     useStore.getState().setTheme('system')
   })
 
+  it('round-trips the field help switch and keeps it out of history', () => {
+    const store = stubStorage()
+    expect(useStore.getState().ui.showFieldHelp).toBe(false)
+    const past = useStore.getState().past
+    useStore.getState().setShowFieldHelp(true)
+    expect(useStore.getState().ui.showFieldHelp).toBe(true)
+    expect(useStore.getState().past).toBe(past)
+    expect(JSON.parse(store.get(VIEW_KEY)!)).toEqual({ showFieldHelp: true })
+    expect(savedView().showFieldHelp).toBe(true)
+    stubStorage({ [VIEW_KEY]: JSON.stringify({ showFieldHelp: 'yes' }) })
+    expect(savedView()).toEqual({})
+    useStore.getState().setShowFieldHelp(false)
+  })
+
   it('is empty on unreadable data', () => {
     stubStorage({ [VIEW_KEY]: 'not json' })
     expect(savedView()).toEqual({})

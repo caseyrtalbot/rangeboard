@@ -85,11 +85,13 @@
   --border-focus: var(--text-primary);
 
   /* Text ramp. Three steps: values and titles, body and meta, labels at
-     12 px weight 500. Disabled text has its own ink: 3.42:1 on the panel
-     and 3.16:1 on the raised tone, so a disabled label stays readable. */
+     12 px weight 500. Text 3 measures 5.27:1 on the panel and 4.87:1 on
+     the raised tone, so it clears AA. Disabled text has its own ink:
+     3.42:1 on the panel and 3.16:1 on the raised tone, so a disabled
+     label stays readable. */
   --text-primary: #ebe9e3;
   --text-secondary: #a9a9a3;
-  --text-tertiary: #74766f;
+  --text-tertiary: #8c8e88;
   --text-disabled: #6c6f69;
 
   /* Ink on a filled control. A pressed control inverts to text 1 on ink. */
@@ -100,7 +102,15 @@
   --status-nominal: #7fc39a;
   --status-warning: #e2ad55;
   --status-critical: #e46f62;
+  /* The LIMITS tag on a validity count: 6.52:1 on the panel. */
+  --status-limit: #e0894b;
   --status-inactive: var(--text-tertiary);
+
+  /* Three control heights and no fourth: a dense .mini control, the
+     default control and the one .primary action. */
+  --h-dense: 24px;
+  --h-default: 28px;
+  --h-primary: 32px;
 
   /* Spacing scale. Every margin and pad in the panel comes from here. */
   --space-1: 4px;
@@ -143,6 +153,8 @@
      tables, the event ledger, the phase chips, the timeline axis and rows,
      and the KPI sub-line. The density control of step 6 will drive it. */
   --type-dense-size: 11px;
+  /* The panel title and the clock. No other size token. */
+  --type-lead-size: 15px;
 
   /* Two radii (rule 2). A button, an input, a segmented group and a
      checkbox are 4 px; a floating surface is 6 px; a docked container is
@@ -158,10 +170,11 @@
   --hover: var(--surface-hover);
   --text: var(--text-primary);
   --text-dim: var(--text-secondary);
-  /* Chrome emphasis. Monochrome by design: an emphasis mark, a focus ring
-     and a filled control all read in text 1, so colour stays with the
-     channels and the states. */
-  --accent: var(--text-primary);
+  /* Chrome emphasis. One accent for the primary action and the active
+     mark; accent ink on it measures 7.56:1. The board channel inks are
+     unchanged, so red, blue and orange keep their meaning there. */
+  --accent: #7ba7e8;
+  --accent-ink: #121313;
   --danger: var(--status-critical);
   --good: var(--status-nominal);
   --warn: var(--status-warning);
@@ -227,6 +240,12 @@
   --paper-nominal: #378154;
   --paper-warning: #98691b;
   --paper-critical: #d43725;
+
+  /* The accent on paper: paper board ink on it measures 5.09:1, and it
+     measures 5.56:1 on the paper panel. The limit ink measures 4.65:1 on
+     the paper panel. */
+  --paper-accent: #2862b0;
+  --paper-limit: #a85a1c;
 }
 
 /* The manual switch in the top bar. `--ink` is the board ground in both
@@ -248,6 +267,9 @@
   --status-nominal: var(--paper-nominal);
   --status-warning: var(--paper-warning);
   --status-critical: var(--paper-critical);
+  --status-limit: var(--paper-limit);
+  --accent: var(--paper-accent);
+  --accent-ink: var(--paper-board);
   color-scheme: light;
 }
 
@@ -270,6 +292,9 @@
     --status-nominal: var(--paper-nominal);
     --status-warning: var(--paper-warning);
     --status-critical: var(--paper-critical);
+    --status-limit: var(--paper-limit);
+    --accent: var(--paper-accent);
+    --accent-ink: var(--paper-board);
     color-scheme: light;
   }
 }
@@ -481,7 +506,8 @@ button {
   font: inherit;
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
-  line-height: 16px;
+  /* 5 + 16 + 5 padding and line plus 1 + 1 border = 28, the default height. */
+  line-height: calc(var(--h-default) - 12px);
   transition:
     background-color var(--dur-fast) ease,
     border-color var(--dur-fast) ease,
@@ -541,9 +567,25 @@ button.danger:hover {
 }
 
 button.primary {
+  min-height: var(--h-primary);
+  padding: 7px 12px;
   background: var(--accent);
-  color: var(--ink);
+  color: var(--accent-ink);
   font-weight: var(--type-label-weight);
+}
+
+/* The accent stays under a pressed or hovered primary, so accent ink stays
+   legible; only the brightness moves. */
+button.primary:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-ink);
+  filter: brightness(1.08);
+}
+
+button.primary:active:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-ink);
+  filter: brightness(0.92);
 }
 
 button.primary:disabled {
@@ -553,7 +595,8 @@ button.primary:disabled {
 
 button.mini {
   align-self: flex-start;
-  padding: 1px 7px;
+  min-height: var(--h-dense);
+  padding: 3px 7px;
   border: 1px solid var(--border-control);
   color: var(--text-secondary);
   font-size: var(--type-meta-size);
@@ -1806,53 +1849,41 @@ p.muted.small {
   margin-left: 0;
 }
 
-/* Field help dot and number-unit row (ui/kit Field) */
+/* Field method note, help line and error line, and the number-unit row
+   (ui/kit Field). The .field > span label rule would otherwise reach these
+   spans and the info button, so each selector names its parent. */
 
-.help-dot {
+.field .field-label > .field-info {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 13px;
-  height: 13px;
-  margin-left: 5px;
-  border: 1px solid var(--border-control);
-  border-radius: var(--radius-control);
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
-  line-height: 1;
-  text-transform: none;
-  letter-spacing: normal;
-  vertical-align: middle;
-  cursor: help;
-  position: relative;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  padding: 0;
+  border-color: transparent;
+  color: var(--text-secondary);
 }
 
-.help-dot::after {
-  content: attr(data-help);
-  display: none;
-  position: absolute;
-  left: 0;
-  top: calc(100% + 5px);
-  z-index: 60;
-  width: max-content;
-  max-width: 280px;
-  padding: 6px 9px;
-  /* A pseudo-element cannot take .surface-float, so it has the tone, rule and
-     radius without the shadow. */
-  background: var(--surface-raised);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-surface);
-  color: var(--text);
-  font-size: var(--type-body-size);
+.field .field-label > .field-info:hover {
+  color: var(--text-primary);
+}
+
+.field > .field-help {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--type-meta-size);
   font-weight: var(--type-body-weight);
   line-height: 1.4;
-  white-space: normal;
-  text-align: left;
 }
 
-.help-dot:hover::after,
-.help-dot:focus::after {
+.field > .field-error {
   display: block;
+  color: var(--status-critical);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-body-weight);
+  line-height: 1.4;
 }
 
 .nu-row {

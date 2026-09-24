@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "94102c245a18aa16985053cd75f9a66b54fc2867da9a93ff178c0d4b098c1980",
-      "reviewedAt": "2026-09-23",
-      "note": "The lazy-boundary list now names the undo cue and the canvas context menu; the rest of the polish4 source changes need no guide text."
+      "sha256": "a02dae1aed471c071e197db164e33aa02132e44fcca7b540a42a4f306dd4e79d",
+      "reviewedAt": "2026-09-24",
+      "note": "Row A foundation (tokens, control heights, icons, Field contracts, showFieldHelp flag) adds no feature or entry point; the guide text stays accurate."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "adc62830d4776a07d4718f0033b1cda1b55ebc374517641979631d1a48646452",
-      "reviewedAt": "2026-09-23",
-      "note": "Polish4: redo mark, prefix-sized merge with the finishSummary cap timing, boundsRefusal self-intersection order, gun-burst tag gate, label handleDeg and drag behavior, deterministic raid-size ids, ContextMenu lazy boundary."
+      "sha256": "8d770b40275f33031cd5cfb023b544f5d51187d72ff484cb45cbd687797babd4",
+      "reviewedAt": "2026-09-24",
+      "note": "Row A: kit.tsx lists FieldHelpProvider and stays store-free; the ui slice gains showFieldHelp in the saved view record; token names unchanged in the design-system paragraph."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "259a2995619b8f9599f28fa4f967851c52c617256676f6549f2070092230a858",
-      "reviewedAt": "2026-09-23",
-      "note": "Polish4 bundle measurement (365,724 entry, 1,276 headroom) and the second header e2e test."
+      "sha256": "e1d76b9039d32cfb0ef44833306917ec43c5c18165150d2c12dcd9a3e9771e3b",
+      "reviewedAt": "2026-09-24",
+      "note": "Row A gate: entry 365,970 (initial 382,635), headroom 1,030; viewState gains showFieldHelp; the kit store-import chunk split is recorded."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "fcd8938a2a86b4597be460f8b93107bfa0dd2ef629e0a30891a7282538ef174d",
-      "reviewedAt": "2026-09-23",
-      "note": "Polish4: equal top bar tracks, whole-chip drop with +N count at every width, Storage panel anchoring, 1024 px floor, cue beside the drawer, tool ink on the rotation handle, glyph halo on names and callouts."
+      "sha256": "74810bb302c2b45f8c3fb5fa26077d81e9740b94f8de191f7de68efdd339fb75",
+      "reviewedAt": "2026-09-24",
+      "note": "Row A: accent and limit tokens, three control heights, lead size, Field help/error/unit contracts with FieldHelpProvider, rule 10, new icons."
     }
   ],
   "historical": [

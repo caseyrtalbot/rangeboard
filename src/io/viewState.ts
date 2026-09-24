@@ -9,7 +9,7 @@ import { LAYERS_KEY, RINGS_KEY, RUNSEQ_KEY, UNITS_KEY, VIEW_KEY } from './storag
 
 /**
  * View state that survives a reload but never enters the `Scenario`: camera,
- * basemap, right panel tab and theme. Written eagerly by the store setters, read
+ * basemap, right panel tab, theme and the field help switch. Written eagerly by the store setters, read
  * once at store construction. Every field is optional, so a partial or older record
  * still loads and an unknown field is dropped rather than raised.
  */
@@ -18,6 +18,7 @@ export interface SavedView {
   basemap?: BasemapMode
   rightTab?: RightTab
   theme?: Theme
+  showFieldHelp?: boolean
 }
 
 /**
@@ -84,6 +85,7 @@ export function savedView(): SavedView {
   if (basemap) out.basemap = basemap
   if (rightTab) out.rightTab = rightTab
   if (theme) out.theme = theme
+  if (typeof raw.showFieldHelp === 'boolean') out.showFieldHelp = raw.showFieldHelp
   return out
 }
 

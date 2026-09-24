@@ -47,8 +47,10 @@ The budget (`scripts/check-bundle.mjs`) is 367,000 bytes gzip for the entry and 
 for initial JavaScript plus CSS. The user raised it from 366,000 on 2026-09-23 at the
 polish follow-up gate, when the board ink fields, the hover release and the
 degenerate-range refusal put the entry at 366,212 (initial 382,637). The polish4 gate
-measured 365,724 (initial 382,285) after the canvas context menu moved to its own chunk,
-so the entry headroom is 1,276 bytes. Documentation-only
+measured 365,724 (initial 382,285) after the canvas context menu moved to its own chunk.
+The Row A gate of the chrome refactor measured 365,970 (initial 382,635) on 2026-09-24,
+so the entry headroom is 1,030 bytes. A `kit.tsx` import of the store splits the store
+into its own chunk and empties the entry metric; `Field` reads `FieldHelpProvider` instead. Documentation-only
 changes need `docs:check`; maintenance-script changes also need `test:docs`.
 `npm run check` runs the silent-gate tests but not `check:silent` itself; CI runs `check:silent`
 against the pull request base or the pushed-from commit, and a local run diffs against `main`.

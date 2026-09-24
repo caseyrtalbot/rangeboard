@@ -3,7 +3,9 @@
  * provenance mark. Reads only the classes and tokens in index.css; imports no store.
  */
 
-import type { CSSProperties, ReactNode } from 'react'
+import { cloneElement, createContext, isValidElement, useContext, useId } from 'react'
+import type { CSSProperties, ReactElement, ReactNode } from 'react'
+import { IconInfo } from './icons'
 
 /** State ink of a word or a square: the three state colours and the grey. */
 export type StateTone = 'nominal' | 'warning' | 'critical' | 'inactive'
@@ -11,41 +13,85 @@ export type StateTone = 'nominal' | 'warning' | 'critical' | 'inactive'
 /** Provenance of a displayed value. `absent` keeps the column and drops the mark. */
 export type ProvKind = 'sourced' | 'pf' | 'estimated' | 'probable' | 'inferred' | 'absent'
 
+/** Whether a `Field` with `help` also renders the note as a `.field-help` line. */
+const FieldHelpContext = createContext(false)
+
 /**
- * A labelled control. The label sits above the control slot; `help` adds the
- * hover dot after the label; `unit` sets a mono text 3 unit inside the frame,
- * after the control. Only a field that accepts input carries an input frame.
+ * Sets the field help switch for every `Field` under it. The inspector mounts it
+ * from `ui.showFieldHelp`, so kit stays free of the store.
+ */
+export function FieldHelpProvider({ value, children }: { value: boolean; children: ReactNode }) {
+  return <FieldHelpContext.Provider value={value}>{children}</FieldHelpContext.Provider>
+}
+
+/**
+ * A labelled control. The label sits above the control slot; `unit` sets a mono
+ * text 2 unit inside the frame, after the control. `help` ends the label row in
+ * a 24 px (i) button whose title holds the method note, and under a
+ * `FieldHelpProvider` set to true also renders the note as a `.field-help` line under the
+ * control. `error` renders a `.field-error` line and sets `aria-invalid` on the
+ * control. With `help` or `error` the child must be one React element: it takes
+ * the label's `id`, since the frame is then a div and not a wrapping label.
  */
 export function Field({
   label,
   help,
+  error,
   unit,
   children,
 }: {
   label: string
   help?: string
+  error?: string
   unit?: string
   children: ReactNode
 }) {
+  const id = useId()
+  const showHelp = useContext(FieldHelpContext)
+  const slot = (control: ReactNode) =>
+    unit == null ? (
+      control
+    ) : (
+      <div className="nu-row">
+        {control}
+        <span className="nu-unit">{unit}</span>
+      </div>
+    )
+  if (!help && !error) {
+    return (
+      <label className="field">
+        <span>{label}</span>
+        {slot(children)}
+      </label>
+    )
+  }
+  if (import.meta.env.DEV && !isValidElement(children)) {
+    throw new Error(`Field "${label}" with help or error needs one React element as its child`)
+  }
+  const control = isValidElement(children)
+    ? cloneElement(children as ReactElement<Record<string, unknown>>, {
+        id,
+        ...(error ? { 'aria-invalid': true } : {}),
+      })
+    : children
   return (
-    <label className="field">
-      <span>
-        {label}
+    <div className="field">
+      <span className="field-label">
+        <label htmlFor={id}>{label}</label>
         {help && (
-          <span className="help-dot" tabIndex={0} data-help={help}>
-            ?
-          </span>
+          <button type="button" className="field-info" aria-label={`About ${label}`} title={help}>
+            <IconInfo />
+          </button>
         )}
       </span>
-      {unit == null ? (
-        children
-      ) : (
-        <div className="nu-row">
-          {children}
-          <span className="nu-unit">{unit}</span>
-        </div>
+      {slot(control)}
+      {help && showHelp && <span className="field-help">{help}</span>}
+      {error && (
+        <span className="field-error" role="alert">
+          {error}
+        </span>
       )}
-    </label>
+    </div>
   )
 }
 
