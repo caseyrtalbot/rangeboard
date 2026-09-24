@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "42c29fce9144cbb44b930827debbc864bc8911f91dbad2e842f6235929893e93",
+      "sha256": "add2491b36ae79c38863468b316753a5def6a363c50641b78a5852cc1cbe6e13",
       "reviewedAt": "2026-09-24",
-      "note": "Row A merged as fc47469; Row B selected with current line anchors, Row A facts for the lanes, the kit store-import landmine and the new bundle numbers."
+      "note": "Row B integrated and reviewed on chrome/int; bundle 8 bytes over waits on the user; Row C selected with anchors at 7634509"
     },
     {
       "document": "docs/Plan.md",

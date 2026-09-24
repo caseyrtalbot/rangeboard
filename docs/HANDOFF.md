@@ -11,82 +11,120 @@ fresh agent starts from this file and the docs index. This file does not authori
 commit, push or merge.
 
 [Plan.md](Plan.md) is the chrome refactor queue (Option C plus the inspector text-density
-pass, 2026-09-24). Row A is merged. Row B is selected. The design and UX polish plan the
-queue replaces is complete in history at `76074bb`.
-
-## Position
+pass, 2026-09-24). Row A is merged. Row B is integrated and reviewed on `chrome/int`, not
+merged: its bundle gate is 8 bytes over budget and w## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
   `origin/main` holds the polish4 run through `76074bb`. Local `main` holds the plan
-  commit `65c0005` and Row A (`fc47469`), not pushed. No worktree and no lane branch
-  exist.
-- Row A (2026-09-24) landed: `--accent #7ba7e8` with `--accent-ink`, `--status-limit`,
-  `--text-tertiary #8c8e88` (5.27:1 on panel), `--h-dense` 24, `--h-default` 28,
-  `--h-primary` 32, `--type-lead-size` 15; paper `--paper-accent #2862b0` and
-  `--paper-limit #a85a1c`. `.primary` is 32 px accent fill with accent ink; `.mini` is
-  24 px. `Field` has `help` (a 24 px (i) button plus a `.field-help` line under
-  `FieldHelpProvider`), `error` (a `.field-error` line, `aria-invalid`) and `unit` (the
-  plan's "suffix"). `src/ui/icons.tsx` has 22 icons. `ui.showFieldHelp` with
-  `setShowFieldHelp` is in the saved view record. Gate: 2,241 tests, lint, format,
-  bundle, docs and silent checks pass; browser check at 1440 × 900 in both themes
-  shows the 32 px accent primary, 28 px default and 24 px segment heights with 0 page
-  errors.
-- Entry gzip at the Row A gate: 365,970 bytes against 367,000, 1,030 bytes of headroom.
-  Initial JavaScript and CSS: 382,635 against 400,000.
+  commit `65c0005`, Row A (`fc47469`) and the Row B handoff (`00b241b`), not pushed.
+- Row B (2026-09-24) is on `chrome/int` at `7634509` in the worktree
+  `~/Projects/rangeboard-wt/int`: lanes `chrome/b1` to `chrome/b4` (worktrees
+  `~/Projects/rangeboard-wt/b1` to `b4`), four merges, the integrator folds, the docs and
+  the `opus-high` review fixes. Nothing is merged to `main`. The user decides the merge
+  and the bundle budget; then delete the five worktrees and the lane branches.
+- Row B gate at `7634509`: `npm run check` passes except `check:bundle`; 2,254 tests, lint,
+  format, docs, silent and `test:e2e` (13 of 13) pass. Entry gzip 367,008 against
+  367,000, initial 384,130 against 400,000. The entry stood at 366,999 before the review
+  fixes; the always-mounted playback loop, the `(Space)` title and the right-anchored
+  frame popover added 9 bytes. D3 says a shortfall goes to the user: raise the budget in
+  `scripts/check-bundle.mjs` (Row C adds chips, popovers and help lines, so 368,000 or
+  more is the realistic floor) or name a Row B removal.
+- Browser check at 1440 × 900 in both themes (Playwright on the dev server, the firing
+  fixture): 36 px top bar, 32 px accent primary, 28 px icon buttons, 28 px tool row with
+  24 px controls and 22 px segments, 44 px rail with 32 px buttons, 32 px library header,
+  24 px filter, 36 px rows, 28 px transport with 24 px controls in Execute and none in
+  Prepare, 24 px status bar, the frame popover at 36 px, 0 page errors. Execute reads
+  Play before a run and Analyze reads Run again.
+- What Row B built: `Toolbar` (36 px: brand, scenario name once with a pencil and `F2`,
+  centred tabs with an accent underline, one `RunControl` with a `phase` prop, icon
+  Settings, the ⋯ menu with Storage as its last item through `StorageMenuItem` and
+  `StorageDialog`, icon drawer toggle); `BoardTools` (28 px, `.mini` controls, `Range`
+  and `View` chevron triggers, `Preset` section at the top of the View menu wrapping
+  `LayerSettings` in `#view-menu-layers`, no Declutter control); `ResourceRail` (44 px:
+  Library, Entities, Layers, Frames, Commands; Layers clicks the View trigger and focuses
+  inside `#view-menu-layers`; Frames focuses `#frame-add` and is disabled in Prepare);
+  `Palette` (32 px header with `LibraryActions` ⋯ holding Import and Export, no footer,
+  36 px two-line rows through `rowLines`, `aria-expanded` collapse toggles);
+  `TimelineBar` (28 px, outside Prepare; exports `usePlaybackLoop`, which `App` mounts,
+  and `FrameAddPanel`); new `StatusBar` (24 px: run id, phase, `T+`, seed, `MC n / N`,
+  the ROE chip with the folded chips, units, `Validity n` with `LIMITS`; D8 drops at
+  1440, 1280 and 1152 px); `selectPlayLabel` in `state/selectors.ts` (Pause, Retry,
+  Replay, Resume when paused, else Play) feeds the transport and the Execute action.
+- Plan text the build departed from, each with its reason: the units cell reads
+  `nm · kt · ft AGL` (the app has no MSL datum); no `Reload built-in` item (no
+  whole-library reload action exists; only `resetModelToSeed`); the drawing tools keep
+  text labels with hint titles (no tool icons in Row A and no tool shortcuts exist);
+  Reset run has no `(⇧R)` and Settings no key (no such shortcuts exist); the transport
+  clock is gone (P2, the status bar carries it).
 - The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
   layered kill mass 1, layered kills mean 1.115, JIATF leakers mean 0.895, JIATF kills
   mean 0.105. `4.68` is not a pin.
 - The flight horizon is `7fdcb1e`.
 
+## Follow-ups from the Row B review (not fixed, the user picks)
+
+- `StatusBar` subscribes to the clock, so its `useLayoutEffect(measure)` runs a layout
+  read about ten times a second during playback. Move the `T+` cell into a child that
+  holds the clock subscription.
+- The ⋯ trigger keeps `aria-controls="file-actions-panel"` while the Storage dialog is
+  the open panel. `aria-controls={storage ? 'storage-panel' : 'file-actions-panel'}`
+  costs about 10 entry bytes.
+- The rail's Frames button is disabled in Prepare with the reason only in its title. A
+  route that enters Execute and then focuses `#frame-add` would serve D4 better.
+- No test covers the rail routes (`openLayers`, `openFrames`) or that Pause and Resume
+  stay enabled in Execute under deterministic mode.
+- Library rows still draw the friend-frame dome for sensor, effector, C2 and asset
+  kinds; per-subtype shapes (radar, EO/IR, RF, kinetic, DE, integrated) need new
+  `Glyph.tsx` shapes.
+- `F2` focuses the scenario name only while focus is inside the header. The drawer
+  toggle's icon no longer shows the open state; `aria-expanded` and the hover surface do.
+- Some `+ Frame` and popover items have no static-render test; the browser check and
+  the e2e cover them.
+
 ## Tasking
 
-Row B of [Plan.md](Plan.md) is selected: the chrome bands. Four lanes in one message,
-each in its own worktree on a branch from local `main` at `fc47469`, budget 1,800 seconds
-each, then B-int on `chrome/int`. Workers: B1 `opus-medium`, B2 `opus-medium`, B3
-`opus-high`, B4 `opus-medium`. `opus-high` reviews the B-int diff against Rows A and B.
-Decisions D3, D4, D5, D7, D8 and D9 apply at their defaults unless the user says otherwise
-before the lanes start. Merge `chrome/int` to `main` only with the user's authorization.
+Row C of [Plan.md](Plan.md) is selected: the inspector and density lanes. Start only
+after the user has settled the bundle budget and merged `chrome/int` to `main`. Four
+lanes in one message, each in its own worktree outside the repository (a `node_modules`
+symlink to the main checkout runs every gate) on a branch from local `main`, budget
+1,800 seconds each, then C-int on a fresh `chrome/int`, the final capture and the
+`fable-medium` canvas comparison. Workers: C1 `opus-medium`, C2 `opus-high`, C3
+`opus-medium`, C4 `opus-medium`; `opus-high` reviews the C-int diff against Rows A to C.
+D6 applies at its default. Merge to `main` only with the user's authorization.
 
-The plan's line numbers are positions at `76074bb`. Row A moved `src/index.css` down by
-about 43 lines before the field block and about 31 after it. Current anchors at
-`fc47469`:
+The plan's line numbers are positions at `76074bb`. Current anchors at `7634509`:
 
 | Lane | File | Anchor |
 | --- | --- | --- |
-| B1 | `src/panels/Toolbar.tsx` | `Toolbar` at 269; `board-run-context` at 383; `status-pills` and `RoeMenu` at 387-394 |
-| B1 | `src/index.css` | `.toolbar` 414 to `.toolbar-left > .scenario-name` 475; `.tb-menu-wrap` 784 to `.tb-menu-row` 884; `.board-run-context` 4339 |
-| B1 | `RunControl` body mounts | `AnalysisNavigation.tsx:30`, `ForecastSettings.tsx:97` |
-| B2 | `src/panels/Toolbar.tsx` | `BoardTools` at 435 to the end (509) |
-| B2 | `src/index.css` | `.board-tools` 4595 to `.board-tools > .seg button` 4686; `.toolbar > .seg button.tb-glyph` 771 |
-| B3 | `src/App.tsx` | `ResourceRail` 119-156; its props at 766-771 |
-| B3 | `src/index.css` | `.board-resource-rail` 4483-4517; `.palette` 1081 to `.palette-item` 1170-1200 |
-| B4 | `src/App.tsx` | `EngagementStrip` and `TimelineBar` mounts at 834-835; `Toolbar` props at 752-759 |
-| B4 | `src/index.css` | `.timeline` 2540 to `.timeline select` 2571; `.status-pills` 1213 |
+| C1 | `src/App.tsx` | `TABS` 75-79; `PanelTabs` 182-188; the `aside.right-panel` 881-950 with `board-panel-heading` at 886; `setRightTab('inspect')` at 491 and 653 |
+| C1 | `src/index.css` | `.right-panel` 1478 to `.inspector-body.insp > .insp-header` 1666 |
+| C1 | screens | `AnalysisNavigation.tsx`, `screens/navigation.ts:9` (`Where to put it`), `PlacementScreen.tsx:148-149` |
+| C2 | `src/index.css` | no `.frag` block exists; add one directly after `.inspector-actions button.mini` (1890) |
+| C2 | `FragilityScreen.test.tsx` | string assertions at 209-210, 236-246, 474-479 |
+| C3 | `src/index.css` | `.detail-ghost` 5085 (eight lines, then `.source-entry`); the `.det-*` detail blocks start at 2335 |
+| C4 | `src/index.css` | `.field` 1798, `.field-row` 1843, `.field .field-label > .field-info` 1942, `.field > .field-help` 1959, `.field > .field-error` 1967, `.nu-unit` 1986 |
 
-Facts the lanes need from Row A:
+Facts the lanes need from Rows A and B:
 
-- Icons in `src/ui/icons.tsx`: `IconLibrary`, `IconObjects`, `IconCommands`, `IconUndo`,
-  `IconRedo`, `IconClose`, `IconCaret`, `IconSettings`, `IconMore`, `IconDrawer`,
-  `IconEntities`, `IconLayers`, `IconFrames`, `IconPlay`, `IconPause`, `IconReset`,
-  `IconInfo`, `IconChevronDown`, `IconChevronRight`, `IconPlus`, `IconSearch`,
-  `IconPencil`. Only `App.tsx` and `Toolbar.tsx` import the set today, so an icon costs
-  entry bytes the first time a lane imports it (D3). `IconObjects` stays until B3 moves
-  the rail to `IconEntities`; the integrator removes it if nothing imports it.
-- `--accent` is now blue, and 31 rules read it: the brand word, the scenario name focus
-  rule, `button.primary` and its hover and active, the `.rr-bar-fill`, and the selected
-  and pressed marks listed by `grep -n 'var(--accent)' src/index.css`. A lane
-  that owns one of those blocks decides whether its rule keeps the accent or moves to
-  text 1; it reports the choice.
-- `.mini` is 24 px through `min-height: var(--h-dense)` and `padding: 3px 7px`. The base
-  `button` rule keeps 28 px through `line-height: calc(var(--h-default) - 12px)`; rules
-  that set their own padding (`.seg button`, `.tabs button`, `.frame-chip button`) are
-  unchanged and are each lane's to resize.
-- `Field` with `help` or `error` renders a `div.field` and needs one React element as its
-  child, which takes the label's `id`. The `.field-help` and `.field-error` lines are
-  direct children of `.field`. `FieldHelpProvider` is not mounted yet; C1 mounts it from
-  `ui.showFieldHelp`.
+- `FieldHelpProvider` (`src/ui/kit.tsx`) is not mounted; C1 mounts it around the right
+  panel from `ui.showFieldHelp` with `setShowFieldHelp`. `Field` with `help` or `error`
+  renders a `div.field` and needs one React element as its child, which takes the
+  label's `id`; `unit` is the plan's "suffix".
+- The entry budget: every Row C addition must be paid for by a removal, or the user
+  raises the budget again. Icons cost entry bytes the first time a file imports them.
+- Shared selectors go in `src/state/selectors.ts`. An import of `panels/TimelineBar.tsx`
+  from `panels/analysis/RunControl.tsx` split the store into its own chunk (see the
+  landmine); a panel-to-panel import can do the same.
+- The status bar carries the run state and `T+`; C3 removes the telemetry status
+  sentence per the plan. The one `RunControl` is in the top bar; nothing in the body
+  renders one.
+- `ui.showFieldHelp` default false; the "Show field help" switch goes in the inspector ⋯
+  menu that C1 builds in the 32 px `board-panel-heading`.
 
-After B-int passes its gate and the review, rewrite this section for Row C: four lanes
+After C-int passes its gate and the review, run the final capture and the canvas
+comparison, then rewrite this file: position, the follow-ups, no row selected.
+
+r Row C: four lanes
 (C1 inspector frame, C2 Fragility density, C3 telemetry, C4 inputs forms), then C-int,
 the final capture and the `fable-medium` canvas comparison.
 
@@ -107,6 +145,14 @@ the final capture and the `fable-medium` canvas comparison.
 - Physics tab: a checked box selects the prior planning fallback; a cleared box selects
   the physical model when its required fields are present.
 - Do not restore `src/analysis/series.ts`, `withBands` or `TRACK_LADDER_STYLE`.
+- `panels/analysis/RunControl.tsx` must not import `panels/TimelineBar.tsx`: that edge
+  split the store into a `store-*.js` chunk on 2026-09-24 and the entry metric read
+  242,488. `selectPlayLabel` lives in `state/selectors.ts` for that reason.
+- The transport renders only outside Prepare (D9). `usePlaybackLoop` in `TimelineBar.tsx`
+  is mounted by `App`, not by the transport, so the clock runs in every phase. Do not
+  move the loop back into the transport.
+- `#view-menu-layers` (View menu) and `#frame-add` (transport) are the rail's D4 targets;
+  renaming either breaks the Layers or Frames route silently.
 - `src/ui/kit.tsx` imports no store. A `useStore` import there makes rolldown split the
   store into a `store-*.js` chunk of about 124,000 gzip bytes that every lazy chunk
   imports, and the entry metric drops to 242,000 while the budget "passes". Pass store
@@ -146,20 +192,18 @@ the final capture and the `fable-medium` canvas comparison.
   `points` array (`scenarioHasWork` in `src/io/persist.test.ts`,
   `scenarioInstall.test.ts`). Those objects do not pass `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
-  touches the entry. The entry gzip budget is 367,000 bytes with 1,030 bytes headroom
-  (last measured 365,970 at the Row A gate). Icons and new components add entry bytes;
-  the Row B removals (Declutter control, library footer, frame-name input, the second
-  `RunControl`) must pay for them (D3). `sql.js` must stay behind `await import` with
-  its wasm URL.
+  touches the entry. The entry gzip budget is 367,000 bytes and the Row B head measures
+  367,008 (D3: the user settles it). CSS is not in the entry metric; only JavaScript
+  moves it. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
 - `newId` embeds `Date.now()`. A test that asserts a seed-dependent Monte Carlo outcome
   must build its entities with fixed ids, or its random stream changes with the clock.
 - Keep `.board-library-drawer` and `.undo-cue` siblings inside `.board-stage`; the cue
   reads `--library-w` there. The ROE `+N` count comes from one `ResizeObserver` on
-  `.status-inline` in `Toolbar.tsx`; B4 moves it with the chips.
+  `.status-inline` in `StatusBar.tsx`.
 - The top bar grid has equal side tracks, so the tabs hold the center from about
-  1115 px; the narrowest supported window is 1024 px. B1 keeps both.
+  1115 px; the narrowest supported window is 1024 px.
 - A redo adds the scenario it makes current to `redone` (`src/state/scenarioInstall.ts`,
   a session-only `WeakSet`). The canvas context menu is its own chunk.
 - Lane worktrees share one `git stash` list. A lane must not use `git stash` while a
