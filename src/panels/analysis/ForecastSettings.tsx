@@ -7,7 +7,6 @@ import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 import { runSettings } from '../../model/types'
 import type { StopRule } from '../../playback/mcRun'
-import { RunControl } from './RunControl'
 
 /** What kind of number the run produces: an envelope point, or a replicate estimate. */
 function chipMeta(run: ReturnType<typeof runSettings>, mc: McState): string {
@@ -94,7 +93,6 @@ export function ForecastSettings() {
         {chip.text}
       </span>
       <span className="chip-meta">{chip.meta}</span>
-      <RunControl />
     </div>
   )
 }

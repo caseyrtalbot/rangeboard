@@ -403,20 +403,19 @@ body,
 
 /* ---------- Toolbar ---------- */
 
-/* The board bar holds one 40 px row. Three columns: identity and the Settings
-   and Storage menus, the lifecycle tablist, the run status and chips. The two
-   outer tracks are equal, so the tablist sits at the bar centre whatever the
-   groups hold. A group that runs out of room shrinks inside its track: the
-   scenario name narrows, the run status ends in an ellipsis and the inline
-   chips drop off whole, and the ROE button counts them. Below about 1120 px a
-   group reaches its floor and pushes the tablist aside instead of covering it.
-   The column gap keeps the three groups apart at every width. */
+/* The board bar holds one 36 px row. Three columns: brand and scenario name,
+   the lifecycle tablist, then the phase's primary action, Settings, the ⋯ menu
+   and the drawer toggle. The two outer tracks are equal, so the tablist sits at
+   the bar centre whatever the groups hold. A group that runs out of room shrinks
+   inside its track: the scenario name narrows and the run progress ends in an
+   ellipsis. Below about 1120 px a group reaches its floor and pushes the tablist
+   aside instead of covering it. The column gap keeps the three groups apart. */
 .toolbar {
   display: grid;
   grid-template-columns: minmax(min-content, 1fr) auto minmax(min-content, 1fr);
   column-gap: var(--space-6);
   align-items: stretch;
-  height: 40px;
+  height: 36px;
   padding: 0 10px;
   box-sizing: border-box;
   background: var(--bg-panel);
@@ -433,6 +432,7 @@ body,
 
 .toolbar-right {
   justify-content: flex-end;
+  gap: var(--space-1);
 }
 
 .toolbar-left > *,
@@ -446,21 +446,31 @@ body,
   white-space: nowrap;
 }
 
-/* The run status fills the free space from a zero basis, so it adds nothing to
-   the right track's floor; the pills keep the ROE button as theirs. */
-.toolbar-right > .board-run-context {
+/* The run control fills the free space from a zero basis, and its progress line
+   takes a zero width, so the line adds nothing to the right track's floor. The
+   line sits before the switch, right-aligned, so the button keeps its place. */
+.toolbar-right > .run-control {
   flex: 1 1 0;
+  min-width: min-content;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  margin-right: var(--space-2);
+  padding-block: 0;
+}
+
+.toolbar-right .run-progress {
+  flex: 1 1 0;
+  order: -1;
   width: 0;
+  overflow: hidden;
   text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.toolbar-right > .status-pills,
-.status-inline {
-  flex-shrink: 1;
-}
-
-.status-inline {
-  min-width: 0;
+.toolbar-right .mc-run {
+  align-self: center;
+  font-size: var(--type-label-size);
 }
 
 .brand {
@@ -470,11 +480,31 @@ body,
   font-weight: var(--type-title-weight);
 }
 
-/* Borderless inline name. A rule appears on hover and on focus only. It is the
-   one shrinking item in the left group, so a narrow bar never hides a control. */
-.toolbar-left > .scenario-name {
-  flex: 0 1 184px;
+/* Borderless inline name. A rule and the pencil appear on hover and on focus
+   only. It is the one shrinking item in the left group. */
+.toolbar-left > .scenario-name-wrap {
+  display: flex;
+  flex: 0 1 204px;
+  align-items: center;
+  gap: var(--space-1);
   min-width: 88px;
+}
+
+.scenario-name-wrap > .scenario-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.scenario-name-edit {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-secondary);
+  opacity: 0;
+}
+
+.scenario-name-wrap:hover > .scenario-name-edit,
+.scenario-name-wrap:focus-within > .scenario-name-edit {
+  opacity: 1;
 }
 
 .scenario-name {
@@ -793,8 +823,33 @@ input[type='color']::-webkit-color-swatch {
   border: 1px solid var(--border-control);
 }
 
-.tb-drawer-toggle {
-  padding: 4px 8px;
+/* Icon-only bar buttons: Settings, the ⋯ menu and the drawer toggle, 28 px square. */
+.tb-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--h-default);
+  height: var(--h-default);
+  padding: 0;
+  color: var(--text-secondary);
+}
+
+.tb-icon.active,
+.tb-icon[aria-expanded='true'] {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* Recovery notices wait in the ⋯ menu; this mark shows they exist while it is shut. */
+.tb-icon-mark {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: var(--status-warning);
+  border-radius: 50%;
 }
 
 .tb-menu.active {
@@ -859,6 +914,16 @@ input[type='color']::-webkit-color-swatch {
 
 .tb-menu-item:hover {
   background: var(--hover);
+}
+
+.tb-menu-item > .state {
+  margin-left: auto;
+}
+
+.tb-menu-sep {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
 }
 
 .tb-menu-tick {
@@ -4343,6 +4408,21 @@ input[type='number'] {
   font-family: var(--font-mono);
   font-size: var(--type-meta-size);
   white-space: nowrap;
+}
+
+/* Top bar phase tabs (Row B1): the selected tab keeps text 1 over a 2 px accent
+   underline, and its mono step number takes the accent. Placed after the base
+   .board-phases rules so these win at equal specificity. */
+.board-phases button[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+}
+
+.board-phases .num {
+  font-family: var(--font-mono);
+}
+
+.board-phases button[aria-selected='true'] .num {
+  color: var(--accent);
 }
 
 .board-panel-heading {

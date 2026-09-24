@@ -293,10 +293,10 @@ test('playback bar: the engagement open state is restored from storage', async (
   assert.deepEqual(errors, [])
 })
 
-test('header: the lifecycle tabs and run status sit in the 40 px header and no phase row renders', async (t) => {
+test('header: the lifecycle tabs sit in the 36 px header and no phase row renders', async (t) => {
   const { page, errors } = await open(t)
   const bar = await page.locator('.toolbar').boundingBox()
-  assert.equal(Math.round(bar.height), 40, 'the header is 40 px high')
+  assert.equal(Math.round(bar.height), 36, 'the header is 36 px high')
   const overflow = await page.evaluate(() => {
     const el = document.querySelector('.toolbar')
     return el.scrollWidth - el.clientWidth
@@ -307,67 +307,54 @@ test('header: the lifecycle tabs and run status sit in the 40 px header and no p
     true,
     'the tablist is in the header',
   )
-  const runText = await page.textContent('.toolbar .board-run-context')
-  assert.ok(runText.startsWith('RUN-'), `the run status is in the header: ${runText}`)
+  assert.equal(
+    await has(page, '.toolbar .mc-run.primary'),
+    true,
+    'the primary action is in the header',
+  )
   assert.equal(await has(page, '.board-lifecycle'), false, 'no phase row renders')
   await page.click('.toolbar #board-phase-execute')
   await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
   assert.deepEqual(errors, [])
 })
 
-test('header: extra chips drop off whole and are counted, the tabs hold the center, and Storage stays inside', async (t) => {
+test('header: the tabs hold the center, the groups fit, and Storage opens from the ⋯ menu', async (t) => {
   const { page, errors } = await open(t)
   await page.setViewportSize({ width: 1600, height: 900 })
-  await page.evaluate(() => {
-    const inline = document.querySelector('.status-inline')
-    for (const n of [1, 2, 3]) {
-      const chip = document.createElement('span')
-      chip.textContent = `Injected chip ${n} with a long label`
-      inline.append(chip)
-    }
-    document.querySelector('.board-run-context').append(' · a long run phase label')
-    // A re-render re-measures the row, as a real chip change does.
-    window.__store.setState((s) => ({ save: { ...s.save } }))
-  })
-  await sleep(100)
   const bar = await page.evaluate(() => {
     const box = (sel) => document.querySelector(sel).getBoundingClientRect()
     const tabs = box('.board-phases')
-    const row = box('.status-inline')
-    const chips = [...document.querySelectorAll('.status-inline > *')].map((c) =>
-      c.getBoundingClientRect(),
-    )
     const right = document.querySelector('.toolbar-right')
     return {
       offset: tabs.left + tabs.width / 2 - innerWidth / 2,
       gapL: tabs.left - box('.toolbar-left > :last-child').right,
       rightOverflow: right.scrollWidth - right.clientWidth,
-      partial: chips.filter((c) => c.top < row.bottom && c.right > row.right + 0.5).length,
-      hidden: chips.filter((c) => c.top >= row.bottom).length,
-      count: document.querySelector('.status-fold-count')?.textContent,
       scroll: document.documentElement.scrollWidth - innerWidth,
     }
   })
   assert.ok(Math.abs(bar.offset) < 1, `the tabs sit at the viewport center: ${bar.offset}`)
   assert.ok(bar.gapL >= 0, `the left group does not cover the tabs: ${bar.gapL}`)
   assert.equal(bar.rightOverflow, 0, 'the right group fits its track')
-  assert.equal(bar.partial, 0, 'no chip is clipped mid-chip')
-  assert.ok(bar.hidden > 0, 'the full row hides whole chips')
-  assert.equal(bar.count, `+${bar.hidden}`, 'the ROE button counts the hidden chips')
   assert.equal(bar.scroll, 0, 'the page does not scroll sideways')
+  // Storage is the last item of the ⋯ menu; its panel replaces the menu.
   const storage = async () => {
+    await page.click('.toolbar [aria-label="More actions"]')
     await page.click('.toolbar [aria-controls="storage-panel"]')
     await waitFor(page, () => document.querySelector('#storage-panel'))
     const box = await page.evaluate(() => {
       const p = document.querySelector('#storage-panel').getBoundingClientRect()
-      const b = document.querySelector('[aria-controls="storage-panel"]').getBoundingClientRect()
-      return { left: p.left, right: p.right, top: p.top, trigger: b.left, bottom: b.bottom }
+      return {
+        left: p.left,
+        right: p.right,
+        top: p.top,
+        bottom: document.querySelector('.toolbar').getBoundingClientRect().bottom,
+      }
     })
     await page.keyboard.press('Escape')
     return box
   }
   const wide = await storage()
-  assert.ok(Math.abs(wide.left - wide.trigger) < 1, 'the Storage panel opens under its trigger')
+  assert.ok(Math.abs(1600 - wide.right - 14) < 1, `a 14 px right margin at 1600 px: ${wide.right}`)
   assert.ok(wide.top >= wide.bottom, 'the Storage panel opens below the bar')
   await page.setViewportSize({ width: 800, height: 900 })
   const narrow = await storage()

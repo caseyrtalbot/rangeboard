@@ -1,13 +1,16 @@
 /**
- * One Run button beside a Deterministic switch, with the progress line under it.
- * Every other run setting lives in the Run tab of Settings.
+ * The top bar's one primary action (D7) beside a Deterministic switch, with the
+ * progress line after it. Prepare runs the ensemble, Execute pauses and resumes
+ * playback, and Analyze runs the ensemble again. Every other run setting lives in
+ * the Run tab of Settings.
  */
 
 import { runSettings } from '../../model/types'
 import type { McSettings } from '../../model/types'
 import type { McSummary, StopRule } from '../../playback/mcRun'
 import type { PoolProgress } from '../../playback/mcTypes'
-import type { McState } from '../../state/runState'
+import { toggleAnalysisRun } from '../../playback/runSession'
+import type { BoardPhase, McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 
 /**
@@ -90,16 +93,29 @@ const DETERMINISTIC_TITLE =
 /** Shown while the pool will refuse another stop, including the summary wait. */
 export const STOPPING_TITLE = 'This run is already stopping.'
 
-export function RunControl() {
+export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
   const scenario = useStore((s) => s.scenario)
   const mc = useStore((s) => s.mc)
+  const playing = useStore((s) => s.playback.playing)
   const patchScenario = useStore((s) => s.patchScenario)
   const run = runSettings(scenario)
   const deterministic = run.runMode === 'deterministic'
   const running = mc.status === 'running'
   const stopping = running && mc.pool?.stopping === true
   const progress = progressText(run, mc)
-  const label = stopping ? 'Stopping' : running ? 'Stop' : 'Run'
+  // Execute drives playback, so the ensemble's mode and stop state do not apply.
+  const playback = phase === 'execute'
+  const label = playback
+    ? playing
+      ? 'Pause'
+      : 'Resume'
+    : stopping
+      ? 'Stopping'
+      : running
+        ? 'Stop'
+        : phase === 'analyze'
+          ? 'Run again'
+          : 'Run'
   return (
     <div className="run-control" aria-label="Run">
       <label className="run-det">
@@ -116,18 +132,27 @@ export function RunControl() {
       <button
         type="button"
         className="mc-run primary"
-        disabled={deterministic || stopping}
-        title={deterministic ? DETERMINISTIC_TITLE : stopping ? STOPPING_TITLE : undefined}
+        disabled={!playback && (deterministic || stopping)}
+        title={
+          playback
+            ? undefined
+            : deterministic
+              ? DETERMINISTIC_TITLE
+              : stopping
+                ? STOPPING_TITLE
+                : undefined
+        }
         onClick={() => {
-          if (stopping) return
-          if (running) useStore.getState().cancelMonteCarlo()
+          if (playback) toggleAnalysisRun()
+          else if (stopping) return
+          else if (running) useStore.getState().cancelMonteCarlo()
           else useStore.getState().runMonteCarlo()
         }}
       >
         {label}
       </button>
       {progress && (
-        <span className="run-progress" role="status">
+        <span className="run-progress" role="status" title={progress}>
           {progress}
         </span>
       )}

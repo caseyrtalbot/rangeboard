@@ -1,7 +1,6 @@
 import { memo } from 'react'
 import type { BoardPhase } from '../../state/runState'
 import { Seg } from '../../ui/kit'
-import { RunControl } from './RunControl'
 import { PHASE_SCREENS } from './screens/navigation'
 import type { AnalysisScreen } from './screens/navigation'
 
@@ -27,7 +26,6 @@ export const AnalysisNavigation = memo(function AnalysisNavigation({
       {options.length > 1 && (
         <Seg value={screen} options={options} onChange={onNavigate} label="Analysis screens" />
       )}
-      {run && <RunControl />}
     </nav>
   )
 })

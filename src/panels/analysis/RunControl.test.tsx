@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../../model/seed'
 import type { McSummary } from '../../playback/mcRun'
 import type { PoolProgress } from '../../playback/mcTypes'
-import type { McState } from '../../state/runState'
+import type { BoardPhase, McState } from '../../state/runState'
 import { IDLE_MC } from '../../state/runState'
 import { useStore } from '../../state/store'
 import { RunControl } from './RunControl'
@@ -33,11 +33,11 @@ vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   return { ...actual, jsxDEV }
 })
 
-function render(): string {
+function render(phase?: BoardPhase): string {
   interaction.buttons.clear()
   interaction.checks = []
   Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(<RunControl />)
+  return renderToStaticMarkup(<RunControl phase={phase} />)
 }
 
 function setMc(patch: Partial<McState>): void {
@@ -229,5 +229,31 @@ describe('RunControl', () => {
     expect(render()).toContain(
       '15 of 100 replicates · stop on the execution budget · 3 completed rows dropped',
     )
+  })
+
+  it('pauses and resumes playback in Execute', () => {
+    const command = vi.fn()
+    useStore.setState({ playbackCommand: command })
+    useStore.setState((s) => ({ playback: { ...s.playback, playing: true } }))
+    expect(render('execute')).toContain('>Pause<')
+    interaction.buttons.get('Pause')!.onClick()
+    expect(command).toHaveBeenCalledWith({ type: 'toggle' })
+
+    useStore.setState((s) => ({ playback: { ...s.playback, playing: false } }))
+    const html = render('execute')
+    expect(html).toContain('>Resume<')
+    expect(interaction.buttons.get('Resume')!.disabled).toBe(false)
+  })
+
+  it('runs the ensemble again in Analyze', () => {
+    const start = vi.fn()
+    useStore.setState({ runMonteCarlo: start })
+    setMc({ status: 'done', summary: summary(20, 'replicates') })
+    expect(render('analyze')).toContain('>Run again<')
+    interaction.buttons.get('Run again')!.onClick()
+    expect(start).toHaveBeenCalledOnce()
+
+    setMc({ status: 'running', progress: 4, total: 100 })
+    expect(render('analyze')).toContain('>Stop<')
   })
 })

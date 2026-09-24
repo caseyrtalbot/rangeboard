@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import fixture from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
 import { parseAutosave } from '../io/persist'
+import { dismissRecoveryNotice, getRecoveryNotices, notifyRecovery } from '../io/recovery'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 import { RangeSetupMenuPanel } from './RangeSetupMenu'
@@ -25,37 +26,33 @@ describe('Board toolbar grouping', () => {
     useStore.getState().setBoardPhase('prepare')
   })
 
-  it('keeps Board identity, scenario, file trigger and status in the top bar', () => {
+  it('orders brand, name, tabs, the primary action, Settings, the ⋯ menu and the drawer', () => {
     const html = render(
-      <Toolbar
-        drawerOpen
-        onToggleDrawer={() => {}}
-        boardPhase="prepare"
-        runSeq={1}
-        runPhase="idle"
-        onOpenPhase={() => {}}
-      />,
+      <Toolbar drawerOpen onToggleDrawer={() => {}} boardPhase="prepare" onOpenPhase={() => {}} />,
     )
 
-    expect(html).toContain('Rangeboard')
-    expect(html).toContain('aria-label="Scenario name"')
-    expect(html).toContain('aria-label="More actions"')
-    expect(html).toContain('aria-label="Status"')
-    expect(html).toContain('title="Settings (requirements, run, systems, physics and view)"')
-    expect(html).toContain('title="ROE · click to change"')
-    expect(html).toContain(
-      'aria-controls="board-workspace-panel" aria-expanded="true" aria-label="Workspace drawer"',
-    )
+    expect(html).toContain('aria-label="Scenario name" title="Scenario name (F2)"')
+    expect(html).toContain('class="scenario-name-edit" aria-hidden="true"><svg')
+    expect(html).toMatch(/class="tb-icon" aria-label="Settings" title="Settings"[^>]*><svg/)
+    expect(html).toMatch(/aria-label="More actions" title="More actions"><svg/)
+    expect(html).toMatch(/aria-label="Workspace drawer" title="Close drawer \(]\)"><svg/)
     expect(html).not.toContain('aria-label="Board tools"')
     expect(html).not.toContain('aria-label="Theme"')
 
-    // The lifecycle tabs and the run status moved into the bar; the phase row is gone.
+    // The scenario name renders once, and one primary action sits in the bar.
+    expect(html.match(/Scenario name/g)).toHaveLength(2)
+    expect(html.match(/class="mc-run primary"/g)).toHaveLength(1)
     expect(html).toContain('role="tablist" aria-label="Lifecycle views"')
     expect(html).toContain('id="board-phase-prepare" role="tab" aria-selected="true"')
-    expect(html).toContain('class="board-run-context"')
-    const order = ['Rangeboard', 'Lifecycle views', 'board-run-context', 'Workspace drawer'].map(
-      (mark) => html.indexOf(mark),
-    )
+    const order = [
+      'Rangeboard',
+      'Scenario name',
+      'Lifecycle views',
+      '>Run<',
+      'aria-label="Settings"',
+      'aria-label="More actions"',
+      'Workspace drawer',
+    ].map((mark) => html.indexOf(mark))
     expect(order.every((position) => position >= 0)).toBe(true)
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })
@@ -106,23 +103,17 @@ describe('Board toolbar grouping', () => {
     }
   })
 
-  it('writes status chips in sentence case and makes the spawn chip a button', () => {
+  it('leaves the run status and the status chips to the status bar', () => {
     useStore.getState().replaceScenario(parseAutosave(JSON.stringify(fixture)))
     const html = render(
-      <Toolbar
-        drawerOpen
-        onToggleDrawer={() => {}}
-        boardPhase="prepare"
-        runSeq={1}
-        runPhase="idle"
-        onOpenPhase={() => {}}
-      />,
+      <Toolbar drawerOpen onToggleDrawer={() => {}} boardPhase="prepare" onOpenPhase={() => {}} />,
     )
 
-    expect(html).toMatch(/<button type="button" class="status-chip"[^>]*>.*Spawn in ring 1</)
-    expect(html).not.toContain('Spawn In Ring')
-    expect(html).not.toContain('WEZ On')
-    expect(html).not.toContain('Env Derate')
+    for (const moved of ['board-run-context', 'aria-label="Status"', 'ROE', 'Spawn in ring']) {
+      expect(html).not.toContain(moved)
+    }
+    expect(html).not.toContain('aria-controls="storage-panel"')
+    expect(html).not.toContain('tb-icon-mark')
   })
 
   it('draws undo and redo as icons', () => {
@@ -131,13 +122,38 @@ describe('Board toolbar grouping', () => {
     expect(html).toMatch(/aria-label="Redo"[^>]*><svg/)
   })
 
-  it('preserves every file action', () => {
-    const html = render(<FileActions onRequestClose={() => {}} />)
+  it('preserves every file action and ends the ⋯ menu with Storage', () => {
+    const html = render(<FileActions onRequestClose={() => {}} onOpenStorage={() => {}} />)
 
     for (const action of ['New', 'Import', 'Export']) {
       expect(html).toContain(`>${action}</button>`)
     }
     expect(html).toContain('role="dialog" aria-label="File actions"')
+    expect(html).toMatch(
+      />Export<\/button><hr class="tb-menu-sep"\/><button[^>]*>Storage<\/button><\/div>$/,
+    )
+    expect(html).toContain('aria-haspopup="dialog" aria-controls="storage-panel"')
+  })
+
+  it('shows recovery notices as a warning on Storage and a mark on the ⋯ trigger', () => {
+    notifyRecovery('scenario', 'rangeboard.recovery.test')
+    const notice = getRecoveryNotices().at(-1)!
+    try {
+      const menu = render(<FileActions onRequestClose={() => {}} onOpenStorage={() => {}} />)
+      expect(menu).toMatch(/>Storage<span class="state warning" role="status">.*1 recovery notices/)
+      const bar = render(
+        <Toolbar
+          drawerOpen
+          onToggleDrawer={() => {}}
+          boardPhase="prepare"
+          onOpenPhase={() => {}}
+        />,
+      )
+      expect(bar).toContain('title="More actions: 1 recovery notices"')
+      expect(bar).toContain('class="tb-icon-mark" aria-hidden="true"')
+    } finally {
+      dismissRecoveryNotice(notice.id)
+    }
   })
 })
 
