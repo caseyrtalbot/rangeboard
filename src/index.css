@@ -865,6 +865,7 @@ input[type='color']::-webkit-color-swatch {
 }
 
 .tb-caret {
+  display: inline-flex;
   color: var(--text-dim);
   font-size: var(--type-meta-size);
 }
@@ -1162,14 +1163,6 @@ input[type='color']::-webkit-color-swatch {
   color: var(--text-dim);
   font-size: var(--type-title-size);
   font-weight: var(--type-title-weight);
-}
-
-/* The library header: 32 px, the title, then the ⋯ actions and Close. */
-.palette > .palette-header {
-  flex: none;
-  height: var(--h-primary);
-  gap: var(--space-1);
-  border-bottom: 1px solid var(--border);
 }
 
 /* A 24 px icon-only header control. */
@@ -3067,12 +3060,6 @@ button.chip {
   white-space: nowrap;
 }
 
-.mc-run {
-  align-self: flex-start;
-  border-color: var(--border-control);
-  font-size: var(--type-meta-size);
-}
-
 /* ---------- I&W strip, threat groups ---------- */
 
 /* ---------- Info affordance ---------- */
@@ -4427,14 +4414,21 @@ input[type='number'] {
   color: var(--text-secondary);
 }
 
+/* The selected tab keeps text 1 over a 2 px accent underline, and its mono step
+   number takes the accent. */
 .board-phases button[aria-selected='true'] {
   color: var(--text-primary);
-  border-bottom-color: var(--text-primary);
+  border-bottom-color: var(--accent);
 }
 
 .board-phases .num {
   margin-right: var(--space-1);
   color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.board-phases button[aria-selected='true'] .num {
+  color: var(--accent);
 }
 
 .board-run-context {
@@ -4444,21 +4438,6 @@ input[type='number'] {
   font-family: var(--font-mono);
   font-size: var(--type-meta-size);
   white-space: nowrap;
-}
-
-/* Top bar phase tabs (Row B1): the selected tab keeps text 1 over a 2 px accent
-   underline, and its mono step number takes the accent. Placed after the base
-   .board-phases rules so these win at equal specificity. */
-.board-phases button[aria-selected='true'] {
-  border-bottom-color: var(--accent);
-}
-
-.board-phases .num {
-  font-family: var(--font-mono);
-}
-
-.board-phases button[aria-selected='true'] .num {
-  color: var(--accent);
 }
 
 .board-panel-heading {
@@ -4688,36 +4667,34 @@ input[type='number'] {
   min-width: 180px;
 }
 
+/* The library header: 32 px, the title, then the ⋯ actions and Close. */
 .palette-header {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-1);
+  height: var(--h-primary);
   padding-right: var(--space-2);
+  border-bottom: 1px solid var(--border);
 }
 
 .board-library-drawer .palette-item {
-  flex-wrap: wrap;
-  align-items: flex-start;
-  padding: var(--space-2);
-  gap: var(--space-1);
-}
-
-.board-library-drawer .palette-name {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
-  overflow-wrap: anywhere;
+  flex-wrap: nowrap;
+  align-items: center;
+  padding: 0 var(--space-2);
+  gap: var(--space-2);
 }
 
 .palette-place {
   display: flex;
-  flex: 1 1 150px;
-  align-items: baseline;
+  flex: 1 1 auto;
+  align-items: center;
   gap: var(--space-2);
   min-width: 0;
   padding: 0;
   text-align: left;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .palette-item-actions {
@@ -4731,28 +4708,7 @@ input[type='number'] {
   visibility: hidden;
 }
 
-/* Rows hold one 36 px line pair and never wrap. These supersede the drawer's
-   wrapping rules above (.board-library-drawer .palette-item and .palette-place). */
-.board-library-drawer .palette-item {
-  flex-wrap: nowrap;
-  align-items: center;
-  padding: 0 var(--space-2);
-  gap: var(--space-2);
-}
-
-.board-library-drawer .palette-place {
-  flex: 1 1 auto;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.board-library-drawer .palette-text .palette-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow-wrap: normal;
-}
-
+/* Rows hold one 36 px line pair and never wrap. */
 .palette-item-actions > .mini {
   align-self: center;
 }
@@ -4861,11 +4817,6 @@ input[type='number'] {
 .board-tools .tb-menu {
   min-height: var(--h-dense);
   padding: 3px 7px;
-}
-
-/* The chevron box is the icon box, so no baseline gap grows the trigger. */
-.board-tools .tb-caret {
-  display: inline-flex;
 }
 
 /* The boundary type sits inside the drawing group, so the frame supplies the
@@ -5420,25 +5371,6 @@ input[type='number'] {
   width: fit-content;
 }
 
-.board-declutter {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.board-declutter > span {
-  font-size: var(--type-label-size);
-}
-
-.board-declutter .seg {
-  width: auto;
-}
-
-.board-declutter .seg button {
-  flex: 0 0 auto;
-  padding: var(--space-1) var(--space-2);
-}
-
 .roe-menu-panel {
   width: 320px;
   max-width: calc(100vw - var(--space-6));
@@ -5602,26 +5534,13 @@ input[type='number'] {
 }
 
 /* Run control: the Deterministic switch, the Run button and the progress line.
-   Prepare renders it under the mode chip; Analyze renders it in the .lens row,
-   where the margin-left pushes it to the right edge beside the screens. */
+   The top bar renders the one instance (.toolbar-right > .run-control). */
 .run-control {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
   padding-block: var(--space-1);
-}
-
-.lens .run-control {
-  justify-content: flex-end;
-  margin-left: auto;
-  padding-block: 0;
-}
-
-/* In the lens the progress line takes its own row, so the switch and the button
-   hold the right edge while a run reports. */
-.lens .run-progress {
-  flex-basis: 100%;
 }
 
 .run-det {

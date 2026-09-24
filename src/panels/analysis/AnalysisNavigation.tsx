@@ -16,11 +16,8 @@ export const AnalysisNavigation = memo(function AnalysisNavigation({
   onNavigate,
 }: AnalysisNavigationProps) {
   const options = PHASE_SCREENS[phase]
-  // Analyze reads a finished ensemble, so the Run control sits beside its screens.
-  // Prepare carries its own in the forecast header; Execute is playback, not a run.
-  const run = phase === 'analyze'
   // A phase with one screen has nothing to choose, so it draws no navigation.
-  if (options.length < 2 && !run) return null
+  if (options.length < 2) return null
   return (
     <nav className="lens" aria-label="Analysis navigation">
       {options.length > 1 && (

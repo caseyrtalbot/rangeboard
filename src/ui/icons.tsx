@@ -27,11 +27,6 @@ export function IconLibrary() {
   return <Stroke d="M3 2.5v11M6.5 2.5v11M9.5 3.25l3 10" />
 }
 
-/** The board objects list: four tiles. */
-export function IconObjects() {
-  return <Stroke d="M2.75 2.75h4v4h-4zM9.25 2.75h4v4h-4zM2.75 9.25h4v4h-4zM9.25 9.25h4v4h-4z" />
-}
-
 /** The command palette: the command key. */
 export function IconCommands() {
   return <Stroke d="M10 4v8a2 2 0 1 0 2-2H4a2 2 0 1 0 2 2V4a2 2 0 1 0-2 2h8a2 2 0 1 0-2-2" />

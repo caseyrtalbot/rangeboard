@@ -95,21 +95,14 @@ describe('ForecastSettings run control', () => {
     useStore.setState({ mc: IDLE_MC })
   })
 
-  // The popover is gone: the settings are in the Run tab and the header carries
-  // the one Run button beside its Deterministic switch. RunControl.test.tsx owns
-  // the button's own behaviour.
-  it('renders the one run control and no popover', () => {
+  // The popover and the body Run button are gone: the settings are in the Run tab
+  // and the top bar carries the one RunControl. RunControl.test.tsx owns the button.
+  it('renders no run control and no popover', () => {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     const html = render()
-    expect(html).toContain('class="run-control"')
-    expect(html).toContain('>Run<')
-    expect(html).toContain('Deterministic')
+    expect(html).not.toContain('class="run-control"')
     expect(html).not.toContain('mc-pop')
     expect(html).not.toContain('Run replicates')
     expect(html).not.toContain('Target half-width')
-  })
-
-  it('closes the run button under the deterministic mode', () => {
-    expect(render()).toContain('<button type="button" class="mc-run primary" disabled=""')
   })
 })
