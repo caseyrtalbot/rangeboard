@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "74d074394bf33b3c7b5344a146c6cc73ba555615c2c7bc144521852caca1236d",
+      "sha256": "a90b047874084b80452c287c226d5a94c66daab2cb694f7249077d2855c0bc65",
       "reviewedAt": "2026-09-24",
-      "note": "Row C review fixes: Field keeps one root once error is passed, Panel options drive the detail toggles, the screen group is .insp-tab-group with no ARIA role, the e2e asserts Run monitor; final capture chrome-2026-09-24."
+      "note": "Row C canvas comparison fix: the collapsible detail section body hides through .wg-b[hidden]; text unchanged."
     }
   ],
   "historical": [
