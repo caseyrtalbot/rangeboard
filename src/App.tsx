@@ -35,8 +35,16 @@ import { readSetting, savedView, writeSetting } from './io/viewState'
 import { exportScenario } from './io/persist'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 import { OpenInputsContext } from './panels/settings/openInputs'
-import { IconCommands, IconEntities, IconFrames, IconLayers, IconLibrary } from './ui/icons'
-import { State } from './ui/kit'
+import {
+  IconCommands,
+  IconEntities,
+  IconFrames,
+  IconLayers,
+  IconLibrary,
+  IconMore,
+} from './ui/icons'
+import { FieldHelpProvider, State } from './ui/kit'
+import { usePopover } from './ui/usePopover'
 import { nextTabIndex } from './ui/rovingTabs'
 
 // Right-panel tabs and the palette: each opens on demand, so each loads on demand.
@@ -72,27 +80,22 @@ function savedRightOpen(): boolean {
   return readSetting(RIGHT_PANEL_OPEN_KEY) !== '0'
 }
 
-const TABS: { id: RightTab; label: string }[] = [
-  { id: 'analysis', label: 'Overview' },
-  { id: 'inspect', label: 'Selected object' },
-  { id: 'library', label: 'Model library' },
-]
+/** The phase word the panel header shows. */
+const PHASE_WORD: Record<BoardPhase, string> = {
+  prepare: 'Prepare',
+  execute: 'Execute',
+  analyze: 'Analyze',
+}
 
-/** Arrow-key navigation across the Inspector tab bar (roving tabindex). */
-function moveTab(
-  e: React.KeyboardEvent<HTMLButtonElement>,
-  current: RightTab,
-  setRightTab: (t: RightTab) => void,
-) {
-  const to = nextTabIndex(
-    e.key,
-    TABS.findIndex((t) => t.id === current),
-    TABS.length,
-  )
+/** Arrow-key navigation across the panel tab row (roving tabindex). The row is
+ * dynamic: the contextual tabs come and go, so it reads the tabs from the DOM. */
+function moveTab(e: React.KeyboardEvent<HTMLElement>) {
+  const tabs = [...e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+  const to = nextTabIndex(e.key, tabs.indexOf(e.target as HTMLButtonElement), tabs.length)
   if (to < 0) return
   e.preventDefault()
-  setRightTab(TABS[to].id)
-  document.getElementById(`insp-tab-${TABS[to].id}`)?.focus()
+  tabs[to].click()
+  tabs[to].focus()
 }
 
 /** The one selected entity id, when exactly one is selected and it still exists. */
@@ -109,6 +112,19 @@ function selectHasObjectSelection(s: Store): boolean {
     s.selection.boundaryId != null ||
     s.selection.connectionId != null
   )
+}
+
+/** The contextual tab label: what the Selected object view shows, or null for nothing. */
+function selectObjectLabel(s: Store): string | null {
+  if (s.ui.raidDraft) return 'Raid builder'
+  const { entityIds, boundaryId, connectionId } = s.selection
+  if (entityIds.length === 1)
+    return s.scenario.entities.find((entity) => entity.id === entityIds[0])?.name ?? null
+  if (entityIds.length > 1) return `${entityIds.length} entities`
+  if (boundaryId) return s.scenario.boundaries.find((b) => b.id === boundaryId)?.name ?? null
+  if (connectionId)
+    return s.scenario.connections.find((c) => c.id === connectionId)?.label || 'Connection'
+  return null
 }
 
 /** Selection identity as a primitive, so the section memory needs no object. */
@@ -177,18 +193,37 @@ const ResourceRail = memo(function ResourceRail({
   )
 })
 
-/** The right-panel tab bar (ARIA tabs). Memoized: `App` re-renders on every selection
- * change and this chrome reads none of it. */
+/** The right-panel tab row (ARIA tabs): the phase's screens, then the contextual
+ * tabs. Memoized: `App` re-renders on every selection change and this row reads
+ * only the label it shows. */
 const PanelTabs = memo(function PanelTabs({
   activeTab,
+  phase,
+  screen,
+  objectLabel,
+  onNavigate,
   setRightTab,
 }: {
   activeTab: RightTab
+  phase: BoardPhase
+  screen: AnalysisScreen
+  objectLabel: string | null
+  onNavigate: (screen: AnalysisScreen) => void
   setRightTab: (t: RightTab) => void
 }) {
+  const contextual: { id: RightTab; label: string; dot: boolean }[] = []
+  if (activeTab === 'library')
+    contextual.push({ id: 'library', label: 'Model library', dot: false })
+  if (objectLabel != null) contextual.push({ id: 'inspect', label: objectLabel, dot: true })
   return (
-    <div className="tabs" role="tablist" aria-label="Board panel views">
-      {TABS.map((t) => (
+    <div className="insp-tabs" role="tablist" aria-label="Board panel views" onKeyDown={moveTab}>
+      <AnalysisNavigation
+        phase={phase}
+        screen={screen}
+        selected={activeTab === 'analysis'}
+        onNavigate={onNavigate}
+      />
+      {contextual.map((t) => (
         <button
           key={t.id}
           id={`insp-tab-${t.id}`}
@@ -197,17 +232,101 @@ const PanelTabs = memo(function PanelTabs({
           aria-selected={activeTab === t.id}
           aria-controls="insp-tabpanel"
           tabIndex={activeTab === t.id ? 0 : -1}
-          className={activeTab === t.id ? 'active' : ''}
+          className={`insp-tab-context${activeTab === t.id ? ' active' : ''}`}
           title={t.label}
           onClick={() => setRightTab(t.id)}
-          onKeyDown={(e) => moveTab(e, t.id, setRightTab)}
         >
-          {t.label}
+          {t.dot && <span className="insp-tab-dot" aria-hidden="true" />}
+          <span className="insp-tab-label">{t.label}</span>
         </button>
       ))}
     </div>
   )
 })
+
+/** Collapsible sections in the panel body: every `details` element there. */
+function panelSections(): HTMLDetailsElement[] {
+  return [...document.querySelectorAll<HTMLDetailsElement>('#insp-tabpanel details')]
+}
+
+/** The panel ⋯ menu: the field help switch (D6), then Collapse all and Expand all. */
+function PanelMenu() {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const { open, setOpen, toggle } = usePopover(wrapRef, buttonRef)
+  const showFieldHelp = useStore((s) => s.ui.showFieldHelp)
+  const setShowFieldHelp = useStore((s) => s.setShowFieldHelp)
+  // Counted when the menu opens: the body may hold no collapsible section.
+  const [sections, setSections] = useState(0)
+  const setAll = (openAll: boolean) => {
+    for (const section of panelSections()) section.open = openAll
+    setOpen(false)
+    buttonRef.current?.focus()
+  }
+  const none = sections === 0 ? 'This view has no collapsible sections' : undefined
+  return (
+    <div className="tb-menu-wrap" ref={wrapRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="tb-icon"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="panel-options-panel"
+        aria-label="Panel options"
+        title="Panel options"
+        onClick={() => {
+          setSections(panelSections().length)
+          toggle()
+        }}
+      >
+        <IconMore />
+      </button>
+      {open && (
+        <div
+          id="panel-options-panel"
+          className="tb-menu-panel surface-float tb-menu-right"
+          role="dialog"
+          aria-label="Panel options"
+        >
+          <button
+            type="button"
+            className="tb-menu-item"
+            role="switch"
+            aria-checked={showFieldHelp}
+            onClick={() => setShowFieldHelp(!showFieldHelp)}
+          >
+            <span className="tb-menu-tick" aria-hidden="true">
+              {showFieldHelp ? '✓' : ''}
+            </span>
+            Show field help
+          </button>
+          <hr className="tb-menu-sep" />
+          <button
+            type="button"
+            className="tb-menu-item"
+            disabled={sections === 0}
+            title={none}
+            onClick={() => setAll(false)}
+          >
+            <span className="tb-menu-tick" aria-hidden="true" />
+            Collapse all
+          </button>
+          <button
+            type="button"
+            className="tb-menu-item"
+            disabled={sections === 0}
+            title={none}
+            onClick={() => setAll(true)}
+          >
+            <span className="tb-menu-tick" aria-hidden="true" />
+            Expand all
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function focusRangeSetup() {
   document.querySelector<HTMLButtonElement>('[aria-controls="range-setup-menu-panel"]')?.focus()
@@ -423,12 +542,16 @@ export default function App() {
   const setBoardPhase = useStore((s) => s.setBoardPhase)
 
   useEffect(() => {
-    if (savedView().rightTab == null) setRightTab('analysis')
+    // A saved view from before the Model library tab left the row opens on analysis.
+    const saved = savedView().rightTab
+    if (saved == null || saved === 'library') setRightTab('analysis')
   }, [setRightTab])
   // Primitives only: a whole `selection` or `scenario` subscription would re-render
   // the Board tree on every click and every edit.
   const selectedEntityId = useStore(selectSelectedEntityId)
   const hasObjectSelection = useStore(selectHasObjectSelection)
+  const objectLabel = useStore(selectObjectLabel)
+  const showFieldHelp = useStore((s) => s.ui.showFieldHelp)
   const selectionKey = useStore(selectSelectionKey)
   const raidDraft = useStore((s) => s.ui.raidDraft)
   const calibrating = useStore((s) => s.ui.tool === 'calibrate')
@@ -445,7 +568,8 @@ export default function App() {
         : 'telemetry'
   const setEntitySection = (section: EntityWorkspaceSection) =>
     setEntityView({ key: selectionKey, section })
-  const activeTab = rightTab
+  // The Selected object tab renders only while it has something to show.
+  const activeTab: RightTab = rightTab === 'inspect' && objectLabel == null ? 'analysis' : rightTab
 
   // The right drawer. A selection switches its tab but never reopens it.
   const [rightOpen, setRightOpenState] = useState(savedRightOpen)
@@ -883,14 +1007,9 @@ export default function App() {
           hidden={!rightOpen}
           aria-label="Board workspace panel"
         >
-          <div className="board-panel-heading">
-            <h2>
-              {boardPhase === 'prepare'
-                ? 'Prepare scenario'
-                : boardPhase === 'execute'
-                  ? 'Run monitor'
-                  : 'Analyze run'}
-            </h2>
+          <div className="board-panel-heading insp-head">
+            <h2>{PHASE_WORD[boardPhase]}</h2>
+            <PanelMenu />
           </div>
           <div
             className="right-resizer"
@@ -905,48 +1024,50 @@ export default function App() {
             onMouseDown={startRightResize}
             onKeyDown={nudgeRightWidth}
           />
-          <PanelTabs activeTab={activeTab} setRightTab={setRightTab} />
-          {activeTab === 'analysis' && (
-            <AnalysisNavigation
-              phase={boardPhase}
-              screen={analysisScreen}
-              onNavigate={navigateAnalysis}
-            />
-          )}
-          <div
-            className="right-panel-body"
-            id="insp-tabpanel"
-            role="tabpanel"
-            tabIndex={0}
-            aria-labelledby={`insp-tab-${activeTab}`}
-          >
-            {activeTab === 'inspect' &&
-              (selectedEntityId && !raidDraft ? (
-                <EntityWorkspace
-                  entityId={selectedEntityId}
-                  section={entitySection}
-                  onSectionChange={setEntitySection}
-                  onOpenSettings={() => openPreparation('run')}
-                  onOverview={() => {
-                    setRightTab('analysis')
-                    requestAnimationFrame(() =>
-                      document.getElementById('insp-tab-analysis')?.focus(),
-                    )
-                  }}
-                />
-              ) : (
-                <Inspector />
-              ))}
-            {activeTab === 'library' && <LibraryEditor />}
-            {activeTab === 'analysis' &&
-              (analysisScreen === 'inputs' ? (
-                <BoardPreparation />
-              ) : (
-                <Suspense fallback={<PanelLoading label="Loading analysis" />}>
-                  <AnalysisPanel phase={boardPhase} screen={analysisScreen} />
-                </Suspense>
-              ))}
-          </div>
+          <PanelTabs
+            activeTab={activeTab}
+            phase={boardPhase}
+            screen={analysisScreen}
+            objectLabel={objectLabel}
+            onNavigate={navigateAnalysis}
+            setRightTab={setRightTab}
+          />
+          <FieldHelpProvider value={showFieldHelp}>
+            <div
+              className="right-panel-body"
+              id="insp-tabpanel"
+              role="tabpanel"
+              tabIndex={0}
+              aria-labelledby={`insp-tab-${activeTab}`}
+            >
+              {activeTab === 'inspect' &&
+                (selectedEntityId && !raidDraft ? (
+                  <EntityWorkspace
+                    entityId={selectedEntityId}
+                    section={entitySection}
+                    onSectionChange={setEntitySection}
+                    onOpenSettings={() => openPreparation('run')}
+                    onOverview={() => {
+                      setRightTab('analysis')
+                      requestAnimationFrame(() =>
+                        document.getElementById('insp-tab-analysis')?.focus(),
+                      )
+                    }}
+                  />
+                ) : (
+                  <Inspector />
+                ))}
+              {activeTab === 'library' && <LibraryEditor />}
+              {activeTab === 'analysis' &&
+                (analysisScreen === 'inputs' ? (
+                  <BoardPreparation />
+                ) : (
+                  <Suspense fallback={<PanelLoading label="Loading analysis" />}>
+                    <AnalysisPanel phase={boardPhase} screen={analysisScreen} />
+                  </Suspense>
+                ))}
+            </div>
+          </FieldHelpProvider>
         </aside>
       </div>
       <CalibrateDialog />

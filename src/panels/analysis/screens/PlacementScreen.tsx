@@ -145,8 +145,8 @@ export function PlacementScreen() {
   const cut = result != null && result.trace.length < result.budget.evaluations
 
   return (
-    <section className="analysis-primary" aria-label="Where to put it">
-      <h3>Where to put it</h3>
+    <section className="analysis-primary" aria-label="Placement">
+      <h3>Placement</h3>
       <p className="analysis-scope">
         Gaussian process with expected improvement over the movable positions · each evaluation is a{' '}
         {result?.budget.replicates ?? replicates}-replicate run under common random numbers at seed{' '}

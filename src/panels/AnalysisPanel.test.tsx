@@ -39,13 +39,13 @@ describe('AnalysisPanel screens', () => {
     expect(render({ phase: 'prepare', screen: 'compare' })).toContain('<h3>Fragility</h3>')
   })
 
-  it('mounts Where to put it in Prepare and nowhere else', () => {
+  it('mounts Placement in Prepare and nowhere else', () => {
     const placement = render({ phase: 'prepare', screen: 'placement' })
-    expect(placement).toContain('aria-label="Where to put it"')
+    expect(placement).toContain('aria-label="Placement"')
     expect(placement).toContain('No current placement result.')
     expect(placement).not.toContain('<h3>Fragility</h3>')
     for (const phase of ['execute', 'analyze'] as const) {
-      expect(render({ phase, screen: 'placement' })).not.toContain('aria-label="Where to put it"')
+      expect(render({ phase, screen: 'placement' })).not.toContain('aria-label="Placement"')
     }
   })
 

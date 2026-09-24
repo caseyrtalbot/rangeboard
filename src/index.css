@@ -1492,39 +1492,65 @@ input[type='color']::-webkit-color-swatch {
   display: none;
 }
 
-/* ---------- Inspector: tab bar ---------- */
+/* ---------- Inspector: header ---------- */
 
-/* Sticky by construction: the bar does not scroll because only the body
-   below it takes overflow. State is one 2 px underline plus contrast, drawn
-   as a mark so the tab box never changes height. */
-.tabs {
+/* 32 px: the phase word at 13/500 and the panel ⋯ menu. Scoped to the panel so
+   it outranks the older .board-panel-heading rules later in the file. */
+.right-panel > .board-panel-heading.insp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 var(--space-1) 0 var(--panel-pad);
+}
+
+.right-panel > .insp-head > h2 {
+  margin: 0;
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  line-height: 32px;
+}
+
+/* ---------- Inspector: tab row ---------- */
+
+/* One row: the phase's screens, then the contextual tabs. Sticky by
+   construction: only the body below it takes overflow. State is one 2 px
+   underline plus contrast, drawn as a mark so the tab box never changes height. */
+.insp-tabs {
   display: flex;
   align-items: stretch;
   flex: 0 0 auto;
-  height: 40px;
+  height: 32px;
   padding: 0 var(--space-2);
   background: var(--surface-panel);
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.tabs button {
+/* The screen group lays its tabs straight into the row. */
+.insp-tab-group {
+  display: contents;
+}
+
+.insp-tabs button {
   position: relative;
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-width: 0;
-  padding: 0 var(--space-1);
+  padding: 0 var(--space-2);
   border: 0;
   background: transparent;
   color: var(--text-secondary);
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
-  line-height: 40px;
+  line-height: 32px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color var(--dur) ease;
 }
 
-.tabs button::after {
+.insp-tabs button::after {
   content: '';
   position: absolute;
   right: 0;
@@ -1535,25 +1561,44 @@ input[type='color']::-webkit-color-swatch {
   transition: background-color var(--dur) ease;
 }
 
-.tabs button:hover {
+.insp-tabs button:hover {
   background: transparent;
   color: var(--text-primary);
 }
 
-.tabs button.active,
-.tabs button[aria-selected='true'] {
+.insp-tabs button[aria-selected='true'] {
   background: transparent;
   color: var(--text-primary);
-  font-weight: var(--type-label-weight);
 }
 
-.tabs button.active::after,
-.tabs button[aria-selected='true']::after {
+.insp-tabs button[aria-selected='true']::after {
   background: var(--accent);
 }
 
-.tabs button:focus-visible {
+.insp-tabs button:focus-visible {
   outline-offset: -3px;
+}
+
+/* The contextual tab: a 6 px accent dot and the object name, cut with an ellipsis. */
+.insp-tabs .insp-tab-context {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 50%;
+}
+
+.insp-tab-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.insp-tab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Inspector: body ---------- */
