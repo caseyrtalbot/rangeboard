@@ -330,6 +330,9 @@ test('playback bar: the engagement open state is restored from storage', async (
     null,
     { timeout: 60000 },
   )
+  // The board boots in Prepare, where no transport renders (D9).
+  await page.click('#board-phase-execute')
+  await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
   await waitFor(page, () => document.querySelector('#engagement-strip'))
   assert.equal(await page.getAttribute('#engagement-toggle', 'aria-expanded'), 'true')
   assert.deepEqual(errors, [])

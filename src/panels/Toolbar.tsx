@@ -170,7 +170,6 @@ export function FileActions({
  * centre, then the phase's one primary action, Settings, the ⋯ menu and the drawer
  * on the right. The two side tracks are equal, so the tablist holds the bar centre.
  * It takes only primitives and stable handlers, and subscribes to the name it shows.
- * `runSeq` and `runPhase` are unused: the run status moved to the status bar.
  */
 export const Toolbar = memo(function Toolbar({
   drawerOpen,
@@ -181,8 +180,6 @@ export const Toolbar = memo(function Toolbar({
   drawerOpen: boolean
   onToggleDrawer: () => void
   boardPhase: BoardPhase
-  runSeq?: number
-  runPhase?: string
   onOpenPhase: (phase: BoardPhase) => void
 }) {
   const scenarioName = useStore((s) => s.scenario.name)

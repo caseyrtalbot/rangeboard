@@ -4551,15 +4551,6 @@ input[type='number'] {
   color: var(--accent);
 }
 
-.board-run-context {
-  overflow-x: clip;
-  text-overflow: ellipsis;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: var(--type-meta-size);
-  white-space: nowrap;
-}
-
 .board-panel-heading {
   padding: var(--space-3) var(--panel-pad) var(--space-1);
   flex: 0 0 auto;
