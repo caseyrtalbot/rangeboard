@@ -30,7 +30,7 @@ describe('AnalysisPanel screens', () => {
 
   it('defaults each phase to its first screen and renders Inputs unchanged', () => {
     expect(render({ phase: 'prepare' })).toContain('<h3>Fragility</h3>')
-    expect(render({ phase: 'prepare' })).toContain('Monte Carlo · No current ensemble result.')
+    expect(render({ phase: 'prepare' })).toContain('No ensemble</span>')
     const inputs = render({ phase: 'prepare', screen: 'inputs' })
     expect(inputs).toBe(renderToStaticMarkup(<BoardPreparation />))
     installTrial()

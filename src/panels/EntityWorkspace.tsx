@@ -76,8 +76,6 @@ export function EntityWorkspace({
   section: EntityWorkspaceSection
   onSectionChange: (section: EntityWorkspaceSection) => void
   onOverview: () => void
-  /** Unused since the status bar carries the run state; kept for the shell's call. */
-  onOpenSettings?: () => void
 }) {
   // Both are stable references between edits, so an edit elsewhere on the board
   // leaves this shell alone.

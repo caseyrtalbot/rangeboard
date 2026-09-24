@@ -1,8 +1,8 @@
 /**
- * The top bar's one primary action (D7) beside a Deterministic switch, with the
- * progress line after it. Prepare runs the ensemble, Execute pauses and resumes
- * playback, and Analyze runs the ensemble again. Every other run setting lives in
- * the Run tab of Settings.
+ * The top bar's one primary action (D7) with the progress line after it. Prepare
+ * runs the ensemble, Execute pauses and resumes playback, and Analyze runs the
+ * ensemble again. The Deterministic checkbox sits under the forecast line in
+ * Prepare > Inputs; every other run setting lives in the Run tab of Settings.
  */
 
 import { runSettings } from '../../model/types'
@@ -98,7 +98,6 @@ export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
   const scenario = useStore((s) => s.scenario)
   const mc = useStore((s) => s.mc)
   const playLabel = useStore(selectPlayLabel)
-  const patchScenario = useStore((s) => s.patchScenario)
   const run = runSettings(scenario)
   const deterministic = run.runMode === 'deterministic'
   const running = mc.status === 'running'
@@ -117,17 +116,6 @@ export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
           : 'Run'
   return (
     <div className="run-control" aria-label="Run">
-      <label className="run-det">
-        <input
-          type="checkbox"
-          role="switch"
-          checked={deterministic}
-          onChange={(event) =>
-            patchScenario({ runMode: event.target.checked ? 'deterministic' : 'monte-carlo' })
-          }
-        />
-        Deterministic
-      </label>
       <button
         type="button"
         className="mc-run primary"

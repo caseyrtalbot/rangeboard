@@ -1046,7 +1046,6 @@ export default function App() {
                     entityId={selectedEntityId}
                     section={entitySection}
                     onSectionChange={setEntitySection}
-                    onOpenSettings={() => openPreparation('run')}
                     onOverview={() => {
                       setRightTab('analysis')
                       requestAnimationFrame(() =>

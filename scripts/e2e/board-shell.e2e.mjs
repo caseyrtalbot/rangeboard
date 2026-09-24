@@ -198,7 +198,7 @@ test('analysis screens follow the phase and no lens bar renders', async (t) => {
   await waitFor(page, () => document.querySelector('[aria-label="Analysis screens"]'))
   assert.deepEqual(await labels(), ['Outcome', 'Compare'])
   await page.click('#board-phase-execute')
-  // Execute has one screen, so it draws no screen navigation.
+  // Execute has one screen, so it draws one Run monitor tab and no segmented control.
   await waitFor(page, () => !document.querySelector('[aria-label="Analysis navigation"]'))
   assert.equal(await has(page, '.lens-builtins'), false)
   assert.equal(await has(page, '.lens-layout'), false)

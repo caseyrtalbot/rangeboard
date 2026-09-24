@@ -1494,8 +1494,7 @@ input[type='color']::-webkit-color-swatch {
 
 /* ---------- Inspector: header ---------- */
 
-/* 32 px: the phase word at 13/500 and the panel ⋯ menu. Scoped to the panel so
-   it outranks the older .board-panel-heading rules later in the file. */
+/* 32 px: the phase word at 13/500 and the panel ⋯ menu. */
 .right-panel > .board-panel-heading.insp-head {
   display: flex;
   align-items: center;
@@ -3370,15 +3369,6 @@ button.chip {
   color: var(--warn);
 }
 
-/* What kind of number the run produces, beside the mode chip. */
-.chip-meta {
-  margin-left: var(--space-1);
-  color: var(--text-tertiary);
-  font-family: var(--font-ui);
-  font-size: var(--type-meta-size);
-  white-space: nowrap;
-}
-
 /* ---------- I&W strip, threat groups ---------- */
 
 /* ---------- Info affordance ---------- */
@@ -4748,44 +4738,8 @@ input[type='number'] {
   color: var(--accent);
 }
 
-.board-panel-heading {
-  padding: var(--space-3) var(--panel-pad) var(--space-1);
-  flex: 0 0 auto;
-}
-
-.board-panel-heading h2 {
-  margin: 0;
-  font-size: var(--type-title-size);
-  font-weight: var(--type-title-weight);
-}
-
 .board-app .right-panel {
   max-width: 44vw;
-}
-
-.board-app .right-panel .tabs {
-  height: auto;
-  min-height: 40px;
-}
-
-.board-app .right-panel .tabs button {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.4;
-  padding: var(--space-2) var(--space-1);
-  overflow: visible;
-}
-
-.board-app .right-panel > .lens {
-  margin: 0;
-  flex: 0 0 auto;
-  min-width: 0;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.board-app .right-panel > .lens .lens-builtins {
-  margin: 0;
-  border-bottom: 0;
 }
 
 .board-app .lens-b {
@@ -4829,10 +4783,6 @@ input[type='number'] {
   align-items: center;
   min-width: 0;
   gap: var(--space-1);
-}
-
-.board-app .right-panel > .lens .lens-builtins {
-  width: 100%;
 }
 
 .board-preparation .insp-row {
@@ -5559,11 +5509,6 @@ input[type='number'] {
 .analysis-settings-edit {
   margin: var(--space-2) 0;
   white-space: normal;
-}
-
-/* Leave the second destination row available for Layout without another rail. */
-.board-app .right-panel > .lens .lens-builtins {
-  padding-right: 64px;
 }
 
 .lens-layout-trigger {

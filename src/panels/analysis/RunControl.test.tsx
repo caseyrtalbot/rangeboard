@@ -74,12 +74,10 @@ describe('RunControl', () => {
     useStore.setState({ mc: IDLE_MC })
   })
 
-  it('offers Run beside an unchecked Deterministic switch under Monte Carlo', () => {
+  it('offers Run with no Deterministic switch under Monte Carlo', () => {
     const html = render()
 
-    expect(html).toContain('role="switch"')
-    expect(html).toContain('Deterministic')
-    expect(html).not.toContain('checked=""')
+    expect(html).not.toContain('role="switch"')
     expect(html).toContain('>Run<')
     expect(interaction.buttons.get('Run')!.disabled).toBe(false)
   })
@@ -99,20 +97,14 @@ describe('RunControl', () => {
     expect(cancel).toHaveBeenCalledOnce()
   })
 
-  it('toggles the run mode through patchScenario and closes the button in deterministic mode', () => {
-    render()
-    interaction.checks[0]({ target: { checked: true } })
-    expect(useStore.getState().scenario.runMode).toBe('deterministic')
+  it('closes the button in deterministic mode with the reason in its title', () => {
+    useStore.getState().patchScenario({ runMode: 'deterministic' })
 
     const html = render()
-    expect(html).toContain('checked=""')
     expect(interaction.buttons.get('Run')!.disabled).toBe(true)
     expect(html).toContain(
       'Deterministic mode computes one expected-value envelope, not replicates.',
     )
-
-    interaction.checks[0]({ target: { checked: false } })
-    expect(useStore.getState().scenario.runMode).toBe('monte-carlo')
   })
 
   it('names the stop rule and the pool size while a pooled run is live', () => {
