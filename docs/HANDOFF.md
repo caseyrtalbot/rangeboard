@@ -10,9 +10,9 @@ commit log. This file holds only the position, the current task and the landmine
 fresh agent starts from this file and the docs index. This file does not authorize a
 commit, push or merge.
 
-[Plan.md](Plan.md), the design and UX polish plan, is complete. No row of it is
-selected. The polish follow-up run, the third polish run (polish3) and the fourth polish
-run (polish4) that came after it are also complete.
+[Plan.md](Plan.md) is the chrome refactor queue (Option C plus the inspector text-density
+pass, 2026-09-24). Row A is selected. The design and UX polish plan it replaces is complete
+in history at `76074bb`.
 
 ## Position
 
@@ -33,8 +33,15 @@ run (polish4) that came after it are also complete.
 
 ## Tasking
 
-No task is open and no candidate is open. Do not add a row to [Plan.md](Plan.md). The
-next task comes from the user.
+Row A of [Plan.md](Plan.md) is selected: the foundation. It is serial, one `opus-medium`
+lane, budget 900 seconds. It owns the token blocks of `src/index.css`, `src/ui/kit.tsx`,
+`src/ui/icons.tsx`, the `ui` slice and saved view record of `src/state/store.ts`, and
+`docs/design/DESIGN_SYSTEM.md`. Decisions D1, D2 and D6 apply at their defaults unless the
+user says otherwise before the lane starts. Its gate is in the row. Report the entry gzip
+bytes: the budget is 367,000 and the headroom at `76074bb` is 1,276 bytes (D3).
+
+After Row A merges, rewrite this section for Row B: four lanes in one message (B1 top
+bar, B2 tool row, B3 rail and library, B4 transport and status bar), then B-int.
 
 The polish4 run closed all eleven polish3 candidates and two defects it found:
 

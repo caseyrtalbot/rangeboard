@@ -6,58 +6,41 @@ links here and selects exactly one row. After that row's gate passes, rewrite th
 handoff so its Tasking section is the next row in the order table, and leave this
 file unchanged.
 
-Authored against local `main` at `293f7bd` (2026-09-23). Line numbers are positions
+Authored against local `main` at `76074bb` (2026-09-24). Line numbers are positions
 at authorship; confirm them before an edit.
 
 ## Source
 
-The frontend design and UX review of 2026-09-23 found 36 findings. It drove the dev
-server with Playwright in dark mode at 2100 × 1325, 1600 and 1440, and in light mode, on
-the fixture `docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json`. The
-screenshots stayed outside the repository. Each finding below has an ID (V visual
-finish, F friction, U user functionality, C canvas), its location and its change. A lane
-works from this table.
+The chrome audit of 2026-09-24 (`~/Downloads/rangeboard-chrome-audit.md`) found nine
+core problems and 18 quick wins outside the board canvas. Three chrome options were
+rendered on a Design canvas; Option C, the dense pro console, was chosen. A second canvas
+re-rendered Option C with the inspector text-density pass. The two canvases are the
+visual source for every row below. Nothing on the canvas is a pixel spec; the token sheet
+on the first canvas is.
 
-## Findings
+- Options A, B, C and the shared token sheet: <https://claude.ai/artifact/8bWcNT4F1UYorsuZnNnaW9>
+- Option C with the text-density pass: <https://claude.ai/artifact/5HAE99aeahPA3Fkmkrvz6v>
 
-| ID | Location | Change |
-| --- | --- | --- |
-| V1 | Palette, context menu, connect popover, readout, menus, Storage, Settings, tooltips: no elevation | Apply the Row A floating surface: raised tone, 6 px radius, `--elev-1`, 1 px border |
-| V2 | `index.css:400-413`: panel actions have a transparent border and read as text | Panel-body actions get a `--rule-strong` border; the main run action on a screen is `.primary` |
-| V3 | `--text-disabled` is `--rule-strong`, 1.88:1 on panel | Dark `#6c6f69` (3.42:1 panel, 3.16:1 raised); paper `#8c877d` (3.28:1 panel) |
-| V4 | `CommandPalette.tsx:204-213`, `index.css:2852-2915`: category prefix on each row, no keys, no scrim | Group headers per category, right-aligned key in mono text 3, 560 px wide, 32 px rows, `--scrim` |
-| V5 | `TrackFileReadout.tsx:70-75` (CURSOR, SPEED / HDG, ALT), `DebriefRecord.tsx:204` (COMPLETE), `Toolbar.tsx:322,327,332` (WEZ On, Env Derate, Spawn In Ring) | Sentence case. The finding words in `runValidityText.tsx:35-36` wait on D6 |
-| V6 | `index.css:3820,3836-3842`: Evidence products header in mono, green left rule | UI font at title size; rule in `--rule` |
-| V7 | `index.css:3243-3256`: a wrapped tile label pushes its value 13 px down | `.tl { min-height: 2.4em }` or subgrid rows |
-| V8 | Execute: one-option segmented control "Now" draws a full-width inverted bar | Do not render the screen navigation for a phase with one screen |
-| V9 | `Inspector.tsx:282`, `index.css:1819`: ring override "Global" wraps | `.insp-rings .seg button { white-space: nowrap; padding: 4px 8px }` |
-| V10 | `ConnectSuggestPopup.tsx:50-53,112-117`, `index.css:2555`: mark column gap, dismiss touches title | `.suggest-meta .prov-mark { width: 8px }`; title text 1 at title weight; 20 px dismiss button right |
-| V11 | `index.css:4292-4297` column flow puts the info button on its own line; label "apply" (`EnvironmentSettings.tsx:20`) | Row flow, centered, `--space-2` gap; label "Apply effects" |
-| V12 | `index.css:341`: top bar grid has no column gap; tabs touch the run status at 1440 | `column-gap: 24px`; below 1600 px fold ROE, warning and saved chips into one status button (D7) |
-| V13 | Rail and undo/redo use text glyphs (⊞ ⌖ ⌘ ↶ ↷) | One inline SVG set, 16 px, 1.5 px stroke, `currentColor` |
-| V14 | Menus and the palette appear with no transition | 120 ms opacity and 4 px entry; reduced motion keeps the 1 ms cut |
-| F1 | Palette: a mouse click in the list moves focus to the body; Escape then does nothing (`interactionRouter.ts:102`, `App.tsx:509-535`) | `onMouseDown={(e) => e.preventDefault()}` on `.cmdk-list`; panel `tabIndex={-1}`; one regression test |
-| F2 | `App.tsx:140-141,593`: "Keys" opens the palette, which shows no keys | Label "Commands", title with ⌘K |
-| F3 | `FragilityScreen.tsx:301-311,364-380`: disabled actions give no reason | A title and a muted line with the reason, for example "Run Monte Carlo first" |
-| F4 | Fire doctrine and Environment are editable in Settings and in Prepare > Inputs | One editor per D2 |
-| F5 | `App.tsx:842-846`: screen tabs stay visible under Selected object; "‹ Overview" repeats the Overview tab | Render the screen navigation only for the analysis tab; remove "‹ Overview" |
-| F6 | `EntityWorkspace.tsx:89-95` and `inspector/kit.tsx:137-145` both show name and type | Keep the header with the state mark |
-| F7 | Execute keeps Boundary, Connect, Path and Range setup | Per D3 |
-| F8 | At 1440 the Library drawer covers the canvas tools and the play button | Drawer starts below the canvas tools row and stops above the timeline |
-| F9 | `Palette.tsx:419-429`: "Model basis" on every library row | Show on row hover or focus |
-| F10 | `NowScreen.tsx:141`, `LiveStrip.tsx:46`: "Press Play in Execute" inside Execute | Inline Play button; drop "in Execute" in that phase |
-| F11 | Analyze has a header Run control and a "Run Monte Carlo" button | Per D4 |
-| F12 | `FragilityScreen.tsx:329-345`: bare "Two factors" label, no gap between field groups | `className="check-row"`; `gap: var(--space-3)` on the wrapper |
-| U1 | Empty first-run board has no guidance | Top-left hint "Add a system: press L or right-click the board" with "Open library (L)"; see D5 |
-| U2 | Context menu and tool buttons show no keys | Right-aligned key in mono text 3; separator above Delete |
-| U3 | No undo cue exists in `src` | Per D8: timeline status line "Deleted KuRFS 1 · Undo ⌘Z", fades after 4 s |
-| U4 | No hover state on entities; cursor stays `auto` | Pointer cursor on entity enter; 1 px ring in entity ink at 60 % |
-| U5 | `Toolbar.tsx:330-334`: "Spawn in ring" warning is a span | A button that selects the entity |
-| C1 | `GridLayer.tsx:29-30`, `EntityLayer.tsx:724`, `CalloutLayer.tsx:31`, `ConnectionLayer.tsx:84`: dark-only ink; paper labels 1.61:1 | Read the Row A board ink. Paper: grid `#dcd7cd` / `#c9c3b8`, label `#4e504b` (6.9:1), link `#5c5f57` (5.5:1) |
-| C2 | `ConnectionLayer.tsx:70-86`, `PathLayer.tsx:57-64`: captions outside `layoutLabels` collide at the origin | Hide a link caption under 80 screen px (show on hover); path caption joins the layout as an obstacle |
-| C3 | `ConnectionLayer.tsx:83`: 10 px caption under the 11 px floor | 11 px |
-| C4 | Selection is a thin dashed ring; readout leader dashed at 45 % | Solid 1.5 px ring in text 1 with a 2 px board-tone halo; solid leader at 60 % |
-| C5 | `camera.ts:30-32`: proportional margin, labels ignored; the cluster lands on the canvas edge | Fixed 64 px screen padding and label boxes in the fit |
+Audit problems, referenced as P1 to P9 in the rows:
+
+| ID | Problem |
+| --- | --- |
+| P1 | No single primary action per phase: Run, Play and New run compete |
+| P2 | Repetition: run id three times, scenario name three times, ROE twice, library twice, import and export in three places |
+| P3 | Two stacked inspector tab levels in two styles; Selected object shown with nothing selected |
+| P4 | Ten control heights; dropdowns, segments and buttons each styled differently |
+| P5 | Top bar, tool row and panel headers on different baselines |
+| P6 | Labels carry units, defaults and help text; slider values live inside labels |
+| P7 | Muted text fails WCAG AA; unlabeled icon buttons; 14 px info targets |
+| P8 | Declutter presets duplicate the View layer toggles and take about 300 px |
+| P9 | Transport controls active in Prepare with no run |
+
+The text-density pass adds one rule: gray text does four jobs (status, rule, method note,
+first-run instruction) and each job gets a home. Status becomes control state. A rule
+becomes a placeholder and an error line shown only when the field is invalid. A method
+note goes behind a 24 px (i). A first-run instruction becomes an empty-state row that the
+first result replaces. A per-panel "Show field help" switch brings every sentence back as
+a normal-weight line. No full sentence is set in muted gray.
 
 ## Decisions
 
@@ -66,205 +49,313 @@ user chose otherwise before the row starts.
 
 | ID | Question | Default | Waits |
 | --- | --- | --- | --- |
-| D1 | Adopt the design-system rule changes in Row A | Adopt all | Row A |
-| D2 | Which surface edits Fire doctrine and Environment | Prepare > Inputs edits; Settings links to it | C1 |
-| D3 | Editing tools during Execute | Hide outside Prepare | C2 |
-| D4 | Which Analyze run control stays | The header Run control; remove the body button on Compare | C3 |
-| D5 | "Load example" on the empty board | No; hint and "Open library (L)" only (bundle budget) | B3 |
-| D6 | Sentence case for LIMITS, INVALIDATES, PENDING | No change; `AGENTS.md` protects finding wording | none |
-| D7 | Fold the top-bar chips below 1600 px | Yes | B5 |
-| D8 | Undo cue after delete and place | Yes | C4 |
+| D1 | Status inks | Keep nominal, warning and critical. Add `--status-limit` `#e0894b` for LIMITS tags. The four-hue CVD set on the token sheet is not adopted | Row A |
+| D2 | Primary action fill | One accent, `#7ba7e8`, ink text; `.primary` becomes 32 px. The board channel inks are unchanged | Row A |
+| D3 | Entry gzip budget (367,000 bytes, 1,276 bytes of headroom at `76074bb`) | No lane raises it. Icons enter `src/ui/icons.tsx` only for the chrome; library per-type icons render from `Glyph.tsx` shapes already in the entry. Removals (Declutter control, Model library tab, library footer, frame-name input, the second RunControl) must pay for additions. The A gate measures; a shortfall goes to the user | Row A, B-int |
+| D4 | Rail destinations Layers and Frames | Route to existing surfaces: Layers opens the View menu at its Layers section; Frames opens the frames strip. No new docked panels | B3 |
+| D5 | Storage | Folds into the scenario ⋯ menu as its last item; the Storage panel opens from there | B1 |
+| D6 | "Show field help" | Off by default. Stored as `ui.showFieldHelp` in the saved view record next to `rightTab`; one switch in the inspector ⋯ menu | Row A, C1, C2 |
+| D7 | Primary action per phase | Prepare: Run. Execute: Pause, Resume when paused. Analyze: Run again. One `RunControl` in the top bar; the body instances are removed | B1 |
+| D8 | Status bar below 1440 px | Cells drop from the right in this order: units, MC, seed. Run id, phase, T+, ROE and validity never drop | B4 |
+| D9 | Transport when no run exists | Not rendered in Prepare. In Execute and Analyze it renders at 28 px above the status bar | B4 |
 
 ## Do not mix
 
 - No change to engine logic, statistics, provenance marks, or the wording of findings and
-  caveats. New UI hint text is allowed; changed finding text is not.
-- The entry gzip budget is 365,000 bytes with about 0.5 kB headroom (`check-bundle.mjs`).
-  Icons and new components add entry bytes. Run `npm run build && npm run check:bundle`
-  at every gate. Do not raise the budget without the user.
+  caveats. Moving a finding paragraph behind a headline row is allowed; changing its
+  words is not.
+- The entry gzip budget rule is D3. Run `npm run build && npm run check:bundle` at every
+  gate. Do not raise the budget without the user.
 - `src/index.css` is shared. Each lane owns the selector blocks listed for it. Add a new
   rule inside or directly after an owned block. Never append at the end of the file,
   never reorder blocks, and never edit an unowned block. Report a needed change in an
   unowned block to the integrator.
 - Only Row A and the integrator edit `docs/design/DESIGN_SYSTEM.md`. A lane reports the
   rule and token text its change needs.
-- Lanes run in their own worktrees. Scope tests with `npx vitest run --dir src`. Never
-  run bare `npx vitest run` while a worktree exists in the repository.
-- Keep JSX button labels on one line (Prettier can split `children`).
-- Every layer stays inside `SceneErrorBoundary`. Keep the draw identity and memo
-  invariants in [ENGINEERING_REFERENCE.md](ENGINEERING_REFERENCE.md#3-hard-architectural-invariants).
+- Lanes run in their own worktrees. Scope tests with `npx vitest run --dir src <file>`.
+  Never run bare `npx vitest run` while a worktree exists in the repository.
+- Keep JSX button labels on one line. Sentence case everywhere. Mono for machine data
+  only. Four text sizes: 11, 12, 13, 15. Three control heights: 24, 28, 32.
+- Every icon-only button carries `aria-label` and a `title` that ends with its key in
+  parentheses. Every (i) is a 24 px button.
 - Do not split `store.ts` or `Inspector.tsx`.
+- `scripts/e2e/board-shell.e2e.mjs` reads `.toolbar`, `.timeline`, `.canvas-host` and
+  `[aria-label="Analysis screens"]`. A lane that renames one updates the e2e in the same
+  change.
 
 ## Order
 
 | Row | Content | Parallel | Waits on | Worker |
 | --- | --- | --- | --- | --- |
-| A | Foundation: tokens, floating surface, board ink, icons, design system | Serial | D1 | `opus-medium` |
-| B | Wave 1: lanes B1 to B5, then B-int | Five lanes | A merged | per lane |
-| C | Wave 2: lanes C1 to C4, then C-int and the final capture | Four lanes | B merged | per lane |
+| A | Foundation: tokens, control heights, icons, store flag, design system | Serial | D1, D2, D6 | `opus-medium` |
+| B | Chrome bands: lanes B1 to B4, then B-int | Four lanes | A merged | per lane |
+| C | Inspector and density: lanes C1 to C4, then C-int and the final capture | Four lanes | B merged | per lane |
 
 One row is one agent turn for the orchestrator. Inside rows B and C the orchestrator
-launches the lanes in one message, then integrates.
+launches the lanes in one message, keeps working, then integrates. Every lane brief
+states the worktree, the owned files, the gate command, the report shape and a time
+budget of 1,800 seconds (Row A: 900 seconds). The lane's report is a claim. The
+orchestrator runs the gate or reads the diff before it counts a lane done.
+
+Reviews are two, not one per lane. `opus-high` reviews the B-int diff and the C-int diff
+for correctness against this file. `fable-medium` reviews the final capture against the
+two canvases once, after C-int, and reports deviations as follow-ups; it changes nothing.
 
 ## Row A. Foundation
 
-Findings: V3, the token part of V1 and V14, the ink part of C1, the icon part of V13.
+Serial. `opus-medium`. Budget 900 seconds.
 
 Owns:
 
 - `src/index.css` token blocks only: `:root` (40-110), the paper `:root` (189-215), the
-  light blocks (217-260), and one new block directly after them for `.surface-float`
-  and `@keyframes surface-enter`.
-- `src/ui/ink.ts`; new `src/canvas/useBoardInk.ts`; new `src/ui/icons.tsx`.
-- `docs/design/DESIGN_SYSTEM.md` and its `docs:review`.
+  light blocks (217-260), and the `.surface-float` block after them.
+- `src/ui/kit.tsx`, `src/ui/icons.tsx`, `src/state/store.ts` (the `ui` slice and the
+  saved view record only), `docs/design/DESIGN_SYSTEM.md` and its `docs:review`.
 
 Work:
 
-1. Tokens: `--surface-raised` (`#202121`, paper `#fbfaf7`); `--radius-control: 4px`;
-   `--radius-surface: 6px`; `--elev-1` (dark `0 8px 24px rgba(0,0,0,.45), 0 1px 2px
-   rgba(0,0,0,.3)`, paper `0 8px 24px rgba(33,34,32,.12)`); `--scrim` (dark
-   `rgba(0,0,0,.32)`, paper `rgba(33,34,32,.2)`); `--text-disabled` per V3;
-   `--dur-enter: 120ms`.
-2. `.surface-float`: raised background, `--rule-strong` border, `--radius-surface`,
-   `--elev-1`, `surface-enter` animation (opacity 0 to 1, `translateY(4px)` to 0).
-   `prefers-reduced-motion` keeps its 1 ms cut.
-3. Board ink: a dark and a paper table in `ink.ts` for grid minor, grid major (canvas
-   and airspace), label, link caption, callout leader. `useBoardInk()` resolves `ui.theme`
-   and `prefers-color-scheme` and returns one table. No layer changes in this row.
-4. Icons: library, objects, commands, undo, redo, close, caret. 16 px viewBox, 1.5 px
-   stroke, `currentColor`, `aria-hidden`.
-5. `DESIGN_SYSTEM.md`: rewrite rules 2 to 5 and the token table for the new values. Add
-   the rule "Canvas ink follows the theme." Keep monochrome chrome, mono for machine
-   data, sentence case, two weights, the 11 px floor and the contrast floors.
+1. Tokens. `--text-tertiary: #8c8e88` (5.3:1 on panel; paper keeps `#7b7d73`).
+   `--accent: #7ba7e8`, `--accent-ink: #121313` (paper accent `#2f6fc4`, ink paper).
+   `--status-limit: #e0894b` (paper `#a85a1c`). `--h-dense: 24px`, `--h-default: 28px`,
+   `--h-primary: 32px`. `--type-dense-size` stays 11; add `--type-lead-size: 15px` for the
+   panel title and the clock. No other size token.
+2. Kit. `.primary` reads `--h-primary`, `--accent` fill, `--accent-ink` text, weight 500.
+   `.mini` reads `--h-dense`. Every other button reads `--h-default`. `Field` gains a
+   `help` prop: when set, the label row ends in a 24 px (i) button (`aria-label="About
+   <label>"`) whose title holds the text; when `ui.showFieldHelp` is true the text also
+   renders as a `.field-help` line (12 px, text 2) under the control. `Field` gains an
+   `error` prop that renders a `.field-error` line (11 px, critical) under the control and
+   sets `aria-invalid` on the child. `Field` gains a `suffix` prop for the unit, rendered
+   inside the frame in mono text 2 (`.nu-unit` exists; reuse it).
+3. Icons. Add to `src/ui/icons.tsx`: settings, more, drawer, entities, layers, frames,
+   play, pause, reset, info, chevron down, chevron right, plus, search, pencil. Same
+   contract as the seven that exist. No per-type library icons here (D3).
+4. Store. `ui.showFieldHelp: boolean` with `setShowFieldHelp`, persisted in the saved
+   view record beside `rightTab` (`store.ts:124,513,1314`). Default false. One test in
+   the existing store view test file.
+5. `DESIGN_SYSTEM.md`. Rewrite section 4 Buttons for the three heights and the accent
+   primary. Add the accent and limit tokens to the section 2 table. Add rule 10: "Gray
+   text has four jobs" with the four homes and the muted-sentence ban. Add the (i)
+   and `Field` help, error and suffix contracts to the Field entry.
 
 Gate: `npm run typecheck`, `npm test`, `npm run lint`, `npm run format:check`,
-`npm run check:silent`, `npm run build && npm run check:bundle`, `npm run docs:check`.
-Browser: dark and light at 2100 and 1440 show the 4 px control radius and readable
-disabled text with no layout shift. Record the entry gzip bytes and the headroom in the
-handoff for Row B.
+`npm run build && npm run check:bundle`, `npm run docs:review -- docs/design/DESIGN_SYSTEM.md
+--note "…"`, `npm run docs:check`. Report the entry gzip bytes.
 
-Stop: tokens, class, ink table, hook and icons exist and are documented. No component
-uses them yet except through global tokens.
+## Row B. Chrome bands
 
-## Row B. Wave 1
+Four lanes in one message, then B-int.
 
-Five lanes run in parallel, each in its own worktree from the Row A tip. The files and
-CSS blocks of each lane are disjoint.
+### B1. Top bar. `opus-medium`
 
-### B1. Floating surfaces and the palette
+Owns `src/panels/Toolbar.tsx` (the `Toolbar` header, lines 340-437), `src/ui/StorageMenu.tsx`,
+`src/panels/analysis/RunControl.tsx` (mount point only), `src/panels/analysis/AnalysisNavigation.tsx:30`
+and `src/panels/analysis/ForecastSettings.tsx:97` (remove the body `RunControl`),
+`index.css` blocks `.toolbar` to `.toolbar-left > .scenario-name` (389-460), `.tb-menu-wrap`
+to `.tb-menu-row` (741-850), `.board-run-context` (4308). Tests: `Toolbar.test.tsx`,
+`RunControl.test.tsx`.
 
-Worker `opus-medium`, budget 3600 s. Findings: V1 (surfaces), V4, V10, V14 (apply),
-F1, U2.
+Work: bar height 36. Order: brand · scenario name (pencil affordance on hover, `F2`
+focuses the input) · phase tabs centered (unchanged markup; active tab in text 1 with a
+2 px `--accent` underline; the `num` in mono, accent when active) · `RunControl` as the
+one `.primary` per D7 · Settings icon · ⋯ menu (New, Import, Export, separator, Storage
+per D5) · drawer toggle. Remove `board-run-context` and `status-pills` from the bar; B4
+takes them. The scenario name renders once (P2). Keep the equal side tracks and the
+1024 px floor from the polish run. Solves P1, P2, P5.
 
-Owns: `src/panels/CommandPalette.tsx`, `src/canvas/ContextMenu.tsx`,
-`src/canvas/ConnectSuggestPopup.tsx`, `src/panels/ViewMenu.tsx`,
-`src/panels/RangeSetupMenu.tsx`, `src/ui/StorageMenu.tsx`, `src/ui/StoragePanel.tsx`,
-`src/panels/Tooltip.tsx`, `src/panels/analysis/Info.tsx`, new
-`src/panels/CommandPalette.test.tsx`. CSS: `.tb-menu-panel` to `.tb-menu-row` (674-747),
-`.help-dot` (1649-1690), `.ctx-*` (2442-2527), `.connect-suggest` and `.suggest-*`
-(2528-2567), `.info-dot`, `.info-pop`, `.tooltip`, `.kbd` (2683-2756); reuse `.kbd` for key hints, `.cmdk-*` (2852-2915),
-`.settings-panel` and its backdrop (4780-4800).
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/Toolbar.test.tsx
+src/panels/analysis/RunControl.test.tsx`, `npm run lint`, `npm run format:check`.
 
-Must not touch: `.seg button, .cmdk-input` (1770-1773, B4), `App.tsx`, the readout.
+### B2. Tool row. `opus-medium`
 
-Gate: scoped tests for the owned files, typecheck, lint, format, `check:silent`. Browser:
-palette, context menu, connect popover, View, Range setup, Storage, Settings and a
-tooltip in dark and light; Escape closes the palette after a click in the list.
+Owns `src/panels/Toolbar.tsx` (`BoardTools`, lines 440-509), `src/panels/ViewMenu.tsx`,
+`src/panels/RangeSetupMenu.tsx`, `index.css` blocks `.board-tools` to `.board-tools > .seg
+button` (4564-4700) and `.toolbar > .seg button.tb-glyph` (728-740). Tests:
+`Toolbar.test.tsx` (the `BoardTools` cases only; B1 and B2 edit disjoint `describe`
+blocks and the integrator merges).
 
-### B2. Canvas legibility
+Work: row height 28; every control `.mini` (24 px). Drawing tools stay a segmented group
+with the new icons and `title="Select (V)"` style keys. `Range setup` becomes a `Range`
+select-style trigger with the same look as `View`. `DeclutterControl` is deleted from the
+row; its four presets become a `Preset` section at the top of the View menu (a `Seg`), and
+the floating "Declutter" label is gone. Undo and Redo keep their icons and gain
+`title="Undo (⌘Z)"` and `title="Redo (⇧⌘Z)"` with the key visible in the tooltip. Outside
+Prepare the drawing group and Range are not rendered (unchanged). Solves P4, P7, P8.
 
-Worker `opus-high`, budget 5400 s. Findings: C1 (apply), C2, C3, C4, C5, U4, V5
-(readout keys), V1 (readout surface).
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/Toolbar.test.tsx
+src/panels/ViewMenu.test.tsx` (create the ViewMenu test if none exists, sized like
+`Toolbar.test.tsx`), `npm run lint`, `npm run format:check`.
 
-Owns: `src/canvas/layers/GridLayer.tsx`, `EntityLayer.tsx`, `CalloutLayer.tsx`,
-`ConnectionLayer.tsx`, `PathLayer.tsx`, `src/canvas/labelLayout.ts` and its test,
-`src/canvas/CanvasStage.tsx`, `src/canvas/TrackFileReadout.tsx` and its test,
-`src/state/camera.ts`. CSS: `.readout` and `.ro-host` to `.ro-details` (829-928) and `.readout.compact`
-(4490-4507).
+### B3. Rail and library. `opus-high`
 
-Must not touch: `store.ts`, other layers, `LiveScene.tsx` unless the label inputs need
-it (report first).
+Owns `src/App.tsx` (`ResourceRail`, lines 118-156, and its props at 767-773 only),
+`src/panels/Palette.tsx`, `src/panels/Glyph.tsx` (read only; per-type shapes),
+`index.css` blocks `.board-resource-rail` (4452-4480) and `.palette` to `.palette-item`
+(1038-1170). Tests: `Palette.test.tsx`, the rail cases in `App` tests if any.
 
-Gate: scoped tests including `labelLayout.test.ts`, `EntityLayer.test.tsx`,
-`CanvasStage.test.tsx`, `TrackFileReadout.test.tsx`; typecheck, lint, format,
-`check:silent`. Browser: the fixture origin cluster at 2100 and 1440 in dark and light;
-no caption overlaps a glyph or a label; hover shows the pointer and the ring; paper
-labels at least 4.5:1.
+Work: rail 44 px, five destinations in order: Library, Entities (renamed from Objects
+everywhere the rail is concerned; the register keeps its own heading), Layers, Frames,
+Commands at the bottom. Layers and Frames route per D4. Each button: 32 px, icon from
+`icons.tsx`, `aria-label`, `title` with the key, a 2 px active mark on the left edge in
+text 1. Library panel: header 32 px with the title, a ⋯ button (Import library, Export
+library, Reload built-in) and Close; the footer is removed. Filter field 24 px. Rows 36 px:
+line 1 name at 13/500 with ellipsis (no wrapping parentheticals: the vendor moves to
+line 2), line 2 vendor · type at 11 px mono text 3. The row glyph is the per-type
+`Glyph` shape, not the dome. Group headers keep their counts in mono; the collapse button
+gains `aria-label="Collapse <group>"` and `aria-expanded`. "Model basis" on a row shows
+on hover or focus (already so). Solves P2, P7.
 
-### B3. Right panel and board shell
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/Palette.test.tsx`,
+`npm run lint`, `npm run format:check`, `npm run build && npm run check:bundle`.
 
-Worker `opus-high`, budget 5400 s. Findings: F2, F5, F6, F8, F9, F10, V8, U1 (D5), V13
-(rail).
+### B4. Transport and status bar. `opus-medium`
 
-Owns: `src/App.tsx`, `src/panels/EntityWorkspace.tsx` and its test,
-`src/panels/inspector/kit.tsx` (header only), `src/panels/analysis/AnalysisNavigation.tsx`
-and its test, `src/panels/analysis/screens/NowScreen.tsx`,
-`src/panels/analysis/LiveStrip.tsx` and its test, `src/panels/Palette.tsx` and its test,
-`scripts/e2e/board-shell.e2e.mjs`. CSS: `.palette*` (932-1060), `.right-panel` to
-`.right-panel-body` (1186-1280), `.board-panel-heading` (4030-4040),
-`.board-resource-rail` to `.board-placement` (4171-4288), `.entity-workspace-header`
-and `.entity-workspace-scroll` (4372-4409).
+Owns `src/panels/TimelineBar.tsx`, new `src/panels/StatusBar.tsx` and
+`StatusBar.test.tsx`, `src/App.tsx` (the `TimelineBar` and `EngagementStrip` mount at
+834-835 and the `Toolbar` props at 752-759 only), the `RoeMenu` and chip markup moved out
+of `Toolbar.tsx` (B1 removes it; B4 re-mounts it; the integrator resolves the seam),
+`index.css` blocks `.timeline` to `.timeline select` (2509-2560), `.status-pills` (1170-1200)
+and one new `.status-bar` block directly after `.timeline`. Tests: `TimelineBar.test.tsx`,
+`StatusBar.test.tsx`; `scripts/e2e/board-shell.e2e.mjs` where it reads `.timeline`.
 
-Note: the e2e test clicks the "‹ Overview" button that F5 removes. Update that test to
-use the Overview tab.
+Work: status bar 24 px, sunken tone, 11 px mono, cells left to right: run id, phase,
+`T+m:ss / m:ss`, `seed`, `MC n / N`, grow, ROE chip (the `RoeMenu` with its folded chips;
+read-only look, click opens the menu as today), units `nm · ft MSL` (read from the saved
+view), `Validity n` with a `LIMITS` tag in `--status-limit` when n > 0. D8 governs the
+narrow width. Transport per D9: 28 px, `.mini` controls: play or pause, reset icon
+(`title="Reset run (⇧R)"`, replaces the "New run" text), clock, scrubber, speed select,
+`+ Frame` (prompts for a name with `window.prompt` replaced by an inline 24 px popover
+that holds one input and Save; the permanent frame-name input is removed), Engagement
+toggle. The run id and the clock leave the transport; the status bar carries them (P2).
+Solves P1, P2, P9.
 
-Gate: scoped tests for the owned files, typecheck, lint, format, `check:silent`,
-`npm run test:e2e` against a dev server on a free port (`E2E_URL`). Browser: Prepare,
-Execute and Analyze with and without a selection; the empty board; the drawer at 1440.
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/TimelineBar.test.tsx
+src/panels/StatusBar.test.tsx`, `npm run lint`, `npm run format:check`.
 
-### B4. Panel controls and forms
+### B-int. Integration. Orchestrator, then `opus-high` review
 
-Worker `opus-medium`, budget 3600 s. Findings: V2, V5 (COMPLETE), V6, V7, V9, V11, F3,
-F12.
+Merge B1 to B4 into `chrome/int`. Resolve the `Toolbar.tsx` seam (B1 header, B2
+`BoardTools`, B4 chip move) and the `App.tsx` seam (B3 rail, B4 mounts). Then `npm run
+check`, `npm run test:e2e`, `npm run check:bundle`. Update `DESIGN_SYSTEM.md` section 3
+(the top bar paragraph) and section 4 (status chips, key hints) with the text the lanes
+reported. `opus-high` reviews the integration diff against Rows A and B and reports
+defects; the orchestrator fixes them on `chrome/int`. Merge to `main` only with the
+user's authorization.
 
-Owns: `src/panels/analysis/screens/FragilityScreen.tsx`,
-`src/panels/analysis/EnvironmentSettings.tsx`, `src/panels/analysis/DebriefRecord.tsx`
-and its test. CSS: `button` to `button.mini:hover` (400-483), `.insp-rings` (1496-1503),
-`.field` to `.check-row` (1507-1610), `.seg` (1749-1822), `.tiles` to `.tile .ts`
-(3236-3301), `.debrief-*` (3815-3850), `.prepare-setting-controls` (after 4297),
-`.evidence-products` (4717-4728). `.prepare-setting-controls` shares a selector with
-two other blocks at 4290-4297: add a separate rule after it, do not edit the shared one.
+## Row C. Inspector and density
 
-Gate: scoped tests for the owned files, typecheck, lint, format, `check:silent`. Browser:
-Fragility, Inputs, Settings Scenario, a sensor's rings, Outcome tiles in dark and light.
-Every panel action has a visible frame; every disabled action states a reason.
+Four lanes in one message, then C-int and the final capture.
 
-### B5. Top bar
+### C1. Inspector frame. `opus-medium`
 
-Worker `opus-medium`, budget 2700 s. Findings: V12 (D7), V5 (chips), U5, V13 (undo and
-redo).
+Owns `src/App.tsx` (`TABS` 75-95, `PanelTabs` 158-190, the `right-panel` markup 838-870,
+the `setRightTab('inspect')` sites 468 and 615), `src/panels/analysis/AnalysisNavigation.tsx`,
+`src/panels/analysis/screens/navigation.ts`, `src/panels/analysis/screens/PlacementScreen.tsx:148-149`,
+`index.css` blocks `.right-panel` to `.inspector-body.insp > .insp-header` (1349-1540).
+Tests: `AnalysisNavigation.test.tsx`, `PlacementScreen.test.tsx`, the tab cases in the
+`App` tests.
 
-Owns: `src/panels/Toolbar.tsx` and its test. CSS: `.toolbar` to `.scenario-name`
-(339-398), `.tb-glyph` to `.tb-caret` (632-672), `.status-pills` (1062-1066),
-`.board-phases` (3997-4028).
+Work: one tab row. The Model library tab is removed (`TABS:77`); the left panel owns the
+library. The Selected object tab renders only while an entity is selected, with the
+entity name as its label and a 6 px accent dot; selection focuses it (the `615` site
+already switches to it). The parent tab row and the screen row merge into one row in one
+style: `Inputs · Fragility · Placement` in Prepare, `Run monitor` in Execute (no
+segmented control for one screen, unchanged), `Outcome · Compare` in Analyze, then the
+contextual entity tab last. "Where to put it" becomes "Placement" in the navigation
+table, the screen heading and its `aria-label`; test strings follow. The
+`board-panel-heading` becomes a 32 px header: the phase word (`Prepare`, `Execute`,
+`Analyze`) at 13/500 and a ⋯ button whose menu holds `Show field help` (a switch bound
+to `ui.showFieldHelp`), `Collapse all`, `Expand all`. Solves P2, P3, P5.
 
-Gate: scoped tests, typecheck, lint, format, `check:silent`. Browser: top bar at 2100,
-1600 and 1440; no two groups touch; the tabs stay centered from 1600 up.
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/analysis/AnalysisNavigation.test.tsx
+src/panels/analysis/screens/PlacementScreen.test.tsx`, `npm run lint`, `npm run
+format:check`, `npm run test:e2e` (it reads `[aria-label="Analysis screens"]`).
 
-### B-int. Integration
+### C2. Fragility density. `opus-high`
 
-The orchestrator merges B1 to B5 in that order, resolves any `index.css` conflict by
-block ownership, then runs `npm run check`, `npm run build && npm run check:bundle`,
-and `npm run test:e2e`. It recaptures every stage and overlay in dark and light at 2100
-and 1440, edits `DESIGN_SYSTEM.md` for any rule a lane reported, runs `docs:review`,
-and rewrites the handoff to Row C. It removes the worktrees.
+Owns `src/panels/analysis/screens/FragilityScreen.tsx` and its test,
+`src/panels/analysis/SensitivityWidget.tsx` and its test, `src/panels/analysis/runValidityText.tsx`
+(rendering only; finding words unchanged), `index.css` block `.frag` if one exists, else
+one new block directly after `.inspector-actions button.mini` (1761).
 
-## Row C. Wave 2
+Work, per the density canvas:
 
-Four lanes run in parallel from the Row B tip. Each waits on its decision.
+1. Monte Carlo: the line "Monte Carlo · No current ensemble result." becomes a `State`
+   chip `No ensemble` (warning, hollow). "Run Monte Carlo first to pin a baseline. Run
+   settings are in the Inputs tab." becomes a `Field`-style help line that renders only
+   when `ui.showFieldHelp` is true; the disabled Pin as baseline keeps its title reason.
+2. Sweep map: the header gains a mono readout `n cells · 40 reps/cell`; the estimate
+   sentence moves into the (i) with the planning-factor note. The value fields use
+   `Field` with `suffix` for the unit, a placeholder `2–6 values, comma-separated`, and
+   `error` set only while the field is invalid, with the rule sentence as the error text.
+   The disabled Run sweep keeps `title="Enter valid factor values"`; the muted line
+   beside it is removed.
+3. Sensitivity: "No defended asset; response unavailable." becomes a `State` chip `No
+   defended asset` and a `.mini` action `Place asset` that opens the library at Assets.
+   "Morris screening, then Sobol indices on the fields it keeps" moves into the
+   section (i). The progress line during a run is unchanged.
+4. Validity: each finding renders as a 28 px headline row (glyph, headline, chevron);
+   the paragraph and "Review finding scope" open on click. The headline is the first
+   clause of the finding text, unchanged in wording. With `ui.showFieldHelp` true the
+   rows render open.
+5. Tests: update the string assertions listed in `FragilityScreen.test.tsx:209-246,
+   474-490` to the new homes; add one case each for the error line, the help switch and
+   the finding row toggle.
 
-| Lane | Findings | Owns | Worker, budget |
-| --- | --- | --- | --- |
-| C1 | F4 (D2) | `src/panels/SettingsPanel.tsx`, `src/panels/settings/`, `src/panels/analysis/FireDoctrineSettings.tsx`, `src/panels/analysis/EnvironmentSettings.tsx`, `src/panels/BoardPreparation.tsx` and their tests | `opus-medium`, 3600 s |
-| C2 | F7 (D3) | `src/panels/Toolbar.tsx` board tools and its test | `opus-medium`, 2700 s |
-| C3 | F11 (D4) | `src/panels/analysis/RunControl.tsx`, `src/panels/analysis/screens/CompareScreen.tsx` and their tests | `opus-medium`, 2700 s |
-| C4 | U3 (D8) | `src/panels/TimelineBar.tsx` and its test; a read-only selector for the last undoable action | `opus-medium`, 3600 s |
+Solves P6, P7.
 
-C4 reads history state from the store. If the store has no label for the last action,
-C4 stops and reports; the integrator adds the store field.
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/analysis/screens/FragilityScreen.test.tsx
+src/panels/analysis/SensitivityWidget.test.tsx`, `npm run lint`, `npm run format:check`.
 
-### C-int. Integration and final capture
+### C3. Telemetry. `opus-medium`
 
-Merge C1 to C4, run the Row B integration checks, recapture the full shot set, and
-compare it against the 36 findings. Record in the handoff each finding that is closed,
-changed by a decision, or open with its reason.
+Owns `src/panels/EntityWorkspace.tsx`, `src/panels/analysis/detail/ThreatDetail.tsx`,
+`src/panels/analysis/detail/DetailSection.tsx`, `src/panels/analysis/detail/detailRows.tsx`,
+`src/canvas/TrackFileReadout.tsx` (the popover; values one line each), `index.css`
+block `.detail-ghost` and the detail blocks after it (4829-4900). Tests: `Detail.test.tsx`,
+`EntityWorkspace.test.tsx`, `TrackFileReadout.test.tsx`.
+
+Work: the four provenance chips under the object header become one `Model basis` row
+(value in text 2, a (i) whose title lists the four sources). The readout becomes four
+collapsible sections: `Track` open by default; `Engagement`, `Path` and `Phase` collapsed
+with a mono summary in the header (`2 kinetic · 1 landed · 0 kills`; `CPA T+10:03 ·
+arrival T+9:35`). Every value is one line: a value that would wrap moves its second
+clause into the row title (hover) or a `.mini` drill-in (`1 sensor ›` for Held by). The
+altitude band goes into the altitude (i). The status sentence at the top ("Running ·
+Simulated trial · observed through …") is removed; the status bar carries the run state
+and T+ (P2). Solves P2, P6.
+
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/analysis/detail/Detail.test.tsx
+src/panels/EntityWorkspace.test.tsx src/canvas/TrackFileReadout.test.tsx`, `npm run lint`,
+`npm run format:check`.
+
+### C4. Inputs forms. `opus-medium`
+
+Owns `src/panels/analysis/EnvironmentSettings.tsx`, `FireDoctrineSettings.tsx`,
+`RequirementSettings.tsx`, `ForecastSettings.tsx` and their tests,
+`src/panels/settings/inputs.tsx`, `index.css` blocks for `.field` and `.nu-unit` (report
+the line numbers in the brief after Row A lands).
+
+Work: every field uses `Field` with `suffix` for its unit and a placeholder `Auto` where
+a blank means a derived default; the derivation sentence ("blank = 20000 from sky") goes
+into the (i). Slider rows keep only the noun in the label and show a right-aligned mono
+readout (`12 kt`, `270°`). The Deterministic checkbox is labelled by its noun
+(`Deterministic (fixed seed)`) and sits under the run forecast line. The two forecast
+lines collapse into one mono line `MC 80 / 2000 · seed 4821`; the stopping rule moves to
+its title. Solves P6, P7.
+
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/analysis/ForecastSettings.test.tsx
+src/panels/analysis/RequirementGates.test.tsx`, `npm run lint`, `npm run format:check`.
+
+### C-int. Integration, review, capture. Orchestrator, `opus-high`, `fable-medium`
+
+Merge C1 to C4 into `chrome/int`. `npm run check`, `npm run test:e2e`, `npm run
+check:bundle`. `opus-high` reviews the C diff against Rows A to C. Then the final
+capture: the dev server with Playwright at 1440 × 900 in dark mode on the fixture
+`docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json`, in Prepare with a
+system selected, in Execute mid-run and in Analyze, plus the Fragility tab with help off
+and on. Store the capture under `docs/field-te/evidence/chrome-2026-<date>/` with a
+`findings.json` per [VERIFICATION.md](VERIFICATION.md). `fable-medium` compares the
+capture with the two canvases and lists deviations as follow-ups in the handoff. Update
+`DESIGN_SYSTEM.md` and its `docs:review`. Rewrite the handoff: position, the follow-ups,
+no row selected. Merge to `main` only with the user's authorization.

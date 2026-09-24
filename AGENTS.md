@@ -61,6 +61,6 @@ One zustand store holds the Board; persistence is localStorage.
 
 ## Learned Workspace Facts
 
-- `docs/Plan.md` is the open design and UX polish queue (rows A to C, 2026-09-23); `docs/HANDOFF.md` selects its row and holds the position and landmines.
+- `docs/Plan.md` is the open chrome refactor queue (Option C and the inspector text-density pass, rows A to C, 2026-09-24); `docs/HANDOFF.md` selects its row and holds the position and landmines.
 - `src/analysis/series.ts` is deleted; use trialSeries and mc helpers (`heldTracksOnGrid`, `liveKpisAt`, `residualOnGrid`)—do not restore `series.ts` or retired ENGINEERING_REFERENCE symbols (`withBands`, `TRACK_LADDER_STYLE`).
 - Run `npm run check:silent` before each commit (CI checks added lines only); intentional matches need `// silent-ok: <reason>`; `check:silent:all` lists pre-existing tree findings that are out of lane unless owned; rules live under `scripts/silent/rules` (see docs/VERIFICATION.md).
