@@ -34,9 +34,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "95e69383a3f4c203f0024feffe89ec126bb321337df40a107eacb955ef4d5c52",
+      "sha256": "197e238b1998570183163376b6c7e5fe6abf14c365887dc513a8c7828f82f4b5",
       "reviewedAt": "2026-09-24",
-      "note": "Plan.md row now names the chrome refactor queue."
+      "note": "Row C: the chrome-2026-09-24 final capture joins the completion records."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
