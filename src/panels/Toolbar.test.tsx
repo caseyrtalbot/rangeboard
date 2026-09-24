@@ -9,8 +9,6 @@ import { RangeSetupMenuPanel } from './RangeSetupMenu'
 import { BoardTools, FileActions, Toolbar } from './Toolbar'
 import { ViewMenuPanel } from './ViewMenu'
 import { SettingsPanel } from './SettingsPanel'
-import { activeLayerPreset, DEFAULT_LAYERS, LAYER_PRESETS } from '../state/layers'
-import type { LayerPreset } from '../state/layers'
 
 function render(node: ReactNode): string {
   Object.assign(useStore.getInitialState(), useStore.getState())
@@ -60,16 +58,15 @@ describe('Board toolbar grouping', () => {
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })
 
-  it('orders canvas tools before range setup, view and history', () => {
+  it('orders canvas tools before range, view and history', () => {
     const html = render(<BoardTools />)
     const labels = [
-      'Select',
-      'Boundary',
-      'Connect',
-      'Path',
-      'Range setup',
-      'View',
-      'Declutter',
+      '>Select</button>',
+      '>Boundary</button>',
+      '>Connect</button>',
+      '>Path</button>',
+      'aria-controls="range-setup-menu-panel"',
+      'aria-controls="view-menu-panel"',
       'History',
     ]
     const positions = labels.map((label) => html.indexOf(label))
@@ -78,6 +75,33 @@ describe('Board toolbar grouping', () => {
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(html).not.toContain('Calibrate scale')
+    expect(html).not.toContain('Range setup')
+    expect(html).not.toContain('Declutter')
+    expect(html).not.toContain('aria-label="Preset"')
+  })
+
+  it('titles each drawing tool and opens Range and View from chevron triggers', () => {
+    const html = render(<BoardTools />)
+
+    // No drawing tool has a shortcut, so no title carries a key.
+    for (const [label, hint] of [
+      ['Select', 'Move, pan, edit'],
+      ['Boundary', 'Draw airspace and range polygons'],
+      ['Connect', 'Link sensor to C2 to effector'],
+      ['Path', 'Draw a UAS flight path'],
+    ]) {
+      expect(html).toMatch(new RegExp(`title="${hint}"[^>]*>${label}</button>`))
+    }
+    for (const [label, panel] of [
+      ['Range', 'range-setup-menu-panel'],
+      ['View', 'view-menu-panel'],
+    ]) {
+      expect(html).toMatch(
+        new RegExp(
+          `class="tb-menu "[^>]*aria-controls="${panel}"[^>]*>${label}<span class="tb-caret" aria-hidden="true"><svg`,
+        ),
+      )
+    }
   })
 
   it('hides the editing tools outside Prepare, returns the tool to Select, and keeps view and history', () => {
@@ -96,11 +120,11 @@ describe('Board toolbar grouping', () => {
         'Boundary',
         'Connect',
         'Path',
-        'Range setup',
+        'range-setup-menu-panel',
       ]) {
         expect(html).not.toContain(hidden)
       }
-      for (const kept of ['View', 'Declutter', 'aria-label="Undo"', 'aria-label="Redo"']) {
+      for (const kept of ['view-menu-panel', 'aria-label="Undo"', 'aria-label="Redo"']) {
         expect(html).toContain(kept)
       }
     }
@@ -127,8 +151,8 @@ describe('Board toolbar grouping', () => {
 
   it('draws undo and redo as icons', () => {
     const html = render(<BoardTools />)
-    expect(html).toMatch(/aria-label="Undo"[^>]*><svg/)
-    expect(html).toMatch(/aria-label="Redo"[^>]*><svg/)
+    expect(html).toMatch(/title="Undo \(⌘Z\)" aria-label="Undo"[^>]*><svg/)
+    expect(html).toMatch(/title="Redo \(⇧⌘Z\)" aria-label="Redo"[^>]*><svg/)
   })
 
   it('preserves every file action', () => {
@@ -199,27 +223,6 @@ describe('Board menu scope', () => {
   })
 })
 
-describe('Declutter selection', () => {
-  it('recognizes every exact preset and rejects a custom combination', () => {
-    for (const name of Object.keys(LAYER_PRESETS) as LayerPreset[]) {
-      expect(activeLayerPreset({ ...LAYER_PRESETS[name] })).toBe(name)
-    }
-    expect(activeLayerPreset(DEFAULT_LAYERS)).toBeNull()
-    expect(activeLayerPreset({ ...LAYER_PRESETS.clean, threatWez: true })).toBeNull()
-  })
-
-  it('marks the applied preset without adding scenario history', () => {
-    const past = useStore.getState().past.length
-    const scenario = useStore.getState().scenario
-    useStore.getState().applyLayerPreset('planning')
-    const html = render(<BoardTools />)
-    expect(html).toMatch(/aria-pressed="true" class="active">Planning<\/button>/)
-    expect(useStore.getState().ui.layers).toEqual(LAYER_PRESETS.planning)
-    expect(useStore.getState().past).toHaveLength(past)
-    expect(useStore.getState().scenario).toBe(scenario)
-  })
-})
-
 describe('Settings sections', () => {
   it('opens Scenario by default and links Fire doctrine and Environment to Prepare > Inputs', () => {
     const html = render(<SettingsPanel onRequestClose={() => {}} />)
@@ -261,5 +264,6 @@ describe('Settings sections', () => {
     expect(html).toContain('Dark')
     expect(html).toContain('Light')
     expect(html).not.toContain('aria-label="Declutter"')
+    expect(html).not.toContain('aria-label="Preset"')
   })
 })

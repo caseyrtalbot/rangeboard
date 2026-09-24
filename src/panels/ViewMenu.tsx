@@ -11,6 +11,7 @@ import type { LayerKey, LayerPreset } from '../state/layers'
 import type { BasemapMode } from '../model/types'
 import type { DisplayUnits } from '../geometry/geo'
 import { RING_HINTS, RING_LABELS } from './ringLabels'
+import { IconChevronDown } from '../ui/icons'
 
 const PRESETS: { id: LayerPreset; label: string; hint: string }[] = [
   { id: 'full', label: 'Full', hint: 'Show every layer' },
@@ -92,23 +93,27 @@ export function ViewMenu() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="view-menu-panel"
-        title="Theme, layers, basemap and units"
+        title="Preset, theme, units, basemap and layers"
         onClick={toggle}
       >
-        View <span className="tb-caret">▾</span>
+        View
+        <span className="tb-caret" aria-hidden="true">
+          <IconChevronDown />
+        </span>
       </button>
       {open && <ViewMenuPanel />}
     </div>
   )
 }
 
-export function DeclutterControl() {
+/** Layer presets. The pressed segment is the preset the current layers match exactly. */
+function PresetSettings() {
   const layers = useStore(selectEffectiveLayers)
   const active = activeLayerPreset(layers)
   return (
-    <div className="board-declutter">
-      <span className="muted">Declutter</span>
-      <div className="seg" role="group" aria-label="Declutter">
+    <>
+      <div className="tb-menu-head">Preset</div>
+      <div className="seg tb-menu-seg" role="group" aria-label="Preset">
         {PRESETS.map((preset) => (
           <button
             key={preset.id}
@@ -122,7 +127,7 @@ export function DeclutterControl() {
           </button>
         ))}
       </div>
-    </div>
+    </>
   )
 }
 
@@ -217,10 +222,14 @@ export function ViewMenuPanel() {
       role="dialog"
       aria-label="View controls"
     >
+      <PresetSettings />
       <ThemeSettings />
       <UnitsSettings />
       <BasemapSettings />
-      <LayerSettings />
+      {/* The rail's Layers destination scrolls to this id. */}
+      <div id="view-menu-layers">
+        <LayerSettings />
+      </div>
     </div>
   )
 }
