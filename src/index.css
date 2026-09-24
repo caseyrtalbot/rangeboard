@@ -2537,39 +2537,62 @@ select.nu-unit {
 
 /* ---------- Timeline ---------- */
 
+/* D9: the transport renders in Execute and Analyze only, one 28 px row of 24 px
+   controls. It does not clip, so the + Frame popover can open upward; the frames
+   strip clips its own chips instead. */
 .timeline {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 36px;
+  height: var(--h-default);
   padding: 0 10px;
   box-sizing: border-box;
   background: var(--bg-panel);
   border-top: 1px solid var(--border);
   flex-wrap: nowrap;
-  overflow: hidden;
   min-width: 0;
 }
 
-.timeline .play {
-  border: 1px solid var(--border-control);
-  width: 36px;
+.timeline button.mini {
+  align-self: center;
+  white-space: nowrap;
+}
+
+.timeline > .tb-menu-wrap {
+  flex: none;
+}
+
+.timeline button.mini:not(.engagement-toggle) {
+  margin-left: 0;
+}
+
+.timeline .play,
+.timeline .play + .mini {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: none;
 }
 
 .time-readout {
   color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
   white-space: nowrap;
-  min-width: 245px;
   font-variant-numeric: tabular-nums;
 }
 
 .scrub {
   flex: 1;
-  min-width: 120px;
+  min-width: 80px;
 }
 
-.timeline select {
+.timeline select,
+.timeline input:not(.scrub) {
   width: auto;
+  height: var(--h-dense);
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 
 .frames-strip {
@@ -2578,6 +2601,7 @@ select.nu-unit {
   gap: 4px;
   flex-wrap: nowrap;
   min-width: 0;
+  overflow: hidden;
 }
 
 .frame-chip {
@@ -2587,16 +2611,112 @@ select.nu-unit {
 }
 
 .frame-chip button {
-  padding: 3px 7px;
+  padding: 2px 7px;
 }
 
 .frame-chip .x {
   color: var(--text-dim);
-  padding: 3px 5px;
+  padding: 2px 5px;
 }
 
-.frame-name {
-  width: 110px;
+/* The bottom bars open their menus upward, over the canvas. */
+.timeline .tb-menu-panel,
+.status-bar .tb-menu-panel {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.frame-add-panel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 260px;
+}
+
+.frame-add-panel input {
+  height: var(--h-dense);
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.frame-add-panel button.mini {
+  flex: none;
+  margin-left: 0;
+  align-self: center;
+}
+
+/* ---------- Status bar ---------- */
+
+/* 24 px, sunken, 11 px mono. Cells run left to right; the ROE chip, units and
+   validity sit right of the grow cell. D8: below 1440 px the units, MC and seed
+   cells drop in that order; run id, phase, clock, ROE and validity stay. */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--h-dense);
+  padding: 0 10px;
+  box-sizing: border-box;
+  flex: none;
+  min-width: 0;
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.status-bar > span {
+  flex: none;
+}
+
+.status-bar .sb-run {
+  color: var(--text-primary);
+}
+
+.status-bar > .sb-grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.status-bar .status-pills {
+  min-width: 0;
+  font-family: var(--font-ui);
+}
+
+.status-bar .status-fold {
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: calc(var(--h-dense) - 6px);
+}
+
+.status-bar .status-inline {
+  height: calc(var(--h-dense) - 2px);
+}
+
+.sb-limits {
+  margin-left: var(--space-1);
+  color: var(--status-limit);
+}
+
+@media (max-width: 1439.98px) {
+  .status-bar .sb-units {
+    display: none;
+  }
+}
+
+@media (max-width: 1279.98px) {
+  .status-bar .sb-mc {
+    display: none;
+  }
+}
+
+@media (max-width: 1151.98px) {
+  .status-bar .sb-seed {
+    display: none;
+  }
 }
 
 .engagement-toggle {

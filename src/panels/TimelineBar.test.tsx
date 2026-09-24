@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useStore } from '../state/store'
 import { IDLE_TRIAL } from '../state/runState'
 import { installTrial } from './analysis/trialTestState'
-import { TimelineBar } from './TimelineBar'
+import { FrameAddPanel, TimelineBar } from './TimelineBar'
 
 function render(engagementOpen = false) {
   Object.assign(useStore.getInitialState(), useStore.getState())
@@ -15,7 +15,7 @@ function render(engagementOpen = false) {
 describe('sampled transport labels', () => {
   beforeEach(() => installTrial())
 
-  it('uses matching Play, Pause, Replay and New run titles and accessible names', () => {
+  it('uses matching Play, Pause, Replay and Reset run titles and accessible names', () => {
     expect(render()).toContain('title="Play" aria-label="Play"')
     useStore.setState(({ playback }) => ({
       playback: { ...playback, playing: true, phase: 'running' },
@@ -27,7 +27,8 @@ describe('sampled transport labels', () => {
     const html = render()
     expect(html).toContain('title="Replay" aria-label="Replay"')
     expect(html).toContain('>Replay</button>')
-    expect(html).toContain('title="New run" aria-label="New run"')
+    expect(html).toContain('title="Reset run" aria-label="Reset run"')
+    expect(html).not.toContain('New run')
     expect(html).not.toContain('Start a new clean run')
   })
 
@@ -64,6 +65,23 @@ describe('sampled transport labels', () => {
     expect(html).toContain('aria-controls="engagement-strip"')
     expect(html).toContain(`Engagement ${threats}`)
     expect(render(true)).toContain('aria-expanded="true"')
+  })
+
+  it('saves a frame from a popover, not a permanent name field', () => {
+    const html = render()
+    expect(html).toMatch(/<button[^>]*id="frame-add"[^>]*>\+ Frame<\/button>/)
+    expect(html).toContain('aria-controls="frame-add-panel"')
+    expect(html).not.toContain('aria-label="Frame name"')
+    expect(html).not.toContain('frame-name')
+    const panel = renderToStaticMarkup(<FrameAddPanel onDone={() => {}} />)
+    expect(panel).toContain('aria-label="Frame name"')
+    expect(panel).toMatch(/>Save<\/button>/)
+  })
+
+  it('leaves the run id to the status bar', () => {
+    const html = render()
+    expect(html).not.toContain('RUN-')
+    expect(html).toContain('T+')
   })
 
   it('keeps the undo cue out of the timeline row', () => {

@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../state/store'
 import type { Store } from '../state/store'
-import { defaultFrameName, formatRunLabel } from '../state/labels'
+import { defaultFrameName } from '../state/labels'
 import {
   selectDurationS,
   selectFrames,
@@ -13,6 +13,8 @@ import {
 import { formatTime } from '../geometry/geo'
 import { resetAnalysisRun, toggleAnalysisRun } from '../playback/runSession'
 import { nextPublishedTimeS } from '../canvas/frameClock'
+import { usePopover } from '../ui/usePopover'
+import { IconPause, IconPlay, IconReset } from '../ui/icons'
 
 const SPEEDS = [1, 2, 5, 10, 30]
 
@@ -20,6 +22,75 @@ const SPEEDS = [1, 2, 5, 10, 30]
 function selectThreatCount(s: Store): number {
   const { entities, paths } = s.scenario
   return entities.filter((e) => e.kind === 'uas' && paths.some((p) => p.entityId === e.id)).length
+}
+
+/**
+ * The `+ Frame` popover: one name field and Save. An empty name saves under the
+ * default name the placeholder shows.
+ */
+export function FrameAddPanel({ onDone }: { onDone: () => void }) {
+  const scenarioName = useStore((s) => s.scenario.name)
+  const basemap = useStore((s) => s.ui.basemap)
+  const simTimeS = useStore(selectSimTimeS)
+  const [name, setName] = useState('')
+  const save = () => {
+    useStore.getState().saveFrame(name.trim())
+    setName('')
+    onDone()
+  }
+  return (
+    <div
+      id="frame-add-panel"
+      className="tb-menu-panel surface-float frame-add-panel"
+      role="dialog"
+      aria-label="Save frame"
+    >
+      <input
+        aria-label="Frame name"
+        placeholder={defaultFrameName(scenarioName, simTimeS, basemap)}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') save()
+        }}
+      />
+      <button type="button" className="mini" onClick={save}>
+        Save
+      </button>
+    </div>
+  )
+}
+
+/** `+ Frame` and its popover. Lane B3's rail Frames button focuses `#frame-add`. */
+function FrameAdd() {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const { open, setOpen, toggle } = usePopover(wrapRef, buttonRef)
+  return (
+    <div className="tb-menu-wrap" ref={wrapRef}>
+      <button
+        ref={buttonRef}
+        id="frame-add"
+        type="button"
+        className="mini"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="frame-add-panel"
+        title="Save the current view, time, and basemap as a frame"
+        onClick={toggle}
+      >
+        + Frame
+      </button>
+      {open && (
+        <FrameAddPanel
+          onDone={() => {
+            setOpen(false)
+            buttonRef.current?.focus()
+          }}
+        />
+      )}
+    </div>
+  )
 }
 
 /**
@@ -36,7 +107,7 @@ export const TimelineBar = memo(function TimelineBar({
   engagementOpen: boolean
   onToggleEngagement: () => void
 }) {
-  const { playing, speedMult, runSeq } = useStore(useShallow(selectPlaybackFlags))
+  const { playing, speedMult } = useStore(useShallow(selectPlaybackFlags))
   const phase = useStore((s) => s.playback.phase)
   const trialStatus = useStore((s) => s.trial.status)
   const playLabel = playing
@@ -50,12 +121,9 @@ export const TimelineBar = memo(function TimelineBar({
   const durationS = useStore(selectDurationS)
   const frames = useStore(selectFrames)
   const waves = useStore(selectWaves)
-  const scenarioName = useStore((s) => s.scenario.name)
-  const basemap = useStore((s) => s.ui.basemap)
   const threatCount = useStore(selectThreatCount)
-  const { scrubTo, setSpeedMult, saveFrame, applyFrame, deleteFrame, setWaveDelay, patchScenario } =
+  const { scrubTo, setSpeedMult, applyFrame, deleteFrame, setWaveDelay, patchScenario } =
     useStore.getState()
-  const [frameName, setFrameName] = useState('')
   const raf = useRef(0)
 
   useEffect(() => {
@@ -90,37 +158,41 @@ export const TimelineBar = memo(function TimelineBar({
   return (
     <div className="timeline">
       <button
-        className="play"
-        style={{ width: 'auto', minWidth: 36 }}
+        type="button"
+        className="mini play"
         onClick={toggleAnalysisRun}
         title={playLabel}
         aria-label={playLabel}
       >
-        {playing
-          ? '❚❚'
-          : phase === 'complete'
-            ? 'Replay'
-            : trialStatus === 'error' || trialStatus === 'cancelled'
-              ? 'Retry'
-              : '▶'}
+        {playing ? <IconPause /> : <IconPlay />}
+        {(playLabel === 'Replay' || playLabel === 'Retry') && playLabel}
       </button>
-      <button onClick={() => resetAnalysisRun('manual')} title="New run" aria-label="New run">
-        New run
+      <button
+        type="button"
+        className="mini"
+        onClick={() => resetAnalysisRun('manual')}
+        title="Reset run"
+        aria-label="Reset run"
+      >
+        <IconReset />
       </button>
       {trialStatus === 'preparing' && (
         <span className="live-head">
           <span role="status">Preparing trial</span>
           <button
+            className="mini"
             onClick={() => useStore.getState().pauseRun()}
             aria-label="Pause trial preparation start"
           >
             Pause
           </button>
-          <button onClick={() => useStore.getState().cancelTrialPreparation()}>Cancel</button>
+          <button className="mini" onClick={() => useStore.getState().cancelTrialPreparation()}>
+            Cancel
+          </button>
         </span>
       )}
       <span className="time-readout">
-        {formatRunLabel(runSeq)} · T+{formatTime(simTimeS)} / {formatTime(durationS)}
+        T+{formatTime(simTimeS)} / {formatTime(durationS)}
       </span>
       <input
         className="scrub"
@@ -188,33 +260,13 @@ export const TimelineBar = memo(function TimelineBar({
             </button>
           </span>
         ))}
-        <input
-          className="frame-name"
-          placeholder={defaultFrameName(scenarioName, simTimeS, basemap)}
-          value={frameName}
-          onChange={(e) => setFrameName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              saveFrame(frameName.trim())
-              setFrameName('')
-            }
-          }}
-        />
-        <button
-          onClick={() => {
-            saveFrame(frameName.trim())
-            setFrameName('')
-          }}
-          title="Save the current view, time, and basemap as a frame"
-        >
-          + Frame
-        </button>
       </div>
+      <FrameAdd />
 
       <button
         type="button"
         id="engagement-toggle"
-        className="engagement-toggle"
+        className="mini engagement-toggle"
         aria-expanded={engagementOpen}
         aria-controls="engagement-strip"
         title="Engagement timeline"

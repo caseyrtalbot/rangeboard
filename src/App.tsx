@@ -28,6 +28,7 @@ import { BoardPreparation } from './panels/BoardPreparation'
 import type { AnalysisScreen } from './panels/analysis/screens/navigation'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar } from './panels/TimelineBar'
+import { StatusBar } from './panels/StatusBar'
 import { toggleAnalysisRun } from './playback/runSession'
 import { ENGSTRIP_OPEN_KEY, RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 import { readSetting, savedView, writeSetting } from './io/viewState'
@@ -400,8 +401,6 @@ export default function App() {
   useEffect(() => {
     if (savedView().rightTab == null) setRightTab('analysis')
   }, [setRightTab])
-  const runSeq = useStore((s) => s.playback.runSeq)
-  const runPhase = useStore((s) => s.playback.phase)
   // Primitives only: a whole `selection` or `scenario` subscription would re-render
   // the Board tree on every click and every edit.
   const selectedEntityId = useStore(selectSelectedEntityId)
@@ -753,8 +752,6 @@ export default function App() {
         drawerOpen={rightOpen}
         onToggleDrawer={toggleRight}
         boardPhase={boardPhase}
-        runSeq={runSeq}
-        runPhase={runPhase}
         onOpenPhase={openPhase}
       />
       <div
@@ -831,8 +828,11 @@ export default function App() {
               <UndoCue />
             </Suspense>
           </div>
-          {engagementOpen && <EngagementStrip />}
-          <TimelineBar engagementOpen={engagementOpen} onToggleEngagement={toggleEngagement} />
+          {boardPhase !== 'prepare' && engagementOpen && <EngagementStrip />}
+          {boardPhase !== 'prepare' && (
+            <TimelineBar engagementOpen={engagementOpen} onToggleEngagement={toggleEngagement} />
+          )}
+          <StatusBar />
         </div>
         <aside
           id="board-workspace-panel"
