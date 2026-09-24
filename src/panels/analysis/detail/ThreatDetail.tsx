@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { modelsForEntity } from '../../../analysis/fidelity'
 import { Ladder } from '../../../charts/Ladder'
 import { TimeSeries } from '../../../charts/TimeSeries'
@@ -11,13 +11,27 @@ import type { TrackPhase } from '../../../playback/trackState'
 import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
 import { threatReadoutAt } from '../threatReadout'
+import type { ThreatReadoutField } from '../threatReadout'
+import { IconInfo } from '../../../ui/icons'
 import { SURVIVAL_LABELS } from '../labels'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
 import { bareSpans, DASH, Legend, PfTag, Rows, useDetailRun } from './detailRows'
 
-/** The threat pane: the track file at t, the phase ladder, Pd by sensor and survival. */
+/** A 24 px (i): the title holds the text. */
+function InfoButton({ label, title }: { label: string; title: string }) {
+  return (
+    <button type="button" className="det-info" aria-label={label} title={title}>
+      <IconInfo />
+    </button>
+  )
+}
+
+/**
+ * The threat pane: the model basis, then Track, Engagement, Path and Phase at t, Pd by
+ * sensor and survival.
+ */
 export function ThreatDetail({ entity }: { entity: Entity }) {
   const run = useDetailRun()
   const {
@@ -80,7 +94,14 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     ).values(),
   ]
 
-  const fileRows = useMemo<DetailRow[]>(() => {
+  const [holdOpen, setHoldOpen] = useState(false)
+  const sections = useMemo(() => {
+    const byId = new Map(readout.rows.map((row) => [row.id, row]))
+    const value = (id: ThreatReadoutField) => byId.get(id)?.value ?? DASH
+    const plain = (id: ThreatReadoutField): DetailRow => ({
+      label: byId.get(id)?.label ?? id,
+      value: value(id),
+    })
     const holdIds = state?.holdingSensorIds ?? []
     const sensor = scenario.entities.find((e) => e.id === holdIds[0])
     let slantText = DASH
@@ -90,29 +111,63 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
       slantText = measured?.slantRangeM != null ? (measured.slantRangeM / 1000).toFixed(1) : DASH
       bearingText = `${Math.round(bearingDeg(sensor.pos, readout.position))}`
     }
-    const rows: DetailRow[] = readout.rows.map((row) => ({
-      label: row.label,
-      value: row.value,
-      tag:
-        row.id === 'altitude' && entity.altitudeFt == null ? (
-          <PfTag model={model} field="altitudeFt" absent />
-        ) : null,
-    }))
-    rows.push(
-      { label: 'Slant range', value: slantText, unit: sensor ? ' km' : undefined },
-      { label: 'Bearing', value: bearingText, unit: sensor ? ' °' : undefined },
+    // The hold value is the count, then one clause per sensor; a clause's own
+    // separator sits inside its parentheses.
+    const holdText = value('hold')
+    const holders = holdText.split(/ · (?![^()]*\))/).slice(1)
+    const altitudeBand = value('altitude').slice(readout.altitudeText.length).replace(/^ · /, '')
+    const track: DetailRow[] = [
+      plain('position'),
+      plain('speedHeading'),
       {
-        label: horizon.scoped ? 'Engage status' : 'Engage status (full run)',
-        value: readout.engageText,
+        label: 'Altitude',
+        value: readout.altitudeText,
+        tag: (
+          <>
+            <InfoButton
+              label="About altitude"
+              title={altitudeBand ? `Constant · ${altitudeBand}` : 'Constant'}
+            />
+            {entity.altitudeFt == null ? <PfTag model={model} field="altitudeFt" absent /> : null}
+          </>
+        ),
       },
-      { label: horizon.scoped ? 'Warning' : 'Warning (full path)', value: readout.warningText },
+      plain('classification'),
+      sensor && holders.length > 0
+        ? {
+            label: 'Held by',
+            value: sensor.name,
+            title: holdText,
+            tag: (
+              <button
+                type="button"
+                className="mini det-drill-btn"
+                aria-expanded={holdOpen}
+                aria-controls="det-hold-list"
+                onClick={() => setHoldOpen(!holdOpen)}
+              >
+                {`${holdIds.length} sensor${holdIds.length === 1 ? '' : 's'} ›`}
+              </button>
+            ),
+            more: holdOpen ? (
+              <ul className="det-drill" id="det-hold-list" aria-label="Held by">
+                {holders.map((holder) => (
+                  <li key={holder} title={holder}>
+                    {holder}
+                  </li>
+                ))}
+              </ul>
+            ) : null,
+          }
+        : { label: 'Held by', value: holdText },
+      plain('navigation'),
       {
         label: horizon.scoped ? 'First detect' : 'First detect (full path)',
         value: readout.firstDetectText,
       },
-    )
+    ]
     if (uasSpec) {
-      rows.push(
+      track.push(
         {
           label: 'RCS',
           value: `${rcsM2For(uasSpec)}`,
@@ -126,13 +181,49 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
         },
       )
     } else {
-      rows.push(
+      track.push(
         { label: 'RCS', value: 'no model linked' },
         { label: 'Swerling', value: 'no model linked' },
       )
     }
-    return rows
-  }, [scenario, entity, model, uasSpec, state, readout, horizon.scoped])
+    const engagement: DetailRow[] = [
+      plain('salvos'),
+      plain('effects'),
+      plain('residual'),
+      plain('ew'),
+      {
+        label: horizon.scoped ? 'Engage status' : 'Engage status (full run)',
+        value: readout.engageText,
+      },
+      { label: horizon.scoped ? 'Warning' : 'Warning (full path)', value: readout.warningText },
+    ]
+    const path: DetailRow[] = [
+      ...(horizon.scoped ? readout.planningRows : []),
+      plain('arrival'),
+      { label: 'Slant range', value: slantText, unit: sensor ? ' km' : undefined },
+      { label: 'Bearing', value: bearingText, unit: sensor ? ' °' : undefined },
+    ]
+    return { track, engagement, path, platform: value('platform') }
+  }, [scenario, entity, model, uasSpec, state, readout, horizon.scoped, holdOpen])
+
+  const engagementSummary = state
+    ? `${state.kineticSalvos} kinetic · ${state.effectsLanded} landed · ${
+        state.hardKillCount + state.missionKillCount
+      } kills`
+    : untouched
+      ? '0 kinetic · 0 landed · 0 kills'
+      : null
+  const [cpaText, arrivalText] = ['cpa', 'arrival'].map(
+    (id) => readout.planningRows.find((row) => row.id === id)?.value.split(' · ')[0] ?? DASH,
+  )
+  const pathSummary =
+    cpaText.startsWith('T+') || arrivalText.startsWith('T+')
+      ? `CPA ${cpaText} · arrival ${arrivalText}`
+      : cpaText
+  const phaseSummary =
+    phaseLegend.length > 0 ? phaseLegend.map((entry) => entry.label).join(' · ') : DASH
+  const tags = modelsForEntity(scenario, entity.id)
+  const basis = [...new Set(tags.flatMap((tag) => [tag.tier, tag.validation]))].join(' · ')
 
   const phase: TrackPhase = readout.phase
   const style = PHASE_STYLE[phase]
@@ -141,36 +232,46 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     word: readout.pillLabel,
     style: { color: pillColor, borderColor: pillColor },
   }
-  const modelLine = model && uasSpec ? `${model.name} · ${uasSpec.airframe}` : 'no model linked'
 
   return (
     <div className="detail" data-detail="threat">
-      <p className="muted small">{run.stateText}</p>
-      <DetailHeader
-        entity={entity}
-        color={color}
-        pill={pill}
-        modelLine={modelLine}
-        tags={modelsForEntity(scenario, entity.id)}
-      />
+      <DetailHeader entity={entity} color={color} pill={pill} modelLine={sections.platform} />
+      {tags.length > 0 ? (
+        <div className="row det-basis">
+          <span className="rl">Model basis</span>
+          <span className="det-basis-v">{basis}</span>
+          <InfoButton
+            label="About model basis"
+            title={tags.map((tag) => `${tag.label} · ${tag.tier} · ${tag.validation}`).join('\n')}
+          />
+        </div>
+      ) : null}
       <DetailSection
-        id="file"
-        title="Track file"
+        id="track"
+        title="Track"
+        collapsible
         meta={
           horizon.scoped
             ? `${readout.cursorText} observed`
             : `${readout.cursorText} cursor · full-path/full-run fields marked`
         }
       >
-        {readout.ghostLine ? <p className="detail-ghost">{readout.ghostLine}</p> : null}
-        <Rows rows={fileRows} />
+        <Rows rows={sections.track} />
       </DetailSection>
-      {horizon.scoped ? (
-        <DetailSection id="planned-path" title="Planned path">
-          <Rows rows={readout.planningRows} />
-        </DetailSection>
-      ) : null}
-      <DetailSection id="phase" title="Phase" meta="Simulated trial">
+      <DetailSection
+        id="engagement"
+        title="Engagement"
+        collapsible
+        defaultOpen={false}
+        meta={engagementSummary}
+      >
+        {readout.ghostLine ? <p className="detail-ghost">{readout.ghostLine}</p> : null}
+        <Rows rows={sections.engagement} />
+      </DetailSection>
+      <DetailSection id="path" title="Path" collapsible defaultOpen={false} meta={pathSummary}>
+        <Rows rows={sections.path} />
+      </DetailSection>
+      <DetailSection id="phase" title="Phase" collapsible defaultOpen={false} meta={phaseSummary}>
         <Ladder
           rows={barePhaseRows}
           durationS={durationS}

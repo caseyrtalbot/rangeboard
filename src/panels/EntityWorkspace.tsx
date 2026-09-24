@@ -4,7 +4,6 @@ import { useStore } from '../state/store'
 import { nextTabIndex } from '../ui/rovingTabs'
 import { DetailPane } from './analysis/detail/DetailPane'
 import { DetailOverviewContext } from './analysis/detail/DetailNavigation'
-import { LiveStrip } from './analysis/LiveStrip'
 import { Inspector } from './Inspector'
 import { LibraryEditor } from './LibraryEditor'
 import { EmptyState, Section } from './inspector/kit'
@@ -72,12 +71,12 @@ export function EntityWorkspace({
   section,
   onSectionChange,
   onOverview,
-  onOpenSettings,
 }: {
   entityId: string
   section: EntityWorkspaceSection
   onSectionChange: (section: EntityWorkspaceSection) => void
   onOverview: () => void
+  /** Unused since the status bar carries the run state; kept for the shell's call. */
   onOpenSettings?: () => void
 }) {
   // Both are stable references between edits, so an edit elsewhere on the board
@@ -142,22 +141,17 @@ export function EntityWorkspace({
               </button>
             </div>
           )
+        ) : hasTelemetry ? (
+          <DetailOverviewContext.Provider value={onOverview}>
+            <DetailPane entityId={entity.id} />
+          </DetailOverviewContext.Provider>
         ) : (
-          <>
-            <LiveStrip onOpenSettings={onOpenSettings} />
-            {hasTelemetry ? (
-              <DetailOverviewContext.Provider value={onOverview}>
-                <DetailPane entityId={entity.id} />
-              </DetailOverviewContext.Provider>
-            ) : (
-              <div className="inspector-body insp">
-                <EmptyState
-                  title="No telemetry for this entity"
-                  body="This entity has no dedicated telemetry view. Its configuration and linked model remain available above."
-                />
-              </div>
-            )}
-          </>
+          <div className="inspector-body insp">
+            <EmptyState
+              title="No telemetry for this entity"
+              body="This entity has no dedicated telemetry view. Its configuration and linked model remain available above."
+            />
+          </div>
         )}
       </div>
     </div>

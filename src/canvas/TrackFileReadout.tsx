@@ -66,6 +66,10 @@ function ReadoutCard({
       trialSweep: trial && tObs !== -Infinity ? trialSweepAt(trial, tObs) : undefined,
     })
   }, [scenario, entity, trial, horizonS, simTimeS, tObs, horizon, units])
+  const residual = readout.state
+    ? readout.rows.find((row) => row.id === 'residual')?.value
+    : undefined
+  // One line per value: a multi-clause value shows its first clause, the rest on hover.
   const compactRows = [
     { label: 'Cursor', value: readout.cursorText },
     {
@@ -73,6 +77,7 @@ function ReadoutCard({
       value: readout.rows.find((row) => row.id === 'speedHeading')!.value,
     },
     { label: 'Altitude', value: readout.altitudeText },
+    ...(residual ? [{ label: 'Residual', value: residual.split(' · ')[0], title: residual }] : []),
   ]
   const pill = PHASE_STYLE[readout.phase]
   const sx = readout.anchorPosition.x * camera.scale + camera.x
@@ -94,16 +99,15 @@ function ReadoutCard({
           </span>
         </div>
         <div className="ro-grid">
-          {compactRows.map(({ label, value }) => (
+          {compactRows.map(({ label, value, title }) => (
             <Fragment key={label}>
               <div className="ro-k">{label}</div>
-              <div className="ro-v">{value}</div>
+              <div className="ro-v" title={title}>
+                {value}
+              </div>
             </Fragment>
           ))}
         </div>
-        {readout.state && (
-          <div className="ro-v">{readout.rows.find((row) => row.id === 'residual')?.value}</div>
-        )}
         <div className="ro-foot">
           <span>{readout.sourceHorizon}</span>
           <button
