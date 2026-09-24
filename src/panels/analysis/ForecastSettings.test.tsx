@@ -5,6 +5,7 @@ import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 import { IDLE_MC } from '../../state/runState'
 import type { Scenario } from '../../model/types'
+import { runSettings } from '../../model/types'
 import { ForecastSettings } from './ForecastSettings'
 
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
@@ -49,8 +50,11 @@ describe('ForecastSettings mode metadata', () => {
   it('shows DET in the forecast settings under the deterministic mode', () => {
     const el = chip(render())
     expect(el).toContain('class="chip det"')
-    expect(el).toContain('>DET<')
-    expect(render()).toContain('<span class="chip-meta">envelope · Pd threshold</span>')
+    expect(el).toContain('>DET · Pd threshold<')
+    expect(render()).not.toContain('chip-meta')
+    expect(render()).toMatch(
+      /<span class="chip det"[^>]*>[^<]*<\/span><label[^>]*><input[^>]*checked=""[^>]*\/>Deterministic \(fixed seed\)<\/label>/,
+    )
     expect(render()).toContain('Forecast and analysis')
     expect(render()).not.toContain('freezes the shared seed')
   })
@@ -59,9 +63,8 @@ describe('ForecastSettings mode metadata', () => {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     const el = chip(render())
     expect(el).toContain('class="chip mc"')
-    expect(el).toContain('MC 100 · seed 4821')
-    expect(el).toContain('Not run yet')
-    expect(render()).toContain('<span class="chip-meta">estimate · 100 replicates</span>')
+    expect(el).toContain('>MC 0 / 100 · seed 4821<')
+    expect(el).toContain('Not run yet. Stops on the replicate count.')
   })
 
   it('shows the progress while running', () => {
@@ -69,15 +72,27 @@ describe('ForecastSettings mode metadata', () => {
     setMc({ status: 'running', progress: 40, total: 100 })
     const el = chip(render())
     expect(el).toContain('class="chip mc"')
-    expect(el).toContain('MC 100 · 40/100')
+    expect(el).toContain('>MC 40 / 100 · seed 4821<')
   })
 
-  it('names the total uncertainty in the chip, its title and the meta', () => {
+  it('names the total uncertainty in the line and its title', () => {
     useStore.getState().patchScenario({ runMode: 'monte-carlo', uncertainty: 'total' })
     const el = chip(render())
-    expect(el).toContain('MC 100 · total · seed 4821')
+    expect(el).toContain('MC 0 / 100 · total · seed 4821')
     expect(el).toContain('Monte Carlo, 100 replicates, seed 4821, total uncertainty')
-    expect(render()).toContain('<span class="chip-meta">estimate · 100 replicates · total</span>')
+  })
+
+  it('collapses a finished half-width run into one line with the rule in its title', () => {
+    useStore.getState().patchScenario({ runMode: 'monte-carlo', targetHalfWidth: 0.05 })
+    const cap = runSettings(useStore.getState().scenario).stopCap
+    setMc({
+      status: 'done',
+      summary: { replicates: 80, elapsedMs: 12, stopped: { rule: 'halfWidth' } },
+    } as unknown as Partial<McState>)
+    const el = chip(render())
+    expect(el).toContain(`>MC 80 / ${cap} · seed 4821<`)
+    expect(el).toContain('stopped at 80 by the half-width rule')
+    expect(render().match(/class="chip/g)).toHaveLength(1)
   })
 
   it('warns when the configuration changed since the replicates ran', () => {
@@ -85,7 +100,7 @@ describe('ForecastSettings mode metadata', () => {
     setMc({ status: 'stale', progress: 100, total: 100 })
     const el = chip(render())
     expect(el).toContain('class="chip mc warn"')
-    expect(el).toContain('MC 100 · stale')
+    expect(el).toContain('>MC 0 / 100 · seed 4821 · stale<')
   })
 })
 

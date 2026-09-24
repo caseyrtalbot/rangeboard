@@ -2126,6 +2126,20 @@ select.nu-unit {
   color: var(--text);
 }
 
+/* A slider row: the label holds the noun, the value reads right-aligned in mono
+   after the track. */
+.nu-row > input[type='range'] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.nu-row > input[type='range'] + .nu-unit {
+  min-width: 7ch;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 /* ---------- Inspector: keyboard reference ---------- */
 
 .insp-shortcuts {

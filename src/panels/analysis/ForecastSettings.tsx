@@ -1,28 +1,12 @@
 /**
- * The forecast header on Prepare: the mode chip, what kind of number the run
- * produces, and the Run control. Every run setting lives in the Run tab.
+ * The forecast header on Prepare: one mono forecast line and the Deterministic
+ * checkbox. The top bar holds the Run control.
  */
 
 import type { McState } from '../../state/runState'
 import { useStore } from '../../state/store'
 import { runSettings } from '../../model/types'
 import type { StopRule } from '../../playback/mcRun'
-
-/** What kind of number the run produces: an envelope point, or a replicate estimate. */
-function chipMeta(run: ReturnType<typeof runSettings>, mc: McState): string {
-  if (run.runMode === 'deterministic') return 'envelope · Pd threshold'
-  const done = mc.status === 'done' ? mc.summary : null
-  const base = `estimate · ${done?.replicates ?? run.replicates} replicates`
-  return run.uncertainty === 'total' ? `${base} · total` : base
-}
-
-/** The mode chip: class, text, title and the basis meta beside it. */
-function chipOf(
-  run: ReturnType<typeof runSettings>,
-  mc: McState,
-): { cls: string; text: string; title: string; meta: string } {
-  return { ...modeChip(run, mc), meta: chipMeta(run, mc) }
-}
 
 /** Chip title phrase per early stop rule. */
 const STOP_BY: Record<StopRule, string> = {
@@ -32,67 +16,79 @@ const STOP_BY: Record<StopRule, string> = {
   cancelled: 'a cancel',
 }
 
-/** Class, text and title per run mode and replicate state. */
-function modeChip(
+/**
+ * The one forecast line: class, mono text and a title that carries the basis and
+ * the stopping rule. Monte Carlo reads `MC done / loop end · seed n`.
+ */
+function forecastLine(
   run: ReturnType<typeof runSettings>,
   mc: McState,
 ): { cls: string; text: string; title: string } {
   if (run.runMode === 'deterministic') {
-    return { cls: 'chip det', text: 'DET', title: 'Deterministic expected-value run' }
+    return {
+      cls: 'chip det',
+      text: 'DET · Pd threshold',
+      title: 'Deterministic expected-value run',
+    }
   }
   const total = run.uncertainty === 'total'
-  const head = total ? `MC ${run.replicates} · total` : `MC ${run.replicates}`
-  const seeded = `${head} · seed ${run.seed}`
+  const halfWidth = run.targetHalfWidth != null
+  const end = halfWidth ? run.stopCap : run.replicates
+  const summary = mc.status === 'done' ? mc.summary : null
+  const done = mc.status === 'running' ? mc.progress : (summary?.replicates ?? 0)
+  const of = mc.status === 'running' ? mc.total : end
+  const stale = mc.status === 'stale'
+  const text = `MC ${done} / ${of}${total ? ' · total' : ''} · seed ${run.seed}${stale ? ' · stale' : ''}`
   const basis = `Monte Carlo, ${run.replicates} replicates, seed ${run.seed}${
     total ? ', total uncertainty' : ''
   }`
+  const rule = `Stops on ${STOP_BY[halfWidth ? 'halfWidth' : 'replicates']}.`
+  const cls = stale ? 'chip mc warn' : 'chip mc'
   switch (mc.status) {
     case 'running':
+      return { cls, text, title: `Running replicates. ${rule}` }
+    case 'done':
       return {
-        cls: 'chip mc',
-        text: `${head} · ${mc.progress}/${mc.total}`,
-        title: 'Running replicates',
+        cls,
+        text,
+        title: `${basis}, stopped at ${summary?.replicates ?? 0} by ${
+          STOP_BY[summary?.stopped.rule ?? 'replicates']
+        }, ${Math.round(summary?.elapsedMs ?? 0)} ms`,
       }
-    case 'done': {
-      const summary = mc.summary
-      const early = summary != null && summary.stopped.rule !== 'replicates'
-      return {
-        cls: 'chip mc',
-        text: early
-          ? `MC ${summary.replicates} of ${run.targetHalfWidth == null ? run.replicates : run.stopCap} · seed ${run.seed}`
-          : seeded,
-        title: early
-          ? `${basis}, stopped at ${summary.replicates} by ${STOP_BY[summary.stopped.rule]}, ${Math.round(
-              summary.elapsedMs,
-            )} ms`
-          : `${basis}, ${Math.round(summary?.elapsedMs ?? 0)} ms`,
-      }
-    }
     case 'stale':
-      return {
-        cls: 'chip mc warn',
-        text: `${head} · stale`,
-        title: 'Configuration changed since the replicates ran',
-      }
+      return { cls, text, title: `Configuration changed since the replicates ran. ${rule}` }
     case 'error':
-      return { cls: 'chip mc', text: seeded, title: mc.error ?? `${basis}. Not run yet.` }
+      return { cls, text, title: mc.error ?? `${basis}. Not run yet. ${rule}` }
     default:
-      return { cls: 'chip mc', text: seeded, title: `${basis}. Not run yet.` }
+      return { cls, text, title: `${basis}. Not run yet. ${rule}` }
   }
 }
 
-/** Forecast controls retain their saved meanings independently of sampled Play. */
+/**
+ * The forecast line and the Deterministic checkbox under it. Every other run
+ * setting lives in the Run tab.
+ */
 export function ForecastSettings() {
   const scenario = useStore((s) => s.scenario)
+  const patchScenario = useStore((s) => s.patchScenario)
   const run = runSettings(scenario)
   const mc = useStore((s) => s.mc)
-  const chip = chipOf(run, mc)
+  const line = forecastLine(run, mc)
   return (
     <div aria-label="Forecast and analysis">
-      <span className={chip.cls} title={chip.title}>
-        {chip.text}
+      <span className={line.cls} title={line.title}>
+        {line.text}
       </span>
-      <span className="chip-meta">{chip.meta}</span>
+      <label className="run-det">
+        <input
+          type="checkbox"
+          checked={run.runMode === 'deterministic'}
+          onChange={(event) =>
+            patchScenario({ runMode: event.target.checked ? 'deterministic' : 'monte-carlo' })
+          }
+        />
+        Deterministic (fixed seed)
+      </label>
     </div>
   )
 }

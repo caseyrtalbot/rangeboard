@@ -30,13 +30,15 @@ function ThresholdsBody() {
   return (
     <>
       <div className="field-row">
-        <Field label="Detect: single-scan Pd">
+        <Field
+          label="Detect: single-scan Pd"
+          help="A radar contact counts as DETECT when its single-scan Pd reaches this value"
+        >
           <input
             type="number"
             min={0.05}
             max={0.99}
             step={0.05}
-            title="A radar contact counts as DETECT when its single-scan Pd reaches this value"
             value={thresholds.pdDetect}
             onChange={onNumber((n) => patch({ pdDetect: clamp(n, 0.05, 0.99) }))}
           />
@@ -63,11 +65,12 @@ function ThresholdsBody() {
             onChange={onNumber((n) => patch({ maxResidualPerTrack: clamp(n, 0, 1) }))}
           />
         </Field>
-        <Field label="Detect: min warning (s, empty = none)">
+        <Field label="Detect: min warning" unit="s" help="Blank = no minimum">
           <input
             type="number"
             min={0}
             step={5}
+            placeholder="None"
             value={thresholds.minWarningS ?? ''}
             onChange={(event) =>
               patch({

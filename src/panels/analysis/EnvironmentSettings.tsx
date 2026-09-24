@@ -64,13 +64,15 @@ function EnvironmentBody() {
           />
         </Field>
         <Field
-          label={`Visibility (m, blank = ${visibilityMFor({ ...environment, visibilityM: null })} from sky)`}
+          label="Visibility"
+          unit="m"
+          help={`Blank = ${visibilityMFor({ ...environment, visibilityM: null })} m from sky`}
         >
           <input
             type="number"
             min={0}
             step={500}
-            placeholder={String(visibilityMFor({ ...environment, visibilityM: null }))}
+            placeholder="Auto"
             value={environment.visibilityM ?? ''}
             onChange={(event) =>
               updateEnvironment({
@@ -82,7 +84,7 @@ function EnvironmentBody() {
         </Field>
       </div>
       <div className="field-row">
-        <Field label={`Wind ${formatSpeed(environment.windSpeedMps, units)}`}>
+        <Field label="Wind" unit={formatSpeed(environment.windSpeedMps, units)}>
           <input
             type="range"
             min={0}
@@ -91,7 +93,7 @@ function EnvironmentBody() {
             onChange={(event) => updateEnvironment({ windSpeedMps: Number(event.target.value) })}
           />
         </Field>
-        <Field label={`From ${environment.windFromDeg} deg (${cardinal})`}>
+        <Field label="Wind from" unit={`${environment.windFromDeg}° ${cardinal}`}>
           <input
             type="range"
             min={0}
@@ -103,7 +105,7 @@ function EnvironmentBody() {
         </Field>
       </div>
       <div className="field-row">
-        <Field label={`Temperature ${environment.temperatureC} C`}>
+        <Field label="Temperature" unit={`${environment.temperatureC} °C`}>
           <input
             type="range"
             min={-30}
@@ -112,7 +114,7 @@ function EnvironmentBody() {
             onChange={(event) => updateEnvironment({ temperatureC: Number(event.target.value) })}
           />
         </Field>
-        <Field label="Field elevation (ft)">
+        <Field label="Field elevation" unit="ft">
           <input
             type="number"
             step={500}
