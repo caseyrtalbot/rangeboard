@@ -17,16 +17,20 @@ function DoctrineBody() {
   const fractionPct = Math.round(doctrine.launchRangeFraction * 100)
   return (
     <>
-      <Field label="Launch point">
+      <Field label="Launch point" help={policy?.hint}>
         <Seg
+          label="Launch point"
           value={doctrine.launchPolicy}
           options={LAUNCH_POLICIES.map((p) => ({ v: p.v as LaunchPolicy, label: p.label }))}
           onChange={(launchPolicy) => patch({ launchPolicy })}
         />
       </Field>
-      {policy ? <p className="muted analysis-empty">{policy.hint}</p> : null}
       <div className="field-row">
-        <Field label={`Release inside ${fractionPct}% of max range`}>
+        <Field
+          label="Release range"
+          unit={`${fractionPct}%`}
+          help="Release inside this share of max range"
+        >
           <input
             type="range"
             min={10}
@@ -37,7 +41,7 @@ function DoctrineBody() {
             onChange={(event) => patch({ launchRangeFraction: Number(event.target.value) / 100 })}
           />
         </Field>
-        <Field label="Re-engagement depth (cycles before arrival)">
+        <Field label="Re-engagement depth" unit="cycles" help="Cycles kept before arrival">
           <input
             type="number"
             min={0}
@@ -51,7 +55,7 @@ function DoctrineBody() {
         </Field>
       </div>
       <div className="field-row">
-        <Field label="Hostile declaration dwell (s)">
+        <Field label="Hostile declaration dwell" unit="s">
           <input
             type="number"
             min={0}

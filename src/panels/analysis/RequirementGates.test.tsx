@@ -6,7 +6,9 @@ import { engagementPicture } from '../../analysis/impact'
 import { buildRequirementGateReport } from '../../analysis/requirements'
 import { assessRunValidity } from '../../analysis/runValidity'
 import { parseAutosave } from '../../io/persist'
+import { useStore } from '../../state/store'
 import { RequirementGates } from './RequirementGates'
+import { RequirementSettings } from './RequirementSettings'
 
 const scenario = parseAutosave(JSON.stringify(fixture))
 const { assessments, report } = engagementPicture(scenario)
@@ -33,4 +35,15 @@ describe('RequirementGates visibility', () => {
       expect(html).not.toContain('title=')
     },
   )
+})
+
+describe('RequirementSettings fields', () => {
+  it('renders the unit and the blank rule through Field, not the label', () => {
+    Object.assign(useStore.getInitialState(), useStore.getState())
+    const html = renderToStaticMarkup(<RequirementSettings />)
+    expect(html).toMatch(/>Detect: min warning<\/label>/)
+    expect(html).toMatch(/placeholder="None"[^>]*\/><span class="nu-unit">s<\/span>/)
+    expect(html).toContain('title="Blank = no minimum"')
+    expect(html).not.toContain('empty = none')
+  })
 })
