@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { assessRunValidity } from '../../../analysis/runValidity'
+import type { RunValidityFinding } from '../../../analysis/runValidity'
 import { uncertainFields } from '../../../analysis/uncertainty'
 import {
   SweepMap,
@@ -10,6 +11,7 @@ import {
 import { formatTime } from '../../../geometry/geo'
 import { scenarioDurationS } from '../../../model/scenario'
 import { entityActive, runSettings } from '../../../model/types'
+import type { Entity } from '../../../model/types'
 import { DEFAULT_BUDGET, SENSITIVITY_RESPONSES } from '../../../playback/mcRun'
 import type { McSummary, SensitivityResponse, SweepSummary } from '../../../playback/mcRun'
 import {
@@ -20,6 +22,7 @@ import {
 import type { SweepFactor, SweepFactorId } from '../../../playback/sweepFactors'
 import { SWEEP_DEFAULTS, sobolBudgetWarning } from '../../../state/analysisRequests'
 import { useStore } from '../../../state/store'
+import { IconChevronDown, IconChevronRight, IconInfo } from '../../../ui/icons'
 import { Field, State } from '../../../ui/kit'
 import { PfTag } from '../../inspector/kit'
 import { SENSITIVITY_DEPTH_NAME, SENSITIVITY_DEPTH_SENTENCE } from '../../settings/inputs'
@@ -49,6 +52,124 @@ const smallBlock = { display: 'block' } as const
 const stack = { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' } as const
 const fractionText = (n: number) => (Number.isFinite(n) ? `${(n * 100).toFixed(1)}%` : '—')
 const numberText = (n: number | null) => (n != null && Number.isFinite(n) ? formatCount(n) : '—')
+const SWEEP_RULE =
+  'Enter 2–6 distinct values per factor; up to two different factors and 36 cells. Speed must be positive, altitude nonnegative, raid size a positive integer.'
+const SWEEP_UNIT: Partial<Record<SweepFactorId, string>> = {
+  threatAltitudeFt: 'ft AGL',
+  threatSpeedMps: 'm/s',
+  approachAzimuthDeg: '° true',
+}
+
+/** A section title, an optional mono readout and the method note behind a 24 px (i). */
+function SectionHead({
+  title,
+  readout,
+  note,
+  showHelp,
+}: {
+  title: string
+  readout?: string
+  note: string
+  showHelp: boolean
+}) {
+  return (
+    <>
+      <div className="frag-head">
+        <h3>{title}</h3>
+        {readout && <span className="mono frag-readout">{readout}</span>}
+        <button
+          type="button"
+          className="frag-info"
+          aria-label={`About ${title.toLowerCase()}`}
+          title={note}
+        >
+          <IconInfo />
+        </button>
+      </div>
+      {showHelp && <p className="frag-help">{note}</p>}
+    </>
+  )
+}
+
+/**
+ * The library drawer's state lives in App; the rail's Library button owns it.
+ * Press that button unless the drawer is already open.
+ */
+function openLibrary() {
+  const trigger = document.querySelector<HTMLButtonElement>(
+    'button[aria-controls="board-library-drawer"]',
+  )
+  if (trigger && trigger.getAttribute('aria-expanded') !== 'true') trigger.click()
+}
+
+/** The first clause of a finding with its mark, and the rest; joined by a space they are the message. */
+function splitFinding(message: string): [string, string] {
+  const m = /[.;:](\s|$)/.exec(message)
+  if (!m) return [message, '']
+  return [message.slice(0, m.index + 1), message.slice(m.index + 1).trim()]
+}
+
+/** One finding as a 28 px headline row; the rest of the finding and its scope open on click. */
+function FindingRow({
+  finding,
+  entities,
+  showHelp,
+}: {
+  finding: RunValidityFinding
+  entities: Entity[]
+  showHelp: boolean
+}) {
+  const [toggled, setToggled] = useState<boolean | null>(null)
+  const open = toggled ?? showHelp
+  const bodyId = useId()
+  const [headline, rest] = splitFinding(finding.message)
+  const tracks = finding.uasIds
+    .map((id) => entities.find((e) => e.id === id)?.name ?? id)
+    .join(', ')
+  return (
+    <div className="validity-finding frag-finding">
+      <button
+        type="button"
+        className="frag-finding-head"
+        aria-expanded={open}
+        aria-controls={open ? bodyId : undefined}
+        data-finding={finding.id}
+        onClick={() => setToggled(!open)}
+      >
+        <State tone={SEVERITY_PILL[finding.severity].tone}>
+          {SEVERITY_PILL[finding.severity].text}
+        </State>
+        <span className="frag-finding-headline">{headline}</span>
+        {open ? <IconChevronDown /> : <IconChevronRight />}
+      </button>
+      {open && (
+        <div id={bodyId} className="frag-finding-body">
+          {rest && <p>{rest}</p>}
+          {finding.id === 'spawn-in-ring' && finding.uasIds.length > 0 ? (
+            <>
+              <p>
+                Gates: {finding.gates.join(', ')}. Tracks: {tracks}.
+              </p>
+              <FindingThreatActions
+                finding={{ ...finding, uasIds: finding.uasIds.slice(0, 1) }}
+                entities={entities}
+              />
+            </>
+          ) : (
+            <details className="analysis-disclosure">
+              <summary>Review finding scope</summary>
+              <p>Gates: {finding.gates.join(', ')}.</p>
+              <p>
+                {finding.uasIds.length ? `Tracks: ${tracks}.` : 'Scenario-wide finding.'} Review
+                settings in the Inputs tab.
+              </p>
+            </details>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function measuredRate(mc: McSummary | null, sweep: SweepSummary | null): number | null {
   const elapsed = sweep?.elapsedMs ?? mc?.elapsedMs ?? 0
@@ -133,16 +254,25 @@ function parseFactor(draft: FactorDraft): SweepFactor | null {
   return { id: draft.id, values }
 }
 
+/** A text factor whose own values break the rule; an empty field is not an error yet. */
+function factorInvalid(draft: FactorDraft): boolean {
+  if (draft.id === 'environmentPreset' || !draft.text.trim()) return false
+  const f = parseFactor(draft)
+  return !f || f.values.length < SWEEP_VALUES_MIN || f.values.length > SWEEP_VALUES_MAX
+}
+
 function FactorPicker({
   draft,
   onChange,
   axis,
   disabled,
+  error,
 }: {
   draft: FactorDraft
   onChange: (draft: FactorDraft) => void
   axis: string
   disabled: boolean
+  error?: string
 }) {
   return (
     <div style={{ minWidth: 0, flex: '1 1 140px' }}>
@@ -183,9 +313,10 @@ function FactorPicker({
           ))}
         </fieldset>
       ) : (
-        <Field label={`${axis} values · ${SWEEP_VALUES_MIN}–${SWEEP_VALUES_MAX}, comma-separated`}>
+        <Field label={`${axis} values`} unit={SWEEP_UNIT[draft.id]} error={error}>
           <input
             value={draft.text}
+            placeholder={`${SWEEP_VALUES_MIN}–${SWEEP_VALUES_MAX} values, comma-separated`}
             disabled={disabled}
             onChange={(e) => onChange({ ...draft, text: e.target.value })}
           />
@@ -199,6 +330,7 @@ export function FragilityScreen() {
   const scenario = useStore((s) => s.scenario)
   const mc = useStore((s) => s.mc)
   const runId = useStore((s) => s.playback.runId)
+  const showHelp = useStore((s) => s.ui.showFieldHelp)
   const startMc = useStore((s) => s.runMonteCarlo)
   const startSweep = useStore((s) => s.runSweep)
   const cancelSweep = useStore((s) => s.cancelSweep)
@@ -225,6 +357,18 @@ export function FragilityScreen() {
   const factors =
     parsed.every((f): f is SweepFactor => f != null) && sweepGridValid(parsed) ? parsed : null
   const count = factors?.reduce((n, f) => n * f.values.length, 1) ?? 0
+  // Each factor reads alone, yet the grid breaks the rule: the error sits on the last text field.
+  const drafts = twoFactors ? [x, y] : [x]
+  const gridTarget =
+    !factors &&
+    parsed.every(
+      (f) =>
+        f != null && f.values.length >= SWEEP_VALUES_MIN && f.values.length <= SWEEP_VALUES_MAX,
+    )
+      ? drafts.map((d) => d.id !== 'environmentPreset').lastIndexOf(true)
+      : -1
+  const factorError = (i: number) =>
+    factorInvalid(drafts[i]) || gridTarget === i ? SWEEP_RULE : undefined
   const durationS = scenarioDurationS(scenario)
   const hasAsset = scenario.entities.some((e) => e.kind === 'asset' && entityActive(e))
   const run = runSettings(scenario)
@@ -261,7 +405,7 @@ export function FragilityScreen() {
     0,
     ...ranked.map((row) => row.responses?.[response].swing ?? 0).filter(Number.isFinite),
   )
-  // A disabled action names why in its title and in a muted line beside it.
+  // A disabled action names why in its title.
   const modeReason = enabled ? undefined : 'Choose Monte Carlo mode in the Inputs tab'
   const busyReason = sweeping
     ? 'A sweep is running'
@@ -292,18 +436,19 @@ export function FragilityScreen() {
   return (
     <section className="analysis-primary" aria-label="Fragility">
       <h3>Fragility</h3>
-      {summary ? (
+      {summary && (
         <>
           <p className="analysis-scope">{basis}</p>
           <EnsembleTiles summary={summary} hasAsset={hasAsset} />
         </>
-      ) : (
-        <p className="muted small">
-          {basis} {runButton}
-        </p>
       )}
       <div style={wrap}>
-        {summary && runButton}
+        {!summary && (
+          <State tone="warning" hollow>
+            No ensemble
+          </State>
+        )}
+        {runButton}
         {mc.status === 'running' && (
           <>
             <span role="status">
@@ -335,29 +480,46 @@ export function FragilityScreen() {
         >
           Pin as baseline
         </button>
-        <span className="muted small">
-          {modeReason
-            ? `${modeReason} to run analyses.`
-            : `${pinReason ? `${pinReason} to pin a baseline. ` : ''}Run settings are in the Inputs tab.`}
-        </span>
       </div>
+      {modeReason ? (
+        <p className="frag-help">{modeReason} to run analyses.</p>
+      ) : (
+        showHelp && (
+          <p className="frag-help">
+            {pinReason ? `${pinReason} to pin a baseline. ` : ''}Run settings are in the Inputs tab.
+          </p>
+        )
+      )}
       {mc.error && <p role="alert">{mc.error}</p>}
       <section aria-label="Factor sweep">
         <header>
-          <h3>Sweep map</h3>
-          <p className="muted small">
-            Planning-factor values · {SWEEP_DEFAULTS.replicatesPerCell} replicates per cell ·{' '}
-            {count} cells · Estimated time:{' '}
-            {rate == null
-              ? 'no rate yet'
-              : `${Math.ceil((count * SWEEP_DEFAULTS.replicatesPerCell) / rate)} s at ${formatCount(rate)} replicates/s`}
-            .
-          </p>
+          <SectionHead
+            title="Sweep map"
+            readout={`${count} cells · ${SWEEP_DEFAULTS.replicatesPerCell} reps/cell`}
+            note={`Planning-factor values. Estimated time: ${
+              rate == null
+                ? 'no rate yet'
+                : `${Math.ceil((count * SWEEP_DEFAULTS.replicatesPerCell) / rate)} s at ${formatCount(rate)} replicates/s`
+            }.`}
+            showHelp={showHelp}
+          />
           <div style={stack}>
             <div style={wrap}>
-              <FactorPicker draft={x} onChange={setX} axis="Column" disabled={sweeping} />
+              <FactorPicker
+                draft={x}
+                onChange={setX}
+                axis="Column"
+                disabled={sweeping}
+                error={factorError(0)}
+              />
               {twoFactors && (
-                <FactorPicker draft={y} onChange={setY} axis="Row" disabled={sweeping} />
+                <FactorPicker
+                  draft={y}
+                  onChange={setY}
+                  axis="Row"
+                  disabled={sweeping}
+                  error={factorError(1)}
+                />
               )}
             </div>
             <label className="check-row">
@@ -383,12 +545,6 @@ export function FragilityScreen() {
             </Field>
           </div>
         </header>
-        {!factors && (
-          <p className="muted small">
-            Enter 2–6 distinct values per factor; up to two different factors and 36 cells. Speed
-            must be positive, altitude nonnegative, raid size a positive integer.
-          </p>
-        )}
         <div style={wrap}>
           <button
             type="button"
@@ -407,7 +563,6 @@ export function FragilityScreen() {
           >
             Run sweep
           </button>
-          {sweepReason && <span className="muted small">{sweepReason}.</span>}
           {sweeping && (
             <button type="button" onClick={() => cancelSweep()}>
               Cancel sweep
@@ -445,7 +600,11 @@ export function FragilityScreen() {
       </section>
       <section aria-label="Sensitivity">
         <header>
-          <h3>Sensitivity</h3>
+          <SectionHead
+            title="Sensitivity"
+            note={`${SENSITIVITY_DEPTH_SENTENCE[depth]}.`}
+            showHelp={showHelp}
+          />
           <Field label="Sensitivity response">
             <select
               value={response}
@@ -472,7 +631,14 @@ export function FragilityScreen() {
           sobol={stageResults?.sobol ?? null}
         />
         {!responseAvailable && (
-          <p className="muted small">No defended asset; response unavailable.</p>
+          <div className="frag-state-row">
+            <State tone="warning" hollow>
+              No defended asset
+            </State>
+            <button type="button" className="mini" onClick={openLibrary}>
+              Place asset
+            </button>
+          </div>
         )}
         {ranked.map((row) => {
           const value = row.responses?.[response]
@@ -547,7 +713,6 @@ export function FragilityScreen() {
           </p>
         )}
         {sensitivityRunning && <p role="status">{stageLine}</p>}
-        <p className="muted small">{SENSITIVITY_DEPTH_SENTENCE[depth]}</p>
         <div style={wrap}>
           <button
             type="button"
@@ -570,40 +735,12 @@ export function FragilityScreen() {
           </p>
         </header>
         {validity.findings.map((finding) => (
-          <div className="validity-finding" key={finding.id}>
-            <State tone={SEVERITY_PILL[finding.severity].tone}>
-              {SEVERITY_PILL[finding.severity].text}
-            </State>
-            <div>
-              <p>{finding.message}</p>
-              {finding.id === 'spawn-in-ring' && finding.uasIds.length > 0 ? (
-                <>
-                  <p>
-                    Gates: {finding.gates.join(', ')}. Tracks:{' '}
-                    {finding.uasIds
-                      .map((id) => scenario.entities.find((e) => e.id === id)?.name ?? id)
-                      .join(', ')}
-                    .
-                  </p>
-                  <FindingThreatActions
-                    finding={{ ...finding, uasIds: finding.uasIds.slice(0, 1) }}
-                    entities={scenario.entities}
-                  />
-                </>
-              ) : (
-                <details className="analysis-disclosure">
-                  <summary>Review finding scope</summary>
-                  <p>Gates: {finding.gates.join(', ')}.</p>
-                  <p>
-                    {finding.uasIds.length
-                      ? `Tracks: ${finding.uasIds.map((id) => scenario.entities.find((e) => e.id === id)?.name ?? id).join(', ')}.`
-                      : 'Scenario-wide finding.'}{' '}
-                    Review settings in the Inputs tab.
-                  </p>
-                </details>
-              )}
-            </div>
-          </div>
+          <FindingRow
+            key={finding.id}
+            finding={finding}
+            entities={scenario.entities}
+            showHelp={showHelp}
+          />
         ))}
         {validity.findings.length === 0 && (
           <p className="muted small">{VALIDITY_TEXT[validity.validity].line}</p>
