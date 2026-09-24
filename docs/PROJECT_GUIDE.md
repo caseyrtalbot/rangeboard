@@ -19,11 +19,13 @@ Prepare composes the existing run inputs, validity findings and a
 keyboard-accessible entity register in [BoardPreparation](../src/panels/BoardPreparation.tsx).
 Each validity finding appears once with its gates. Setup findings that cost a measurement
 come first, with a Select button for a threat that starts inside detection coverage.
-The [analysis navigation](../src/panels/analysis/AnalysisNavigation.tsx) is one segmented
-control of the current phase's screens. It stays outside the scrolling panel, draws only
-on the Overview tab, and draws nothing for Execute, which has one screen. Selected-object
-configuration and the model library remain
-available in the panel tabs.
+The [analysis navigation](../src/panels/analysis/AnalysisNavigation.tsx) is the phase's
+screen tabs inside the one right-panel tab row (Inputs, Fragility and Placement in
+Prepare; Run monitor in Execute; Outcome and Compare in Analyze). The row stays outside
+the scrolling panel. A contextual tab with the selected object's name follows the screens
+while something is selected, and the model library editor shows as a contextual tab while
+it is open. The panel header holds the phase word and a Panel options menu with the field
+help switch, Collapse all and Expand all.
 
 The Library resource opens a drawer with model/system placement, drag-and-drop, model-basis
 editing, tactics and library import/export. `L` toggles it and Escape returns focus to its
@@ -75,7 +77,8 @@ analysis screen. It remains in the run export and the requirement record, and th
 Outcome validity row falls back to forecast requirement validity when a trial captured
 none. Run settings (mode, uncertainty, seed, replicates, stop rule, confidence, sampling,
 sensitivity depth, Sobol base) live on the **Run** tab of Settings, each with its default and
-a reset. One Run button with a Deterministic switch sits on Prepare and Analyze; a run uses
+a reset. One Run button sits in the top bar; the Deterministic checkbox sits under the
+forecast line on Prepare > Inputs. A run uses
 the worker pool and its progress line names the stop rule and the pool size. While the
 pool is ending or its summary worker is in flight the button says Stopping; the Fragility
 screen's Cancel Monte Carlo button also says Stopping and is disabled in that state. After
@@ -106,7 +109,7 @@ open state is saved.
 
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers
-Now. Analyze offers Outcome and Compare. Prepare also offers Where to put it after Inputs.
+Now. Analyze offers Outcome and Compare. Prepare also offers Placement after Inputs.
 The selected screen of Prepare and of Analyze is
 session state in [App.tsx](../src/App.tsx), never saved; a Prepare link from a results
 screen selects Inputs.
@@ -115,7 +118,7 @@ screen selects Inputs.
 | --- | --- | --- | --- |
 | [Fragility](../src/panels/analysis/screens/FragilityScreen.tsx) | Prepare | Monte Carlo ensemble and sensitivity | Kills, Leakers and Min warning tiles with the band inside; a factor [sweep map](../src/charts/SweepMap.tsx) over one or two scenario factors; ranked sensitivity bars for a selected response; validity findings; Run Monte Carlo, Run sweep, Run sensitivity and Pin as baseline |
 | Inputs | Prepare | Scenario | The existing [BoardPreparation](../src/panels/BoardPreparation.tsx) content |
-| [Where to put it](../src/panels/analysis/screens/PlacementScreen.tsx) | Prepare | Optimize run over the current scenario | Objective, movable systems and budget; progress with the best evaluation so far; up to five candidate laydowns with intervals; Apply installs one as a new scenario named with the suffix `(placement N)` |
+| [Placement](../src/panels/analysis/screens/PlacementScreen.tsx) | Prepare | Optimize run over the current scenario | Objective, movable systems and budget; progress with the best evaluation so far; up to five candidate laydowns with intervals; Apply installs one as a new scenario named with the suffix `(placement N)` |
 | [Now](../src/panels/analysis/screens/NowScreen.tsx) | Execute | Sampled trial at the cursor | Run line, kill-chain table, one inventory bar per effector, sensor rows, New run and Forecast and analysis |
 | [Outcome](../src/panels/analysis/screens/OutcomeScreen.tsx) | Analyze | Completed trial | Six count tiles with their denominator, a sortable per-threat table, and Event ledger, Manifest and Validity rows that open the existing records in place, with export |
 | [Compare](../src/panels/analysis/screens/CompareScreen.tsx) | Analyze | Ensemble with the trial marked, plus a pinned baseline; any two saved runs | [Band chart](../src/charts/BandChart.tsx), delta table with an inside/outside flag, findings that name a cause, a Baseline row with Pin and Clear, PNG export of the chart, and a saved-run comparison of two history records (means differenced, no interval on the difference) |
@@ -139,7 +142,7 @@ when that count can use most of the 10 minute worker budget. The Sobol stage fol
 Morris unless the screening was cancelled or kept no field; a cancel during Morris ends
 the run done on the trajectories completed.
 
-Where to put it runs a placement optimizer on its own worker slot: a Gaussian process
+Placement runs a placement optimizer on its own worker slot: a Gaussian process
 with expected improvement over the movable positions inside the range polygon, each
 evaluation a replicate run under common random numbers at one seed (defaults 60
 evaluations of 40 replicates). A range boundary with fewer than three vertices cannot
@@ -179,7 +182,7 @@ screen changes preserve the result basis.
 | Watch a trial | Now screen: run line, kill chain at the cursor, effector inventory bars and sensor rows | [NowScreen](../src/panels/analysis/screens/NowScreen.tsx), [trialSweepAt](../src/playback/trialSweepAt.ts), [systemTelemetry](../src/analysis/systemTelemetry.ts) |
 | Read a completed trial | Outcome screen: count tiles, per-threat table, event ledger, manifest, validity and export | [OutcomeScreen](../src/panels/analysis/screens/OutcomeScreen.tsx), [trialResult](../src/analysis/trialResult.ts), [DebriefRecord](../src/panels/analysis/DebriefRecord.tsx) |
 | Compare against expectation | Compare screen: ensemble band with the trial marked, delta table, disagreement finding, a pinned baseline, chart PNG export and a comparison of any two saved runs | [CompareScreen](../src/panels/analysis/screens/CompareScreen.tsx), [BandChart](../src/charts/BandChart.tsx), [runValidity](../src/analysis/runValidity.ts), [baseline](../src/state/baseline.ts), [exportPng](../src/charts/exportPng.ts) |
-| Find where to put it | Where to put it screen: objective, movable systems and budget; a GP with expected improvement over the range polygon, common random numbers, candidates with intervals; Apply installs one as a new scenario | [PlacementScreen](../src/panels/analysis/screens/PlacementScreen.tsx), [optimize loop](../src/playback/optimize/loop.ts), [gp](../src/playback/optimize/gp.ts), [polygon](../src/playback/optimize/polygon.ts), [optimize client](../src/playback/optimize/client.ts), [optimizeTypes](../src/playback/optimizeTypes.ts) |
+| Find where to put it | Placement screen: objective, movable systems and budget; a GP with expected improvement over the range polygon, common random numbers, candidates with intervals; Apply installs one as a new scenario | [PlacementScreen](../src/panels/analysis/screens/PlacementScreen.tsx), [optimize loop](../src/playback/optimize/loop.ts), [gp](../src/playback/optimize/gp.ts), [polygon](../src/playback/optimize/polygon.ts), [optimize client](../src/playback/optimize/client.ts), [optimizeTypes](../src/playback/optimizeTypes.ts) |
 | Find where a laydown fails | Fragility screen: Monte Carlo tiles, factor sweep map, Morris screening then Sobol first-order and total indices with bootstrap intervals under the full sensitivity depth (one-at-a-time under quick) and validity; run settings on the Run tab | [FragilityScreen](../src/panels/analysis/screens/FragilityScreen.tsx), [SweepMap](../src/charts/SweepMap.tsx), [SobolChart](../src/charts/SobolChart.tsx), [morris](../src/playback/morris.ts), [sobol](../src/playback/sobol.ts), [mcRun](../src/playback/mcRun.ts), [RunTab](../src/panels/settings/RunTab.tsx) |
 | Run outside the browser | `npm run engine -- scenario.json --replicates N --seed S --out run.json` builds the headless engine bundle and spreads a fixed replicate count over worker threads; `--overrides overrides.json` applies a saved override set from the run's manifest; the run record equals the browser summary at one seed | [run-engine](../scripts/run-engine.mjs), [engine barrel](../src/engine/index.ts), [workerPool](../src/playback/workerPool.ts) |
 | Retain work | Autosave, scenario/library/run JSON, saved Board frames and run logs; Save to history keeps a finished ensemble in IndexedDB with its manifest, and the history list opens any record in place with its lineage | [autosave lifecycle](../src/io/autosave.ts), [persist](../src/io/persist.ts), [runResultGroups](../src/io/runResultGroups.ts), [runStore](../src/io/runStore.ts), [RunHistory](../src/panels/analysis/RunHistory.tsx) |

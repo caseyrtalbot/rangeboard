@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "9109875c24465e26668c71d4d8afc7896db7e42a3181222e9430844502c70bd1",
+      "sha256": "9b889c4ea415c86c85603d80f10f982291549e2b645a6b0e2b5c170d7a04a230",
       "reviewedAt": "2026-09-24",
-      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
+      "note": "Row C: App.tsx changed for the one right-panel tab row and the panel header; README text unchanged (it names no tab)."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "783aa772afca6743412489e6ffe836aa0506e777c8edca730dc8fef5e0a3b585",
+      "sha256": "40ee346182cbe92783511d4be09a91d46fd6481b783e815c1bece5cceadb09c1",
       "reviewedAt": "2026-09-24",
-      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
+      "note": "Row C: the one right-panel tab row with the contextual object tab and the Panel options menu; Where to put it renamed Placement; the Deterministic checkbox under the forecast line."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "721d0065ef6ae84236429a5ed75c73d7fe855f48f9f32e0180140879cdbb9fe8",
+      "sha256": "155dde8172be111294afc435500475f06a74b003f182e2e4a68228d00bd008a6",
       "reviewedAt": "2026-09-24",
-      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
+      "note": "Row C: AnalysisNavigation draws role=tab buttons in the panel tablist sorted by SCREEN_ORDER; Placement rename; the Deterministic checkbox under the forecast line; DetailSection collapsible props, Field unit/help/error in the settings forms."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "1ccbd1e92047e402c6180848c29e2e09fb9b05e330948f0c9b243ffcc8cc9aea",
+      "sha256": "0f4c2f82c54adb32d5c7bdfe5938f1c9f7d569182e3e96e7a4c52b22e186bfca",
       "reviewedAt": "2026-09-24",
-      "note": "Row B gate: the bundle test follows the 368,000 budget"
+      "note": "Row C: the Placement rename in the screen table; the e2e comment on the Execute tab row; no harness change."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "899230fdee55a958aa0d916c0debf9e24b0d5cebbb44e4fc79588cfe1ffb04bf",
+      "sha256": "ba912c6e522bb4248cb4c0add4a71c534f28551fde89757de514c248f84ea212",
       "reviewedAt": "2026-09-24",
-      "note": "Row B gate: the entry budget is 368,000"
+      "note": "Row C: the e2e comment edit in scripts/e2e; the gate text is unchanged."
     },
     {
       "document": "docs/HANDOFF.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "9d16088600fa70574817b12ced5ca421bc42776969a5af65eb286c27182a19c7",
+      "sha256": "dd70d7488187d34e6033ee9225374a2fa634277b216354b6441627acb55372d1",
       "reviewedAt": "2026-09-24",
-      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
+      "note": "Row C: the 32 px panel header with Panel options, the one tab row with the contextual object tab, the Field noun-only label with Auto and mono readouts, section method notes, empty-state chips, finding rows and collapsible detail sections; the Deterministic checkbox leaves the top bar."
     }
   ],
   "historical": [

@@ -602,7 +602,7 @@ src/panels/    Toolbar (the 36 px header: brand, scenario name, the lifecycle ta
                spreadText.ts),
                LibraryEditor, settings/ (RunTab, SystemsTab, PhysicsTab and
                CalibrateDialog), AnalysisPanel (+ analysis/screens/ for the
-               Fragility, Inputs, Where to put it (PlacementScreen), Now, Outcome and
+               Fragility, Inputs, Placement (PlacementScreen), Now, Outcome and
                Compare screens and their phase map,
                analysis/ for the shared readers, records and settings, analysis/detail/,
                analysis/ForecastSettings.tsx for forecast/MC controls),
@@ -1100,19 +1100,20 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   pixel size.
 - **Analysis screens** (`src/panels/AnalysisPanel.tsx`, `src/panels/analysis/screens/`):
   `PHASE_SCREENS` (`screens/navigation.ts`) is the one phase-to-screen map: Prepare
-  `fragility`, `inputs` and `placement` (Where to put it), Execute `now`, Analyze
+  `fragility`, `inputs` and `placement` (Placement), Execute `now`, Analyze
   `outcome` and `compare`. `AnalysisPanel`
   takes the phase and the screen, falls back to the phase's first screen, and renders
-  `BoardPreparation` for `inputs`. `AnalysisNavigation` draws on the Overview tab only,
-  outside the content scroller: one `Seg` of the phase's screens when the phase has more
-  than one. Execute has one screen and draws none. Each screen has one owner component and one
+  `BoardPreparation` for `inputs`. `AnalysisNavigation` draws the phase's screen tabs
+  (`role="tab"` in a `role="group"` labelled Analysis screens, sorted by `SCREEN_ORDER`)
+  inside the one right-panel tab row, outside the content scroller; the current screen
+  carries `insp-tab-analysis`. The contextual object tab follows them. Each screen has one owner component and one
   result basis: Fragility the current `McSummary`, `SensitivitySummary` and `SweepSummary`
   through `currentSummary`, `currentSensitivity` and `currentSweep`; Now the retained
   trial through `trialSweepAt` and `trialSystemTelemetryAt` at the cursor horizon;
   Outcome the completed `TrialResultView` through `trialResultOf`; Compare the completed
   trial against the current `McSummary` and the pinned baseline, plus any two saved
   history records side by side (`SavedRunCompareView`: means differenced, no interval on
-  a difference of independent runs); Where to put it the `McState.optimize` result and
+  a difference of independent runs); Placement the `McState.optimize` result and
   `optimizeBest`, and its Apply installs a copy through `replaceScenario` with the name
   suffix `(placement N)`. The deterministic
   forecast appears on no screen; Outcome and Compare call `engagementPicture` only for
@@ -1129,8 +1130,8 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   while effect times, Pk and kill deltas wait for the effect. EngagementStrip clips
   windows and censors lane marks, tooltips and labels through `censorLane`
   (`panels/analysis/censorLane.ts`). Compare findings route to Prepare.
-  Run settings live on the Run tab; the Run button and the Deterministic switch sit on
-  Prepare and Analyze.
+  Run settings live on the Run tab; the Run button sits in the top bar and the
+  Deterministic checkbox under the forecast line on Prepare > Inputs.
 - **Pinned baseline** (`src/state/baseline.ts`): `PinnedBaseline` is `pinnedAt` (ISO),
   `label`, `scenario`, `mc` (`McSummary`) and `scenarioHash` (the `analysisBasisSignature`
   at the pin). `pinBaseline(label?)` needs a done summary for the current run and basis
@@ -1393,9 +1394,9 @@ Design system (`src/index.css`):
   the browser harness at 1400 by 900 with a saved 320 px panel width (see
   [VERIFICATION](VERIFICATION.md) "Harness setup"): no panel content may be clipped or
   inaccessible. Lifecycle views are local UI composition;
-  they do not advance playback or change the analysis basis. The screen control
-  (`AnalysisNavigation`) remains outside the scrolling content and draws only on the
-  Overview tab; the Selected object tab does not show it.
+  they do not advance playback or change the analysis basis. The screen tabs
+  (`AnalysisNavigation`) remain outside the scrolling content in the one tab row; the
+  contextual object tab sits after them and shows only while something is selected.
 - **Separators, not cards.** Hierarchy comes from surface tone, spacing, typography, a 1 px
   rule and interaction state. `--radius-control` (4 px) applies to controls and
   `--radius-surface` (6 px) to floating surfaces; docked containers are square. The only
@@ -1432,9 +1433,9 @@ state)` is the one owner of that Escape order and of click precedence. `App.tsx`
   no vertex), then a plain select click on empty canvas clears the selection. An entity
   click is owned by connect and select; path owns only the UAS that starts a draft;
   boundary, calibrate and a raid draft bubble it to the stage. The matrix is
-  table-tested in `interactionRouter.test.ts`. The screen control in `AnalysisNavigation.tsx`
-  is one `Seg` (`role="group"`, one pressed segment) on the Overview tab for a phase with
-  more than one screen; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
+  table-tested in `interactionRouter.test.ts`. The screen tabs in `AnalysisNavigation.tsx`
+  are `role="tab"` buttons in a `role="group"` inside the panel tablist, one per screen
+  of the phase; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
 
 ## 8. Standards referenced by model tags
 

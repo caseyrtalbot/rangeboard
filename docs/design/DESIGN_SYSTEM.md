@@ -162,9 +162,9 @@ selected phase tab is text 1 over a 2 px accent underline, and its step number i
 and accent. One `RunControl` holds the bar's single `.primary` button (32 px, accent
 fill), and its label follows the phase: Prepare reads Run, then Stop, then Stopping while
 the pool ends; Execute reads the transport word (Play, Pause, Resume when paused, Replay,
-Retry); Analyze reads Run again. The
-Deterministic switch sits beside the button, and the mono progress line ends in an
-ellipsis before the switch. Settings, the ⋯ menu and the drawer toggle are 28 px
+Retry); Analyze reads Run again. The mono progress line ends in an ellipsis before the
+button. The Deterministic checkbox is not in the bar: it sits under the forecast line in
+Prepare > Inputs, and the Run tab of Settings keeps the run mode control. Settings, the ⋯ menu and the drawer toggle are 28 px
 icon-only buttons with an `aria-label` and a title. The ⋯ menu holds New, Import and
 Export, then a separator, then Storage, which opens the Storage panel in place of the
 menu; while recovery notices exist the Storage item shows a warning state with the count
@@ -181,10 +181,16 @@ validity cells never drop. The transport sits above it in Execute and Analyze on
 waves, the frame chips, `+ Frame` (a popover with one name field and Save) and the
 Engagement toggle. The clock and the run id render only in the status bar.
 
-The lifecycle navigation sits outside the scroll body. The
-analysis screen navigation also sits outside it, draws only on the Overview tab, and draws
-no segmented control for a phase with one screen. Labels wrap and no panel text may be
-inaccessible.
+The lifecycle navigation sits outside the scroll body. The right panel opens with a
+32 px header: the phase word (Prepare, Execute, Analyze) at 13/500 and a ⋯ Panel options
+menu with Show field help (a switch, off by default, D6), Collapse all and Expand all,
+which act on every `details` in the panel body. Below it one 32 px tab row in 12/500
+holds the phase's screens (Inputs · Fragility · Placement in Prepare; Run monitor in
+Execute; Outcome · Compare in Analyze), then the contextual tab last: the selected
+object's name after a 6 px accent dot, shown only while something is selected. The
+selected tab is marked by a 2 px accent underline. A long object name ends in an ellipsis
+at half the row width. The Model library editor has no fixed tab; it shows as a
+contextual tab while open. Labels do not wrap, and no panel text may be inaccessible.
 
 ## 4. Components
 
@@ -230,7 +236,30 @@ inaccessible.
   when `FieldHelpProvider` is true; the inspector mounts that provider from
   `ui.showFieldHelp`, so kit imports no store. `error` renders a `.field-error` line (11 px, critical)
   under the control and sets `aria-invalid` on it. With `help` or `error` the frame is a
-  div and the child must be one React element, which takes the label's `id`.
+  div and the child must be one React element, which takes the label's `id`. The label
+  holds the noun only. A blank that means a derived default shows the placeholder `Auto`,
+  and the derivation sentence goes in `help`. A slider row shows its value as a
+  right-aligned mono readout through `unit` (`12 kt`, `270°`). The forecast header on
+  Inputs is one mono line, `MC done / loop end · seed n`, with the stopping rule in its
+  title and the Deterministic checkbox under it.
+- **Section method note** (`.frag-info`, `.frag-help`). A section head may end in a
+  24 px (i) button (`aria-label="About <section>"`, the note in its title). With field
+  help on, the note also renders under the head as a 12 px text 2 line at normal weight.
+  A machine readout in a section head is mono 12 px text 2 (`n cells · 40 reps/cell`).
+- **Empty state.** A hollow warning `State` chip names the missing input (`No ensemble`,
+  `No defended asset`), with a `.mini` action beside it when one exists.
+- **Finding row** (`.frag-finding`). A 28 px button with the severity state, the
+  finding's first clause unchanged, and a chevron (right closed, down open) with
+  `aria-expanded`. The rest of the finding and its scope open below. With field help on,
+  rows render open.
+- **Detail section** (`DetailSection`, `.det-s`). A collapsible section has a 28 px
+  full-width header button with `aria-expanded` and `aria-controls`, a chevron, the title
+  and a mono 11 px summary that stays visible while collapsed; the body uses `hidden`.
+  Track opens by default; Engagement, Path and Phase open on click. Detail values hold
+  one line: a multi-clause value clips with an ellipsis and carries the full text in
+  `title`, and a list behind a value opens from a `.mini` count button (`2 sensors ›`).
+  A threat's model tags are one `Model basis` row: tier and validation words in text 2
+  and a 24 px (i) whose title lists each model as label · tier · validation.
 - **State** (`State`, `.state`). A solid 8 px square and a word in one state ink. `hollow`
   outlines the square for an undecided or qualifying count; `live` clips it to a circle.
 - **Provenance mark** (`ProvMark`, `.prov-mark`). One 8 px shape in a fixed 36 px column
