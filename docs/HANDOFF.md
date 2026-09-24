@@ -11,24 +11,20 @@ fresh agent starts from this file and the docs index. This file does not authori
 commit, push or merge.
 
 [Plan.md](Plan.md) is the chrome refactor queue (Option C plus the inspector text-density
-pass, 2026-09-24). Row A is merged. Row B is integrated and reviewed on `chrome/int`, not
-merged: its bundle gate is 8 bytes over budget and w## Position
+pass, 2026-09-24). Rows A and B are merged. Row C is selected. The design and UX polish
+plan the queue replaces is complete in history at `76074bb`.
+
+## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
   `origin/main` holds the polish4 run through `76074bb`. Local `main` holds the plan
   commit `65c0005`, Row A (`fc47469`) and the Row B handoff (`00b241b`), not pushed.
-- Row B (2026-09-24) is on `chrome/int` at `7634509` in the worktree
-  `~/Projects/rangeboard-wt/int`: lanes `chrome/b1` to `chrome/b4` (worktrees
-  `~/Projects/rangeboard-wt/b1` to `b4`), four merges, the integrator folds, the docs and
-  the `opus-high` review fixes. Nothing is merged to `main`. The user decides the merge
-  and the bundle budget; then delete the five worktrees and the lane branches.
-- Row B gate at `7634509`: `npm run check` passes except `check:bundle`; 2,254 tests, lint,
-  format, docs, silent and `test:e2e` (13 of 13) pass. Entry gzip 367,008 against
-  367,000, initial 384,130 against 400,000. The entry stood at 366,999 before the review
-  fixes; the always-mounted playback loop, the `(Space)` title and the right-anchored
-  frame popover added 9 bytes. D3 says a shortfall goes to the user: raise the budget in
-  `scripts/check-bundle.mjs` (Row C adds chips, popovers and help lines, so 368,000 or
-  more is the realistic floor) or name a Row B removal.
+- Row B (2026-09-24) merged to local `main` from `chrome/int`: lanes `chrome/b1` to
+  `chrome/b4`, four merges, the integrator folds, the docs and the `opus-high` review
+  fixes. The lane worktrees and branches are deleted. Not pushed.
+- Row B gate: `npm run check`, `check:bundle`, `check:silent` and `test:e2e` (13 of 13)
+  pass; 2,254 tests. Entry gzip 367,008 against 368,000 (the user raised the budget from
+  367,000 at this gate), initial 384,130 against 400,000. Headroom 992 bytes.
 - Browser check at 1440 × 900 in both themes (Playwright on the dev server, the firing
   fixture): 36 px top bar, 32 px accent primary, 28 px icon buttons, 28 px tool row with
   24 px controls and 22 px segments, 44 px rail with 32 px buttons, 32 px library header,
@@ -83,16 +79,15 @@ merged: its bundle gate is 8 bytes over budget and w## Position
 
 ## Tasking
 
-Row C of [Plan.md](Plan.md) is selected: the inspector and density lanes. Start only
-after the user has settled the bundle budget and merged `chrome/int` to `main`. Four
-lanes in one message, each in its own worktree outside the repository (a `node_modules`
-symlink to the main checkout runs every gate) on a branch from local `main`, budget
-1,800 seconds each, then C-int on a fresh `chrome/int`, the final capture and the
+Row C of [Plan.md](Plan.md) is selected: the inspector and density lanes. Four lanes in
+one message, each in its own worktree outside the repository (a `node_modules` symlink
+to the main checkout runs every gate) on a branch from local `main`, budget 1,800
+seconds each, then C-int on a fresh `chrome/int`, the final capture and the
 `fable-medium` canvas comparison. Workers: C1 `opus-medium`, C2 `opus-high`, C3
 `opus-medium`, C4 `opus-medium`; `opus-high` reviews the C-int diff against Rows A to C.
 D6 applies at its default. Merge to `main` only with the user's authorization.
 
-The plan's line numbers are positions at `76074bb`. Current anchors at `7634509`:
+The plan's line numbers are positions at `76074bb`. Current anchors at the Row B merge:
 
 | Lane | File | Anchor |
 | --- | --- | --- |
@@ -110,8 +105,8 @@ Facts the lanes need from Rows A and B:
   panel from `ui.showFieldHelp` with `setShowFieldHelp`. `Field` with `help` or `error`
   renders a `div.field` and needs one React element as its child, which takes the
   label's `id`; `unit` is the plan's "suffix".
-- The entry budget: every Row C addition must be paid for by a removal, or the user
-  raises the budget again. Icons cost entry bytes the first time a file imports them.
+- The entry budget has 992 bytes of headroom; every Row C addition beyond it must be
+  paid for by a removal, or the user raises the budget again. Icons cost entry bytes the first time a file imports them.
 - Shared selectors go in `src/state/selectors.ts`. An import of `panels/TimelineBar.tsx`
   from `panels/analysis/RunControl.tsx` split the store into its own chunk (see the
   landmine); a panel-to-panel import can do the same.
@@ -192,9 +187,8 @@ the final capture and the `fable-medium` canvas comparison.
   `points` array (`scenarioHasWork` in `src/io/persist.test.ts`,
   `scenarioInstall.test.ts`). Those objects do not pass `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
-  touches the entry. The entry gzip budget is 367,000 bytes and the Row B head measures
-  367,008 (D3: the user settles it). CSS is not in the entry metric; only JavaScript
-  moves it. `sql.js` must stay behind `await import` with its wasm URL.
+  touches the entry. The entry gzip budget is 368,000 bytes with 992 bytes of headroom
+  (367,008 at the Row B gate). CSS is not in the entry metric; only JavaScript moves it. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
 - `newId` embeds `Date.now()`. A test that asserts a seed-dependent Monte Carlo outcome

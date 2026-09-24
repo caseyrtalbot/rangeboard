@@ -27,7 +27,7 @@ The [Quality workflow](../.github/workflows/quality.yml) runs `npm ci` and the s
 `npm run check:silent` on the lines the push or pull request added, checks the built
 bundle budget, installs Playwright Chromium, starts Vite on fixed port 5377, waits for
 readiness, runs `npm run test:e2e` and stops its server even on failure. The budget uses
-`gzip -9`: at most 367,000 bytes for the entry and 400,000 for initial JavaScript plus CSS
+`gzip -9`: at most 368,000 bytes for the entry and 400,000 for initial JavaScript plus CSS
 (entry, modulepreloads and stylesheets), following the Wave 3 evidence method. Font and
 other preloads and the all-in total are reported separately. Remote CI results require a
 pushed commit; local checks do not establish GitHub status. Remote branch protection is

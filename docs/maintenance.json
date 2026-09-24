@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "65b1ea43ab6d04bc1e9f0f83a2b7090f40fcedaef7cb468ebe470c0788dd0520",
+      "sha256": "1ccbd1e92047e402c6180848c29e2e09fb9b05e330948f0c9b243ffcc8cc9aea",
       "reviewedAt": "2026-09-24",
-      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
+      "note": "Row B gate: the bundle test follows the 368,000 budget"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "6aaf8b63f9cd045255f63fec2a1d18f6450f39e120611f3e36b087a1c70260a2",
+      "sha256": "899230fdee55a958aa0d916c0debf9e24b0d5cebbb44e4fc79588cfe1ffb04bf",
       "reviewedAt": "2026-09-24",
-      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
+      "note": "Row B gate: the entry budget is 368,000"
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "add2491b36ae79c38863468b316753a5def6a363c50641b78a5852cc1cbe6e13",
+      "sha256": "241ea97a809e13e5ef013b15ebc68b9b569cf696d60735c739c7a79d00d7d722",
       "reviewedAt": "2026-09-24",
-      "note": "Row B integrated and reviewed on chrome/int; bundle 8 bytes over waits on the user; Row C selected with anchors at 7634509"
+      "note": "Row B merged to main with the budget at 368,000; Row C selected"
     },
     {
       "document": "docs/Plan.md",

@@ -13,7 +13,10 @@ import { pathToFileURL } from 'node:url'
 // and floating surfaces put the merged entry at 365.7 kB.
 // Raised to 367 kB on 2026-09-23 at the polish follow-up gate by the user: the board ink
 // fields, the hover release and the degenerate-range refusal put the entry at 366.2 kB.
-export const BUNDLE_BUDGET = { entry: 367_000, initial: 400_000 }
+// Raised to 368 kB on 2026-09-24 at the Row B chrome gate by the user: the status bar, the
+// top-bar run control, the popovers and the always-mounted playback loop put the entry at
+// 367,008 after the Row B removals paid for the rest.
+export const BUNDLE_BUDGET = { entry: 368_000, initial: 400_000 }
 
 // Match the Wave 3 evidence method: entry + modulepreloaded JS + initial CSS.
 // Report other preloads separately so the total transfer is also visible.
