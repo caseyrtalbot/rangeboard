@@ -10,7 +10,6 @@ import {
   selectSimTimeS,
   selectWaves,
 } from '../state/selectors'
-import { formatTime } from '../geometry/geo'
 import { resetAnalysisRun, toggleAnalysisRun } from '../playback/runSession'
 import { nextPublishedTimeS } from '../canvas/frameClock'
 import { usePopover } from '../ui/usePopover'
@@ -191,9 +190,6 @@ export const TimelineBar = memo(function TimelineBar({
           </button>
         </span>
       )}
-      <span className="time-readout">
-        T+{formatTime(simTimeS)} / {formatTime(durationS)}
-      </span>
       <input
         className="scrub"
         type="range"

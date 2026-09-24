@@ -2668,14 +2668,6 @@ select.nu-unit {
   flex: none;
 }
 
-.time-readout {
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: var(--type-dense-size);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
 .scrub {
   flex: 1;
   min-width: 80px;
@@ -3313,7 +3305,6 @@ button.chip {
    prose) is set in the UI sans, which is what stopped the panel reading
    as a terminal dump. */
 .hud-bottom,
-.time-readout,
 .mono,
 input[type='number'] {
   font-family: var(--font-mono);
@@ -3321,7 +3312,6 @@ input[type='number'] {
 
 .num,
 .hud-bottom,
-.time-readout,
 input[type='number'] {
   font-variant-numeric: tabular-nums;
 }

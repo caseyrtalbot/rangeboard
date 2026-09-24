@@ -632,13 +632,8 @@ export default function App() {
         ?.click()
     requestAnimationFrame(() => {
       document.getElementById('view-menu-layers')?.scrollIntoView({ block: 'start' })
-      // The first control after the Layers heading, inside it or in a later sibling.
-      const at = '#view-menu-layers'
-      document
-        .querySelector<HTMLElement>(
-          `${at} :is(button,input,select), ${at} ~ :is(button,input,select), ${at} ~ * :is(button,input,select)`,
-        )
-        ?.focus()
+      // The first control inside the Layers section.
+      document.querySelector<HTMLElement>('#view-menu-layers :is(button,input,select)')?.focus()
     })
   }, [])
   // D4: Frames focuses + Frame in the transport, which Execute and Analyze render.

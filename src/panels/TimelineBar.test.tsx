@@ -78,10 +78,11 @@ describe('sampled transport labels', () => {
     expect(panel).toMatch(/>Save<\/button>/)
   })
 
-  it('leaves the run id to the status bar', () => {
+  it('leaves the run id and the clock to the status bar', () => {
     const html = render()
     expect(html).not.toContain('RUN-')
-    expect(html).toContain('T+')
+    expect(html).not.toContain('T+')
+    expect(html).toContain('class="scrub"')
   })
 
   it('keeps the undo cue out of the timeline row', () => {
