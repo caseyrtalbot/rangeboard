@@ -27,7 +27,7 @@ import { LibraryEditor } from './panels/LibraryEditor'
 import { BoardPreparation } from './panels/BoardPreparation'
 import type { AnalysisScreen } from './panels/analysis/screens/navigation'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
-import { TimelineBar } from './panels/TimelineBar'
+import { TimelineBar, usePlaybackLoop } from './panels/TimelineBar'
 import { StatusBar } from './panels/StatusBar'
 import { toggleAnalysisRun } from './playback/runSession'
 import { ENGSTRIP_OPEN_KEY, RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
@@ -415,6 +415,7 @@ export default function App() {
   const [placement, setPlacement] = useState<LibraryPlacement | null>(null)
   const libraryTrigger = useRef<HTMLButtonElement>(null)
   const boardPhase = useStore(selectBoardPhase)
+  usePlaybackLoop()
   const [prepareScreen, setPrepareScreen] = useState<AnalysisScreen>('fragility')
   const [analyzeScreen, setAnalyzeScreen] = useState<AnalysisScreen>('outcome')
   const analysisScreen =
@@ -631,7 +632,7 @@ export default function App() {
         .querySelector<HTMLButtonElement>('.board-tools [aria-controls="view-menu-panel"]')
         ?.click()
     requestAnimationFrame(() => {
-      document.getElementById('view-menu-layers')?.scrollIntoView({ block: 'start' })
+      document.getElementById('view-menu-layers')?.scrollIntoView()
       // The first control inside the Layers section.
       document.querySelector<HTMLElement>('#view-menu-layers :is(button,input,select)')?.focus()
     })

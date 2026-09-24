@@ -1,10 +1,10 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useShallow } from 'zustand/react/shallow'
 import { Seg, State } from '../ui/kit'
 import type { StateTone } from '../ui/kit'
 import { usePopover } from '../ui/usePopover'
 import { useStore } from '../state/store'
+import { loopEndOf } from './analysis/RunControl'
 import type { Store } from '../state/store'
 import { selectDurationS, selectEffectiveLayers, selectSimTimeS } from '../state/selectors'
 import { formatRunLabel } from '../state/labels'
@@ -111,37 +111,33 @@ interface SpawnWarning {
   hint: string
 }
 
-const spawnWarningCache = new WeakMap<Scenario, SpawnWarning | null>()
-
-/**
- * The chip reads the same run-validity finding the requirement gates and the run
- * export read. Derived live, never stored, and cached by scenario identity.
- */
-function selectSpawnWarning(s: Store): SpawnWarning | null {
-  const cached = spawnWarningCache.get(s.scenario)
-  if (cached !== undefined) return cached
-  const finding = assessRunValidity(s.scenario, []).findings.find((f) => f.id === 'spawn-in-ring')
-  const warning = finding ? { uasIds: finding.uasIds, hint: finding.message } : null
-  spawnWarningCache.set(s.scenario, warning)
-  return warning
+interface Validity {
+  count: number
+  spawn: SpawnWarning | null
 }
 
-const validityCache = new WeakMap<Scenario, number>()
+const validityCache = new WeakMap<Scenario, Validity>()
 
-/** Findings of the deterministic picture, as the Prepare overview reads them. */
-function selectValidityCount(s: Store): number {
+/**
+ * Findings of the deterministic picture, as the Prepare overview reads them, and the
+ * spawn-in-ring finding the chip shows. Derived live, never stored, cached by scenario.
+ */
+function selectValidity(s: Store): Validity {
   const cached = validityCache.get(s.scenario)
-  if (cached !== undefined) return cached
-  const { assessments } = engagementPicture(s.scenario)
-  const count = assessRunValidity(s.scenario, assessments).findings.length
-  validityCache.set(s.scenario, count)
-  return count
+  if (cached) return cached
+  const { findings } = assessRunValidity(s.scenario, engagementPicture(s.scenario).assessments)
+  const finding = findings.find((f) => f.id === 'spawn-in-ring')
+  const validity = {
+    count: findings.length,
+    spawn: finding ? { uasIds: finding.uasIds, hint: finding.message } : null,
+  }
+  validityCache.set(s.scenario, validity)
+  return validity
 }
 
 /** Replicates done against the loop end RunControl reports; a dash before any run. */
 function selectMcText(s: Store): string {
-  const run = runSettings(s.scenario)
-  const end = run.targetHalfWidth == null ? run.replicates : run.stopCap
+  const end = loopEndOf(runSettings(s.scenario))
   const { mc } = s
   const done =
     mc.status === 'running'
@@ -165,9 +161,8 @@ export const StatusBar = memo(function StatusBar() {
   const seed = useStore((s) => runSettings(s.scenario).seed)
   const mcText = useStore(selectMcText)
   const units = useStore((s) => s.ui.units)
-  const validity = useStore(selectValidityCount)
+  const { count: validity, spawn: spawnWarning } = useStore(selectValidity)
   const environment = useStore((s) => s.scenario.environment)
-  const spawnWarning = useStore(useShallow(selectSpawnWarning))
   const threatWez = useStore((s) => selectEffectiveLayers(s).threatWez)
   const save = useStore((s) => s.save)
   // Chips that wrap off the one clipped row are hidden whole; count them. -1
@@ -224,7 +219,7 @@ export const StatusBar = memo(function StatusBar() {
   )
 
   return (
-    <div className="status-bar" aria-label="Run status">
+    <div className="status-bar" role="group" aria-label="Run status">
       <span className="sb-run">{formatRunLabel(runSeq)}</span>
       <span className="sb-phase">{phase}</span>
       <span className="sb-clock">

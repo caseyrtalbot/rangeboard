@@ -49,11 +49,13 @@ polish follow-up gate, when the board ink fields, the hover release and the
 degenerate-range refusal put the entry at 366,212 (initial 382,637). The polish4 gate
 measured 365,724 (initial 382,285) after the canvas context menu moved to its own chunk.
 The Row A gate of the chrome refactor measured 365,970 (initial 382,635) on 2026-09-24.
-The Row B gate measured 366,999 (initial 384,155) on 2026-09-24 after the transport clock,
+The Row B gate measured 367,008 (initial 384,130) on 2026-09-24 after the transport clock,
 the Declutter control, the library footer, the frame-name input and the body run controls
 were removed and the chrome icons, the status bar and the popovers were added, so the
-entry headroom is 1 byte; Row C must pay for every byte it adds. A `kit.tsx` import of the store splits the store
-into its own chunk and empties the entry metric; `Field` reads `FieldHelpProvider` instead. Documentation-only
+entry is 8 bytes over the budget after the review fixes (the always-mounted playback loop, the Space key title and the right-anchored frame popover); the budget decision is the user's. A `kit.tsx` import of the store splits the store
+into its own chunk and empties the entry metric; `Field` reads `FieldHelpProvider` instead.
+An import of `panels/TimelineBar.tsx` from `panels/analysis/RunControl.tsx` did the same on
+2026-09-24; shared selectors go in `state/selectors.ts`. Documentation-only
 changes need `docs:check`; maintenance-script changes also need `test:docs`.
 `npm run check` runs the silent-gate tests but not `check:silent` itself; CI runs `check:silent`
 against the pull request base or the pushed-from commit, and a local run diffs against `main`.

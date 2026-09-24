@@ -307,12 +307,14 @@ test('status bar: 24 px, run id first, extra chips fold into a counted ROE chip'
     )
     const el = document.querySelector('.status-bar')
     return {
+      partial: chips.filter((c) => c.top < box.bottom && c.right > box.right + 0.5).length,
       hidden: chips.filter((c) => c.top >= box.bottom).length,
       count: document.querySelector('.status-bar .status-fold-count')?.textContent,
       overflow: el.scrollWidth - el.clientWidth,
       scroll: document.documentElement.scrollWidth - innerWidth,
     }
   })
+  assert.equal(row.partial, 0, 'no chip is clipped mid-chip')
   assert.ok(row.hidden > 0, 'the full row hides whole chips')
   assert.equal(row.count, `+${row.hidden}`, 'the ROE button counts the hidden chips')
   assert.equal(row.overflow, 0, 'the status bar does not scroll sideways')

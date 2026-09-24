@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "09080fb4c9ad6e1f9df74ba5f02579e1d5ec1e506ebb3a6ec4f2d46b359ef1b2",
+      "sha256": "9109875c24465e26668c71d4d8afc7896db7e42a3181222e9430844502c70bd1",
       "reviewedAt": "2026-09-24",
-      "note": "Row B chrome bands: source fingerprint refresh; no content change needed"
+      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "93404b1c46dd721a806842a87ae81114bd546772f2dc398056c8f599428567e4",
+      "sha256": "783aa772afca6743412489e6ffe836aa0506e777c8edca730dc8fef5e0a3b585",
       "reviewedAt": "2026-09-24",
-      "note": "Row B chrome bands: one RunControl in the top bar, Range and View tool row with layer presets, Entities rail, Storage in the file menu"
+      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "58a8c5cfca7043267e735e155c75cbe927281bb6907bf7bcfd64ba556151b1cc",
+      "sha256": "721d0065ef6ae84236429a5ed75c73d7fe855f48f9f32e0180140879cdbb9fe8",
       "reviewedAt": "2026-09-24",
-      "note": "Row B chrome bands: Toolbar header and tool row, the new StatusBar, the transport outside Prepare, one RunControl"
+      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "d9b849c99c04b92a076952ad9a97f1247db500652ba0603facc69bf8736b2aa0",
+      "sha256": "65b1ea43ab6d04bc1e9f0f83a2b7090f40fcedaef7cb468ebe470c0788dd0520",
       "reviewedAt": "2026-09-24",
-      "note": "Row B chrome bands: e2e header, transport and status-bar checks; Row B bundle gate 366,999"
+      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b637890429aa6d68a67201233343bd5571b3434722ff84d9923a9559aa217680",
+      "sha256": "6aaf8b63f9cd045255f63fec2a1d18f6450f39e120611f3e36b087a1c70260a2",
       "reviewedAt": "2026-09-24",
-      "note": "Row B chrome bands: source fingerprint refresh; no content change needed"
+      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
     },
     {
       "document": "docs/HANDOFF.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "6f86f4d2fa70731af28d55860f483b67880ab94b2075bd7cb9022ac062cf5a5b",
+      "sha256": "9d16088600fa70574817b12ced5ca421bc42776969a5af65eb286c27182a19c7",
       "reviewedAt": "2026-09-24",
-      "note": "Row B chrome bands: top bar, status bar and transport in section 3; key hints, status chips, rail, library and tool row in section 4"
+      "note": "Row B review fixes: the playback loop hook App mounts, one play-label selector, the Space key title, the right-anchored frame popover; bundle 367,008"
     }
   ],
   "historical": [

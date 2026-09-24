@@ -43,7 +43,7 @@ describe('status bar', () => {
     const at = cells.map((cell) => flat.indexOf(cell))
     expect(at.every((i) => i >= 0)).toBe(true)
     expect(at).toEqual([...at].sort((a, b) => a - b))
-    expect(html).toContain('class="status-bar" aria-label="Run status"')
+    expect(html).toContain('class="status-bar" role="group" aria-label="Run status"')
     expect(html).toContain('title="ROE · click to change"')
   })
 

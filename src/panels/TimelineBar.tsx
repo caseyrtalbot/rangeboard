@@ -7,6 +7,7 @@ import {
   selectDurationS,
   selectFrames,
   selectPlaybackFlags,
+  selectPlayLabel,
   selectSimTimeS,
   selectWaves,
 } from '../state/selectors'
@@ -40,7 +41,7 @@ export function FrameAddPanel({ onDone }: { onDone: () => void }) {
   return (
     <div
       id="frame-add-panel"
-      className="tb-menu-panel surface-float frame-add-panel"
+      className="tb-menu-panel surface-float tb-menu-right frame-add-panel"
       role="dialog"
       aria-label="Save frame"
     >
@@ -93,38 +94,14 @@ function FrameAdd() {
 }
 
 /**
- * Bottom transport: play/pause, scrub, speed, the frames strip and the Engagement
- * toggle. It owns the one requestAnimationFrame loop that publishes
- * `playback.simTimeS` every PUBLISH_PERIOD_MS of wall time, at every speed. Each
- * publication advances sim time by the measured wall time at playback speed, so
- * the clock does not drift.
+ * The one requestAnimationFrame loop that publishes `playback.simTimeS` every
+ * PUBLISH_PERIOD_MS of wall time, at every speed. Each publication advances sim time
+ * by the measured wall time at playback speed, so the clock does not drift. App mounts
+ * it once, so the clock runs in every phase (Prepare renders no transport).
  */
-export const TimelineBar = memo(function TimelineBar({
-  engagementOpen,
-  onToggleEngagement,
-}: {
-  engagementOpen: boolean
-  onToggleEngagement: () => void
-}) {
-  const { playing, speedMult } = useStore(useShallow(selectPlaybackFlags))
-  const phase = useStore((s) => s.playback.phase)
-  const trialStatus = useStore((s) => s.trial.status)
-  const playLabel = playing
-    ? 'Pause'
-    : phase === 'complete'
-      ? 'Replay'
-      : trialStatus === 'error' || trialStatus === 'cancelled'
-        ? 'Retry'
-        : 'Play'
-  const simTimeS = useStore(selectSimTimeS)
-  const durationS = useStore(selectDurationS)
-  const frames = useStore(selectFrames)
-  const waves = useStore(selectWaves)
-  const threatCount = useStore(selectThreatCount)
-  const { scrubTo, setSpeedMult, applyFrame, deleteFrame, setWaveDelay, patchScenario } =
-    useStore.getState()
+export function usePlaybackLoop() {
+  const playing = useStore((s) => s.playback.playing)
   const raf = useRef(0)
-
   useEffect(() => {
     if (!playing) return
     // Wall time and speed of the last publication. A frame inside the period
@@ -153,6 +130,32 @@ export const TimelineBar = memo(function TimelineBar({
     raf.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf.current)
   }, [playing])
+}
+
+/**
+ * Bottom transport: play/pause, scrub, speed, the frames strip and the Engagement
+ * toggle. It owns the one requestAnimationFrame loop that publishes
+ * `playback.simTimeS` every PUBLISH_PERIOD_MS of wall time, at every speed. Each
+ * publication advances sim time by the measured wall time at playback speed, so
+ * the clock does not drift.
+ */
+export const TimelineBar = memo(function TimelineBar({
+  engagementOpen,
+  onToggleEngagement,
+}: {
+  engagementOpen: boolean
+  onToggleEngagement: () => void
+}) {
+  const { playing, speedMult } = useStore(useShallow(selectPlaybackFlags))
+  const trialStatus = useStore((s) => s.trial.status)
+  const playLabel = useStore(selectPlayLabel)
+  const simTimeS = useStore(selectSimTimeS)
+  const durationS = useStore(selectDurationS)
+  const frames = useStore(selectFrames)
+  const waves = useStore(selectWaves)
+  const threatCount = useStore(selectThreatCount)
+  const { scrubTo, setSpeedMult, applyFrame, deleteFrame, setWaveDelay, patchScenario } =
+    useStore.getState()
 
   return (
     <div className="timeline">
@@ -160,7 +163,7 @@ export const TimelineBar = memo(function TimelineBar({
         type="button"
         className="mini play"
         onClick={toggleAnalysisRun}
-        title={playLabel}
+        title={`${playLabel} (Space)`}
         aria-label={playLabel}
       >
         {playing ? <IconPause /> : <IconPlay />}

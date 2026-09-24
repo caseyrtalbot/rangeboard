@@ -91,6 +91,15 @@ export const selectPlaybackFlags = (s: Store): PlaybackFlags => ({
   completedAtMs: s.playback.completedAtMs,
 })
 
+/** The transport word for the run state; the top bar's Execute action reads it too. */
+export const selectPlayLabel = (s: Store): string => {
+  const { playing, phase } = s.playback
+  if (playing) return 'Pause'
+  if (s.trial.status === 'error' || s.trial.status === 'cancelled') return 'Retry'
+  if (phase === 'complete') return 'Replay'
+  return phase === 'paused' ? 'Resume' : 'Play'
+}
+
 export const selectFrames = (s: Store): FrameSnap[] => s.scenario.frames
 
 const EMPTY_WAVES: RaidWave[] = []

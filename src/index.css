@@ -440,12 +440,6 @@ body,
   flex: 0 0 auto;
 }
 
-/* Unwrapped labels make the left track's min-content floor its used width. */
-.toolbar-left > button,
-.toolbar-left > .tb-menu-wrap > button {
-  white-space: nowrap;
-}
-
 /* The run control fills the free space from a zero basis, and its progress line
    takes a zero width, so the line adds nothing to the right track's floor. The
    line sits before the switch, right-aligned, so the button keeps its place. */
@@ -799,7 +793,6 @@ input[type='color']::-webkit-color-swatch {
 
 /* Undo and redo carry an icon, not a word. The title text names them. A 16 px
    icon plus 3 + 3 padding and the group's 1 + 1 frame is the 24 px dense height. */
-.toolbar > .seg button.tb-glyph,
 .board-tools > .seg button.tb-glyph {
   display: inline-flex;
   align-items: center;
@@ -1315,7 +1308,6 @@ input[type='color']::-webkit-color-swatch {
    first item lets even the first chip wrap. */
 .status-inline {
   flex-wrap: wrap;
-  height: 24px;
   overflow: hidden;
 }
 
@@ -2652,7 +2644,8 @@ select.nu-unit {
   white-space: nowrap;
 }
 
-.timeline > .tb-menu-wrap {
+.timeline > .tb-menu-wrap,
+.frame-add-panel button.mini {
   flex: none;
 }
 
@@ -2719,18 +2712,6 @@ select.nu-unit {
   min-width: 260px;
 }
 
-.frame-add-panel input {
-  height: var(--h-dense);
-  padding-top: 2px;
-  padding-bottom: 2px;
-}
-
-.frame-add-panel button.mini {
-  flex: none;
-  margin-left: 0;
-  align-self: center;
-}
-
 /* ---------- Status bar ---------- */
 
 /* 24 px, sunken, 11 px mono. Cells run left to right; the ROE chip, units and
@@ -2758,11 +2739,11 @@ select.nu-unit {
   flex: none;
 }
 
-.status-bar .sb-run {
+.sb-run {
   color: var(--text-primary);
 }
 
-.status-bar > .sb-grow {
+.sb-grow {
   flex: 1;
   min-width: 0;
 }
@@ -2788,19 +2769,19 @@ select.nu-unit {
 }
 
 @media (max-width: 1439.98px) {
-  .status-bar .sb-units {
+  .sb-units {
     display: none;
   }
 }
 
 @media (max-width: 1279.98px) {
-  .status-bar .sb-mc {
+  .sb-mc {
     display: none;
   }
 }
 
 @media (max-width: 1151.98px) {
-  .status-bar .sb-seed {
+  .sb-seed {
     display: none;
   }
 }

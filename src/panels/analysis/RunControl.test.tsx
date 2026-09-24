@@ -239,7 +239,9 @@ describe('RunControl', () => {
     interaction.buttons.get('Pause')!.onClick()
     expect(command).toHaveBeenCalledWith({ type: 'toggle' })
 
-    useStore.setState((s) => ({ playback: { ...s.playback, playing: false } }))
+    useStore.setState((s) => ({ playback: { ...s.playback, playing: false, phase: 'ready' } }))
+    expect(render('execute')).toContain('>Play<')
+    useStore.setState((s) => ({ playback: { ...s.playback, playing: false, phase: 'paused' } }))
     const html = render('execute')
     expect(html).toContain('>Resume<')
     expect(interaction.buttons.get('Resume')!.disabled).toBe(false)

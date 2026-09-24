@@ -161,7 +161,8 @@ pencil and a rule on hover and focus, and `F2` focuses it from anywhere in the b
 selected phase tab is text 1 over a 2 px accent underline, and its step number is mono
 and accent. One `RunControl` holds the bar's single `.primary` button (32 px, accent
 fill), and its label follows the phase: Prepare reads Run, then Stop, then Stopping while
-the pool ends; Execute reads Pause, or Resume when paused; Analyze reads Run again. The
+the pool ends; Execute reads the transport word (Play, Pause, Resume when paused, Replay,
+Retry); Analyze reads Run again. The
 Deterministic switch sits beside the button, and the mono progress line ends in an
 ellipsis before the switch. Settings, the ⋯ menu and the drawer toggle are 28 px
 icon-only buttons with an `aria-label` and a title. The ⋯ menu holds New, Import and

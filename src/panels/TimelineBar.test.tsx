@@ -16,16 +16,17 @@ describe('sampled transport labels', () => {
   beforeEach(() => installTrial())
 
   it('uses matching Play, Pause, Replay and Reset run titles and accessible names', () => {
-    expect(render()).toContain('title="Play" aria-label="Play"')
+    useStore.setState(({ playback }) => ({ playback: { ...playback, phase: 'ready' } }))
+    expect(render()).toContain('title="Play (Space)" aria-label="Play"')
     useStore.setState(({ playback }) => ({
       playback: { ...playback, playing: true, phase: 'running' },
     }))
-    expect(render()).toContain('title="Pause" aria-label="Pause"')
+    expect(render()).toContain('title="Pause (Space)" aria-label="Pause"')
     useStore.setState(({ playback }) => ({
       playback: { ...playback, playing: false, phase: 'complete', completedAtMs: 1 },
     }))
     const html = render()
-    expect(html).toContain('title="Replay" aria-label="Replay"')
+    expect(html).toContain('title="Replay (Space)" aria-label="Replay"')
     expect(html).toContain('>Replay</button>')
     expect(html).toContain('title="Reset run" aria-label="Reset run"')
     expect(html).not.toContain('New run')
@@ -36,12 +37,15 @@ describe('sampled transport labels', () => {
     useStore.setState(({ playback }) => ({
       playback: { ...playback, playing: false, phase: 'paused', completedAtMs: 1 },
     }))
-    expect(render()).toContain('aria-label="Play"')
+    expect(render()).toContain('aria-label="Resume"')
     expect(render()).not.toContain('aria-label="Replay"')
   })
 
   it('offers explicit Pause and Cancel during preparation without replacing repeated Play', () => {
-    useStore.setState({ trial: { ...IDLE_TRIAL, status: 'preparing', startWhenReady: true } })
+    useStore.setState(({ playback }) => ({
+      playback: { ...playback, phase: 'ready' },
+      trial: { ...IDLE_TRIAL, status: 'preparing', startWhenReady: true },
+    }))
     const html = render()
     expect(html).toContain('Preparing trial')
     expect(html).toContain('aria-label="Play"')
@@ -51,7 +55,7 @@ describe('sampled transport labels', () => {
 
   it.each(['error', 'cancelled'] as const)('offers Retry for %s preparation', (status) => {
     useStore.setState({ trial: { ...IDLE_TRIAL, status } })
-    expect(render()).toContain('title="Retry" aria-label="Retry"')
+    expect(render()).toContain('title="Retry (Space)" aria-label="Retry"')
   })
 
   it('shows the engagement toggle with the threat count and expanded state', () => {

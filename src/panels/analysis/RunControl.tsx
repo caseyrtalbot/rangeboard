@@ -11,6 +11,7 @@ import type { McSummary, StopRule } from '../../playback/mcRun'
 import type { PoolProgress } from '../../playback/mcTypes'
 import { toggleAnalysisRun } from '../../playback/runSession'
 import type { BoardPhase, McState } from '../../state/runState'
+import { selectPlayLabel } from '../../state/selectors'
 import { useStore } from '../../state/store'
 
 /**
@@ -30,7 +31,7 @@ function settingsStopRule(run: McSettings): StopRule {
 }
 
 /** Where the loop ends: the cap under a half-width target, else the replicate count. */
-function loopEndOf(run: McSettings): number {
+export function loopEndOf(run: McSettings): number {
   return run.targetHalfWidth == null ? run.replicates : run.stopCap
 }
 
@@ -96,7 +97,7 @@ export const STOPPING_TITLE = 'This run is already stopping.'
 export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
   const scenario = useStore((s) => s.scenario)
   const mc = useStore((s) => s.mc)
-  const playing = useStore((s) => s.playback.playing)
+  const playLabel = useStore(selectPlayLabel)
   const patchScenario = useStore((s) => s.patchScenario)
   const run = runSettings(scenario)
   const deterministic = run.runMode === 'deterministic'
@@ -106,9 +107,7 @@ export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
   // Execute drives playback, so the ensemble's mode and stop state do not apply.
   const playback = phase === 'execute'
   const label = playback
-    ? playing
-      ? 'Pause'
-      : 'Resume'
+    ? playLabel
     : stopping
       ? 'Stopping'
       : running
@@ -152,7 +151,7 @@ export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
         {label}
       </button>
       {progress && (
-        <span className="run-progress" role="status" title={progress}>
+        <span className="run-progress" role="status">
           {progress}
         </span>
       )}

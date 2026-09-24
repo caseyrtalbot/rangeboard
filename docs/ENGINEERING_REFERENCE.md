@@ -22,7 +22,8 @@ Breaking one of these breaks the app.
   (`src/geometry/geo.ts`) under `noFlightLimits` or with no UAS spec, else
   `limitedPosAtTime` (`src/playback/flight.ts`). `playback.simTimeS` is the
   simulation clock; the playback slice also owns speed, flags, run identity and basis state.
-  `TimelineBar` owns the requestAnimationFrame loop that publishes `simTimeS` every 100 ms of
+  `usePlaybackLoop` (in `TimelineBar.tsx`, mounted once by `App` so the clock runs in every
+  phase) owns the requestAnimationFrame loop that publishes `simTimeS` every 100 ms of
   wall time at every speed (10 Hz, `PUBLISH_PERIOD_MS` in `src/canvas/frameClock.ts`); each
   publication advances by the measured wall time at playback speed. The canvas frame clock
   (`useFrameClock`, mounted once in `LiveScene` on the live Konva Layer) derives its display time
@@ -37,7 +38,7 @@ Breaking one of these breaks the app.
   The module owns reset versus replay, the first-start stamps (`startedAtMs`,
   `basisSignature`, the observed lens, the run sequence write), observation advance,
   the one completion at the run duration, cancellation of a pending automatic start and
-  frame = scrub + camera. `TimelineBar` publishes only; a publication while stopped
+  frame = scrub + camera. The loop publishes only; a publication while stopped
   changes nothing. `scrub` and `frame` neither advance `observedThroughS` nor stamp
   `startedAtMs` or `basisSignature`.
 - **Board phase and horizon:** `BoardPhase` is exported only from `state/runState.ts`.
@@ -605,8 +606,8 @@ src/panels/    Toolbar (the 36 px header: brand, scenario name, the lifecycle ta
                Compare screens and their phase map,
                analysis/ for the shared readers, records and settings, analysis/detail/,
                analysis/ForecastSettings.tsx for forecast/MC controls),
-               TimelineBar (the 28 px transport outside Prepare; owns the rAF loop;
-               publishes the clock only; holds the + Frame popover and the Engagement
+               TimelineBar (the 28 px transport outside Prepare; exports the rAF loop
+               hook App mounts and the play-label selector; holds the + Frame popover and the Engagement
                toggle whose open flag lives in App state), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names)
 src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns read,
