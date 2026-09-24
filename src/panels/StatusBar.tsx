@@ -153,11 +153,21 @@ function selectMcText(s: Store): string {
  * progress, the ROE chip with its folded chips, display units and the validity
  * count. Below 1440 px the units, MC and seed cells drop in that order (D8).
  */
+/** The `T+` cell holds the clock subscription, so the bar's layout measure does
+ * not run on every playback tick. */
+function ClockCell() {
+  const simTimeS = useStore(selectSimTimeS)
+  const durationS = useStore(selectDurationS)
+  return (
+    <span className="sb-clock">
+      T+{formatTime(simTimeS)} / {formatTime(durationS)}
+    </span>
+  )
+}
+
 export const StatusBar = memo(function StatusBar() {
   const runSeq = useStore((s) => s.playback.runSeq)
   const phase = useStore((s) => s.playback.phase)
-  const simTimeS = useStore(selectSimTimeS)
-  const durationS = useStore(selectDurationS)
   const seed = useStore((s) => runSettings(s.scenario).seed)
   const mcText = useStore(selectMcText)
   const units = useStore((s) => s.ui.units)
@@ -222,9 +232,7 @@ export const StatusBar = memo(function StatusBar() {
     <div className="status-bar" role="group" aria-label="Run status">
       <span className="sb-run">{formatRunLabel(runSeq)}</span>
       <span className="sb-phase">{phase}</span>
-      <span className="sb-clock">
-        T+{formatTime(simTimeS)} / {formatTime(durationS)}
-      </span>
+      <ClockCell />
       <span className="sb-seed">seed {seed}</span>
       <span className="sb-mc">{mcText}</span>
       <span className="sb-grow" />

@@ -86,7 +86,7 @@ function OverflowMenu() {
         className={`tb-icon ${open ? 'active' : ''}`}
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-controls="file-actions-panel"
+        aria-controls={storage ? 'storage-panel' : 'file-actions-panel'}
         aria-label="More actions"
         title={notices > 0 ? `More actions: ${notices} recovery notices` : 'More actions'}
         onClick={() => {

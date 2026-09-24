@@ -29,7 +29,7 @@
       ],
       "sha256": "76dff04d93dabe16c3f5088e4def97eeea8193b1293c13f9ee27768e72a04ecc",
       "reviewedAt": "2026-09-24",
-      "note": "Row C canvas comparison fix: a collapsed detail section hides its body (.wg-b[hidden]); capture re-run."
+      "note": "Row B ride-along fixes at C-int: the T+ cell holds the clock subscription in StatusBar; the toolbar ⋯ trigger names the Storage panel while it is open."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "bcf1f1856c71beee8db3798b3b0123faf49366a13bd3a619ec848094bf9a5f97",
+      "sha256": "874534176a0c064dd219be318383f3ed324b295f58513e7869244e9cbac03b27",
       "reviewedAt": "2026-09-24",
-      "note": "Row C canvas comparison fix: a collapsed detail section hides its body (.wg-b[hidden]); capture re-run."
+      "note": "Row B ride-along fixes at C-int: the T+ cell holds the clock subscription in StatusBar; the toolbar ⋯ trigger names the Storage panel while it is open."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "31baafd7ad43fdf25faeed247e11c8a1797af743d4d709358e4e5b6c3c3b641e",
+      "sha256": "36170fee587efca99f3d982c293b3b4120bf539996cbddfb219252acd17acb9e",
       "reviewedAt": "2026-09-24",
-      "note": "Row C canvas comparison fix: a collapsed detail section hides its body (.wg-b[hidden]); capture re-run."
+      "note": "Row B ride-along fixes at C-int: the T+ cell holds the clock subscription in StatusBar; the toolbar ⋯ trigger names the Storage panel while it is open."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -116,7 +116,7 @@
       ],
       "sha256": "a90b047874084b80452c287c226d5a94c66daab2cb694f7249077d2855c0bc65",
       "reviewedAt": "2026-09-24",
-      "note": "Row C canvas comparison fix: the collapsible detail section body hides through .wg-b[hidden]; text unchanged."
+      "note": "Row B ride-along fixes at C-int: the T+ cell holds the clock subscription in StatusBar; the toolbar ⋯ trigger names the Storage panel while it is open."
     }
   ],
   "historical": [
