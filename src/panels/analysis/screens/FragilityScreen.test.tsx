@@ -13,6 +13,7 @@ import { SENSITIVITY_RESPONSES } from '../../../playback/mcRun'
 import { MORRIS_FIXTURE, SOBOL_FIXTURE } from '../../../charts/__fixtures__/sobolFixture'
 import { IDLE_MC, IDLE_SENSITIVITY, IDLE_SWEEP } from '../../../state/runState'
 import { useStore } from '../../../state/store'
+import { FieldHelpProvider } from '../../../ui/kit'
 import { FragilityScreen } from './FragilityScreen'
 
 const interaction = vi.hoisted(() => ({
@@ -46,9 +47,12 @@ vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
       disabled?: boolean
       onClick?: () => void
       label?: string
+      'data-finding'?: string
     }
     if (type === 'button' && typeof p.children === 'string' && p.onClick)
       interaction.buttons.set(p.children, { disabled: p.disabled, onClick: p.onClick })
+    if (type === 'button' && p['data-finding'] && p.onClick)
+      interaction.buttons.set(`finding:${p['data-finding']}`, { onClick: p.onClick })
     if (typeof type === 'function' && type.name === 'Field') {
       const child = p.children as {
         props?: { onChange?: (event: { target: { value: string } }) => void }
@@ -192,12 +196,16 @@ function installResults() {
     },
   })
 }
-function render() {
+function render(help = false) {
   interaction.cursor = 0
   interaction.buttons.clear()
   interaction.fields.clear()
   Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(<FragilityScreen />)
+  return renderToStaticMarkup(
+    <FieldHelpProvider value={help}>
+      <FragilityScreen />
+    </FieldHelpProvider>,
+  )
 }
 function change(label: string, value: string) {
   expect(interaction.fields.has(label)).toBe(true)
@@ -206,8 +214,8 @@ function change(label: string, value: string) {
 }
 function grid() {
   render()
-  change('Column values · 2–6, comma-separated', '100,200,300,400,500')
-  return change('Row values · 2–6, comma-separated', '10,20,30,40')
+  change('Column values', '100,200,300,400,500')
+  return change('Row values', '10,20,30,40')
 }
 
 describe('FragilityScreen', () => {
@@ -226,24 +234,45 @@ describe('FragilityScreen', () => {
       notes: '',
     })
     useStore.getState().replaceScenario(scenario)
-    useStore.setState({ mc: IDLE_MC })
+    useStore.setState({ mc: IDLE_MC, ui: { ...useStore.getState().ui, showFieldHelp: false } })
   })
 
-  it('offers one no-ensemble line, run actions and a disabled pin without an ensemble', () => {
+  it('offers one no-ensemble chip, run actions and a disabled pin without an ensemble', () => {
     const start = vi.fn()
     useStore.setState({ runMonteCarlo: start })
     const html = render()
-    expect(html).toContain('Monte Carlo · No current ensemble result.')
+    expect(html).toContain('No ensemble</span>')
+    expect(html).not.toContain('No current ensemble result')
+    expect(html).not.toContain('Run settings are in the Inputs tab.')
     expect(html.match(/>Run Monte Carlo</g)).toHaveLength(1)
     expect(html).not.toContain('class="tile"')
-    expect(html).toContain('no rate yet')
+    expect(html).toContain('0 cells · 40 reps/cell')
+    expect(html).toContain('title="Planning-factor values. Estimated time: no rate yet."')
     expect(html).toContain(
       'disabled="" title="Run Monte Carlo first to pin a baseline.">Pin as baseline',
     )
     interaction.buttons.get('Run Monte Carlo')!.onClick()
     expect(start).toHaveBeenCalledOnce()
     expect(html).toContain('Run sensitivity · Morris then Sobol')
-    expect(html).toContain('Morris screening, then Sobol indices on the fields it keeps')
+    expect(html).toContain(
+      'aria-label="About sensitivity" title="Morris screening, then Sobol indices on the fields it keeps."',
+    )
+  })
+
+  it('shows every moved sentence as a help line with field help on', () => {
+    useStore.setState({ ui: { ...useStore.getState().ui, showFieldHelp: true } })
+    const html = render(true)
+    expect(html).toContain(
+      '<p class="frag-help">Run Monte Carlo first to pin a baseline. Run settings are in the Inputs tab.</p>',
+    )
+    expect(html).toContain(
+      '<p class="frag-help">Planning-factor values. Estimated time: no rate yet.</p>',
+    )
+    expect(html).toContain(
+      '<p class="frag-help">Morris screening, then Sobol indices on the fields it keeps.</p>',
+    )
+    expect(html).toContain('aria-expanded="true"')
+    expect(html).not.toContain('aria-expanded="false"')
   })
 
   it('closes the cancel button while the pool is already stopping', () => {
@@ -390,13 +419,16 @@ describe('FragilityScreen', () => {
     )
     expect(html).toContain('width:100%')
     expect(html).not.toContain('99 members')
-    expect(html).toContain('class="validity-finding"')
+    expect(html).toContain('class="validity-finding frag-finding"')
     const rows = html
       .slice(html.indexOf('<section aria-label="Validity">'))
-      .split('class="validity-finding"')
+      .split('class="validity-finding frag-finding"')
       .slice(1)
     expect(rows.length).toBeGreaterThan(0)
-    rows.forEach((row) => expect((row.match(/<summary>|<button /g) ?? []).length).toBe(1))
+    rows.forEach((row) => {
+      expect((row.match(/<summary>|<button /g) ?? []).length).toBe(1)
+      expect(row).toContain('aria-expanded="false"')
+    })
   })
 
   it('changes response ranking and preserves conditional definedness for times', () => {
@@ -471,13 +503,35 @@ describe('FragilityScreen', () => {
   it('blocks invalid picker values, duplicate factors and more than six values', () => {
     grid()
     for (const value of ['100', '100,100', '100,NaN', '1,2,3,4,5,6,7', '-1,2']) {
-      change('Column values · 2–6, comma-separated', value)
+      change('Column values', value)
       expect(interaction.buttons.get('Run sweep')!.disabled).toBe(true)
     }
-    change('Column values · 2–6, comma-separated', '100,200')
+    change('Column values', '100,200')
     change('Row factor', 'threatAltitudeFt')
-    change('Row values · 2–6, comma-separated', '100,200')
+    change('Row values', '100,200')
     expect(interaction.buttons.get('Run sweep')!.disabled).toBe(true)
+  })
+
+  it('sets the rule as an error line only while a value field is invalid', () => {
+    grid()
+    const bad = change('Column values', '100,NaN')
+    expect(bad.match(/class="field-error"/g)).toHaveLength(1)
+    expect(bad).toContain('aria-invalid="true"')
+    expect(bad).toContain('Enter 2–6 distinct values per factor')
+    expect(change('Column values', '100,200')).not.toContain('class="field-error"')
+  })
+
+  it('opens a finding row on click', () => {
+    installResults()
+    const closed = render()
+    const key = [...interaction.buttons.keys()].find((k) => k.startsWith('finding:'))!
+    expect(closed).not.toContain('Review finding scope')
+    interaction.buttons.get(key)!.onClick()
+    const open = render()
+    expect(open).toContain('aria-expanded="true"')
+    expect(open).toContain('Review finding scope')
+    interaction.buttons.get(key)!.onClick()
+    expect(render()).not.toContain('aria-expanded="true"')
   })
 
   it.each(['mc', 'sweep'] as const)(

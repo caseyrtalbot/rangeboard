@@ -1936,6 +1936,91 @@ p.muted.small {
   margin-left: 0;
 }
 
+/* Fragility density: a section head with a mono readout and a 24 px (i), the
+   help line the field help switch shows, a state row, and finding rows that
+   open on click. */
+.frag-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--h-default);
+}
+
+.frag-head > h3 {
+  margin: 0;
+}
+
+.frag-readout {
+  color: var(--text-secondary);
+  font-size: var(--type-machine-size);
+}
+
+.frag-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--h-dense);
+  height: var(--h-dense);
+  margin-left: auto;
+  padding: 0;
+  color: var(--text-secondary);
+}
+
+.frag-info:hover {
+  color: var(--text-primary);
+}
+
+.frag-help {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--type-meta-size);
+  font-weight: var(--type-body-weight);
+  line-height: 1.4;
+}
+
+.frag-state-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.validity-finding.frag-finding {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding-top: 0;
+}
+
+.frag-finding-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: var(--h-default);
+  padding: 0;
+  color: var(--text-primary);
+  font-size: var(--type-meta-size);
+  font-weight: var(--type-body-weight);
+  text-align: left;
+}
+
+.frag-finding-headline {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.frag-finding-head > svg {
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.frag-finding-body {
+  padding-bottom: var(--space-2);
+}
+
 .check-row {
   display: flex;
   align-items: center;
