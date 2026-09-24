@@ -34,7 +34,7 @@ import { readSetting, savedView, writeSetting } from './io/viewState'
 import { exportScenario } from './io/persist'
 import { ErrorBoundary } from './ui/ErrorBoundary'
 import { OpenInputsContext } from './panels/settings/openInputs'
-import { IconCommands, IconLibrary, IconObjects } from './ui/icons'
+import { IconCommands, IconEntities, IconFrames, IconLayers, IconLibrary } from './ui/icons'
 import { State } from './ui/kit'
 import { nextTabIndex } from './ui/rovingTabs'
 
@@ -115,39 +115,62 @@ function selectSelectionKey(s: Store): string {
   return s.selection.entityIds.join('|')
 }
 
-/** The board resource rail. Memoized: every handler it takes is stable. */
+/** The board resource rail. Memoized: every handler it takes is stable. Layers and
+ * Frames route to the surfaces that already hold them (D4): the View menu and the
+ * transport, which Prepare does not render. */
 const ResourceRail = memo(function ResourceRail({
   libraryOpen,
   libraryTrigger,
+  boardPhase,
   onToggleLibrary,
-  onOpenObjects,
+  onOpenEntities,
+  onOpenLayers,
+  onOpenFrames,
   onOpenCommands,
 }: {
   libraryOpen: boolean
   libraryTrigger: React.RefObject<HTMLButtonElement | null>
+  boardPhase: BoardPhase
   onToggleLibrary: () => void
-  onOpenObjects: () => void
+  onOpenEntities: () => void
+  onOpenLayers: () => void
+  onOpenFrames: () => void
   onOpenCommands: () => void
 }) {
+  const framesOff = boardPhase === 'prepare'
   return (
     <nav className="board-resource-rail" aria-label="Board resources">
       <button
         ref={libraryTrigger}
+        aria-label="Library"
         aria-expanded={libraryOpen}
         aria-controls="board-library-drawer"
         onClick={onToggleLibrary}
         title="Library (L)"
       >
         <IconLibrary />
-        Library
       </button>
-      <button onClick={onOpenObjects} title="Board entity register">
-        <IconObjects />
-        Objects
+      <button aria-label="Entities" onClick={onOpenEntities} title="Entities">
+        <IconEntities />
       </button>
-      <button className="board-commands" onClick={onOpenCommands} title="Commands (⌘K)">
+      <button aria-label="Layers" onClick={onOpenLayers} title="Layers">
+        <IconLayers />
+      </button>
+      <button
+        aria-label="Frames"
+        disabled={framesOff}
+        onClick={onOpenFrames}
+        title={framesOff ? 'Frames (Execute or Analyze)' : 'Frames'}
+      >
+        <IconFrames />
+      </button>
+      <button
+        className="board-commands"
+        aria-label="Commands"
+        onClick={onOpenCommands}
+        title="Commands (⌘K)"
+      >
         <IconCommands />
-        Commands
       </button>
     </nav>
   )
@@ -592,7 +615,7 @@ export default function App() {
       setPlacement(null)
   }, [])
   const toggleLibrary = useCallback(() => setLibraryOpen((open) => !open), [])
-  const openObjects = useCallback(() => {
+  const openEntities = useCallback(() => {
     openPhase('prepare')
     setPrepareScreen('inputs')
     setRightOpen(true)
@@ -601,6 +624,26 @@ export default function App() {
     )
   }, [openPhase, setRightOpen])
   const openCommands = useCallback(() => setPaletteOpen(true), [])
+  // D4: Layers opens the View menu at its Layers section. DOM-driven, so the rail
+  // needs no store state: the tool row owns the menu and its open state.
+  const openLayers = useCallback(() => {
+    if (!document.getElementById('view-menu-panel'))
+      document
+        .querySelector<HTMLButtonElement>('.board-tools [aria-controls="view-menu-panel"]')
+        ?.click()
+    requestAnimationFrame(() => {
+      document.getElementById('view-menu-layers')?.scrollIntoView({ block: 'start' })
+      // The first control after the Layers heading, inside it or in a later sibling.
+      const at = '#view-menu-layers'
+      document
+        .querySelector<HTMLElement>(
+          `${at} :is(button,input,select), ${at} ~ :is(button,input,select), ${at} ~ * :is(button,input,select)`,
+        )
+        ?.focus()
+    })
+  }, [])
+  // D4: Frames focuses + Frame in the transport, which Execute and Analyze render.
+  const openFrames = useCallback(() => document.getElementById('frame-add')?.focus(), [])
   const navigateAnalysis = useCallback(
     (screen: AnalysisScreen) => {
       if (screen === 'fragility' || screen === 'inputs' || screen === 'placement')
@@ -766,8 +809,11 @@ export default function App() {
         <ResourceRail
           libraryOpen={libraryOpen}
           libraryTrigger={libraryTrigger}
+          boardPhase={boardPhase}
           onToggleLibrary={toggleLibrary}
-          onOpenObjects={openObjects}
+          onOpenEntities={openEntities}
+          onOpenLayers={openLayers}
+          onOpenFrames={openFrames}
           onOpenCommands={openCommands}
         />
         <div className="center">

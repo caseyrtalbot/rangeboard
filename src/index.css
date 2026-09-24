@@ -1156,11 +1156,31 @@ input[type='color']::-webkit-color-swatch {
 }
 
 .panel-title {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
+  flex: 1;
+  min-width: 0;
+  padding: 0 10px;
   color: var(--text-dim);
   font-size: var(--type-title-size);
   font-weight: var(--type-title-weight);
+}
+
+/* The library header: 32 px, the title, then the ⋯ actions and Close. */
+.palette > .palette-header {
+  flex: none;
+  height: var(--h-primary);
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border);
+}
+
+/* A 24 px icon-only header control. */
+.palette-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--h-dense);
+  height: var(--h-dense);
+  padding: 0;
+  color: var(--text-secondary);
 }
 
 .palette-scroll {
@@ -1170,14 +1190,15 @@ input[type='color']::-webkit-color-swatch {
 }
 
 .palette-filter {
-  padding: 6px 8px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--border);
 }
 
 .palette-filter input {
   width: 100%;
+  height: var(--h-dense);
   font-size: var(--type-meta-size);
-  padding: 3px 6px;
+  padding: 0 6px;
 }
 
 .palette-heading {
@@ -1223,7 +1244,8 @@ input[type='color']::-webkit-color-swatch {
 .palette-count {
   flex-shrink: 0;
   color: var(--text-tertiary);
-  font-size: var(--type-meta-size);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
 }
 
 .palette-subhead {
@@ -1237,7 +1259,8 @@ input[type='color']::-webkit-color-swatch {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 10px;
+  min-height: 36px;
+  padding: 0 10px;
   cursor: grab;
   border-left: 2px solid transparent;
   transition:
@@ -1260,18 +1283,30 @@ input[type='color']::-webkit-color-swatch {
   white-space: nowrap;
 }
 
-.palette-footer {
+/* A row's two lines: the name at 13/500, then vendor · type in 11 px mono. */
+.palette-text {
   display: flex;
-  gap: 4px;
-  padding: 6px;
-  border-top: 1px solid var(--border);
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.palette-footer button {
-  flex: 1;
-  border: 1px solid var(--border-control);
-  font-size: var(--type-meta-size);
-  padding: 4px 2px;
+.palette-text .palette-name {
+  color: var(--text-primary);
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  line-height: 16px;
+}
+
+.palette-meta {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-body-weight);
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---------- Status pills ---------- */
@@ -4564,22 +4599,45 @@ input[type='number'] {
 .board-resource-rail {
   display: flex;
   flex-direction: column;
-  /* Wide enough for the longest label, Commands, at the meta size. */
-  flex: 0 0 76px;
-  width: 76px;
-  padding: var(--space-2) var(--space-1);
-  gap: var(--space-3);
+  /* 6 + 32 + 5 + the 1 px rule: the buttons sit 6 px in from the left edge. */
+  flex: 0 0 44px;
+  width: 44px;
+  padding: var(--space-2) 5px var(--space-2) 6px;
+  gap: var(--space-1);
   background: var(--surface-panel);
   border-right: 1px solid var(--border-subtle);
 }
 
 .board-resource-rail button {
+  position: relative;
   display: flex;
-  flex-direction: column;
+  flex: none;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) 0;
-  font-size: var(--type-meta-size);
+  justify-content: center;
+  width: var(--h-primary);
+  height: var(--h-primary);
+  padding: 0;
+  color: var(--text-secondary);
+}
+
+.board-resource-rail button:hover:not(:disabled),
+.board-resource-rail button[aria-expanded='true'] {
+  color: var(--text-primary);
+}
+
+.board-resource-rail button:disabled {
+  color: var(--text-disabled);
+}
+
+/* The open surface's mark: 2 px on the rail's left edge in text 1. */
+.board-resource-rail button[aria-expanded='true']::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: -6px;
+  width: 2px;
+  background: var(--text-primary);
 }
 
 .board-resource-rail .board-commands {
@@ -4671,6 +4729,32 @@ input[type='number'] {
 /* One row's model basis link at a time: it shows on hover or keyboard focus. */
 .palette-item:not(:hover, :focus-within) .palette-basis {
   visibility: hidden;
+}
+
+/* Rows hold one 36 px line pair and never wrap. These supersede the drawer's
+   wrapping rules above (.board-library-drawer .palette-item and .palette-place). */
+.board-library-drawer .palette-item {
+  flex-wrap: nowrap;
+  align-items: center;
+  padding: 0 var(--space-2);
+  gap: var(--space-2);
+}
+
+.board-library-drawer .palette-place {
+  flex: 1 1 auto;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.board-library-drawer .palette-text .palette-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.palette-item-actions > .mini {
+  align-self: center;
 }
 
 /* The tool row is 28 px: 24 px dense controls with 2 px above and 1 px plus the

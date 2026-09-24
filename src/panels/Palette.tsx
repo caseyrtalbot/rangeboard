@@ -8,6 +8,9 @@ import { Glyph } from './Glyph'
 import { PALETTE_COLLAPSED_KEY, PALETTE_WIDTH_KEY } from '../io/storageKeys'
 import { readSetting, writeSetting } from '../io/viewState'
 import { KIND_INK } from '../ui/ink'
+import { KIND_NAMES } from '../state/labels'
+import { IconClose, IconMore } from '../ui/icons'
+import { usePopover } from '../ui/usePopover'
 
 const WIDTH_KEY = PALETTE_WIDTH_KEY
 const COLLAPSE_KEY = PALETTE_COLLAPSED_KEY
@@ -67,6 +70,29 @@ function subtypeLabel(m: SpecModel): string {
   return groups?.find((g) => g.match(m))?.label ?? ''
 }
 
+/**
+ * A row's two lines. The model record has no vendor field; a library name carries
+ * its vendor or variant as a trailing parenthetical, so that moves to line 2 beside
+ * the type and line 1 never wraps.
+ */
+function rowLines(m: SpecModel): { name: string; meta: string } {
+  const split = /^(.*\S)\s*\(([^()]+)\)$/.exec(m.name.trim())
+  const type = subtypeLabel(m) || KIND_NAMES[m.kind]
+  return split ? { name: split[1], meta: `${split[2]} · ${type}` } : { name: m.name, meta: type }
+}
+
+/** Line 1 at 13/500 with its full text in the title, line 2 in 11 px mono. */
+function RowText({ name, meta, full }: { name: string; meta: string; full: string }) {
+  return (
+    <span className="palette-text">
+      <span className="palette-name" title={full}>
+        {name}
+      </span>
+      <span className="palette-meta">{meta}</span>
+    </span>
+  )
+}
+
 /** Split a section's models into labeled buckets; unmatched models land in Other. */
 function bucketize(
   kind: EntityKind,
@@ -96,6 +122,7 @@ function SectionHeading(props: {
       <button
         className="palette-toggle"
         type="button"
+        aria-label={`${props.open ? 'Collapse' : 'Expand'} ${props.title}`}
         aria-expanded={props.open}
         onClick={props.onToggle}
       >
@@ -161,12 +188,64 @@ function TacticsSection(props: {
             }}
             title={`${t.name}: ${t.description} (study ${t.sourceRef})`}
           >
-            <Glyph kind="uas" color={KIND_INK.uas} size={10} />
-            <span className="palette-name">
-              {t.id} · {t.name}
-            </span>
+            <Glyph kind="uas" color={KIND_INK.uas} size={12} />
+            <RowText name={t.name} meta={`${t.id} · Tactic`} full={`${t.id} · ${t.name}`} />
           </button>
         ))}
+    </div>
+  )
+}
+
+/** Library file actions behind one ⋯ button in the drawer header. */
+function LibraryActions({ library }: { library: SpecModel[] }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const { open, setOpen, toggle } = usePopover(wrapRef, buttonRef)
+
+  return (
+    <div className="tb-menu-wrap" ref={wrapRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="palette-icon"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="library-actions-panel"
+        aria-label="Library actions"
+        title="Library actions"
+        onClick={toggle}
+      >
+        <IconMore />
+      </button>
+      {open && (
+        <div
+          id="library-actions-panel"
+          className="tb-menu-panel surface-float tb-menu-right"
+          role="dialog"
+          aria-label="Library actions"
+        >
+          <button
+            type="button"
+            className="tb-menu-item"
+            onClick={() => {
+              setOpen(false)
+              importLibraryFile()
+            }}
+          >
+            Import library
+          </button>
+          <button
+            type="button"
+            className="tb-menu-item"
+            onClick={() => {
+              setOpen(false)
+              exportLibrary(library)
+            }}
+          >
+            Export library
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -291,13 +370,15 @@ export const Palette = memo(function Palette({
     >
       <div className="palette-header">
         <div className="panel-title">Library</div>
+        <LibraryActions library={library} />
         <button
-          className="palette-close"
+          className="palette-icon palette-close"
           type="button"
           aria-label="Close library"
+          title="Close library (Esc)"
           onClick={onClose}
         >
-          ×
+          <IconClose />
         </button>
       </div>
       <div className="palette-filter">
@@ -342,8 +423,8 @@ export const Palette = memo(function Palette({
                       onArmPlacement?.({ kind: 'system', id: p.id, name: p.name })
                     }}
                   >
-                    <Glyph kind="sensor" color="#7da7c4" size={10} />
-                    <span className="palette-name">{p.name}</span>
+                    <Glyph kind="sensor" color="#7da7c4" size={12} />
+                    <RowText name={p.name} meta="Integrated system" full={p.name} />
                   </button>
                   {!p.builtin ? (
                     <div className="palette-item-actions">
@@ -425,8 +506,8 @@ export const Palette = memo(function Palette({
                               onArmPlacement?.({ kind: 'model', id: m.id, name: m.name })
                             }}
                           >
-                            <Glyph kind={m.kind} color={m.color} size={10} />
-                            <span className="palette-name">{m.name}</span>
+                            <Glyph kind={m.kind} color={m.color} size={12} />
+                            <RowText {...rowLines(m)} full={m.name} />
                           </button>
                           <div className="palette-item-actions">
                             <button
@@ -451,14 +532,6 @@ export const Palette = memo(function Palette({
             </Fragment>
           )
         })}
-      </div>
-      <div className="palette-footer">
-        <button type="button" onClick={() => exportLibrary(library)}>
-          Export library
-        </button>
-        <button type="button" onClick={importLibraryFile}>
-          Import library
-        </button>
       </div>
       <div
         className="palette-resizer"

@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PALETTE_WIDTH_KEY } from '../io/storageKeys'
+import { PALETTE_COLLAPSED_KEY, PALETTE_WIDTH_KEY } from '../io/storageKeys'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 import { Palette } from './Palette'
@@ -29,8 +29,37 @@ describe('Palette drawer', () => {
     const html = render()
 
     expect(html).toContain('style="width:306px"')
-    expect(html).toContain('aria-label="Close library"')
+    expect(html).toMatch(/aria-label="Close library" title="Close library \(Esc\)"/)
     expect(html).toContain('type="search" aria-label="Search library"')
+  })
+
+  it('holds the library file actions behind one header button and has no footer', () => {
+    const html = render()
+    const header = html.slice(html.indexOf('palette-header'), html.indexOf('palette-filter'))
+
+    expect(header).toContain('aria-label="Library actions"')
+    expect(header).toContain('aria-haspopup="dialog"')
+    expect(header).toContain('aria-controls="library-actions-panel"')
+    expect(header.indexOf('Library actions')).toBeLessThan(header.indexOf('Close library'))
+    expect(html).not.toContain('palette-footer')
+    expect(html).not.toContain('>Export library<')
+  })
+
+  it('labels each group toggle with its action and expanded state', () => {
+    settings.set(PALETTE_COLLAPSED_KEY, JSON.stringify({ effector: true }))
+    const html = render()
+
+    expect(html).toContain('aria-label="Collapse Sensors" aria-expanded="true"')
+    expect(html).toContain('aria-label="Expand Effectors" aria-expanded="false"')
+  })
+
+  it('splits a vendor parenthetical from the name onto the mono second line', () => {
+    const html = render()
+    const place = html.indexOf('aria-label="Place Giraffe 1X 3D radar (Saab)"')
+    const row = html.slice(place, html.indexOf('</button>', place))
+
+    expect(row).toContain('title="Giraffe 1X 3D radar (Saab)">Giraffe 1X 3D radar</span>')
+    expect(row).toContain('<span class="palette-meta">Saab · Radar</span>')
   })
 
   it('retains a valid saved width and stays mounted while closed', () => {
