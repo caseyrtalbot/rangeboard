@@ -256,7 +256,7 @@ describe('DetailPane', () => {
     })
     captureTrial()
     const file = section(render(entityOf('uas').id), 'engagement')
-    expect(file).toContain('Engage status</span><span class="rv num">—')
+    expect(file).toContain('Engage status</span><span class="rv num"><span class="rv-t">—')
     expect(file).not.toContain('no fire-control source')
     expect(file).not.toContain('full run')
   })
@@ -329,17 +329,23 @@ describe('DetailPane', () => {
         expect(file).toContain('0 sensors')
         expect(file).toContain('0 landed · 0 hard kill · 0 mission kill')
         expect(file).toContain('0 kinetic · 0 DE · 0 EW · 0 inbound')
-        expect(file).toContain('Residual</span><span class="rv num">—')
+        expect(file).toContain('Residual</span><span class="rv num"><span class="rv-t">—')
         expect(file).not.toMatch(/[1-9] (active|hard kill|mission kill|landed)/)
         expect(section(html, 'phase')).not.toContain('chart-legend')
       } else if (kind === 'sensor') {
-        expect(section(html, 'load')).toContain('Held track files</span><span class="rv num">—')
-        expect(section(html, 'load')).toContain('Hold clock (union)</span><span class="rv num">—')
+        expect(section(html, 'load')).toContain(
+          'Held track files</span><span class="rv num"><span class="rv-t">—',
+        )
+        expect(section(html, 'load')).toContain(
+          'Hold clock (union)</span><span class="rv num"><span class="rv-t">—',
+        )
         expect(section(html, 'ladder')).toContain('No track observed.')
         expect(section(html, 'slant')).toContain('No track observed.')
       } else if (kind === 'effector') {
         for (const label of ['Kinetic shots', 'DE salvos', 'Jam salvos']) {
-          expect(section(html, 'capacity')).toContain(`${label}</span><span class="rv num">—`)
+          expect(section(html, 'capacity')).toContain(
+            `${label}</span><span class="rv num"><span class="rv-t">—`,
+          )
         }
         expect(section(html, 'doctrine')).toContain('No threats with flight paths.')
         expect(section(html, 'doctrine')).not.toMatch(/\d+:\d{2}/)
@@ -390,17 +396,17 @@ describe('DetailPane', () => {
     )
     const capacity = section(render(effector.id), 'capacity')
     expect(capacity).toContain(
-      `Kinetic shots</span><span class="rv num">${events.filter((event) => event.channelClass === 'kinetic').length}`,
+      `Kinetic shots</span><span class="rv num"><span class="rv-t">${events.filter((event) => event.channelClass === 'kinetic').length}`,
     )
     const component = trialSystemTelemetryAt(view, 30)
       .flatMap((group) => group.components)
       .find((candidate) => candidate.entityId === sensor.id)!
     const load = section(render(sensor.id), 'load')
     expect(load).toContain(
-      `Held track files</span><span class="rv num">${trialSeriesOf(view, 30).sensors[sensor.id].find((s) => s.id === 'scanLoad')!.values[60]}`,
+      `Held track files</span><span class="rv num"><span class="rv-t">${trialSeriesOf(view, 30).sensors[sensor.id].find((s) => s.id === 'scanLoad')!.values[60]}`,
     )
     expect(load).toContain(
-      `Hold clock (union)</span><span class="rv num">${formatTime(component.holdSeconds)}`,
+      `Hold clock (union)</span><span class="rv num"><span class="rv-t">${formatTime(component.holdSeconds)}`,
     )
   })
 

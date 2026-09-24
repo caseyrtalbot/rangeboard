@@ -5169,6 +5169,33 @@ input[type='number'] {
   text-overflow: clip;
 }
 
+/* The collapsible telemetry sections hold one line per value: the text clips
+   with an ellipsis and carries its full text in the title; a tag or drill-in
+   after it stays visible. The section header keeps its title and summary on
+   one line too. */
+.board-app .right-panel .det-s[data-open] .rv {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.board-app .right-panel .det-s[data-open] .rv > .rv-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board-app .right-panel .det-s[data-open] .det-s-toggle :is(.wg-t, .wg-m) {
+  flex: 0 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .board-app .right-panel .insp-row {
   margin: 0;
   padding-right: 0;

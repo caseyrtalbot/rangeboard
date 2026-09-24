@@ -79,8 +79,10 @@ export function Rows({ rows }: { rows: DetailRow[] }) {
               className="rv num"
               title={row.title ?? (row.value.includes(' · ') ? row.value : undefined)}
             >
-              {row.value}
-              {row.unit ? <em>{row.unit}</em> : null}
+              <span className="rv-t">
+                {row.value}
+                {row.unit ? <em>{row.unit}</em> : null}
+              </span>
               {row.tag}
             </span>
           </div>
