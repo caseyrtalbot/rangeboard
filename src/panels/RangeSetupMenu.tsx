@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { importUnderlayImage } from '../io/persist'
 import { usePopover } from '../ui/usePopover'
 import { useStore } from '../state/store'
+import { IconChevronDown } from '../ui/icons'
 
 /** Scenario-scoped range geometry and calibrated-image controls. */
 export function RangeSetupMenu({ onSelectTool }: { onSelectTool?: () => void }) {
@@ -21,7 +22,10 @@ export function RangeSetupMenu({ onSelectTool }: { onSelectTool?: () => void }) 
         title="Scenario-scoped range geometry and image calibration"
         onClick={toggle}
       >
-        Range setup <span className="tb-caret">▾</span>
+        Range
+        <span className="tb-caret" aria-hidden="true">
+          <IconChevronDown />
+        </span>
       </button>
       {open && (
         <RangeSetupMenuPanel onRequestClose={() => setOpen(false)} onSelectTool={onSelectTool} />

@@ -2,8 +2,7 @@ import { selectBoardPhase } from '../state/selectors'
 import { lazy, memo, Suspense, useRef, useState, useSyncExternalStore } from 'react'
 import { usePopover } from '../ui/usePopover'
 import { useStore } from '../state/store'
-import { Tip } from './Tooltip'
-import { DeclutterControl, ViewMenu } from './ViewMenu'
+import { ViewMenu } from './ViewMenu'
 import { RangeSetupMenu } from './RangeSetupMenu'
 import type { BoundaryType } from '../model/types'
 import { emptyScenario } from '../model/seed'
@@ -279,20 +278,21 @@ export const BoardTools = memo(function BoardTools({
     <div className="board-tools" role="toolbar" aria-label="Board tools">
       {editing && (
         <div className="seg" role="group" aria-label="Drawing tools">
+          {/* No drawing tool has a keyboard shortcut, so its title carries no key. */}
           {BOARD_TOOLS.map((item) => (
-            <Tip key={item.id} label={item.hint}>
-              <button
-                type="button"
-                aria-pressed={tool === item.id}
-                className={tool === item.id ? 'active' : ''}
-                onClick={() => {
-                  onSelectTool?.()
-                  setTool(item.id)
-                }}
-              >
-                {item.label}
-              </button>
-            </Tip>
+            <button
+              key={item.id}
+              type="button"
+              title={item.hint}
+              aria-pressed={tool === item.id}
+              className={tool === item.id ? 'active' : ''}
+              onClick={() => {
+                onSelectTool?.()
+                setTool(item.id)
+              }}
+            >
+              {item.label}
+            </button>
           ))}
           {tool === 'boundary' && (
             <select
@@ -312,7 +312,6 @@ export const BoardTools = memo(function BoardTools({
       )}
       {editing && <RangeSetupMenu onSelectTool={onSelectTool} />}
       <ViewMenu />
-      <DeclutterControl />
       <div className="seg" role="group" aria-label="History">
         <button
           type="button"
