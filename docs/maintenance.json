@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "241ea97a809e13e5ef013b15ebc68b9b569cf696d60735c739c7a79d00d7d722",
+      "sha256": "7e663519a85fd5d833fb7b946a05879d9c28477630ca65cfcc6dea8245d6cdbd",
       "reviewedAt": "2026-09-24",
-      "note": "Row B merged to main with the budget at 368,000; Row C selected"
+      "note": "Row B pushed as f389abb with a green Quality run; follow-up handling recorded; Row C selected"
     },
     {
       "document": "docs/Plan.md",

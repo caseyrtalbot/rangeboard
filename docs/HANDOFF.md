@@ -17,11 +17,12 @@ plan the queue replaces is complete in history at `76074bb`.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  `origin/main` holds the polish4 run through `76074bb`. Local `main` holds the plan
-  commit `65c0005`, Row A (`fc47469`) and the Row B handoff (`00b241b`), not pushed.
-- Row B (2026-09-24) merged to local `main` from `chrome/int`: lanes `chrome/b1` to
+  `origin/main` is `f389abb`: the plan commit `65c0005`, Row A (`fc47469`) and Row B.
+  The Quality workflow run `36069742868` on that push is green (check job, 8 m 9 s).
+- Row B (2026-09-24) merged to `main` from `chrome/int`: lanes `chrome/b1` to
   `chrome/b4`, four merges, the integrator folds, the docs and the `opus-high` review
-  fixes. The lane worktrees and branches are deleted. Not pushed.
+  fixes. The lane worktrees and branches are deleted; the empty `~/Projects/rangeboard-wt`
+  folder remains and can hold the Row C worktrees.
 - Row B gate: `npm run check`, `check:bundle`, `check:silent` and `test:e2e` (13 of 13)
   pass; 2,254 tests. Entry gzip 367,008 against 368,000 (the user raised the budget from
   367,000 at this gate), initial 384,130 against 400,000. Headroom 992 bytes.
@@ -57,7 +58,13 @@ plan the queue replaces is complete in history at `76074bb`.
   mean 0.105. `4.68` is not a pin.
 - The flight horizon is `7fdcb1e`.
 
-## Follow-ups from the Row B review (not fixed, the user picks)
+## Follow-ups from the Row B review (not fixed)
+
+Handling: these are candidates, not rows. The two that need no decision and sit in files
+C-int already owns ride along as integrator fixes (the ⋯ trigger `aria-controls` and the
+status-bar clock cell). The rest wait for the one triage after C-int and the canvas
+comparison, when the user picks fix-now items for a follow-up row in `Plan.md`, folds
+them into a later row, or drops them. Row C lanes do not pick them up.
 
 - `StatusBar` subscribes to the clock, so its `useLayoutEffect(measure)` runs a layout
   read about ten times a second during playback. Move the `T+` cell into a child that
