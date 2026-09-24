@@ -34,7 +34,7 @@ function forecastLine(
   const total = run.uncertainty === 'total'
   const halfWidth = run.targetHalfWidth != null
   const end = halfWidth ? run.stopCap : run.replicates
-  const summary = mc.status === 'done' ? mc.summary : null
+  const summary = mc.status === 'done' || mc.status === 'stale' ? mc.summary : null
   const done = mc.status === 'running' ? mc.progress : (summary?.replicates ?? 0)
   const of = mc.status === 'running' ? mc.total : end
   const stale = mc.status === 'stale'

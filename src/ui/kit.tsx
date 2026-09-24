@@ -30,7 +30,9 @@ export function FieldHelpProvider({ value, children }: { value: boolean; childre
  * a 24 px (i) button whose title holds the method note, and under a
  * `FieldHelpProvider` set to true also renders the note as a `.field-help` line under the
  * control. `error` renders a `.field-error` line and sets `aria-invalid` on the
- * control. With `help` or `error` the child must be one React element: it takes
+ * control; pass an empty string while the value is valid so the frame keeps one
+ * root shape and the control is not remounted on every validity change. With
+ * `help` or `error` the child must be one React element: it takes
  * the label's `id`, since the frame is then a div and not a wrapping label.
  */
 export function Field({
@@ -57,7 +59,7 @@ export function Field({
         <span className="nu-unit">{unit}</span>
       </div>
     )
-  if (!help && !error) {
+  if (help == null && error == null) {
     return (
       <label className="field">
         <span>{label}</span>
@@ -100,12 +102,14 @@ export function Field({
  * text 1 on ink. `label` names the group for assistive technology.
  */
 export function Seg<T extends string>({
+  id,
   value,
   options,
   onChange,
   label,
   disabled,
 }: {
+  id?: string
   value: T
   options: Array<{ v: T; label: string }>
   onChange: (v: T) => void
@@ -113,7 +117,7 @@ export function Seg<T extends string>({
   disabled?: boolean
 }) {
   return (
-    <div className="seg" role="group" aria-label={label}>
+    <div id={id} className="seg" role="group" aria-label={label}>
       {options.map((o) => (
         <button
           key={o.v}

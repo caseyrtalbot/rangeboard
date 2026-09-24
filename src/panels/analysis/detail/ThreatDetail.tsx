@@ -143,7 +143,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
                 type="button"
                 className="mini det-drill-btn"
                 aria-expanded={holdOpen}
-                aria-controls="det-hold-list"
+                aria-controls={holdOpen ? 'det-hold-list' : undefined}
                 onClick={() => setHoldOpen(!holdOpen)}
               >
                 {`${holdIds.length} sensor${holdIds.length === 1 ? '' : 's'} ›`}
@@ -213,8 +213,12 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
     : untouched
       ? '0 kinetic · 0 landed · 0 kills'
       : null
-  const [cpaText, arrivalText] = ['cpa', 'arrival'].map(
-    (id) => readout.planningRows.find((row) => row.id === id)?.value.split(' · ')[0] ?? DASH,
+  // The summary names only values the Path body renders: the planning rows sit
+  // there under a scoped horizon alone.
+  const [cpaText, arrivalText] = ['cpa', 'arrival'].map((id) =>
+    horizon.scoped
+      ? (readout.planningRows.find((row) => row.id === id)?.value.split(' · ')[0] ?? DASH)
+      : DASH,
   )
   const pathSummary =
     cpaText.startsWith('T+') || arrivalText.startsWith('T+')

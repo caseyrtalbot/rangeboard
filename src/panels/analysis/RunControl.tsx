@@ -89,7 +89,7 @@ function progressText(run: McSettings, mc: McState): string | null {
 
 /** Deterministic mode runs no replicates, so the button says why it is closed. */
 const DETERMINISTIC_TITLE =
-  'Deterministic mode computes one expected-value envelope, not replicates. Turn Deterministic off to run.'
+  'Deterministic mode computes one expected-value envelope, not replicates. Clear Deterministic in Prepare > Inputs to run.'
 
 /** Shown while the pool will refuse another stop, including the summary wait. */
 export const STOPPING_TITLE = 'This run is already stopping.'

@@ -244,9 +244,19 @@ const PanelTabs = memo(function PanelTabs({
   )
 })
 
-/** Collapsible sections in the panel body: every `details` element there. */
-function panelSections(): HTMLDetailsElement[] {
-  return [...document.querySelectorAll<HTMLDetailsElement>('#insp-tabpanel details')]
+/** Collapsible sections in the panel body: every `details` element and every
+ * detail-section toggle (`DetailSection` with `collapsible`). */
+function panelSections(): (HTMLDetailsElement | HTMLButtonElement)[] {
+  return [
+    ...document.querySelectorAll<HTMLDetailsElement | HTMLButtonElement>(
+      '#insp-tabpanel details, #insp-tabpanel .det-s-toggle',
+    ),
+  ]
+}
+
+function setSectionOpen(section: HTMLDetailsElement | HTMLButtonElement, open: boolean) {
+  if (section instanceof HTMLDetailsElement) section.open = open
+  else if ((section.getAttribute('aria-expanded') === 'true') !== open) section.click()
 }
 
 /** The panel ⋯ menu: the field help switch (D6), then Collapse all and Expand all. */
@@ -259,7 +269,7 @@ function PanelMenu() {
   // Counted when the menu opens: the body may hold no collapsible section.
   const [sections, setSections] = useState(0)
   const setAll = (openAll: boolean) => {
-    for (const section of panelSections()) section.open = openAll
+    for (const section of panelSections()) setSectionOpen(section, openAll)
     setOpen(false)
     buttonRef.current?.focus()
   }
@@ -776,26 +786,22 @@ export default function App() {
   useEffect(() => {
     if (hasObjectSelection && useStore.getState().ui.rightTab !== 'inspect') setRightTab('inspect')
   }, [hasObjectSelection, setRightTab])
-  const openPreparation = useCallback(
-    (section: 'run' | 'environment' | 'doctrine' | 'requirements') => {
-      setPrepareScreen('inputs')
-      setBoardPhase('prepare')
-      setPlacement(null)
-      setLibraryOpen(false)
-      setRightTab('analysis')
-      setRightOpen(true)
-      requestAnimationFrame(() => {
-        const target = document.getElementById(`prepare-${section}`)
-        if (!target) return
-        if (target instanceof HTMLDetailsElement) target.open = true
-        const focusTarget = target.querySelector('summary') ?? target
-        focusTarget.focus()
-        target.scrollIntoView({ block: 'start' })
-      })
-    },
-    [setBoardPhase, setRightTab, setRightOpen],
-  )
-  const openDoctrine = useCallback(() => openPreparation('doctrine'), [openPreparation])
+  const openDoctrine = useCallback(() => {
+    setPrepareScreen('inputs')
+    setBoardPhase('prepare')
+    setPlacement(null)
+    setLibraryOpen(false)
+    setRightTab('analysis')
+    setRightOpen(true)
+    requestAnimationFrame(() => {
+      const target = document.getElementById('prepare-doctrine')
+      if (!target) return
+      if (target instanceof HTMLDetailsElement) target.open = true
+      const focusTarget = target.querySelector('summary') ?? target
+      focusTarget.focus()
+      target.scrollIntoView({ block: 'start' })
+    })
+  }, [setBoardPhase, setRightTab, setRightOpen])
 
   const [rightW, setRightW] = useState(savedRightWidth)
 

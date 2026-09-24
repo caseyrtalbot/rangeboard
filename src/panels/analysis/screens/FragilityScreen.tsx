@@ -368,7 +368,7 @@ export function FragilityScreen() {
       ? drafts.map((d) => d.id !== 'environmentPreset').lastIndexOf(true)
       : -1
   const factorError = (i: number) =>
-    factorInvalid(drafts[i]) || gridTarget === i ? SWEEP_RULE : undefined
+    factorInvalid(drafts[i]) || gridTarget === i ? SWEEP_RULE : ''
   const durationS = scenarioDurationS(scenario)
   const hasAsset = scenario.entities.some((e) => e.kind === 'asset' && entityActive(e))
   const run = runSettings(scenario)
@@ -481,15 +481,14 @@ export function FragilityScreen() {
           Pin as baseline
         </button>
       </div>
-      {modeReason ? (
-        <p className="frag-help">{modeReason} to run analyses.</p>
-      ) : (
-        showHelp && (
+      {showHelp &&
+        (modeReason ? (
+          <p className="frag-help">{modeReason} to run analyses.</p>
+        ) : (
           <p className="frag-help">
             {pinReason ? `${pinReason} to pin a baseline. ` : ''}Run settings are in the Inputs tab.
           </p>
-        )
-      )}
+        ))}
       {mc.error && <p role="alert">{mc.error}</p>}
       <section aria-label="Factor sweep">
         <header>
@@ -602,7 +601,16 @@ export function FragilityScreen() {
         <header>
           <SectionHead
             title="Sensitivity"
-            note={`${SENSITIVITY_DEPTH_SENTENCE[depth]}.`}
+            readout={
+              sensitivity
+                ? `${sensitivity.replicates} paired replicates · seed ${sensitivity.seed}`
+                : undefined
+            }
+            note={`${SENSITIVITY_DEPTH_SENTENCE[depth]}.${
+              sensitivity
+                ? ' Each perturbation’s full run · MC mean swing at parameter p10/p90, not an uncertainty interval · paired SE.'
+                : ''
+            }`}
             showHelp={showHelp}
           />
           <Field label="Sensitivity response">
@@ -617,13 +625,6 @@ export function FragilityScreen() {
               ))}
             </select>
           </Field>
-          {sensitivity && (
-            <p className="muted small">
-              Each perturbation’s full run · MC mean swing at parameter p10/p90, not an uncertainty
-              interval · paired SE. {sensitivity.replicates} paired replicates · seed{' '}
-              {sensitivity.seed}.
-            </p>
-          )}
         </header>
         <SensitivityWidget
           scenario={scenario}
@@ -720,7 +721,6 @@ export function FragilityScreen() {
             title={sensitivityReason}
             onClick={() => startSensitivity(response)}
           >{`Run sensitivity · ${SENSITIVITY_DEPTH_NAME[depth]}`}</button>
-          {sensitivityReason && <span className="muted small">{sensitivityReason}.</span>}
         </div>
         {mc.sensitivity.error && <p role="alert">{mc.sensitivity.error}</p>}
       </section>

@@ -12,7 +12,7 @@ describe('AnalysisNavigation', () => {
       const html = renderToStaticMarkup(
         <AnalysisNavigation phase={phase} screen={selected.v} selected onNavigate={() => {}} />,
       )
-      expect(html).toContain('aria-label="Analysis screens"')
+      expect(html).toContain('class="insp-tab-group"')
       expect(html.match(/role="tab"/g)).toHaveLength(options.length)
       expect(html.match(/aria-selected="true"/g)).toHaveLength(1)
       expect(html).toContain(`class="active">${selected.label}</button>`)

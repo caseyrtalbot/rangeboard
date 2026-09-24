@@ -26,7 +26,7 @@ export const AnalysisNavigation = memo(function AnalysisNavigation({
     (a, b) => SCREEN_ORDER.indexOf(a.v) - SCREEN_ORDER.indexOf(b.v),
   )
   return (
-    <div className="insp-tab-group" role="group" aria-label="Analysis screens">
+    <div className="insp-tab-group">
       {options.map((o) => {
         const current = o.v === screen
         const on = selected && current

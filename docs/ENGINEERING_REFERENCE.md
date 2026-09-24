@@ -1104,7 +1104,7 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   `outcome` and `compare`. `AnalysisPanel`
   takes the phase and the screen, falls back to the phase's first screen, and renders
   `BoardPreparation` for `inputs`. `AnalysisNavigation` draws the phase's screen tabs
-  (`role="tab"` in a `role="group"` labelled Analysis screens, sorted by `SCREEN_ORDER`)
+  (`role="tab"` buttons in `.insp-tab-group`, sorted by `SCREEN_ORDER`)
   inside the one right-panel tab row, outside the content scroller; the current screen
   carries `insp-tab-analysis`. The contextual object tab follows them. Each screen has one owner component and one
   result basis: Fragility the current `McSummary`, `SensitivitySummary` and `SweepSummary`
@@ -1434,7 +1434,7 @@ state)` is the one owner of that Escape order and of click precedence. `App.tsx`
   click is owned by connect and select; path owns only the UAS that starts a draft;
   boundary, calibrate and a raid draft bubble it to the stage. The matrix is
   table-tested in `interactionRouter.test.ts`. The screen tabs in `AnalysisNavigation.tsx`
-  are `role="tab"` buttons in a `role="group"` inside the panel tablist, one per screen
+  are `role="tab"` buttons in `.insp-tab-group` inside the panel tablist, one per screen
   of the phase; the calibrate tool shows a `role="status"` strip until Escape or Cancel.
 
 ## 8. Standards referenced by model tags

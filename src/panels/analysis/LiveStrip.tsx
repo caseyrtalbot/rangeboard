@@ -27,8 +27,6 @@ export function LiveStrip({
 }: {
   view?: TrialResultView
   horizon?: number
-  /** Retained for the selected-object caller; actions now belong to NowScreen. */
-  onOpenSettings?: () => void
 } = {}) {
   const selection = useStore(selectTrialSelection)
   const started = useStore((state) => state.playback.startedAtMs != null)
