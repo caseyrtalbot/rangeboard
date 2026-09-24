@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "2af238ddd68b2a7a70a5a4de7dd8a5f0461267c20c911947e8c6162dffef4453",
+      "sha256": "42c29fce9144cbb44b930827debbc864bc8911f91dbad2e842f6235929893e93",
       "reviewedAt": "2026-09-24",
-      "note": "Selected Row A of the chrome refactor plan; kept the polish4 results and landmines."
+      "note": "Row A merged as fc47469; Row B selected with current line anchors, Row A facts for the lanes, the kit store-import landmine and the new bundle numbers."
     },
     {
       "document": "docs/Plan.md",
