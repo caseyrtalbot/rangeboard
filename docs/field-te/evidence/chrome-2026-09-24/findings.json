@@ -1,0 +1,536 @@
+{
+  "capturedAt": "2026-09-24T23:46:07.503Z",
+  "viewport": "1440x900 dark",
+  "shots": {
+    "prepare-fragility-help-off": {
+      "toolbar": {
+        "w": 1440,
+        "h": 36
+      },
+      "panelHeader": {
+        "w": 407,
+        "h": 32
+      },
+      "panelHeaderFont": "13px/500",
+      "tabRow": {
+        "w": 407,
+        "h": 32
+      },
+      "tabFont": "12px/500",
+      "tabs": [
+        {
+          "label": "Inputs",
+          "selected": "false"
+        },
+        {
+          "label": "Fragility",
+          "selected": "true"
+        },
+        {
+          "label": "Placement",
+          "selected": "false"
+        }
+      ],
+      "infoButtons": [
+        24,
+        24
+      ],
+      "miniButtons": [],
+      "stateChips": [
+        "No ensemble",
+        "INVALID",
+        "INVALIDATES",
+        "LIMITS"
+      ],
+      "findingRows": [
+        28,
+        28
+      ],
+      "detailSectionHeads": [],
+      "detailValueLines": [],
+      "fieldHelpLines": 0,
+      "fieldErrors": 0,
+      "statusBar": {
+        "w": 988,
+        "h": 24
+      },
+      "transport": null,
+      "mutedSentences": []
+    },
+    "prepare-fragility-help-on": {
+      "toolbar": {
+        "w": 1440,
+        "h": 36
+      },
+      "panelHeader": {
+        "w": 407,
+        "h": 32
+      },
+      "panelHeaderFont": "13px/500",
+      "tabRow": {
+        "w": 407,
+        "h": 32
+      },
+      "tabFont": "12px/500",
+      "tabs": [
+        {
+          "label": "Inputs",
+          "selected": "false"
+        },
+        {
+          "label": "Fragility",
+          "selected": "true"
+        },
+        {
+          "label": "Placement",
+          "selected": "false"
+        }
+      ],
+      "infoButtons": [
+        24,
+        24
+      ],
+      "miniButtons": [
+        24
+      ],
+      "stateChips": [
+        "No ensemble",
+        "INVALID",
+        "INVALIDATES",
+        "LIMITS"
+      ],
+      "findingRows": [
+        28,
+        28
+      ],
+      "detailSectionHeads": [],
+      "detailValueLines": [],
+      "fieldHelpLines": 3,
+      "fieldErrors": 0,
+      "statusBar": {
+        "w": 988,
+        "h": 24
+      },
+      "transport": null,
+      "mutedSentences": []
+    },
+    "prepare-inputs": {
+      "toolbar": {
+        "w": 1440,
+        "h": 36
+      },
+      "panelHeader": {
+        "w": 407,
+        "h": 32
+      },
+      "panelHeaderFont": "13px/500",
+      "tabRow": {
+        "w": 407,
+        "h": 32
+      },
+      "tabFont": "12px/500",
+      "tabs": [
+        {
+          "label": "Inputs",
+          "selected": "true"
+        },
+        {
+          "label": "Fragility",
+          "selected": "false"
+        },
+        {
+          "label": "Placement",
+          "selected": "false"
+        }
+      ],
+      "infoButtons": [
+        24,
+        24,
+        24,
+        24,
+        24,
+        24
+      ],
+      "miniButtons": [
+        24
+      ],
+      "stateChips": [
+        "INVALID",
+        "INVALIDATES",
+        "LIMITS"
+      ],
+      "findingRows": [],
+      "detailSectionHeads": [],
+      "detailValueLines": [],
+      "fieldHelpLines": 0,
+      "fieldErrors": 0,
+      "statusBar": {
+        "w": 988,
+        "h": 24
+      },
+      "transport": null,
+      "mutedSentences": []
+    },
+    "prepare-placement": {
+      "toolbar": {
+        "w": 1440,
+        "h": 36
+      },
+      "panelHeader": {
+        "w": 407,
+        "h": 32
+      },
+      "panelHeaderFont": "13px/500",
+      "tabRow": {
+        "w": 407,
+        "h": 32
+      },
+      "tabFont": "12px/500",
+      "tabs": [
+        {
+          "label": "Inputs",
+          "selected": "false"
+        },
+        {
+          "label": "Fragility",
+          "selected": "false"
+        },
+        {
+          "label": "Placement",
+          "selected": "true"
+        }
+      ],
+      "infoButtons": [],
+      "miniButtons": [],
+      "stateChips": [],
+      "findingRows": [],
+      "detailSectionHeads": [],
+      "detailValueLines": [],
+      "fieldHelpLines": 0,
+      "fieldErrors": 0,
+      "statusBar": {
+        "w": 988,
+        "h": 24
+      },
+      "transport": null,
+      "mutedSentences": [
+        "Every other entity, every threat and every asset stays put.",
+        "A proposal stays inside the range polygon, in the meters world frame.",
+        "No range boundary. Draw one on the board before a placement run.",
+        "Engine replicates: evaluations × replicates per evaluation."
+      ]
+    },
+    "prepare-selected-system": {
+      "toolbar": {
+        "w": 1440,
+        "h": 36
+      },
+      "panelHeader": {
+        "w": 407,
+        "h": 32
+      },
+      "panelHeaderFont": "13px/500",
+      "tabRow": {
+        "w": 407,
+        "h": 32
+      },
+      "tabFont": "12px/500",
+      "tabs": [
+        {
+          "label": "Inputs",
+          "selected": "false"
+        },
+        {
+          "label": "Fragility",
+          "selected": "false"
+        },
+        {
+          "label": "Placement",
+          "selected": "false"
+        },
+        {
+          "label": "Giraffe 1X 3D radar (Saab) 1",
+          "selected": "true"
+        }
+      ],
+      "infoButtons": [],
+      "miniButtons": [],
+      "stateChips": [
+        "Active"
+      ],
+      "findingRows": [],
+      "detailSectionHeads": [],
+      "detailValueLines": [],
+      "fieldHelpLines": 0,
+      "fieldErrors": 0,
+      "statusBar": {
+        "w": 988,
+        "h": 24
+      },
+      "transport": null,
+      "mutedSentences": [
+        "Against threats on the board, at detect Pd 0.5",
+        "Height of the antenna phase centre above ground. The engine measures the slant range and the radio horizon from it. The value applies to every sensor placed from this model.",
+        "Can complete its role with no connections."
+      ]
+    },
+    "prepare-panel-menu": {
+      "toolbar": {
+        "w": 1440,
+        "h": 36
+      },
+      "panelHeader": {
+        "w": 407,
+        "h": 32
+      },
+      "panelHeaderFont": "13px/500",
+      "tabRow": {
+        "w": 407,
+        "h": 32
+      },
+      "tabFont": "12px/500",
+      "tabs": [
+        {
+          "label": "Inputs",
+          "selected": "false"
+        },
+        {
+          "label": "Fragility",
+          "selected": "false"
+        },
+        {
+          "label": "Placement",
+          "selected": "false"
+        },
+        {
+          "label": "Giraffe 1X 3D radar (Saab) 1",
+          "selected": "true"
+        }
+      ],
+      "infoButtons": [],
+      "miniButtons": [],
+      "stateChips": [
+        "Active"
+      ],
+      "findingRows": [],
+      "detailSectionHeads": [],
+      "detailValueLines": [],
+      "fieldHelpLines": 0,
+      "fieldErrors": 0,
+      "statusBar": {
+        "w": 988,
+        "h": 24
+      },
+      "transport": null,
+      "mutedSentences": [
+        "Against threats on the board, at detect Pd 0.5",
+        "Height of the antenna phase centre above ground. The engine measures the slant range and the radio horizon from it. The value applies to every sensor placed from this model.",
+        "Can complete its role with no connections."
+      ]
+    },
+    "execute-midrun": {
+      "toolbar": {
+        "w": 1440,
+        "h": 36
+      },
+      "panelHeader": {
+        "w": 407,
+        "h": 32
+      },
+      "panelHeaderFont": "13px/500",
+      "tabRow": {
+        "w": 407,
+        "h": 32
+      },
+      "tabFont": "12px/500",
+      "tabs": [
+        {
+          "label": "Run monitor",
+          "selected": "true"
+        }
+      ],
+      "infoButtons": [],
+      "miniButtons": [
+        24,
+        24,
+        24,
+        24,
+        24,
+        24
+      ],
+      "stateChips": [
+        "Paused",
+        "identified",
+        "searching",
+        "tracking"
+      ],
+      "findingRows": [],
+      "detailSectionHeads": [],
+      "detailValueLines": [],
+      "fieldHelpLines": 0,
+      "fieldErrors": 0,
+      "statusBar": {
+        "w": 988,
+        "h": 24
+      },
+      "transport": {
+        "w": 988,
+        "h": 28
+      },
+      "mutedSentences": []
+    },
+    "execute-threat-telemetry": {
+      "toolbar": {
+        "w": 1440,
+        "h": 36
+      },
+      "panelHeader": {
+        "w": 407,
+        "h": 32
+      },
+      "panelHeaderFont": "13px/500",
+      "tabRow": {
+        "w": 407,
+        "h": 32
+      },
+      "tabFont": "12px/500",
+      "tabs": [
+        {
+          "label": "Run monitor",
+          "selected": "false"
+        },
+        {
+          "label": "DJI Mavic 3 (G1 quad) 1",
+          "selected": "true"
+        }
+      ],
+      "infoButtons": [
+        24,
+        24
+      ],
+      "miniButtons": [
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24
+      ],
+      "stateChips": [
+        "HOSTILE"
+      ],
+      "findingRows": [],
+      "detailSectionHeads": [
+        28,
+        28,
+        28,
+        28
+      ],
+      "detailValueLines": [
+        16,
+        16,
+        24,
+        16,
+        24,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16,
+        16
+      ],
+      "fieldHelpLines": 0,
+      "fieldErrors": 0,
+      "statusBar": {
+        "w": 988,
+        "h": 24
+      },
+      "transport": {
+        "w": 988,
+        "h": 28
+      },
+      "mutedSentences": []
+    },
+    "analyze-outcome": {
+      "toolbar": {
+        "w": 1440,
+        "h": 36
+      },
+      "panelHeader": {
+        "w": 407,
+        "h": 32
+      },
+      "panelHeaderFont": "13px/500",
+      "tabRow": {
+        "w": 407,
+        "h": 32
+      },
+      "tabFont": "12px/500",
+      "tabs": [
+        {
+          "label": "Outcome",
+          "selected": "true"
+        },
+        {
+          "label": "Compare",
+          "selected": "false"
+        }
+      ],
+      "infoButtons": [],
+      "miniButtons": [
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24
+      ],
+      "stateChips": [
+        "leaked",
+        "TRACK",
+        "ROUTING",
+        "TARGET",
+        "TRACK",
+        "INVALID",
+        "INVALID",
+        "INVALIDATES"
+      ],
+      "findingRows": [],
+      "detailSectionHeads": [],
+      "detailValueLines": [],
+      "fieldHelpLines": 0,
+      "fieldErrors": 0,
+      "statusBar": {
+        "w": 988,
+        "h": 24
+      },
+      "transport": {
+        "w": 988,
+        "h": 28
+      },
+      "mutedSentences": [
+        "State shows the final sampled instant, not the run outcome; cumulative counts cover the run.",
+        "Giraffe 1X 3D radar (Saab) 1 · surveillance · 1 now · 1 seen · 0 classified · 5:50 hold · 350 track-s",
+        "FAAD C2 (Northrop Grumman) 1 · command and control · 1 now · 1 routed · 1 effector",
+        "Coyote Block 2 interceptor 1 · interceptor · 1 target · 2 salvos · 2 effects · 0 trial defeats · 2/4 remaining",
+        "KuRFS fire-control radar (Raytheon) 1 · fire control · 1 now · 1 seen · 1 classified · 8:21 hold · 501 track-s",
+        "Forecast · requirement validity. No trial validity assessment was captured.",
+        "Deterministic planning envelope · these gates do not adjudicate the simulated trial."
+      ]
+    }
+  },
+  "errors": [],
+  "selectedSystem": "Giraffe 1X 3D radar (Saab) 1",
+  "selectedThreat": "DJI Mavic 3 (G1 quad) 1"
+}

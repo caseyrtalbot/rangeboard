@@ -42,6 +42,7 @@ Proposals preserve design decisions as issued; the records below them show what 
 Earlier plans, earlier handoffs and the wave completion write-ups were removed on
 2026-09-16 and remain in Git history.
 
+- [Chrome refactor final capture after Row C, 2026-09-24](field-te/evidence/chrome-2026-09-24/README.md)
 - [Phase 3 review fixes CR-01 to CR-04, 2026-09-14](field-te/evidence/cr-fixes-2026-09-14/README.md)
 - [Calibration Phase 0 gate evidence, 2026-09-10](field-te/evidence/p0-gate-2026-09-10/README.md)
 - [Calibration Phase 1 gate evidence, 2026-09-10](field-te/evidence/p1-gate-2026-09-10/README.md)

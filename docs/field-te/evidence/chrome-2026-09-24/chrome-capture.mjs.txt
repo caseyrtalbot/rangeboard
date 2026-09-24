@@ -1,0 +1,161 @@
+// Row C final capture: 1440 x 900, dark, the firing fixture on the dev server.
+// Usage: node chrome-capture.mjs <base-url> <out-dir> <repo-root>
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT] = process.argv.slice(2)
+const RAW = readFileSync(
+  join(ROOT, 'docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'),
+  'utf8',
+)
+mkdirSync(OUT, { recursive: true })
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const waitFor = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 20000 })
+
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: 'dark' })
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => {
+  if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+})
+await page.goto(BASE, { waitUntil: 'load' })
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store, null, {
+  timeout: 60000,
+})
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setTheme('dark')
+  s.setShowFieldHelp(false)
+}, RAW)
+await sleep(400)
+
+const findings = { capturedAt: new Date().toISOString(), viewport: '1440x900 dark', shots: {}, errors }
+
+/** Box sizes of the chrome the plan specifies, read from the live page. */
+async function measure(page) {
+  return page.evaluate(() => {
+    const box = (sel) => {
+      const el = document.querySelector(sel)
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { w: Math.round(r.width), h: Math.round(r.height) }
+    }
+    const font = (sel) => {
+      const el = document.querySelector(sel)
+      if (!el) return null
+      const cs = getComputedStyle(el)
+      return `${cs.fontSize}/${cs.fontWeight}`
+    }
+    const all = (sel) => [...document.querySelectorAll(sel)].map((el) => Math.round(el.getBoundingClientRect().height)).filter((h) => h > 0)
+    return {
+      toolbar: box('.toolbar'),
+      panelHeader: box('.insp-head'),
+      panelHeaderFont: font('.insp-head h2'),
+      tabRow: box('.insp-tabs'),
+      tabFont: font('.insp-tabs [role="tab"]'),
+      tabs: [...document.querySelectorAll('.insp-tabs [role="tab"]')].map((b) => ({
+        label: b.textContent.trim(),
+        selected: b.getAttribute('aria-selected'),
+      })),
+      infoButtons: all('.field-info, .frag-info, .det-info'),
+      miniButtons: all('button.mini'),
+      stateChips: [...document.querySelectorAll('#insp-tabpanel .state')].map((el) => el.textContent.trim()).slice(0, 8),
+      findingRows: all('.frag-finding > button'),
+      detailSectionHeads: all('.det-s-toggle'),
+      detailValueLines: [...document.querySelectorAll('.det-s[data-open] .rv')].map((el) => Math.round(el.getBoundingClientRect().height)).filter((h) => h > 0),
+      fieldHelpLines: document.querySelectorAll('.field-help, .frag-help').length,
+      fieldErrors: document.querySelectorAll('.field-error').length,
+      statusBar: box('.status-bar'),
+      transport: box('.timeline'),
+      mutedSentences: [...document.querySelectorAll('#insp-tabpanel p.small, #insp-tabpanel .muted, #insp-tabpanel .hint')]
+        .map((el) => el.textContent.trim())
+        .filter((t) => t.length > 40)
+        .slice(0, 12),
+    }
+  })
+}
+
+async function shot(name) {
+  await sleep(250)
+  await page.screenshot({ path: join(OUT, `${name}.png`) })
+  findings.shots[name] = await measure(page)
+  console.log('shot', name)
+}
+
+// 1. Prepare > Fragility, field help off and on.
+await page.click('#board-phase-prepare')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="prepare"]'))
+await page.click('.insp-tab-group button:has-text("Fragility")')
+await sleep(200)
+await shot('prepare-fragility-help-off')
+await page.evaluate(() => window.__store.getState().setShowFieldHelp(true))
+await shot('prepare-fragility-help-on')
+await page.evaluate(() => window.__store.getState().setShowFieldHelp(false))
+
+// 2. Prepare > Inputs (C4 forms) and Placement.
+await page.click('.insp-tab-group button:has-text("Inputs")')
+await sleep(200)
+await shot('prepare-inputs')
+await page.click('.insp-tab-group button:has-text("Placement")')
+await sleep(200)
+await shot('prepare-placement')
+
+// 3. Prepare with a system selected.
+const sensor = await page.evaluate(() => {
+  const e = window.__store.getState().scenario.entities.find((x) => x.kind === 'sensor')
+  return { id: e.id, name: e.name }
+})
+await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), sensor.id)
+await waitFor(page, () => document.querySelector('.entity-workspace'))
+await shot('prepare-selected-system')
+findings.selectedSystem = sensor.name
+
+// 4. Panel options menu open.
+await page.click('button[aria-controls="panel-options-panel"]')
+await waitFor(page, () => document.getElementById('panel-options-panel'))
+await shot('prepare-panel-menu')
+await page.keyboard.press('Escape')
+await page.evaluate(() => window.__store.getState().clearSelection())
+
+// 5. Execute mid-run, then a threat selected (C3 telemetry).
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+await page.evaluate(() => window.__store.getState().startRun())
+await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status))
+await page.evaluate(() => window.__store.getState().setPlaying(true))
+await sleep(5000)
+await page.evaluate(() => window.__store.getState().setPlaying(false))
+await shot('execute-midrun')
+const threat = await page.evaluate(() => {
+  const e = window.__store.getState().scenario.entities.find((x) => x.kind === 'uas')
+  return e ? { id: e.id, name: e.name } : null
+})
+if (threat) {
+  await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), threat.id)
+  await waitFor(page, () => document.querySelector('.entity-workspace'))
+  await shot('execute-threat-telemetry')
+  findings.selectedThreat = threat.name
+  await page.evaluate(() => window.__store.getState().clearSelection())
+}
+
+// 6. Analyze after the trial completes.
+await page.evaluate(async () => {
+  const s = window.__store.getState()
+  const { durationOf } = await import('/src/state/selectors.ts')
+  s.completeRun(durationOf(s.scenario))
+})
+await page.click('#board-phase-analyze')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="analyze"]'))
+await sleep(400)
+await shot('analyze-outcome')
+
+findings.errors = errors
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2) + '\n')
+console.log('errors', errors.length)
+await browser.close()
