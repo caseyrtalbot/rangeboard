@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "811f7a6d6746cd763888d33dda76f5dab884ab93c7dc255e6f9faa3630a9636e",
-      "reviewedAt": "2026-09-23",
-      "note": "Polish4 run integrated: all eleven polish3 candidates and two found defects closed; no candidate open; entry 365,724."
+      "sha256": "39c6645a24a3fe6813c5391964ebdbbbd22155f0c9a39b9991f58603d7873fab",
+      "reviewedAt": "2026-09-24",
+      "note": "Position: the polish4 run is on origin/main."
     },
     {
       "document": "docs/Plan.md",

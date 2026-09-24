@@ -17,11 +17,11 @@ run (polish4) that came after it are also complete.
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch.
-  `origin/main` holds the plan commit `0386b3a`, Rows A, B and C (B-int `2028d35`, C-int
-  `d806e33`), the polish follow-up integration `b979358` and the polish3 run (`1b39c03`).
-  Local `main` adds the polish4 run: the lane merges of `polish4/placement`,
-  `polish4/cue`, `polish4/fidelity`, `polish4/canvas`, `polish4/chrome`, `polish4/trim`
-  and `polish4/pool`, and the integration commit that holds this handoff. The audit fixes
+  Local `main` and `origin/main` hold the plan commit `0386b3a`, Rows A, B and C (B-int
+  `2028d35`, C-int `d806e33`), the polish follow-up integration `b979358`, the polish3 run
+  (`1b39c03`) and the polish4 run: the lane merges of `polish4/placement`, `polish4/cue`,
+  `polish4/fidelity`, `polish4/canvas`, `polish4/chrome`, `polish4/trim` and
+  `polish4/pool`, the integration commit `10a9e68` and the commit that holds this handoff. The audit fixes
   `181c8ec` to `7da197d` and the documentation update after them follow row J (`afaf1ae`)
   and row O (`de208aa`).
 - The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
