@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "2ca932ab31ad6feefd5c20a946c987f7b1aef761151211073734b48a1ecb14ae",
-      "reviewedAt": "2026-09-23",
-      "note": "Reviewed the polish4 source changes (redo mark, drawer-width cue cap, lazy context menu, top bar grid). The README describes none of these details; text stays accurate."
+      "sha256": "09080fb4c9ad6e1f9df74ba5f02579e1d5ec1e506ebb3a6ec4f2d46b359ef1b2",
+      "reviewedAt": "2026-09-24",
+      "note": "Row B chrome bands: source fingerprint refresh; no content change needed"
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "a02dae1aed471c071e197db164e33aa02132e44fcca7b540a42a4f306dd4e79d",
+      "sha256": "93404b1c46dd721a806842a87ae81114bd546772f2dc398056c8f599428567e4",
       "reviewedAt": "2026-09-24",
-      "note": "Row A foundation (tokens, control heights, icons, Field contracts, showFieldHelp flag) adds no feature or entry point; the guide text stays accurate."
+      "note": "Row B chrome bands: one RunControl in the top bar, Range and View tool row with layer presets, Entities rail, Storage in the file menu"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "8d770b40275f33031cd5cfb023b544f5d51187d72ff484cb45cbd687797babd4",
+      "sha256": "58a8c5cfca7043267e735e155c75cbe927281bb6907bf7bcfd64ba556151b1cc",
       "reviewedAt": "2026-09-24",
-      "note": "Row A: kit.tsx lists FieldHelpProvider and stays store-free; the ui slice gains showFieldHelp in the saved view record; token names unchanged in the design-system paragraph."
+      "note": "Row B chrome bands: Toolbar header and tool row, the new StatusBar, the transport outside Prepare, one RunControl"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "e1d76b9039d32cfb0ef44833306917ec43c5c18165150d2c12dcd9a3e9771e3b",
+      "sha256": "d9b849c99c04b92a076952ad9a97f1247db500652ba0603facc69bf8736b2aa0",
       "reviewedAt": "2026-09-24",
-      "note": "Row A gate: entry 365,970 (initial 382,635), headroom 1,030; viewState gains showFieldHelp; the kit store-import chunk split is recorded."
+      "note": "Row B chrome bands: e2e header, transport and status-bar checks; Row B bundle gate 366,999"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,9 +88,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b6b3ce922fa5f124a1e7fef947176d31f4336e3262c83b8c1dfd9eb0e2141cf1",
-      "reviewedAt": "2026-09-23",
-      "note": "Reviewed the polish4 script changes (the e2e header test). The workflow text and budget figures stay accurate."
+      "sha256": "b637890429aa6d68a67201233343bd5571b3434722ff84d9923a9559aa217680",
+      "reviewedAt": "2026-09-24",
+      "note": "Row B chrome bands: source fingerprint refresh; no content change needed"
     },
     {
       "document": "docs/HANDOFF.md",
@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "74810bb302c2b45f8c3fb5fa26077d81e9740b94f8de191f7de68efdd339fb75",
+      "sha256": "6f86f4d2fa70731af28d55860f483b67880ab94b2075bd7cb9022ac062cf5a5b",
       "reviewedAt": "2026-09-24",
-      "note": "Row A: accent and limit tokens, three control heights, lead size, Field help/error/unit contracts with FieldHelpProvider, rule 10, new icons."
+      "note": "Row B chrome bands: top bar, status bar and transport in section 3; key hints, status chips, rail, library and tool row in section 4"
     }
   ],
   "historical": [

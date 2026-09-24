@@ -149,18 +149,38 @@ axis and rows, and the KPI sub-line. The Board right panel defaults to 408 px (2
 44 percent of the viewport); an existing saved width is preserved. The right panel is a
 drawer: the drawer button at the right end of the top bar, or `]`, closes and opens it,
 and a resize drag 60 px past the minimum also closes it. A closed drawer gives its width to
-the canvas and holds the board center. A selection does not reopen it. The header is 40 px high. It carries the lifecycle tabs in
-its center and the run status at the start of its right group; the phase row is gone. The
-left group carries identity, the file menu, Settings and Storage; the right group carries the
-run status, the chips and the drawer button. The two side tracks are equal, so the tabs hold
-the bar center whatever the groups hold. Each side keeps a floor, and its groups keep a
-24 px column gap (`--space-6`). Below about 1115 px a group at its floor pushes the tabs
-aside and does not cover them. The narrowest supported window is 1024 px. A full right
-group ends the run status in an ellipsis first, then drops whole chips off its single chip
-row. Below 1600 px the status chips fold into the ROE button. At every width the button
-shows a `+N` count of hidden chips in mono warning ink, and its panel lists every chip; a
-failed save stays in the bar. The Storage panel opens under its trigger. On a narrow window
-it shifts left to keep a 14 px right margin. The lifecycle navigation sits outside the scroll body. The
+the canvas and holds the board center. A selection does not reopen it.
+
+The top bar is one 36 px row with three grid columns. Equal side tracks keep the
+lifecycle tabs at the bar center down to the 1024 px floor; each side keeps a floor, and
+its groups keep a 24 px column gap (`--space-6`). Below about 1115 px a group at its floor
+pushes the tabs aside and does not cover them. Left to right the bar holds the brand word,
+the scenario name, the phase tabs, the phase's primary action, Settings, the ⋯ menu and
+the drawer toggle. The scenario name is a borderless input that renders once: it shows a
+pencil and a rule on hover and focus, and `F2` focuses it from anywhere in the bar. The
+selected phase tab is text 1 over a 2 px accent underline, and its step number is mono
+and accent. One `RunControl` holds the bar's single `.primary` button (32 px, accent
+fill), and its label follows the phase: Prepare reads Run, then Stop, then Stopping while
+the pool ends; Execute reads Pause, or Resume when paused; Analyze reads Run again. The
+Deterministic switch sits beside the button, and the mono progress line ends in an
+ellipsis before the switch. Settings, the ⋯ menu and the drawer toggle are 28 px
+icon-only buttons with an `aria-label` and a title. The ⋯ menu holds New, Import and
+Export, then a separator, then Storage, which opens the Storage panel in place of the
+menu; while recovery notices exist the Storage item shows a warning state with the count
+and the ⋯ trigger shows a warning dot. The panel keeps a 14 px right margin on a narrow
+window. The run status and the status chips live in the status bar, not the top bar.
+
+The status bar is the last row of the board column: 24 px, `--surface-sunken`, 11 px
+mono. It carries, left to right, the run id, the run phase, `T+m:ss / m:ss`, the seed and
+`MC n / N`, a grow cell, then the ROE chip, the display units and `Validity n`. The count
+takes a `LIMITS` tag in `--status-limit` when a finding exists. Below 1440 px the units
+cell drops, below 1280 px MC, and below 1152 px seed; the run id, phase, clock, ROE and
+validity cells never drop. The transport sits above it in Execute and Analyze only: 28 px,
+`.mini` controls. It holds play or pause, the Reset run icon, the scrubber, speed, the raid
+waves, the frame chips, `+ Frame` (a popover with one name field and Save) and the
+Engagement toggle. The clock and the run id render only in the status bar.
+
+The lifecycle navigation sits outside the scroll body. The
 analysis screen navigation also sits outside it, draws only on the Overview tab, and draws
 no segmented control for a phase with one screen. Labels wrap and no panel text may be
 inaccessible.
@@ -185,10 +205,16 @@ inaccessible.
 - **Key hints.** A key at the right end of a menu or palette row is
   `<kbd class="kbd kbd-hint">`: mono, text 3, no chip. A separator above Delete is
   `.ctx-sep`, 1 px `--rule`. The command palette is 560 px wide with 32 px rows under
-  one group header per category.
-- **Status chips.** A top-bar status chip that acts is a button with no frame; it keeps
-  the chip look.
-- **Icons** (`src/ui/icons.tsx`). One inline SVG set for chrome glyphs: library, objects,
+  one group header per category. An icon-only chrome button carries an `aria-label` and
+  a `title` that ends with its key in parentheses when a shortcut exists: `Undo (⌘Z)`,
+  `Redo (⇧⌘Z)`, `Library (L)`, `Commands (⌘K)`. A control with no shortcut carries no
+  parenthetical.
+- **Status chips.** Status chips live in the status bar. From 1600 px they sit inline on
+  one clipped row, and a chip that does not fit is hidden whole. Below 1600 px they fold
+  into the ROE chip. The ROE chip counts hidden chips as `+N`, and its menu opens upward
+  and lists them all. A chip that acts is a button with no frame; it keeps the chip look.
+  A failed save stays visible as an alert at every width.
+- **Icons** (`src/ui/icons.tsx`). One inline SVG set for chrome glyphs: library,
   commands, undo, redo, close, caret, settings, more, drawer, entities, layers, frames,
   play, pause, reset, info, chevron down, chevron right, plus, search and pencil. Each is a 16 px viewBox with a 1.5 px round
   stroke in `currentColor` and `aria-hidden`; the button that holds it carries the label
@@ -250,17 +276,34 @@ inaccessible.
   scale, the replicates per cell and that the thirds are relative, never a requirement.
   Each cell title carries the factor values, response, replicates, horizon and interval.
 
-The Board has a 76 px resource rail, wide enough for "Commands" at the meta size, and an
-overlaid Library drawer (306 px default, existing saved width retained). The drawer starts
-below the canvas tools row and stops above the timeline. A library row shows its Model
-basis action only on hover or keyboard focus. Drawing tools and the View and Range setup
-disclosures sit above the canvas. The board editing tools (Select, Boundary, Connect, Path
-and Range setup) show only in Prepare. Outside Prepare the palette, the Inspector and the
+The Board has a 44 px resource rail with five 32 px icon-only buttons: Library, Entities,
+Layers and Frames at the top, Commands at the bottom. Each button has an `aria-label` and
+a title with its key in parentheses when it has one. The Library button carries the rail's
+open mark, a 2 px bar in text 1 on the rail's left edge, while the drawer is open.
+Entities opens the entity register. Layers opens the View menu at its Layers section
+(`#view-menu-layers`). Frames focuses `+ Frame` in the transport and is disabled in
+Prepare. The overlaid Library drawer (306 px default, existing saved width retained)
+starts below the canvas tools row and stops above the transport. It has a 32 px header
+with the title, a ⋯ menu (Import library, Export library) and Close, then a 24 px filter
+field, and no footer. Each row is 36 px: the name at 13/500 on one line with ellipsis,
+then vendor or variant · type in 11 px mono text 3; a trailing parenthetical in the name
+moves to line 2. Group headers show their counts in mono and name their toggle `Collapse
+<group>` or `Expand <group>`. A library row shows its Model basis action only on hover or
+keyboard focus.
+
+The canvas tool row is 28 px tall (`.board-tools`), and every control in it is 24 px at
+the `.mini` box; segment buttons are 22 px inside the group's 1 px frame. Drawing tools
+are one segmented group with text labels; no drawing tool has a shortcut today. Undo and
+Redo are icon-only with their key titles. `Range` and `View` are `tb-menu` disclosure
+triggers with the same look: a word and a chevron. The layer presets (Full, Planning,
+Engagement, Clean) are the `Preset` section at the top of the View menu, not in the row.
+The board editing tools (Select, Boundary, Connect, Path
+and Range) show only in Prepare. Outside Prepare the palette, the Inspector and the
 context menu offer no action that starts a tool, and `setBoardPhase` returns the tool to
 Select. After a delete or a place, a `.surface-float` cue at the canvas bottom left, above
 the timeline, shows `<verb> <name> · Undo ⌘Z`. It fades during the last 15 % of 4 s,
 reduced motion cuts it at 4 s, and undo, redo or a load clear it. The name truncates
-first, the cue takes no pointer events, and the timeline scrub keeps its 120 px floor. With
+first, the cue takes no pointer events, and the transport scrub keeps its 80 px floor. With
 the Library drawer open the cue sits at the canvas bottom right and never under the drawer:
 its width shrinks to the room beside the drawer, and below 160 px of room it stays hidden
 until the drawer closes. An empty board shows one hint, a `.surface-float` at

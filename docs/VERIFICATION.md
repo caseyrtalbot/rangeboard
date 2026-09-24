@@ -48,8 +48,11 @@ for initial JavaScript plus CSS. The user raised it from 366,000 on 2026-09-23 a
 polish follow-up gate, when the board ink fields, the hover release and the
 degenerate-range refusal put the entry at 366,212 (initial 382,637). The polish4 gate
 measured 365,724 (initial 382,285) after the canvas context menu moved to its own chunk.
-The Row A gate of the chrome refactor measured 365,970 (initial 382,635) on 2026-09-24,
-so the entry headroom is 1,030 bytes. A `kit.tsx` import of the store splits the store
+The Row A gate of the chrome refactor measured 365,970 (initial 382,635) on 2026-09-24.
+The Row B gate measured 366,999 (initial 384,155) on 2026-09-24 after the transport clock,
+the Declutter control, the library footer, the frame-name input and the body run controls
+were removed and the chrome icons, the status bar and the popovers were added, so the
+entry headroom is 1 byte; Row C must pay for every byte it adds. A `kit.tsx` import of the store splits the store
 into its own chunk and empties the entry metric; `Field` reads `FieldHelpProvider` instead. Documentation-only
 changes need `docs:check`; maintenance-script changes also need `test:docs`.
 `npm run check` runs the silent-gate tests but not `check:silent` itself; CI runs `check:silent`
@@ -315,14 +318,15 @@ committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 p
   that no lens bar renders. Two drawer tests close and reopen the right panel with the
   top-bar button and `]`, check that the camera holds the board center, that a selection
   keeps a closed drawer closed, and that a resize drag past the minimum closes it. Two
-  playback-bar tests open and close the engagement strip from the Engagement toggle, check
-  the 36 px bar height, the strip position above the bar, the canvas height change and the
-  saved open state, and check that the saved state restores on reload. One header test
-  checks the 40 px header, the lifecycle tablist and run status inside it, and that no
-  phase row renders. A second header test injects three long chips at 1600 px and checks
-  that the tabs hold the viewport center, that chips drop off whole and the ROE count
-  equals the hidden chips, and that the Storage panel opens under its trigger and keeps a
-  14 px right margin at 800 px. The
+  playback-bar tests enter Execute (Prepare renders no transport), open and close the
+  engagement strip from the Engagement toggle, check the 28 px bar height, the strip
+  position above the bar, the canvas height change and the saved open state, and check
+  that the saved state restores on reload. The status-bar test checks the 24 px bar, the
+  run id first, and that three chips injected at 1600 px fold into a counted ROE chip.
+  One header test checks the 36 px header, the lifecycle tablist and the primary run
+  button inside it, and that no phase row renders. A second header test checks that the
+  tabs hold the viewport center, that the groups fit their tracks, and that Storage opens
+  from the ⋯ menu and keeps a 14 px right margin. The
   debrief check calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
   completion requires a matching ready trial. Start the dev server first.

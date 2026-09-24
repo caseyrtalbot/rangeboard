@@ -376,8 +376,8 @@ Breaking one of these breaks the app.
   and observed horizon; unavailable trials never substitute a forecast.
   `useForecastEngagement` retains the deterministic `engagementPicture` path. Forecast
   and Monte Carlo are separately labeled, numerically unchanged analyses; their controls
-  live on the Run tab (`panels/settings/RunTab.tsx`) and in the run control
-  (`panels/analysis/RunControl.tsx`) on Prepare and Analyze.
+  live on the Run tab (`panels/settings/RunTab.tsx`) and in the one run control
+  (`panels/analysis/RunControl.tsx`) in the top bar, whose label follows the phase.
   Completed-run export adds `TrialResultGroup` under `resultGroups.trial`, with captured
   scenario, manifest, ledger, observations, jam decisions, members and integer counts.
   Its basis is `simulated-trial`, with no ensemble confidence interval or independently
@@ -592,8 +592,11 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                (the hovered entity's pointer cursor, released when that entity unmounts),
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
                style source)
-src/panels/    Toolbar (header: brand, scenario name, ⋯ menu, settings, storage, the
-               lifecycle tabs, run status, status pills, drawer toggle),
+src/panels/    Toolbar (the 36 px header: brand, scenario name, the lifecycle tabs, the
+               phase RunControl, settings, the ⋯ menu with Storage, drawer toggle;
+               BoardTools, the 28 px tool row), StatusBar (the 24 px status bar: run
+               id, phase, clock, seed, MC, the ROE chip with the folded status chips,
+               units, validity),
                ViewMenu, Palette, Inspector (+ inspector/kit.tsx over src/ui/kit.tsx,
                spreadText.ts),
                LibraryEditor, settings/ (RunTab, SystemsTab, PhysicsTab and
@@ -602,8 +605,9 @@ src/panels/    Toolbar (header: brand, scenario name, ⋯ menu, settings, storag
                Compare screens and their phase map,
                analysis/ for the shared readers, records and settings, analysis/detail/,
                analysis/ForecastSettings.tsx for forecast/MC controls),
-               TimelineBar (owns the rAF loop; publishes the clock only; holds the
-               Engagement toggle whose open flag lives in App state), CommandPalette,
+               TimelineBar (the 28 px transport outside Prepare; owns the rAF loop;
+               publishes the clock only; holds the + Frame popover and the Engagement
+               toggle whose open flag lives in App state), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names)
 src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns read,
                restore, observe, flush and stop, and owns the read, the recovery, the
@@ -1100,7 +1104,7 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   takes the phase and the screen, falls back to the phase's first screen, and renders
   `BoardPreparation` for `inputs`. `AnalysisNavigation` draws on the Overview tab only,
   outside the content scroller: one `Seg` of the phase's screens when the phase has more
-  than one, and the Run control in Analyze. Execute has one screen and draws none. Each screen has one owner component and one
+  than one. Execute has one screen and draws none. Each screen has one owner component and one
   result basis: Fragility the current `McSummary`, `SensitivitySummary` and `SweepSummary`
   through `currentSummary`, `currentSensitivity` and `currentSweep`; Now the retained
   trial through `trialSweepAt` and `trialSystemTelemetryAt` at the cursor horizon;

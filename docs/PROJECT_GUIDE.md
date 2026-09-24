@@ -29,10 +29,11 @@ The Library resource opens a drawer with model/system placement, drag-and-drop, 
 editing, tactics and library import/export. `L` toggles it and Escape returns focus to its
 button. Prepare groups run configuration, environment, doctrine and requirement inputs.
 Prepare > Inputs is the one editor for Fire doctrine and Environment; Settings links to it.
-The board editing tools and Range setup show only in Prepare. After a delete or a place the
+The board editing tools and Range show only in Prepare. The one Run control sits in the
+top bar: Run in Prepare, Pause or Resume in Execute, Run again in Analyze. After a delete or a place the
 timeline shows the action and "Undo ⌘Z" for 4 s.
-The canvas toolbar separates View preferences (theme, layers, units and basemap) from
-Range setup (location, calibrated image, image movement and saved opacity). Existing
+The canvas tool row separates View preferences (layer presets, theme, units, basemap and
+layers) from Range (location, calibrated image, image movement and saved opacity). Existing
 scenario actions govern changes and undo; automatic documented connections remain their
 own undo step. Pending placement is cancelled by a competing tool or a change to the entity
 or system-preset count. Escape closes an open dialog before it
@@ -96,7 +97,7 @@ Where a forecast count still prints, it reads as an expected value with two deci
 below ten. No surface labels a forecast as a realized kill.
 
 The right panel is a drawer. The drawer button at the right end of the top bar, or `]`,
-closes and opens it, and the open state is saved. Objects, Details in Analysis and a
+closes and opens it, and the open state is saved. Entities, Details in Analysis and a
 Prepare link reopen it; a selection does not.
 
 The engagement timeline opens from the Engagement button at the right end of the playback
@@ -126,7 +127,7 @@ never advance observation. Charts, engagement strips, WEZ impact badges, selecte
 details and the Now screen censor outcomes at that horizon, including tooltips and
 accessibility text. Chart accessibility text identifies the shown horizon separately from
 a forward preview playhead. Outcome and Compare wait for a completed trial; Compare also
-needs an ensemble for the current run; the header Run control of Analyze starts one.
+needs an ensemble for the current run; the top bar's Run again starts one.
 
 A sweep runs one ensemble per grid cell on the sensitivity worker slot, so a sweep and a
 sensitivity run replace each other. A pinned baseline keeps the current laydown and its
@@ -167,7 +168,7 @@ screen changes preserve the result basis.
 | Activity | Implemented features | Source entry points |
 | --- | --- | --- |
 | Build a laydown | Model palette, system presets, placement, duplication, rotation, inspection, selection and undo/redo | [store](../src/state/store.ts), [Palette](../src/panels/Palette.tsx), [Inspector](../src/panels/Inspector.tsx) |
-| Describe the range | Meter-scaled pan/zoom, boundaries, calibrated image underlay, geo reference, satellite basemap, layers, per-entity rings, declutter presets on the board tools bar, ring hover hints and one Settings dialog for scenario, run, systems and view inputs | [CanvasStage](../src/canvas/CanvasStage.tsx), [layers](../src/canvas/layers/), [SettingsPanel](../src/panels/SettingsPanel.tsx), [view state](../src/io/viewState.ts) |
+| Describe the range | Meter-scaled pan/zoom, boundaries, calibrated image underlay, geo reference, satellite basemap, layers, per-entity rings, layer presets in the View menu, ring hover hints and one Settings dialog for scenario, run, systems and view inputs | [CanvasStage](../src/canvas/CanvasStage.tsx), [layers](../src/canvas/layers/), [SettingsPanel](../src/panels/SettingsPanel.tsx), [view state](../src/io/viewState.ts) |
 | Represent an architecture | Sensor/C2/effector links, integration profiles, suggested pairings, typed routes and fire-control eligibility | [integration](../src/model/integration.ts), [killChain](../src/playback/killChain.ts) |
 | Represent a threat | Paths, speed/delay/altitude, formations, raid waves and tactic-driven raid construction | [tracks](../src/playback/tracks.ts), [tactics](../src/playback/tactics.ts), [raidBuilder](../src/state/raidBuilder.ts) |
 | Inspect assumptions | Editable library, field provenance, sourced/PF labels, parameter spreads, seed reset and library JSON; the Systems tab lists every field of every system in use with grade, layer, source and spread, and an edit there is an override with a reason, reset per field, per system or all | [LibraryEditor](../src/panels/LibraryEditor.tsx), [SystemsTab](../src/panels/settings/SystemsTab.tsx), [overrides](../src/state/overrides.ts), [types](../src/model/types.ts), [parameterBasis](../src/analysis/parameterBasis.ts) |
@@ -187,7 +188,7 @@ screen changes preserve the result basis.
 Opening a saved Board frame scrubs to its time and restores its camera and basemap. It
 never advances observation or stamps a run start or analysis basis.
 
-The shared toolbar's Storage section shows estimated UTF-16 bytes per live and recovery key.
+The Storage item of the top bar's ⋯ menu shows estimated UTF-16 bytes per live and recovery key.
 It retains startup recovery notices and lets the user download the exact unreadable copy or
 explicitly delete one recovery key. Deletion does not resume a paused autosave. A new
 underlay image has a 5 MiB admission budget. Existing valid saved payloads remain loadable.
