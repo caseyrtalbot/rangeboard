@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "3f23e8610417c12fa49dd3b78e9eaf70d6c153a83c63fa12e544636b187dd423",
-      "reviewedAt": "2026-09-24",
-      "note": "Row C position: chrome/int at 12a3568 awaits the merge and the budget decision; follow-ups from the review and the canvas comparison; no row selected."
+      "sha256": "0c3a6dbc29d97bb31c8592d8afbbcc587fc34ea1a8e4ab5ba47a4dd225f4d1ae",
+      "reviewedAt": "2026-09-25",
+      "note": "Row C merged to local main at 05e9e73 with the user's authorization; gate green, check:bundle 173 over; budget decision and push open; lane worktrees and branches deleted."
     },
     {
       "document": "docs/Plan.md",

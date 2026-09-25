@@ -11,22 +11,23 @@ fresh agent starts from this file and the docs index. This file does not authori
 commit, push or merge.
 
 [Plan.md](Plan.md) is the chrome refactor queue (Option C plus the inspector text-density
-pass, 2026-09-24). Rows A, B and C are built. Row C waits on `chrome/int` for the user's
-merge authorization and a bundle-budget decision. No row is selected.
+pass, 2026-09-24). Rows A, B and C are built. Row C is merged to local `main`
+(2026-09-25) and waits on a bundle-budget decision and a push. No row is selected.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch and
-  equals `origin/main` at `01fd3ac` (the Row B handoff commit).
-- Row C (2026-09-24) is on `chrome/int` at `12a3568`, 17 commits after `main`: the four
-  lane merges (`chrome/c1` `16c8027`, `chrome/c2` `4a5584b`, `chrome/c3` `355d68b`,
-  `chrome/c4` `2790101`), the integrator fixes, the docs, the `opus-high` review fixes,
-  the final capture, the canvas-comparison fix and the two Row B ride-along fixes. Not
-  merged, not pushed. The lane worktrees under `~/Projects/rangeboard-wt` and the lane
-  branches still exist; delete them after the merge.
-- Row C gate on `chrome/int`: `npm run check` passes (2,264 tests, docs and evidence
-  gates green), `check:silent` passes, `test:e2e` 13 of 13 on a dev server at 5393.
-  `check:bundle` fails: entry gzip 368,173 against 368,000, initial 385,659 against
+- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch at
+  `05e9e73`, 18 commits ahead of `origin/main` (`01fd3ac`, the Row B handoff commit).
+  Not pushed.
+- Row C (2026-09-24) was fast-forwarded into `main` on 2026-09-25 with the user's merge
+  authorization: the four lane merges (`chrome/c1` `16c8027`, `chrome/c2` `4a5584b`,
+  `chrome/c3` `355d68b`, `chrome/c4` `2790101`), the integrator fixes, the docs, the
+  `opus-high` review fixes, the final capture, the canvas-comparison fix and the two
+  Row B ride-along fixes. The lane worktrees and the lane branches (`chrome/c1..c4`,
+  `chrome/int`) are deleted; `~/Projects/rangeboard-wt` is empty.
+- Row C gate on `main` at `05e9e73` (2026-09-25): `npm run check` passes (210 files, 2,264
+  tests, docs and evidence gates green, build green), `test:e2e` 13 of 13 on a dev
+  server at 5393. `check:bundle` fails: entry gzip 368,173 against 368,000, initial 385,659 against
   400,000. The lanes cost about 1,111 entry bytes against 992 of headroom (C1 625, C3
   424, C4 40, C2 22); the integrator removed the top-bar Deterministic switch, the unused
   `onOpenSettings` prop and the unreachable `openPreparation` branches, and the review
@@ -174,10 +175,10 @@ brackets: 1 structure, 2 density rule, 3 text, 4 tokens):
 
 ## Tasking
 
-No row is selected. Two decisions wait on the user before anything else: the merge of
-`chrome/int` to `main`, and the entry budget (raise to at least 368,200 or name a
-removal). After the merge, delete the four lane worktrees and branches, rewrite this
-file's position, and run the one triage over the follow-ups above.
+No row is selected. One decision waits on the user before anything else: the entry
+budget (raise to at least 368,200 or name a removal). The Quality workflow runs
+`check:bundle`, so a push of `main` before that decision goes red. After the decision,
+push `main` and run the one triage over the follow-ups above.
 
 ## Landmines
 
