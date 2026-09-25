@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "720ae1718c59b4fe6b6eac56d1f611b8b8bab6b4214ab94330b0da9c3ac7b69a",
-      "reviewedAt": "2026-09-24",
-      "note": "Row C review fixes: Field keeps one root once error is passed, Panel options drive the detail toggles, the screen group is .insp-tab-group with no ARIA role, the e2e asserts Run monitor; final capture chrome-2026-09-24."
+      "sha256": "cefdf67258072c85455ee2582a1793d2b0f27bfd5432af4cd0b108fdb6622ce0",
+      "reviewedAt": "2026-09-25",
+      "note": "Entry budget raised to 369,000 at the Row C gate (368,173 measured); headroom 827."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "b8d1b00fa3de25d469570d6758693edbbf4b1281638cbdf2b322872c3d410da1",
-      "reviewedAt": "2026-09-24",
-      "note": "Row C review fixes: Field keeps one root once error is passed, Panel options drive the detail toggles, the screen group is .insp-tab-group with no ARIA role, the e2e asserts Run monitor; final capture chrome-2026-09-24."
+      "sha256": "26be0c706c7be0636a188e528ec81c649c7c943b7d08ffa19787649f25477729",
+      "reviewedAt": "2026-09-25",
+      "note": "Entry budget 369,000 after the Row C gate."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "0c3a6dbc29d97bb31c8592d8afbbcc587fc34ea1a8e4ab5ba47a4dd225f4d1ae",
+      "sha256": "4dc43b1f9da8e48f933645c4f0eae63e9a897f309f8f46c30745e57cbe4bbd0a",
       "reviewedAt": "2026-09-25",
-      "note": "Row C merged to local main at 05e9e73 with the user's authorization; gate green, check:bundle 173 over; budget decision and push open; lane worktrees and branches deleted."
+      "note": "Row C gate: budget raised to 369,000 by the user; push and triage next."
     },
     {
       "document": "docs/Plan.md",

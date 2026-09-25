@@ -43,7 +43,7 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 Run the complete gate for source changes and after integrating lanes. `npm run check`
 does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
 `npm run check:bundle` after `npm run build` for any change that touches the entry chunk.
-The budget (`scripts/check-bundle.mjs`) is 368,000 bytes gzip for the entry and 400,000
+The budget (`scripts/check-bundle.mjs`) is 369,000 bytes gzip for the entry and 400,000
 for initial JavaScript plus CSS. The user raised it from 366,000 on 2026-09-23 at the
 polish follow-up gate, when the board ink fields, the hover release and the
 degenerate-range refusal put the entry at 366,212 (initial 382,637). The polish4 gate
@@ -52,8 +52,11 @@ The Row A gate of the chrome refactor measured 365,970 (initial 382,635) on 2026
 The Row B gate measured 367,008 (initial 384,130) on 2026-09-24 after the transport clock,
 the Declutter control, the library footer, the frame-name input and the body run controls
 were removed and the chrome icons, the status bar and the popovers were added, so the
-user raised the budget from 367,000 to 368,000 at that gate, so the entry headroom is 992
-bytes; Row C additions must be paid for or go to the user again. A `kit.tsx` import of the store splits the store
+user raised the budget from 367,000 to 368,000 at that gate. The Row C gate measured
+368,173 (initial 385,659) on 2026-09-25 after the inspector frame, the fragility density
+pass, the telemetry readout and the inputs forms were added and the top-bar Deterministic
+switch was removed, so the user raised the budget from 368,000 to 369,000 at that gate;
+the entry headroom is 827 bytes. Later additions must be paid for or go to the user again. A `kit.tsx` import of the store splits the store
 into its own chunk and empties the entry metric; `Field` reads `FieldHelpProvider` instead.
 An import of `panels/TimelineBar.tsx` from `panels/analysis/RunControl.tsx` did the same on
 2026-09-24; shared selectors go in `state/selectors.ts`. Documentation-only

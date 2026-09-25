@@ -12,7 +12,7 @@ commit, push or merge.
 
 [Plan.md](Plan.md) is the chrome refactor queue (Option C plus the inspector text-density
 pass, 2026-09-24). Rows A, B and C are built. Row C is merged to local `main`
-(2026-09-25) and waits on a bundle-budget decision and a push. No row is selected.
+(2026-09-25) with the entry budget raised to 369,000. No row is selected.
 
 ## Position
 
@@ -27,13 +27,13 @@ pass, 2026-09-24). Rows A, B and C are built. Row C is merged to local `main`
   `chrome/int`) are deleted; `~/Projects/rangeboard-wt` is empty.
 - Row C gate on `main` at `05e9e73` (2026-09-25): `npm run check` passes (210 files, 2,264
   tests, docs and evidence gates green, build green), `test:e2e` 13 of 13 on a dev
-  server at 5393. `check:bundle` fails: entry gzip 368,173 against 368,000, initial 385,659 against
-  400,000. The lanes cost about 1,111 entry bytes against 992 of headroom (C1 625, C3
+  server at 5393. `check:bundle` measured entry gzip 368,173 against 368,000, initial
+  385,659 against 400,000. The lanes cost about 1,111 entry bytes against 992 of headroom (C1 625, C3
   424, C4 40, C2 22); the integrator removed the top-bar Deterministic switch, the unused
   `onOpenSettings` prop and the unreachable `openPreparation` branches, and the review
-  fixes added bytes back. Per D3 the shortfall of 173 bytes goes to the user: raise the
-  budget to at least 368,200, or name a removal. `WORKFLOW.md` and the Quality workflow
-  state the budget; both change with it.
+  fixes added bytes back. Per D3 the shortfall of 173 bytes went to the user, who raised
+  the budget to 369,000 on 2026-09-25 (headroom 827). `check-bundle.mjs`,
+  `test-bundle.mjs`, `WORKFLOW.md` and `VERIFICATION.md` carry the new number.
 - Final capture: [chrome-2026-09-24](field-te/evidence/chrome-2026-09-24/README.md), nine
   shots at 1440 × 900 dark on the firing fixture with `findings.json` (header 32 px at
   13/500, tab row 32 px at 12/500, every (i) 24 px, finding rows 28 px, detail section
@@ -175,10 +175,8 @@ brackets: 1 structure, 2 density rule, 3 text, 4 tokens):
 
 ## Tasking
 
-No row is selected. One decision waits on the user before anything else: the entry
-budget (raise to at least 368,200 or name a removal). The Quality workflow runs
-`check:bundle`, so a push of `main` before that decision goes red. After the decision,
-push `main` and run the one triage over the follow-ups above.
+No row is selected. The next step is the one triage over the follow-ups above: the user
+picks fix-now items, the rest become candidates.
 
 ## Landmines
 
@@ -259,8 +257,8 @@ push `main` and run the one triage over the follow-ups above.
   `points` array (`scenarioHasWork` in `src/io/persist.test.ts`,
   `scenarioInstall.test.ts`). Those objects do not pass `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
-  touches the entry. The entry gzip budget is 368,000 bytes with 992 bytes of headroom
-  (367,008 at the Row B gate). CSS is not in the entry metric; only JavaScript moves it. `sql.js` must stay behind `await import` with its wasm URL.
+  touches the entry. The entry gzip budget is 369,000 bytes with 827 bytes of headroom
+  (368,173 at the Row C gate). CSS is not in the entry metric; only JavaScript moves it. `sql.js` must stay behind `await import` with its wasm URL.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
 - `newId` embeds `Date.now()`. A test that asserts a seed-dependent Monte Carlo outcome

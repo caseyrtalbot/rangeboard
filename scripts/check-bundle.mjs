@@ -16,7 +16,10 @@ import { pathToFileURL } from 'node:url'
 // Raised to 368 kB on 2026-09-24 at the Row B chrome gate by the user: the status bar, the
 // top-bar run control, the popovers and the always-mounted playback loop put the entry at
 // 367,008 after the Row B removals paid for the rest.
-export const BUNDLE_BUDGET = { entry: 368_000, initial: 400_000 }
+// Raised to 369 kB on 2026-09-25 at the Row C chrome gate by the user: the inspector frame,
+// the fragility density pass, the telemetry readout and the inputs forms put the entry at
+// 368,173 after the integrator removals paid for the rest.
+export const BUNDLE_BUDGET = { entry: 369_000, initial: 400_000 }
 
 // Match the Wave 3 evidence method: entry + modulepreloaded JS + initial CSS.
 // Report other preloads separately so the total transfer is also visible.
