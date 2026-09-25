@@ -16,9 +16,9 @@ pass, 2026-09-24). Rows A, B and C are built. Row C is merged to local `main`
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch at
-  `05e9e73`, 18 commits ahead of `origin/main` (`01fd3ac`, the Row B handoff commit).
-  Not pushed.
+- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch and
+  equals `origin/main` at `1f9439a` (the Row C budget commit), pushed 2026-09-25 with
+  Quality run 36179101938 green (`check:bundle` at 369,000 included).
 - Row C (2026-09-24) was fast-forwarded into `main` on 2026-09-25 with the user's merge
   authorization: the four lane merges (`chrome/c1` `16c8027`, `chrome/c2` `4a5584b`,
   `chrome/c3` `355d68b`, `chrome/c4` `2790101`), the integrator fixes, the docs, the

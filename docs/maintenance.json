@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "4dc43b1f9da8e48f933645c4f0eae63e9a897f309f8f46c30745e57cbe4bbd0a",
+      "sha256": "1fb229daab0af4132790b62c5e5ac28bb1604c534655433c1b7d34ed04ac6c12",
       "reviewedAt": "2026-09-25",
-      "note": "Row C gate: budget raised to 369,000 by the user; push and triage next."
+      "note": "Row C pushed as 1f9439a with a green Quality run; triage next."
     },
     {
       "document": "docs/Plan.md",
