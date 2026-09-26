@@ -116,6 +116,22 @@ From the Row D review:
 - `npm run test:e2e` needs a running Vite server (`E2E_URL`, default 5377); record that in
   `VERIFICATION.md` or the lane template.
 
+From the engine profile of 2026-09-25 (100 replicates of the 54-entity board on one
+Node thread, 95 ms per replicate, flat profile; a Rust port was assessed and declined
+because the gain would be about 2x to 4x on work that already runs off the page thread):
+
+- `shnidmanPdFromSnr` (`src/playback/radarDwell.ts`) is the largest self time at 11
+  percent, plus 4 percent in its forward call: a 24-step bisection per uncached SNR.
+  A precomputed table over SNR per (pfa, pulses, swerling) or a closed-form inverse
+  would remove the bisection. The cache and the fixed-ID parity expects bound the change.
+- The sweep step (`stepSweep` in `src/playback/sweep.ts`; `sensorHit` and the sweep's
+  `hits` in `src/playback/detection.ts`) and `dist` and `bearingDeg` in
+  `src/geometry/geo.ts` together take about 30 percent;
+  entity and member state as typed arrays inside one sweep would cut the object reads.
+- Garbage collection is 5 percent: `trackSamples` and `fusedTracks` grow one object per
+  step per threat in `assessThreat`, and `scenario.entities.find` runs inside the
+  attrition loops. Preallocated per-step buffers and an id index would remove both.
+
 From the Row B review, still open:
 
 - The rail's Frames button is disabled in Prepare with the reason only in its title; a

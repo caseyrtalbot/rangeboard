@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "fe4c61176a199f3c7987720d4229f622c95114daa37bd971d21ee6b804f8b23e",
+      "sha256": "a55294daf1136b609a9671055484d27a5d6262c5e9a910088d1f1b5bbb124421",
       "reviewedAt": "2026-09-26",
-      "note": "Row D gate counts exact: 211 files, 2,287 tests."
+      "note": "Added three TypeScript engine follow-up candidates from the 2026-09-25 CPU profile (Shnidman bisection, sweep object reads, per-step allocations); Rust port assessed and declined."
     },
     {
       "document": "docs/Plan.md",
