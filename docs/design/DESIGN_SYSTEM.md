@@ -382,7 +382,7 @@ in Analyze does not draw its own run button.
 Each analysis screen is one labeled section with one basis line (`.analysis-scope`)
 under its heading and one caveat per section header, never on a tile. Tiles are `.tiles.c3` with the denominator and horizon inside the tile. Records,
 findings and evidence products use native disclosures (`.analysis-disclosure`). A
-placeholder before the first Play is one muted line. The band chart on Compare draws the
+placeholder before the first Play is an empty-state row. The band chart on Compare draws the
 95 % band in `--rule-strong`, the ensemble mean in `--text-secondary`, the trial in
 `--chart-1` with its endpoint marked, and the pinned baseline mean dashed in
 `--text-tertiary`; its axis labels are mono at `--type-dense-size`. The delta table flag
