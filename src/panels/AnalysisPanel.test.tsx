@@ -13,7 +13,8 @@ function render(props?: ComponentProps<typeof AnalysisPanel>): string {
   return renderToStaticMarkup(<AnalysisPanel {...props} />)
 }
 
-const noTrial = '<p class="muted small">No trial yet. Press Play in Execute to run one.</p>'
+const noTrial =
+  '<p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No trial yet. Press Play in Execute to run one.</span></p>'
 // Execute holds the Play control, so its placeholder carries it inline.
 const nowPlay =
   '<p class="muted small">No trial yet. Press <button class="mini">Play</button> to run one.</p>'
