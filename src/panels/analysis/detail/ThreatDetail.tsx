@@ -12,21 +12,11 @@ import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
 import { threatReadoutAt } from '../threatReadout'
 import type { ThreatReadoutField } from '../threatReadout'
-import { IconInfo } from '../../../ui/icons'
 import { SURVIVAL_LABELS } from '../labels'
-import { DetailHeader } from './DetailHeader'
+import { DetailHeader, InfoButton } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
 import { bareSpans, DASH, Legend, PfTag, Rows, useDetailRun } from './detailRows'
-
-/** A 24 px (i): the title holds the text. */
-function InfoButton({ label, title }: { label: string; title: string }) {
-  return (
-    <button type="button" className="det-info" aria-label={label} title={title}>
-      <IconInfo />
-    </button>
-  )
-}
 
 /**
  * The threat pane: the model basis, then Track, Engagement, Path and Phase at t, Pd by
@@ -172,13 +162,8 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
           label: 'RCS',
           value: `${rcsM2For(uasSpec)}`,
           unit: ' m²',
-          tag: <PfTag model={model} field="rcsM2" />,
         },
-        {
-          label: 'Swerling',
-          value: `${swerlingFor(uasSpec)}`,
-          tag: <PfTag model={model} field="swerling" />,
-        },
+        { label: 'Swerling', value: `${swerlingFor(uasSpec)}` },
       )
     } else {
       track.push(
@@ -227,7 +212,6 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
   const phaseSummary =
     phaseLegend.length > 0 ? phaseLegend.map((entry) => entry.label).join(' · ') : DASH
   const tags = modelsForEntity(scenario, entity.id)
-  const basis = [...new Set(tags.flatMap((tag) => [tag.tier, tag.validation]))].join(' · ')
 
   const phase: TrackPhase = readout.phase
   const style = PHASE_STYLE[phase]
@@ -239,17 +223,13 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
 
   return (
     <div className="detail" data-detail="threat">
-      <DetailHeader entity={entity} color={color} pill={pill} modelLine={sections.platform} />
-      {tags.length > 0 ? (
-        <div className="row det-basis">
-          <span className="rl">Model basis</span>
-          <span className="det-basis-v">{basis}</span>
-          <InfoButton
-            label="About model basis"
-            title={tags.map((tag) => `${tag.label} · ${tag.tier} · ${tag.validation}`).join('\n')}
-          />
-        </div>
-      ) : null}
+      <DetailHeader
+        entity={entity}
+        color={color}
+        pill={pill}
+        modelLine={sections.platform}
+        tags={tags}
+      />
       <DetailSection
         id="track"
         title="Track"

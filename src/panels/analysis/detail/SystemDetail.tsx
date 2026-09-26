@@ -106,9 +106,15 @@ export function SystemDetail({ entity }: { entity: Entity }) {
     : { word: 'OFFLINE', tone: 'critical' as const }
   const modelLine = model ? `${model.name} · command and control` : 'no model linked'
 
+  const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
+  const coverageSummary = untouched
+    ? DASH
+    : uncovered.length > 0
+      ? `${uncovered.length} no route`
+      : 'all routed'
+
   return (
     <div className="detail" data-detail="system">
-      <p className="muted small">{run.stateText}</p>
       <DetailHeader
         entity={entity}
         color={color}
@@ -116,21 +122,38 @@ export function SystemDetail({ entity }: { entity: Entity }) {
         modelLine={modelLine}
         tags={modelsForEntity(scenario, entity.id)}
       />
-      <DetailSection id="hops" title="Kill-chain hops">
+      <DetailSection
+        id="hops"
+        title="Kill-chain hops"
+        collapsible
+        meta={plural(hopRows.length, 'route')}
+      >
         {hopRows.length > 0 ? (
           <DetailTable head={['Effector', 'Via', 'Medium', 'Latency']} rows={hopRows} />
         ) : (
           <p className="muted small">No route through this node.</p>
         )}
       </DetailSection>
-      <DetailSection id="timing" title="Detect to effect">
+      <DetailSection
+        id="timing"
+        title="Detect to effect"
+        collapsible
+        defaultOpen={false}
+        meta={plural(timingRows.length, 'threat')}
+      >
         {timingRows.length > 0 ? (
           <DetailTable head={['Threat', 'Detect', 'Effect', 'Delta']} rows={timingRows} />
         ) : (
           <p className="muted small">No threats with flight paths.</p>
         )}
       </DetailSection>
-      <DetailSection id="coverage" title="Route coverage">
+      <DetailSection
+        id="coverage"
+        title="Route coverage"
+        collapsible
+        defaultOpen={false}
+        meta={coverageSummary}
+      >
         {uncovered.length > 0 ? (
           <Rows rows={uncovered} />
         ) : (
