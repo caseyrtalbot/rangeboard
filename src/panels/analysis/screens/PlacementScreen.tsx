@@ -63,7 +63,7 @@ function SectionHead({
         {note && (
           <button
             type="button"
-            className="frag-info"
+            className="field-info"
             aria-label={`About ${title.toLowerCase()}`}
             title={note}
           >
@@ -71,7 +71,7 @@ function SectionHead({
           </button>
         )}
       </div>
-      {note && showHelp && <p className="frag-help">{note}</p>}
+      {note && showHelp && <p className="field-help">{note}</p>}
     </header>
   )
 }

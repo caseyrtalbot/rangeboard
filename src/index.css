@@ -2051,11 +2051,10 @@ p.muted.small {
    (ui/kit Field). The .field > span label rule would otherwise reach these
    spans and the info button, so each selector names its parent. A bare
    .field-info or .field-help outside a Field (a screen section head or note)
-   takes the same rule; .frag-info and .frag-help are its older names. */
+   takes the same rule. */
 
 .field .field-label > .field-info,
-.field-info,
-.frag-info {
+.field-info {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2069,14 +2068,12 @@ p.muted.small {
 }
 
 .field .field-label > .field-info:hover,
-.field-info:hover,
-.frag-info:hover {
+.field-info:hover {
   color: var(--text-primary);
 }
 
 .field > .field-help,
-.field-help,
-.frag-help {
+.field-help {
   display: block;
   margin: 0;
   color: var(--text-secondary);
@@ -2252,8 +2249,6 @@ select.nu-unit {
 }
 
 /* ---------- Analysis ---------- */
-
-/* Progressive disclosure: a lens bar over a stack of widget frames. */
 
 /* The analysis panel stacks its widgets edge to edge; each widget frames
    its own rhythm with a hairline and its header padding. */
@@ -4759,13 +4754,6 @@ input[type='number'] {
 
 .board-app .right-panel {
   max-width: 44vw;
-}
-
-.board-app .lens-b {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  max-width: 100%;
-  text-align: left;
 }
 
 .board-app .inspector-body > * {

@@ -907,6 +907,7 @@ export default function App() {
       // Native controls keep their keyboard activation; Space elsewhere controls playback.
       if (e.target instanceof HTMLElement && e.target.closest('button, summary, [role=tab]')) return
       if (e.key === 'Enter') {
+        if (e.metaKey || e.ctrlKey) return
         if (st.ui.tool === 'boundary') st.finishBoundary(true)
         if (st.ui.tool === 'path') st.finishPath()
         return

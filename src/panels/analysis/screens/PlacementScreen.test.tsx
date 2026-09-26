@@ -388,7 +388,7 @@ describe('PlacementScreen', () => {
       /<p class="empty-row"><span class="state warning">.*No range boundary\. Draw one on the board before a placement run\.<\/span><\/p>/,
     )
     expect(idle).toMatch(/class="empty-row">.*No current placement result\./)
-    expect(idle).not.toContain('frag-help')
+    expect(idle).not.toContain('field-help')
 
     change('Evaluations', '1')
     expect(render()).toContain(
@@ -398,7 +398,7 @@ describe('PlacementScreen', () => {
     // Field help on renders each note as a normal-weight line.
     useStore.setState(({ ui }) => ({ ui: { ...ui, showFieldHelp: true } }))
     expect(render()).toContain(
-      '<p class="frag-help">Every other entity, every threat and every asset stays put.</p>',
+      '<p class="field-help">Every other entity, every threat and every asset stays put.</p>',
     )
     useStore.setState(({ ui }) => ({ ui: { ...ui, showFieldHelp: false } }))
   })

@@ -282,14 +282,14 @@ describe('FragilityScreen', () => {
     useStore.setState({ ui: { ...useStore.getState().ui, showFieldHelp: true } })
     const html = render(true)
     expect(html).toContain(
-      '<p class="frag-help">Run Monte Carlo first to pin a baseline. Run settings are in the Inputs tab.</p>',
+      '<p class="field-help">Run Monte Carlo first to pin a baseline. Run settings are in the Inputs tab.</p>',
     )
     expect(html).toContain(
-      '<p class="frag-help">Planning-factor values. 40 replicates per cell.</p><p class="frag-help">Enter 2–6 distinct values per factor; up to two different factors and 36 cells.</p>',
+      '<p class="field-help">Planning-factor values. 40 replicates per cell.</p><p class="field-help">Enter 2–6 distinct values per factor; up to two different factors and 36 cells.</p>',
     )
-    expect(html).not.toContain('<p class="frag-help">Planning-factor values. Estimated time')
+    expect(html).not.toContain('<p class="field-help">Planning-factor values. Estimated time')
     expect(html).toContain(
-      '<p class="frag-help">Method: Morris then Sobol. Morris screening, then Sobol indices on the fields it keeps.</p>',
+      '<p class="field-help">Method: Morris then Sobol. Morris screening, then Sobol indices on the fields it keeps.</p>',
     )
     expect(html).toContain('aria-expanded="true"')
     expect(html).not.toContain('aria-expanded="false"')

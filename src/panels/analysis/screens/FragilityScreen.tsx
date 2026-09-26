@@ -85,7 +85,7 @@ function SectionHead({
         {readout && <span className="mono frag-readout">{readout}</span>}
         <button
           type="button"
-          className="frag-info"
+          className="field-info"
           aria-label={`About ${title.toLowerCase()}`}
           title={note}
         >
@@ -94,7 +94,7 @@ function SectionHead({
       </div>
       {showHelp &&
         help.map((line) => (
-          <p className="frag-help" key={line}>
+          <p className="field-help" key={line}>
             {line}
           </p>
         ))}
@@ -496,9 +496,9 @@ export function FragilityScreen() {
       </div>
       {showHelp &&
         (modeReason ? (
-          <p className="frag-help">{modeReason} to run analyses.</p>
+          <p className="field-help">{modeReason} to run analyses.</p>
         ) : (
-          <p className="frag-help">
+          <p className="field-help">
             {pinReason ? `${pinReason} to pin a baseline. ` : ''}Run settings are in the Inputs tab.
           </p>
         ))}
@@ -604,6 +604,9 @@ export function FragilityScreen() {
             <State tone="warning" hollow>
               No defended asset
             </State>
+            <button type="button" className="mini" onClick={openLibrary}>
+              Place asset
+            </button>
           </div>
         )}
         {mapFactors && (

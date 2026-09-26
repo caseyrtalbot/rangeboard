@@ -43,11 +43,11 @@ export function NoteInfo({ label, note }: { label: string; note: string }) {
   return (
     <>
       <div className="frag-head">
-        <button type="button" className="frag-info" aria-label={`About ${label}`} title={note}>
+        <button type="button" className="field-info" aria-label={`About ${label}`} title={note}>
           <IconInfo />
         </button>
       </div>
-      {showHelp && <p className="frag-help">{note}</p>}
+      {showHelp && <p className="field-help">{note}</p>}
     </>
   )
 }
