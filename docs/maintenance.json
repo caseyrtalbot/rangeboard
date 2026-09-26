@@ -20,6 +20,16 @@
       "note": "Reviewed the AGENTS.md workspace-fact edit for the chrome refactor queue. CLAUDE.md still only redirects to AGENTS.md; text unchanged."
     },
     {
+      "document": "CONTEXT.md",
+      "inputs": [
+        "src/model/types.ts",
+        "src/playback/trackTypes.ts"
+      ],
+      "sha256": "e84d86e87d2bea33886881b3fe60325684cdd0f8a2283a337aac38e9288f4901",
+      "reviewedAt": "2026-09-26",
+      "note": "Run timeline glossary created from the 2026-09-26 grilling session; terms checked against EntityKind, EffectorSpec.effectorType and FusedTrack."
+    },
+    {
       "document": "README.md",
       "inputs": [
         "package.json",
@@ -34,9 +44,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "197e238b1998570183163376b6c7e5fe6abf14c365887dc513a8c7828f82f4b5",
-      "reviewedAt": "2026-09-24",
-      "note": "Row C: the chrome-2026-09-24 final capture joins the completion records."
+      "sha256": "214ab2f7e99438206e8e7156b070245a3884c3a4e7080739ec4898fae9d456ee",
+      "reviewedAt": "2026-09-26",
+      "note": "timeline/SPEC.md joins the current references; Plan.md row reads as the completed chrome queue."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -95,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "a55294daf1136b609a9671055484d27a5d6262c5e9a910088d1f1b5bbb124421",
+      "sha256": "b8f63ec2151d8701b50d4609986336dff96f3cb3f58d5b0d6a572df505e6d2a9",
       "reviewedAt": "2026-09-26",
-      "note": "Added three TypeScript engine follow-up candidates from the 2026-09-25 CPU profile (Shnidman bisection, sweep object reads, per-step allocations); Rust port assessed and declined."
+      "note": "Rewritten in place 2026-09-26: position at f4363a3, Phase 1 of the run timeline plan selected, timeline landmines added; Row D record and candidates kept."
     },
     {
       "document": "docs/Plan.md",
@@ -105,6 +115,18 @@
       "sha256": "b986405a69a205f0b1f868084fe194afa6653cfca8332a6f334135303ec8a0d6",
       "reviewedAt": "2026-09-26",
       "note": "Row D appended: Row C follow-ups in four lanes, D10 wording decision."
+    },
+    {
+      "document": "docs/timeline/SPEC.md",
+      "inputs": [
+        "CONTEXT.md",
+        "src/panels/analysis/EngagementStrip.tsx",
+        "src/playback/retainTrial.ts",
+        "src/analysis/trialSeries.ts"
+      ],
+      "sha256": "338eb90b1423fb56418f9e5eb6210cf3c232392db2d1edc2154d780e68e84ed3",
+      "reviewedAt": "2026-09-26",
+      "note": "Created 2026-09-26: run timeline spec, architecture contracts and the four-phase plan with lane ownership and gates."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

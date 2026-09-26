@@ -11,6 +11,7 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | --- | --- |
 | [AGENTS.md](../AGENTS.md) | Concise shared agent instructions |
 | [CLAUDE.md](../CLAUDE.md) | Claude entry point pointing to AGENTS.md |
+| [CONTEXT.md](../CONTEXT.md) | Glossary for the run timeline: rows, marks, spans, sides, tracks |
 | [README.md](../README.md) | Project introduction and local setup |
 | [PROJECT_GUIDE.md](PROJECT_GUIDE.md) | Features, execution boundaries and refactor navigation |
 | [ENGINEERING_REFERENCE.md](ENGINEERING_REFERENCE.md) | Architecture, equations and implementation invariants |
@@ -18,7 +19,8 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [WORKFLOW.md](WORKFLOW.md) | Bounded work, documentation maintenance, handoffs and orchestration |
 | [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Implemented visual rules, tokens and shared components |
 | [HANDOFF.md](HANDOFF.md) | Position and landmines; rewritten in place, never a journal |
-| [Plan.md](Plan.md) | Frozen chrome refactor queue (Option C and the text-density pass); sessions advance only in the handoff |
+| [Plan.md](Plan.md) | Completed chrome refactor queue (Rows A to D); selects nothing |
+| [timeline/SPEC.md](timeline/SPEC.md) | Run timeline spec and four-phase plan; sessions advance only in the handoff |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
 Run `npm run docs:check`; follow the [workflow](WORKFLOW.md#documentation-maintenance) when

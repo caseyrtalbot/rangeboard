@@ -10,23 +10,31 @@ commit log. This file holds only the position, the current task and the landmine
 fresh agent starts from this file and the docs index. This file does not authorize a
 commit, push or merge.
 
-[Plan.md](Plan.md) is the chrome refactor queue (Option C plus the inspector text-density
-pass, 2026-09-24; Row D, the Row C follow-ups, added 2026-09-25). Rows A to D are built.
-Row D is integrated, reviewed and gated on `chrome/d-int`. The merge to `main` waits on
-the user. No row is selected after that merge.
+[timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
+four phases that replace the threat-only engagement strip with a multi-row run timeline.
+Phase 1 is selected. [Plan.md](Plan.md) is the completed chrome refactor queue (Rows A
+to D merged and pushed as `f4363a3`); it selects nothing.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. Local `main` equals `origin/main` at `8ac3bf6` (the
-  entry budget rework), pushed 2026-09-25 with Quality run 36222099950 green.
+- Repository `~/Projects/rangeboard`. Local `main` equals `origin/main` at `f4363a3`
+  (the Row D merge and the engine follow-up candidates), no worktrees, no lane branches.
+- Uncommitted on `main` (2026-09-26, this session): `CONTEXT.md` (the run timeline
+  glossary), `docs/timeline/SPEC.md` (the spec and plan), the `docs/README.md` rows and
+  `docs/maintenance.json` entries for both, and this file. `npm run docs:check` passes.
+  Commit them as one docs commit before the Phase 1 branch, with the user's authorization.
+- Run timeline design (2026-09-26): the grilling settled the tree recorded in
+  `timeline/SPEC.md` section 1; the mockup is
+  <https://claude.ai/artifact/PYWeMH5tEhE9fNS9uhrBEt> (synthetic trial, both themes,
+  Playwright-checked, 0 page errors). Facts the plan relies on: the Execute trial is one
+  precomputed draw and playback moves a cursor; `retainTrial.ts` drops per-step
+  `fusedTracks` from each assessment; `trialSeries.ts` already derives hold, coast,
+  window, preparation, flight, dwell and beam spans; no activation or per-decision
+  operator record exists.
 - Entry budget rework (`8ac3bf6`, 2026-09-25): the entry ceiling in `check-bundle.mjs` is
-  380,000 because seven raises in fifteen days for changes under 1 kB showed it tripping on
-  chrome edits. The chunk boundary is `scripts/check-entry-graph.mjs` with its freeze
-  `scripts/entry-graph.json` (4 packages, 107 guarded modules of 208 reachable), run by
-  `npm run check`; `check:bundle` also freezes the preloaded JavaScript to the rolldown and
-  JSX runtime chunks. The data and engine extraction (JSON assets, lazy engine client) was
-  assessed and declined: no user-visible gain at a 280 ms load against a boot-sequence
-  change through 51 files. D3 in `Plan.md` is superseded by this.
+  380,000. The chunk boundary is `scripts/check-entry-graph.mjs` with its freeze
+  `scripts/entry-graph.json`, run by `npm run check`; `check:bundle` also freezes the
+  preloaded JavaScript to the rolldown and JSX runtime chunks.
 - Row D (2026-09-25) ran as four lanes in `~/Projects/rangeboard-wt/d1..d4` on
   `chrome/d1..d4` from `8ac3bf6`: D1 `b14f642` (`opus-high`), D2 `069f87a` (`opus-high`),
   D3 `809f802` (`opus-high`), D4 `695d20d` (`opus-medium`). `chrome/int` (checked out in
@@ -173,10 +181,44 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-Row D is built on `chrome/d-int`; the merge to `main` and the push wait on the user. After
-the merge, no row is selected: the candidates above wait for the next triage.
+**Phase 1 of [timeline/SPEC.md](timeline/SPEC.md): model, no UI change.**
+
+- Base: `main` at `f4363a3` plus the docs commit above. Branch `timeline/p1` for the
+  contract commit and the integration; lanes `timeline/p1-a`, `p1-b`, `p1-c` in
+  worktrees `~/Projects/rangeboard-wt/tl-1a`, `tl-1b`, `tl-1c` outside the repository
+  with `node_modules` symlinked to the main checkout.
+- Outcome: the three modules of SPEC section 2.1 rows one to three, built to the
+  contracts in sections 2.2 and 2.3, with unit tests, and the `fusedTrack` summary
+  retained per assessment. No component, store or CSS change. Nothing imports the new
+  modules yet, so the entry graph is unchanged.
+- Order: the integrator makes the contract commit first (the `fusedTrack` field on
+  `ThreatAssessment` in `src/playback/sim.ts`, the two empty modules exporting the types).
+  Then the three lanes run in parallel with the file ownership in the SPEC Phase 1 table.
+  Brief shape per `~/.claude/rules/delegation.md`: working directory, owned files, the
+  gate command `npx vitest run --dir src <owned test>` then `npm run typecheck`, the report
+  shape (diff summary, checks run with output, unresolved findings), a time budget.
+- Exclusions: no edit to `EngagementStrip.tsx`, `App.tsx`, `TimelineBar.tsx`,
+  `index.css`, the store, or any doc other than ENGINEERING_REFERENCE.
+- Completion checks: `npm run check` green on `timeline/p1`; `npm run check:silent`
+  green; `schema:check` green (run `schema:generate` if the assessment type change moves
+  it); `opus-high` diff review with must-fix items closed; `fable-high` review of the
+  censoring rules in `runTimeline.ts` against ENGINEERING_REFERENCE section 3 with no
+  open finding; ENGINEERING_REFERENCE paragraph added and `docs:review` recorded;
+  `docs:check` green.
+- Next action: ask the user to authorize the docs commit, then make the contract commit.
+- Stop condition: Phase 1 merged to `main` with the user's authorization, this file
+  rewritten to select Phase 2 with the Phase 1 evidence (gate output, review findings)
+  recorded here, worktrees removed.
 
 ## Landmines
+
+- Run timeline (see [timeline/SPEC.md](timeline/SPEC.md) section 5): keep
+  `ENGSTRIP_OPEN_KEY` exported with the value `rangeboard.engstrip.open`;
+  `storageManagement.ts` derives live keys from the exports. Derive the `fusedTrack`
+  summary in `boundAssessment` before the per-step drop and keep no reference to the
+  list. The e2e playback-bar tests name the Engagement toggle; rename them with the
+  toggle in Phase 2. Moving the strip to a lazy chunk changes the entry-graph freeze;
+  rewrite it once with `--write` and name the reason in the commit.
 
 - `openLibrary(kind?, modelId?)` in `store.ts` bumps `ui.libraryRequest.seq`; App's
   subscription opens the drawer on a seq change and Palette consumes the request in the
