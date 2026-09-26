@@ -414,7 +414,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
     deleteModel,
     resetModelToSeed,
     select,
-    setRightTab,
+    openLibrary,
   } = useStore.getState()
 
   const model = scenario.library.find((m) => m.id === (modelId ?? libraryId))
@@ -1169,13 +1169,7 @@ export function LibraryEditor({ modelId }: { modelId?: string } = {}) {
         <p className="note" role="status">
           Added {availableCopy.name} to the library. This entity still uses {model.name}. Choose the
           copy in Configure to change its model.{' '}
-          <button
-            className="mini"
-            onClick={() => {
-              select({ libraryId: copiedModel.id })
-              setRightTab('library')
-            }}
-          >
+          <button className="mini" onClick={() => openLibrary(model.kind, copiedModel.id)}>
             Open duplicate in model library
           </button>
         </p>

@@ -54,6 +54,26 @@ describe('CommandPalette', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('opens a model command in the library drawer editor, not a panel tab', () => {
+    seen.clear()
+    const onClose = vi.fn()
+    const tab = useStore.getState().ui.rightTab
+    const seq = useStore.getState().ui.libraryRequest.seq
+    renderToStaticMarkup(<CommandPalette onClose={onClose} />)
+    const library = useStore.getState().scenario.library
+    const last = library[library.length - 1]
+
+    const item = seen.get('cmdk-item') as { onClick: () => void }
+    item.onClick()
+    expect(useStore.getState().ui.libraryRequest).toEqual({
+      seq: seq + 1,
+      kind: last.kind,
+      modelId: last.id,
+    })
+    expect(useStore.getState().selection.libraryId).toBe(last.id)
+    expect(useStore.getState().ui.rightTab).toBe(tab)
+  })
+
   it('offers the board editing tools only in Prepare (D3)', () => {
     const head = 'class="cmdk-head">Tool<'
     const renderIn = (phase: 'prepare' | 'execute') => {

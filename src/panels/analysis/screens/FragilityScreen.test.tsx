@@ -259,6 +259,20 @@ describe('FragilityScreen', () => {
     )
   })
 
+  it('opens the library at its Assets group from Place asset', () => {
+    const scenario = emptyScenario()
+    scenario.runMode = 'monte-carlo'
+    useStore.getState().replaceScenario(scenario)
+    const seq = useStore.getState().ui.libraryRequest.seq
+    expect(render()).toContain('No defended asset')
+    interaction.buttons.get('Place asset')!.onClick()
+    expect(useStore.getState().ui.libraryRequest).toEqual({
+      seq: seq + 1,
+      kind: 'asset',
+      modelId: null,
+    })
+  })
+
   it('shows every moved sentence as a help line with field help on', () => {
     useStore.setState({ ui: { ...useStore.getState().ui, showFieldHelp: true } })
     const html = render(true)

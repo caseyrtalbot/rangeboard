@@ -21,6 +21,9 @@ describe('Palette drawer', () => {
       setItem: (key: string, value: string) => settings.set(key, value),
     })
     useStore.getState().replaceScenario(emptyScenario())
+    useStore.setState((s) => ({
+      ui: { ...s.ui, libraryRequest: { seq: 0, kind: null, modelId: null } },
+    }))
   })
 
   afterEach(() => vi.unstubAllGlobals())
@@ -105,6 +108,33 @@ describe('Palette drawer', () => {
     expect(html).toContain('aria-valuemin="180"')
     expect(html).toContain('aria-valuemax="480"')
     expect(html).toContain('tabindex="0"')
+  })
+
+  it('shows a model editor in place of the list, at no less than 408 px, with a way back', () => {
+    const tab = useStore.getState().ui.rightTab
+    useStore.getState().openLibrary('sensor', 'lib-giraffe1x')
+    const html = render()
+
+    expect(useStore.getState().selection.libraryId).toBe('lib-giraffe1x')
+    expect(useStore.getState().ui.rightTab).toBe(tab)
+    expect(html).toContain('style="width:408px"')
+    expect(html).toContain('aria-label="Back to library" title="Back to library"')
+    expect(html).toContain('aria-label="Close library"')
+    expect(html).toContain('Giraffe 1X 3D radar (Saab)')
+    expect(html).not.toContain('aria-label="Search library"')
+    expect(html).not.toContain('aria-label="Library actions"')
+  })
+
+  it('keeps the list for a kind request and a closed drawer, with an id on each group', () => {
+    useStore.getState().openLibrary('asset')
+    const listed = render()
+    expect(listed).toContain('id="library-group-asset"')
+    expect(listed).toContain('aria-label="Search library"')
+    expect(listed).not.toContain('Back to library')
+    expect(useStore.getState().selection.libraryId).toBeNull()
+
+    useStore.getState().openLibrary('sensor', 'lib-giraffe1x')
+    expect(render({ open: false })).not.toContain('Back to library')
   })
 
   it('renders tactics as real buttons that retain the existing action labels', () => {

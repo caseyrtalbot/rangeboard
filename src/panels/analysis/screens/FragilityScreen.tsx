@@ -91,15 +91,9 @@ function SectionHead({
   )
 }
 
-/**
- * The library drawer's state lives in App; the rail's Library button owns it.
- * Press that button unless the drawer is already open.
- */
+/** Open the library drawer at its Assets group. */
 function openLibrary() {
-  const trigger = document.querySelector<HTMLButtonElement>(
-    'button[aria-controls="board-library-drawer"]',
-  )
-  if (trigger && trigger.getAttribute('aria-expanded') !== 'true') trigger.click()
+  useStore.getState().openLibrary('asset')
 }
 
 /** The first clause of a finding with its mark, and the rest; joined by a space they are the message. */

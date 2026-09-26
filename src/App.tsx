@@ -23,7 +23,6 @@ import { Inspector } from './panels/Inspector'
 import { AnalysisNavigation } from './panels/analysis/AnalysisNavigation'
 import { EntityWorkspace } from './panels/EntityWorkspace'
 import type { EntityWorkspaceSection } from './panels/EntityWorkspace'
-import { LibraryEditor } from './panels/LibraryEditor'
 import { BoardPreparation } from './panels/BoardPreparation'
 import type { AnalysisScreen } from './panels/analysis/screens/navigation'
 import { EngagementStrip } from './panels/analysis/EngagementStrip'
@@ -48,7 +47,6 @@ import { usePopover } from './ui/usePopover'
 import { nextTabIndex } from './ui/rovingTabs'
 
 // Right-panel tabs and the palette: each opens on demand, so each loads on demand.
-// LibraryEditor stays static because EntityWorkspace renders it inline.
 const AnalysisPanel = lazy(() =>
   import('./panels/AnalysisPanel').then((m) => ({ default: m.AnalysisPanel })),
 )
@@ -212,8 +210,6 @@ const PanelTabs = memo(function PanelTabs({
   setRightTab: (t: RightTab) => void
 }) {
   const contextual: { id: RightTab; label: string; dot: boolean }[] = []
-  if (activeTab === 'library')
-    contextual.push({ id: 'library', label: 'Model library', dot: false })
   if (objectLabel != null) contextual.push({ id: 'inspect', label: objectLabel, dot: true })
   return (
     <div className="insp-tabs" role="tablist" aria-label="Board panel views" onKeyDown={moveTab}>
@@ -552,7 +548,7 @@ export default function App() {
   const setBoardPhase = useStore((s) => s.setBoardPhase)
 
   useEffect(() => {
-    // A saved view from before the Model library tab left the row opens on analysis.
+    // The Model library tab left the row; a saved view that holds it opens on analysis.
     const saved = savedView().rightTab
     if (saved == null || saved === 'library') setRightTab('analysis')
   }, [setRightTab])
@@ -732,6 +728,15 @@ export default function App() {
       stopBoard()
     }
   }, [])
+
+  // `openLibrary` in the store: every call opens the drawer.
+  useEffect(
+    () =>
+      useStore.subscribe((state, previous) => {
+        if (state.ui.libraryRequest.seq !== previous.ui.libraryRequest.seq) setLibraryOpen(true)
+      }),
+    [],
+  )
 
   const openPhase = useCallback(
     (phase: BoardPhase) => {
@@ -1062,7 +1067,6 @@ export default function App() {
                 ) : (
                   <Inspector />
                 ))}
-              {activeTab === 'library' && <LibraryEditor />}
               {activeTab === 'analysis' &&
                 (analysisScreen === 'inputs' ? (
                   <BoardPreparation />
