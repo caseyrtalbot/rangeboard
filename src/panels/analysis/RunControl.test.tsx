@@ -268,7 +268,7 @@ describe('RunControl', () => {
   it('shows the key hint and ends every enabled title with it', () => {
     const html = render()
     expect(html).toContain('title="Run (⌘↵)"')
-    expect(html).toContain('>Run<kbd class="kbd run-key">⌘↵</kbd></button>')
+    expect(html).toContain('>Run<kbd class="kbd run-key" aria-hidden="true">⌘↵</kbd></button>')
     setMc({ status: 'running', progress: 4, total: 100 })
     expect(render()).toContain('title="Stop (⌘↵)"')
     setMc({ status: 'done', summary: summary(20, 'replicates') })

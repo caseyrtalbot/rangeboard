@@ -234,10 +234,10 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
             findings
           </summary>
           {!view.validity && (
-            <NoteInfo
-              label="validity"
-              note="Forecast · requirement validity. No trial validity assessment was captured."
-            />
+            <>
+              <EmptyRow>No trial validity assessment was captured.</EmptyRow>
+              <NoteInfo label="validity" note="Forecast · requirement validity." />
+            </>
           )}
           <RunValidityBanner assessment={validity} />
         </details>

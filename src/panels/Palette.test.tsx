@@ -8,7 +8,50 @@ import { Palette } from './Palette'
 
 const settings = new Map<string, string>()
 
+type Props = Record<string, unknown>
+
+// Node has no DOM renderer. A test fires a handler from the props recorded by
+// aria-label, runs the collected effects, and with `keep` set carries local state
+// from one static render to the next.
+const harness = vi.hoisted(() => ({
+  props: new Map<string, Record<string, unknown>>(),
+  effects: [] as Array<() => void>,
+  keep: false,
+  slots: [] as unknown[],
+  next: 0,
+}))
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  function useState<T>(init: T | (() => T)) {
+    if (!harness.keep) return actual.useState(init)
+    const i = harness.next++
+    if (!(i in harness.slots)) harness.slots[i] = init instanceof Function ? init() : init
+    const set = (v: T | ((prev: T) => T)) => {
+      harness.slots[i] = v instanceof Function ? v(harness.slots[i] as T) : v
+    }
+    return [harness.slots[i] as T, set] as const
+  }
+  const useEffect = (effect: () => void) => void harness.effects.push(effect)
+  return { ...actual, useState, useEffect }
+})
+vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
+  const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
+    const label = (props as Props)['aria-label']
+    if (typeof label === 'string') harness.props.set(label, props as Props)
+    return actual.jsxDEV(type, props, ...rest)
+  }
+  return { ...actual, jsxDEV }
+})
+
+function fire(label: string, handler: string, event?: unknown): void {
+  ;(harness.props.get(label)![handler] as (event?: unknown) => void)(event)
+}
+
 function render(props?: ComponentProps<typeof Palette>): string {
+  harness.props.clear()
+  harness.effects = []
+  harness.next = 0
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(<Palette {...props} />)
 }
@@ -26,7 +69,11 @@ describe('Palette drawer', () => {
     }))
   })
 
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    harness.keep = false
+    harness.slots = []
+  })
 
   it('opens at the new default width with an accessible close and focused search target', () => {
     const html = render()
@@ -123,6 +170,69 @@ describe('Palette drawer', () => {
     expect(html).toContain('Giraffe 1X 3D radar (Saab)')
     expect(html).not.toContain('aria-label="Search library"')
     expect(html).not.toContain('aria-label="Library actions"')
+  })
+
+  it('fixes the editor width and keeps the saved list width while the editor shows', () => {
+    harness.keep = true
+    render()
+    fire('Resize library', 'onKeyDown', { key: 'ArrowLeft', preventDefault() {} })
+    expect(settings.get(PALETTE_WIDTH_KEY)).toBe('294')
+
+    useStore.getState().openLibrary('sensor', 'lib-giraffe1x')
+    const editor = render()
+    expect(editor).toContain('style="width:408px"')
+    expect(editor).not.toContain('role="separator"')
+    expect(harness.props.has('Resize library')).toBe(false)
+    expect(settings.get(PALETTE_WIDTH_KEY)).toBe('294')
+
+    fire('Back to library', 'onClick')
+    const list = render()
+    expect(list).toContain('style="width:294px"')
+    expect(list).toContain('aria-valuenow="294"')
+  })
+
+  it('opens the editor from Model basis and from a group add button', () => {
+    harness.keep = true
+    const seq = useStore.getState().ui.libraryRequest.seq
+    render()
+    fire('Open Giraffe 1X 3D radar (Saab) model basis', 'onClick')
+    expect(useStore.getState().ui.libraryRequest).toEqual({
+      seq: seq + 1,
+      kind: 'sensor',
+      modelId: 'lib-giraffe1x',
+    })
+    expect(render()).toContain('aria-label="Back to library"')
+
+    fire('Back to library', 'onClick')
+    render()
+    fire('New Effectors model', 'onClick')
+    const added = useStore.getState().scenario.library.at(-1)!
+    expect(added.kind).toBe('effector')
+    expect(useStore.getState().ui.libraryRequest).toEqual({
+      seq: seq + 2,
+      kind: 'effector',
+      modelId: added.id,
+    })
+    expect(render()).toContain('aria-label="Back to library"')
+  })
+
+  it('expands and focuses the group of a kind request for this session only', () => {
+    harness.keep = true
+    settings.set(PALETTE_COLLAPSED_KEY, JSON.stringify({ sensor: true }))
+    expect(render()).toContain('aria-label="Expand Sensors" aria-expanded="false"')
+
+    useStore.getState().openLibrary('sensor')
+    render()
+    const html = render()
+    expect(html).toContain('aria-label="Collapse Sensors" aria-expanded="true"')
+
+    const toggle = { scrollIntoView: vi.fn(), focus: vi.fn() }
+    const aside = { querySelector: vi.fn(() => toggle), closest: () => null }
+    ;(harness.props.get('Model library')!.ref as { current: unknown }).current = aside
+    for (const effect of harness.effects) effect()
+    expect(aside.querySelector).toHaveBeenCalledWith('#library-group-sensor .palette-toggle')
+    expect(toggle.focus).toHaveBeenCalledOnce()
+    expect(settings.get(PALETTE_COLLAPSED_KEY)).toBe(JSON.stringify({ sensor: true }))
   })
 
   it('keeps the list for a kind request and a closed drawer, with an id on each group', () => {

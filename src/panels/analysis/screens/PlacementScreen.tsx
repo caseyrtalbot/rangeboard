@@ -20,6 +20,7 @@ import { KIND_NAMES } from '../../../state/labels'
 import { useStore } from '../../../state/store'
 import { Field, State } from '../../../ui/kit'
 import { IconInfo } from '../../../ui/icons'
+import { EmptyRow } from '../DebriefRecord'
 import { formatCount } from '../mc'
 
 const wrap = {
@@ -73,17 +74,6 @@ function SectionHead({
       </div>
       {note && showHelp && <p className="field-help">{note}</p>}
     </header>
-  )
-}
-
-/** An empty-state row: the missing input named in a hollow warning state. */
-function EmptyRow({ children }: { children: string }) {
-  return (
-    <p className="empty-row">
-      <State tone="warning" hollow>
-        {children}
-      </State>
-    </p>
   )
 }
 
@@ -199,9 +189,7 @@ export function PlacementScreen() {
         {result?.budget.seed ?? settings.seed} · modeled, not observed.
       </p>
       {!enabled && (
-        <p className="line-error">
-          Choose Monte Carlo mode in the Inputs tab to run a placement study.
-        </p>
+        <EmptyRow>Choose Monte Carlo mode in the Inputs tab to run a placement study.</EmptyRow>
       )}
 
       <section aria-label="Objective">

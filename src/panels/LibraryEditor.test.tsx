@@ -1,12 +1,47 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LibraryEditor } from './LibraryEditor'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 
+// Node has no DOM renderer. A test fires a button by its text, and with `keep` set
+// local state carries from one static render to the next.
+const harness = vi.hoisted(() => ({
+  buttons: new Map<string, () => void>(),
+  keep: false,
+  slots: [] as unknown[],
+  next: 0,
+}))
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  function useState<T>(init: T | (() => T)) {
+    if (!harness.keep) return actual.useState(init)
+    const i = harness.next++
+    if (!(i in harness.slots)) harness.slots[i] = init instanceof Function ? init() : init
+    const set = (v: T | ((prev: T) => T)) => {
+      harness.slots[i] = v instanceof Function ? v(harness.slots[i] as T) : v
+    }
+    return [harness.slots[i] as T, set] as const
+  }
+  return { ...actual, useState }
+})
+vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
+  const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
+    const p = props as { children?: unknown; onClick?: () => void }
+    if (type === 'button' && typeof p.children === 'string' && p.onClick) {
+      harness.buttons.set(p.children, p.onClick)
+    }
+    return actual.jsxDEV(type, props, ...rest)
+  }
+  return { ...actual, jsxDEV }
+})
+
 // zustand 5 gives react-dom/server the store's initial state, not the live one,
 // so every static render of a store-reading panel needs the two in step.
 function render(modelId?: string): string {
+  harness.buttons.clear()
+  harness.next = 0
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(<LibraryEditor modelId={modelId} />)
 }
@@ -14,6 +49,28 @@ function render(modelId?: string): string {
 describe('LibraryEditor sources', () => {
   beforeEach(() => {
     useStore.getState().replaceScenario(emptyScenario())
+  })
+
+  afterEach(() => {
+    harness.keep = false
+    harness.slots = []
+  })
+
+  it('opens an entity-scoped duplicate in the model library drawer', () => {
+    harness.keep = true
+    const seq = useStore.getState().ui.libraryRequest.seq
+    render('lib-giraffe1x')
+    harness.buttons.get('Duplicate')!()
+    const copy = useStore.getState().scenario.library.at(-1)!
+    expect(render('lib-giraffe1x')).toContain(`Added ${copy.name} to the library.`)
+
+    harness.buttons.get('Open duplicate in model library')!()
+    expect(useStore.getState().ui.libraryRequest).toEqual({
+      seq: seq + 1,
+      kind: 'sensor',
+      modelId: copy.id,
+    })
+    expect(useStore.getState().selection.libraryId).toBe(copy.id)
   })
 
   it('edits an explicit model without changing selection or using the selected library model', () => {

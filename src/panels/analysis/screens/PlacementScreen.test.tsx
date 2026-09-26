@@ -380,10 +380,11 @@ describe('PlacementScreen', () => {
     expect(idle).toContain(
       'aria-label="About Placement response" title="Minimize Leakers (members)."',
     )
-    // A rule is an error line; a missing input is an empty-state row.
-    expect(idle).toContain(
-      '<p class="line-error">Choose Monte Carlo mode in the Inputs tab to run a placement study.</p>',
+    // A mode status and a missing input are empty-state rows; a rule is an error line.
+    expect(idle).toMatch(
+      /<p class="empty-row"><span class="state warning">(?:(?!<\/p>).)*Choose Monte Carlo mode in the Inputs tab to run a placement study\.<\/span><\/p>/,
     )
+    expect(idle).not.toContain('<p class="line-error">Choose Monte Carlo mode')
     expect(idle).toMatch(
       /<p class="empty-row"><span class="state warning">.*No range boundary\. Draw one on the board before a placement run\.<\/span><\/p>/,
     )

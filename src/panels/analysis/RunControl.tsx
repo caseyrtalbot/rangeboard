@@ -189,7 +189,9 @@ export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
         onClick={() => runPrimaryAction(phase)}
       >
         {label}
-        <kbd className="kbd run-key">{RUN_KEY}</kbd>
+        <kbd className="kbd run-key" aria-hidden="true">
+          {RUN_KEY}
+        </kbd>
       </button>
       {progress && (
         <span className="run-progress" role="status">

@@ -360,7 +360,7 @@ export const Palette = memo(function Palette({
 
   function startResize(e: ReactMouseEvent<HTMLDivElement>) {
     e.preventDefault()
-    dragFrom.current = { x: e.clientX, w: shownWidth }
+    dragFrom.current = { x: e.clientX, w: width }
     function onMove(ev: MouseEvent) {
       const from = dragFrom.current
       if (!from) return
@@ -378,9 +378,9 @@ export const Palette = memo(function Palette({
   function resizeWithKeyboard(event: KeyboardEvent<HTMLDivElement>) {
     const next =
       event.key === 'ArrowLeft'
-        ? shownWidth - KEYBOARD_STEP_W
+        ? width - KEYBOARD_STEP_W
         : event.key === 'ArrowRight'
-          ? shownWidth + KEYBOARD_STEP_W
+          ? width + KEYBOARD_STEP_W
           : event.key === 'Home'
             ? MIN_W
             : event.key === 'End'
@@ -597,19 +597,22 @@ export const Palette = memo(function Palette({
           </div>
         </>
       )}
-      <div
-        className="palette-resizer"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize library"
-        aria-valuenow={shownWidth}
-        aria-valuemin={MIN_W}
-        aria-valuemax={MAX_W}
-        tabIndex={0}
-        title="Drag or use the arrow keys to resize"
-        onMouseDown={startResize}
-        onKeyDown={resizeWithKeyboard}
-      />
+      {/* The editor width is fixed at max(saved, EDITOR_W); only the list resizes. */}
+      {!editModel && (
+        <div
+          className="palette-resizer"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize library"
+          aria-valuenow={width}
+          aria-valuemin={MIN_W}
+          aria-valuemax={MAX_W}
+          tabIndex={0}
+          title="Drag or use the arrow keys to resize"
+          onMouseDown={startResize}
+          onKeyDown={resizeWithKeyboard}
+        />
+      )}
     </aside>
   )
 })

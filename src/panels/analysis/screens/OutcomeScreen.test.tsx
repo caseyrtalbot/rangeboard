@@ -213,7 +213,10 @@ describe('OutcomeScreen', () => {
     expect(html).toContain('Jam failed')
     expect(html).toContain('mixed-fixed-trial')
     expect(html).toContain('Build revision unavailable')
-    expect(html).toContain('No trial validity assessment was captured')
+    expect(html).toMatch(
+      /<p class="empty-row"><span class="state warning">(?:(?!<\/p>).)*No trial validity assessment was captured\.<\/span><\/p>/,
+    )
+    expect(html).toContain('title="Forecast · requirement validity."')
     expect(html).toContain('Export debrief JSON')
     expect(html).toContain('Capture final PNG')
     expect(html).toContain('Forecast · requirement record')
