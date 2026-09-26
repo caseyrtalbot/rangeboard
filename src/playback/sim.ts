@@ -74,6 +74,22 @@ interface ClassificationTimes {
   hostileAtS: number | null
 }
 
+/**
+ * What the page keeps of `fusedTracks` after retention (retainTrial.ts): the
+ * first and last step with a fused track, the node that formed the first one,
+ * and each member sensor with the first step it fed the fused track.
+ */
+export interface FusedTrackSummary {
+  /** First sweep step with a fused track, seconds. */
+  initAtS: number
+  /** Last sweep step with a fused track, seconds. */
+  lastAtS: number
+  /** C2 node of the first fused track; `NO_C2` (fusion.ts) when the sensors fused it. */
+  c2Id: string
+  /** Member sensors in the order they first fed the fused track. */
+  members: Array<{ sensorId: string; fromS: number }>
+}
+
 /** Track continuity from first detection through closest approach/path end. */
 interface TrackQualitySummary {
   heldSamples: number
@@ -182,9 +198,11 @@ export interface ThreatAssessment {
   /**
    * The fused track at each sweep step where one exists (fusion.ts): the C2
    * picture after link latency, or the sensor-level fusion with no C2 node.
-   * Per replicate, discarded with the assessment; no summary retains it.
+   * Per replicate; the page retention drops it and keeps `fusedTrack`.
    */
   fusedTracks?: FusedTrack[]
+  /** Set only on a retained trial (retainTrial.ts); absent when nothing fused. */
+  fusedTrack?: FusedTrackSummary
   /** Union-of-sensors hold quality from first detection to the decision horizon. */
   trackQuality?: TrackQualitySummary | null
   /**
