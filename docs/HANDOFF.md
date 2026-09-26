@@ -12,17 +12,61 @@ commit, push or merge.
 
 [timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
-Phase 1 is selected. [Plan.md](Plan.md) is the completed chrome refactor queue (Rows A
+Phase 1 (the model, no UI) is merged to local `main`. Phase 2 is selected. [Plan.md](Plan.md) is the completed chrome refactor queue (Rows A
 to D merged and pushed as `f4363a3`); it selects nothing.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. Local `main` equals `origin/main` at `f4363a3`
-  (the Row D merge and the engine follow-up candidates), no worktrees, no lane branches.
-- Uncommitted on `main` (2026-09-26, this session): `CONTEXT.md` (the run timeline
-  glossary), `docs/timeline/SPEC.md` (the spec and plan), the `docs/README.md` rows and
-  `docs/maintenance.json` entries for both, and this file. `npm run docs:check` passes.
-  Commit them as one docs commit before the Phase 1 branch, with the user's authorization.
+- Repository `~/Projects/rangeboard`. Local `main` carries run timeline Phase 1, a
+  fast-forward of `timeline/p1`, and is ahead of `origin/main` (`f4363a3`). It is not
+  pushed. No worktrees and no lane branches remain.
+- Run timeline Phase 1 (2026-09-26) on `timeline/p1` from `f4363a3`: the docs commit
+  `56f93d2` (`CONTEXT.md`, the spec, their index rows and reviews), the contract commit
+  `f50d209`, lane 1A `9913893` (`opus-medium`, the retention summary), lane 1B `91e75de`
+  (`opus-high`, the model), lane 1C `e33e1f1` (`opus-medium`, the viewport), then the
+  integration `3f12c45`, the integrator fixes `839f70f`, the review fixes `81e3bf9` and
+  this handoff. Lane 1B's first run stalled for 600 s with nothing on disk; resumed with
+  writes of about 150 lines and a WIP commit, it finished.
+- What Phase 1 built. `ThreatAssessment.fusedTrack` (`FusedTrackSummary` in `sim.ts`):
+  `boundAssessment` derives the first and last fused step, each C2 node that held the
+  fused picture and each member sensor, each with its first step, before it drops the
+  per-step list. `runTimelineOf(view, horizonS)` in `src/analysis/runTimeline.ts`: the
+  groups, rows, sub-lanes, spans and marks of SPEC 1.2, censored once at the lesser of the
+  horizon and `observedThroughS`, memoized per view with four models per horizon, a fully
+  reached row returned as the same object. `src/charts/timeViewport.ts`: `clampViewport`,
+  `followViewport`, `zoomViewport`, `viewportTicks`, `xOf` and `DEFAULT_WINDOW_S`,
+  `MIN_WINDOW_S`, `FOLLOW_AT`, `ZOOM_STEP`. No component imports the model or the
+  viewport yet. ENGINEERING_REFERENCE carries the model paragraph and the summary text.
+- Phase 1 gate on `timeline/p1` (2026-09-26): `npm run check` passes (213 files,
+  2,328 tests, docs and evidence gates green, entry graph 107 of 208, build green);
+  `check:silent` passes; `check:bundle` entry 368,901 against 380,000 and initial
+  386,438 against 400,000 (the retention summary adds 141 entry bytes over Row D's
+  368,760); `schema:check` passes unchanged, since the runtime schema reads only
+  `src/model/types.ts`. `test:e2e` was not run: Phase 1 changes no UI.
+- Phase 1 reviews. The integrator closed two leaks before review (`839f70f`): a later
+  kill hid a track's drop mark and a threat's CPA mark. The `opus-high` diff review found
+  one must-fix (a kill with no planned arrival drew no ghost) and should-fixes (in-range
+  windows ran past a kill; the summary kept only the first node, so a node that took the
+  picture later, or a board where the sensors fused first, lost its C2 marks; no test for
+  the last-member kill, the burst span or a run with no estimates; the zoom no-op skipped
+  the clamp; the tick spacing test asserted 64 px); all closed in `81e3bf9`. Its nit on
+  the formation count is moot: `trialResultOf` holds the attrition ship count equal to
+  the formation count. The `fable-high` censoring review found no must-fix: false track
+  numbering read the whole run (closed in `81e3bf9`), and the C2 assignment route reads
+  the full-run detecting set (open, engine side, see Follow-ups). Its re-check of
+  `81e3bf9` found no leak.
+- Spec text Phase 1 departed from, each with its reason: the summary is `{ initAtS,
+  lastAtS, nodes, members }` in place of `memberSensorIds` (the C2 row needs every node
+  that held the picture; the track row meta needs first steps to censor the member
+  list); ticks reuse `tickStepS`, so they sit at least 70 px apart, not 64; a mark exactly
+  at the horizon draws (`reached` is inclusive; section 1.4 says "at or past"); the
+  GROUP_AT fold of same-named threats is not in the model (the contract has no fold
+  shape; lane 2A builds it); `jamDecisions` is not read (every effect mark prints the
+  event pk; no rule uses the continue-jam outcome); a fused track row appears at its
+  first fused step even when an assignment came first; after a kill the ghost runs to
+  the planned arrival, else to the path end, and in-range windows stop at the kill; the
+  C2 row marks init on every node that held the fused picture and firm on the nodes that
+  held it by then.
 - Run timeline design (2026-09-26): the grilling settled the tree recorded in
   `timeline/SPEC.md` section 1; the mockup is
   <https://claude.ai/artifact/PYWeMH5tEhE9fNS9uhrBEt> (synthetic trial, both themes,
@@ -93,6 +137,22 @@ to D merged and pushed as `f4363a3`); it selects nothing.
 
 Handling: candidates, not rows. Row D took the Row C review items and the class 2, 3 and 4
 canvas deviations. What remains:
+
+From run timeline Phase 1 (each needs a user decision):
+
+- The C2 assignment row: `runTimeline.ts` routes each assignment with `killChainRoutes`
+  over the full-run `detectingSensorIds`, as `attrition.ts` does, so a sensor that first
+  detects after the horizon can move an assignment mark between C2 rows. The fix records
+  the assigning node on `EngagementEvent` in attrition, an engine change that SPEC 1.6
+  excludes from this plan.
+- The engine sweep ignores kills: sensor holds, the fused track and the track ramp run to
+  the path end after the last member falls, as the board's TrackLayer shows. The timeline
+  follows the engine picture; clipping at the kill is a product decision.
+- A row with any item past the horizon is a new object at every horizon, even when its
+  reached content is the same. Phase 4 measures before adding reuse: 4 ms first build and
+  0.008 ms per horizon pass on the 54-entity perf board (1,322 s, 14,277 estimates).
+- A node that held the fused picture and lost it before the firm time still gets a firm
+  mark on its C2 row. An empty trial and a zero duration have no model test.
 
 From the Row D review:
 
@@ -181,44 +241,53 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Phase 1 of [timeline/SPEC.md](timeline/SPEC.md): model, no UI change.**
+**Phase 2 of [timeline/SPEC.md](timeline/SPEC.md): the strip.**
 
-- Base: `main` at `f4363a3` plus the docs commit above. Branch `timeline/p1` for the
-  contract commit and the integration; lanes `timeline/p1-a`, `p1-b`, `p1-c` in
-  worktrees `~/Projects/rangeboard-wt/tl-1a`, `tl-1b`, `tl-1c` outside the repository
-  with `node_modules` symlinked to the main checkout.
-- Outcome: the three modules of SPEC section 2.1 rows one to three, built to the
-  contracts in sections 2.2 and 2.3, with unit tests, and the `fusedTrack` summary
-  retained per assessment. No component, store or CSS change. Nothing imports the new
-  modules yet, so the entry graph is unchanged.
-- Order: the integrator makes the contract commit first (the `fusedTrack` field on
-  `ThreatAssessment` in `src/playback/sim.ts`, the two empty modules exporting the types).
-  Then the three lanes run in parallel with the file ownership in the SPEC Phase 1 table.
-  Brief shape per `~/.claude/rules/delegation.md`: working directory, owned files, the
-  gate command `npx vitest run --dir src <owned test>` then `npm run typecheck`, the report
-  shape (diff summary, checks run with output, unresolved findings), a time budget.
-- Exclusions: no edit to `EngagementStrip.tsx`, `App.tsx`, `TimelineBar.tsx`,
-  `index.css`, the store, or any doc other than ENGINEERING_REFERENCE.
-- Completion checks: `npm run check` green on `timeline/p1`; `npm run check:silent`
-  green; `schema:check` green (run `schema:generate` if the assessment type change moves
-  it); `opus-high` diff review with must-fix items closed; `fable-high` review of the
-  censoring rules in `runTimeline.ts` against ENGINEERING_REFERENCE section 3 with no
-  open finding; ENGINEERING_REFERENCE paragraph added and `docs:review` recorded;
-  `docs:check` green.
-- Next action: ask the user to authorize the docs commit, then make the contract commit.
-- Stop condition: Phase 1 merged to `main` with the user's authorization, this file
-  rewritten to select Phase 2 with the Phase 1 evidence (gate output, review findings)
-  recorded here, worktrees removed.
+- Base: local `main` with Phase 1. Branch `timeline/p2` for the integration; lanes
+  `timeline/p2-a` and `p2-b` in worktrees `~/Projects/rangeboard-wt/tl-2a` and `tl-2b`
+  outside the repository with `node_modules` symlinked to the main checkout.
+- Outcome: the strip of SPEC sections 1.1 to 1.4 in `src/panels/timeline/`, fed by
+  `runTimelineOf` and `timeViewport.ts`; the `ui.runTimeline` slice; the lazy mount, the
+  resizer and the `Timeline` toggle; `EngagementStrip.tsx`, its test, the `.engstrip` CSS
+  and `censorLane.ts` deleted; the entry-graph freeze rewritten once with the reason.
+- Order: lanes 2A (`opus-high`) and 2B (`opus-medium`) in parallel with the file
+  ownership in the SPEC Phase 2 table, then the integration (`opus-high`).
+- Inputs from Phase 1: call `runTimelineOf(view, trial.horizon)` with
+  `view = trialViewOf(trial)`, the horizon `EngagementStrip` reads today. The component
+  never compares a time with the horizon. Key memoized rows by `row.key` and keep the row
+  object identity. Take the window constants from `timeViewport.ts`. Lane 2A builds the
+  GROUP_AT fold as a pure helper under `src/panels/timeline/` with a test.
+- Brief shape per `~/.claude/rules/delegation.md`. Tell each worker to write a large file
+  in parts of about 150 lines and to make a WIP commit once it typechecks.
+- Exclusions: no engine or physics change; no edit to `runTimeline.ts` or
+  `timeViewport.ts` except an integrator fix with a test.
+- Completion checks: the SPEC Phase 2 gates, the browser check at 1265 px on the
+  JIATF-401 laydown with evidence under `docs/field-te/evidence/run-timeline-p2-<date>/`
+  and `oxipng`, the PROJECT_GUIDE, DESIGN_SYSTEM, VERIFICATION and ENGINEERING_REFERENCE
+  edits with `docs:review`, and the `opus-high` diff review with must-fix items closed.
+- Next action: branch `timeline/p2` from `main`, create the two worktrees, launch 2A
+  and 2B.
+- Stop condition: Phase 2 merged to `main` with the user's authorization, this file
+  rewritten to select Phase 3 with the Phase 2 evidence, worktrees removed.
 
 ## Landmines
 
 - Run timeline (see [timeline/SPEC.md](timeline/SPEC.md) section 5): keep
   `ENGSTRIP_OPEN_KEY` exported with the value `rangeboard.engstrip.open`;
-  `storageManagement.ts` derives live keys from the exports. Derive the `fusedTrack`
-  summary in `boundAssessment` before the per-step drop and keep no reference to the
-  list. The e2e playback-bar tests name the Engagement toggle; rename them with the
-  toggle in Phase 2. Moving the strip to a lazy chunk changes the entry-graph freeze;
-  rewrite it once with `--write` and name the reason in the commit.
+  `storageManagement.ts` derives live keys from the exports. The e2e playback-bar tests
+  name the Engagement toggle; rename them with the toggle in Phase 2. Moving the strip to
+  a lazy chunk changes the entry-graph freeze; rewrite it once with `--write` and name
+  the reason in the commit.
+- `fusedTrack` exists only on a retained trial (`boundRetainedTrial`); a view built from
+  an engine result has no fused track rows and no C2 init or firm marks. The summary is
+  derived before the per-step drop and keeps no reference to the list.
+- `runTimeline.ts` maps an estimate to its sensor by id: `trackId(sensorId, uasId)` for a
+  sensor track and the `${sensorId}:false:` prefix for a false track. A change to either
+  id format in `tracker.ts` or `falseTracks.ts` empties the quality levels and the false
+  track rows with no error.
+- Censoring lives in `runTimelineOf` alone. It returns the uncensored row object for a
+  row whose items all end at or before the horizon; a component must not copy, sort or
+  mutate a row, a span list or a mark list.
 
 - `openLibrary(kind?, modelId?)` in `store.ts` bumps `ui.libraryRequest.seq`; App's
   subscription opens the drawer on a seq change and Palette consumes the request in the

@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "9c3ed8ea11606dc3edfee4989f99b6cc0de1493f4cbe6969f60cb626d17e340c",
+      "sha256": "3a873c20aec7646c0373ba936f400e37185c99d045c14e1ec68ec899ba6e46f8",
       "reviewedAt": "2026-09-26",
-      "note": "Row D review fixes: Palette editor view has no resizer; Placement and Outcome status sentences are EmptyRows; the Run key hint is aria-hidden."
+      "note": "Run timeline Phase 1 final: retainTrial.ts imports NO_C2 from fusion.ts in place of the empty-string literal; no text change."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "436a8ec6f32d06b91188751c38be2a71e36d2d731c16335bb470b5d20b4e55bc",
+      "sha256": "15938fba93ebe5d9eb548d4070471b2a62fa093f8bc6c4f550cf03c57fd2f86b",
       "reviewedAt": "2026-09-26",
-      "note": "Row D review fixes: Palette editor view has no resizer; Placement and Outcome status sentences are EmptyRows; the Run key hint is aria-hidden."
+      "note": "Run timeline Phase 1: the retained fusedTrack summary (nodes and members with first steps), the run timeline model paragraph and the map entries for runTimeline.ts and timeViewport.ts; checked again after retainTrial.ts imports NO_C2."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "b8f63ec2151d8701b50d4609986336dff96f3cb3f58d5b0d6a572df505e6d2a9",
+      "sha256": "373aedf09f31828e757581d56a4dfd4d75780dfb20c765fda2778d42938a95c2",
       "reviewedAt": "2026-09-26",
-      "note": "Rewritten in place 2026-09-26: position at f4363a3, Phase 1 of the run timeline plan selected, timeline landmines added; Row D record and candidates kept."
+      "note": "Rewritten in place 2026-09-26: Phase 1 record (commits, gate, reviews, spec departures), run timeline follow-ups and landmines added; Phase 2 selected; Row D record and candidates kept."
     },
     {
       "document": "docs/Plan.md",
@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "338eb90b1423fb56418f9e5eb6210cf3c232392db2d1edc2154d780e68e84ed3",
+      "sha256": "dea556e12f355655adcb48bccc7a57711d4dfa8485e87d66c6ecdb2856f71f6d",
       "reviewedAt": "2026-09-26",
-      "note": "Created 2026-09-26: run timeline spec, architecture contracts and the four-phase plan with lane ownership and gates."
+      "note": "Phase 1 built; the spec stays unmodified while phases run. The summary departs from section 2.1 (nodes and members with first steps in place of memberSensorIds); HANDOFF records the departures."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "328c32a75b071f60f5feb76c1b0c4b04dad3e792f23179e9f550449094fa61e1",
+      "sha256": "49bf55753c384887d515e75f8f855ab82ec215213a4760c448a19aafee2d6548",
       "reviewedAt": "2026-09-26",
-      "note": "Row D: library editor in the drawer, finding rows, run monitor card, empty-state and error rows, tab underline, detail pane header."
+      "note": "Run timeline Phase 1 adds src/charts/timeViewport.ts, pure window math with no visual rule; no text changes."
     }
   ],
   "historical": [

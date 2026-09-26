@@ -1,6 +1,7 @@
 import type { SensorType } from '../model/types'
 import type { SensorHoldGate } from '../analysis/sensorEnv'
 import type { SensorScanObservation } from './detection'
+import { NO_C2 } from './fusion'
 import type { FusedTrackSummary, ThreatAssessment } from './sim'
 import { bindHorizonRead } from './trackEstimateView'
 import type { FusedTrack, TrackEstimate, TrackSource } from './trackTypes'
@@ -324,8 +325,8 @@ function fusedTrackSummary(fusedTracks: readonly FusedTrack[]): FusedTrackSummar
   const seenNodes = new Set<string>()
   const seenSensors = new Set<string>()
   for (const fused of fusedTracks) {
-    // '' is NO_C2 (fusion.ts): the sensors fused the track, no node did.
-    if (fused.c2Id !== '' && !seenNodes.has(fused.c2Id)) {
+    // At NO_C2 the sensors fused the track; no node did.
+    if (fused.c2Id !== NO_C2 && !seenNodes.has(fused.c2Id)) {
       seenNodes.add(fused.c2Id)
       nodes.push({ c2Id: fused.c2Id, fromS: fused.fusedAtS })
     }
