@@ -8,9 +8,10 @@ import type { TrialResult } from './trialTypes'
 
 /**
  * Page retention of one trial. The engine return stays complete. The copy the
- * store keeps drops per-step fused tracks (the ledger is already resolved),
- * keeps a fused-track summary in place of that list, and keeps scan records and track estimates in typed buffers that still export
- * the same objects; an estimate keeps the fields the board ellipse reads.
+ * store keeps drops per-step fused tracks (the ledger is already resolved)
+ * and holds a fused-track summary in their place. Scan records and track
+ * estimates stay in typed buffers that still export the same objects; an
+ * estimate keeps the fields the board ellipse reads.
  */
 
 const SENSOR_TYPES: readonly SensorType[] = ['radar', 'eo-ir', 'acoustic', 'rf']

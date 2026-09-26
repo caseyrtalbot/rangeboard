@@ -558,6 +558,8 @@ src/analysis/  classPriors.ts (classOfModel, classPriorFor over the generated CL
                fidelity.ts (model tags), aar.ts, systemTelemetry.ts,
                threatAggregation.ts, range.ts, trialResult.ts (validated trial view and
                integer counts), trialSeries.ts (observation-bounded trial chart adapters),
+               runTimeline.ts (the run timeline model: rows, spans and marks censored at
+               the observed horizon),
                calibrate.ts (familyFor, the beta and normal-gamma posteriors,
                overrideReason and acceptCalibration over CalibrationRecord)
 src/ui/        kit.tsx: the shared primitives Field, FieldHelpProvider, Seg, State and
@@ -571,7 +573,8 @@ src/ui/        kit.tsx: the shared primitives Field, FieldHelpProvider, Seg, Sta
                pointer, capture-phase Escape, focus in on open and back on close).
                rovingTabs.ts: nextTabIndex, the one arrow-key mapping for every
                roving-tabindex group
-src/charts/    chart kit: types.ts (Series), tokens.ts, timeAxis.ts, seriesData.ts (pure
+src/charts/    chart kit: types.ts (Series), tokens.ts, timeAxis.ts, timeViewport.ts (the
+               run timeline window: clamp, follow, zoom, ticks), seriesData.ts (pure
                series helpers), TimeSeries (a lazy shell whose fallback holds the plot
                box), TimeSeriesChart + ChartFrame (the recharts plot, loaded on first
                render), BandChart (the recharts ensemble band with the trial and a dashed
@@ -738,9 +741,12 @@ Each fact below has exactly one definition. Read it there; never add a second co
   cross-bearing range sigma from their maximum baseline and signal-to-noise. Capture is opt-in:
   `runTrial` attaches the sink that fills `TrialResult.tracks`, so the ensemble path
   allocates no estimate history. The page does not keep that return. `acceptTrialMessage`
-  stores `boundRetainedTrial`: fused tracks are omitted once the ledger is resolved,
-  and scans and track estimates each stay in a column ledger that still exports the same
-  records. The track ledger keeps interned ids, a Float64 state and position block,
+  stores `boundRetainedTrial`: per-step fused tracks are omitted once the ledger is
+  resolved, and each assessment keeps a `fusedTrack` summary in their place: the first
+  and last fused step, the node of the first fused track (`NO_C2` when the sensors
+  fused it) and each member sensor with the first step it fed the fused track. The
+  summary is derived before the drop and keeps no reference to the list. Scans and track
+  estimates each stay in a column ledger that still exports the same records. The track ledger keeps interned ids, a Float64 state and position block,
   Uint32 hits and misses and Uint8 flags, plus a per-id index. Both ledgers read through
   the same materializing Proxy, so `tracks[i]` returns a fresh, equal object on each read;
   each estimate carries no sensor ids and the position block the board ellipse reads.
@@ -757,8 +763,8 @@ Each fact below has exactly one definition. Read it there; never add a second co
   that have arrived fuse at that node. A truth member bypasses the latency and makes the
   fused track the truth at t, so a `truthTracks` run is unchanged by fusion. With no C2
   node every live track fuses at the sensors with no latency (`NO_C2`). `assessThreat`
-  keeps the per-step fused tracks on `ThreatAssessment.fusedTracks` (per replicate, never
-  summarized) and the stable track now needs both `trackInitAtS` and a fused quality at
+  keeps the per-step fused tracks on `ThreatAssessment.fusedTracks` (per replicate; only
+  the page's retained copy summarizes them, as `fusedTrack`) and the stable track now needs both `trackInitAtS` and a fused quality at
   or above `FC_QUALITY_MIN` (0.5, the quality of a 50 m position sigma). Classification
   reads `SensorSpec.classification` when the sensor states one: `bandFor` picks the first
   band whose `maxRangeM` exceeds the range and `classifyByMatrix` draws the declaration,
