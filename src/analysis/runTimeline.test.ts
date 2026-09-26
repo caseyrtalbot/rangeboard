@@ -3,7 +3,7 @@ import type { Entity } from '../model/types'
 import { mixedTrial, trialEvent } from '../playback/__fixtures__/trialFixture'
 import type { TrackEstimate } from '../playback/trackTypes'
 import { trackId } from '../playback/tracker'
-import { createTrialManifest } from '../playback/trialTypes'
+import { createTrialManifest, type TrialResult } from '../playback/trialTypes'
 import { analysisBasisSignature } from '../state/analysisBasis'
 import type { RunTimelineModel, RunTimelineRow } from './runTimeline'
 import { runTimelineOf } from './runTimeline'
@@ -29,7 +29,7 @@ function estimate(id: string, tS: number, quality: number, coasting = false): Tr
  * platform, fused track summaries, a track ledger with one false track, a
  * killed threat (moving), a fly-by (flyby) and an event with no release time.
  */
-function timelineTrial() {
+function timelineTrial(edit?: (result: TrialResult) => void) {
   const base = mixedTrial()
   const scenario = structuredClone(base.scenario)
   scenario.sweepStepS = 0.5
@@ -115,6 +115,7 @@ function timelineTrial() {
     estimate(real, 9.5, 0.6),
     estimate(real, 11.5, 0.7),
   ]
+  edit?.(result)
   const manifest = createTrialManifest(scenario, 'timeline-fixed', analysisBasisSignature(scenario))
   result.manifest = manifest
   return { view: trialResultOf(scenario, manifest, result), baseView: base.view }
@@ -208,16 +209,16 @@ describe('runTimelineOf rows (SPEC 1.2)', () => {
     const model = runTimelineOf(timelineTrial().view, Infinity)
     expect(marks(row(model, 'c2:c2'))).toEqual([
       ['init', 1.15, 'swarm'],
-      ['assign', 1.2, 'swarm'],
-      ['assign', 1.3, 'swarm'],
-      ['assign', 2, 'swarm'],
-      ['assign', 2.5, 'swarm'],
+      ['assign', 1.2, 'jammer'],
+      ['assign', 1.3, 'gun'],
+      ['assign', 2, 'jammer'],
+      ['assign', 2.5, 'gun'],
       ['firm', 3, 'swarm'],
-      ['assign', 5, 'swarm'],
-      ['assign', 5.5, 'swarm'],
-      ['assign', 6, 'swarm'],
+      ['assign', 5, 'jammer'],
+      ['assign', 5.5, 'gun'],
+      ['assign', 6, 'jammer'],
       ['init', 10, 'flyby'],
-      ['assign', 13, 'flyby'],
+      ['assign', 13, 'gun'],
     ])
   })
 
@@ -422,6 +423,8 @@ describe('runTimelineOf horizon (SPEC 1.4) and memo (SPEC 2.4)', () => {
     const before = runTimelineOf(view, 1.14)
     expect(row(before, 'track:swarm')).toBeUndefined()
     expect(row(before, 'track:moving')).toBeDefined()
+    // The assignment at 0 comes before the fused track at 0.5.
+    expect(row(runTimelineOf(view, 0.2), 'track:moving')).toBeUndefined()
     expect(row(before, 'sensor:radar')!.subLanes!.map((s) => s.key)).toEqual(['sensor:radar:swarm'])
     const at = runTimelineOf(view, 1.15)
     expect(row(at, 'track:swarm')).toMatchObject({ spans: [], marks: [{ kind: 'init', tS: 1.15 }] })
@@ -452,6 +455,22 @@ describe('runTimelineOf horizon (SPEC 1.4) and memo (SPEC 2.4)', () => {
     const radar = row(full, 'sensor:radar')!
     expect(spans(radar).at(-1)).toEqual(['hold', 6.1, 12.1])
     expect(row(full, 'threat:flyby')!.spans.at(-1)!.endS).toBe(60)
+  })
+
+  it('keeps a drop and a CPA that come before a later kill', () => {
+    const view = timelineTrial((result) => {
+      result.report.events.push(
+        trialEvent({ tS: 24, tReleaseS: 24.5, tEffectS: 25, uasId: 'flyby', shipIdx: 0 }),
+      )
+    }).view
+    for (const h of [22, 60]) {
+      const model = runTimelineOf(view, h)
+      expect(marks(row(model, 'track:flyby')).map((m) => m[0])).toContain('drop')
+      expect(marks(row(model, 'threat:flyby')).map((m) => m[0])).toContain('cpa')
+    }
+    expect(marks(row(runTimelineOf(view, 60), 'threat:flyby')).map((m) => m[0])).toContain(
+      'hard-kill',
+    )
   })
 
   it('returns the same model for the same horizon and the same row once fully reached', () => {

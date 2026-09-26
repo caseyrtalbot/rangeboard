@@ -440,7 +440,7 @@ function derive(view: TrialResultView): Derived {
   }
   for (const event of events) {
     const c2Id = assignerOf(event)
-    if (c2Id) addC2(c2Id, { kind: 'assign', tS: event.tS, text: nameOf(event.uasId) })
+    if (c2Id) addC2(c2Id, { kind: 'assign', tS: event.tS, text: nameOf(event.effectorId) })
   }
   const c2Lanes = enabled('c2').map((c2) =>
     laneOf(
@@ -457,21 +457,29 @@ function derive(view: TrialResultView): Derived {
     ),
   )
 
-  // Threat outcome times shared by the track and threat rows.
+  // Events per threat and per effector, in assignment order.
   const eventsOn = new Map<string, EngagementEvent[]>()
-  for (const event of events) {
-    const list = eventsOn.get(event.uasId) ?? []
-    list.push(event)
-    eventsOn.set(event.uasId, list)
+  const eventsBy = new Map<string, EngagementEvent[]>()
+  const add = (map: Map<string, EngagementEvent[]>, id: string, event: EngagementEvent) => {
+    const list = map.get(id)
+    if (list) list.push(event)
+    else map.set(id, [event])
   }
-  const killAtS = (a: ThreatAssessment): number | null => {
+  for (const event of events) {
+    add(eventsOn, event.uasId, event)
+    add(eventsBy, event.effectorId, event)
+  }
+  // The effect that removes the last member, shared by the track and threat rows.
+  const killTimes = new Map<string, number | null>()
+  for (const a of view.assessments) {
     const count = Math.max(1, byId.get(a.uasId)?.formation?.count ?? 1)
     const kills = (eventsOn.get(a.uasId) ?? [])
       .filter((e) => e.killDelta === 1)
       .map((e) => e.tEffectS)
       .sort((x, y) => x - y)
-    return kills.length >= count ? kills[count - 1] : null
+    killTimes.set(a.uasId, kills.length >= count ? kills[count - 1] : null)
   }
+  const killAtS = (a: ThreatAssessment) => killTimes.get(a.uasId) ?? null
   const lastSweepS = (a: ThreatAssessment): number => {
     const path = paths.get(a.uasId)
     if (!path) return durationS
@@ -492,11 +500,12 @@ function derive(view: TrialResultView): Derived {
     if (a.stableTrackAtS != null) marks.push({ kind: 'firm', tS: a.stableTrackAtS })
     for (const event of eventsOn.get(a.uasId) ?? [])
       marks.push({ kind: 'assign', tS: event.tS, text: nameOf(event.effectorId) })
-    const arrived = a.arrivalS != null && a.arrivalS <= fused.lastAtS
-    // The last fused step lies before the threat's last sweep sample.
-    const lost = fused.lastAtS + stepS <= lastSweepS(a) + 1e-9
-    if (lost && killAtS(a) == null && !arrived)
-      marks.push({ kind: 'drop', tS: fused.lastAtS + stepS })
+    // The first step with no fused track, before the threat's last sweep sample,
+    // with no kill or arrival by then. A later outcome must not hide the drop.
+    const dropS = fused.lastAtS + stepS
+    const killS = killAtS(a)
+    const ended = (killS != null && killS <= dropS) || (a.arrivalS != null && a.arrivalS <= dropS)
+    if (dropS <= lastSweepS(a) + 1e-9 && !ended) marks.push({ kind: 'drop', tS: dropS })
     const members = fused.members.map((m) => ({ name: nameOf(m.sensorId), fromS: m.fromS }))
     const row: RunTimelineRow = {
       key: `track:${a.uasId}`,
@@ -507,20 +516,20 @@ function derive(view: TrialResultView): Derived {
       spans,
       marks,
     }
-    trackLanes.push(laneOf(row, false, { members }))
+    // The row appears with the fused track, even when an assignment came first.
+    trackLanes.push(laneOf(row, false, { members, firstS: fused.initAtS }))
   }
   for (const [id, { sensorId, series }] of falseTracks) {
     const lastS = series.t[series.t.length - 1] + stepS
     const marks: RunTimelineMark[] = [{ kind: 'init', tS: series.t[0] }]
     if (lastS <= durationS) marks.push({ kind: 'drop', tS: lastS })
-    const spans: RunTimelineSpan[] = estimateSpans(series, stepS, durationS).map((s) => ({ ...s }))
     const row: RunTimelineRow = {
       key: `track:${id}`,
       kind: 'track',
       label: falseLabel(id),
       meta: nameOf(sensorId),
       entityId: null,
-      spans,
+      spans: estimateSpans(series, stepS, durationS),
       marks,
     }
     trackLanes.push(laneOf(row, false))
@@ -532,8 +541,7 @@ function derive(view: TrialResultView): Derived {
     const spans: RunTimelineSpan[] = []
     const marks: RunTimelineMark[] = []
     let assigned = 0
-    for (const event of events) {
-      if (event.effectorId !== effector.id) continue
+    for (const event of eventsBy.get(effector.id) ?? []) {
       assigned += 1
       const text = nameOf(event.uasId)
       const release = engagementReleaseS(event, scenario)
@@ -598,7 +606,7 @@ function derive(view: TrialResultView): Derived {
       marks.push(effectMark(event, text))
     }
     if (a.arrivalS != null && !killedFirst) marks.push({ kind: 'arrival', tS: a.arrivalS })
-    if (a.arrivalS == null && killS == null && a.cpaS != null)
+    if (a.arrivalS == null && a.cpaS != null && (killS == null || killS > a.cpaS))
       marks.push({ kind: 'cpa', tS: a.cpaS })
     const count = Math.max(1, entity?.formation?.count ?? 1)
     const name = entity ? modelName(entity) : ''
