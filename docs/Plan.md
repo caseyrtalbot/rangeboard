@@ -359,3 +359,159 @@ and on. Store the capture under `docs/field-te/evidence/chrome-2026-<date>/` wit
 capture with the two canvases and lists deviations as follow-ups in the handoff. Update
 `DESIGN_SYSTEM.md` and its `docs:review`. Rewrite the handoff: position, the follow-ups,
 no row selected. Merge to `main` only with the user's authorization.
+
+## Row D. Row C follow-ups
+
+Added 2026-09-25 after the Row C triage. The user chose the seven Row C review items and
+the canvas deviations of class 2, 3 and 4 (density rule, text, tokens). Class 1
+(structure) deviations and the Row B leftovers stay candidates in the handoff. Decision
+D10: the checkbox label becomes `Deterministic (no sampling)`; the plan text in C4 and the
+canvas are superseded for that label. D3 is superseded by the entry budget rework of
+2026-09-25 (`8ac3bf6`): the ceiling is 380,000 and `npm run check:entry-graph` guards the
+chunk boundary. Authored against `main` at `8ac3bf6`; confirm line numbers before an edit.
+Four lanes in one message, then D-int. Every lane gate ends with `npm run check:entry-graph`
+and `npm run build && npm run check:bundle`.
+
+### D1. Library routing. `opus-high`
+
+Owns `src/state/store.ts` (one new action, no split), `src/App.tsx`, `src/panels/Palette.tsx`,
+`src/panels/CommandPalette.tsx`, `src/canvas/ContextMenu.tsx`, `src/panels/LibraryEditor.tsx`,
+the `openLibrary` callback in `src/panels/analysis/screens/FragilityScreen.tsx` (the
+`Place asset` handler only; no other line of that file), `index.css` blocks for the
+library drawer (`.board-library-drawer` and the `.lib-` blocks). Tests: `Palette.test.tsx`,
+`CommandPalette.test.tsx`, `LibraryEditor.test.tsx`, `Inspector.test.tsx` tab cases,
+`FragilityScreen.test.tsx` only for the `Place asset` assertion.
+
+Work:
+
+1. A store action `openLibrary(kind?: EntityKind)` that App reads to open the drawer
+   (App holds `libraryOpen` locally today; move that flag or subscribe to a request
+   counter so the action reaches it), and that Palette reads to focus the group for
+   `kind`. `Place asset` calls `openLibrary('asset')`; it no longer clicks the rail trigger.
+2. The five `setRightTab('library')` callers (Palette `New model` and `Model basis`,
+   CommandPalette model commands, ContextMenu `Edit model specs`, LibraryEditor's own
+   site) open the editor in the left drawer: the drawer shows the editor in place of the
+   list with a `‹ Library` back control, and the drawer widens to the editor's width.
+   Then the right-panel `LibraryEditor` mount and the contextual `Model library` tab go
+   (`App.tsx:215-216`, the `'library'` mapping at 557, `TABS`). `EntityWorkspace` keeps its
+   inline Model basis section unchanged. `rightTab` 'library' in a saved view still maps
+   to 'analysis'.
+3. The e2e reads `.insp-tab-group [role="tab"]`; it must still pass.
+
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/Palette.test.tsx
+src/panels/CommandPalette.test.tsx src/panels/LibraryEditor.test.tsx src/panels/Inspector.test.tsx
+src/panels/analysis/screens/FragilityScreen.test.tsx`, `npm run lint`, `npm run format:check`,
+`npm run check:entry-graph`, `npm run build && npm run check:bundle`, `npm run test:e2e`.
+
+### D2. Fragility and findings. `opus-high`
+
+Owns `src/panels/analysis/screens/FragilityScreen.tsx` (all but the `openLibrary`
+callback) and its test, `src/panels/analysis/SensitivityWidget.tsx` and its test,
+`src/panels/analysis/runValidityText.tsx`, `src/charts/SweepMap.tsx` and its test,
+`index.css` blocks `.frag-head` to `.frag-readout` (1941-1956) and `.frag-state-row` to the
+end of the `.frag-finding-*` rules (1981 to about 2040). `.frag-info` and `.frag-help`
+(1957-1980) belong to D4.
+
+Work, per the density canvas and the Row C review:
+
+1. `Run Monte Carlo` (433) is an outline 28 px button, not accent-filled; the top-bar Run
+   is the phase's one accent control (D2, D7).
+2. The sensitivity button reads `Run sensitivity` (723); the method name moves into the
+   section (i) title, which already carries the method note.
+3. The meta line `Full-run setup findings · INVALID` (731) goes; the Validity section
+   header carries the count as a tag (`3 findings`, tone from the worst finding).
+4. Finding rows: glyph (tone color), the headline, a chevron. The `INVALIDATES` and
+   `LIMITS` words and the row border go (`runValidityText.tsx:35` keeps the tone map; the
+   word is no longer rendered in the row). Finding wording is unchanged.
+5. Sweep help under the switch (498) reads `Planning-factor values. 40 replicates per
+   cell.` with the replicate count from the run settings, and a second line with the 2 to
+   6 value rule. The estimated-time clause moves into the (i) title.
+6. `SweepMap.tsx:115` drops the figcaption sentence `No defended asset; response
+   unavailable.`; the chip beside the widget carries it.
+
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/analysis/screens/FragilityScreen.test.tsx
+src/panels/analysis/SensitivityWidget.test.tsx src/charts`, `npm run lint`,
+`npm run format:check`, `npm run check:entry-graph`, `npm run build && npm run check:bundle`.
+
+### D3. Run, forecast, outcome, placement. `opus-high`
+
+Owns `src/panels/analysis/ForecastSettings.tsx` and its test, `src/panels/settings/inputs.tsx`,
+`src/panels/settings/RunTab.test.tsx`, `src/panels/analysis/screens/NowScreen.tsx` and its
+test, `src/panels/analysis/LiveStrip.tsx` and its test, `src/panels/analysis/screens/PlacementScreen.tsx`
+and its test, `src/panels/analysis/screens/OutcomeScreen.tsx` and its test,
+`src/panels/analysis/DebriefRecord.tsx` and its test, `src/panels/TimelineBar.tsx` and its
+test, `src/panels/analysis/RunControl.tsx` and its test, `index.css` blocks `.live-strip`
+to `.live-state` (3288-3330) and `.tile` to `.tile .ts` (3952-4013).
+
+Work:
+
+1. D10: the checkbox label is `Deterministic (no sampling)` (`ForecastSettings.tsx:90`);
+   its title explains that deterministic mode evaluates the model once with no draws.
+2. The forecast line renders in mono text 1, not accent; `· total` leaves the line (its
+   title already says `total uncertainty`).
+3. The `none` placeholder in `inputs.tsx:81` becomes `None`; `RunTab.test.tsx:151` follows.
+4. Run monitor: the muted status sentence in `LiveStrip` (`Paused · Simulated trial ·
+   observed through …`) becomes a card: the clock at 15/500 mono, a progress bar for the
+   observed horizon, and `Replicate`, `Seed`, `Speed` rows (label text 2, value mono).
+   `PlayPrompt` is unchanged.
+5. Placement: the muted sentences (156, 179, 188, 211, 218, 239, 246) each get a home:
+   a rule becomes a placeholder or an error line, a method note goes behind a 24 px (i),
+   and `No current placement result.` (336) becomes an empty-state row that the first
+   result replaces. No full sentence stays in muted gray. Wording is unchanged.
+6. Outcome: tile digits use the 15 px size and the clock uses 15 px mono (the 40 px and
+   27 px sizes go); the seven muted sentences in `OutcomeScreen` and `DebriefRecord` get
+   homes per rule 5. `New clean run` and the export button are class 1 and stay.
+7. The Analyze transport `▷ Replay` (`TimelineBar.tsx:170`) is a 24 px icon button with
+   `aria-label="Replay"` and `title="Replay (Space)"`; `Retry` follows the same pattern.
+8. The top-bar Run button shows the key hint `⌘↵` as a trailing `kbd` and its title ends
+   with `(⌘↵)`. `RunControl` mounts one window keydown listener for Meta+Enter (Ctrl+Enter
+   on other platforms) that triggers the phase's primary action unless focus is in a text
+   field; add a test.
+
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/analysis/ForecastSettings.test.tsx
+src/panels/settings/RunTab.test.tsx src/panels/analysis/screens/NowScreen.test.tsx
+src/panels/analysis/LiveStrip.test.tsx src/panels/analysis/screens/PlacementScreen.test.tsx
+src/panels/analysis/screens/OutcomeScreen.test.tsx src/panels/analysis/DebriefRecord.test.tsx
+src/panels/TimelineBar.test.tsx src/panels/analysis/RunControl.test.tsx`, `npm run lint`,
+`npm run format:check`, `npm run check:entry-graph`, `npm run build && npm run check:bundle`.
+
+### D4. Detail panes, telemetry, tokens, dead CSS. `opus-medium`
+
+Owns `src/panels/analysis/detail/SensorDetail.tsx`, `EffectorDetail.tsx`, `SystemDetail.tsx`,
+`DetailHeader.tsx`, `ThreatDetail.tsx`, `Detail.test.tsx`, `src/panels/EntityWorkspace.tsx`
+and its test, `src/ui/ink.ts` and `src/canvas/useBoardInk.ts` (ground color only),
+`index.css` blocks `.frag-info` and `.frag-help` (1957-1980), `.field .field-label >
+.field-info` to `.field > .field-help` (2071-2095), `.lens*` (2278-2340, 4786, 5410-5560),
+`.insp-tabs button[aria-selected='true']` and its `::after` (1568-1576), `.fid-tag*`, and
+the detail blocks `.wg-h` to `.det-s-toggle` (2344-2540).
+
+Work:
+
+1. Sensor, effector and system panes follow the C3 pattern: the fid-tag chips under the
+   header become one `Model basis` row with a (i) whose title lists the sources; the
+   `Simulated trial · …` line goes (the status bar carries run state); values are one
+   line each with the full text in `title`; sections are `DetailSection` `collapsible`
+   with the first open and a mono summary in each collapsed header.
+2. Telemetry (threat pane): the trailing provenance squares on RCS and Swerling go; the
+   header meta line is mono.
+3. The active inspector tab underline uses text 1, not accent (1573).
+4. The board ground: the Konva ground fill reads about `#212528` in the capture while
+   `--surface-board` is `#121313`. Make the Konva ground match the token (`ink.ts`,
+   `useBoardInk.ts`). If the grain overlay is the cause, report it instead.
+5. Dead CSS: remove the `.lens`, `.lens-b*`, `.lens-layout*` rules that no TSX uses
+   (confirm with grep first). Fold `.frag-help` into `.field > .field-help` and
+   `.frag-info` into `.field-info` where the declarations match, and keep one class in
+   the TSX (D2 owns the FragilityScreen TSX: report the class rename to the integrator,
+   do not edit that file).
+
+Gate: `npm run typecheck`, `npx vitest run --dir src src/panels/analysis/detail/Detail.test.tsx
+src/panels/EntityWorkspace.test.tsx src/canvas`, `npm run lint`, `npm run format:check`,
+`npm run check:entry-graph`, `npm run build && npm run check:bundle`.
+
+### D-int. Integration and review. Orchestrator, then `opus-high`
+
+Merge D1 to D4 into `chrome/int`. `npm run check`, `npm run test:e2e`, `npm run
+check:bundle`. `opus-high` reviews the D diff against this row and the Do not mix rules.
+Update `DESIGN_SYSTEM.md` from the lane reports and its `docs:review`. Rewrite the
+handoff: position, the remaining candidates, no row selected. Merge to `main` only with
+the user's authorization.

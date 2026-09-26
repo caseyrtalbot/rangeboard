@@ -95,16 +95,16 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "6c5085b4adbfec1b4ba227dea8e06888eaf92c812bd1329c3a270622c8c8fffc",
+      "sha256": "a89be5d7a2e64036bc8324d1f2cb3ea6bced8c49c75f37c09e2ae338c7987c39",
       "reviewedAt": "2026-09-26",
-      "note": "Entry budget set at 380,000 and the entry graph check recorded in Position and Landmines; D3 number superseded."
+      "note": "Row D selected after the Row C triage; lanes d1..d4."
     },
     {
       "document": "docs/Plan.md",
       "inputs": [],
-      "sha256": "eabe69e193176b89611655fd9cca33d972a1da3dd0a556e69c2bac6895092919",
-      "reviewedAt": "2026-09-24",
-      "note": "Replaced the polish queue with the chrome refactor queue: Option C plus the inspector text-density pass, 9 audit problems, 9 decisions, rows A to C with four lanes each, workers per lane."
+      "sha256": "b986405a69a205f0b1f868084fe194afa6653cfca8332a6f334135303ec8a0d6",
+      "reviewedAt": "2026-09-26",
+      "note": "Row D appended: Row C follow-ups in four lanes, D10 wording decision."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

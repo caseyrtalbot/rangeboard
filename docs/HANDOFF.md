@@ -185,8 +185,11 @@ brackets: 1 structure, 2 density rule, 3 text, 4 tokens):
 
 ## Tasking
 
-No row is selected. The next step is the one triage over the follow-ups above: the user
-picks fix-now items, the rest become candidates.
+Row D (Row C follow-ups) is selected; see [Plan.md](Plan.md) Row D. The triage of
+2026-09-25: the seven Row C review items and the class 2, 3 and 4 canvas deviations are
+in Row D; the class 1 deviations and the Row B leftovers stay candidates. Decision D10:
+`Deterministic (no sampling)`. Lanes run in `~/Projects/rangeboard-wt/d1..d4` on
+`chrome/d1..d4` from `8ac3bf6`.
 
 ## Landmines
 
