@@ -23,9 +23,11 @@ The [analysis navigation](../src/panels/analysis/AnalysisNavigation.tsx) is the 
 screen tabs inside the one right-panel tab row (Inputs, Fragility and Placement in
 Prepare; Run monitor in Execute; Outcome and Compare in Analyze). The row stays outside
 the scrolling panel. A contextual tab with the selected object's name follows the screens
-while something is selected, and the model library editor shows as a contextual tab while
-it is open. The panel header holds the phase word and a Panel options menu with the field
-help switch, Collapse all and Expand all.
+while something is selected. The model library editor opens in the Library drawer in place
+of the model list, with a Back to library control; the `openLibrary` store action routes
+Model basis, New model, the palette's model commands, Edit model specs and Place asset
+there. The panel header holds the phase word and a Panel options menu with the field help
+switch, Collapse all and Expand all.
 
 The Library resource opens a drawer with model/system placement, drag-and-drop, model-basis
 editing, tactics and library import/export. `L` toggles it and Escape returns focus to its

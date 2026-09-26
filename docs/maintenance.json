@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "df394a94f78f55a68091d80c260d6fce4fe765b4784a5a663cc183916c73b7dd",
+      "sha256": "8f6a1a35f4113ad61829ef7fe95e45255d026b3ec12417f7b6f93b7832ad119c",
       "reviewedAt": "2026-09-26",
-      "note": "Entry budget set at 380,000 and the entry graph check (check:entry-graph, entry-graph.json) added to npm run check; check:bundle freezes the preloaded JavaScript."
+      "note": "Row D: the library editor opens in the drawer through openLibrary; finding rows, empty-state rows, the run monitor card, collapsible detail panes, Deterministic (no sampling)."
     },
     {
       "document": "docs/README.md",
@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "874534176a0c064dd219be318383f3ed324b295f58513e7869244e9cbac03b27",
-      "reviewedAt": "2026-09-24",
-      "note": "Row B ride-along fixes at C-int: the T+ cell holds the clock subscription in StatusBar; the toolbar ⋯ trigger names the Storage panel while it is open."
+      "sha256": "b002cd8c9ac62055a285d1f3bb2340fa02eb9c4384a294511d801a8acf3bb91b",
+      "reviewedAt": "2026-09-26",
+      "note": "Row D: the library editor opens in the drawer through openLibrary; finding rows, empty-state rows, the run monitor card, collapsible detail panes, Deterministic (no sampling)."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "36170fee587efca99f3d982c293b3b4120bf539996cbddfb219252acd17acb9e",
-      "reviewedAt": "2026-09-24",
-      "note": "Row B ride-along fixes at C-int: the T+ cell holds the clock subscription in StatusBar; the toolbar ⋯ trigger names the Storage panel while it is open."
+      "sha256": "48c5787440b0e7befc52267bb0f0acac6cb7238009b967cc780f157575fb6bfd",
+      "reviewedAt": "2026-09-26",
+      "note": "Row D: the library editor opens in the drawer through openLibrary; finding rows, empty-state rows, the run monitor card, collapsible detail panes, Deterministic (no sampling)."
     },
     {
       "document": "docs/VERIFICATION.md",
