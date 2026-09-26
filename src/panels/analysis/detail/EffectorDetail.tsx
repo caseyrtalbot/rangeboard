@@ -137,10 +137,18 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
   const modelLine = model && spec ? `${model.name} · ${spec.effectorType}` : 'no model linked'
   const doctrineMeta = doctrine.enabled ? launchPolicyLabel(doctrine.launchPolicy) : 'doctrine off'
   const none = <p className="muted small">No salvo assigned.</p>
+  const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
+  const magazineSummary = rounds
+    ? magazineSize != null
+      ? `${attrition?.roundsRemaining ?? DASH} of ${magazineSize} rounds`
+      : DASH
+    : 'continuous capacity'
+  const capacitySummary = attrition
+    ? `${attrition.shotsFired} kinetic · ${attrition.deSalvos} DE · ${attrition.jamSalvos} jam`
+    : DASH
 
   return (
     <div className="detail" data-detail="effector">
-      <p className="muted small">{run.stateText}</p>
       <DetailHeader
         entity={entity}
         color={color}
@@ -148,7 +156,12 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
         modelLine={modelLine}
         tags={modelsForEntity(scenario, entity.id)}
       />
-      <DetailSection id="pk" title="Pk per track">
+      <DetailSection
+        id="pk"
+        title="Pk per track"
+        collapsible
+        meta={pk.length > 0 ? plural(pk.length, 'track') : DASH}
+      >
         {pk.length > 0 ? (
           <TimeSeries
             series={pk}
@@ -162,7 +175,13 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
           none
         )}
       </DetailSection>
-      <DetailSection id="magazine" title="Magazine" meta={rounds ? null : 'continuous capacity'}>
+      <DetailSection
+        id="magazine"
+        title="Magazine"
+        collapsible
+        defaultOpen={false}
+        meta={magazineSummary}
+      >
         {rounds && magazineSize != null ? (
           <TimeSeries
             series={[rounds]}
@@ -185,7 +204,13 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
           none
         )}
       </DetailSection>
-      <DetailSection id="release" title="Assignment, release and effect">
+      <DetailSection
+        id="release"
+        title="Assignment, release and effect"
+        collapsible
+        defaultOpen={false}
+        meta={attrition ? plural(assigned.length, 'salvo') : DASH}
+      >
         {releaseRows.length > 0 ? (
           <>
             <Ladder
@@ -201,14 +226,26 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
           none
         )}
       </DetailSection>
-      <DetailSection id="doctrine" title="Doctrine by threat" meta={doctrineMeta}>
+      <DetailSection
+        id="doctrine"
+        title="Doctrine by threat"
+        collapsible
+        defaultOpen={false}
+        meta={doctrineMeta}
+      >
         {doctrineRows.length > 0 ? (
           <DetailTable head={['Threat', 'Gate', 'Ready', 'Commit Pk']} rows={doctrineRows} />
         ) : (
           <p className="muted small">No threats with flight paths.</p>
         )}
       </DetailSection>
-      <DetailSection id="capacity" title="Capacity" meta="Trial assignments reached">
+      <DetailSection
+        id="capacity"
+        title="Capacity"
+        collapsible
+        defaultOpen={false}
+        meta={capacitySummary}
+      >
         <Rows rows={capacityRows} />
       </DetailSection>
     </div>

@@ -85,7 +85,6 @@ export function SensorDetail({ entity }: { entity: Entity }) {
   if (!spec) {
     return (
       <div className="detail" data-detail="sensor">
-        <p className="muted small">{run.stateText}</p>
         <DetailHeader
           entity={entity}
           color={color}
@@ -181,9 +180,13 @@ export function SensorDetail({ entity }: { entity: Entity }) {
       : { label: 'Elevation', value: 'not recorded' },
   ]
 
+  const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
+  const loadSummary = `${loadNow != null ? loadNow : DASH} held · hold ${
+    component && !untouched ? formatTime(component.holdSeconds) : DASH
+  }`
+
   return (
     <div className="detail" data-detail="sensor">
-      <p className="muted small">{run.stateText}</p>
       <DetailHeader
         entity={entity}
         color={color}
@@ -194,7 +197,8 @@ export function SensorDetail({ entity }: { entity: Entity }) {
       <DetailSection
         id="pd"
         title="Pd per track"
-        meta={pd.length > 0 ? `Swerling ${cal.swerling0} · Pfa ${pfaText(cal.pfa)}` : null}
+        collapsible
+        meta={pd.length > 0 ? `Swerling ${cal.swerling0} · Pfa ${pfaText(cal.pfa)}` : DASH}
       >
         {pd.length > 0 ? (
           <TimeSeries
@@ -212,6 +216,8 @@ export function SensorDetail({ entity }: { entity: Entity }) {
       <DetailSection
         id="slant"
         title="Slant range per track"
+        collapsible
+        defaultOpen={false}
         meta={`mount ${mountHeightOf(spec)} m`}
       >
         {slant.length > 0 ? (
@@ -226,7 +232,13 @@ export function SensorDetail({ entity }: { entity: Entity }) {
           <p className="muted small">No track observed.</p>
         )}
       </DetailSection>
-      <DetailSection id="ladder" title="Track ladder" meta={ladderMeta}>
+      <DetailSection
+        id="ladder"
+        title="Track ladder"
+        collapsible
+        defaultOpen={false}
+        meta={ladderMeta}
+      >
         {ladderRows.length > 0 ? (
           <>
             <Ladder
@@ -242,10 +254,22 @@ export function SensorDetail({ entity }: { entity: Entity }) {
           <p className="muted small">No track observed.</p>
         )}
       </DetailSection>
-      <DetailSection id="load" title="Load and hold">
+      <DetailSection
+        id="load"
+        title="Load and hold"
+        collapsible
+        defaultOpen={false}
+        meta={loadSummary}
+      >
         <Rows rows={loadRows} />
       </DetailSection>
-      <DetailSection id="gates" title="Sensor state by threat" meta="Retained sensor measurements">
+      <DetailSection
+        id="gates"
+        title="Sensor state by threat"
+        collapsible
+        defaultOpen={false}
+        meta={`${plural(gateRows.length, 'threat')} · retained sensor measurements`}
+      >
         {gateRows.length > 0 ? (
           <DetailTable head={['Threat', 'State', 'Last measured', 'Pd']} rows={gateRows} />
         ) : (

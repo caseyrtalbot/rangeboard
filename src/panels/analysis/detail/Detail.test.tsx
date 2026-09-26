@@ -142,9 +142,9 @@ describe('DetailPane', () => {
     ])
     expect(bodyRows(section(html, 'gates'))).toBe(1)
     expect(section(html, 'load')).toContain('Held track files')
-    // The models behind this sensor, tier and validation status on each chip.
-    expect(html).toContain('class="fid-tags"')
-    expect(html).toContain('data-tier="physics" data-validation="analytic"')
+    // The models behind this sensor: one Model basis row, each source in the (i) title.
+    expect(html).not.toContain('class="fid-tags"')
+    expect(html).toContain('<span class="rl">Model basis</span>')
     expect(html).toContain('Horizon · physics · analytic')
     expect(html).not.toContain('Kinetic Pk ·')
     expectNoControls(html)
@@ -235,6 +235,49 @@ describe('DetailPane', () => {
     )
   })
 
+  it.each([
+    ['sensor', ['pd', 'slant', 'ladder', 'load', 'gates']],
+    ['effector', ['pk', 'magazine', 'release', 'doctrine', 'capacity']],
+    ['c2', ['hops', 'timing', 'coverage']],
+  ] as const)(
+    'opens the first %s section, collapses the rest behind mono summaries and drops the trial line',
+    (kind, keys) => {
+      const html = render(entityOf(kind).id)
+      expect(html).not.toContain('Simulated trial ·')
+      expect(html).not.toContain('class="fid-tags"')
+      expect(html).toContain('<span class="rl">Model basis</span>')
+      const [first, ...rest] = keys
+      expect(section(html, first)).toContain('aria-expanded="true"')
+      expect(section(html, first)).toContain('class="wg-m det-sum"')
+      for (const key of rest) {
+        expect(section(html, key)).toContain('aria-expanded="false"')
+        expect(section(html, key)).toContain(`id="det-s-${key}" hidden=""`)
+        expect(section(html, key)).toMatch(/<span class="wg-m det-sum">[^<]+<\/span>/)
+      }
+    },
+  )
+
+  it('summarizes the collapsed sensor, effector and C2 sections from observed values', () => {
+    const sensor = render(entityOf('sensor').id)
+    expect(section(sensor, 'gates')).toContain(
+      '<span class="wg-m det-sum">1 threat · retained sensor measurements</span>',
+    )
+    const effector = render(entityOf('effector').id)
+    expect(section(effector, 'capacity')).toMatch(
+      /<span class="wg-m det-sum">\d+ kinetic · \d+ DE · \d+ jam<\/span>/,
+    )
+    const c2 = render(entityOf('c2').id)
+    expect(section(c2, 'timing')).toContain('<span class="wg-m det-sum">1 threat</span>')
+  })
+
+  it('draws no provenance mark after RCS or Swerling', () => {
+    const track = section(render(entityOf('uas').id), 'track')
+    for (const label of ['RCS', 'Swerling']) {
+      const row = track.slice(track.indexOf(`<span class="rl">${label}</span>`))
+      expect(row.slice(0, row.indexOf('</div>'))).not.toContain('prov-mark')
+    }
+  })
+
   it('folds the model tags into one Model basis row whose (i) lists each source', () => {
     const uas = entityOf('uas')
     const html = render(uas.id)
@@ -320,10 +363,9 @@ describe('DetailPane', () => {
       store.setBoardPhase('execute')
       unstartTrial()
       const html = render(entityOf(kind).id)
-      if (kind !== 'uas') expect(html).toContain('Simulated trial · ready')
+      expect(html).not.toContain('Simulated trial ·')
       expect(html).not.toContain('EXPECTED DEFEAT')
       if (kind === 'uas') {
-        expect(html).not.toContain('Simulated trial ·')
         const file = section(html, 'track') + section(html, 'engagement')
         expect(file).not.toMatch(/T\+\d/)
         expect(file).toContain('0 sensors')
