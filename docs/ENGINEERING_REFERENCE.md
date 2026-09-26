@@ -743,9 +743,10 @@ Each fact below has exactly one definition. Read it there; never add a second co
   allocates no estimate history. The page does not keep that return. `acceptTrialMessage`
   stores `boundRetainedTrial`: per-step fused tracks are omitted once the ledger is
   resolved, and each assessment keeps a `fusedTrack` summary in their place: the first
-  and last fused step, the node of the first fused track (`NO_C2` when the sensors
-  fused it) and each member sensor with the first step it fed the fused track. The
-  summary is derived before the drop and keeps no reference to the list. Scans and track
+  and last fused step, each C2 node that held the fused picture and each member sensor,
+  each with its first step. The best node can change per step; a sensor-level fusion
+  (`NO_C2`) is not a node. The summary is derived before the drop and keeps no reference
+  to the list. Scans and track
   estimates each stay in a column ledger that still exports the same records. The track ledger keeps interned ids, a Float64 state and position block,
   Uint32 hits and misses and Uint8 flags, plus a per-id index. Both ledgers read through
   the same materializing Proxy, so `tracks[i]` returns a fresh, equal object on each read;
@@ -1175,6 +1176,23 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   `src/analysis/trialSeries.ts` builds `simulated-trial` step series and ladders
   from retained observations and events. Samples, marks and spans end at the trial horizon;
   `useTrialResult` supplies the same bounded series to the screens and detail panes.
+- **Run timeline model** (`src/analysis/runTimeline.ts`, `src/charts/timeViewport.ts`):
+  `runTimelineOf(view, horizonS)` is the one derivation of the run timeline. It returns
+  groups by side then kind: Sensors, C2, Tracks, Effectors and Threats. A `uas` is red and
+  every other kind is blue. Each row holds spans and marks, and a sensor row holds one
+  sub-lane per held track. The model reads the assessments, `sensorObservations`, the
+  engagement events, the track estimate history and the retained `fusedTrack` summary; the
+  engine is unchanged. It derives the uncensored rows once per view in a `WeakMap` and keeps
+  the four latest censored models by horizon. A row whose items all end at or before the
+  horizon is returned as the same object. Censoring happens here once, with `reached` at the
+  lesser of the horizon and `observedThroughS`. A mark draws when its time is reached. A
+  span draws when its start is reached and ends at the horizon. A track row or a sub-lane
+  appears only from its first item; a fused track row appears from its first fused step.
+  Hold chunks sit on an absolute 5 s grid, and a chunk's quality level never reads an
+  estimate past the horizon. A kill or an arrival hides a drop or a CPA mark only when it
+  comes first, and false tracks are numbered by their first estimate. `timeViewport.ts` holds the window math: clamp, follow at two thirds, zoom
+  about an anchor, absolute ticks through `tickStepS`, and `xOf`. No component reads either
+  module yet.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `src/model/libraryLifecycle.ts` is the one seed

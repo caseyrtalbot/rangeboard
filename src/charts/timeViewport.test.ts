@@ -76,6 +76,11 @@ describe('zoomViewport', () => {
     expect(zoomViewport(atMin, 1 / ZOOM_STEP, 105, 488)).toBe(atMin)
     const atMax = { t0S: 0, winS: 488 }
     expect(zoomViewport(atMax, ZOOM_STEP, 200, 488)).toBe(atMax)
+    // At a limit, a window past the run end still comes back clamped.
+    expect(zoomViewport({ t0S: 480, winS: 10 }, 1 / ZOOM_STEP, 485, 488)).toEqual({
+      t0S: 478,
+      winS: 10,
+    })
   })
 
   it('clamps t0 to 0 when zooming out near the start', () => {
@@ -87,7 +92,7 @@ describe('zoomViewport', () => {
 })
 
 describe('viewportTicks', () => {
-  it('gives multiples of the step inside the window, at least 64 px apart', () => {
+  it('gives multiples of the step inside the window, at least 70 px apart', () => {
     for (const widthPx of [200, 312, 640, 1200]) {
       for (const v of [
         { t0S: 0, winS: 10 },
@@ -105,7 +110,7 @@ describe('viewportTicks', () => {
           expect(t).toBeLessThanOrEqual(v.t0S + v.winS)
         }
         for (let i = 1; i < ticks.length; i++) {
-          expect(x(ticks[i]) - x(ticks[i - 1])).toBeGreaterThanOrEqual(64)
+          expect(x(ticks[i]) - x(ticks[i - 1])).toBeGreaterThanOrEqual(70)
         }
       }
     }

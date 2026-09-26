@@ -48,7 +48,7 @@ export function zoomViewport(
   durationS: number,
 ): TimeViewport {
   const nextWinS = clampViewport({ t0S: 0, winS: v.winS * factor }, durationS).winS
-  if (nextWinS === v.winS) return v
+  if (nextWinS === v.winS) return clampViewport(v, durationS)
   const f = (anchorS - v.t0S) / v.winS
   return clampViewport({ t0S: anchorS - f * nextWinS, winS: nextWinS }, durationS)
 }

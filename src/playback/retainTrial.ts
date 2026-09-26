@@ -319,19 +319,26 @@ function trackLedger(tracks: readonly TrackEstimate[]): TrackEstimate[] {
 
 /** One pass over the per-step list; the summary holds fresh arrays and objects only. */
 function fusedTrackSummary(fusedTracks: readonly FusedTrack[]): FusedTrackSummary {
+  const nodes: FusedTrackSummary['nodes'] = []
   const members: FusedTrackSummary['members'] = []
-  const seen = new Set<string>()
+  const seenNodes = new Set<string>()
+  const seenSensors = new Set<string>()
   for (const fused of fusedTracks) {
+    // '' is NO_C2 (fusion.ts): the sensors fused the track, no node did.
+    if (fused.c2Id !== '' && !seenNodes.has(fused.c2Id)) {
+      seenNodes.add(fused.c2Id)
+      nodes.push({ c2Id: fused.c2Id, fromS: fused.fusedAtS })
+    }
     for (const sensorId of fused.sensorIds) {
-      if (seen.has(sensorId)) continue
-      seen.add(sensorId)
+      if (seenSensors.has(sensorId)) continue
+      seenSensors.add(sensorId)
       members.push({ sensorId, fromS: fused.fusedAtS })
     }
   }
   return {
     initAtS: fusedTracks[0].fusedAtS,
     lastAtS: fusedTracks[fusedTracks.length - 1].fusedAtS,
-    c2Id: fusedTracks[0].c2Id,
+    nodes,
     members,
   }
 }

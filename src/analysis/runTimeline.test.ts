@@ -64,7 +64,7 @@ function timelineTrial(edit?: (result: TrialResult) => void) {
   swarm.fusedTrack = {
     initAtS: 1.15,
     lastAtS: 12,
-    c2Id: 'c2',
+    nodes: [{ c2Id: 'c2', fromS: 1.15 }],
     members: [
       { sensorId: 'radar', fromS: 1.15 },
       { sensorId: 'eo', fromS: 7 },
@@ -77,7 +77,7 @@ function timelineTrial(edit?: (result: TrialResult) => void) {
     fusedTrack: {
       initAtS: 0.5,
       lastAtS: 1.5,
-      c2Id: '',
+      nodes: [],
       members: [{ sensorId: 'radar', fromS: 0.5 }],
     },
   })
@@ -91,7 +91,7 @@ function timelineTrial(edit?: (result: TrialResult) => void) {
     fusedTrack: {
       initAtS: 10,
       lastAtS: 14,
-      c2Id: 'c2',
+      nodes: [{ c2Id: 'c2', fromS: 10 }],
       members: [{ sensorId: 'radar', fromS: 10 }],
     },
   })
@@ -468,9 +468,10 @@ describe('runTimelineOf horizon (SPEC 1.4) and memo (SPEC 2.4)', () => {
       expect(marks(row(model, 'track:flyby')).map((m) => m[0])).toContain('drop')
       expect(marks(row(model, 'threat:flyby')).map((m) => m[0])).toContain('cpa')
     }
-    expect(marks(row(runTimelineOf(view, 60), 'threat:flyby')).map((m) => m[0])).toContain(
-      'hard-kill',
-    )
+    const full = row(runTimelineOf(view, 60), 'threat:flyby')
+    expect(marks(full).map((m) => m[0])).toContain('hard-kill')
+    // No planned arrival: the ghost runs to the path end.
+    expect(spans(full).at(-1)).toEqual(['ghost', 25, 60])
   })
 
   it('returns the same model for the same horizon and the same row once fully reached', () => {
@@ -488,5 +489,64 @@ describe('runTimelineOf horizon (SPEC 1.4) and memo (SPEC 2.4)', () => {
     const falseLane = 'sensor:radar:radar:false:0:0'
     expect(row(at8, 'sensor:radar')).not.toBe(row(at20, 'sensor:radar'))
     expect(row(at8, falseLane)).toBe(row(at20, falseLane))
+  })
+})
+
+describe('runTimelineOf review cases', () => {
+  it('ends a formation at the effect that removes its last member', () => {
+    // A fifth kill: the members fall at 2, 3, 4, 8 and 9 s.
+    const view = timelineTrial((result) => {
+      result.report.events.push(trialEvent({ tS: 3.5, tReleaseS: 3.6, tEffectS: 4, shipIdx: 0 }))
+      result.report.events.sort((a, b) => a.tS - b.tS)
+    }).view
+    const swarm = row(runTimelineOf(view, 60), 'threat:swarm')
+    // Windows stop at 9 s. The last member falls after the arrival at 5 s: no ghost.
+    expect(spans(swarm).filter(([kind]) => kind === 'window')).toEqual([
+      ['window', 0, 2.5],
+      ['window', 1.2, 9],
+      ['window', 5, 7.5],
+    ])
+    expect(spans(swarm).some(([kind]) => kind === 'ghost')).toBe(false)
+    expect(marks(swarm).map((m) => m[0])).toContain('arrival')
+  })
+
+  it('draws a directed-energy event as a burst', () => {
+    const view = timelineTrial((result) => {
+      result.report.events.find((e) => e.tS === 1.3)!.channelClass = 'directed-energy'
+    }).view
+    expect(spans(row(runTimelineOf(view, 60), 'effector:gun'))).toContainEqual(['burst', 1.8, 2])
+  })
+
+  it('draws holds without a level and no false track when the run kept no estimates', () => {
+    const view = timelineTrial((result) => {
+      delete result.tracks
+    }).view
+    const model = runTimelineOf(view, 60)
+    expect(row(model, 'sensor:radar:swarm')!.spans.every((s) => s.level === undefined)).toBe(true)
+    expect(row(model, 'track:radar:false:0:0')).toBeUndefined()
+  })
+
+  it('marks init on each node that held the picture and firm on the nodes that held it by then', () => {
+    const view = timelineTrial((result) => {
+      result.assessments.find((a) => a.uasId === 'swarm')!.fusedTrack!.nodes = [
+        { c2Id: 'c2', fromS: 4 },
+      ]
+    }).view
+    const c2 = marks(row(runTimelineOf(view, 60), 'c2:c2')).filter(([kind]) => kind !== 'assign')
+    // The node took the picture at 4 s, after the firm track at 3 s.
+    expect(c2).toEqual([
+      ['init', 4, 'swarm'],
+      ['init', 10, 'flyby'],
+    ])
+  })
+
+  it('numbers false tracks by first estimate, not ledger order', () => {
+    const view = timelineTrial((result) => {
+      result.tracks = [...result.tracks!, estimate('eo:false:0:0', 3, 0.3)]
+    }).view
+    const early = runTimelineOf(view, 3.2)
+    expect(row(early, 'track:eo:false:0:0')!.label).toBe('False track 1')
+    expect(row(early, 'track:radar:false:0:0')).toBeUndefined()
+    expect(row(runTimelineOf(view, 60), 'track:radar:false:0:0')!.label).toBe('False track 2')
   })
 })

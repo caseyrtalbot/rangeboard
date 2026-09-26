@@ -76,16 +76,19 @@ interface ClassificationTimes {
 
 /**
  * What the page keeps of `fusedTracks` after retention (retainTrial.ts): the
- * first and last step with a fused track, the node that formed the first one,
- * and each member sensor with the first step it fed the fused track.
+ * first and last step with a fused track, each C2 node that formed it, and
+ * each member sensor, each with the first step it held or fed the track.
  */
 export interface FusedTrackSummary {
   /** First sweep step with a fused track, seconds. */
   initAtS: number
   /** Last sweep step with a fused track, seconds. */
   lastAtS: number
-  /** C2 node of the first fused track; `NO_C2` (fusion.ts) when the sensors fused it. */
-  c2Id: string
+  /**
+   * C2 nodes in the order they first held the fused picture; the best node can
+   * change per step. A sensor-level fusion (`NO_C2`, fusion.ts) is not a node.
+   */
+  nodes: Array<{ c2Id: string; fromS: number }>
   /** Member sensors in the order they first fed the fused track. */
   members: Array<{ sensorId: string; fromS: number }>
 }

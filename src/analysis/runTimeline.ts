@@ -336,7 +336,7 @@ function derive(view: TrialResultView): Derived {
       if (!entry) {
         const hit = prefixes.find(([, prefix]) => id.startsWith(prefix))
         if (hit) {
-          entry = { sensorId: hit[0], n: falseTracks.size + 1, series: { t: [], q: [], coast: [] } }
+          entry = { sensorId: hit[0], n: 0, series: { t: [], q: [], coast: [] } }
           falseTracks.set(id, entry)
           const list = falseBySensor.get(hit[0]) ?? []
           list.push(id)
@@ -358,6 +358,10 @@ function derive(view: TrialResultView): Derived {
     series.q = order.map((i) => series.q[i])
     series.coast = order.map((i) => series.coast[i])
   }
+  // Numbered by first estimate: the ledger lists radar by radar, and a label
+  // must not depend on a track that appears later.
+  const byFirst = [...falseTracks.values()].sort((x, y) => x.series.t[0] - y.series.t[0])
+  for (let i = 0; i < byFirst.length; i += 1) byFirst[i].n = i + 1
   const falseLabel = (id: string) => `False track ${falseTracks.get(id)!.n}`
 
   // Sensors: one sub-lane per held threat, then one per false track.
@@ -382,7 +386,8 @@ function derive(view: TrialResultView): Derived {
           text: name,
         })),
       }
-      subs.push(laneOf(row, false, { quality }))
+      const lane = laneOf(row, false, { quality })
+      if (lane.firstS < Infinity) subs.push(lane)
     }
     for (const id of falseBySensor.get(sensor.id) ?? []) {
       const { series } = falseTracks.get(id)!
@@ -431,12 +436,14 @@ function derive(view: TrialResultView): Derived {
     c2Marks.set(c2Id, list)
   }
   for (const a of view.assessments) {
-    const fused = a.fusedTrack
-    // An empty c2Id is sensor-level fusion: no node formed the track.
-    if (!fused || fused.c2Id === '') continue
+    if (!a.fusedTrack) continue
     const text = nameOf(a.uasId)
-    addC2(fused.c2Id, { kind: 'init', tS: fused.initAtS, text })
-    if (a.stableTrackAtS != null) addC2(fused.c2Id, { kind: 'firm', tS: a.stableTrackAtS, text })
+    const firmS = a.stableTrackAtS
+    for (const node of a.fusedTrack.nodes) {
+      addC2(node.c2Id, { kind: 'init', tS: node.fromS, text })
+      // Firm on each node that held the fused picture by then.
+      if (firmS != null && node.fromS <= firmS) addC2(node.c2Id, { kind: 'firm', tS: firmS, text })
+    }
   }
   for (const event of events) {
     const c2Id = assignerOf(event)
@@ -470,9 +477,11 @@ function derive(view: TrialResultView): Derived {
     add(eventsBy, event.effectorId, event)
   }
   // The effect that removes the last member, shared by the track and threat rows.
+  // trialResultOf holds the attrition ship count equal to this formation count.
+  const countOf = (uasId: string) => Math.max(1, byId.get(uasId)?.formation?.count ?? 1)
   const killTimes = new Map<string, number | null>()
   for (const a of view.assessments) {
-    const count = Math.max(1, byId.get(a.uasId)?.formation?.count ?? 1)
+    const count = countOf(a.uasId)
     const kills = (eventsOn.get(a.uasId) ?? [])
       .filter((e) => e.killDelta === 1)
       .map((e) => e.tEffectS)
@@ -591,13 +600,16 @@ function derive(view: TrialResultView): Derived {
     const spans: RunTimelineSpan[] = []
     pushSpan(spans, 'undetected', startS, a.firstDetectS ?? endS)
     pushRamp(spans, a, -Infinity, endS)
+    // No in-range window after the last member is removed.
+    const deadS = killS ?? Infinity
     for (const window of a.effectorWindows) {
       const label = nameOf(window.effectorId)
       for (const [from, to] of window.intervals)
-        pushSpan(spans, 'window', from, cover(to), { label })
+        pushSpan(spans, 'window', from, Math.min(cover(to), deadS), { label })
     }
-    if (killS != null && a.arrivalS != null && killS < a.arrivalS)
-      pushSpan(spans, 'ghost', killS, a.arrivalS)
+    // After a kill, a ghost runs to the planned arrival, else to the path end.
+    const plannedS = a.arrivalS ?? lastSweepS(a)
+    if (killS != null && killS < plannedS) pushSpan(spans, 'ghost', killS, plannedS)
     const marks: RunTimelineMark[] = []
     for (const event of eventsOn.get(a.uasId) ?? []) {
       const text = nameOf(event.effectorId)
@@ -608,7 +620,7 @@ function derive(view: TrialResultView): Derived {
     if (a.arrivalS != null && !killedFirst) marks.push({ kind: 'arrival', tS: a.arrivalS })
     if (a.arrivalS == null && a.cpaS != null && (killS == null || killS > a.cpaS))
       marks.push({ kind: 'cpa', tS: a.cpaS })
-    const count = Math.max(1, entity?.formation?.count ?? 1)
+    const count = countOf(a.uasId)
     const name = entity ? modelName(entity) : ''
     return laneOf(
       {

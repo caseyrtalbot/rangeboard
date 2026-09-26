@@ -28,10 +28,15 @@ const summaryOf = (fused: readonly FusedTrack[]): FusedTrackSummary => {
   const pairs = fused.flatMap((entry) =>
     entry.sensorIds.map((sensorId) => ({ sensorId, fromS: entry.fusedAtS })),
   )
+  const nodes = fused
+    .filter((entry) => entry.c2Id !== '')
+    .map((entry) => ({ c2Id: entry.c2Id, fromS: entry.fusedAtS }))
   return {
     initAtS: fused[0].fusedAtS,
     lastAtS: fused.at(-1)!.fusedAtS,
-    c2Id: fused[0].c2Id,
+    nodes: nodes.filter(
+      (node, index) => nodes.findIndex((other) => other.c2Id === node.c2Id) === index,
+    ),
     members: pairs.filter(
       (pair, index) => pairs.findIndex((other) => other.sensorId === pair.sensorId) === index,
     ),
@@ -122,25 +127,34 @@ describe('bounded trial retention', () => {
     const carried: FusedTrackSummary = {
       initAtS: 2,
       lastAtS: 9,
-      c2Id: 'c2-a',
+      nodes: [{ c2Id: 'c2-a', fromS: 2 }],
       members: [{ sensorId: 'radar', fromS: 2 }],
     }
     expect(boundOne(trialAssessment('swarm', { fusedTrack: carried })).fusedTrack).toEqual(carried)
   })
 
-  it('lists members in first-fed order with the step each first fed', () => {
+  it('lists nodes and members in first order with the step each first held or fed', () => {
     const bound = boundOne(
       trialAssessment('swarm', {
-        fusedTracks: [fusedEntry(4, 'c2-a', ['radar']), fusedEntry(6, 'c2-b', ['radar', 'eo-1'])],
+        fusedTracks: [
+          fusedEntry(3, '', ['eo-1']),
+          fusedEntry(4, 'c2-a', ['radar']),
+          fusedEntry(5, 'c2-b', ['radar']),
+          fusedEntry(6, 'c2-a', ['radar', 'eo-1']),
+        ],
       }),
     )
+    // The sensor-level fusion at 3 s is not a node.
     expect(bound.fusedTrack).toEqual({
-      initAtS: 4,
+      initAtS: 3,
       lastAtS: 6,
-      c2Id: 'c2-a',
+      nodes: [
+        { c2Id: 'c2-a', fromS: 4 },
+        { c2Id: 'c2-b', fromS: 5 },
+      ],
       members: [
+        { sensorId: 'eo-1', fromS: 3 },
         { sensorId: 'radar', fromS: 4 },
-        { sensorId: 'eo-1', fromS: 6 },
       ],
     })
   })
