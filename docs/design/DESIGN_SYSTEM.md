@@ -8,7 +8,7 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
 
 1. **Almost nothing is enclosed.** Separation comes from alignment, one hairline rule and
    space. A border marks an input, a segmented group, a `.mini` button, a panel-body
-   action or a floating surface. A plain chrome button has a transparent border and shows
+   action, the run monitor card or a floating surface. A plain chrome button has a transparent border and shows
    the hover tone.
 2. **Two radii.** A control (button, input, segmented group, checkbox) uses
    `--radius-control`, 4 px. A floating surface uses `--radius-surface`, 6 px. No other
@@ -97,7 +97,7 @@ map onto them.
 | `--h-dense` | 24 px | `.mini` control height |
 | `--h-default` | 28 px | default control height |
 | `--h-primary` | 32 px | `.primary` control height |
-| `--type-lead-size` | 15 px | the panel title and the clock |
+| `--type-lead-size` | 15 px | the panel title, the clock and a KPI tile value |
 | `--elev-1` | `0 8px 24px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.3)` | the one shadow, floating surfaces only |
 | `--scrim` | `rgba(0,0,0,.32)` | the board under a modal floating surface |
 
@@ -141,7 +141,7 @@ tabular-nums` is set on `:root`.
 | label | `--type-label-*` | 12 / 500, text 3, sentence case |
 | machine | `--type-machine-*` | 12 / 400, mono |
 | dense | `--type-dense-size` | 11 |
-| lead | `--type-lead-size` | 15, the panel title and the clock |
+| lead | `--type-lead-size` | 15, the panel title, the clock and a KPI tile value |
 
 The floor is 11 px. No `font-size` rule in the sheet is below it. Only dense machine rows
 reach it: the detail and register tables, the event ledger, the phase chips, the timeline
@@ -163,8 +163,11 @@ and accent. One `RunControl` holds the bar's single `.primary` button (32 px, ac
 fill), and its label follows the phase: Prepare reads Run, then Stop, then Stopping while
 the pool ends; Execute reads the transport word (Play, Pause, Resume when paused, Replay,
 Retry); Analyze reads Run again. The mono progress line ends in an ellipsis before the
-button. The Deterministic checkbox is not in the bar: it sits under the forecast line in
-Prepare > Inputs, and the Run tab of Settings keeps the run mode control. Settings, the ⋯ menu and the drawer toggle are 28 px
+button. The button ends in a `kbd.run-key` that shows ⌘↵ in the button ink, and its title
+ends `(⌘↵)`. Meta+Enter (Ctrl+Enter off macOS) runs the phase's primary action unless
+focus is in a text field. The `Deterministic (no sampling)` checkbox is not in the bar:
+it sits under the forecast line in Prepare > Inputs, and the Run tab of Settings keeps
+the run mode control. Settings, the ⋯ menu and the drawer toggle are 28 px
 icon-only buttons with an `aria-label` and a title. The ⋯ menu holds New, Import and
 Export, then a separator, then Storage, which opens the Storage panel in place of the
 menu; while recovery notices exist the Storage item shows a warning state with the count
@@ -177,7 +180,8 @@ mono. It carries, left to right, the run id, the run phase, `T+m:ss / m:ss`, the
 takes a `LIMITS` tag in `--status-limit` when a finding exists. Below 1440 px the units
 cell drops, below 1280 px MC, and below 1152 px seed; the run id, phase, clock, ROE and
 validity cells never drop. The transport sits above it in Execute and Analyze only: 28 px,
-`.mini` controls. It holds play or pause, the Reset run icon, the scrubber, speed, the raid
+`.mini` controls. It holds play or pause (Replay and Retry are icon-only 24 px buttons
+too), the Reset run icon, the scrubber, speed, the raid
 waves, the frame chips, `+ Frame` (a popover with one name field and Save) and the
 Engagement toggle. The clock and the run id render only in the status bar.
 
@@ -188,9 +192,9 @@ which act on every `details` in the panel body. Below it one 32 px tab row in 12
 holds the phase's screens (Inputs · Fragility · Placement in Prepare; Run monitor in
 Execute; Outcome · Compare in Analyze), then the contextual tab last: the selected
 object's name after a 6 px accent dot, shown only while something is selected. The
-selected tab is marked by a 2 px accent underline. A long object name ends in an ellipsis
-at half the row width. The Model library editor has no fixed tab; it shows as a
-contextual tab while open. Labels do not wrap, and no panel text may be inaccessible.
+selected tab is marked by a 2 px underline in text 1; the accent stays for the primary
+action. A long object name ends in an ellipsis at half the row width. The Model library
+editor opens in the Library drawer, not in the right panel. Labels do not wrap, and no panel text may be inaccessible.
 
 ## 4. Components
 
@@ -200,8 +204,9 @@ contextual tab while open. Labels do not wrap, and no panel text may be inaccess
   transparent border, hover tone on hover, inverted on active. `.primary` is 32 px
   (`--h-primary`: 7 px by 12 px pad): the `--accent` fill with `--accent-ink` text at
   weight 500. Its hover keeps the fill at `brightness(1.08)` and its press at
-  `brightness(0.92)`, so the ink stays legible. The main run action on a screen is
-  `.primary`. `.danger`: critical text, border on hover. `.active`: hover tone plus
+  `brightness(0.92)`, so the ink stays legible. The top-bar Run is the phase's one
+  `.primary`. An analysis screen's own run action (Run Monte Carlo) is a default 28 px
+  panel-body button. `.danger`: critical text, border on hover. `.active`: hover tone plus
   text 1. Disabled drops to `--text-disabled`. A panel-body action
   (`.inspector-body button`) draws a 1 px `--rule-strong` frame, disabled included;
   register rows, table sort headers and danger actions keep their own edges. A disabled
@@ -240,26 +245,37 @@ contextual tab while open. Labels do not wrap, and no panel text may be inaccess
   holds the noun only. A blank that means a derived default shows the placeholder `Auto`,
   and the derivation sentence goes in `help`. A slider row shows its value as a
   right-aligned mono readout through `unit` (`12 kt`, `270°`). The forecast header on
-  Inputs is one mono line, `MC done / loop end · seed n`, with the stopping rule in its
-  title and the Deterministic checkbox under it.
-- **Section method note** (`.frag-info`, `.frag-help`). A section head may end in a
-  24 px (i) button (`aria-label="About <section>"`, the note in its title). With field
-  help on, the note also renders under the head as a 12 px text 2 line at normal weight.
-  A machine readout in a section head is mono 12 px text 2 (`n cells · 40 reps/cell`).
-- **Empty state.** A hollow warning `State` chip names the missing input (`No ensemble`,
-  `No defended asset`), with a `.mini` action beside it when one exists.
-- **Finding row** (`.frag-finding`). A 28 px button with the severity state, the
-  finding's first clause unchanged, and a chevron (right closed, down open) with
-  `aria-expanded`. The rest of the finding and its scope open below. With field help on,
-  rows render open.
+  Inputs is one mono line in text 1, `MC done / loop end · seed n`, with the stopping
+  rule in its title and the `Deterministic (no sampling)` checkbox under it. A stale
+  forecast line takes the warning ink.
+- **Error line** (`.line-error`). A rule outside a Field that shows only while its input
+  is invalid: 11 px, critical, the same style as `.field-error`.
+- **Section method note** (`.field-info`, `.field-help`). A section note or (i) outside a
+  Field uses the Field classes. A section head may end in a 24 px (i) button
+  (`aria-label="About <section>"`, the note in its title). With field help on, the note
+  also renders under the head as one or more 12 px text 2 lines at normal weight. A
+  machine readout in a section head is mono 12 px text 2 (`n cells · 40 reps/cell`). A
+  section head may carry a count tag as a `State` in the tone of the worst item
+  (Validity: `3 findings`).
+- **Empty state** (`.empty-row`). A hollow warning `State` names the missing input
+  (`No ensemble`, `No defended asset`), with a `.mini` action beside it when one exists.
+  The State may hold a full sentence and wraps.
+- **Finding row** (`.frag-finding`). A 28 px button with a severity glyph, the finding's
+  first clause unchanged, and a chevron (right closed, down open) with `aria-expanded`.
+  The glyph is the 8 px state square in the tone ink; the severity word is its title and
+  accessible name and is not shown. No rule between rows and no panel-body frame. The
+  rest of the finding and its scope open below. With field help on, rows render open.
+- **Detail pane header** (`DetailHeader`). Back, glyph, name and state, then the model
+  line in mono meta (`.det-m`). Under it one `Model basis` row: tier and validation
+  words in text 2 and a 24 px (i) whose title lists each model as label · tier ·
+  validation.
 - **Detail section** (`DetailSection`, `.det-s`). A collapsible section has a 28 px
   full-width header button with `aria-expanded` and `aria-controls`, a chevron, the title
   and a mono 11 px summary that stays visible while collapsed; the body uses `hidden`.
-  Track opens by default; Engagement, Path and Phase open on click. Detail values hold
+  Every telemetry section is collapsible: the first is open, and each header carries a
+  mono summary. Detail values hold
   one line: a multi-clause value clips with an ellipsis and carries the full text in
   `title`, and a list behind a value opens from a `.mini` count button (`2 sensors ›`).
-  A threat's model tags are one `Model basis` row: tier and validation words in text 2
-  and a 24 px (i) whose title lists each model as label · tier · validation.
 - **State** (`State`, `.state`). A solid 8 px square and a word in one state ink. `hollow`
   outlines the square for an undecided or qualifying count; `live` clips it to a circle.
 - **Provenance mark** (`ProvMark`, `.prov-mark`). One 8 px shape in a fixed 36 px column
@@ -277,8 +293,13 @@ contextual tab while open. Labels do not wrap, and no panel text may be inaccess
   truth-path track draws the cross alone. The layer is censored at the observed horizon
   like every other trial surface.
 - **KPI tiles** (`.tiles.c2`, `.tiles.c3`, `.tile`). Two or three columns, no borders.
-  Label in text 3 (`.tl`), value in mono at value size with a small denominator (`.tv`).
+  Label in text 3 (`.tl`), value in mono at the lead size (15 px) with a small
+  denominator (`.tv`).
   A tile label reserves two lines (`min-height: 2.4em`) so the values in a row align.
+- **Run monitor card** (`.live-card`, `LiveStrip` in Execute). A 1 px `--rule-strong`
+  border at `--radius-control`, an exception to the surface rules. It holds a 15/500 mono
+  clock, a 4 px `--rule-strong` progress bar filled in text 1, and 20 px rows with the
+  label in text 2 at 12 px and the value in mono text 1.
 - **Inspector rows** (`.insp-row`). Flex rows, 28 px minimum height, baseline aligned,
   bleeding to the panel padding line.
 - **Per-threat table** (`.tb.tb-dense`, the kill-chain table on Now and the outcome table
@@ -319,7 +340,11 @@ field, and no footer. Each row is 36 px: the name at 13/500 on one line with ell
 then vendor or variant · type in 11 px mono text 3; a trailing parenthetical in the name
 moves to line 2. Group headers show their counts in mono and name their toggle `Collapse
 <group>` or `Expand <group>`. A library row shows its Model basis action only on hover or
-keyboard focus.
+keyboard focus. Model basis, a group's + (New model), a Model command in the palette and
+Edit model specs show the model's editor in the drawer in place of the list, at no less
+than 408 px. Its 32 px header holds Back to library (a mirrored chevron with the word
+Library) and Close. Back, Close and a deleted model return the list. Place asset opens the
+drawer at its Assets group.
 
 The canvas tool row is 28 px tall (`.board-tools`), and every control in it is 24 px at
 the `.mini` box; segment buttons are 22 px inside the group's 1 px frame. Drawing tools

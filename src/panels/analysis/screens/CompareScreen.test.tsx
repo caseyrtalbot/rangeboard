@@ -119,7 +119,7 @@ describe('CompareScreen', () => {
           trial: status === 'idle' ? IDLE_TRIAL : { ...useStore.getState().trial, status },
         })
       expect(render()).toBe(
-        '<p class="muted small">No trial yet. Press Play in Execute to run one.</p>',
+        '<p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No trial yet. Press Play in Execute to run one.</span></p>',
       )
     },
   )

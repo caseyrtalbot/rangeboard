@@ -114,9 +114,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "a90b047874084b80452c287c226d5a94c66daab2cb694f7249077d2855c0bc65",
-      "reviewedAt": "2026-09-24",
-      "note": "Row B ride-along fixes at C-int: the T+ cell holds the clock subscription in StatusBar; the toolbar ⋯ trigger names the Storage panel while it is open."
+      "sha256": "725c573e6eaf2daedf8b28213603df09baa54572444f708dbd4d601a35e6aa4c",
+      "reviewedAt": "2026-09-26",
+      "note": "Row D: library editor in the drawer, finding rows, run monitor card, empty-state and error rows, tab underline, detail pane header."
     }
   ],
   "historical": [

@@ -5,6 +5,7 @@ import { assessRunValidity } from '../../../analysis/runValidity'
 import { trialForecast } from '../../../analysis/trialResult'
 import type { TrialResultView } from '../../../analysis/trialResult'
 import { trialSeriesOf } from '../../../analysis/trialSeries'
+import { EmptyRow } from '../DebriefRecord'
 import { BandChart } from '../../../charts/BandChart'
 import { exportChartPng } from '../../../charts/exportPng'
 import { readTokens } from '../../../charts/tokens'
@@ -707,7 +708,7 @@ export function CompareScreen() {
   ) {
     return (
       <>
-        <p className="muted small">No trial yet. Press Play in Execute to run one.</p>
+        <EmptyRow>No trial yet. Press Play in Execute to run one.</EmptyRow>
         <SavedRunCompare />
       </>
     )
