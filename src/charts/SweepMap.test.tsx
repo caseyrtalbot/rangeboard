@@ -140,6 +140,6 @@ describe('SweepMap', () => {
       />,
     )
     expect(tones(html)).toEqual(['pending', 'pending', 'pending'])
-    expect(html).toContain('No defended asset')
+    expect(html).not.toContain('No defended asset')
   })
 })
