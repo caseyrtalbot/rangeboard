@@ -247,16 +247,21 @@ describe('FragilityScreen', () => {
     expect(html.match(/>Run Monte Carlo</g)).toHaveLength(1)
     expect(html).not.toContain('class="tile"')
     expect(html).toContain('0 cells · 40 reps/cell')
-    expect(html).toContain('title="Planning-factor values. Estimated time: no rate yet."')
+    expect(html).toContain(
+      'title="Planning-factor values. 40 replicates per cell. Enter 2–6 distinct values per factor; up to two different factors and 36 cells. Estimated time: no rate yet."',
+    )
     expect(html).toContain(
       'disabled="" title="Run Monte Carlo first to pin a baseline.">Pin as baseline',
     )
     interaction.buttons.get('Run Monte Carlo')!.onClick()
     expect(start).toHaveBeenCalledOnce()
-    expect(html).toContain('Run sensitivity · Morris then Sobol')
+    expect(html).toContain('>Run sensitivity</button>')
     expect(html).toContain(
-      'aria-label="About sensitivity" title="Morris screening, then Sobol indices on the fields it keeps."',
+      'aria-label="About sensitivity" title="Method: Morris then Sobol. Morris screening, then Sobol indices on the fields it keeps."',
     )
+    // The top-bar Run is the phase's one accent control.
+    expect(html).not.toContain('class="primary"')
+    expect(html).toMatch(/<button type="button">Run Monte Carlo<\/button>/)
   })
 
   it('opens the library at its Assets group from Place asset', () => {
@@ -280,10 +285,11 @@ describe('FragilityScreen', () => {
       '<p class="frag-help">Run Monte Carlo first to pin a baseline. Run settings are in the Inputs tab.</p>',
     )
     expect(html).toContain(
-      '<p class="frag-help">Planning-factor values. Estimated time: no rate yet.</p>',
+      '<p class="frag-help">Planning-factor values. 40 replicates per cell.</p><p class="frag-help">Enter 2–6 distinct values per factor; up to two different factors and 36 cells.</p>',
     )
+    expect(html).not.toContain('<p class="frag-help">Planning-factor values. Estimated time')
     expect(html).toContain(
-      '<p class="frag-help">Morris screening, then Sobol indices on the fields it keeps.</p>',
+      '<p class="frag-help">Method: Morris then Sobol. Morris screening, then Sobol indices on the fields it keeps.</p>',
     )
     expect(html).toContain('aria-expanded="true"')
     expect(html).not.toContain('aria-expanded="false"')
@@ -405,15 +411,15 @@ describe('FragilityScreen', () => {
     useStore.setState({ runSensitivity: start })
     render()
     change('Sensitivity response', 'kills')
-    interaction.buttons.get('Run sensitivity · Morris then Sobol')!.onClick()
+    interaction.buttons.get('Run sensitivity')!.onClick()
     expect(start).toHaveBeenCalledWith('kills')
   })
 
-  it('names the quick depth in the sensitivity button and the sentence above it', () => {
+  it('names the quick depth in the sensitivity (i) title', () => {
     useStore.getState().patchScenario({ sensitivityDepth: 'quick' })
     const html = render()
-    expect(html).toContain('Run sensitivity · one-at-a-time')
-    expect(html).toContain('One-at-a-time at p10 and p90')
+    expect(html).toContain('>Run sensitivity</button>')
+    expect(html).toContain('title="Method: one-at-a-time. One-at-a-time at p10 and p90."')
     expect(html).not.toContain('Morris screening')
   })
 
@@ -443,6 +449,22 @@ describe('FragilityScreen', () => {
       expect((row.match(/<summary>|<button /g) ?? []).length).toBe(1)
       expect(row).toContain('aria-expanded="false"')
     })
+  })
+
+  it('carries the finding count as a header tag and draws each row as a glyph and headline', () => {
+    installResults()
+    const html = render()
+    const section = html.slice(html.indexOf('<section aria-label="Validity">'))
+    const count = section.split('class="validity-finding frag-finding"').length - 1
+    expect(count).toBeGreaterThan(0)
+    expect(section).toMatch(
+      new RegExp(
+        `<h3>Validity</h3><span class="state (critical|warning)">.*?${count} findings?</span>`,
+      ),
+    )
+    expect(section).not.toContain('Full-run setup findings')
+    expect(section).not.toMatch(/>(INVALIDATES|LIMITS|INVALID)</)
+    expect(section).toMatch(/title="(INVALIDATES|LIMITS)" role="img"><i class="state-square"/)
   })
 
   it('changes response ranking and preserves conditional definedness for times', () => {
@@ -533,6 +555,18 @@ describe('FragilityScreen', () => {
     expect(bad).toContain('aria-invalid="true"')
     expect(bad).toContain('Enter 2–6 distinct values per factor')
     expect(change('Column values', '100,200')).not.toContain('class="field-error"')
+  })
+
+  it('names the missing asset beside the sweep map, not in its caption', () => {
+    useStore.getState().replaceScenario({ ...emptyScenario(), runMode: 'monte-carlo' })
+    const html = grid()
+    const sweep = html.slice(
+      html.indexOf('<section aria-label="Factor sweep">'),
+      html.indexOf('<section aria-label="Sensitivity">'),
+    )
+    expect(sweep).toContain('<div class="frag-state-row">')
+    expect(sweep).toContain('No defended asset</span>')
+    expect(sweep).not.toContain('response unavailable')
   })
 
   it('opens a finding row on click', () => {

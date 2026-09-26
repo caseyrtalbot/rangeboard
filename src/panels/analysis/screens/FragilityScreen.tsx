@@ -52,24 +52,30 @@ const smallBlock = { display: 'block' } as const
 const stack = { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' } as const
 const fractionText = (n: number) => (Number.isFinite(n) ? `${(n * 100).toFixed(1)}%` : '—')
 const numberText = (n: number | null) => (n != null && Number.isFinite(n) ? formatCount(n) : '—')
-const SWEEP_RULE =
-  'Enter 2–6 distinct values per factor; up to two different factors and 36 cells. Speed must be positive, altitude nonnegative, raid size a positive integer.'
+const SWEEP_VALUE_RULE =
+  'Enter 2–6 distinct values per factor; up to two different factors and 36 cells.'
+const SWEEP_RULE = `${SWEEP_VALUE_RULE} Speed must be positive, altitude nonnegative, raid size a positive integer.`
 const SWEEP_UNIT: Partial<Record<SweepFactorId, string>> = {
   threatAltitudeFt: 'ft AGL',
   threatSpeedMps: 'm/s',
   approachAzimuthDeg: '° true',
 }
 
-/** A section title, an optional mono readout and the method note behind a 24 px (i). */
+/**
+ * A section title, an optional mono readout and the method note behind a 24 px (i).
+ * With field help on, `help` renders under the head, one line each; it defaults to the note.
+ */
 function SectionHead({
   title,
   readout,
   note,
+  help = [note],
   showHelp,
 }: {
   title: string
   readout?: string
   note: string
+  help?: string[]
   showHelp: boolean
 }) {
   return (
@@ -86,7 +92,12 @@ function SectionHead({
           <IconInfo />
         </button>
       </div>
-      {showHelp && <p className="frag-help">{note}</p>}
+      {showHelp &&
+        help.map((line) => (
+          <p className="frag-help" key={line}>
+            {line}
+          </p>
+        ))}
     </>
   )
 }
@@ -130,8 +141,12 @@ function FindingRow({
         data-finding={finding.id}
         onClick={() => setToggled(!open)}
       >
-        <State tone={SEVERITY_PILL[finding.severity].tone}>
-          {SEVERITY_PILL[finding.severity].text}
+        <State
+          tone={SEVERITY_PILL[finding.severity].tone}
+          role="img"
+          title={SEVERITY_PILL[finding.severity].text}
+        >
+          {null}
         </State>
         <span className="frag-finding-headline">{headline}</span>
         {open ? <IconChevronDown /> : <IconChevronRight />}
@@ -367,7 +382,7 @@ export function FragilityScreen() {
   const hasAsset = scenario.entities.some((e) => e.kind === 'asset' && entityActive(e))
   const run = runSettings(scenario)
   const enabled = run.runMode !== 'deterministic'
-  // The Run tab sets the depth; the button and the sentence above it name what it will do.
+  // The Run tab sets the depth; the section (i) names the method and what it will do.
   const depth = run.sensitivityDepth
   const sweeping = mc.sweep.status === 'running' && mc.sweep.runId === runId
   // The Morris and Sobol results ride the sensitivity run's identity: a basis
@@ -416,14 +431,18 @@ export function FragilityScreen() {
     modeReason ?? busyReason ?? (factors ? undefined : 'Enter valid factor values')
   const sensitivityReason =
     modeReason ?? busyReason ?? (fields.length === 0 ? 'Add a spread to a field first' : undefined)
+  // The replicates per cell are the ones Run sweep passes with its request.
+  const sweepHelp = [
+    `Planning-factor values. ${SWEEP_DEFAULTS.replicatesPerCell} replicates per cell.`,
+    SWEEP_VALUE_RULE,
+  ]
+  const sweepNeedsAsset =
+    !hasAsset && (sweepResponse === 'leakers' || sweepResponse === 'minWarningS')
+  const worstTone = validity.findings.some((f) => f.severity === 'invalidating')
+    ? SEVERITY_PILL.invalidating.tone
+    : SEVERITY_PILL.limiting.tone
   const runButton = (
-    <button
-      type="button"
-      className="primary"
-      disabled={mcReason != null}
-      title={mcReason}
-      onClick={() => startMc()}
-    >
+    <button type="button" disabled={mcReason != null} title={mcReason} onClick={() => startMc()}>
       Run Monte Carlo
     </button>
   )
@@ -489,11 +508,12 @@ export function FragilityScreen() {
           <SectionHead
             title="Sweep map"
             readout={`${count} cells · ${SWEEP_DEFAULTS.replicatesPerCell} reps/cell`}
-            note={`Planning-factor values. Estimated time: ${
+            note={`${sweepHelp[0]} ${sweepHelp[1]} Estimated time: ${
               rate == null
                 ? 'no rate yet'
                 : `${Math.ceil((count * SWEEP_DEFAULTS.replicatesPerCell) / rate)} s at ${formatCount(rate)} replicates/s`
             }.`}
+            help={sweepHelp}
             showHelp={showHelp}
           />
           <div style={stack}>
@@ -579,6 +599,13 @@ export function FragilityScreen() {
           </p>
         )}
         {mc.sweep.error && <p role="alert">{mc.sweep.error}</p>}
+        {mapFactors && sweepNeedsAsset && (
+          <div className="frag-state-row">
+            <State tone="warning" hollow>
+              No defended asset
+            </State>
+          </div>
+        )}
         {mapFactors && (
           <SweepMap
             factors={mapFactors}
@@ -600,7 +627,7 @@ export function FragilityScreen() {
                 ? `${sensitivity.replicates} paired replicates · seed ${sensitivity.seed}`
                 : undefined
             }
-            note={`${SENSITIVITY_DEPTH_SENTENCE[depth]}.${
+            note={`Method: ${SENSITIVITY_DEPTH_NAME[depth]}. ${SENSITIVITY_DEPTH_SENTENCE[depth]}.${
               sensitivity
                 ? ' Each perturbation’s full run · MC mean swing at parameter p10/p90, not an uncertainty interval · paired SE.'
                 : ''
@@ -714,19 +741,22 @@ export function FragilityScreen() {
             disabled={sensitivityReason != null}
             title={sensitivityReason}
             onClick={() => startSensitivity(response)}
-          >{`Run sensitivity · ${SENSITIVITY_DEPTH_NAME[depth]}`}</button>
+          >
+            Run sensitivity
+          </button>
         </div>
         {mc.sensitivity.error && <p role="alert">{mc.sensitivity.error}</p>}
       </section>
       <section aria-label="Validity">
         <header>
-          <h3>Validity</h3>
-          <p className="muted small">
-            Full-run setup findings ·{' '}
-            <State tone={VALIDITY_TEXT[validity.validity].tone}>
-              {VALIDITY_TEXT[validity.validity].pill}
-            </State>
-          </p>
+          <div className="frag-head">
+            <h3>Validity</h3>
+            {validity.findings.length > 0 && (
+              <State tone={worstTone}>
+                {`${validity.findings.length} ${validity.findings.length === 1 ? 'finding' : 'findings'}`}
+              </State>
+            )}
+          </div>
         </header>
         {validity.findings.map((finding) => (
           <FindingRow

@@ -109,11 +109,7 @@ export function SweepMap({
           : low === high
             ? `all ${formatCount(low)} (middle step)`
             : `${tones[0]} ${formatCount(low)} to <${formatCount(low + step)}; warning ${formatCount(low + step)} to <${formatCount(high - step)}; ${tones[2]} ${formatCount(high - step)} to ${formatCount(high)}`}
-        .
-        {!hasAsset &&
-          (response === 'leakers' || response === 'minWarningS') &&
-          ' No defended asset; response unavailable.'}{' '}
-        — unavailable or pending; ✓ completed, values pending.
+        . — unavailable or pending; ✓ completed, values pending.
       </figcaption>
       <p className="small">
         Columns: {SWEEP_FACTOR_LABELS[x.id]}
