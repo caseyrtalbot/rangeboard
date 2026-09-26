@@ -33,30 +33,34 @@ major version; `.nvmrc` selects it. `npm ci` installs the locked dependencies; n
 | `npm run test:silent` | Run the ast-grep rule cases in `scripts/silent/rule-tests` and the gate script tests |
 | `npm run hooks:install` | Point `core.hooksPath` at `.githooks` so `check:silent --staged` runs before each commit. Opt in per clone |
 | `npm run test:bundle` | Test bundle accounting and over-budget rejection |
-| `npm run check:bundle` | Check the current `dist/` entry and initial JavaScript + CSS gzip budgets |
+| `npm run check:bundle` | Check the current `dist/` entry and initial JavaScript + CSS gzip budgets, and that the preloaded JavaScript is only the frozen runtime chunks |
+| `npm run test:entry-graph` | Test the entry import-graph walk and its freeze comparison |
+| `npm run check:entry-graph` | Check that no new package or guarded module reaches the entry chunk through a static import (`scripts/entry-graph.json`) |
 | `npm run test:e2e` | Run the Board shell Playwright spec against a dev server (`E2E_URL`, default port 5377) |
 | `npm run engine:build` | Build the headless engine bundle `dist-engine/engine.js` from `src/engine/index.ts` |
 | `npm run engine -- <scenario.json> --replicates N --seed S --out run.json [--overrides overrides.json]` | Run a fixed replicate count over worker threads, an override set applied from the manifest, and write a run record |
 | `npm run test:engine` | Check the runner record equals the in-process summary at one seed |
-| `npm run check` | Complete documentation, evidence, silent-gate test, type, library, schema, engine, test, lint, format and build gate |
+| `npm run check` | Complete documentation, evidence, silent-gate test, entry graph, type, library, schema, engine, test, lint, format and build gate |
 
 Run the complete gate for source changes and after integrating lanes. `npm run check`
 does not run `check:bundle`; `test:bundle` tests the accounting script only. Run
 `npm run check:bundle` after `npm run build` for any change that touches the entry chunk.
-The budget (`scripts/check-bundle.mjs`) is 369,000 bytes gzip for the entry and 400,000
-for initial JavaScript plus CSS. The user raised it from 366,000 on 2026-09-23 at the
-polish follow-up gate, when the board ink fields, the hover release and the
-degenerate-range refusal put the entry at 366,212 (initial 382,637). The polish4 gate
-measured 365,724 (initial 382,285) after the canvas context menu moved to its own chunk.
-The Row A gate of the chrome refactor measured 365,970 (initial 382,635) on 2026-09-24.
-The Row B gate measured 367,008 (initial 384,130) on 2026-09-24 after the transport clock,
-the Declutter control, the library footer, the frame-name input and the body run controls
-were removed and the chrome icons, the status bar and the popovers were added, so the
-user raised the budget from 367,000 to 368,000 at that gate. The Row C gate measured
-368,173 (initial 385,659) on 2026-09-25 after the inspector frame, the fragility density
-pass, the telemetry readout and the inputs forms were added and the top-bar Deterministic
-switch was removed, so the user raised the budget from 368,000 to 369,000 at that gate;
-the entry headroom is 827 bytes. Later additions must be paid for or go to the user again. A `kit.tsx` import of the store splits the store
+The budget (`scripts/check-bundle.mjs`) is 380,000 bytes gzip for the entry and 400,000
+for initial JavaScript plus CSS. From 2026-09-10 to 2026-09-25 the entry ceiling rose seven
+times, always after the code landed and by the user's decision, the last three for 8 bytes,
+about 1 kB and 173 bytes; the Row C gate measured 368,173 (initial 385,659) against
+369,000. On 2026-09-25 the user set the ceiling at 380,000 so it trips only on a chunk
+regression, and the chunk boundary itself moved to `npm run check:entry-graph`. That check
+walks the static value imports from `src/main.tsx` (type-only imports, `import()` and
+`new Worker(new URL(...))` are not followed) and compares the npm packages and the modules
+under the guarded prefixes in `scripts/entry-graph.json` (`src/playback/`, `src/analysis/`,
+`src/engine/`, `src/charts/`, `src/panels/analysis/` and the generated data modules) with
+the frozen lists there. A shell module may enter the entry freely. A guarded module or a
+package that reaches the entry for the first time fails `npm run check`, as does a frozen
+entry that no longer reaches it; `node scripts/check-entry-graph.mjs --write` records a
+deliberate change and the commit names the reason. `check:bundle` also fails when
+`index.html` preloads a JavaScript chunk other than the rolldown runtime and the JSX
+runtime, so a store split into a preloaded chunk cannot pass as an entry reduction. A `kit.tsx` import of the store splits the store
 into its own chunk and empties the entry metric; `Field` reads `FieldHelpProvider` instead.
 An import of `panels/TimelineBar.tsx` from `panels/analysis/RunControl.tsx` did the same on
 2026-09-24; shared selectors go in `state/selectors.ts`. Documentation-only

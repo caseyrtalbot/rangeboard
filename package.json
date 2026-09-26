@@ -25,10 +25,12 @@
     "test:docs": "node --test scripts/test-docs.mjs",
     "test:e2e": "node --test scripts/e2e/board-shell.e2e.mjs",
     "test:bundle": "node --test scripts/test-bundle.mjs",
+    "test:entry-graph": "node --test scripts/test-entry-graph.mjs",
     "engine:build": "vite build --config vite.engine.config.ts",
     "engine": "node scripts/run-engine.mjs",
     "test:engine": "node --test scripts/test-engine-cli.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
+    "check:entry-graph": "node scripts/check-entry-graph.mjs",
     "evidence:report": "node scripts/check-evidence.mjs",
     "check:evidence": "node scripts/check-evidence.mjs --enforce",
     "test:evidence": "node --test scripts/test-evidence.mjs scripts/test-evidence-capture.mjs",
@@ -36,7 +38,7 @@
     "check:silent:all": "node scripts/check-silent.mjs --all",
     "test:silent": "ast-grep test -c scripts/silent/sgconfig.yml --skip-snapshot-tests && node --test scripts/test-silent.mjs",
     "hooks:install": "git config core.hooksPath .githooks",
-    "check": "npm run docs:check && npm run check:evidence && npm run test:docs && npm run test:evidence && npm run test:silent && npm run test:bundle && npm run test:engine && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run format:check && npm run build"
+    "check": "npm run docs:check && npm run check:evidence && npm run test:docs && npm run test:evidence && npm run test:silent && npm run test:bundle && npm run test:entry-graph && npm run check:entry-graph && npm run test:engine && npm run library:check && npm run typecheck && npm run schema:check && npm test && npm run lint && npm run format:check && npm run build"
   },
   "dependencies": {
     "konva": "^10.3.1",

@@ -27,9 +27,14 @@ The [Quality workflow](../.github/workflows/quality.yml) runs `npm ci` and the s
 `npm run check:silent` on the lines the push or pull request added, checks the built
 bundle budget, installs Playwright Chromium, starts Vite on fixed port 5377, waits for
 readiness, runs `npm run test:e2e` and stops its server even on failure. The budget uses
-`gzip -9`: at most 369,000 bytes for the entry and 400,000 for initial JavaScript plus CSS
-(entry, modulepreloads and stylesheets), following the Wave 3 evidence method. Font and
-other preloads and the all-in total are reported separately. Remote CI results require a
+`gzip -9`: at most 380,000 bytes for the entry and 400,000 for initial JavaScript plus CSS
+(entry, modulepreloads and stylesheets), following the Wave 3 evidence method, and the
+preloaded JavaScript must be only the rolldown and JSX runtime chunks. Font and other
+preloads and the all-in total are reported separately. The chunk boundary is guarded
+before the build by `npm run check:entry-graph` inside `npm run check`: no new npm
+package or module under a guarded prefix (engine, analysis, charts, analysis panels,
+generated data) may reach `src/main.tsx` through a static import unless
+`scripts/entry-graph.json` is rewritten with `--write` and the commit names the reason. Remote CI results require a
 pushed commit; local checks do not establish GitHub status. Remote branch protection is
 a separate repository setting.
 

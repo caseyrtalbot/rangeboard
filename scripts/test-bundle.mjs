@@ -15,13 +15,13 @@ function fixture(t, entry = 'export const ready = true') {
   put(
     'index.html',
     `<script type="module" src="/assets/index.js"></script>
-    <link rel="modulepreload" href="/assets/shared.js">
-    <link rel="modulepreload" href="/assets/shared.js?duplicate">
+    <link rel="modulepreload" href="/assets/jsx-runtime-abc123.js">
+    <link rel="modulepreload" href="/assets/jsx-runtime-abc123.js?duplicate">
     <link rel="stylesheet" href="/assets/index.css">
     <link rel="preload" as="font" href="/assets/font.woff2">`,
   )
   put('assets/index.js', entry)
-  put('assets/shared.js', 'export const shared = true')
+  put('assets/jsx-runtime-abc123.js', 'export const shared = true')
   put('assets/index.css', 'body { color: white }')
   put('assets/font.woff2', randomBytes(200))
   put('assets/lazy.js', randomBytes(500_000))
@@ -39,7 +39,7 @@ test('counts entry, modulepreloads and CSS once; reports font and all-in totals,
   )
   assert.equal(
     result.initialBytes,
-    bytes['assets/index.js'] + bytes['assets/shared.js'] + bytes['assets/index.css'],
+    bytes['assets/index.js'] + bytes['assets/jsx-runtime-abc123.js'] + bytes['assets/index.css'],
   )
   assert.equal(result.preloadBytes, bytes['assets/font.woff2'])
   assert.equal(result.allBytes, result.initialBytes + result.preloadBytes)
@@ -47,10 +47,10 @@ test('counts entry, modulepreloads and CSS once; reports font and all-in totals,
 })
 
 test('budget boundaries use exact decimal bytes and allow equality', () => {
-  assert.deepEqual(budgetFailures({ entryBytes: 369_000, initialBytes: 400_000 }), [])
-  assert.equal(budgetFailures({ entryBytes: 369_001, initialBytes: 400_000 }).length, 1)
+  assert.deepEqual(budgetFailures({ entryBytes: 380_000, initialBytes: 400_000 }), [])
+  assert.equal(budgetFailures({ entryBytes: 380_001, initialBytes: 400_000 }).length, 1)
   assert.match(
-    budgetFailures({ entryBytes: 369_000, initialBytes: 400_001 })[0],
+    budgetFailures({ entryBytes: 380_000, initialBytes: 400_001 })[0],
     /Initial JavaScript \+ CSS/,
   )
 })
@@ -60,15 +60,26 @@ test('CLI passes a small bundle and fails an entry whose gzip size exceeds its b
   const run = () =>
     spawnSync(process.execPath, ['scripts/check-bundle.mjs', root], { encoding: 'utf8' })
   assert.equal(run().status, 0)
-  put('assets/index.js', randomBytes(380_000))
+  put('assets/index.js', randomBytes(390_000))
   const result = run()
   assert.equal(result.status, 1)
-  assert.match(result.stderr, /Entry exceeds 369000/)
+  assert.match(result.stderr, /Entry exceeds 380000/)
+})
+
+test('a preloaded JavaScript chunk outside the frozen initial set fails', () => {
+  const failures = budgetFailures({
+    entryBytes: 1,
+    initialBytes: 1,
+    initialJs: ['assets/jsx-runtime-abc123.js', 'assets/store-Bq9Z2m1k.js'],
+  })
+  assert.deepEqual(failures, [
+    'Preloaded JavaScript is not a frozen initial chunk: assets/store-Bq9Z2m1k.js',
+  ])
 })
 
 test('CLI fails when shared JS and CSS push the initial set over budget', (t) => {
   const { root, put } = fixture(t, randomBytes(240_000))
-  put('assets/shared.js', randomBytes(100_000))
+  put('assets/jsx-runtime-abc123.js', randomBytes(100_000))
   put('assets/index.css', randomBytes(70_000))
   const result = spawnSync(process.execPath, ['scripts/check-bundle.mjs', root], {
     encoding: 'utf8',

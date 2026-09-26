@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "69bf6be8b801575a4bae647ddd033f6baed2644e7b069d6a68c2111255640b7b",
-      "reviewedAt": "2026-09-24",
-      "note": "Workspace fact names docs/Plan.md as the chrome refactor queue of 2026-09-24."
+      "sha256": "801d8689ad22203616b2c7c2663c9081875f5fb36c526f7c127ba1b3e8a3bffc",
+      "reviewedAt": "2026-09-26",
+      "note": "Entry budget set at 380,000 and the entry graph check (check:entry-graph, entry-graph.json) added to npm run check; check:bundle freezes the preloaded JavaScript."
     },
     {
       "document": "CLAUDE.md",
@@ -27,9 +27,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "76dff04d93dabe16c3f5088e4def97eeea8193b1293c13f9ee27768e72a04ecc",
-      "reviewedAt": "2026-09-24",
-      "note": "Row B ride-along fixes at C-int: the T+ cell holds the clock subscription in StatusBar; the toolbar ⋯ trigger names the Storage panel while it is open."
+      "sha256": "df394a94f78f55a68091d80c260d6fce4fe765b4784a5a663cc183916c73b7dd",
+      "reviewedAt": "2026-09-26",
+      "note": "Entry budget set at 380,000 and the entry graph check (check:entry-graph, entry-graph.json) added to npm run check; check:bundle freezes the preloaded JavaScript."
     },
     {
       "document": "docs/README.md",
@@ -69,9 +69,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "cefdf67258072c85455ee2582a1793d2b0f27bfd5432af4cd0b108fdb6622ce0",
-      "reviewedAt": "2026-09-25",
-      "note": "Entry budget raised to 369,000 at the Row C gate (368,173 measured); headroom 827."
+      "sha256": "a59fe81b3dd1e22ddc02021693b83d4dba4aed2203c3484381e3ed7cf7ddb57f",
+      "reviewedAt": "2026-09-26",
+      "note": "Entry budget set at 380,000 and the entry graph check (check:entry-graph, entry-graph.json) added to npm run check; check:bundle freezes the preloaded JavaScript."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -88,16 +88,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "26be0c706c7be0636a188e528ec81c649c7c943b7d08ffa19787649f25477729",
-      "reviewedAt": "2026-09-25",
-      "note": "Entry budget 369,000 after the Row C gate."
+      "sha256": "95ba91332028a5142d877122550a9cc0490c90a2a40c04c79769ee7c18e82128",
+      "reviewedAt": "2026-09-26",
+      "note": "Entry budget set at 380,000 and the entry graph check (check:entry-graph, entry-graph.json) added to npm run check; check:bundle freezes the preloaded JavaScript."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "1fb229daab0af4132790b62c5e5ac28bb1604c534655433c1b7d34ed04ac6c12",
-      "reviewedAt": "2026-09-25",
-      "note": "Row C pushed as 1f9439a with a green Quality run; triage next."
+      "sha256": "6c5085b4adbfec1b4ba227dea8e06888eaf92c812bd1329c3a270622c8c8fffc",
+      "reviewedAt": "2026-09-26",
+      "note": "Entry budget set at 380,000 and the entry graph check recorded in Position and Landmines; D3 number superseded."
     },
     {
       "document": "docs/Plan.md",

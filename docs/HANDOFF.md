@@ -12,13 +12,23 @@ commit, push or merge.
 
 [Plan.md](Plan.md) is the chrome refactor queue (Option C plus the inspector text-density
 pass, 2026-09-24). Rows A, B and C are built. Row C is merged to local `main`
-(2026-09-25) with the entry budget raised to 369,000. No row is selected.
+(2026-09-25). On 2026-09-25 the user set the entry budget at 380,000 and added the entry
+graph check, which supersedes the D3 number in `Plan.md`. No row is selected.
 
 ## Position
 
 - Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch and
-  equals `origin/main` at `1f9439a` (the Row C budget commit), pushed 2026-09-25 with
-  Quality run 36179101938 green (`check:bundle` at 369,000 included).
+  equals `origin/main` at `cc5e517` (the Row C handoff commit), pushed 2026-09-25 with
+  Quality run 36197812217 green (`check:bundle` at 369,000 included).
+- Entry budget rework (2026-09-25, after Row C, uncommitted at this writing): the entry
+  ceiling in `check-bundle.mjs` is 380,000 (measured 368,173, headroom 11,827) because
+  seven raises in fifteen days for changes under 1 kB showed it tripping on chrome edits.
+  The chunk boundary is now `scripts/check-entry-graph.mjs` with its freeze
+  `scripts/entry-graph.json` (4 packages, 107 guarded modules of 208 reachable), run by
+  `npm run check`; `check:bundle` also freezes the preloaded JavaScript to the rolldown
+  and JSX runtime chunks. `VERIFICATION.md` and `WORKFLOW.md` carry the rule. The data
+  and engine extraction (JSON assets, lazy engine client) was assessed and declined: no
+  user-visible gain at a 280 ms load against a boot-sequence change through 51 files.
 - Row C (2026-09-24) was fast-forwarded into `main` on 2026-09-25 with the user's merge
   authorization: the four lane merges (`chrome/c1` `16c8027`, `chrome/c2` `4a5584b`,
   `chrome/c3` `355d68b`, `chrome/c4` `2790101`), the integrator fixes, the docs, the
@@ -32,8 +42,8 @@ pass, 2026-09-24). Rows A, B and C are built. Row C is merged to local `main`
   424, C4 40, C2 22); the integrator removed the top-bar Deterministic switch, the unused
   `onOpenSettings` prop and the unreachable `openPreparation` branches, and the review
   fixes added bytes back. Per D3 the shortfall of 173 bytes went to the user, who raised
-  the budget to 369,000 on 2026-09-25 (headroom 827). `check-bundle.mjs`,
-  `test-bundle.mjs`, `WORKFLOW.md` and `VERIFICATION.md` carry the new number.
+  the budget to 369,000 on 2026-09-25 (headroom 827), then to 380,000 the same day with
+  the entry graph check (above).
 - Final capture: [chrome-2026-09-24](field-te/evidence/chrome-2026-09-24/README.md), nine
   shots at 1440 × 900 dark on the firing fixture with `findings.json` (header 32 px at
   13/500, tab row 32 px at 12/500, every (i) 24 px, finding rows 28 px, detail section
@@ -257,8 +267,18 @@ picks fix-now items, the rest become candidates.
   `points` array (`scenarioHasWork` in `src/io/persist.test.ts`,
   `scenarioInstall.test.ts`). Those objects do not pass `parseScenarioData`.
 - `npm run check` does not run `check:bundle`; run it after `build` at every gate that
-  touches the entry. The entry gzip budget is 369,000 bytes with 827 bytes of headroom
-  (368,173 at the Row C gate). CSS is not in the entry metric; only JavaScript moves it. `sql.js` must stay behind `await import` with its wasm URL.
+  touches the entry. The entry gzip budget is 380,000 bytes with 11,827 bytes of headroom
+  (368,173 at the Row C gate). CSS is not in the entry metric; only JavaScript moves it.
+  `sql.js` must stay behind `await import` with its wasm URL.
+- `npm run check:entry-graph` (inside `npm run check`) fails when a static value import
+  brings a new npm package, or a module under `src/playback/`, `src/analysis/`,
+  `src/engine/`, `src/charts/`, `src/panels/analysis/` or the generated data files, into
+  the entry graph from `src/main.tsx`, and when a frozen module leaves it. Load such a
+  module through `import()` or a worker, or rewrite the freeze with
+  `node scripts/check-entry-graph.mjs --write` and name the reason in the commit. The walk
+  reads source, so a module that TypeScript elides as type-only can sit in the freeze
+  without being in the built chunk; that is expected. `check:bundle` fails on any
+  preloaded JavaScript other than the rolldown and JSX runtime chunks.
 - Never run bare `npx vitest run` while a worktree exists inside the repository. Scope
   with `--dir src`.
 - `newId` embeds `Date.now()`. A test that asserts a seed-dependent Monte Carlo outcome

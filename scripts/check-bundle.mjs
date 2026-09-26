@@ -19,7 +19,16 @@ import { pathToFileURL } from 'node:url'
 // Raised to 369 kB on 2026-09-25 at the Row C chrome gate by the user: the inspector frame,
 // the fragility density pass, the telemetry readout and the inputs forms put the entry at
 // 368,173 after the integrator removals paid for the rest.
-export const BUNDLE_BUDGET = { entry: 369_000, initial: 400_000 }
+// Raised to 380 kB on 2026-09-25 by the user after the Row C gate: seven raises in fifteen
+// days for changes under 1 kB showed the ceiling was tripping on chrome edits, not on the
+// chunk regressions it exists for. `check-entry-graph.mjs` now guards the chunk boundary by
+// import graph; this budget is the byte backstop, and `initialChunks` freezes the preloaded
+// JavaScript so a store split into a preloaded chunk cannot pass as an entry reduction.
+export const BUNDLE_BUDGET = {
+  entry: 380_000,
+  initial: 400_000,
+  initialChunks: [/^assets\/rolldown-runtime-[\w-]+\.js$/, /^assets\/jsx-runtime-[\w-]+\.js$/],
+}
 
 // Match the Wave 3 evidence method: entry + modulepreloaded JS + initial CSS.
 // Report other preloads separately so the total transfer is also visible.
@@ -71,6 +80,7 @@ export function measureBundle(directory) {
   return {
     entryFile,
     entryBytes: files.get(entryFile),
+    initialJs: [...initialFiles].filter((file) => file !== entryFile && file.endsWith('.js')),
     initialBytes,
     preloadBytes,
     allBytes: initialBytes + preloadBytes,
@@ -84,6 +94,11 @@ export function budgetFailures(result, budget = BUNDLE_BUDGET) {
       `Entry exceeds ${budget.entry} bytes gzip-9: ${result.entryBytes}`,
     result.initialBytes > budget.initial &&
       `Initial JavaScript + CSS exceeds ${budget.initial} bytes gzip-9: ${result.initialBytes}`,
+    ...(budget.initialChunks
+      ? (result.initialJs ?? [])
+          .filter((file) => !budget.initialChunks.some((pattern) => pattern.test(file)))
+          .map((file) => `Preloaded JavaScript is not a frozen initial chunk: ${file}`)
+      : []),
   ].filter(Boolean)
 }
 
