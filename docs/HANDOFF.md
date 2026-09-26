@@ -11,78 +11,71 @@ fresh agent starts from this file and the docs index. This file does not authori
 commit, push or merge.
 
 [Plan.md](Plan.md) is the chrome refactor queue (Option C plus the inspector text-density
-pass, 2026-09-24). Rows A, B and C are built. Row C is merged to local `main`
-(2026-09-25). On 2026-09-25 the user set the entry budget at 380,000 and added the entry
-graph check, which supersedes the D3 number in `Plan.md`. No row is selected.
+pass, 2026-09-24; Row D, the Row C follow-ups, added 2026-09-25). Rows A to D are built.
+Row D is integrated, reviewed and gated on `chrome/d-int`. The merge to `main` waits on
+the user. No row is selected after that merge.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. Local `main` is the sole integration branch and
-  equals `origin/main` at `cc5e517` (the Row C handoff commit), pushed 2026-09-25 with
-  Quality run 36197812217 green (`check:bundle` at 369,000 included).
-- Entry budget rework (2026-09-25, after Row C, uncommitted at this writing): the entry
-  ceiling in `check-bundle.mjs` is 380,000 (measured 368,173, headroom 11,827) because
-  seven raises in fifteen days for changes under 1 kB showed it tripping on chrome edits.
-  The chunk boundary is now `scripts/check-entry-graph.mjs` with its freeze
+- Repository `~/Projects/rangeboard`. Local `main` equals `origin/main` at `8ac3bf6` (the
+  entry budget rework), pushed 2026-09-25 with Quality run 36222099950 green.
+- Entry budget rework (`8ac3bf6`, 2026-09-25): the entry ceiling in `check-bundle.mjs` is
+  380,000 because seven raises in fifteen days for changes under 1 kB showed it tripping on
+  chrome edits. The chunk boundary is `scripts/check-entry-graph.mjs` with its freeze
   `scripts/entry-graph.json` (4 packages, 107 guarded modules of 208 reachable), run by
-  `npm run check`; `check:bundle` also freezes the preloaded JavaScript to the rolldown
-  and JSX runtime chunks. `VERIFICATION.md` and `WORKFLOW.md` carry the rule. The data
-  and engine extraction (JSON assets, lazy engine client) was assessed and declined: no
-  user-visible gain at a 280 ms load against a boot-sequence change through 51 files.
-- Row C (2026-09-24) was fast-forwarded into `main` on 2026-09-25 with the user's merge
-  authorization: the four lane merges (`chrome/c1` `16c8027`, `chrome/c2` `4a5584b`,
-  `chrome/c3` `355d68b`, `chrome/c4` `2790101`), the integrator fixes, the docs, the
-  `opus-high` review fixes, the final capture, the canvas-comparison fix and the two
-  Row B ride-along fixes. The lane worktrees and the lane branches (`chrome/c1..c4`,
-  `chrome/int`) are deleted; `~/Projects/rangeboard-wt` is empty.
-- Row C gate on `main` at `05e9e73` (2026-09-25): `npm run check` passes (210 files, 2,264
-  tests, docs and evidence gates green, build green), `test:e2e` 13 of 13 on a dev
-  server at 5393. `check:bundle` measured entry gzip 368,173 against 368,000, initial
-  385,659 against 400,000. The lanes cost about 1,111 entry bytes against 992 of headroom (C1 625, C3
-  424, C4 40, C2 22); the integrator removed the top-bar Deterministic switch, the unused
-  `onOpenSettings` prop and the unreachable `openPreparation` branches, and the review
-  fixes added bytes back. Per D3 the shortfall of 173 bytes went to the user, who raised
-  the budget to 369,000 on 2026-09-25 (headroom 827), then to 380,000 the same day with
-  the entry graph check (above).
-- Final capture: [chrome-2026-09-24](field-te/evidence/chrome-2026-09-24/README.md), nine
-  shots at 1440 × 900 dark on the firing fixture with `findings.json` (header 32 px at
-  13/500, tab row 32 px at 12/500, every (i) 24 px, finding rows 28 px, detail section
-  headers 28 px, 0 page errors). The `fable-medium` comparison with the two canvases is
-  in the follow-ups below.
-- What Row C built. C1: one right-panel tab row (`.insp-tabs`, the phase's screen tabs in
-  `.insp-tab-group` with `insp-tab-analysis` on the current screen, then the contextual
-  tab: the selected object's name with a 6 px accent dot, `N entities`, a boundary or
-  connection name, `Raid builder`, or `Model library` while the editor is open), the
-  32 px `.insp-head` with the phase word and the Panel options ⋯ (`#panel-options-panel`:
-  Show field help switch, Collapse all, Expand all over every `details` and every
-  `.det-s-toggle` in `#insp-tabpanel`), `FieldHelpProvider` mounted from
-  `ui.showFieldHelp`, `Placement` in place of `Where to put it`, a saved `rightTab`
-  'library' mapped to 'analysis'. C2: `No ensemble` and `No defended asset` chips with
-  `Place asset` (clicks the rail Library trigger), the sweep readout `n cells · 40
-  reps/cell`, sweep value `Field`s with `unit`, placeholder and `error` (empty string
-  while valid), section (i) notes with `.frag-help` lines under the switch, finding
-  headline rows (28 px button, `aria-expanded`, open under the switch). C3: the threat
-  pane's `Model basis` row with a (i), `DetailSection` `collapsible` and `defaultOpen`
-  (Track open; Engagement, Path, Phase collapsed with mono summaries), one line per
-  value with the full text in `title`, the `N sensors ›` drill-in, the altitude band in
-  its (i), the LiveStrip status sentence removed from the entity workspace. C4: every
-  settings field through `Field` with `unit` and `help`, `Auto` placeholders, slider mono
-  readouts, one mono forecast line `MC done / loop end · seed n` with the stopping rule
-  in its title, the `Deterministic (fixed seed)` checkbox under it; the top-bar switch is
-  gone, so the checkbox and the Settings Run tab are the two run-mode controls.
-- Plan text the build departed from, each with its reason: the `LibraryEditor` mount
-  stays as a contextual `Model library` tab (Palette, CommandPalette, ContextMenu and
-  LibraryEditor still call `setRightTab('library')`; removing the mount would make those
-  actions no-ops and saves no bytes); `PHASE_SCREENS` keeps Fragility first and
-  `SCREEN_ORDER` sorts the row (AnalysisPanel defaults to the first screen); the
-  contextual tab covers every selection kind, not only an entity (the inspect view
-  renders boundaries and connections too); the screen group carries no ARIA role (a
-  tablist may own only tabs); `Place asset` opens the library but not at Assets (App
-  holds the drawer state locally and Palette has no filter preset); the Model basis row,
-  the collapsible sections and the removed status sentence apply to the threat pane
-  only (the sensor, effector and system panes were outside C3's files); the sweep
-  fields' error also goes on the last text field for grid-level rules; the sensitivity
-  sampling record is the section readout and its method note sits behind the (i).
+  `npm run check`; `check:bundle` also freezes the preloaded JavaScript to the rolldown and
+  JSX runtime chunks. The data and engine extraction (JSON assets, lazy engine client) was
+  assessed and declined: no user-visible gain at a 280 ms load against a boot-sequence
+  change through 51 files. D3 in `Plan.md` is superseded by this.
+- Row D (2026-09-25) ran as four lanes in `~/Projects/rangeboard-wt/d1..d4` on
+  `chrome/d1..d4` from `8ac3bf6`: D1 `b14f642` (`opus-high`), D2 `069f87a` (`opus-high`),
+  D3 `809f802` (`opus-high`), D4 `695d20d` (`opus-medium`). `chrome/int` (checked out in
+  the main checkout) holds the Row D plan commit `d7231ea` and the four lane merges to
+  `e9e6a18`. `chrome/d-int` (worktree `~/Projects/rangeboard-wt/int`) continues from there:
+  the integrator folds `87ce397`, the two placeholder folds `954e517` and `a23865b`, the
+  design system `efaf7e0`, the docs reviews `531ef2c`, and the `opus-high` review fixes
+  `fbe6ac5` (one must-fix: the drawer resizer wrote the list width from the editor view;
+  four should-fix: two status sentences moved from an error line and an (i) to empty-state
+  rows, the Run key hint hidden from the accessible name, and handler tests for Palette,
+  ContextMenu and LibraryEditor). The main checkout carries an uncommitted engine-profile
+  section in this file and a `maintenance.json` change from another session; neither is
+  in `chrome/d-int`. Merge `chrome/d-int` to `main` only with the user's authorization, and
+  let that session commit its section first or resolve this file by hand.
+- Row D gate on `chrome/d-int` (2026-09-25): `npm run check` passes (210 files, 2,282 tests
+  plus the review-fix tests, docs and evidence gates green, entry graph 107 of 208, build
+  green), `test:e2e` 13 of 13 on a dev server at 5395, `check:bundle` entry 368,760 against
+  380,000 and initial 386,297 against 400,000. The lanes cost 587 entry bytes over the
+  Row C 368,173.
+- What Row D built. D1: a store action `openLibrary(kind?, modelId?)` that bumps
+  `ui.libraryRequest.seq`; App subscribes and opens the drawer; Palette expands and focuses
+  the kind's group, or shows `LibraryEditor` in the drawer in place of the list at no less
+  than 408 px with a `Back to library` control; the five `setRightTab('library')` callers
+  (Palette New model and Model basis, CommandPalette model commands, ContextMenu Edit model
+  specs, LibraryEditor) use it; the right-panel editor mount and the contextual `Model
+  library` tab are gone; `Place asset` calls `openLibrary('asset')`. D2: Run Monte Carlo is
+  a default 28 px button; `Run sensitivity` with the method in the (i); the Validity header
+  carries the finding count as a tag; finding rows are glyph, headline and chevron with the
+  severity word as the glyph title; the sweep help reads the replicates per cell and the
+  value rule; the SweepMap caption sentence became a chip with `Place asset`. D3:
+  `Deterministic (no sampling)` (D10); the forecast line in mono text 1 without `· total`;
+  the `None` placeholder; the Run monitor card (`.live-card`: clock, progress bar,
+  Replicate, Seed, Speed rows); Placement, Outcome, Debrief and Compare sentences moved to
+  placeholders, error lines, (i) titles and `EmptyRow`s; tile values at 15 px; Replay and
+  Retry icon-only; the Run button `⌘↵` hint with a Meta+Enter (Ctrl+Enter) listener in
+  `RunControl`. D4: the sensor, effector and C2 panes take the C3 pattern (Model basis row,
+  no trial line, collapsible sections with mono summaries); the RCS and Swerling provenance
+  squares are gone; the active tab underline is text 1; the `.lens*` rules are deleted;
+  `.frag-info` and `.frag-help` folded into `.field-info` and `.field-help`.
+- Plan text the build departed from, each with its reason: the Back control is the
+  mirrored chevron icon with the word Library, not the `‹` glyph (a chrome control uses the
+  icon set); `RightTab` keeps 'library' because `viewState.ts`, `store.test.ts` and the e2e
+  still name it (a follow-up); the Replicate row shows the trial's replicate index, not
+  `12 / 80` (the Execute trial is one draw; pool progress is in the status bar); the 15 px
+  tile value applies to every `.tv`, Fragility and RunHistory included; the board ground
+  was not changed: there is no Konva ground fill, `.canvas-host` sets `--surface-board`
+  (`#121313`) with a 3.5 percent grain, and the capture's `#212528` matches the grid inks
+  in `src/ui/ink.ts`, so the sample hit a grid line; the sweep-map chip is a second chip
+  keyed to the sweep response, separate from the sensitivity chip.
 - The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
   layered kill mass 1, layered kills mean 1.115, JIATF leakers mean 0.895, JIATF kills
   mean 0.105. `4.68` is not a pin.
@@ -90,28 +83,38 @@ graph check, which supersedes the D3 number in `Plan.md`. No row is selected.
 
 ## Follow-ups (not fixed)
 
-Handling: candidates, not rows. The one triage after Row C: the user picks fix-now items
-for a follow-up row in `Plan.md`, folds them into a later row, or drops them.
+Handling: candidates, not rows. Row D took the Row C review items and the class 2, 3 and 4
+canvas deviations. What remains:
 
-From the Row C review and the lanes:
+From the Row D review:
 
-- `Deterministic (fixed seed)` misstates the model: deterministic mode samples nothing
-  and uses no seed. The plan and the canvas both carry that text; a wording change
-  (`Deterministic (no sampling)`) needs a plan decision.
-- `Place asset` should open the library at Assets: a store action App and Palette read
-  (`openLibrary(kind)`), then focus or filter the Assets group.
-- Move the `setRightTab('library')` callers (Palette `New model` and `Model basis`,
-  CommandPalette model commands, ContextMenu `Edit model specs`, LibraryEditor) to the
-  left panel, then drop the `LibraryEditor` mount and the contextual tab.
-- `src/charts/SweepMap.tsx:115` still renders the muted sentence `No defended asset;
-  response unavailable.` in its figcaption; the chip beside the widget carries it now.
-- The sensor, effector and system detail panes keep the fid-tag chips and the
-  `Simulated trial · …` line; apply the C3 pattern there.
-- Dead CSS with no TSX user: the `.lens`, `.lens-b*`, `.lens-layout*` rules
-  (`index.css` about 2264-2335, 4745, 5377-5520); `.field > .field-help` and
-  `.frag-help`, and `.field-info` and `.frag-info`, hold the same declarations.
-- `RunTab.tsx:151` asserts the `none` placeholder in `inputs.tsx`, which is not sentence
-  case.
+- Muted full sentences remain on changed screens: `FragilityScreen.tsx` about 592, 597,
+  733, 736, 773; `LiveStrip.tsx:69` (the no-trial placeholder, kept because `PlayPrompt`
+  was out of scope); the detail panes' `No …` empty lines (SensorDetail 95, 213, 232, 254,
+  276; EffectorDetail 139, 239; SystemDetail 134, 147, 160; ThreatDetail 287, 302);
+  `SystemStatus` lines inside the Outcome and Debrief disclosures.
+- The Validity header dropped the VALID or PENDING verdict word when there are no
+  findings; decide whether the verdict needs a home on the Fragility screen.
+- The objective direction (`Maximize leakers.`) lives only in the Placement response (i).
+- `RunControl.tsx` duplicates App's `isTypingTarget`; `PlacementScreen` no longer
+  duplicates `EmptyRow`.
+- `.chip.mc` (`index.css` about 3378) is dead; `.chip.det` has one user (`SystemsTab`).
+  `.empty-row` and `.line-error` sit after the run-strip block; move them beside the Field
+  rules at the next CSS pass. The four drawer rules D1 added copy the `.right-panel` rules
+  near 5205; fold with `:is(.right-panel, .board-library-drawer)`.
+- `RightTab` still includes 'library'; `viewState.ts` `RIGHT_TABS`, `store.test.ts:1049`
+  and e2e line 82 name it. Narrow the type and drop App's saved-view mapping together.
+- `DetailHeader.tsx:53` aria-label `Back to the lens stack` names the removed lens UI.
+- `TrialOutcomeSummary` (`DebriefRecord.tsx`) has no production caller; `.outcome-metric
+  strong` still uses the 24 px value size.
+- The Palette editor view follows `selection.libraryId`: selecting a board entity returns
+  the list without dismissing the request. Escape closes the whole drawer from the editor.
+- Opening the editor still clears the entity selection, as the old callers did; the right
+  panel falls back to the analysis screens while the model edits on the left.
+- `DetailTable` cells in the collapsible sections (gates, doctrine, hops, timing) still
+  wrap through the `:is(.tb th, .tb td, …)` block and carry no `title`.
+- `npm run test:e2e` needs a running Vite server (`E2E_URL`, default 5377); record that in
+  `VERIFICATION.md` or the lane template.
 
 From the Row B review, still open:
 
@@ -125,74 +128,57 @@ From the Row B review, still open:
   toggle's icon no longer shows the open state.
 - Some `+ Frame` and popover items have no static-render test.
 
-From the `fable-medium` canvas comparison (capture versus the two canvases; class in
-brackets: 1 structure, 2 density rule, 3 text, 4 tokens):
+From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 - Entity view keeps a second tab level (Telemetry · Configure · Model basis) under the
-  one tab row, so P3 stays open there [1].
-- `Run Monte Carlo` on Fragility is a filled accent button; the canvas shows an outline
-  28 px button, and the token sheet allows one accent control per phase [4].
+  one tab row, so P3 stays open there.
 - Outcome: `Export debrief JSON` is a second accent-filled control and `New clean run` is
-  a rival run verb beside the top-bar `Run again` (P1) [1, 4].
-- Run monitor opens with a muted status sentence (`Paused · Simulated trial · observed
-  through …`); the canvas shows a card with the clock, a progress bar and Replicate,
-  Seed and Speed rows [2].
-- Run monitor keeps body buttons `New run` and `Forecast and analysis` under Sensors;
-  the canvas has no body run controls (D7) [1].
+  a rival run verb beside the top-bar `Run again` (P1).
+- Run monitor keeps body buttons `New run` and `Forecast and analysis` under Sensors (D7).
 - Run monitor sections are `Kill chain`, `Effectors`, `Sensors` as 15 px headings; the
   canvas shows Engagements (open), Tracks and Run validity as 32 px collapsible rows with
-  counts; no Run validity section exists in Execute [1].
+  counts; no Run validity section exists in Execute.
 - Inputs carries the `Entity register` list and a `Run validity` block with full finding
-  paragraphs; the canvas shows findings as one collapsed row with a count and tag [1].
+  paragraphs; the canvas shows findings as one collapsed row with a count and tag.
 - Inputs repeats the scenario name and run id in its header (P2) with an INVALID tag;
-  the canvas card reads `Scenario inputs` with a PENDING tag [1].
-- The forecast line renders in accent; the canvas sets it mono text 1, and `· total` is
-  extra [3, 4].
+  the canvas card reads `Scenario inputs` with a PENDING tag.
 - Fragility has no `Monte Carlo` section header or (i); the 15 px `Fragility` heading
-  repeats the tab label [1].
-- `Run sensitivity · Morris then Sobol` carries the method in the label; the canvas
-  reads `Run sensitivity` [2].
-- The muted meta line `Full-run setup findings · INVALID` sits above the finding rows;
-  the canvas puts the count tag in the Validity header [2].
-- Finding rows carry the INVALIDATES or LIMITS word and a border; the canvas rows are a
-  glyph, the headline and a chevron [3].
-- Sweep help under the switch reads `Planning-factor values. Estimated time: no rate
-  yet.`; the canvas reads `Planning-factor values. 40 replicates per cell.` and adds a
-  second line with the 2 to 6 value rule [3, 2].
+  repeats the tab label.
 - Open findings show the `Gates:` line and a Select button; `Review finding scope` is one
-  disclosure at the bottom, not a dense button per finding [1].
-- Sweep factor selects carry the unit in the option text; the canvas shows a mono suffix.
-  The section (i) sits at the far right, not beside the title [3, 1].
+  disclosure at the bottom, not a dense button per finding.
+- Sweep factor selects carry the unit in the option text; the section (i) sits at the far
+  right, not beside the title.
 - Panel options: the switch has no visible state; `Reset section layout` and the
-  separator are absent; Collapse all and Expand all are disabled on the Configure view
-  [2, 1].
-- Telemetry: RCS and Swerling carry trailing provenance squares; the header meta line is
-  the UI face, not mono [3].
+  separator are absent; Collapse all and Expand all are disabled on the Configure view.
 - Configure view of a sensor: `East (km)` and `North (km)` keep the unit in the label
   (P6), Heading is a slider with a value box, and the section names are muted labels,
   not 32 px collapsible rows; the canvas shows Lat, Lon, Elevation and Heading with mono
-  suffixes; three muted sentences remain [1, 3, 2].
-- Placement: five muted full sentences and the first-run line `No current placement
-  result.` are set in gray, not behind a (i) or as an empty-state row [2].
-- Outcome tiles use about 40 px digits and a 27 px clock, outside the 11/12/13/15 scale;
-  seven muted sentences remain [3, 2].
-- The Analyze transport reads `▷ Replay` as a text button; the canvas uses a 24 px icon
-  button [3].
-- The active inspector tab underline is accent; the canvas CSS sets it text 1 [4].
-- The top-bar Run button shows no `⌘↵` key hint; the canvas Run button carries it [3].
-- The board ground reads about `#212528`, not the sheet's `#121313` (board, outside the
-  chrome lanes) [4].
+  suffixes; three muted sentences remain.
 
 ## Tasking
 
-Row D (Row C follow-ups) is selected; see [Plan.md](Plan.md) Row D. The triage of
-2026-09-25: the seven Row C review items and the class 2, 3 and 4 canvas deviations are
-in Row D; the class 1 deviations and the Row B leftovers stay candidates. Decision D10:
-`Deterministic (no sampling)`. Lanes run in `~/Projects/rangeboard-wt/d1..d4` on
-`chrome/d1..d4` from `8ac3bf6`.
+Row D is built on `chrome/d-int`; the merge to `main` and the push wait on the user. After
+the merge, no row is selected: the candidates above wait for the next triage.
 
 ## Landmines
 
+- `openLibrary(kind?, modelId?)` in `store.ts` bumps `ui.libraryRequest.seq`; App's
+  subscription opens the drawer on a seq change and Palette consumes the request in the
+  render-phase adjust pattern. A kind request expands its group for the session only; an
+  effect or updater must not write the collapse map to storage.
+- The Palette editor view (`editModel` set) renders no resizer; its width is
+  `max(saved, 408)`. The resizer and `aria-valuenow` read the list width only.
+- `RunControl.tsx` owns the Meta+Enter (Ctrl+Enter) listener on `window`, ignored inside
+  inputs, textareas, selects, contenteditable and while `#settings-panel[open]`. App's
+  keydown returns early on Meta or Ctrl plus Enter so the boundary and path tools do not
+  finish on the run shortcut. Do not add a second listener in App.
+- `EmptyRow` and `NoteInfo` are exported from `panels/analysis/DebriefRecord.tsx` and used
+  by Outcome, Compare and Placement. `.empty-row` and `.line-error` are the generic rules;
+  a first-run instruction or a status sentence is an `EmptyRow`, an error line is for
+  invalid input only, a method note goes behind the (i).
+- Every `DetailSection` in the sensor, effector, C2 and threat panes is `collapsible`;
+  the `.det-s[data-open]` exclusion from the right-panel wrap override covers them all.
+- `.frag-info` and `.frag-help` no longer exist; use `.field-info` and `.field-help`.
 - `.wg-b[hidden] { display: none }` keeps a collapsed `DetailSection` body hidden; the
   `.wg-b` flex display would otherwise override the attribute.
 - The right-panel wrap overrides (`index.css`, the `:is(… .rv)` block near 5154 and the

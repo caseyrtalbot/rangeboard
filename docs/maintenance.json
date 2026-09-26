@@ -43,18 +43,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "b002cd8c9ac62055a285d1f3bb2340fa02eb9c4384a294511d801a8acf3bb91b",
+      "sha256": "9c3ed8ea11606dc3edfee4989f99b6cc0de1493f4cbe6969f60cb626d17e340c",
       "reviewedAt": "2026-09-26",
-      "note": "Row D: the library editor opens in the drawer through openLibrary; finding rows, empty-state rows, the run monitor card, collapsible detail panes, Deterministic (no sampling)."
+      "note": "Row D review fixes: Palette editor view has no resizer; Placement and Outcome status sentences are EmptyRows; the Run key hint is aria-hidden."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "48c5787440b0e7befc52267bb0f0acac6cb7238009b967cc780f157575fb6bfd",
+      "sha256": "436a8ec6f32d06b91188751c38be2a71e36d2d731c16335bb470b5d20b4e55bc",
       "reviewedAt": "2026-09-26",
-      "note": "Row D: the library editor opens in the drawer through openLibrary; finding rows, empty-state rows, the run monitor card, collapsible detail panes, Deterministic (no sampling)."
+      "note": "Row D review fixes: Palette editor view has no resizer; Placement and Outcome status sentences are EmptyRows; the Run key hint is aria-hidden."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "a89be5d7a2e64036bc8324d1f2cb3ea6bced8c49c75f37c09e2ae338c7987c39",
+      "sha256": "f6ae5e016ee6b092956057747a065b7342b5471549cffa8a1aa1636508826e43",
       "reviewedAt": "2026-09-26",
-      "note": "Row D selected after the Row C triage; lanes d1..d4."
+      "note": "Row D integrated on chrome/d-int: position, gate, departures, remaining candidates, landmines."
     },
     {
       "document": "docs/Plan.md",
