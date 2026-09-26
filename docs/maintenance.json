@@ -95,9 +95,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "f6ae5e016ee6b092956057747a065b7342b5471549cffa8a1aa1636508826e43",
+      "sha256": "fe4c61176a199f3c7987720d4229f622c95114daa37bd971d21ee6b804f8b23e",
       "reviewedAt": "2026-09-26",
-      "note": "Row D integrated on chrome/d-int: position, gate, departures, remaining candidates, landmines."
+      "note": "Row D gate counts exact: 211 files, 2,287 tests."
     },
     {
       "document": "docs/Plan.md",

@@ -41,8 +41,8 @@ the user. No row is selected after that merge.
   section in this file and a `maintenance.json` change from another session; neither is
   in `chrome/d-int`. Merge `chrome/d-int` to `main` only with the user's authorization, and
   let that session commit its section first or resolve this file by hand.
-- Row D gate on `chrome/d-int` (2026-09-25): `npm run check` passes (210 files, 2,282 tests
-  plus the review-fix tests, docs and evidence gates green, entry graph 107 of 208, build
+- Row D gate on `chrome/d-int` (2026-09-25): `npm run check` passes (211 files, 2,287 tests,
+  docs and evidence gates green, entry graph 107 of 208, build
   green), `test:e2e` 13 of 13 on a dev server at 5395, `check:bundle` entry 368,760 against
   380,000 and initial 386,297 against 400,000. The lanes cost 587 entry bytes over the
   Row C 368,173.
