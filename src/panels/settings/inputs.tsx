@@ -78,7 +78,7 @@ export function DecimalInput({
       min={min}
       max={max}
       defaultValue={value ?? ''}
-      placeholder={nullable ? 'none' : undefined}
+      placeholder={nullable ? 'None' : undefined}
       onBlur={(event) => commit(event.target.value)}
       onKeyDown={(event) => {
         if (event.key === 'Enter') commit((event.target as HTMLInputElement).value)

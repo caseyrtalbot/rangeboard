@@ -90,7 +90,12 @@ describe('DebriefRecord', () => {
     const html = render()
     expect(html).toContain('aria-label="Forecast requirements"')
     expect(html).toContain('Forecast · requirement record')
-    expect(html).toContain('these gates do not adjudicate the simulated trial')
+    // The caveat keeps its words behind a 24 px (i).
+    expect(html).toContain(
+      'aria-label="About forecast requirements" title="Deterministic planning envelope · these gates do not adjudicate the simulated trial."',
+    )
+    const forecast = html.slice(html.indexOf('aria-label="Forecast requirements"'))
+    expect(forecast).not.toContain('class="muted small"')
     expect(html.indexOf('Completed simulated trial record')).toBeLessThan(
       html.indexOf('Forecast · requirement record'),
     )
@@ -122,7 +127,9 @@ describe('DebriefRecord', () => {
                 error: status === 'error' ? 'Trial failed' : null,
               },
       })
-      expect(render()).not.toContain('aria-label="Completed simulated trial record"')
+      const html = render()
+      expect(html).not.toContain('aria-label="Completed simulated trial record"')
+      expect(html).toMatch(/class="empty-row">.*· completed trial record unavailable<\/span>/)
       actions.export!()
       expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBeNull()
     },
@@ -163,7 +170,9 @@ describe('DebriefRecord', () => {
     const trial = useStore.getState().trial
     const result = { ...trial.result!, observedThroughS: 3 }
     useStore.setState({ trial: { ...trial, result } })
-    expect(render()).not.toContain('aria-label="Completed simulated trial record"')
+    const html = render()
+    expect(html).not.toContain('aria-label="Completed simulated trial record"')
+    expect(html).toMatch(/class="empty-row">.*· completed trial record unavailable<\/span>/)
     actions.export!()
     expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBeNull()
   })

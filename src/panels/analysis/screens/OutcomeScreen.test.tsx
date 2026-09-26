@@ -102,8 +102,9 @@ describe('OutcomeScreen', () => {
         useStore.setState({
           trial: state === 'idle' ? IDLE_TRIAL : { ...useStore.getState().trial, status: state },
         })
+      // A first-run instruction is an empty-state row, never a muted sentence.
       expect(render()).toBe(
-        '<p class="muted small">No trial yet. Press Play in Execute to run one.</p>',
+        '<p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No trial yet. Press Play in Execute to run one.</span></p>',
       )
     },
   )
@@ -127,6 +128,10 @@ describe('OutcomeScreen', () => {
     const partial = render()
     expect(partial).toContain('T+0:03 of 1:00 observed')
     expect(partial).toContain('Complete playback in Execute')
+    expect(partial).toMatch(
+      /class="empty-row">.*Trial in progress\. Complete playback in Execute to see the outcome\./,
+    )
+    expect(partial).not.toContain('muted')
     expect(partial).not.toContain('tiles c3')
     observeTrial(60)
     expect(render()).not.toContain('tiles c3')
@@ -242,7 +247,10 @@ describe('OutcomeScreen', () => {
     expect(tile(html, 'Arrived undefeated')).toContain('>—<small>/9 members</small>')
     expect(tile(html, 'First detect')).toContain('>—<small')
     expect(tile(html, 'First effect')).toContain('>—<small')
-    expect(html).toContain('No defended asset · arrival and leakage unavailable')
+    expect(html).toMatch(
+      /class="empty-row"><span class="state warning">.*No defended asset · arrival and leakage unavailable\.<\/span>/,
+    )
+    expect(html).not.toContain('<p class="muted small">No defended asset')
   })
 })
 

@@ -26,7 +26,7 @@ function forecastLine(
 ): { cls: string; text: string; title: string } {
   if (run.runMode === 'deterministic') {
     return {
-      cls: 'chip det',
+      cls: 'chip forecast-line',
       text: 'DET · Pd threshold',
       title: 'Deterministic expected-value run',
     }
@@ -38,12 +38,12 @@ function forecastLine(
   const done = mc.status === 'running' ? mc.progress : (summary?.replicates ?? 0)
   const of = mc.status === 'running' ? mc.total : end
   const stale = mc.status === 'stale'
-  const text = `MC ${done} / ${of}${total ? ' · total' : ''} · seed ${run.seed}${stale ? ' · stale' : ''}`
+  const text = `MC ${done} / ${of} · seed ${run.seed}${stale ? ' · stale' : ''}`
   const basis = `Monte Carlo, ${run.replicates} replicates, seed ${run.seed}${
     total ? ', total uncertainty' : ''
   }`
   const rule = `Stops on ${STOP_BY[halfWidth ? 'halfWidth' : 'replicates']}.`
-  const cls = stale ? 'chip mc warn' : 'chip mc'
+  const cls = stale ? 'chip forecast-line warn' : 'chip forecast-line'
   switch (mc.status) {
     case 'running':
       return { cls, text, title: `Running replicates. ${rule}` }
@@ -79,7 +79,10 @@ export function ForecastSettings() {
       <span className={line.cls} title={line.title}>
         {line.text}
       </span>
-      <label className="run-det">
+      <label
+        className="run-det"
+        title="Deterministic mode evaluates the model once, with no random draws."
+      >
         <input
           type="checkbox"
           checked={run.runMode === 'deterministic'}
@@ -87,7 +90,7 @@ export function ForecastSettings() {
             patchScenario({ runMode: event.target.checked ? 'deterministic' : 'monte-carlo' })
           }
         />
-        Deterministic (fixed seed)
+        Deterministic (no sampling)
       </label>
     </div>
   )

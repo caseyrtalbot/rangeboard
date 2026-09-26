@@ -19,6 +19,7 @@ import { OPTIMIZE_DEFAULTS } from '../../../state/analysisRequests'
 import { KIND_NAMES } from '../../../state/labels'
 import { useStore } from '../../../state/store'
 import { Field, State } from '../../../ui/kit'
+import { IconInfo } from '../../../ui/icons'
 import { formatCount } from '../mc'
 
 const wrap = {
@@ -43,6 +44,47 @@ const RESPONSE_DIRECTION: Record<SensitivityResponse, OptimizeObjective['directi
 const DIRECTION_WORD: Record<OptimizeObjective['direction'], string> = {
   minimize: 'Minimize',
   maximize: 'Maximize',
+}
+
+/** A section title and its method note behind a 24 px (i); help on also shows the note. */
+function SectionHead({
+  title,
+  note,
+  showHelp,
+}: {
+  title: string
+  note: string | null
+  showHelp: boolean
+}) {
+  return (
+    <header>
+      <div className="frag-head">
+        <h3>{title}</h3>
+        {note && (
+          <button
+            type="button"
+            className="frag-info"
+            aria-label={`About ${title.toLowerCase()}`}
+            title={note}
+          >
+            <IconInfo />
+          </button>
+        )}
+      </div>
+      {note && showHelp && <p className="frag-help">{note}</p>}
+    </header>
+  )
+}
+
+/** An empty-state row: the missing input named in a hollow warning state. */
+function EmptyRow({ children }: { children: string }) {
+  return (
+    <p className="empty-row">
+      <State tone="warning" hollow>
+        {children}
+      </State>
+    </p>
+  )
 }
 
 /** A position in the meters world frame, one decimal. */
@@ -102,6 +144,7 @@ export function PlacementScreen() {
   const startOptimize = useStore((s) => s.runOptimize)
   const cancelOptimize = useStore((s) => s.cancelOptimize)
   const replaceScenario = useStore((s) => s.replaceScenario)
+  const showHelp = useStore((s) => s.ui.showFieldHelp)
 
   const [response, setResponse] = useState<SensitivityResponse>('leakers')
   const [checked, setChecked] = useState<string[]>([])
@@ -143,6 +186,9 @@ export function PlacementScreen() {
   const rows = result ? candidateRows(result) : []
   const nameOf = (id: string) => scenario.entities.find((e) => e.id === id)?.name ?? id
   const cut = result != null && result.trace.length < result.budget.evaluations
+  const resultNote = result
+    ? `Best first by the objective · ${result.trace.length} evaluations · ${result.replicatesRun} engine replicates. Apply installs a copy of this scenario with the candidate positions and clears the run; the current scenario is never edited in place.`
+    : null
 
   return (
     <section className="analysis-primary" aria-label="Placement">
@@ -153,7 +199,7 @@ export function PlacementScreen() {
         {result?.budget.seed ?? settings.seed} · modeled, not observed.
       </p>
       {!enabled && (
-        <p className="muted small">
+        <p className="line-error">
           Choose Monte Carlo mode in the Inputs tab to run a placement study.
         </p>
       )}
@@ -163,7 +209,10 @@ export function PlacementScreen() {
           <h3>Objective</h3>
         </header>
         <div style={wrap}>
-          <Field label="Placement response">
+          <Field
+            label="Placement response"
+            help={`${DIRECTION_WORD[direction]} ${SWEEP_RESPONSE_LABELS[response]}.`}
+          >
             <select
               value={response}
               disabled={running}
@@ -176,17 +225,15 @@ export function PlacementScreen() {
               ))}
             </select>
           </Field>
-          <span className="muted small">
-            {DIRECTION_WORD[direction]} {SWEEP_RESPONSE_LABELS[response]}.
-          </span>
         </div>
       </section>
 
       <section aria-label="Movable systems">
-        <header>
-          <h3>Movable systems</h3>
-          <p className="muted small">Every other entity, every threat and every asset stays put.</p>
-        </header>
+        <SectionHead
+          title="Movable systems"
+          note="Every other entity, every threat and every asset stays put."
+          showHelp={showHelp}
+        />
         <fieldset disabled={running} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
           <legend>Systems the optimizer may move</legend>
           {movable.map((e) => (
@@ -207,20 +254,17 @@ export function PlacementScreen() {
             </label>
           ))}
         </fieldset>
-        {movable.length === 0 && (
-          <p className="muted small">No active sensor, effector or C2 to move.</p>
-        )}
+        {movable.length === 0 && <EmptyRow>No active sensor, effector or C2 to move.</EmptyRow>}
       </section>
 
       <section aria-label="Bounds">
-        <header>
-          <h3>Bounds</h3>
-          <p className="muted small">
-            A proposal stays inside the range polygon, in the meters world frame.
-          </p>
-        </header>
+        <SectionHead
+          title="Bounds"
+          note="A proposal stays inside the range polygon, in the meters world frame."
+          showHelp={showHelp}
+        />
         {bounds ? (
-          <Field label="Range boundary">
+          <Field label="Range boundary" error={refusal ?? ''}>
             <select
               value={bounds.id}
               disabled={running}
@@ -236,26 +280,24 @@ export function PlacementScreen() {
           </Field>
         ) : (
           allRanges.length === 0 && (
-            <p className="muted small">
-              No range boundary. Draw one on the board before a placement run.
-            </p>
+            <EmptyRow>No range boundary. Draw one on the board before a placement run.</EmptyRow>
           )
         )}
-        {refusal != null && <p className="muted small">{refusal}</p>}
         {skippedRanges > 0 && (
-          <p className="muted small">
+          <EmptyRow>
             {skippedRanges === 1
               ? '1 range boundary has fewer than three vertices and cannot bound a placement run.'
               : `${skippedRanges} range boundaries have fewer than three vertices and cannot bound a placement run.`}
-          </p>
+          </EmptyRow>
         )}
       </section>
 
       <section aria-label="Budget">
-        <header>
-          <h3>Budget</h3>
-          <p className="muted small">Engine replicates: evaluations × replicates per evaluation.</p>
-        </header>
+        <SectionHead
+          title="Budget"
+          note="Engine replicates: evaluations × replicates per evaluation."
+          showHelp={showHelp}
+        />
         <div style={wrap}>
           <Field label="Evaluations">
             <input
@@ -282,9 +324,7 @@ export function PlacementScreen() {
           </Field>
         </div>
         {!budgetValid && (
-          <p className="muted small">
-            Enter whole numbers: at least 2 evaluations and 1 replicate.
-          </p>
+          <p className="line-error">Enter whole numbers: at least 2 evaluations and 1 replicate.</p>
         )}
         <div style={wrap}>
           <button
@@ -328,16 +368,15 @@ export function PlacementScreen() {
       </section>
 
       <section aria-label="Candidate laydowns">
-        <header>
-          <h3>Candidate laydowns</h3>
-          <p className="muted small">
-            {result
-              ? `Best first by the objective · ${result.trace.length} evaluations · ${result.replicatesRun} engine replicates.`
-              : 'No current placement result.'}
-            {cut &&
-              ` Run cut at ${result!.trace.length} of ${result!.budget.evaluations} evaluations.`}
+        <SectionHead title="Candidate laydowns" note={resultNote} showHelp={showHelp} />
+        {!result && <EmptyRow>No current placement result.</EmptyRow>}
+        {cut && (
+          <p className="empty-row">
+            <State tone="warning">
+              {`Run cut at ${result!.trace.length} of ${result!.budget.evaluations} evaluations.`}
+            </State>
           </p>
-        </header>
+        )}
         {result && (
           <table className="tb tb-dense" aria-label="Candidate laydowns">
             <thead>
@@ -403,12 +442,6 @@ export function PlacementScreen() {
               ))}
             </tbody>
           </table>
-        )}
-        {result && (
-          <p className="muted small">
-            Apply installs a copy of this scenario with the candidate positions and clears the run;
-            the current scenario is never edited in place.
-          </p>
         )}
       </section>
     </section>

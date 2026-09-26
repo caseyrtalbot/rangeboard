@@ -15,6 +15,8 @@ import { selectTrialHorizon } from '../../../state/trialSelectors'
 import { State } from '../../../ui/kit'
 import {
   DebriefRecord,
+  EmptyRow,
+  NoteInfo,
   RunValidityBanner,
   TrialEventLedger,
   TrialManifestRecord,
@@ -205,9 +207,15 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
         ))}
       </div>
       {!view.hasActiveAsset && (
-        <p className="muted small">No defended asset · arrival and leakage unavailable.</p>
+        <EmptyRow>No defended asset · arrival and leakage unavailable.</EmptyRow>
       )}
-      {floored && <p className="muted small">{floored}</p>}
+      {floored && (
+        <p className="empty-row">
+          <State tone="warning" hollow>
+            {floored}
+          </State>
+        </p>
+      )}
       <OutcomeTable rows={rows} durationS={view.durationS} />
       <section aria-label="Records">
         <details className="analysis-disclosure">
@@ -226,9 +234,10 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
             findings
           </summary>
           {!view.validity && (
-            <p className="muted small">
-              Forecast · requirement validity. No trial validity assessment was captured.
-            </p>
+            <NoteInfo
+              label="validity"
+              note="Forecast · requirement validity. No trial validity assessment was captured."
+            />
           )}
           <RunValidityBanner assessment={validity} />
         </details>
@@ -294,7 +303,7 @@ export function OutcomeScreen() {
     // The history does not depend on a trial, so it renders below the placeholder.
     return (
       <>
-        <p className="muted small">No trial yet. Press Play in Execute to run one.</p>
+        <EmptyRow>No trial yet. Press Play in Execute to run one.</EmptyRow>
         <RunHistory save={save} />
       </>
     )
@@ -314,11 +323,11 @@ export function OutcomeScreen() {
       {view && complete && horizon >= view.durationS ? (
         <CompletedOutcome key={view.manifest.runId} view={view} />
       ) : (
-        <p className="muted small">
+        <EmptyRow>
           {view
             ? 'Trial in progress. Complete playback in Execute to see the outcome.'
             : 'Outcome is waiting for a trial.'}
-        </p>
+        </EmptyRow>
       )}
       <RunHistory save={save} />
     </section>

@@ -24,6 +24,33 @@ import { ThreatPicture } from './ThreatPicture'
 import { currentSensitivity, currentSummary } from './mc'
 import { SEVERITY_PILL, VALIDITY_TEXT } from './runValidityText'
 import { State } from '../../ui/kit'
+import { IconInfo } from '../../ui/icons'
+
+/** An empty-state row: the missing input or result named in a hollow warning state. */
+export function EmptyRow({ children }: { children: string }) {
+  return (
+    <p className="empty-row">
+      <State tone="warning" hollow>
+        {children}
+      </State>
+    </p>
+  )
+}
+
+/** A method note behind a 24 px (i); with field help on it also renders as a line. */
+export function NoteInfo({ label, note }: { label: string; note: string }) {
+  const showHelp = useStore((state) => state.ui.showFieldHelp)
+  return (
+    <>
+      <div className="frag-head">
+        <button type="button" className="frag-info" aria-label={`About ${label}`} title={note}>
+          <IconInfo />
+        </button>
+      </div>
+      {showHelp && <p className="frag-help">{note}</p>}
+    </>
+  )
+}
 
 function RunActions({
   scenario,
@@ -227,9 +254,7 @@ export function DebriefRecord({
             </details>
           </section>
         ) : (
-          <p className="muted small">
-            {trialStateText(selection)} · completed trial record unavailable
-          </p>
+          <EmptyRow>{`${trialStateText(selection)} · completed trial record unavailable`}</EmptyRow>
         ))}
       <RunActions
         scenario={scenario}
@@ -244,9 +269,10 @@ export function DebriefRecord({
         <summary>
           Forecast · requirement record · {requirements.met}/{requirements.required} met
         </summary>
-        <p className="muted small">
-          Deterministic planning envelope · these gates do not adjudicate the simulated trial.
-        </p>
+        <NoteInfo
+          label="forecast requirements"
+          note="Deterministic planning envelope · these gates do not adjudicate the simulated trial."
+        />
         {showValidity && <RunValidityBanner assessment={validity} />}
         <RequirementGates report={requirements} />
       </details>
@@ -313,7 +339,7 @@ export function TrialOutcomeSummary({
         ))}
       </div>
       {!view.hasActiveAsset && (
-        <p className="muted small">No defended asset · arrival and warning measures unavailable.</p>
+        <EmptyRow>No defended asset · arrival and warning measures unavailable.</EmptyRow>
       )}
     </div>
   )
@@ -381,9 +407,7 @@ export function TrialEventLedger({ view }: { view: TrialResultView }) {
           </div>
         )
       })}
-      {view.attrition.events.length === 0 && (
-        <p className="muted small">No engagement events recorded.</p>
-      )}
+      {view.attrition.events.length === 0 && <EmptyRow>No engagement events recorded.</EmptyRow>}
       {visible < view.attrition.events.length && (
         <button onClick={() => setVisible((count) => count + 20)}>Show next events</button>
       )}

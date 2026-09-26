@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../../model/seed'
 import type { McSummary } from '../../playback/mcRun'
 import type { PoolProgress } from '../../playback/mcTypes'
@@ -13,7 +13,18 @@ import { RunControl } from './RunControl'
 const interaction = vi.hoisted(() => ({
   buttons: new Map<string, { disabled?: boolean; onClick: () => void }>(),
   checks: [] as Array<(event: { target: { checked: boolean } }) => void>,
+  effects: [] as Array<() => void | (() => void)>,
 }))
+// Effects do not run under renderToStaticMarkup; collect them so a test can mount one.
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  return {
+    ...actual,
+    useEffect: (effect: () => void | (() => void)) => {
+      interaction.effects.push(effect)
+    },
+  }
+})
 vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
@@ -24,8 +35,10 @@ vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
       onClick?: () => void
       onChange?: (event: { target: { checked: boolean } }) => void
     }
-    if (type === 'button' && typeof p.children === 'string' && p.onClick) {
-      interaction.buttons.set(p.children, { disabled: p.disabled, onClick: p.onClick })
+    // The run button's children are its label, then the key hint.
+    const text = Array.isArray(p.children) ? p.children[0] : p.children
+    if (type === 'button' && typeof text === 'string' && p.onClick) {
+      interaction.buttons.set(text, { disabled: p.disabled, onClick: p.onClick })
     }
     if (type === 'input' && p.type === 'checkbox' && p.onChange) interaction.checks.push(p.onChange)
     return actual.jsxDEV(type, props, ...rest)
@@ -36,6 +49,7 @@ vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
 function render(phase?: BoardPhase): string {
   interaction.buttons.clear()
   interaction.checks = []
+  interaction.effects = []
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(<RunControl phase={phase} />)
 }
@@ -249,5 +263,126 @@ describe('RunControl', () => {
 
     setMc({ status: 'running', progress: 4, total: 100 })
     expect(render('analyze')).toContain('>Stop<')
+  })
+
+  it('shows the key hint and ends every enabled title with it', () => {
+    const html = render()
+    expect(html).toContain('title="Run (⌘↵)"')
+    expect(html).toContain('>Run<kbd class="kbd run-key">⌘↵</kbd></button>')
+    setMc({ status: 'running', progress: 4, total: 100 })
+    expect(render()).toContain('title="Stop (⌘↵)"')
+    setMc({ status: 'done', summary: summary(20, 'replicates') })
+    expect(render('analyze')).toContain('title="Run again (⌘↵)"')
+    useStore.setState((s) => ({ playback: { ...s.playback, playing: true } }))
+    expect(render('execute')).toContain('title="Pause (⌘↵)"')
+  })
+})
+
+describe('RunControl keyboard shortcut', () => {
+  class FakeElement {
+    isContentEditable = false
+  }
+  class FakeInput extends FakeElement {}
+  class FakeTextArea extends FakeElement {}
+  class FakeSelect extends FakeElement {}
+  const key = (patch: Partial<KeyboardEvent> = {}) => {
+    const preventDefault = vi.fn()
+    return {
+      event: {
+        key: 'Enter',
+        metaKey: true,
+        ctrlKey: false,
+        altKey: false,
+        shiftKey: false,
+        repeat: false,
+        target: new FakeElement() as unknown as EventTarget,
+        preventDefault,
+        ...patch,
+      },
+      preventDefault,
+    }
+  }
+
+  type Key = ReturnType<typeof key>['event']
+  /** Mounts the control's effect on a stub window and returns the listener it added. */
+  const listener = (phase?: BoardPhase) => {
+    const add = vi.fn()
+    vi.stubGlobal('window', { addEventListener: add, removeEventListener: vi.fn() })
+    render(phase)
+    interaction.effects.forEach((effect) => effect())
+    const onKey = add.mock.calls[0][1] as (event: Key) => void
+    return (event: Key) => onKey(event)
+  }
+  const handleRunKey = (event: Key, phase: BoardPhase) => {
+    const handled = vi.fn()
+    listener(phase)({
+      ...event,
+      preventDefault: () => {
+        handled()
+        event.preventDefault()
+      },
+    })
+    return handled.mock.calls.length > 0
+  }
+
+  beforeEach(() => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    vi.stubGlobal('HTMLInputElement', FakeInput)
+    vi.stubGlobal('HTMLTextAreaElement', FakeTextArea)
+    vi.stubGlobal('HTMLSelectElement', FakeSelect)
+    useStore.getState().replaceScenario(emptyScenario())
+    useStore.setState({ mc: IDLE_MC })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('mounts one window keydown listener and removes it on unmount', () => {
+    const add = vi.fn()
+    const remove = vi.fn()
+    vi.stubGlobal('window', { addEventListener: add, removeEventListener: remove })
+    render()
+    expect(interaction.effects).toHaveLength(1)
+    const cleanup = interaction.effects[0]()
+    expect(add).toHaveBeenCalledOnce()
+    expect(add.mock.calls[0][0]).toBe('keydown')
+    ;(cleanup as () => void)()
+    expect(remove).toHaveBeenCalledWith('keydown', add.mock.calls[0][1])
+  })
+
+  it('runs the phase primary action on Meta+Enter or Ctrl+Enter', () => {
+    const start = vi.fn()
+    const cancel = vi.fn()
+    useStore.setState({ runMonteCarlo: start, cancelMonteCarlo: cancel })
+    const meta = key()
+    expect(handleRunKey(meta.event, 'prepare')).toBe(true)
+    expect(meta.preventDefault).toHaveBeenCalledOnce()
+    expect(start).toHaveBeenCalledOnce()
+    expect(handleRunKey(key({ metaKey: false, ctrlKey: true }).event, 'analyze')).toBe(true)
+    expect(start).toHaveBeenCalledTimes(2)
+    setMc({ status: 'running', progress: 4, total: 100 })
+    handleRunKey(key().event, 'prepare')
+    expect(cancel).toHaveBeenCalledOnce()
+
+    const command = vi.fn()
+    useStore.setState({ playbackCommand: command })
+    handleRunKey(key().event, 'execute')
+    expect(command).toHaveBeenCalledWith({ type: 'toggle' })
+  })
+
+  it('ignores the key in a text field, without the modifier, and while the run is closed', () => {
+    const start = vi.fn()
+    useStore.setState({ runMonteCarlo: start })
+    const editable = Object.assign(new FakeElement(), { isContentEditable: true })
+    for (const target of [new FakeInput(), new FakeTextArea(), new FakeSelect(), editable]) {
+      const typed = key({ target: target as unknown as EventTarget })
+      expect(handleRunKey(typed.event, 'prepare')).toBe(false)
+      expect(typed.preventDefault).not.toHaveBeenCalled()
+    }
+    expect(handleRunKey(key({ metaKey: false }).event, 'prepare')).toBe(false)
+    expect(handleRunKey(key({ key: 'a' }).event, 'prepare')).toBe(false)
+    expect(start).not.toHaveBeenCalled()
+
+    useStore.getState().patchScenario({ runMode: 'deterministic' })
+    handleRunKey(key().event, 'prepare')
+    expect(start).not.toHaveBeenCalled()
   })
 })

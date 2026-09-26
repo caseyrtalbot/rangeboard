@@ -167,7 +167,6 @@ export const TimelineBar = memo(function TimelineBar({
         aria-label={playLabel}
       >
         {playing ? <IconPause /> : <IconPlay />}
-        {(playLabel === 'Replay' || playLabel === 'Retry') && playLabel}
       </button>
       <button
         type="button"

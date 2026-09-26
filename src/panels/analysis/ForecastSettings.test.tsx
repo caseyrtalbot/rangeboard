@@ -65,11 +65,11 @@ describe('ForecastSettings mode metadata', () => {
 
   it('shows DET in the forecast settings under the deterministic mode', () => {
     const el = chip(render())
-    expect(el).toContain('class="chip det"')
+    expect(el).toContain('class="chip forecast-line"')
     expect(el).toContain('>DET · Pd threshold<')
     expect(render()).not.toContain('chip-meta')
     expect(render()).toMatch(
-      /<span class="chip det"[^>]*>[^<]*<\/span><label[^>]*><input[^>]*checked=""[^>]*\/>Deterministic \(fixed seed\)<\/label>/,
+      /<span class="chip forecast-line"[^>]*>[^<]*<\/span><label[^>]*><input[^>]*checked=""[^>]*\/>Deterministic \(no sampling\)<\/label>/,
     )
     expect(render()).toContain('Forecast and analysis')
     expect(render()).not.toContain('freezes the shared seed')
@@ -78,7 +78,7 @@ describe('ForecastSettings mode metadata', () => {
   it('shows the replicate count and the seed while idle under Monte Carlo', () => {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     const el = chip(render())
-    expect(el).toContain('class="chip mc"')
+    expect(el).toContain('class="chip forecast-line"')
     expect(el).toContain('>MC 0 / 100 · seed 4821<')
     expect(el).toContain('Not run yet. Stops on the replicate count.')
   })
@@ -87,14 +87,15 @@ describe('ForecastSettings mode metadata', () => {
     useStore.getState().patchScenario({ runMode: 'monte-carlo' })
     setMc({ status: 'running', progress: 40, total: 100 })
     const el = chip(render())
-    expect(el).toContain('class="chip mc"')
+    expect(el).toContain('class="chip forecast-line"')
     expect(el).toContain('>MC 40 / 100 · seed 4821<')
   })
 
-  it('names the total uncertainty in the line and its title', () => {
+  it('names the total uncertainty in the title only', () => {
     useStore.getState().patchScenario({ runMode: 'monte-carlo', uncertainty: 'total' })
     const el = chip(render())
-    expect(el).toContain('MC 0 / 100 · total · seed 4821')
+    expect(el).toContain('>MC 0 / 100 · seed 4821<')
+    expect(el).not.toContain('· total')
     expect(el).toContain('Monte Carlo, 100 replicates, seed 4821, total uncertainty')
   })
 
@@ -120,7 +121,7 @@ describe('ForecastSettings mode metadata', () => {
       summary: { replicates: 100 },
     } as unknown as Partial<McState>)
     const el = chip(render())
-    expect(el).toContain('class="chip mc warn"')
+    expect(el).toContain('class="chip forecast-line warn"')
     expect(el).toContain('>MC 100 / 100 · seed 4821 · stale<')
   })
 })
@@ -135,7 +136,10 @@ describe('ForecastSettings run control', () => {
   // and the top bar carries the one RunControl. RunControl.test.tsx owns the button.
   it('flips the run mode from the Deterministic checkbox', () => {
     const html = render()
-    expect(html).toContain('Deterministic (fixed seed)')
+    expect(html).toContain('Deterministic (no sampling)')
+    expect(html).toContain(
+      'title="Deterministic mode evaluates the model once, with no random draws."',
+    )
     expect(html).toContain('checked=""')
     checks[0]({ target: { checked: false } })
     expect(useStore.getState().scenario.runMode).toBe('monte-carlo')
