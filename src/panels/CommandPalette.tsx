@@ -159,11 +159,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       id: `model-${m.id}`,
       category: 'Model',
       label: m.name,
-      run: () => {
-        const st = useStore.getState()
-        st.select({ libraryId: m.id })
-        st.setRightTab('library')
-      },
+      run: () => useStore.getState().openLibrary(m.kind, m.id),
     }))
     // Board editing tools exist only in Prepare (D3).
     return [...(prepare ? ACTIONS : ACTIONS.filter((c) => c.category !== 'Tool')), ...models]

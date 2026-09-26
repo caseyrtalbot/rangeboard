@@ -225,13 +225,7 @@ export function ContextMenu() {
           }}
         />
         {model && (
-          <Item
-            label="Edit model specs"
-            onPick={() => {
-              st.select({ libraryId: model.id })
-              st.setRightTab('library')
-            }}
-          />
+          <Item label="Edit model specs" onPick={() => st.openLibrary(model.kind, model.id)} />
         )}
         {blue && (
           <Item

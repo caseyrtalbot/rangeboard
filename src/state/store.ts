@@ -150,6 +150,18 @@ export interface UiState {
   raidDraft: RaidDraft | null
   /** Sat basemap location dialog visibility. */
   locationDialogOpen: boolean
+  /**
+   * The last `openLibrary` call. App opens the left drawer when `seq` moves; the
+   * drawer focuses the `kind` group, or shows the editor for `modelId`.
+   */
+  libraryRequest: LibraryRequest
+}
+
+/** One request to open the library drawer. `seq` counts the calls; 0 is none. */
+export interface LibraryRequest {
+  seq: number
+  kind: EntityKind | null
+  modelId: string | null
 }
 
 /** Autosave status. Its own slice so a write does not re-render every ui subscriber. */
@@ -296,6 +308,11 @@ export interface Store {
   setBasemap: (b: BasemapMode) => void
   setBoundaryType: (t: BoundaryType) => void
   setRightTab: (t: RightTab) => void
+  /**
+   * Open the library drawer at the `kind` group. With `modelId`, select that model
+   * and show its editor in the drawer.
+   */
+  openLibrary: (kind?: EntityKind, modelId?: string) => void
   setShowFieldHelp: (v: boolean) => void
   setTheme: (t: Theme) => void
   setMoveUnderlay: (v: boolean) => void
@@ -524,6 +541,7 @@ export const useStore = create<Store>()((set, get) => {
       connectSuggestion: null,
       raidDraft: null,
       locationDialogOpen: false,
+      libraryRequest: { seq: 0, kind: null, modelId: null },
     },
     playback: freshPlayback(savedRunSeq()),
     mc: IDLE_MC,
@@ -1319,6 +1337,18 @@ export const useStore = create<Store>()((set, get) => {
       writeView({ rightTab: t })
       set((st) => ({ ui: { ...st.ui, rightTab: t } }))
     },
+    openLibrary: (kind, modelId) =>
+      set((st) => ({
+        ...(modelId == null ? {} : { selection: { ...EMPTY_SELECTION, libraryId: modelId } }),
+        ui: {
+          ...st.ui,
+          libraryRequest: {
+            seq: st.ui.libraryRequest.seq + 1,
+            kind: kind ?? null,
+            modelId: modelId ?? null,
+          },
+        },
+      })),
     setShowFieldHelp: (v) => {
       if (get().ui.showFieldHelp === v) return
       writeView({ showFieldHelp: v })

@@ -9,8 +9,9 @@ import { PALETTE_COLLAPSED_KEY, PALETTE_WIDTH_KEY } from '../io/storageKeys'
 import { readSetting, writeSetting } from '../io/viewState'
 import { KIND_INK } from '../ui/ink'
 import { KIND_NAMES } from '../state/labels'
-import { IconClose, IconMore } from '../ui/icons'
+import { IconChevronRight, IconClose, IconMore } from '../ui/icons'
 import { usePopover } from '../ui/usePopover'
+import { LibraryEditor } from './LibraryEditor'
 
 const WIDTH_KEY = PALETTE_WIDTH_KEY
 const COLLAPSE_KEY = PALETTE_COLLAPSED_KEY
@@ -19,6 +20,8 @@ const MIN_W = 180
 const MAX_W = 480
 const DEFAULT_W = 306
 const KEYBOARD_STEP_W = 12
+/** The editor view is never narrower than the right panel's default width. */
+const EDITOR_W = 408
 
 function savedWidth(): number {
   const n = Number(readSetting(WIDTH_KEY))
@@ -273,28 +276,58 @@ export const Palette = memo(function Palette({
   const library = useStore((s) => s.scenario.library)
   const systemPresets = useStore((s) => s.scenario.systemPresets)
   const selectedId = useStore((s) => s.selection.libraryId)
-  const select = useStore((s) => s.select)
-  const setRightTab = useStore((s) => s.setRightTab)
   const addModel = useStore((s) => s.addModel)
   const deleteSystemPreset = useStore((s) => s.deleteSystemPreset)
   const cancelRaidDraft = useStore((s) => s.cancelRaidDraft)
+  const openLibrary = useStore((s) => s.openLibrary)
+  const request = useStore((s) => s.ui.libraryRequest)
   const [width, setWidth] = useState(savedWidth)
   const [filter, setFilter] = useState('')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(savedCollapsed)
+  // The last request that no longer shows the editor: Back and Close dismiss it.
+  const [dismissed, setDismissed] = useState(0)
+  // The request and open state this drawer last acted on.
+  const [seen, setSeen] = useState({ seq: request.seq, open })
+  // The control to focus once the render that shows it is on screen.
+  const [focus, setFocus] = useState<{ selector: string } | null>(null)
   const dragFrom = useRef<{ x: number; w: number } | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const asideRef = useRef<HTMLElement>(null)
+  // A request with a model shows the selected model's editor in place of the list.
+  const editModel =
+    open && request.modelId != null && request.seq > dismissed
+      ? library.find((m) => m.id === selectedId)
+      : undefined
+  const shownWidth = editModel ? Math.max(width, EDITOR_W) : width
+
+  // Close dismisses the editor. An `openLibrary` call on an open drawer clears the
+  // filter and focuses the model's editor or the kind's group.
+  if (seen.open !== open || (open && seen.seq !== request.seq)) {
+    setSeen({ seq: open ? request.seq : seen.seq, open })
+    if (!open) setDismissed(request.seq)
+    else if (seen.seq !== request.seq) {
+      setFilter('')
+      if (request.modelId != null) setFocus({ selector: '.lib-back' })
+      else if (request.kind) showGroup(request.kind)
+    }
+  }
 
   useEffect(() => {
     if (open) searchRef.current?.focus()
   }, [open])
 
+  useEffect(() => {
+    const target = focus && asideRef.current?.querySelector<HTMLElement>(focus.selector)
+    target?.scrollIntoView({ block: 'nearest' })
+    target?.focus()
+  }, [focus])
+
   // The undo cue beside the drawer reads the width to stay clear of it.
   useEffect(() => {
     asideRef.current
       ?.closest<HTMLElement>('.board-stage')
-      ?.style.setProperty('--library-w', `${width}px`)
-  }, [width])
+      ?.style.setProperty('--library-w', `${shownWidth}px`)
+  }, [shownWidth])
 
   const q = filter.trim().toLowerCase()
   // A live filter overrides the collapse state so matches are always visible.
@@ -308,6 +341,17 @@ export const Palette = memo(function Palette({
     })
   }
 
+  /** Expand the kind's group for this session and focus its toggle. */
+  function showGroup(kind: EntityKind) {
+    setCollapsed((c) => (c[kind] ? { ...c, [kind]: false } : c))
+    setFocus({ selector: `#library-group-${kind} .palette-toggle` })
+  }
+
+  function openEditor(m: SpecModel) {
+    cancelRaidDraft()
+    openLibrary(m.kind, m.id)
+  }
+
   function commitWidth(nextWidth: number) {
     const clamped = Math.min(MAX_W, Math.max(MIN_W, nextWidth))
     setWidth(clamped)
@@ -316,7 +360,7 @@ export const Palette = memo(function Palette({
 
   function startResize(e: ReactMouseEvent<HTMLDivElement>) {
     e.preventDefault()
-    dragFrom.current = { x: e.clientX, w: width }
+    dragFrom.current = { x: e.clientX, w: shownWidth }
     function onMove(ev: MouseEvent) {
       const from = dragFrom.current
       if (!from) return
@@ -334,9 +378,9 @@ export const Palette = memo(function Palette({
   function resizeWithKeyboard(event: KeyboardEvent<HTMLDivElement>) {
     const next =
       event.key === 'ArrowLeft'
-        ? width - KEYBOARD_STEP_W
+        ? shownWidth - KEYBOARD_STEP_W
         : event.key === 'ArrowRight'
-          ? width + KEYBOARD_STEP_W
+          ? shownWidth + KEYBOARD_STEP_W
           : event.key === 'Home'
             ? MIN_W
             : event.key === 'End'
@@ -360,185 +404,205 @@ export const Palette = memo(function Palette({
     return `${m.name} ${m.description} ${subtypeLabel(m)} ${sectionTitle}`.toLowerCase().includes(q)
   }
 
+  const close = (
+    <button
+      className="palette-icon palette-close"
+      type="button"
+      aria-label="Close library"
+      title="Close library (Esc)"
+      onClick={onClose}
+    >
+      <IconClose />
+    </button>
+  )
+
   return (
     <aside
       ref={asideRef}
       className="palette"
-      style={{ width }}
+      style={{ width: shownWidth }}
       hidden={!open}
       aria-label="Model library"
     >
-      <div className="palette-header">
-        <div className="panel-title">Library</div>
-        <LibraryActions library={library} />
-        <button
-          className="palette-icon palette-close"
-          type="button"
-          aria-label="Close library"
-          title="Close library (Esc)"
-          onClick={onClose}
-        >
-          <IconClose />
-        </button>
-      </div>
-      <div className="palette-filter">
-        <input
-          ref={searchRef}
-          type="search"
-          aria-label="Search library"
-          placeholder="Filter models…"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-      </div>
-      <div className="palette-scroll">
-        {!(q && systems.length === 0) && (
-          <div className="palette-section">
-            <SectionHeading
-              title="Integrated systems"
-              count={systems.length}
-              open={isOpen('systems')}
-              onToggle={() => toggleSection('systems')}
-            />
-            {isOpen('systems') &&
-              systems.map((p) => (
-                <div
-                  key={p.id}
-                  className="palette-item"
-                  draggable
-                  onDragStart={(e) => {
-                    cancelRaidDraft()
-                    e.dataTransfer.setData('text/rangeboard-system', p.id)
-                    e.dataTransfer.effectAllowed = 'copy'
-                  }}
-                  onDragEnd={finishDrag}
-                  title={p.description || p.name}
-                >
-                  <button
-                    className="palette-place"
-                    type="button"
-                    aria-label={`Place ${p.name}`}
-                    onClick={() => {
-                      cancelRaidDraft()
-                      onArmPlacement?.({ kind: 'system', id: p.id, name: p.name })
-                    }}
-                  >
-                    <Glyph kind="sensor" color="#7da7c4" size={12} />
-                    <RowText name={p.name} meta="Integrated system" full={p.name} />
-                  </button>
-                  {!p.builtin ? (
-                    <div className="palette-item-actions">
-                      <button
-                        className="mini palette-delete"
-                        type="button"
-                        aria-label={`Delete ${p.name} system preset`}
-                        title="Delete system preset"
-                        onClick={() => deleteSystemPreset(p.id)}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            {isOpen('systems') && !q && systemPresets.length === 0 && (
-              <div className="palette-item" style={{ cursor: 'default', opacity: 0.6 }}>
-                <span className="palette-name">Select entities, then save as system</span>
-              </div>
-            )}
+      {editModel ? (
+        <>
+          <div className="palette-header lib-editor-header">
+            <button
+              className="lib-back"
+              type="button"
+              aria-label="Back to library"
+              title="Back to library"
+              onClick={() => {
+                setDismissed(request.seq)
+                showGroup(editModel.kind)
+              }}
+            >
+              <IconChevronRight />
+              <span>Library</span>
+            </button>
+            {close}
           </div>
-        )}
-        {SECTIONS.map((section) => {
-          const models = library.filter(
-            (m) => m.kind === section.kind && modelMatches(m, section.title),
-          )
-          const tactics = section.kind === 'uas' && (
-            <TacticsSection
-              query={q}
-              open={isOpen('tactics')}
-              onToggle={() => toggleSection('tactics')}
-              onClose={onClose}
+          <LibraryEditor />
+        </>
+      ) : (
+        <>
+          <div className="palette-header">
+            <div className="panel-title">Library</div>
+            <LibraryActions library={library} />
+            {close}
+          </div>
+          <div className="palette-filter">
+            <input
+              ref={searchRef}
+              type="search"
+              aria-label="Search library"
+              placeholder="Filter models…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
             />
-          )
-          if (q && models.length === 0) return <Fragment key={section.kind}>{tactics}</Fragment>
-          const open = isOpen(section.kind)
-          return (
-            <Fragment key={section.kind}>
-              {tactics}
+          </div>
+          <div className="palette-scroll">
+            {!(q && systems.length === 0) && (
               <div className="palette-section">
                 <SectionHeading
-                  title={section.title}
-                  count={models.length}
-                  open={open}
-                  onToggle={() => toggleSection(section.kind)}
-                  addTitle={`New ${section.title} model`}
-                  onAdd={() => {
-                    cancelRaidDraft()
-                    const id = addModel(section.kind)
-                    select({ libraryId: id })
-                    setRightTab('library')
-                    onClose?.()
-                  }}
+                  title="Integrated systems"
+                  count={systems.length}
+                  open={isOpen('systems')}
+                  onToggle={() => toggleSection('systems')}
                 />
-                {open &&
-                  bucketize(section.kind, models).map((bucket) => (
-                    <Fragment key={bucket.label ?? 'all'}>
-                      {bucket.label && <div className="palette-subhead">{bucket.label}</div>}
-                      {bucket.models.map((m) => (
-                        <div
-                          key={m.id}
-                          className={`palette-item ${selectedId === m.id ? 'selected' : ''}`}
-                          draggable
-                          onDragStart={(e) => {
-                            cancelRaidDraft()
-                            e.dataTransfer.setData('text/rangeboard-model', m.id)
-                            e.dataTransfer.effectAllowed = 'copy'
-                          }}
-                          onDragEnd={finishDrag}
-                          title={m.description || m.name}
-                        >
+                {isOpen('systems') &&
+                  systems.map((p) => (
+                    <div
+                      key={p.id}
+                      className="palette-item"
+                      draggable
+                      onDragStart={(e) => {
+                        cancelRaidDraft()
+                        e.dataTransfer.setData('text/rangeboard-system', p.id)
+                        e.dataTransfer.effectAllowed = 'copy'
+                      }}
+                      onDragEnd={finishDrag}
+                      title={p.description || p.name}
+                    >
+                      <button
+                        className="palette-place"
+                        type="button"
+                        aria-label={`Place ${p.name}`}
+                        onClick={() => {
+                          cancelRaidDraft()
+                          onArmPlacement?.({ kind: 'system', id: p.id, name: p.name })
+                        }}
+                      >
+                        <Glyph kind="sensor" color="#7da7c4" size={12} />
+                        <RowText name={p.name} meta="Integrated system" full={p.name} />
+                      </button>
+                      {!p.builtin ? (
+                        <div className="palette-item-actions">
                           <button
-                            className="palette-place"
+                            className="mini palette-delete"
                             type="button"
-                            aria-label={`Place ${m.name}`}
-                            onClick={() => {
-                              cancelRaidDraft()
-                              onArmPlacement?.({ kind: 'model', id: m.id, name: m.name })
-                            }}
+                            aria-label={`Delete ${p.name} system preset`}
+                            title="Delete system preset"
+                            onClick={() => deleteSystemPreset(p.id)}
                           >
-                            <Glyph kind={m.kind} color={m.color} size={12} />
-                            <RowText {...rowLines(m)} full={m.name} />
+                            ×
                           </button>
-                          <div className="palette-item-actions">
-                            <button
-                              className="mini palette-basis"
-                              type="button"
-                              aria-label={`Open ${m.name} model basis`}
-                              onClick={() => {
-                                cancelRaidDraft()
-                                select({ libraryId: m.id })
-                                setRightTab('library')
-                                onClose?.()
-                              }}
-                            >
-                              Model basis
-                            </button>
-                          </div>
                         </div>
-                      ))}
-                    </Fragment>
+                      ) : null}
+                    </div>
                   ))}
+                {isOpen('systems') && !q && systemPresets.length === 0 && (
+                  <div className="palette-item" style={{ cursor: 'default', opacity: 0.6 }}>
+                    <span className="palette-name">Select entities, then save as system</span>
+                  </div>
+                )}
               </div>
-            </Fragment>
-          )
-        })}
-      </div>
+            )}
+            {SECTIONS.map((section) => {
+              const models = library.filter(
+                (m) => m.kind === section.kind && modelMatches(m, section.title),
+              )
+              const tactics = section.kind === 'uas' && (
+                <TacticsSection
+                  query={q}
+                  open={isOpen('tactics')}
+                  onToggle={() => toggleSection('tactics')}
+                  onClose={onClose}
+                />
+              )
+              if (q && models.length === 0) return <Fragment key={section.kind}>{tactics}</Fragment>
+              const open = isOpen(section.kind)
+              return (
+                <Fragment key={section.kind}>
+                  {tactics}
+                  <div className="palette-section" id={`library-group-${section.kind}`}>
+                    <SectionHeading
+                      title={section.title}
+                      count={models.length}
+                      open={open}
+                      onToggle={() => toggleSection(section.kind)}
+                      addTitle={`New ${section.title} model`}
+                      onAdd={() => {
+                        cancelRaidDraft()
+                        openLibrary(section.kind, addModel(section.kind))
+                      }}
+                    />
+                    {open &&
+                      bucketize(section.kind, models).map((bucket) => (
+                        <Fragment key={bucket.label ?? 'all'}>
+                          {bucket.label && <div className="palette-subhead">{bucket.label}</div>}
+                          {bucket.models.map((m) => (
+                            <div
+                              key={m.id}
+                              className={`palette-item ${selectedId === m.id ? 'selected' : ''}`}
+                              draggable
+                              onDragStart={(e) => {
+                                cancelRaidDraft()
+                                e.dataTransfer.setData('text/rangeboard-model', m.id)
+                                e.dataTransfer.effectAllowed = 'copy'
+                              }}
+                              onDragEnd={finishDrag}
+                              title={m.description || m.name}
+                            >
+                              <button
+                                className="palette-place"
+                                type="button"
+                                aria-label={`Place ${m.name}`}
+                                onClick={() => {
+                                  cancelRaidDraft()
+                                  onArmPlacement?.({ kind: 'model', id: m.id, name: m.name })
+                                }}
+                              >
+                                <Glyph kind={m.kind} color={m.color} size={12} />
+                                <RowText {...rowLines(m)} full={m.name} />
+                              </button>
+                              <div className="palette-item-actions">
+                                <button
+                                  className="mini palette-basis"
+                                  type="button"
+                                  aria-label={`Open ${m.name} model basis`}
+                                  onClick={() => openEditor(m)}
+                                >
+                                  Model basis
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </Fragment>
+                      ))}
+                  </div>
+                </Fragment>
+              )
+            })}
+          </div>
+        </>
+      )}
       <div
         className="palette-resizer"
         role="separator"
         aria-orientation="vertical"
         aria-label="Resize library"
-        aria-valuenow={width}
+        aria-valuenow={shownWidth}
         aria-valuemin={MIN_W}
         aria-valuemax={MAX_W}
         tabIndex={0}

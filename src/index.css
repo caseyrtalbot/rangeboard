@@ -4931,6 +4931,42 @@ input[type='number'] {
   min-width: 180px;
 }
 
+/* The editor view: a 32 px header with Back to library and Close, then the model
+   editor at no less than 408 px, scrolling on its own. */
+.lib-back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: var(--space-1);
+  padding-left: var(--space-1);
+  color: var(--text-secondary);
+}
+
+.lib-back svg {
+  transform: scaleX(-1);
+}
+
+/* The right panel's field and row fit, for the editor in the drawer. */
+.board-library-drawer .field-row {
+  flex-wrap: wrap;
+}
+
+.board-library-drawer .field-row > .field {
+  flex: 1 1 145px;
+  min-width: 0;
+}
+
+.board-library-drawer .insp-row {
+  margin: 0;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.board-library-drawer .insp-row-label {
+  flex: 0 1 42%;
+  min-width: 0;
+}
+
 /* The library header: 32 px, the title, then the ⋯ actions and Close. */
 .palette-header {
   display: flex;
