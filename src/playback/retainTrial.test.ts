@@ -5,9 +5,10 @@ import { parseScenarioData } from '../io/persist'
 import { buildTrialResultGroup } from '../io/runResultGroups'
 import { analysisBasisSignature } from '../state/analysisBasis'
 import { trackEstimateFixture } from './__fixtures__/trackEstimateFixture'
-import { mixedTrial } from './__fixtures__/trialFixture'
+import { mixedTrial, trialAssessment } from './__fixtures__/trialFixture'
 import { latestEstimatesAt, positionEllipse } from './trackEstimateView'
-import type { TrackEstimate } from './trackTypes'
+import type { FusedTrackSummary, ThreatAssessment } from './sim'
+import type { FusedTrack, TrackEstimate } from './trackTypes'
 import { runTrial } from './trial'
 import { trialSweepAt } from './trialSweepAt'
 import { createTrialManifest } from './trialTypes'
@@ -21,6 +22,43 @@ const trimmed = ({ covariance, ...track }: TrackEstimate): TrackEstimate => ({
   sensorIds: [],
   covariance: [covariance[0], covariance[1], 0, 0, 0, covariance[5]],
 })
+
+/** The summary computed straight from the engine list, for comparison. */
+const summaryOf = (fused: readonly FusedTrack[]): FusedTrackSummary => {
+  const pairs = fused.flatMap((entry) =>
+    entry.sensorIds.map((sensorId) => ({ sensorId, fromS: entry.fusedAtS })),
+  )
+  return {
+    initAtS: fused[0].fusedAtS,
+    lastAtS: fused.at(-1)!.fusedAtS,
+    c2Id: fused[0].c2Id,
+    members: pairs.filter(
+      (pair, index) => pairs.findIndex((other) => other.sensorId === pair.sensorId) === index,
+    ),
+  }
+}
+
+const fusedEntry = (fusedAtS: number, c2Id: string, sensorIds: string[]): FusedTrack => ({
+  id: `fused-${fusedAtS}`,
+  uasId: 'swarm',
+  sensorIds,
+  state: { x: 0, y: 0, vx: 0, vy: 0, tS: fusedAtS },
+  covariance: [1, 0, 0, 0, 0, 1],
+  quality: 1,
+  hits: 1,
+  misses: 0,
+  coasting: false,
+  source: 'estimate',
+  c2Id,
+  memberTrackIds: [],
+  fusedAtS,
+})
+
+/** Binds a hand-built trial whose only assessment is `assessment`. */
+const boundOne = (assessment: ThreatAssessment): ThreatAssessment => {
+  const { result } = mixedTrial()
+  return boundRetainedTrial({ ...result, assessments: [assessment] }).assessments[0]
+}
 
 function firingTrial() {
   const scenario = parseScenarioData(structuredClone(firing))
@@ -40,10 +78,71 @@ describe('bounded trial retention', () => {
     expect(round(retained.members)).toEqual(round(full.members))
     expect(retained.counts).toEqual(full.counts)
     expect(round(retained.assessments)).toEqual(
-      round(full.assessments.map(({ fusedTracks: _fused, ...assessment }) => assessment)),
+      round(
+        full.assessments.map(({ fusedTracks, ...assessment }) =>
+          fusedTracks && fusedTracks.length > 0
+            ? { ...assessment, fusedTrack: summaryOf(fusedTracks) }
+            : assessment,
+        ),
+      ),
     )
     expect(JSON.stringify(bound.assessments)).not.toContain('fusedTracks')
     expect(boundRetainedTrial(bound)).toBe(bound)
+  })
+
+  it('summarizes each non-empty fused-track list and keeps no reference to it', () => {
+    const { result, bound } = firingTrial()
+    const fused = result.assessments.filter((a) => (a.fusedTracks?.length ?? 0) > 0)
+    expect(fused.length).toBeGreaterThan(0)
+    for (const [index, assessment] of result.assessments.entries()) {
+      const list = assessment.fusedTracks
+      if (list && list.length > 0) {
+        expect(bound.assessments[index].fusedTrack).toEqual(summaryOf(list))
+      } else {
+        expect(bound.assessments[index]).not.toHaveProperty('fusedTrack')
+      }
+    }
+    const before = structuredClone(bound.assessments.map((a) => a.fusedTrack))
+    for (const assessment of fused) {
+      assessment.fusedTracks![0].sensorIds.push('mutated')
+      assessment.fusedTracks![0].c2Id = 'mutated'
+      assessment.fusedTracks![0].fusedAtS = -1
+      assessment.fusedTracks!.length = 0
+    }
+    expect(bound.assessments.map((a) => a.fusedTrack)).toEqual(before)
+  })
+
+  it('adds no summary for an absent or empty list and keeps a carried summary', () => {
+    const plain = boundOne(trialAssessment('swarm'))
+    expect(plain).not.toHaveProperty('fusedTrack')
+    expect(plain).not.toHaveProperty('fusedTracks')
+    const empty = boundOne(trialAssessment('swarm', { fusedTracks: [] }))
+    expect(empty).not.toHaveProperty('fusedTrack')
+    expect(empty).not.toHaveProperty('fusedTracks')
+    const carried: FusedTrackSummary = {
+      initAtS: 2,
+      lastAtS: 9,
+      c2Id: 'c2-a',
+      members: [{ sensorId: 'radar', fromS: 2 }],
+    }
+    expect(boundOne(trialAssessment('swarm', { fusedTrack: carried })).fusedTrack).toEqual(carried)
+  })
+
+  it('lists members in first-fed order with the step each first fed', () => {
+    const bound = boundOne(
+      trialAssessment('swarm', {
+        fusedTracks: [fusedEntry(4, 'c2-a', ['radar']), fusedEntry(6, 'c2-b', ['radar', 'eo-1'])],
+      }),
+    )
+    expect(bound.fusedTrack).toEqual({
+      initAtS: 4,
+      lastAtS: 6,
+      c2Id: 'c2-a',
+      members: [
+        { sensorId: 'radar', fromS: 4 },
+        { sensorId: 'eo-1', fromS: 6 },
+      ],
+    })
   })
 
   it('keeps the board ellipse and the sweep while dropping unread estimate fields', () => {

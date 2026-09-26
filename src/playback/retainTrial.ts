@@ -1,15 +1,15 @@
 import type { SensorType } from '../model/types'
 import type { SensorHoldGate } from '../analysis/sensorEnv'
 import type { SensorScanObservation } from './detection'
-import type { ThreatAssessment } from './sim'
+import type { FusedTrackSummary, ThreatAssessment } from './sim'
 import { bindHorizonRead } from './trackEstimateView'
-import type { TrackEstimate, TrackSource } from './trackTypes'
+import type { FusedTrack, TrackEstimate, TrackSource } from './trackTypes'
 import type { TrialResult } from './trialTypes'
 
 /**
  * Page retention of one trial. The engine return stays complete. The copy the
- * store keeps drops per-step fused tracks (the ledger is already resolved) and
- * keeps scan records and track estimates in typed buffers that still export
+ * store keeps drops per-step fused tracks (the ledger is already resolved),
+ * keeps a fused-track summary in place of that list, and keeps scan records and track estimates in typed buffers that still export
  * the same objects; an estimate keeps the fields the board ellipse reads.
  */
 
@@ -316,10 +316,33 @@ function trackLedger(tracks: readonly TrackEstimate[]): TrackEstimate[] {
   return list
 }
 
+/** One pass over the per-step list; the summary holds fresh arrays and objects only. */
+function fusedTrackSummary(fusedTracks: readonly FusedTrack[]): FusedTrackSummary {
+  const members: FusedTrackSummary['members'] = []
+  const seen = new Set<string>()
+  for (const fused of fusedTracks) {
+    for (const sensorId of fused.sensorIds) {
+      if (seen.has(sensorId)) continue
+      seen.add(sensorId)
+      members.push({ sensorId, fromS: fused.fusedAtS })
+    }
+  }
+  return {
+    initAtS: fusedTracks[0].fusedAtS,
+    lastAtS: fusedTracks[fusedTracks.length - 1].fusedAtS,
+    c2Id: fusedTracks[0].c2Id,
+    members,
+  }
+}
+
 function boundAssessment(assessment: ThreatAssessment): ThreatAssessment {
-  const { fusedTracks: _fused, sensorObservations, effectorWindows, ...rest } = assessment
+  const { fusedTracks, sensorObservations, effectorWindows, ...rest } = assessment
   return {
     ...rest,
+    // Derived before the per-step list drops out of the retained copy.
+    ...(fusedTracks && fusedTracks.length > 0
+      ? { fusedTrack: fusedTrackSummary(fusedTracks) }
+      : {}),
     ...(sensorObservations ? { sensorObservations: sensorObservations.slice() } : {}),
     effectorWindows: effectorWindows.map((window) => ({
       effectorId: window.effectorId,
