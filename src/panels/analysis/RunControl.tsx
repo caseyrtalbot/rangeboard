@@ -5,6 +5,7 @@
  * Prepare > Inputs; every other run setting lives in the Run tab of Settings.
  */
 
+import { useEffect } from 'react'
 import { runSettings } from '../../model/types'
 import type { McSettings } from '../../model/types'
 import type { McSummary, StopRule } from '../../playback/mcRun'
@@ -94,6 +95,58 @@ const DETERMINISTIC_TITLE =
 /** Shown while the pool will refuse another stop, including the summary wait. */
 export const STOPPING_TITLE = 'This run is already stopping.'
 
+/** The key hint the button shows and its title ends with. */
+const RUN_KEY = '⌘↵'
+
+/**
+ * The phase's primary action, read from the store at call time: playback in
+ * Execute, else run, stop or nothing while the ensemble is closed or stopping.
+ */
+function runPrimaryAction(phase: BoardPhase): void {
+  const state = useStore.getState()
+  if (phase === 'execute') {
+    toggleAnalysisRun()
+    return
+  }
+  const running = state.mc.status === 'running'
+  if (runSettings(state.scenario).runMode === 'deterministic') return
+  if (running && state.mc.pool?.stopping === true) return
+  if (running) state.cancelMonteCarlo()
+  else state.runMonteCarlo()
+}
+
+/** A text field keeps Meta+Enter for itself. */
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) return false
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable
+  )
+}
+
+/**
+ * The window keydown handler: Meta+Enter, or Ctrl+Enter off macOS, runs the
+ * phase's primary action unless focus is in a text field or a modal is open.
+ */
+function handleRunKey(
+  event: Pick<
+    KeyboardEvent,
+    'key' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'repeat' | 'target' | 'preventDefault'
+  >,
+  phase: BoardPhase,
+): boolean {
+  if (event.key !== 'Enter' || !(event.metaKey || event.ctrlKey)) return false
+  if (event.altKey || event.shiftKey || event.repeat) return false
+  if (isTypingTarget(event.target)) return false
+  if (typeof document !== 'undefined' && document.querySelector('#settings-panel[open]'))
+    return false
+  event.preventDefault()
+  runPrimaryAction(phase)
+  return true
+}
+
 export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
   const scenario = useStore((s) => s.scenario)
   const mc = useStore((s) => s.mc)
@@ -114,6 +167,12 @@ export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
         : phase === 'analyze'
           ? 'Run again'
           : 'Run'
+  // One listener per mounted control; the top bar mounts the only one.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => handleRunKey(event, phase)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [phase])
   return (
     <div className="run-control" aria-label="Run">
       <button
@@ -121,22 +180,16 @@ export function RunControl({ phase = 'prepare' }: { phase?: BoardPhase }) {
         className="mc-run primary"
         disabled={!playback && (deterministic || stopping)}
         title={
-          playback
-            ? undefined
-            : deterministic
-              ? DETERMINISTIC_TITLE
-              : stopping
-                ? STOPPING_TITLE
-                : undefined
+          !playback && deterministic
+            ? DETERMINISTIC_TITLE
+            : !playback && stopping
+              ? STOPPING_TITLE
+              : `${label} (${RUN_KEY})`
         }
-        onClick={() => {
-          if (playback) toggleAnalysisRun()
-          else if (stopping) return
-          else if (running) useStore.getState().cancelMonteCarlo()
-          else useStore.getState().runMonteCarlo()
-        }}
+        onClick={() => runPrimaryAction(phase)}
       >
         {label}
+        <kbd className="kbd run-key">{RUN_KEY}</kbd>
       </button>
       {progress && (
         <span className="run-progress" role="status">

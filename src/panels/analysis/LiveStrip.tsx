@@ -20,7 +20,21 @@ export function PlayPrompt() {
   )
 }
 
-/** One simulated-trial basis and one cursor bound for the whole Execute screen. */
+/** One label and one mono value in the run monitor card. */
+function LiveRow({ label, value, title }: { label: string; value: string; title?: string }) {
+  return (
+    <div className="live-row" title={title}>
+      <span>{label}</span>
+      <span className="live-value">{value}</span>
+    </div>
+  )
+}
+
+/**
+ * The run monitor card for the whole Execute screen: the clock at the observed
+ * horizon, a bar for that horizon, then the trial's replicate, seed, speed and
+ * the counts at the cursor.
+ */
 export function LiveStrip({
   view: suppliedView,
   horizon: suppliedHorizon,
@@ -45,6 +59,7 @@ export function LiveStrip({
   const phase = useStore((state) => state.playback.phase)
   const execute = useStore((state) => state.ui.boardPhase === 'execute')
   const completed = useStore((state) => state.playback.completedAtMs != null)
+  const speed = useStore((state) => state.playback.speedMult)
   const counts = useMemo(
     () => (view ? trialSnapshotAt(view, horizon).counts : undefined),
     [view, horizon],
@@ -76,18 +91,44 @@ export function LiveStrip({
         : phase === 'running'
           ? 'Running'
           : 'Paused'
+  const duration = view.durationS
+  const observed = Math.max(0, Math.min(horizon, duration))
+  const share = duration > 0 ? Math.round((observed / duration) * 1000) / 10 : 0
 
   return (
-    <p className="analysis-scope" role="status">
-      <State tone={phase === 'running' ? 'nominal' : 'inactive'}>{word}</State>
-      {' · Simulated trial · observed through T+'}
-      {formatTime(horizon)} of {formatTime(view.durationS)}
-      {' · tracks '}
-      {counts.detectedTracks}/{counts.totalTracks}
-      {' · engaged '}
-      {counts.engagedTracks}/{counts.totalTracks} tracks
-      {' · defeated '}
-      {defeated}/{counts.activeAtHorizon + defeated} members
-    </p>
+    <section className="live-card" aria-label="Simulated trial">
+      <div className="live-head">
+        <span className="live-clock">
+          T+{formatTime(horizon)} / {formatTime(duration)}
+        </span>
+        <State tone={phase === 'running' ? 'nominal' : 'inactive'} role="status">
+          {word}
+        </State>
+      </div>
+      <div
+        className="live-bar"
+        role="progressbar"
+        aria-label="Observed horizon"
+        aria-valuemin={0}
+        aria-valuemax={duration}
+        aria-valuenow={observed}
+        aria-valuetext={`Simulated trial · observed through T+${formatTime(horizon)} of ${formatTime(duration)}`}
+      >
+        <div className="live-bar-fill" style={{ width: `${share}%` }} />
+      </div>
+      <LiveRow
+        label="Replicate"
+        value={String(view.manifest.replicateIndex)}
+        title="Replicate index of this trial's draw"
+      />
+      <LiveRow label="Seed" value={String(view.manifest.seed)} />
+      <LiveRow label="Speed" value={`${speed}x`} />
+      <LiveRow label="Tracks" value={`${counts.detectedTracks}/${counts.totalTracks}`} />
+      <LiveRow label="Engaged" value={`${counts.engagedTracks}/${counts.totalTracks} tracks`} />
+      <LiveRow
+        label="Defeated"
+        value={`${defeated}/${counts.activeAtHorizon + defeated} members`}
+      />
+    </section>
   )
 }

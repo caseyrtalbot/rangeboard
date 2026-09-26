@@ -362,4 +362,54 @@ describe('PlacementScreen', () => {
     check('Move Coyote 1', true)
     expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
   })
+
+  it('gives every former muted sentence a home: (i), error line or empty-state row', () => {
+    useStore.getState().patchScenario({ runMode: 'deterministic', boundaries: [] })
+    const idle = render()
+    expect(idle).not.toContain('muted')
+    // Method notes sit behind a 24 px (i) whose title holds the unchanged note.
+    expect(idle).toContain(
+      'aria-label="About movable systems" title="Every other entity, every threat and every asset stays put."',
+    )
+    expect(idle).toContain(
+      'aria-label="About bounds" title="A proposal stays inside the range polygon, in the meters world frame."',
+    )
+    expect(idle).toContain(
+      'aria-label="About budget" title="Engine replicates: evaluations × replicates per evaluation."',
+    )
+    expect(idle).toContain(
+      'aria-label="About Placement response" title="Minimize Leakers (members)."',
+    )
+    // A rule is an error line; a missing input is an empty-state row.
+    expect(idle).toContain(
+      '<p class="line-error">Choose Monte Carlo mode in the Inputs tab to run a placement study.</p>',
+    )
+    expect(idle).toMatch(
+      /<p class="empty-row"><span class="state warning">.*No range boundary\. Draw one on the board before a placement run\.<\/span><\/p>/,
+    )
+    expect(idle).toMatch(/class="empty-row">.*No current placement result\./)
+    expect(idle).not.toContain('frag-help')
+
+    change('Evaluations', '1')
+    expect(render()).toContain(
+      '<p class="line-error">Enter whole numbers: at least 2 evaluations and 1 replicate.</p>',
+    )
+
+    // Field help on renders each note as a normal-weight line.
+    useStore.setState(({ ui }) => ({ ui: { ...ui, showFieldHelp: true } }))
+    expect(render()).toContain(
+      '<p class="frag-help">Every other entity, every threat and every asset stays put.</p>',
+    )
+    useStore.setState(({ ui }) => ({ ui: { ...ui, showFieldHelp: false } }))
+  })
+
+  it('puts the result basis and the Apply note behind the candidates (i) once a result exists', () => {
+    installResult(cutResult())
+    const html = render()
+    expect(html).not.toContain('muted')
+    expect(html).not.toContain('No current placement result.')
+    expect(html).toContain(
+      'aria-label="About candidate laydowns" title="Best first by the objective · 4 evaluations · 160 engine replicates. Apply installs a copy of this scenario with the candidate positions and clears the run; the current scenario is never edited in place."',
+    )
+  })
 })

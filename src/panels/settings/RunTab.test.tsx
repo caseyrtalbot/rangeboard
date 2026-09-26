@@ -148,7 +148,7 @@ describe('RunTab', () => {
   it('commits a confidence and bounds its input to the open interval', () => {
     const html = render()
     // The input carries the bounds; the commit rule inside it is covered by inputs.tsx.
-    expect(html).toContain('placeholder="none"')
+    expect(html).toContain('placeholder="None"')
     expect(html).toContain('min="0" max="1"')
 
     interaction.commits.get('Interval width · confidence')!(0.9)

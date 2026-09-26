@@ -3211,17 +3211,17 @@ select.nu-unit {
   font-size: var(--type-meta-size);
 }
 
-/* ---------- Run header strip ---------- */
+/* ---------- Run monitor card ---------- */
 
-/* Run id, cursor time, phase and the clean reset. The accent left edge marks
-   it as the live layer; the widget frames below it stay plain. */
-.live-strip {
+/* The Execute run monitor: the clock, the observed horizon bar, then label and
+   value rows. One rule-strong frame at the control radius, as on the canvas. */
+.live-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: 0 calc(var(--panel-pad) * -1);
-  padding: var(--space-3) var(--panel-pad);
-  border-left: 2px solid var(--accent);
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-control);
 }
 
 .live-head {
@@ -3256,6 +3256,89 @@ select.nu-unit {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* The run monitor clock: lead size, title weight, mono. */
+.live-clock {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--type-lead-size);
+  font-weight: var(--type-title-weight);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The observed horizon: a 4 px bar, the observed share filled in text 1. */
+.live-bar {
+  height: 4px;
+  margin-block: var(--space-1);
+  background: var(--rule-strong);
+}
+
+.live-bar-fill {
+  height: 100%;
+  background: var(--text-primary);
+}
+
+.live-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 20px;
+  color: var(--text-secondary);
+  font-size: var(--type-meta-size);
+}
+
+.live-value {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--type-machine-size);
+  white-space: nowrap;
+}
+
+/* The Inputs forecast line: mono text 1; a stale line keeps the warning ink. */
+.chip.forecast-line {
+  color: var(--text-primary);
+}
+
+/* The Run button's key hint: mono in the button's ink, no chip. */
+.mc-run .run-key {
+  min-width: 0;
+  height: auto;
+  margin-left: var(--space-2);
+  padding: 0;
+  color: inherit;
+  background: transparent;
+}
+
+/* A rule shown only while its input is invalid, outside a Field. */
+.line-error {
+  display: block;
+  margin: 0;
+  color: var(--status-critical);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-body-weight);
+  line-height: 1.4;
+}
+
+/* An empty-state row: a hollow warning state that names the missing input. The
+   first result replaces it. */
+.empty-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--h-default);
+  margin: 0;
+}
+
+.empty-row > .state {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: normal;
 }
 
 .run-reset {
@@ -3897,7 +3980,7 @@ input[type='number'] {
 
 .tv {
   font-family: var(--font-mono);
-  font-size: var(--type-value-size);
+  font-size: var(--type-lead-size);
   font-weight: var(--type-value-weight);
   font-variant-numeric: tabular-nums;
   line-height: 1.15;

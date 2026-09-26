@@ -27,7 +27,8 @@ describe('sampled transport labels', () => {
     }))
     const html = render()
     expect(html).toContain('title="Replay (Space)" aria-label="Replay"')
-    expect(html).toContain('>Replay</button>')
+    // Icon-only at 24 px: the word lives in the accessible name and the title.
+    expect(html).not.toContain('>Replay</button>')
     expect(html).toContain('title="Reset run" aria-label="Reset run"')
     expect(html).not.toContain('New run')
     expect(html).not.toContain('Start a new clean run')
@@ -55,7 +56,9 @@ describe('sampled transport labels', () => {
 
   it.each(['error', 'cancelled'] as const)('offers Retry for %s preparation', (status) => {
     useStore.setState({ trial: { ...IDLE_TRIAL, status } })
-    expect(render()).toContain('title="Retry (Space)" aria-label="Retry"')
+    const html = render()
+    expect(html).toContain('title="Retry (Space)" aria-label="Retry"')
+    expect(html).not.toContain('>Retry</button>')
   })
 
   it('shows the engagement toggle with the threat count and expanded state', () => {
