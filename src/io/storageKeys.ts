@@ -25,8 +25,10 @@ export const RIGHT_PANEL_OPEN_KEY = 'rangeboard.rightpanel.open'
 export const PALETTE_WIDTH_KEY = 'rangeboard.palette.width'
 /** Palette collapsed groups, JSON record. */
 export const PALETTE_COLLAPSED_KEY = 'rangeboard.palette.collapsed'
-/** Engagement strip open flag, '1' or '0'. */
+/** Run timeline open flag, '1' or '0'. It keeps the engagement strip's key value. */
 export const ENGSTRIP_OPEN_KEY = 'rangeboard.engstrip.open'
+/** Run timeline strip height, px. */
+export const RUN_TIMELINE_HEIGHT_KEY = 'rangeboard.runtimeline.height'
 /** Retired analysis lens layout. Nothing reads it. */
 export const ANALYSIS_KEY = 'rangeboard.analysis.v1'
 /** Pinned baseline save (`BaselineSave`): one laydown and its ensemble kept for Compare. */

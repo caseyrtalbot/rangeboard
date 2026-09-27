@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { useStore } from './state/store'
+import { RUN_TIMELINE_MAX_FRACTION, RUN_TIMELINE_MIN_H, useStore } from './state/store'
 import type { BoardPhase } from './state/runState'
 import { selectBoardPhase } from './state/selectors'
 import type { RightTab, Store } from './state/store'
@@ -25,11 +25,10 @@ import { EntityWorkspace } from './panels/EntityWorkspace'
 import type { EntityWorkspaceSection } from './panels/EntityWorkspace'
 import { BoardPreparation } from './panels/BoardPreparation'
 import type { AnalysisScreen } from './panels/analysis/screens/navigation'
-import { EngagementStrip } from './panels/analysis/EngagementStrip'
 import { TimelineBar, usePlaybackLoop } from './panels/TimelineBar'
 import { StatusBar } from './panels/StatusBar'
 import { toggleAnalysisRun } from './playback/runSession'
-import { ENGSTRIP_OPEN_KEY, RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
+import { RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 import { readSetting, savedView, writeSetting } from './io/viewState'
 import { exportScenario } from './io/persist'
 import { ErrorBoundary } from './ui/ErrorBoundary'
@@ -50,6 +49,10 @@ import { nextTabIndex } from './ui/rovingTabs'
 const AnalysisPanel = lazy(() =>
   import('./panels/AnalysisPanel').then((m) => ({ default: m.AnalysisPanel })),
 )
+// The run timeline strip loads when it first opens.
+const RunTimeline = lazy(() =>
+  import('./panels/timeline/RunTimeline').then((m) => ({ default: m.RunTimeline })),
+)
 const CommandPalette = lazy(() =>
   import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })),
 )
@@ -69,6 +72,119 @@ const RIGHT_MAX_W = 560
 function savedRightWidth(): number {
   const n = Number(readSetting(RIGHT_PANEL_WIDTH_KEY))
   return n >= RIGHT_MIN_W && n <= RIGHT_MAX_W ? n : 408
+}
+
+/** The tallest the run timeline strip may be in a window `innerH` px high. */
+function runTimelineMaxH(innerH: number): number {
+  return Math.floor(RUN_TIMELINE_MAX_FRACTION * innerH)
+}
+
+/** The window height, px, kept current across resizes. */
+function useInnerHeight(): number {
+  const [h, setH] = useState(() => window.innerHeight)
+  useEffect(() => {
+    const onResize = () => setH(window.innerHeight)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return h
+}
+
+/**
+ * The drag handle above the run timeline. The strip grows upward, so dragging up
+ * or ArrowUp makes it taller. A drag writes the store at most once per frame.
+ */
+function RunTimelineResizer({ height, maxH }: { height: number; maxH: number }) {
+  const drag = useRef<{ y: number; h: number; next: number; raf: number } | null>(null)
+  const clamp = (h: number) => Math.min(maxH, Math.max(RUN_TIMELINE_MIN_H, h))
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.button !== 0) return
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    drag.current = { y: e.clientY, h: height, next: height, raf: 0 }
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const d = drag.current
+    if (!d) return
+    d.next = clamp(d.h + (d.y - e.clientY))
+    if (d.raf) return
+    d.raf = requestAnimationFrame(() => {
+      d.raf = 0
+      useStore.getState().setRunTimelineHeight(d.next)
+    })
+  }
+
+  function endDrag(e: React.PointerEvent<HTMLDivElement>) {
+    const d = drag.current
+    if (!d) return
+    drag.current = null
+    if (d.raf) cancelAnimationFrame(d.raf)
+    useStore.getState().setRunTimelineHeight(d.next)
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    }
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    const step = e.shiftKey ? 40 : 8
+    const to =
+      e.key === 'ArrowUp'
+        ? height + step
+        : e.key === 'ArrowDown'
+          ? height - step
+          : e.key === 'Home'
+            ? RUN_TIMELINE_MIN_H
+            : e.key === 'End'
+              ? maxH
+              : null
+    if (to == null) return
+    e.preventDefault()
+    useStore.getState().setRunTimelineHeight(clamp(to))
+  }
+
+  return (
+    <div
+      className="runtl-resizer"
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Resize run timeline"
+      aria-controls="run-timeline"
+      aria-valuenow={height}
+      aria-valuemin={RUN_TIMELINE_MIN_H}
+      aria-valuemax={maxH}
+      tabIndex={0}
+      title="Drag or use the arrow keys to resize"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onKeyDown={onKeyDown}
+    />
+  )
+}
+
+/**
+ * The run timeline between the board and the playback bar: the resizer and the
+ * dock that holds the strip's height. Nothing mounts while the strip is closed.
+ */
+function RunTimelineDock() {
+  const open = useStore((s) => s.ui.runTimeline.open)
+  const heightPx = useStore((s) => s.ui.runTimeline.heightPx)
+  const maxH = runTimelineMaxH(useInnerHeight())
+  if (!open) return null
+  const height = Math.min(heightPx, maxH)
+  return (
+    <>
+      <RunTimelineResizer height={height} maxH={maxH} />
+      <div className="runtl-dock" style={{ height }}>
+        <Suspense fallback={null}>
+          <RunTimeline />
+        </Suspense>
+      </div>
+    </>
+  )
 }
 
 /** A resize drag this far past the minimum width closes the drawer. */
@@ -595,17 +711,6 @@ export default function App() {
   }, [])
   const toggleRight = useCallback(() => setRightOpen(!rightOpenNow.current), [setRightOpen])
 
-  // The engagement strip open flag. Only this column reads it. The ref keeps one
-  // stable toggle, so the memoized playback bar holds its memo.
-  const [engagementOpen, setEngagementOpen] = useState(() => readSetting(ENGSTRIP_OPEN_KEY) === '1')
-  const engagementOpenNow = useRef(engagementOpen)
-  const toggleEngagement = useCallback(() => {
-    const next = !engagementOpenNow.current
-    engagementOpenNow.current = next
-    writeSetting(ENGSTRIP_OPEN_KEY, next ? '1' : '0')
-    setEngagementOpen(next)
-  }, [])
-
   useLayoutEffect(() => {
     const from = centerFrom.current
     centerFrom.current = null
@@ -1006,10 +1111,8 @@ export default function App() {
               <UndoCue />
             </Suspense>
           </div>
-          {boardPhase !== 'prepare' && engagementOpen && <EngagementStrip />}
-          {boardPhase !== 'prepare' && (
-            <TimelineBar engagementOpen={engagementOpen} onToggleEngagement={toggleEngagement} />
-          )}
+          {boardPhase !== 'prepare' && <RunTimelineDock />}
+          {boardPhase !== 'prepare' && <TimelineBar />}
           <StatusBar />
         </div>
         <aside

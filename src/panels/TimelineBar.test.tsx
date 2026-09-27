@@ -5,11 +5,13 @@ import { IDLE_TRIAL } from '../state/runState'
 import { installTrial } from './analysis/trialTestState'
 import { FrameAddPanel, TimelineBar } from './TimelineBar'
 
-function render(engagementOpen = false) {
+function render() {
   Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(
-    <TimelineBar engagementOpen={engagementOpen} onToggleEngagement={() => {}} />,
-  )
+  return renderToStaticMarkup(<TimelineBar />)
+}
+
+function setTimelineOpen(open: boolean) {
+  useStore.setState(({ ui }) => ({ ui: { ...ui, runTimeline: { ...ui.runTimeline, open } } }))
 }
 
 describe('sampled transport labels', () => {
@@ -61,17 +63,15 @@ describe('sampled transport labels', () => {
     expect(html).not.toContain('>Retry</button>')
   })
 
-  it('shows the engagement toggle with the threat count and expanded state', () => {
-    const { entities, paths } = useStore.getState().scenario
-    const threats = entities.filter(
-      (e) => e.kind === 'uas' && paths.some((p) => p.entityId === e.id),
-    ).length
+  it('shows the Timeline toggle with the expanded state from the store', () => {
+    setTimelineOpen(false)
     const html = render()
-    expect(html).toContain('id="engagement-toggle"')
-    expect(html).toContain('aria-expanded="false"')
-    expect(html).toContain('aria-controls="engagement-strip"')
-    expect(html).toContain(`Engagement ${threats}`)
-    expect(render(true)).toContain('aria-expanded="true"')
+    expect(html).toMatch(
+      /<button[^>]*id="run-timeline-toggle"[^>]*class="mini run-timeline-toggle"[^>]*aria-expanded="false"[^>]*aria-controls="run-timeline"[^>]*title="Run timeline"[^>]*><span class="caret">▴<\/span> Timeline<\/button>/,
+    )
+    setTimelineOpen(true)
+    expect(render()).toMatch(/id="run-timeline-toggle"[^>]*aria-expanded="true"/)
+    setTimelineOpen(false)
   })
 
   it('saves a frame from a popover, not a permanent name field', () => {

@@ -58,14 +58,17 @@ import {
   savedRingOverrides,
   savedRunSeq,
   savedUnits,
+  readSetting,
   savedView,
   writeLayers,
   writeRingOverrides,
   writeRunSeq,
+  writeSetting,
   writeUnits,
   writeView,
   writeViewCamera,
 } from '../io/viewState'
+import { ENGSTRIP_OPEN_KEY, RUN_TIMELINE_HEIGHT_KEY } from '../io/storageKeys'
 import type { McSweepMessage, McWorkerMessage, SensitivityResponse } from '../playback/mcRun'
 import type { AnalysisSinks, OptimizeSpec, SensitivityMessage, SweepSpec } from './analysisRequests'
 import type { OptimizeWorkerMessage } from '../playback/optimizeTypes'
@@ -458,6 +461,12 @@ function withDeletedSeed(s: Scenario, id: string, builtin: boolean | undefined):
   return [...have, id]
 }
 
+/** The saved strip height: a finite number of at least RUN_TIMELINE_MIN_H, else the default. */
+function savedRunTimelineHeight(): number {
+  const n = Number(readSetting(RUN_TIMELINE_HEIGHT_KEY))
+  return Number.isFinite(n) && n >= RUN_TIMELINE_MIN_H ? n : RUN_TIMELINE_DEFAULT_H
+}
+
 /** `list` with `item` removed when present, else appended. */
 function toggled<T>(list: readonly T[], item: T): readonly T[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item]
@@ -589,8 +598,8 @@ export const useStore = create<Store>()((set, get) => {
       locationDialogOpen: false,
       libraryRequest: { seq: 0, kind: null, modelId: null },
       runTimeline: {
-        open: false,
-        heightPx: RUN_TIMELINE_DEFAULT_H,
+        open: readSetting(ENGSTRIP_OPEN_KEY) === '1',
+        heightPx: savedRunTimelineHeight(),
         openGroups: [],
         openSensors: [],
         openFolds: [],
@@ -1415,9 +1424,15 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, theme: t } }))
     },
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
-    setRunTimelineOpen: (open) => patchRunTimeline({ open }),
-    setRunTimelineHeight: (px) =>
-      patchRunTimeline({ heightPx: Math.max(RUN_TIMELINE_MIN_H, Math.round(px)) }),
+    setRunTimelineOpen: (open) => {
+      writeSetting(ENGSTRIP_OPEN_KEY, open ? '1' : '0')
+      patchRunTimeline({ open })
+    },
+    setRunTimelineHeight: (px) => {
+      const heightPx = Math.max(RUN_TIMELINE_MIN_H, Math.round(px))
+      writeSetting(RUN_TIMELINE_HEIGHT_KEY, String(heightPx))
+      patchRunTimeline({ heightPx })
+    },
     toggleRunTimelineGroup: (key) =>
       patchRunTimeline({ openGroups: toggled(get().ui.runTimeline.openGroups, key) }),
     toggleRunTimelineSensor: (rowKey) =>
