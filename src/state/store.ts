@@ -69,6 +69,8 @@ import {
 import type { McSweepMessage, McWorkerMessage, SensitivityResponse } from '../playback/mcRun'
 import type { AnalysisSinks, OptimizeSpec, SensitivityMessage, SweepSpec } from './analysisRequests'
 import type { OptimizeWorkerMessage } from '../playback/optimizeTypes'
+import type { RunTimelineKind } from '../analysis/runTimeline'
+import type { TimeViewport } from '../charts/timeViewport'
 import {
   acceptMcMessage,
   acceptOptimizeMessage,
@@ -155,6 +157,31 @@ export interface UiState {
    * drawer focuses the `kind` group, or shows the editor for `modelId`.
    */
   libraryRequest: LibraryRequest
+  /** Run timeline strip under the board (docs/timeline/SPEC.md 2.1). */
+  runTimeline: RunTimelineUi
+}
+
+/** Strip height limits, px. The upper limit is this fraction of the window height. */
+export const RUN_TIMELINE_MIN_H = 120
+export const RUN_TIMELINE_DEFAULT_H = 240
+export const RUN_TIMELINE_MAX_FRACTION = 0.6
+
+/** Run timeline state. Only `open` and `heightPx` persist; the rest is session only. */
+export interface RunTimelineUi {
+  open: boolean
+  heightPx: number
+  /** Groups expanded from their summary row; every group starts collapsed. */
+  openGroups: readonly RunTimelineKind[]
+  /** Sensor row keys expanded to one sub-lane per held track. */
+  openSensors: readonly string[]
+  /** Same-name threat folds (past GROUP_AT rows) expanded to their members, by fold key. */
+  openFolds: readonly string[]
+  /** Row keys hidden with the row's × control. */
+  hiddenRows: readonly string[]
+  /** The viewport keeps the playhead at FOLLOW_AT of the width. */
+  follow: boolean
+  /** null reads as `{ t0S: 0, winS: DEFAULT_WINDOW_S }`, clamped to the run. */
+  viewport: TimeViewport | null
 }
 
 /** One request to open the library drawer. `seq` counts the calls; 0 is none. */
@@ -316,6 +343,16 @@ export interface Store {
   setShowFieldHelp: (v: boolean) => void
   setTheme: (t: Theme) => void
   setMoveUnderlay: (v: boolean) => void
+  setRunTimelineOpen: (open: boolean) => void
+  /** Clamps to at least RUN_TIMELINE_MIN_H; the resizer applies the window limit. */
+  setRunTimelineHeight: (px: number) => void
+  toggleRunTimelineGroup: (key: RunTimelineKind) => void
+  toggleRunTimelineSensor: (rowKey: string) => void
+  toggleRunTimelineFold: (foldKey: string) => void
+  hideRunTimelineRow: (rowKey: string) => void
+  showAllRunTimelineRows: () => void
+  setRunTimelineFollow: (follow: boolean) => void
+  setRunTimelineViewport: (viewport: TimeViewport) => void
   setBoardPhase: (phase: BoardPhase) => void
   setLayer: (key: LayerKey, v: boolean) => void
   toggleLayer: (key: LayerKey) => void
@@ -421,6 +458,11 @@ function withDeletedSeed(s: Scenario, id: string, builtin: boolean | undefined):
   return [...have, id]
 }
 
+/** `list` with `item` removed when present, else appended. */
+function toggled<T>(list: readonly T[], item: T): readonly T[] {
+  return list.includes(item) ? list.filter((x) => x !== item) : [...list, item]
+}
+
 /** Field-by-field selection equality, entity id order included. */
 function sameSelection(a: Selection, b: Selection): boolean {
   return (
@@ -511,6 +553,10 @@ export const useStore = create<Store>()((set, get) => {
     install({ op: 'edit', next: fn(get().scenario) })
   }
 
+  function patchRunTimeline(patch: Partial<RunTimelineUi>) {
+    set((st) => ({ ui: { ...st.ui, runTimeline: { ...st.ui.runTimeline, ...patch } } }))
+  }
+
   const view = savedView()
 
   return {
@@ -542,6 +588,16 @@ export const useStore = create<Store>()((set, get) => {
       raidDraft: null,
       locationDialogOpen: false,
       libraryRequest: { seq: 0, kind: null, modelId: null },
+      runTimeline: {
+        open: false,
+        heightPx: RUN_TIMELINE_DEFAULT_H,
+        openGroups: [],
+        openSensors: [],
+        openFolds: [],
+        hiddenRows: [],
+        follow: true,
+        viewport: null,
+      },
     },
     playback: freshPlayback(savedRunSeq()),
     mc: IDLE_MC,
@@ -1359,6 +1415,22 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, theme: t } }))
     },
     setMoveUnderlay: (v) => set((st) => ({ ui: { ...st.ui, moveUnderlay: v } })),
+    setRunTimelineOpen: (open) => patchRunTimeline({ open }),
+    setRunTimelineHeight: (px) =>
+      patchRunTimeline({ heightPx: Math.max(RUN_TIMELINE_MIN_H, Math.round(px)) }),
+    toggleRunTimelineGroup: (key) =>
+      patchRunTimeline({ openGroups: toggled(get().ui.runTimeline.openGroups, key) }),
+    toggleRunTimelineSensor: (rowKey) =>
+      patchRunTimeline({ openSensors: toggled(get().ui.runTimeline.openSensors, rowKey) }),
+    toggleRunTimelineFold: (foldKey) =>
+      patchRunTimeline({ openFolds: toggled(get().ui.runTimeline.openFolds, foldKey) }),
+    hideRunTimelineRow: (rowKey) => {
+      const { hiddenRows } = get().ui.runTimeline
+      if (!hiddenRows.includes(rowKey)) patchRunTimeline({ hiddenRows: [...hiddenRows, rowKey] })
+    },
+    showAllRunTimelineRows: () => patchRunTimeline({ hiddenRows: [] }),
+    setRunTimelineFollow: (follow) => patchRunTimeline({ follow }),
+    setRunTimelineViewport: (viewport) => patchRunTimeline({ viewport }),
     // Editing tools belong to Prepare: leaving it drops any drawing tool back to Select.
     setBoardPhase: (boardPhase) =>
       set((st) =>
