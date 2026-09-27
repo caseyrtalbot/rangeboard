@@ -214,7 +214,7 @@ function markEl(
             className="runtl-chip"
             x={cx + 6}
             y={cy - 6.5}
-            width={7 + mark.after.length * 6.6}
+            width={Math.round(7 + mark.after.length * 6.6)}
             height={13}
           />
           <text className="runtl-label" x={cx + 9.5} y={cy + 4}>
