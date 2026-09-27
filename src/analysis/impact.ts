@@ -143,9 +143,6 @@ const SEVERE_KG = 20
 const MODERATE_SHIPS = 0.25
 const MODERATE_KG = 5
 
-/** Higher = worse; for picking the worst tier per asset. */
-export const SEVERITY_RANK: Record<ImpactSeverity, number> = { low: 1, moderate: 2, severe: 3 }
-
 /** UI copy for a tier. */
 export const SEVERITY_LABEL: Record<ImpactSeverity, string> = {
   low: 'LOW',
