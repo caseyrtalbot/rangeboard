@@ -1,0 +1,335 @@
+// Run timeline Phase 2 capture: 1265 x 900, dark, the JIATF-401 laydown with the
+// threat spawned outside every ring (src/playback/__fixtures__/detection-outside-rings.json).
+// Usage: node run-timeline-capture.mjs <base-url> <out-dir> <repo-root>
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT] = process.argv.slice(2)
+const RAW = readFileSync(join(ROOT, 'src/playback/__fixtures__/detection-outside-rings.json'), 'utf8')
+mkdirSync(OUT, { recursive: true })
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const waitFor = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 30000 })
+
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => {
+  if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+})
+
+const findings = {
+  capturedAt: new Date().toISOString(),
+  viewport: '1265x900 dark',
+  fixture: 'src/playback/__fixtures__/detection-outside-rings.json',
+  shots: [],
+  errors,
+}
+
+async function boot() {
+  await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store, null, {
+    timeout: 60000,
+  })
+}
+
+await page.goto(BASE, { waitUntil: 'load' })
+await boot()
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setTheme('dark')
+  s.setRunTimelineOpen(false)
+}, RAW)
+await sleep(400)
+
+/** Store facts: cursor, observation, the trial horizon and the run duration. */
+const clock = () =>
+  page.evaluate(async () => {
+    const { selectTrialHorizon } = await import('/src/state/trialSelectors.ts')
+    const { durationOf } = await import('/src/state/selectors.ts')
+    const s = window.__store.getState()
+    return {
+      simTimeS: s.playback.simTimeS,
+      observedThroughS: s.playback.observedThroughS,
+      trialHorizonS: selectTrialHorizon(s, s.playback.simTimeS),
+      durationS: durationOf(s.scenario),
+      playing: s.playback.playing,
+    }
+  })
+
+/**
+ * The strip's drawn marks against the model. A mark glyph sits at
+ * cx = tS * pxPerS inside the pan wrapper (LaneMarks.tsx), so its time is
+ * cx / pxPerS; pxPerS is the plot width over the clamped window. The model is
+ * runTimelineOf(view, trial horizon), as RunTimeline.tsx builds it; `full` is
+ * the same view at the run duration, the uncensored record.
+ */
+const compareMarks = () =>
+  page.evaluate(async () => {
+    const { selectTrialHorizon, selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+    const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+    const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+    const { clampViewport, DEFAULT_WINDOW_S } = await import('/src/charts/timeViewport.ts')
+    const s = window.__store.getState()
+    const sel = selectTrialSelection(s)
+    if (sel.status !== 'ready') return { error: `trial ${sel.status}` }
+    const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+    const horizonS = selectTrialHorizon(s, s.playback.simTimeS)
+    const model = runTimelineOf(view, horizonS)
+    const full = runTimelineOf(view, model.durationS)
+    const rt = s.ui.runTimeline
+    const base = clampViewport(rt.viewport ?? { t0S: 0, winS: DEFAULT_WINDOW_S }, model.durationS)
+    const widthPx = document.querySelector('.runtl-plotcol').clientWidth
+    const pxPerS = widthPx / base.winS
+    const OFFSET = { release: 3.5, drop: 3 }
+    const drawn = [...document.querySelectorAll('.runtl-svg .runtl-m')].map((el) => {
+      const kind = [...el.classList].find((c) => c.startsWith('runtl-m-')).slice(8)
+      let cx
+      if (el.tagName === 'circle') cx = Number(el.getAttribute('cx'))
+      else if (el.tagName === 'line') cx = Number(el.getAttribute('x1'))
+      else cx = Number(el.getAttribute('d').slice(1).split(' ')[0]) + (OFFSET[kind] ?? 0)
+      return { kind, tS: cx / pxPerS }
+    })
+    // The rows the strip shows with every group and sensor open: rows, then sub-lanes.
+    const shownRows = (m) =>
+      m.groups.flatMap((g) => g.rows.flatMap((r) => [r, ...(rt.openSensors.includes(r.key) ? (r.subLanes ?? []) : [])]))
+    const marksOf = (m) => shownRows(m).flatMap((r) => r.marks.map((k) => ({ kind: k.kind, tS: k.tS })))
+    const key = (m) => `${m.kind}@${m.tS.toFixed(1)}`
+    const modelMarks = marksOf(model)
+    const fullMarks = marksOf(full)
+    const drawnKeys = drawn.map(key).sort()
+    const modelKeys = modelMarks.map(key).sort()
+    const tol = 0.5 / pxPerS
+    const before = fullMarks.filter((m) => m.tS <= horizonS)
+    const atHorizon = fullMarks.filter((m) => Math.abs(m.tS - horizonS) < 1e-9)
+    const missing = before.filter((m) => !drawn.some((d) => d.kind === m.kind && Math.abs(d.tS - m.tS) <= tol))
+    return {
+      simTimeS: s.playback.simTimeS,
+      observedThroughS: s.playback.observedThroughS,
+      horizonS,
+      modelHorizonS: model.horizonS,
+      pxPerS,
+      drawnCount: drawn.length,
+      modelCount: modelMarks.length,
+      fullCount: fullMarks.length,
+      fullAtOrBeforeHorizon: before.length,
+      fullAtHorizon: atHorizon.length,
+      drawnMaxS: drawn.length ? Math.max(...drawn.map((d) => d.tS)) : null,
+      drawnPastHorizon: drawn.filter((d) => d.tS > horizonS + tol).length,
+      modelPastHorizon: modelMarks.filter((m) => m.tS > horizonS).length,
+      missingAtOrBeforeHorizon: missing.length,
+      drawnEqualsModel: JSON.stringify(drawnKeys) === JSON.stringify(modelKeys),
+    }
+  })
+
+/** Play at the current speed for `ms` and record every requestAnimationFrame interval. */
+const playAndRecord = (ms) =>
+  page.evaluate(
+    (ms) =>
+      new Promise((resolve) => {
+        const st = window.__store.getState()
+        st.setPlaying(true)
+        const gaps = []
+        let last = null
+        const stop = performance.now() + ms
+        function frame(t) {
+          if (last != null) gaps.push(t - last)
+          last = t
+          if (t < stop) requestAnimationFrame(frame)
+          else {
+            window.__store.getState().setPlaying(false)
+            resolve(gaps)
+          }
+        }
+        requestAnimationFrame(frame)
+      }),
+    ms,
+  )
+
+function frameStats(gaps) {
+  const sorted = [...gaps].sort((a, b) => a - b)
+  const r = (x) => Math.round(x * 100) / 100
+  return {
+    intervals: gaps.length,
+    over20ms: gaps.filter((g) => g > 20).length,
+    over33ms: gaps.filter((g) => g > 33).length,
+    maxMs: r(sorted[sorted.length - 1]),
+    meanMs: r(gaps.reduce((a, b) => a + b, 0) / gaps.length),
+    p99Ms: r(sorted[Math.floor(sorted.length * 0.99)]),
+  }
+}
+
+async function shot(name, state) {
+  await sleep(400)
+  await page.screenshot({ path: join(OUT, `${name}.png`) })
+  const at = await clock()
+  const box = await page.evaluate(() => {
+    const el = document.querySelector('.runtl-dock')
+    return el ? Math.round(el.getBoundingClientRect().height) : null
+  })
+  findings.shots.push({ file: `${name}.png`, state, simTimeS: at.simTimeS, observedThroughS: at.observedThroughS, dockHeightPx: box })
+  console.log('shot', name)
+}
+
+const scrub = async (t) => {
+  await page.evaluate((t) => window.__store.getState().scrubTo(t), t)
+  await sleep(350)
+}
+
+// Execute, a ready trial, the strip opened from the Timeline toggle.
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+await page.evaluate(() => window.__store.getState().startRun())
+await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status))
+findings.trialStatus = await page.evaluate(() => window.__store.getState().trial.status)
+await page.click('#run-timeline-toggle')
+await waitFor(page, () => document.querySelector('#run-timeline'))
+await page.evaluate(() => window.__store.getState().setSpeedMult(30))
+findings.start = await clock()
+
+// 6a. Play at 30x for 10 s with the strip open, then again from T+0 with it closed.
+const openGaps = await playAndRecord(10000)
+const afterOpen = await clock()
+await shot('execute-midrun-collapsed', 'Execute, paused after 10 s at 30x, strip open, every group collapsed')
+await scrub(0)
+await page.click('#run-timeline-toggle')
+await waitFor(page, () => !document.querySelector('#run-timeline'))
+const closedGaps = await playAndRecord(10000)
+const afterClosed = await clock()
+const open = frameStats(openGaps)
+const closed = frameStats(closedGaps)
+findings.frames = {
+  speed: 30,
+  recordMs: 10000,
+  open: { ...open, endSimTimeS: afterOpen.simTimeS },
+  closed: { ...closed, endSimTimeS: afterClosed.simTimeS },
+  pass: open.over33ms <= closed.over33ms,
+}
+console.log('frames', JSON.stringify(findings.frames))
+
+// 6b. Every group and sensor open; marks against the model at four paused times.
+await page.click('#run-timeline-toggle')
+await waitFor(page, () => document.querySelector('#run-timeline .runtl-head'))
+await page.evaluate(async () => {
+  const { selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+  const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+  const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+  const s = window.__store.getState()
+  const sel = selectTrialSelection(s)
+  const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+  const full = runTimelineOf(view, Infinity)
+  for (const g of full.groups) if (!s.ui.runTimeline.openGroups.includes(g.key)) s.toggleRunTimelineGroup(g.key)
+  for (const g of full.groups)
+    for (const r of g.rows) if (r.subLanes?.length && !window.__store.getState().ui.runTimeline.openSensors.includes(r.key))
+      window.__store.getState().toggleRunTimelineSensor(r.key)
+})
+const obs = (await clock()).observedThroughS
+findings.marks = []
+for (const f of [0.25, 0.5, 0.75, 1]) {
+  await scrub(Math.round(obs * f))
+  findings.marks.push(await compareMarks())
+}
+console.log('marks', JSON.stringify(findings.marks))
+
+// 6c. Scrub back and forward; observation must not move.
+const at = async (label) => {
+  const m = await compareMarks()
+  return { label, simTimeS: m.simTimeS, observedThroughS: m.observedThroughS, drawnCount: m.drawnCount }
+}
+const scrubs = [await at('start')]
+await scrub(Math.round(obs * 0.3))
+scrubs.push(await at('back'))
+await scrub(scrubs[0].simTimeS)
+scrubs.push(await at('forward'))
+findings.scrub = {
+  steps: scrubs,
+  observedUnchanged: scrubs.every((s) => s.observedThroughS === scrubs[0].observedThroughS),
+  countRestored: scrubs[2].drawnCount === scrubs[0].drawnCount,
+  cursorRestored: scrubs[2].simTimeS === scrubs[0].simTimeS,
+}
+console.log('scrub', JSON.stringify(findings.scrub))
+
+// Shot 2: only Sensors open, and its first sensor expanded to sub-lanes, through the DOM controls.
+await page.evaluate(() => {
+  const s = window.__store.getState()
+  for (const k of s.ui.runTimeline.openGroups) if (k !== 'sensor') window.__store.getState().toggleRunTimelineGroup(k)
+  const open = window.__store.getState().ui.runTimeline.openSensors
+  for (const k of open) window.__store.getState().toggleRunTimelineSensor(k)
+  for (const k of window.__store.getState().ui.runTimeline.openGroups) window.__store.getState().toggleRunTimelineGroup(k)
+})
+await sleep(200)
+await page.click('.runtl-group-btn:has-text("Sensors")')
+await sleep(200)
+await page.locator('.runtl-expand').first().click()
+findings.expanded = await page.evaluate(() => ({
+  openGroups: window.__store.getState().ui.runTimeline.openGroups,
+  openSensors: window.__store.getState().ui.runTimeline.openSensors,
+  subLanes: document.querySelectorAll('.runtl-sub').length,
+}))
+await shot('execute-group-and-sensor-expanded', 'Execute, paused at the observed time, Sensors open, one sensor expanded to sub-lanes')
+
+// 6d. Complete the run; Analyze shows the whole record.
+await page.evaluate(async () => {
+  const s = window.__store.getState()
+  const { durationOf } = await import('/src/state/selectors.ts')
+  s.completeRun(durationOf(s.scenario))
+})
+await page.click('#board-phase-analyze')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="analyze"]'))
+await waitFor(page, () => document.querySelector('#run-timeline .runtl-head'))
+await sleep(400)
+const done = await compareMarks()
+const unobserved = await page.evaluate(() => {
+  const w = (sel) => {
+    const el = document.querySelector(sel)
+    return el ? Number(el.getAttribute('width')) : 0
+  }
+  return {
+    plotUnobservedWidthPx: w('.runtl-unobserved rect'),
+    overviewUnobservedWidthPx: w('.runtl-over-unobserved'),
+    scopeText: document.querySelector('.runtl-scope')?.textContent,
+  }
+})
+const c = await clock()
+findings.analyze = {
+  durationS: c.durationS,
+  modelHorizonS: done.modelHorizonS,
+  horizonEqualsDuration: done.modelHorizonS === c.durationS,
+  ...unobserved,
+  unobservedEmpty: unobserved.plotUnobservedWidthPx === 0 && unobserved.overviewUnobservedWidthPx === 0,
+  drawnCount: done.drawnCount,
+  fullCount: done.fullCount,
+  drawnEqualsModel: done.drawnEqualsModel,
+}
+console.log('analyze', JSON.stringify(findings.analyze))
+await shot('analyze-strip-open', 'Analyze after completeRun, strip open, Sensors open')
+
+// 6e. Resize with the keyboard (Shift+ArrowUp adds 40 px), reload, read the dock height.
+const dockH = () =>
+  page.evaluate(() => {
+    const el = document.querySelector('.runtl-dock')
+    return el ? Math.round(el.getBoundingClientRect().height) : null
+  })
+const h0 = await dockH()
+await page.focus('.runtl-resizer')
+for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowUp')
+await sleep(200)
+const h1 = await dockH()
+const saved = await page.evaluate(() => localStorage.getItem('rangeboard.runtimeline.height'))
+await page.reload({ waitUntil: 'load' })
+await boot()
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.runtl-dock'))
+await sleep(300)
+const h2 = await dockH()
+findings.height = { beforePx: h0, afterKeysPx: h1, storedValue: saved, afterReloadPx: h2, survives: h2 === h1 && h1 !== h0 }
+console.log('height', JSON.stringify(findings.height))
+
+findings.errors = errors
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2) + '\n')
+console.log('errors', errors.length)
+await browser.close()
