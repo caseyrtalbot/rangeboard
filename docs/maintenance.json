@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "7b2ec5925b82ec5b8be95f22cd58cef4c7b9b91b4542344d9148e3bcb6ea4102",
+      "sha256": "50bd20591b2e215d49465558ecd9f3242dbe8c68d0d4136d6cc4dcb01cb3457f",
       "reviewedAt": "2026-09-27",
-      "note": "Phase 2 recorded (commits, gate, browser check, reviews, departures, follow-ups, landmines); Phase 3 selected; Phase 1 pushed as 019d747."
+      "note": "Phase 2 merged to main by fast-forward and pushed; the position and the Phase 3 base and next action say so."
     },
     {
       "document": "docs/Plan.md",

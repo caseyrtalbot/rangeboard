@@ -12,16 +12,16 @@ commit, push or merge.
 
 [timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
-Phase 1 (the model, no UI) is on `main`. Phase 2 (the strip) is on `timeline/p2` and
-is not merged. Phase 3 is selected. [Plan.md](Plan.md) is the completed chrome refactor
+Phases 1 (the model, no UI) and 2 (the strip) are on `main` and `origin/main`. Phase 3
+is selected. [Plan.md](Plan.md) is the completed chrome refactor
 queue (Rows A to D merged and pushed as `f4363a3`); it selects nothing.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. `main` and `origin/main` are at `019d747` (run
-  timeline Phase 1, pushed 2026-09-26). `timeline/p2` carries Phase 2 on top of
-  `019d747` and ends with this handoff. It is not merged to `main` and not pushed. No
-  worktrees and no lane branches remain.
+- Repository `~/Projects/rangeboard`. `main` and `origin/main` carry run timeline Phase
+  2, a fast-forward of `timeline/p2` onto Phase 1 (`019d747`), merged and pushed on
+  2026-09-27 with the user's authorization. No worktrees, lane branches or phase branch
+  remain.
 - Run timeline Phase 2 (2026-09-27) on `timeline/p2`: the contract commit `4f63211` (the
   `ui.runTimeline` slice with its session actions, and a stub lazy target), lane 2A
   `8be6b60` and `bb9a182` (`opus-high`, the strip), lane 2B `c5b6449` and `3f1672c`
@@ -283,10 +283,9 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 **Phase 3 of [timeline/SPEC.md](timeline/SPEC.md): interaction.**
 
-- Base: `main` once the user merges `timeline/p2`; until then, `timeline/p2`. Branch
-  `timeline/p3` for the integration; lanes `timeline/p3-a` and `p3-b` in worktrees
-  `~/Projects/rangeboard-wt/tl-3a` and `tl-3b` outside the repository with
-  `node_modules` symlinked to the main checkout.
+- Base: `main` with Phase 2. Branch `timeline/p3` for the integration; lanes
+  `timeline/p3-a` and `p3-b` in worktrees `~/Projects/rangeboard-wt/tl-3a` and `tl-3b`
+  outside the repository with `node_modules` symlinked to the main checkout.
 - Outcome: SPEC section 1.5 and the 1.3 controls. A row label click selects through the
   existing selection action (a track row selects its threat; a false track selects
   nothing). Board selection highlights the row and scrolls it into view. A mark click
@@ -316,9 +315,8 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
   `oxipng`; the docs updated with `docs:review`; the `opus-high` diff review and the
   `fable-high` check that no interaction advances `observedThroughS` (a store test and
   browser evidence), must-fix items closed.
-- Next action: the user decides the merge of `timeline/p2` to `main` and the push. Then
-  branch `timeline/p3`, write the contract commit, create the two worktrees and launch
-  3A and 3B.
+- Next action: branch `timeline/p3` from `main`, write the contract commit, create the
+  two worktrees and launch 3A and 3B.
 - Stop condition: Phase 3 merged to `main` with the user's authorization, this file
   rewritten to select Phase 4 with the Phase 3 evidence, worktrees removed.
 
