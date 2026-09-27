@@ -3632,180 +3632,387 @@ input[type='number'] {
   color: var(--text-dim);
 }
 
-/* ---------- Engagement timeline strip ---------- */
+/* ---------- Run timeline strip ---------- */
 
-.engstrip {
+/* App holds the height on the dock; the strip fills it. The line heights here
+   match ROW_H and SUB_H in src/panels/timeline/layout.ts, so the gutter and
+   the plot stay aligned. */
+.runtl-dock {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The drag handle above the dock: .right-resizer turned horizontal. It
+   overlaps the boundary by half its height, so it takes no layout space. */
+.runtl-resizer {
   position: relative;
+  z-index: 5;
+  flex: none;
+  height: 6px;
+  margin: -3px 0;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.runtl-resizer:hover,
+.runtl-resizer:focus-visible {
+  background: var(--rule-strong);
+}
+
+.runtl-resizer:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 0;
+}
+
+.runtl {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   background: var(--bg-panel);
   border-top: 1px solid var(--border);
+  font-size: var(--type-meta-size);
   user-select: none;
 }
 
-.engstrip-legend {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 3px 10px 2px;
-  cursor: default;
+.runtl-empty {
+  margin: 0;
+  padding: 6px 12px;
+  color: var(--text-dim);
 }
 
-.engstrip-legend span {
-  display: inline-flex;
+.runtl-head {
+  display: flex;
+  flex: none;
   align-items: center;
-  gap: 5px;
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
+  gap: var(--space-2);
+  height: 28px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--rule);
   white-space: nowrap;
 }
 
-.engstrip-legend .sw {
-  display: inline-block;
+.runtl-title {
+  color: var(--text);
+  font-weight: var(--type-title-weight);
+}
+
+.runtl-scope {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.runtl-spacer {
+  flex: 1;
+}
+
+.runtl-axis,
+.runtl-over,
+.runtl-scroll {
+  display: grid;
+  grid-template-columns: var(--runtl-gutter) minmax(0, 1fr);
+}
+
+.runtl-axis {
   flex: none;
+  height: 20px;
+  border-bottom: 1px solid var(--rule-strong);
 }
 
-.engstrip-legend .sw.ramp {
-  width: 18px;
-  height: 6px;
-  background: linear-gradient(
-    to right,
-    color-mix(in srgb, var(--danger) 25%, var(--bg-panel)) 0 33.3%,
-    color-mix(in srgb, var(--danger) 55%, var(--bg-panel)) 33.3% 66.6%,
-    var(--danger) 66.6% 100%
-  );
+.runtl-over {
+  flex: none;
+  height: 22px;
+  background: color-mix(in srgb, var(--surface-sunken) 50%, var(--bg-panel));
+  border-bottom: 1px solid var(--rule);
 }
 
-.engstrip-legend .sw.win {
-  width: 12px;
-  height: 4px;
-  background: var(--accent);
+.runtl-axis-gutter,
+.runtl-over-gutter {
+  padding: 0 8px;
+  overflow: hidden;
+  border-right: 1px solid var(--rule);
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+  line-height: 19px;
+  white-space: nowrap;
 }
 
-.engstrip-legend .sw.shot {
-  width: 1px;
-  height: 8px;
-  background: var(--text);
+.runtl-axis-svg,
+.runtl-over-svg {
+  display: block;
 }
 
-.engstrip-legend .sw.arr {
-  width: 6px;
-  height: 6px;
-  background: var(--text-dim);
-  transform: rotate(45deg);
+.runtl-axis-svg line {
+  stroke: var(--rule-strong);
 }
 
-.engstrip-scroll {
-  max-height: 190px;
+.runtl-axis-svg text {
+  fill: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.runtl-over-unobserved {
+  fill: color-mix(in srgb, var(--surface-sunken) 80%, transparent);
+}
+
+.runtl-over-window {
+  fill: color-mix(in srgb, var(--text) 10%, transparent);
+  stroke: var(--text-tertiary);
+}
+
+/* The gutter and the plot scroll together vertically. */
+.runtl-scroll {
+  flex: 1 1 auto;
+  align-items: start;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
-.engstrip-axis {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  height: 14px;
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
-}
-
-.engstrip-axis-gutter {
-  flex: none;
-}
-
-.engstrip-axis-track {
-  position: relative;
-  flex: 1;
+.runtl-gutter {
   min-width: 0;
+  border-right: 1px solid var(--rule);
 }
 
-.engstrip-tick {
-  position: absolute;
-  top: 0;
+.runtl-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 18px;
+  padding: 0 6px 0 8px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--rule);
   color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: var(--type-dense-size);
-  line-height: 13px;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.engstrip-rows {
-  display: flex;
+.runtl-group,
+.runtl-fold {
+  padding: 0;
 }
 
-.engstrip-gutter {
-  flex: none;
-  display: flex;
-  flex-direction: column;
+.runtl-group {
+  background: color-mix(in srgb, var(--surface-sunken) 55%, var(--bg-panel));
 }
 
-.engstrip-name {
+.runtl-group-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  height: 16px;
-  padding: 0 6px 0 10px;
-  font-size: var(--type-dense-size);
-  color: var(--text-dim);
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: 0 6px 0 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: var(--text-tertiary);
+  font: inherit;
+  font-weight: var(--type-label-weight);
+  text-align: left;
   cursor: pointer;
-  min-width: 0;
 }
 
-.engstrip-name:hover {
+.runtl-fold .runtl-group-btn {
+  color: var(--text-dim);
+  font-weight: var(--type-body-weight);
+}
+
+.runtl-group-btn:hover {
+  color: var(--text);
+}
+
+.runtl-group-btn:focus-visible,
+.runtl-expand:focus-visible,
+.runtl-hide:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
+}
+
+.runtl-chev {
+  flex: 0 0 10px;
+  width: 10px;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+}
+
+.runtl-expand {
+  height: 14px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.runtl-ink {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+}
+
+.runtl-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.runtl-count,
+.runtl-meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+  text-overflow: ellipsis;
+}
+
+.runtl-count,
+.runtl-side {
+  font-family: var(--font-mono);
+}
+
+.runtl-side {
+  flex: none;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-body-weight);
+}
+
+.runtl-hide {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--text-tertiary);
+  line-height: 16px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.runtl-meta + .runtl-hide {
+  margin-left: 0;
+}
+
+.runtl-row:hover {
   background: var(--hover);
   color: var(--text);
 }
 
-.engstrip-name .chevron {
-  flex: none;
+.runtl-row:hover .runtl-hide,
+.runtl-hide:focus-visible {
+  opacity: 1;
 }
 
-.engstrip-name-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
+.runtl-hide:hover {
+  color: var(--text);
 }
 
-.engstrip-plot {
+.runtl-row.in-fold {
+  padding-left: 18px;
+}
+
+.runtl-sub,
+.runtl-summary-name {
+  padding-left: 26px;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+}
+
+.runtl-sub {
+  height: 14px;
+  font-family: var(--font-mono);
+}
+
+/* The plot clips; the pan wrapper moves every row by one transform. */
+.runtl-plotcol {
   position: relative;
-  flex: 1;
   min-width: 0;
-  cursor: crosshair;
-  touch-action: none;
 }
 
-.engstrip-svg {
+.runtl-plot {
+  position: relative;
+  overflow: hidden;
+}
+
+.runtl-grounds,
+.runtl-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: block;
 }
 
-.engstrip-playhead {
+.runtl-svg {
+  overflow: visible;
+}
+
+.runtl-pan {
+  position: absolute;
+  inset: 0;
+}
+
+.runtl-ground-group {
+  fill: color-mix(in srgb, var(--surface-sunken) 55%, var(--bg-panel));
+}
+
+.runtl-rule {
+  stroke: var(--rule);
+  shape-rendering: crispEdges;
+}
+
+.runtl-unobserved rect {
+  fill: color-mix(in srgb, var(--surface-sunken) 70%, transparent);
+}
+
+.runtl-unobserved line {
+  stroke: var(--rule-strong);
+  stroke-dasharray: 2 3;
+}
+
+.runtl-summary {
+  opacity: 0.75;
+}
+
+.runtl-dur,
+.runtl-label {
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.runtl-dur {
+  fill: var(--accent-ink);
+}
+
+.runtl-label {
+  fill: var(--text);
+}
+
+.runtl-label.dim {
+  fill: var(--text-tertiary);
+}
+
+.runtl-chip {
+  fill: var(--surface-sunken);
+  stroke: var(--rule-strong);
+  stroke-width: 0.5;
+}
+
+.runtl-playhead {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   width: 1px;
-  background: var(--accent);
+  background: var(--text);
   pointer-events: none;
-}
-
-.engstrip-tip {
-  position: absolute;
-  z-index: 3;
-  padding: 2px 7px;
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: var(--type-dense-size);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.engstrip-tip .name {
-  color: var(--text);
 }
 
 /* ---------- Chart kit ---------- */
