@@ -1,20 +1,20 @@
 {
-  "capturedAt": "2026-09-27T15:49:11.579Z",
+  "capturedAt": "2026-09-27T16:15:57.322Z",
   "viewport": "1265x900 dark",
   "fixture": "src/playback/__fixtures__/detection-outside-rings.json",
   "shots": [
     {
       "file": "execute-midrun-collapsed.png",
       "state": "Execute, paused after 10 s at 30x, strip open, every group collapsed",
-      "simTimeS": 299.09659999999843,
-      "observedThroughS": 299.09659999999843,
+      "simTimeS": 298.0906000000029,
+      "observedThroughS": 298.0906000000029,
       "dockHeightPx": 240
     },
     {
       "file": "execute-group-and-sensor-expanded.png",
       "state": "Execute, paused at the observed time, Sensors open, one sensor expanded to sub-lanes",
-      "simTimeS": 299,
-      "observedThroughS": 299.09659999999843,
+      "simTimeS": 298,
+      "observedThroughS": 298.15500000004454,
       "dockHeightPx": 240
     },
     {
@@ -28,65 +28,85 @@
   "errors": [],
   "trialStatus": "ready",
   "start": {
-    "simTimeS": 0.3265999999985099,
-    "observedThroughS": 0.3265999999985099,
-    "trialHorizonS": 0.3265999999985099,
+    "simTimeS": 0.31560000000298033,
+    "observedThroughS": 0.31560000000298033,
+    "trialHorizonS": 0.31560000000298033,
     "durationS": 1500,
     "playing": true
+  },
+  "transforms": {
+    "pan": {
+      "transform": "translateX(-1164.97px)",
+      "transition": "transform 100ms linear"
+    },
+    "axis": {
+      "transform": "translateX(-1164.97px)",
+      "transition": "transform 100ms linear"
+    },
+    "playhead": {
+      "transform": "translateX(1592.3px)",
+      "transition": "transform 100ms linear"
+    },
+    "window": {
+      "transform": "translateX(93.1974px)",
+      "transition": "transform 100ms linear"
+    },
+    "axisTransformEqualsPan": true,
+    "oneTransition": true
   },
   "frames": {
     "speed": 30,
     "recordMs": 10000,
     "open": {
-      "intervals": 1149,
-      "over20ms": 0,
+      "intervals": 1146,
+      "over20ms": 1,
       "over33ms": 0,
-      "maxMs": 16.9,
-      "meanMs": 8.7,
+      "maxMs": 24.9,
+      "meanMs": 8.73,
       "p99Ms": 16.7,
-      "endSimTimeS": 299.09659999999843
+      "endSimTimeS": 298.0906000000029
     },
     "closed": {
-      "intervals": 1202,
+      "intervals": 1198,
       "over20ms": 0,
       "over33ms": 0,
-      "maxMs": 13.4,
-      "meanMs": 8.32,
+      "maxMs": 16.8,
+      "meanMs": 8.35,
       "p99Ms": 9.3,
-      "endSimTimeS": 297.92699999995517
+      "endSimTimeS": 298.15500000004454
     },
     "pass": true
   },
   "marks": [
     {
       "simTimeS": 75,
-      "observedThroughS": 299.09659999999843,
+      "observedThroughS": 298.15500000004454,
       "horizonS": 75,
       "modelHorizonS": 75,
       "pxPerS": 5.341666666666667,
-      "drawnCount": 54,
-      "modelCount": 54,
-      "fullCount": 560,
-      "fullAtOrBeforeHorizon": 54,
+      "drawnCount": 64,
+      "modelCount": 64,
+      "fullCount": 564,
+      "fullAtOrBeforeHorizon": 64,
       "fullAtHorizon": 0,
-      "drawnMaxS": 73.5,
+      "drawnMaxS": 74.5,
       "drawnPastHorizon": 0,
       "modelPastHorizon": 0,
       "missingAtOrBeforeHorizon": 0,
       "drawnEqualsModel": true
     },
     {
-      "simTimeS": 150,
-      "observedThroughS": 299.09659999999843,
-      "horizonS": 150,
-      "modelHorizonS": 150,
+      "simTimeS": 149,
+      "observedThroughS": 298.15500000004454,
+      "horizonS": 149,
+      "modelHorizonS": 149,
       "pxPerS": 5.341666666666667,
-      "drawnCount": 110,
-      "modelCount": 110,
-      "fullCount": 560,
-      "fullAtOrBeforeHorizon": 110,
-      "fullAtHorizon": 0,
-      "drawnMaxS": 149.5,
+      "drawnCount": 138,
+      "modelCount": 138,
+      "fullCount": 564,
+      "fullAtOrBeforeHorizon": 138,
+      "fullAtHorizon": 2,
+      "drawnMaxS": 149,
       "drawnPastHorizon": 0,
       "modelPastHorizon": 0,
       "missingAtOrBeforeHorizon": 0,
@@ -94,33 +114,33 @@
     },
     {
       "simTimeS": 224,
-      "observedThroughS": 299.09659999999843,
+      "observedThroughS": 298.15500000004454,
       "horizonS": 224,
       "modelHorizonS": 224,
       "pxPerS": 5.341666666666667,
-      "drawnCount": 184,
-      "modelCount": 184,
-      "fullCount": 560,
-      "fullAtOrBeforeHorizon": 184,
-      "fullAtHorizon": 0,
-      "drawnMaxS": 223.5,
+      "drawnCount": 224,
+      "modelCount": 224,
+      "fullCount": 564,
+      "fullAtOrBeforeHorizon": 224,
+      "fullAtHorizon": 2,
+      "drawnMaxS": 224,
       "drawnPastHorizon": 0,
       "modelPastHorizon": 0,
       "missingAtOrBeforeHorizon": 0,
       "drawnEqualsModel": true
     },
     {
-      "simTimeS": 299,
-      "observedThroughS": 299.09659999999843,
-      "horizonS": 299,
-      "modelHorizonS": 299,
+      "simTimeS": 298,
+      "observedThroughS": 298.15500000004454,
+      "horizonS": 298,
+      "modelHorizonS": 298,
       "pxPerS": 5.341666666666667,
-      "drawnCount": 266,
-      "modelCount": 266,
-      "fullCount": 560,
-      "fullAtOrBeforeHorizon": 266,
+      "drawnCount": 302,
+      "modelCount": 302,
+      "fullCount": 564,
+      "fullAtOrBeforeHorizon": 302,
       "fullAtHorizon": 0,
-      "drawnMaxS": 297.5,
+      "drawnMaxS": 297,
       "drawnPastHorizon": 0,
       "modelPastHorizon": 0,
       "missingAtOrBeforeHorizon": 0,
@@ -131,21 +151,21 @@
     "steps": [
       {
         "label": "start",
-        "simTimeS": 299,
-        "observedThroughS": 299.09659999999843,
-        "drawnCount": 266
+        "simTimeS": 298,
+        "observedThroughS": 298.15500000004454,
+        "drawnCount": 302
       },
       {
         "label": "back",
-        "simTimeS": 90,
-        "observedThroughS": 299.09659999999843,
-        "drawnCount": 64
+        "simTimeS": 89,
+        "observedThroughS": 298.15500000004454,
+        "drawnCount": 76
       },
       {
         "label": "forward",
-        "simTimeS": 299,
-        "observedThroughS": 299.09659999999843,
-        "drawnCount": 266
+        "simTimeS": 298,
+        "observedThroughS": 298.15500000004454,
+        "drawnCount": 302
       }
     ],
     "observedUnchanged": true,
@@ -169,14 +189,46 @@
     "overviewUnobservedWidthPx": 0,
     "scopeText": "Shown through T+25:00",
     "unobservedEmpty": true,
-    "drawnCount": 522,
-    "fullCount": 522,
+    "drawnCount": 532,
+    "fullCount": 532,
     "drawnEqualsModel": true
+  },
+  "playheadAtEnd": {
+    "simTimeS": 1500,
+    "follow": true,
+    "plotLeftPx": 216,
+    "plotRightPx": 857,
+    "playheadLeftPx": 856,
+    "playheadRightPx": 857,
+    "insidePlot": true
+  },
+  "analyzeScrub": {
+    "simTimeS": 300,
+    "durationS": 1500,
+    "modelHorizonS": 1500,
+    "horizonEqualsDuration": true,
+    "unobservedWidthPx": 0,
+    "scopeText": "Shown through T+25:00",
+    "drawnCount": 532,
+    "fullCount": 532,
+    "drawnEqualsFull": true
   },
   "height": {
     "beforePx": 240,
     "afterKeysPx": 360,
     "storedValue": "360",
+    "drag": {
+      "moves": 40,
+      "writes": 1,
+      "stored": "320",
+      "dockPx": 320,
+      "oneWrite": true
+    },
+    "click": {
+      "writes": 0,
+      "noWrite": true
+    },
+    "afterRestorePx": 360,
     "afterReloadPx": 360,
     "survives": true
   }

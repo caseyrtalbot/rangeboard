@@ -65,7 +65,7 @@ const clock = () =>
  * The strip's drawn marks against the model. A mark glyph sits at
  * cx = tS * pxPerS inside the pan wrapper (LaneMarks.tsx), so its time is
  * cx / pxPerS; pxPerS is the plot width over the clamped window. The model is
- * runTimelineOf(view, trial horizon), as RunTimeline.tsx builds it; `full` is
+ * runTimelineOf(view, horizon), as RunTimeline.tsx builds it; `full` is
  * the same view at the run duration, the uncensored record.
  */
 const compareMarks = () =>
@@ -78,7 +78,8 @@ const compareMarks = () =>
     const sel = selectTrialSelection(s)
     if (sel.status !== 'ready') return { error: `trial ${sel.status}` }
     const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
-    const horizonS = selectTrialHorizon(s, s.playback.simTimeS)
+    // As RunTimeline.tsx: in Analyze the horizon is the observed end, not the cursor.
+    const horizonS = selectTrialHorizon(s, s.ui.boardPhase === 'analyze' ? Infinity : s.playback.simTimeS)
     const model = runTimelineOf(view, horizonS)
     const full = runTimelineOf(view, model.durationS)
     const rt = s.ui.runTimeline
@@ -195,6 +196,26 @@ findings.start = await clock()
 const openGaps = await playAndRecord(10000)
 const afterOpen = await clock()
 await shot('execute-midrun-collapsed', 'Execute, paused after 10 s at 30x, strip open, every group collapsed')
+// The pan wrapper, the playhead, the axis tick group and the overview window share one glide.
+findings.transforms = await page.evaluate(() => {
+  const st = (sel) => {
+    const el = document.querySelector(sel)
+    return el ? { transform: el.style.transform, transition: el.style.transition } : null
+  }
+  const pan = st('.runtl-pan')
+  const axis = st('.runtl-axis-svg > g')
+  const playhead = st('.runtl-playhead')
+  const windowRect = st('.runtl-over-window')
+  return {
+    pan,
+    axis,
+    playhead,
+    window: windowRect,
+    axisTransformEqualsPan: axis?.transform === pan?.transform,
+    oneTransition: [axis, playhead, windowRect].every((x) => x?.transition === pan?.transition),
+  }
+})
+console.log('transforms', JSON.stringify(findings.transforms))
 await scrub(0)
 await page.click('#run-timeline-toggle')
 await waitFor(page, () => !document.querySelector('#run-timeline'))
@@ -306,7 +327,45 @@ findings.analyze = {
   drawnEqualsModel: done.drawnEqualsModel,
 }
 console.log('analyze', JSON.stringify(findings.analyze))
+// The playhead at the run end must sit inside the plot's clip.
+findings.playheadAtEnd = await page.evaluate(() => {
+  const plot = document.querySelector('.runtl-plot').getBoundingClientRect()
+  const ph = document.querySelector('.runtl-playhead').getBoundingClientRect()
+  const rt = window.__store.getState().ui.runTimeline
+  return {
+    simTimeS: window.__store.getState().playback.simTimeS,
+    follow: rt.follow,
+    plotLeftPx: plot.left,
+    plotRightPx: plot.right,
+    playheadLeftPx: ph.left,
+    playheadRightPx: ph.right,
+    insidePlot: ph.left >= plot.left && ph.right <= plot.right,
+  }
+})
+console.log('playheadAtEnd', JSON.stringify(findings.playheadAtEnd))
 await shot('analyze-strip-open', 'Analyze after completeRun, strip open, Sensors open')
+
+// Analyze scrub: the cursor moves back to T+5:00; the horizon stays at the run duration.
+await scrub(300)
+const back = await compareMarks()
+const backDom = await page.evaluate(() => {
+  const el = document.querySelector('.runtl-unobserved rect')
+  return {
+    unobservedWidthPx: el ? Number(el.getAttribute('width')) : 0,
+    scopeText: document.querySelector('.runtl-scope')?.textContent,
+  }
+})
+findings.analyzeScrub = {
+  simTimeS: back.simTimeS,
+  durationS: c.durationS,
+  modelHorizonS: back.modelHorizonS,
+  horizonEqualsDuration: back.modelHorizonS === c.durationS,
+  ...backDom,
+  drawnCount: back.drawnCount,
+  fullCount: back.fullCount,
+  drawnEqualsFull: back.drawnCount === back.fullCount && back.drawnEqualsModel,
+}
+console.log('analyzeScrub', JSON.stringify(findings.analyzeScrub))
 
 // 6e. Resize with the keyboard (Shift+ArrowUp adds 40 px), reload, read the dock height.
 const dockH = () =>
@@ -320,13 +379,58 @@ for (let i = 0; i < 3; i++) await page.keyboard.press('Shift+ArrowUp')
 await sleep(200)
 const h1 = await dockH()
 const saved = await page.evaluate(() => localStorage.getItem('rangeboard.runtimeline.height'))
+// A pointer drag saves once at its end; a click with no move saves nothing.
+await page.evaluate(() => {
+  window.__heightWrites = 0
+  const set = Storage.prototype.setItem
+  Storage.prototype.setItem = function (k, v) {
+    if (k === 'rangeboard.runtimeline.height') window.__heightWrites++
+    return set.call(this, k, v)
+  }
+})
+const grip = await page.locator('.runtl-resizer').boundingBox()
+const gx = grip.x + grip.width / 2
+const gy = grip.y + grip.height / 2
+await page.mouse.move(gx, gy)
+await page.mouse.down()
+for (let i = 1; i <= 40; i++) {
+  await page.mouse.move(gx, gy + i)
+  await sleep(16)
+}
+await page.mouse.up()
+await sleep(200)
+const drag = await page.evaluate(() => ({
+  writes: window.__heightWrites,
+  stored: localStorage.getItem('rangeboard.runtimeline.height'),
+}))
+drag.dockPx = await dockH()
+await page.evaluate(() => (window.__heightWrites = 0))
+await page.mouse.move(gx, gy - 40)
+await page.mouse.down()
+await page.mouse.up()
+await sleep(200)
+const click = await page.evaluate(() => ({ writes: window.__heightWrites }))
+// Shift+ArrowUp undoes the 40 px drag, so the reload check reads the keyboard height.
+await page.focus('.runtl-resizer')
+await page.keyboard.press('Shift+ArrowUp')
+await sleep(200)
+const h1b = await dockH()
 await page.reload({ waitUntil: 'load' })
 await boot()
 await page.click('#board-phase-execute')
 await waitFor(page, () => document.querySelector('.runtl-dock'))
 await sleep(300)
 const h2 = await dockH()
-findings.height = { beforePx: h0, afterKeysPx: h1, storedValue: saved, afterReloadPx: h2, survives: h2 === h1 && h1 !== h0 }
+findings.height = {
+  beforePx: h0,
+  afterKeysPx: h1,
+  storedValue: saved,
+  drag: { moves: 40, ...drag, oneWrite: drag.writes === 1 },
+  click: { ...click, noWrite: click.writes === 0 },
+  afterRestorePx: h1b,
+  afterReloadPx: h2,
+  survives: h2 === h1 && h1b === h1 && h1 !== h0,
+}
 console.log('height', JSON.stringify(findings.height))
 
 findings.errors = errors

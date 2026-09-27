@@ -37,9 +37,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "73181bc0c98e7f6bb7936bfd518a63826d6307208bbcdb43cc82ee2748f59eef",
+      "sha256": "b83bf5641f82204dc92aa3bddd641d7cb11aa88bc18d13536534554f0878910a",
       "reviewedAt": "2026-09-27",
-      "note": "Timeline P2: App.tsx mounts the run timeline lazily; the setup, gate and CI text is unchanged and still correct."
+      "note": "Timeline P2 review fixes (8e58df2): axis and overview window share the rows' pan glide, Analyze horizon is the observed end, playhead clamped inside the plot, fold label counts shown members, resizer drag saves once; the text still matches the source."
     },
     {
       "document": "docs/README.md",
@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "df3b15aea7fd91eef0ef2edce3d72d1b0b1dbd5c97fa9e64b5964842d9bb5b06",
+      "sha256": "5bc6fd6fa79c54c4643620fb3ef3473699053d222d225ce0262bffd1825e7599",
       "reviewedAt": "2026-09-27",
-      "note": "Timeline P2: the strip paragraph names the run timeline, the Timeline toggle, the 28 px bar, the rows, the horizon, the lazy chunk, the resizer limits and the saved open state and height; the censoring list names the run timeline."
+      "note": "Timeline P2 review fixes (8e58df2): axis and overview window share the rows' pan glide, Analyze horizon is the observed end, playhead clamped inside the plot, fold label counts shown members, resizer drag saves once; the text still matches the source."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "c91deeae38912a11c25cce660b09bad38b77ba8c1354de6d8f9cbfa616c2ac86",
+      "sha256": "7829b84303fa4de06efbd553e8ad69e4970d0548054300327df63c2afc67c720",
       "reviewedAt": "2026-09-27",
-      "note": "Timeline P2: storage keys list RUN_TIMELINE_HEIGHT_KEY and ENGSTRIP_OPEN_KEY with its unchanged value; the EngagementStrip and censorLane text is replaced; the model paragraph names RunTimeline.tsx as the reader; the module map lists src/panels/timeline/ and the lazy RunTimeline in App."
+      "note": "Timeline P2 review fixes (8e58df2): axis and overview window share the rows' pan glide, Analyze horizon is the observed end, playhead clamped inside the plot, fold label counts shown members, resizer drag saves once; the text still matches the source."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "3295240dccfba8c964cf1bde39a38c2f30711cc325e857174bcc5cfa30c28750",
+      "sha256": "a057e69f7a826d8b6343e179a7da6e7e5ee480ec6a309000d6748c1aef5ce1fe",
       "reviewedAt": "2026-09-27",
-      "note": "Phase 2 deleted EngagementStrip.tsx; the dead link becomes code text. No plan content changed."
+      "note": "Timeline P2 review fixes (8e58df2): axis and overview window share the rows' pan glide, Analyze horizon is the observed end, playhead clamped inside the plot, fold label counts shown members, resizer drag saves once; the text still matches the source. Section 1.4 now holds in Analyze; SPEC text unchanged."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
