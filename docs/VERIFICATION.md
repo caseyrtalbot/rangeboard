@@ -328,10 +328,13 @@ committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 p
   that no lens bar renders. Two drawer tests close and reopen the right panel with the
   top-bar button and `]`, check that the camera holds the board center, that a selection
   keeps a closed drawer closed, and that a resize drag past the minimum closes it. Two
-  playback-bar tests enter Execute (Prepare renders no transport), open and close the
-  engagement strip from the Engagement toggle, check the 28 px bar height, the strip
-  position above the bar, the canvas height change and the saved open state, and check
-  that the saved state restores on reload. The status-bar test checks the 24 px bar, the
+  playback-bar tests enter Execute (Prepare renders no transport). The first opens and
+  closes the run timeline (`#run-timeline`) from the Timeline toggle
+  (`#run-timeline-toggle`) and checks the 28 px bar height, that the `.runtl-dock` bottom
+  meets the bar top, that the canvas gives up the dock height, and the saved open flag
+  (`rangeboard.engstrip.open`). The second writes the open flag and a 300 px height under
+  `rangeboard.runtimeline.height`, reloads, checks that no dock mounts in Prepare, and
+  checks that the dock is 300 px in Execute. The status-bar test checks the 24 px bar, the
   run id first, and that three chips injected at 1600 px fold into a counted ROE chip.
   One header test checks the 36 px header, the lifecycle tablist and the primary run
   button inside it, and that no phase row renders. A second header test checks that the
@@ -339,7 +342,10 @@ committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 p
   from the ⋯ menu and keeps a 14 px right margin. The
   debrief check calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
-  completion requires a matching ready trial. Start the dev server first.
+  completion requires a matching ready trial. `npm run test:e2e` needs a running Vite
+  server: start `npm run dev -- --port <port> --strictPort` first and pass
+  `E2E_URL=http://localhost:<port>`; without `E2E_URL` the spec reads
+  `http://localhost:5377`.
   CI runs it separately after `npm run check`, `npm run check:silent` and `npm run check:bundle`, installing Chromium
   and managing its own fixed-port Vite process. Locally the browser and built-bundle checks
   remain separate commands; bundle-accounting unit tests are included in `check`.

@@ -183,7 +183,7 @@ validity cells never drop. The transport sits above it in Execute and Analyze on
 `.mini` controls. It holds play or pause (Replay and Retry are icon-only 24 px buttons
 too), the Reset run icon, the scrubber, speed, the raid
 waves, the frame chips, `+ Frame` (a popover with one name field and Save) and the
-Engagement toggle. The clock and the run id render only in the status bar.
+Timeline toggle (`#run-timeline-toggle`). The clock and the run id render only in the status bar.
 
 The lifecycle navigation sits outside the scroll body. The right panel opens with a
 32 px header: the phase word (Prepare, Execute, Analyze) at 13/500 and a ⋯ Panel options
@@ -300,6 +300,28 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   border at `--radius-control`, an exception to the surface rules. It holds a 15/500 mono
   clock, a 4 px `--rule-strong` progress bar filled in text 1, and 20 px rows with the
   label in text 2 at 12 px and the value in mono text 1.
+- **Run timeline** (`src/panels/timeline/`, every class under the `.runtl` prefix in
+  `index.css`). The strip sits in `.runtl-dock` between the board and the playback bar in
+  Execute and Analyze. From the top: a 28 px header (title, then the horizon in mono
+  text 3, `Shown through T+m:ss`), the rows, a 20 px axis and a 22 px overview. Only the
+  rows scroll. The axis has a `--rule-strong` top rule and the overview a `--rule` top
+  rule. The gutter is 172 px. Group headers, rows, summary rows and fold rows are 18 px;
+  a sensor sub-lane is 14 px. A group header sits on sunken 55 percent over the panel. A
+  collapsed group draws its summary row at 0.75 opacity. Inks come from `KIND_INK`:
+  sensor holds and detect dots in the sensor ink, C2 init and firm marks in the C2 ink,
+  assignment diamonds hollow in the effector ink. A hold chunk's opacity maps track
+  quality 0 to 1 onto 0.3 to 1; a coast is a dashed sensor outline. The classification
+  ramp is one hue, `--danger` at 25, 55 and 100 percent over the panel. A window is a
+  2.5 px `--accent` bar. A preparation span is a `--warn` hatch; a flight is `--accent`,
+  a burst `--de` and a dwell `--ew`. Glyphs: a filled diamond in `--danger` for a hard
+  kill or an arrival and in `--ew` for a mission kill; a hollow diamond for a miss
+  (`--ghost`), a jam decision (`--ew`) and a CPA (text 3); a triangle for a release; a
+  tick for a shot or a C2 init; a cross in `--ghost` for a drop. The unobserved region is
+  sunken 70 percent with a dashed `--rule-strong` edge; the playhead is a 1 px text 1
+  line. The resizer above the dock is a 6 px `row-resize` handle that overlaps the
+  boundary and takes no layout space; it shows `--rule-strong` on hover and focus. No
+  strip text is under 11 px (`--type-dense-size`). Times, counts, sides, sub-lane names,
+  durations and printed values are mono; group and row names are Archivo.
 - **Inspector rows** (`.insp-row`). Flex rows, 28 px minimum height, baseline aligned,
   bleeding to the panel padding line.
 - **Per-threat table** (`.tb.tb-dense`, the kill-chain table on Now and the outcome table

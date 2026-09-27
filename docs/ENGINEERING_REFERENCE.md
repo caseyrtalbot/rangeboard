@@ -113,7 +113,10 @@ Breaking one of these breaks the app.
   (`rangeboard.baseline.v1`), `LAYERS_KEY`,
   `RINGS_KEY`, `UNITS_KEY`, `VIEW_KEY`, `RUNSEQ_KEY`, `RIGHT_PANEL_WIDTH_KEY`,
   `RIGHT_PANEL_OPEN_KEY`,
-  `PALETTE_WIDTH_KEY`, `PALETTE_COLLAPSED_KEY`, `ENGSTRIP_OPEN_KEY` and the retired
+  `PALETTE_WIDTH_KEY`, `PALETTE_COLLAPSED_KEY`, `ENGSTRIP_OPEN_KEY`
+  (`rangeboard.engstrip.open`, the run timeline open flag; the value is unchanged from the
+  engagement strip), `RUN_TIMELINE_HEIGHT_KEY` (`rangeboard.runtimeline.height`, the run
+  timeline height in px, at least 120) and the retired
   `ANALYSIS_KEY` (`rangeboard.analysis.v1`), which earlier builds wrote for the removed
   lens layout and nothing reads now, and `OVERRIDES_KEY` (`rangeboard.overrides.v1`), an
   `OverrideSet` written by `overridesAutosaveAdapter` (`src/io/persistOverrides.ts`) from
@@ -610,8 +613,12 @@ src/panels/    Toolbar (the 36 px header: brand, scenario name, the lifecycle ta
                analysis/ for the shared readers, records and settings, analysis/detail/,
                analysis/ForecastSettings.tsx for forecast/MC controls),
                TimelineBar (the 28 px transport outside Prepare; exports the rAF loop
-               hook App mounts and the play-label selector; holds the + Frame popover and the Engagement
-               toggle whose open flag lives in App state), CommandPalette,
+               hook App mounts and the play-label selector; holds the + Frame popover and the Timeline
+               toggle, `#run-timeline-toggle`, whose open flag lives in `ui.runTimeline`),
+               timeline/ (the run timeline strip: RunTimeline, the lazy mount target,
+               with Gutter, Plot, LaneMarks, Axis and Overview; layout.ts places the
+               lines and maps time to pixels, fold.ts folds same-named threats past 14
+               rows, useShownT0.ts pans the plot with Follow), CommandPalette,
                Glyph.tsx (symbology), ringLabels.ts (ring names)
 src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns read,
                restore, observe, flush and stop, and owns the read, the recovery, the
@@ -643,8 +650,9 @@ src/main.tsx   restores the Board and overrides autosaves (restoreAutosave and
                subscriptions,
                mounts the override-subscriber boundary, exposes window.__store in dev
 src/App.tsx    right panel tabs and drawer, keyboard map, resizer; lazy boundaries for
-               AnalysisPanel, CommandPalette and UndoCue; CanvasStage holds the one
-               for ContextMenu
+               AnalysisPanel, CommandPalette, UndoCue and RunTimeline (in the
+               `.runtl-dock` under the board in Execute and Analyze, with the
+               RunTimelineResizer above it); CanvasStage holds the one for ContextMenu
 ```
 
 Data flow for a click or drag: Konva event, store action, new scenario, React re-render of
@@ -1134,9 +1142,9 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   behind Evidence products and exports `TrialEventLedger` and `TrialManifestRecord`, which
   the Outcome records rows open in place; the outcome tiles render once, on Outcome.
   Now samples within the execution horizon: event counts include reached assignments,
-  while effect times, Pk and kill deltas wait for the effect. EngagementStrip clips
-  windows and censors lane marks, tooltips and labels through `censorLane`
-  (`panels/analysis/censorLane.ts`). Compare findings route to Prepare.
+  while effect times, Pk and kill deltas wait for the effect. The run timeline draws the
+  model `runTimelineOf` returns, already censored; no component compares a time with the
+  horizon. Compare findings route to Prepare.
   Run settings live on the Run tab; the Run button sits in the top bar and the
   Deterministic checkbox under the forecast line on Prepare > Inputs.
 - **Pinned baseline** (`src/state/baseline.ts`): `PinnedBaseline` is `pinnedAt` (ISO),
@@ -1191,8 +1199,8 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   Hold chunks sit on an absolute 5 s grid, and a chunk's quality level never reads an
   estimate past the horizon. A kill or an arrival hides a drop or a CPA mark only when it
   comes first, and false tracks are numbered by their first estimate. `timeViewport.ts` holds the window math: clamp, follow at two thirds, zoom
-  about an anchor, absolute ticks through `tickStepS`, and `xOf`. No component reads either
-  module yet.
+  about an anchor, absolute ticks through `tickStepS`, and `xOf`. `RunTimeline.tsx` in
+  `src/panels/timeline/` reads both. It does not copy, sort or mutate a row, a span list or a mark list.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `src/model/libraryLifecycle.ts` is the one seed

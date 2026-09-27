@@ -105,9 +105,16 @@ The right panel is a drawer. The drawer button at the right end of the top bar, 
 closes and opens it, and the open state is saved. Entities, Details in Analysis and a
 Prepare link reopen it; a selection does not.
 
-The engagement timeline opens from the Engagement button at the right end of the playback
-bar. The bar is 36 px high. The strip sits above the bar and pushes the canvas up, and its
-open state is saved.
+The [run timeline](../src/panels/timeline/RunTimeline.tsx) replaces the engagement strip.
+It opens from the Timeline button at the right end of the playback bar in Execute and
+Analyze. The bar is 28 px high. The strip sits above the bar and pushes the canvas up. It
+shows every platform's activity in one run on one time axis. Rows run by side then kind:
+Sensors, C2, Tracks, Effectors and Threats. Each group starts collapsed to one summary
+row. A sensor row expands to one sub-lane per held track. Any row hides for the session
+with its × control. Nothing draws past the observed horizon. The strip draws the model
+from [runTimeline.ts](../src/analysis/runTimeline.ts) and loads in its own lazy chunk. A
+resizer above the strip sets its height from 120 px to 60 percent of the window. The open
+state and the height are saved. The [spec](timeline/SPEC.md) holds the plan.
 
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers
@@ -128,7 +135,7 @@ screen selects Inputs.
 Before the first Play, Now, Outcome and Compare each show one line: `No trial yet. Press
 Play in Execute to run one.` Trial outcomes are bounded by the lesser of the cursor and
 observed horizon, capped by the retained result. Scrubbing and saved-frame navigation
-never advance observation. Charts, engagement strips, WEZ impact badges, selected-object
+never advance observation. Charts, the run timeline, WEZ impact badges, selected-object
 details and the Now screen censor outcomes at that horizon, including tooltips and
 accessibility text. Chart accessibility text identifies the shown horizon separately from
 a forward preview playhead. Outcome and Compare wait for a completed trial; Compare also

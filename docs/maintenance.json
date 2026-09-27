@@ -37,34 +37,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "8f6a1a35f4113ad61829ef7fe95e45255d026b3ec12417f7b6f93b7832ad119c",
-      "reviewedAt": "2026-09-26",
-      "note": "Row D: the library editor opens in the drawer through openLibrary; finding rows, empty-state rows, the run monitor card, collapsible detail panes, Deterministic (no sampling)."
+      "sha256": "73181bc0c98e7f6bb7936bfd518a63826d6307208bbcdb43cc82ee2748f59eef",
+      "reviewedAt": "2026-09-27",
+      "note": "Timeline P2: App.tsx mounts the run timeline lazily; the setup, gate and CI text is unchanged and still correct."
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "214ab2f7e99438206e8e7156b070245a3884c3a4e7080739ec4898fae9d456ee",
-      "reviewedAt": "2026-09-26",
-      "note": "timeline/SPEC.md joins the current references; Plan.md row reads as the completed chrome queue."
+      "sha256": "4b1da27b66c3a1335f38cb54a77087d49dbabfa4c454b57ec74691f2fc4dcbf2",
+      "reviewedAt": "2026-09-27",
+      "note": "Timeline P2: the run timeline Phase 2 browser check (2026-09-27) is indexed beside the chrome capture."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "3a873c20aec7646c0373ba936f400e37185c99d045c14e1ec68ec899ba6e46f8",
-      "reviewedAt": "2026-09-26",
-      "note": "Run timeline Phase 1 final: retainTrial.ts imports NO_C2 from fusion.ts in place of the empty-string literal; no text change."
+      "sha256": "df3b15aea7fd91eef0ef2edce3d72d1b0b1dbd5c97fa9e64b5964842d9bb5b06",
+      "reviewedAt": "2026-09-27",
+      "note": "Timeline P2: the strip paragraph names the run timeline, the Timeline toggle, the 28 px bar, the rows, the horizon, the lazy chunk, the resizer limits and the saved open state and height; the censoring list names the run timeline."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "15938fba93ebe5d9eb548d4070471b2a62fa093f8bc6c4f550cf03c57fd2f86b",
-      "reviewedAt": "2026-09-26",
-      "note": "Run timeline Phase 1: the retained fusedTrack summary (nodes and members with first steps), the run timeline model paragraph and the map entries for runTimeline.ts and timeViewport.ts; checked again after retainTrial.ts imports NO_C2."
+      "sha256": "c91deeae38912a11c25cce660b09bad38b77ba8c1354de6d8f9cbfa616c2ac86",
+      "reviewedAt": "2026-09-27",
+      "note": "Timeline P2: storage keys list RUN_TIMELINE_HEIGHT_KEY and ENGSTRIP_OPEN_KEY with its unchanged value; the EngagementStrip and censorLane text is replaced; the model paragraph names RunTimeline.tsx as the reader; the module map lists src/panels/timeline/ and the lazy RunTimeline in App."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "a59fe81b3dd1e22ddc02021693b83d4dba4aed2203c3484381e3ed7cf7ddb57f",
-      "reviewedAt": "2026-09-26",
-      "note": "Entry budget set at 380,000 and the entry graph check (check:entry-graph, entry-graph.json) added to npm run check; check:bundle freezes the preloaded JavaScript."
+      "sha256": "9366471f390f0619fd45cf4e46f8bcae8df30193e531fd7365254041dea83bfb",
+      "reviewedAt": "2026-09-27",
+      "note": "Timeline P2: the e2e paragraph names the Timeline toggle, #run-timeline, the dock height checks and the height key, and says test:e2e needs a running Vite server (E2E_URL, default 5377)."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -98,9 +98,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "95ba91332028a5142d877122550a9cc0490c90a2a40c04c79769ee7c18e82128",
-      "reviewedAt": "2026-09-26",
-      "note": "Entry budget set at 380,000 and the entry graph check (check:entry-graph, entry-graph.json) added to npm run check; check:bundle freezes the preloaded JavaScript."
+      "sha256": "4cab980ae08e8ef8364303579d6a5211b5a80cfc97e1a0ffa30103db0a16f723",
+      "reviewedAt": "2026-09-27",
+      "note": "Timeline P2: the e2e spec and the entry-graph freeze changed; the workflow text on the freeze rewrite and the gates is unchanged and still correct."
     },
     {
       "document": "docs/HANDOFF.md",
@@ -120,13 +120,13 @@
       "document": "docs/timeline/SPEC.md",
       "inputs": [
         "CONTEXT.md",
-        "src/panels/analysis/EngagementStrip.tsx",
+        "src/panels/timeline/RunTimeline.tsx",
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "dea556e12f355655adcb48bccc7a57711d4dfa8485e87d66c6ecdb2856f71f6d",
-      "reviewedAt": "2026-09-26",
-      "note": "Phase 1 built; the spec stays unmodified while phases run. The summary departs from section 2.1 (nodes and members with first steps in place of memberSensorIds); HANDOFF records the departures."
+      "sha256": "55cc48fe5bc1cfb07c9bcfc778d4637df074a6d160404809a599961e629a8409",
+      "reviewedAt": "2026-09-27",
+      "note": "Timeline P2 integration: the spec is unmodified; its input moves from the deleted EngagementStrip.tsx to src/panels/timeline/RunTimeline.tsx. Line 5 still links the deleted file; the orchestrator owns that edit."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "49bf55753c384887d515e75f8f855ab82ec215213a4760c448a19aafee2d6548",
-      "reviewedAt": "2026-09-26",
-      "note": "Run timeline Phase 1 adds src/charts/timeViewport.ts, pure window math with no visual rule; no text changes."
+      "sha256": "bc556280483cc267b0f4b88635e6c7cabb8ed97cb993ade0ef93de51dd58c5f4",
+      "reviewedAt": "2026-09-27",
+      "note": "Timeline P2: the run timeline rules (the .runtl prefix, the order, row and sub-lane heights, inks, glyphs, the resizer, the 11 px floor, mono for machine data) and the Timeline toggle in the transport."
     }
   ],
   "historical": [
