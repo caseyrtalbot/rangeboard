@@ -100,8 +100,6 @@ export function RunTimeline() {
               </button>
             )}
           </div>
-          <Axis base={base} follow={follow} durationS={durationS} widthPx={widthPx} />
-          <Overview model={model} base={base} follow={follow} widthPx={widthPx} />
           <div className="runtl-scroll">
             <Gutter lines={layout.lines} />
             <div className="runtl-plotcol" ref={plotRef}>
@@ -117,6 +115,8 @@ export function RunTimeline() {
               />
             </div>
           </div>
+          <Axis base={base} follow={follow} durationS={durationS} widthPx={widthPx} />
+          <Overview model={model} base={base} follow={follow} widthPx={widthPx} />
         </>
       ) : (
         <p className="runtl-empty" role="status">

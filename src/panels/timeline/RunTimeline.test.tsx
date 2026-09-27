@@ -57,6 +57,15 @@ describe('RunTimeline states', () => {
     expect(html).toContain('>Shown through T+0:03<')
     expect(html).toContain('T+ from run start')
   })
+
+  it('puts the axis and the overview under the scrolling rows, as the mockup does', () => {
+    const html = render()
+    const at = ['runtl-head', 'runtl-scroll', 'runtl-axis', 'runtl-over'].map((c) =>
+      html.indexOf(`class="${c}"`),
+    )
+    expect(at.every((i) => i >= 0)).toBe(true)
+    expect([...at].sort((a, b) => a - b)).toEqual(at)
+  })
 })
 
 describe('RunTimeline rows', () => {
