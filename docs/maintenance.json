@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "55cc48fe5bc1cfb07c9bcfc778d4637df074a6d160404809a599961e629a8409",
+      "sha256": "3295240dccfba8c964cf1bde39a38c2f30711cc325e857174bcc5cfa30c28750",
       "reviewedAt": "2026-09-27",
-      "note": "Timeline P2 integration: the spec is unmodified; its input moves from the deleted EngagementStrip.tsx to src/panels/timeline/RunTimeline.tsx. Line 5 still links the deleted file; the orchestrator owns that edit."
+      "note": "Phase 2 deleted EngagementStrip.tsx; the dead link becomes code text. No plan content changed."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

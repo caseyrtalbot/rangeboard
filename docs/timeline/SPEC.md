@@ -2,7 +2,7 @@
 
 The run timeline is the strip under the board that shows every platform's activity in one
 run on one time axis. It replaces the threat-only engagement strip
-([EngagementStrip.tsx](../../src/panels/analysis/EngagementStrip.tsx)). Vocabulary is in
+(`src/panels/analysis/EngagementStrip.tsx`, deleted in Phase 2). Vocabulary is in
 [CONTEXT.md](../../CONTEXT.md). Decisions were settled with the user on 2026-09-26. The
 mockup is a published artifact: <https://claude.ai/artifact/PYWeMH5tEhE9fNS9uhrBEt>. This
 file is the one plan. It stays unmodified while phases run; [HANDOFF.md](../HANDOFF.md)
