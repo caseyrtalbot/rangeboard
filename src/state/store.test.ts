@@ -1850,7 +1850,9 @@ describe('run timeline state', () => {
 
   it('reads a missing, invalid or short saved height as the default', async () => {
     for (const saved of [null, 'tall', 'Infinity', '80']) {
-      stubStorage(saved == null ? { [ENGSTRIP_OPEN_KEY]: '0' } : { [RUN_TIMELINE_HEIGHT_KEY]: saved })
+      stubStorage(
+        saved == null ? { [ENGSTRIP_OPEN_KEY]: '0' } : { [RUN_TIMELINE_HEIGHT_KEY]: saved },
+      )
       const fresh = await freshStore()
       expect(fresh.getState().ui.runTimeline.open).toBe(false)
       expect(fresh.getState().ui.runTimeline.heightPx).toBe(RUN_TIMELINE_DEFAULT_H)

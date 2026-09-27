@@ -249,7 +249,7 @@ test('drawer: a selection keeps it closed and a resize drag past the minimum clo
   assert.deepEqual(errors, [])
 })
 
-test('playback bar: the Engagement toggle opens the strip above the bar and pushes the canvas up', async (t) => {
+test('playback bar: the Timeline toggle opens the run timeline above the bar and pushes the canvas up', async (t) => {
   const { page, errors } = await open(t)
   // D9: the transport renders in Execute and Analyze only.
   assert.equal(await has(page, '.timeline'), false, 'no transport in Prepare')
@@ -261,23 +261,25 @@ test('playback bar: the Engagement toggle opens the strip above the bar and push
   const h0 = await hostHeight()
   const bar0 = await barBox()
   assert.equal(Math.round(bar0.height), 28, 'the transport is 28 px high')
-  assert.equal(await has(page, '#engagement-strip'), false, 'the strip starts closed')
-  assert.equal(await page.getAttribute('#engagement-toggle', 'aria-expanded'), 'false')
-  await page.click('#engagement-toggle')
-  await waitFor(page, () => document.querySelector('#engagement-strip'))
-  assert.equal(await page.getAttribute('#engagement-toggle', 'aria-expanded'), 'true')
+  assert.equal(await has(page, '#run-timeline'), false, 'the run timeline starts closed')
+  assert.equal(await has(page, '.runtl-dock'), false, 'no dock mounts while closed')
+  assert.equal(await page.getAttribute('#run-timeline-toggle', 'aria-expanded'), 'false')
+  await page.click('#run-timeline-toggle')
+  await waitFor(page, () => document.querySelector('#run-timeline'))
+  assert.equal(await page.getAttribute('#run-timeline-toggle', 'aria-expanded'), 'true')
   assert.equal(await openFlag(), '1')
-  const strip = await page.locator('#engagement-strip').boundingBox()
+  const dock = await page.locator('.runtl-dock').boundingBox()
   const bar1 = await barBox()
-  const gap = Math.abs(strip.y + strip.height - bar1.y)
-  assert.ok(gap <= 1, `the strip bottom meets the bar top: ${gap}`)
+  const gap = Math.abs(dock.y + dock.height - bar1.y)
+  assert.ok(gap <= 1, `the dock bottom meets the bar top: ${gap}`)
   const h1 = await hostHeight()
-  assert.ok(h1 < h0, `the strip takes canvas height: ${h1} vs ${h0}`)
+  assert.ok(h0 - h1 >= dock.height - 1, `the canvas gives the dock its height: ${h1} vs ${h0}`)
   assert.equal(Math.round(bar1.height), 28, 'the bar keeps its height')
-  await page.click('#engagement-toggle')
-  await waitFor(page, () => !document.querySelector('#engagement-strip'))
+  await page.click('#run-timeline-toggle')
+  await waitFor(page, () => !document.querySelector('#run-timeline'))
+  assert.equal(await has(page, '.runtl-dock'), false, 'the dock unmounts on close')
   assert.equal(await openFlag(), '0')
-  assert.equal(await hostHeight(), h0, 'the canvas takes the strip height back')
+  assert.equal(await hostHeight(), h0, 'the canvas takes the dock height back')
   assert.deepEqual(errors, [])
 })
 
@@ -321,9 +323,12 @@ test('status bar: 24 px, run id first, extra chips fold into a counted ROE chip'
   assert.deepEqual(errors, [])
 })
 
-test('playback bar: the engagement open state is restored from storage', async (t) => {
+test('playback bar: the run timeline open state and height are restored from storage', async (t) => {
   const { page, errors } = await open(t)
-  await page.evaluate(() => localStorage.setItem('rangeboard.engstrip.open', '1'))
+  await page.evaluate(() => {
+    localStorage.setItem('rangeboard.engstrip.open', '1')
+    localStorage.setItem('rangeboard.runtimeline.height', '300')
+  })
   // The reload loads the autosaved scenario, not the fixture; only the strip is asserted.
   await page.reload({ waitUntil: 'load' })
   await page.waitForFunction(
@@ -332,10 +337,13 @@ test('playback bar: the engagement open state is restored from storage', async (
     { timeout: 60000 },
   )
   // The board boots in Prepare, where no transport renders (D9).
+  assert.equal(await has(page, '.runtl-dock'), false, 'no dock in Prepare')
   await page.click('#board-phase-execute')
   await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
-  await waitFor(page, () => document.querySelector('#engagement-strip'))
-  assert.equal(await page.getAttribute('#engagement-toggle', 'aria-expanded'), 'true')
+  await waitFor(page, () => document.querySelector('#run-timeline'))
+  assert.equal(await page.getAttribute('#run-timeline-toggle', 'aria-expanded'), 'true')
+  const dock = await page.locator('.runtl-dock').boundingBox()
+  assert.equal(Math.round(dock.height), 300, 'the dock is 300 px high')
   assert.deepEqual(errors, [])
 })
 
