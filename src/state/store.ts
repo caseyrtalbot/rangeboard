@@ -347,8 +347,12 @@ export interface Store {
   setTheme: (t: Theme) => void
   setMoveUnderlay: (v: boolean) => void
   setRunTimelineOpen: (open: boolean) => void
-  /** Clamps to at least RUN_TIMELINE_MIN_H; the resizer applies the window limit. */
-  setRunTimelineHeight: (px: number) => void
+  /**
+   * Clamps to at least RUN_TIMELINE_MIN_H; the resizer applies the window limit.
+   * `persist` false skips the storage write: a drag updates the store per frame
+   * and saves once when it ends.
+   */
+  setRunTimelineHeight: (px: number, persist?: boolean) => void
   toggleRunTimelineGroup: (key: RunTimelineKind) => void
   toggleRunTimelineSensor: (rowKey: string) => void
   toggleRunTimelineFold: (foldKey: string) => void
@@ -1428,9 +1432,9 @@ export const useStore = create<Store>()((set, get) => {
       writeSetting(ENGSTRIP_OPEN_KEY, open ? '1' : '0')
       patchRunTimeline({ open })
     },
-    setRunTimelineHeight: (px) => {
+    setRunTimelineHeight: (px, persist = true) => {
       const heightPx = Math.max(RUN_TIMELINE_MIN_H, Math.round(px))
-      writeSetting(RUN_TIMELINE_HEIGHT_KEY, String(heightPx))
+      if (persist) writeSetting(RUN_TIMELINE_HEIGHT_KEY, String(heightPx))
       patchRunTimeline({ heightPx })
     },
     toggleRunTimelineGroup: (key) =>

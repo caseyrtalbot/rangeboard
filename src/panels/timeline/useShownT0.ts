@@ -1,6 +1,15 @@
+import { PUBLISH_PERIOD_MS } from '../../canvas/frameClock'
 import { followViewport, type TimeViewport } from '../../charts/timeViewport'
 import { selectSimTimeS } from '../../state/selectors'
 import { useStore } from '../../state/store'
+
+/**
+ * One publication period, linear. The pan wrapper, the playhead, the axis ticks
+ * and the overview window all use it, so they move in step between publications.
+ * Each gliding element is keyed by its scale: a width or zoom change remounts
+ * it, so only a pan at a fixed scale glides.
+ */
+export const GLIDE = `transform ${PUBLISH_PERIOD_MS}ms linear`
 
 /**
  * The shown viewport start. With Follow on it tracks the clock, so only the

@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import type { RunTimelineModel } from '../../analysis/runTimeline'
 import type { TimeViewport } from '../../charts/timeViewport'
-import { useShownT0 } from './useShownT0'
+import { GLIDE, useShownT0 } from './useShownT0'
 
 const OVER_H = 22
 /** Threat ramp band height, px; many threats share the band. */
@@ -77,7 +77,10 @@ const Picture = memo(function Picture({
   )
 })
 
-/** The viewport rectangle; it follows the clock with Follow on. */
+/**
+ * The viewport rectangle; it follows the clock with Follow on, with the rows'
+ * glide. Keyed by scale, so a width change moves it without a glide.
+ */
 function Window({
   base,
   follow,
@@ -94,8 +97,10 @@ function Window({
   const scale = widthPx / durationS
   return (
     <rect
+      key={scale}
       className="runtl-over-window"
-      x={t0S * scale}
+      style={{ transform: `translateX(${t0S * scale}px)`, transition: GLIDE }}
+      x={0}
       y={0.5}
       width={Math.max(2, base.winS * scale)}
       height={OVER_H - 1}

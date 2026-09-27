@@ -78,7 +78,9 @@ export function stripLayout(model: RunTimelineModel, state: LineState): StripLay
       const members = entry.rows.filter((row) => !hidden.has(row.key))
       if (members.length === 0) continue
       const foldOpen = state.openFolds.includes(entry.key)
-      push({ t: 'fold', key: entry.key, label: entry.label, rows: members, open: foldOpen }, ROW_H)
+      // The label counts the shown members, so a hidden member leaves the count.
+      const label = `${entry.base} ×${members.length}`
+      push({ t: 'fold', key: entry.key, label, rows: members, open: foldOpen }, ROW_H)
       if (foldOpen) for (const row of members) pushRow(row, true)
     }
   }
@@ -98,6 +100,15 @@ export function spanBox(span: RunTimelineSpan, pxPerS: number): { x: number; w: 
 /** The pan wrapper's horizontal shift for a viewport start, px. */
 export function panPx(t0S: number, pxPerS: number): number {
   return -t0S * pxPerS
+}
+
+/**
+ * The playhead's absolute run-time x, px. At the run end the plot's right edge
+ * would clip it, so it stops one pixel inside. Unrounded, like the pan and the
+ * marks, so it sits on a mark at the same time.
+ */
+export function playheadX(tS: number, durationS: number, pxPerS: number): number {
+  return Math.max(0, Math.min(tS * pxPerS, durationS * pxPerS - 1))
 }
 
 /** A span's duration as printed on it. */

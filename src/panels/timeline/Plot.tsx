@@ -1,26 +1,28 @@
 import { memo, useId, type ReactNode } from 'react'
-import { PUBLISH_PERIOD_MS } from '../../canvas/frameClock'
 import type { TimeViewport } from '../../charts/timeViewport'
 import { selectSimTimeS } from '../../state/selectors'
 import { useStore } from '../../state/store'
 import { LaneItems } from './LaneMarks'
-import { panPx, type Placed } from './layout'
-import { useShownT0 } from './useShownT0'
-
-/** One publication period, linear, so the pan and the playhead move in step. */
-const GLIDE = `transform ${PUBLISH_PERIOD_MS}ms linear`
+import { panPx, playheadX, type Placed } from './layout'
+import { GLIDE, useShownT0 } from './useShownT0'
 
 /**
  * The playhead subscribes to the clock alone. It sits at the absolute run-time
  * x inside the pan wrapper; a linear transition over one publication period
  * carries it between publications.
  */
-const Playhead = memo(function Playhead({ pxPerS }: { pxPerS: number }) {
+const Playhead = memo(function Playhead({
+  pxPerS,
+  durationS,
+}: {
+  pxPerS: number
+  durationS: number
+}) {
   const t = useStore(selectSimTimeS)
   return (
     <div
       className="runtl-playhead"
-      style={{ transform: `translateX(${Math.round(t * pxPerS)}px)`, transition: GLIDE }}
+      style={{ transform: `translateX(${playheadX(t, durationS, pxPerS)}px)`, transition: GLIDE }}
     />
   )
 })
@@ -28,6 +30,7 @@ const Playhead = memo(function Playhead({ pxPerS }: { pxPerS: number }) {
 /**
  * The pan wrapper: the only plot element that re-renders on a Follow update.
  * Its children are created by Plot, so they keep their identity and skip.
+ * Plot keys it by scale, so a width or zoom change does not glide.
  */
 function Pan({
   base,
@@ -157,7 +160,7 @@ export const Plot = memo(function Plot({
       <svg className="runtl-grounds" width={widthPx} height={heightPx} aria-hidden="true">
         <Grounds lines={lines} widthPx={widthPx} />
       </svg>
-      <Pan base={base} follow={follow} durationS={durationS} pxPerS={pxPerS}>
+      <Pan key={pxPerS} base={base} follow={follow} durationS={durationS} pxPerS={pxPerS}>
         <svg className="runtl-svg" width={widthPx} height={heightPx} aria-hidden="true">
           <defs>
             <pattern
@@ -178,7 +181,7 @@ export const Plot = memo(function Plot({
           )}
           <Rows lines={lines} pxPerS={pxPerS} hatch={hatch} />
         </svg>
-        <Playhead pxPerS={pxPerS} />
+        <Playhead pxPerS={pxPerS} durationS={durationS} />
       </Pan>
     </div>
   )

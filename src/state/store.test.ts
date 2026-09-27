@@ -1834,6 +1834,18 @@ describe('run timeline state', () => {
     expect([...storage.keys()].sort()).toEqual([ENGSTRIP_OPEN_KEY, RUN_TIMELINE_HEIGHT_KEY].sort())
   })
 
+  it('updates the height without a storage write when persist is false', () => {
+    const storage = stubStorage({ [RUN_TIMELINE_HEIGHT_KEY]: '300' })
+    const writes = vi.spyOn(localStorage, 'setItem')
+    useStore.getState().setRunTimelineHeight(250.4, false)
+    expect(useStore.getState().ui.runTimeline.heightPx).toBe(250)
+    expect(storage.get(RUN_TIMELINE_HEIGHT_KEY)).toBe('300')
+    expect(writes).not.toHaveBeenCalled()
+    useStore.getState().setRunTimelineHeight(260)
+    expect(storage.get(RUN_TIMELINE_HEIGHT_KEY)).toBe('260')
+    writes.mockRestore()
+  })
+
   it('clamps the height to the minimum', () => {
     const storage = stubStorage()
     useStore.getState().setRunTimelineHeight(40)

@@ -5,8 +5,11 @@ import { xOf } from '../../charts/timeViewport'
 import type { RunTimelineUi } from '../../state/store'
 import { useStore } from '../../state/store'
 import { installTrial, observeTrial, unstartTrial } from '../analysis/trialTestState'
+import { Axis } from './Axis'
 import { LaneItems } from './LaneMarks'
 import { panPx, spanBox } from './layout'
+import { Overview } from './Overview'
+import { Plot } from './Plot'
 import { RunTimeline } from './RunTimeline'
 
 function render() {
@@ -56,6 +59,15 @@ describe('RunTimeline states', () => {
     expect(html).toContain('aria-label="Run timeline. Shown through T+0:03"')
     expect(html).toContain('>Shown through T+0:03<')
     expect(html).toContain('T+ from run start')
+  })
+
+  it('holds the Analyze horizon at the observed end while the cursor scrubs back', () => {
+    observeTrial(60, 5)
+    expect(render()).toContain('>Shown through T+0:05<')
+    useStore.getState().setBoardPhase('analyze')
+    const html = render()
+    expect(html).toContain('>Shown through T+1:00<')
+    expect(html).toContain('aria-label="Run timeline. Shown through T+1:00"')
   })
 
   it('puts the axis and the overview under the scrolling rows, as the mockup does', () => {
@@ -169,5 +181,58 @@ describe('RunTimeline viewport mapping', () => {
     )
     expect(html).toContain('width="36"')
     expect(html).not.toContain('>12 s<')
+  })
+})
+
+describe('RunTimeline transforms', () => {
+  const base = { t0S: 30, winS: 60 }
+  const glide = 'transition:transform 100ms linear'
+
+  it('draws axis ticks at absolute run-time x inside the rows pan and glide', () => {
+    const html = renderToStaticMarkup(
+      <Axis base={base} follow={false} durationS={300} widthPx={600} pxPerS={10} />,
+    )
+    expect(html).toContain(`style="transform:translateX(${panPx(30, 10)}px);${glide}"`)
+    // One window either side of the shown one, clipped at 0: ticks 0 to 150 s every 10 s.
+    expect(html).toContain('x1="0"')
+    expect(html).toContain('x1="600"')
+    expect(html).toContain('x1="1500"')
+    expect(html).not.toContain('x1="1600"')
+  })
+
+  it('moves the overview window with the same glide', () => {
+    const model = { durationS: 300, horizonS: 300, groups: [] }
+    const html = renderToStaticMarkup(
+      <Overview model={model} base={base} follow={false} widthPx={600} />,
+    )
+    expect(html).toContain(`style="transform:translateX(60px);${glide}" x="0"`)
+  })
+
+  it('keeps the playhead inside the plot at the run end, unrounded like the pan', () => {
+    installTrial(300)
+    observeTrial(300, 300)
+    // A server render reads the initial state, as render() arranges.
+    const plot = (t0S: number) => {
+      Object.assign(useStore.getInitialState(), useStore.getState())
+      return renderToStaticMarkup(
+        <Plot
+          lines={[]}
+          heightPx={100}
+          widthPx={600}
+          pxPerS={5}
+          base={{ t0S, winS: 120 }}
+          follow={false}
+          durationS={300}
+          horizonS={300}
+        />,
+      )
+    }
+    const end = plot(180)
+    expect(end).toContain(`class="runtl-pan" style="transform:translateX(-900px);${glide}"`)
+    // 1499 - 900 = 599: the playhead's one pixel is the plot's last column.
+    expect(end).toContain(`class="runtl-playhead" style="transform:translateX(1499px);${glide}"`)
+    observeTrial(300, 100.1)
+    expect(plot(10.3)).toContain('translateX(-51.5px)')
+    expect(plot(10.3)).toContain('translateX(500.5px)')
   })
 })

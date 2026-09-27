@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { runTimelineOf } from '../../analysis/runTimeline'
 import { clampViewport, DEFAULT_WINDOW_S, type TimeViewport } from '../../charts/timeViewport'
 import { formatTime } from '../../geometry/geo'
+import { selectBoardPhase } from '../../state/selectors'
 import { useStore } from '../../state/store'
-import type { TrialSelection } from '../../state/trialSelectors'
+import { selectTrialHorizon, type TrialSelection } from '../../state/trialSelectors'
 import { trialViewOf, useTrialResult } from '../analysis/controls'
 import { Axis } from './Axis'
 import { Gutter } from './Gutter'
@@ -39,10 +40,13 @@ function scopeText(horizonS: number | null): string {
 export function RunTimeline() {
   const trial = useTrialResult()
   const view = trialViewOf(trial)
-  const model = useMemo(
-    () => (view ? runTimelineOf(view, trial.horizon) : null),
-    [view, trial.horizon],
+  // SPEC 1.4: in Analyze the horizon is the run's observed end, not the cursor.
+  // The selector still bounds it by what the run and the trial observed.
+  const analyzeHorizon = useStore((s) =>
+    selectBoardPhase(s) === 'analyze' ? selectTrialHorizon(s, Infinity) : null,
   )
+  const horizonS = analyzeHorizon ?? trial.horizon
+  const model = useMemo(() => (view ? runTimelineOf(view, horizonS) : null), [view, horizonS])
   const openGroups = useStore((s) => s.ui.runTimeline.openGroups)
   const openSensors = useStore((s) => s.ui.runTimeline.openSensors)
   const openFolds = useStore((s) => s.ui.runTimeline.openFolds)
@@ -61,10 +65,11 @@ export function RunTimeline() {
   )
 
   // The plot column's width sets the scale; the axis and the overview share it.
+  // A layout effect measures before the first paint, so no frame draws at scale 0.
   const [widthPx, setWidthPx] = useState(0)
   const plotRef = useRef<HTMLDivElement | null>(null)
   const hasModel = model != null
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = plotRef.current
     if (!el) return
     const ro = new ResizeObserver(() => setWidthPx(el.clientWidth))
@@ -115,7 +120,13 @@ export function RunTimeline() {
               />
             </div>
           </div>
-          <Axis base={base} follow={follow} durationS={durationS} widthPx={widthPx} />
+          <Axis
+            base={base}
+            follow={follow}
+            durationS={durationS}
+            widthPx={widthPx}
+            pxPerS={pxPerS}
+          />
           <Overview model={model} base={base} follow={follow} widthPx={widthPx} />
         </>
       ) : (

@@ -11,7 +11,7 @@ export const GROUP_AT = 14
 
 export type ThreatEntry =
   | { t: 'row'; row: RunTimelineRow }
-  | { t: 'fold'; key: string; label: string; rows: RunTimelineRow[] }
+  | { t: 'fold'; key: string; base: string; label: string; rows: RunTimelineRow[] }
 
 /** The fold key for a label base; the store's `openFolds` holds these. */
 export function foldKey(base: string): string {
@@ -36,6 +36,7 @@ export function foldThreats(rows: readonly RunTimelineRow[]): ThreatEntry[] {
       out.push({
         t: 'fold',
         key: foldKey(base),
+        base,
         label: `${base} ×${members.length}`,
         rows: members,
       })

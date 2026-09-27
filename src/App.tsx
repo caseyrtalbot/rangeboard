@@ -92,17 +92,33 @@ function useInnerHeight(): number {
 
 /**
  * The drag handle above the run timeline. The strip grows upward, so dragging up
- * or ArrowUp makes it taller. A drag writes the store at most once per frame.
+ * or ArrowUp makes it taller. A drag writes the store at most once per frame
+ * without a storage write, and saves once at its end, only when the height
+ * changed; a click saves nothing, so a window-clamped height is never stored.
  */
 function RunTimelineResizer({ height, maxH }: { height: number; maxH: number }) {
-  const drag = useRef<{ y: number; h: number; next: number; raf: number } | null>(null)
+  const drag = useRef<{
+    y: number
+    h: number
+    saved: number
+    next: number
+    raf: number
+    wrote: boolean
+  } | null>(null)
   const clamp = (h: number) => Math.min(maxH, Math.max(RUN_TIMELINE_MIN_H, h))
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.button !== 0) return
     e.preventDefault()
     e.currentTarget.setPointerCapture(e.pointerId)
-    drag.current = { y: e.clientY, h: height, next: height, raf: 0 }
+    drag.current = {
+      y: e.clientY,
+      h: height,
+      saved: useStore.getState().ui.runTimeline.heightPx,
+      next: height,
+      raf: 0,
+      wrote: false,
+    }
   }
 
   function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
@@ -112,7 +128,8 @@ function RunTimelineResizer({ height, maxH }: { height: number; maxH: number }) 
     if (d.raf) return
     d.raf = requestAnimationFrame(() => {
       d.raf = 0
-      useStore.getState().setRunTimelineHeight(d.next)
+      d.wrote = true
+      useStore.getState().setRunTimelineHeight(d.next, false)
     })
   }
 
@@ -121,7 +138,10 @@ function RunTimelineResizer({ height, maxH }: { height: number; maxH: number }) 
     if (!d) return
     drag.current = null
     if (d.raf) cancelAnimationFrame(d.raf)
-    useStore.getState().setRunTimelineHeight(d.next)
+    const st = useStore.getState()
+    if (d.next !== d.h) st.setRunTimelineHeight(d.next)
+    // A drag that returned to its start restores the saved height it began with.
+    else if (d.wrote) st.setRunTimelineHeight(d.saved, false)
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
     }
