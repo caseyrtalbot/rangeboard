@@ -1,7 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useStore } from '../state/store'
-import type { Store } from '../state/store'
 import { defaultFrameName } from '../state/labels'
 import {
   selectDurationS,
@@ -17,12 +16,6 @@ import { usePopover } from '../ui/usePopover'
 import { IconPause, IconPlay, IconReset } from '../ui/icons'
 
 const SPEEDS = [1, 2, 5, 10, 30]
-
-/** Threats the engagement strip lists: `uas` entities that have a flight path. */
-function selectThreatCount(s: Store): number {
-  const { entities, paths } = s.scenario
-  return entities.filter((e) => e.kind === 'uas' && paths.some((p) => p.entityId === e.id)).length
-}
 
 /**
  * The `+ Frame` popover: one name field and Save. An empty name saves under the
@@ -133,19 +126,13 @@ export function usePlaybackLoop() {
 }
 
 /**
- * Bottom transport: play/pause, scrub, speed, the frames strip and the Engagement
+ * Bottom transport: play/pause, scrub, speed, the frames strip and the Timeline
  * toggle. It owns the one requestAnimationFrame loop that publishes
  * `playback.simTimeS` every PUBLISH_PERIOD_MS of wall time, at every speed. Each
  * publication advances sim time by the measured wall time at playback speed, so
  * the clock does not drift.
  */
-export const TimelineBar = memo(function TimelineBar({
-  engagementOpen,
-  onToggleEngagement,
-}: {
-  engagementOpen: boolean
-  onToggleEngagement: () => void
-}) {
+export const TimelineBar = memo(function TimelineBar() {
   const { playing, speedMult } = useStore(useShallow(selectPlaybackFlags))
   const trialStatus = useStore((s) => s.trial.status)
   const playLabel = useStore(selectPlayLabel)
@@ -153,9 +140,16 @@ export const TimelineBar = memo(function TimelineBar({
   const durationS = useStore(selectDurationS)
   const frames = useStore(selectFrames)
   const waves = useStore(selectWaves)
-  const threatCount = useStore(selectThreatCount)
-  const { scrubTo, setSpeedMult, applyFrame, deleteFrame, setWaveDelay, patchScenario } =
-    useStore.getState()
+  const timelineOpen = useStore((s) => s.ui.runTimeline.open)
+  const {
+    scrubTo,
+    setSpeedMult,
+    applyFrame,
+    deleteFrame,
+    setWaveDelay,
+    patchScenario,
+    setRunTimelineOpen,
+  } = useStore.getState()
 
   return (
     <div className="timeline">
@@ -263,14 +257,14 @@ export const TimelineBar = memo(function TimelineBar({
 
       <button
         type="button"
-        id="engagement-toggle"
-        className="mini engagement-toggle"
-        aria-expanded={engagementOpen}
-        aria-controls="engagement-strip"
-        title="Engagement timeline"
-        onClick={onToggleEngagement}
+        id="run-timeline-toggle"
+        className="mini run-timeline-toggle"
+        aria-expanded={timelineOpen}
+        aria-controls="run-timeline"
+        title="Run timeline"
+        onClick={() => setRunTimelineOpen(!timelineOpen)}
       >
-        <span className="caret">▴</span> Engagement {threatCount}
+        <span className="caret">▴</span> Timeline
       </button>
     </div>
   )

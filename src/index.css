@@ -2805,7 +2805,7 @@ select.nu-unit {
   flex: none;
 }
 
-.timeline button.mini:not(.engagement-toggle) {
+.timeline button.mini:not(.run-timeline-toggle) {
   margin-left: 0;
 }
 
@@ -2942,7 +2942,7 @@ select.nu-unit {
   }
 }
 
-.engagement-toggle {
+.run-timeline-toggle {
   margin-left: auto;
   flex: none;
   display: inline-flex;
@@ -2951,17 +2951,17 @@ select.nu-unit {
   white-space: nowrap;
 }
 
-.engagement-toggle .caret {
+.run-timeline-toggle .caret {
   display: inline-block;
   transition: transform 140ms linear;
 }
 
-.engagement-toggle[aria-expanded='true'] .caret {
+.run-timeline-toggle[aria-expanded='true'] .caret {
   transform: rotate(180deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .engagement-toggle .caret {
+  .run-timeline-toggle .caret {
     transition: none;
   }
 }

@@ -3,7 +3,7 @@ import { runTrial } from '../playback/trial'
 import { IDLE_TRIAL } from './runState'
 import { selectEffectiveLayers } from './selectors'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useStore } from './store'
+import { RUN_TIMELINE_DEFAULT_H, RUN_TIMELINE_MIN_H, useStore } from './store'
 import { scenarioDurationS } from '../model/scenario'
 import { analysisBasisSignature } from './analysisBasis'
 import { bumpCardVersion } from './labels'
@@ -21,7 +21,13 @@ import {
   savedRunSeq,
   savedView,
 } from '../io/viewState'
-import { RINGS_KEY, RUNSEQ_KEY, VIEW_KEY } from '../io/storageKeys'
+import {
+  ENGSTRIP_OPEN_KEY,
+  RINGS_KEY,
+  RUN_TIMELINE_HEIGHT_KEY,
+  RUNSEQ_KEY,
+  VIEW_KEY,
+} from '../io/storageKeys'
 import { ControlledWorker } from '../playback/controlledWorker'
 
 /** Supply a real retained result for clock tests; async worker ownership lives in store.trial.test. */
@@ -1798,5 +1804,90 @@ describe('Execute phase view state', () => {
       playing: false,
       phase: 'review',
     })
+  })
+})
+
+describe('run timeline state', () => {
+  beforeEach(reset)
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.resetModules()
+  })
+
+  /** A fresh store module, so the initial state reads the stubbed storage. */
+  async function freshStore() {
+    vi.resetModules()
+    return (await import('./store')).useStore
+  }
+
+  it('persists the open flag and the height under their keys', () => {
+    const storage = stubStorage()
+    const st = useStore.getState()
+    st.setRunTimelineOpen(true)
+    expect(useStore.getState().ui.runTimeline.open).toBe(true)
+    expect(storage.get(ENGSTRIP_OPEN_KEY)).toBe('1')
+    st.setRunTimelineOpen(false)
+    expect(storage.get(ENGSTRIP_OPEN_KEY)).toBe('0')
+    st.setRunTimelineHeight(301.6)
+    expect(useStore.getState().ui.runTimeline.heightPx).toBe(302)
+    expect(storage.get(RUN_TIMELINE_HEIGHT_KEY)).toBe('302')
+    expect([...storage.keys()].sort()).toEqual([ENGSTRIP_OPEN_KEY, RUN_TIMELINE_HEIGHT_KEY].sort())
+  })
+
+  it('clamps the height to the minimum', () => {
+    const storage = stubStorage()
+    useStore.getState().setRunTimelineHeight(40)
+    expect(useStore.getState().ui.runTimeline.heightPx).toBe(RUN_TIMELINE_MIN_H)
+    expect(storage.get(RUN_TIMELINE_HEIGHT_KEY)).toBe(String(RUN_TIMELINE_MIN_H))
+  })
+
+  it('restores the open flag and the height at startup', async () => {
+    stubStorage({ [ENGSTRIP_OPEN_KEY]: '1', [RUN_TIMELINE_HEIGHT_KEY]: '300' })
+    const fresh = await freshStore()
+    expect(fresh.getState().ui.runTimeline.open).toBe(true)
+    expect(fresh.getState().ui.runTimeline.heightPx).toBe(300)
+  })
+
+  it('reads a missing, invalid or short saved height as the default', async () => {
+    for (const saved of [null, 'tall', 'Infinity', '80']) {
+      stubStorage(
+        saved == null ? { [ENGSTRIP_OPEN_KEY]: '0' } : { [RUN_TIMELINE_HEIGHT_KEY]: saved },
+      )
+      const fresh = await freshStore()
+      expect(fresh.getState().ui.runTimeline.open).toBe(false)
+      expect(fresh.getState().ui.runTimeline.heightPx).toBe(RUN_TIMELINE_DEFAULT_H)
+    }
+  })
+
+  it('toggles, hides and shows the session fields without storage writes', () => {
+    const storage = stubStorage({ sentinel: 'unchanged' })
+    const writes = vi.spyOn(localStorage, 'setItem')
+    const st = useStore.getState()
+    const tl = () => useStore.getState().ui.runTimeline
+    st.toggleRunTimelineGroup('threat')
+    expect(tl().openGroups).toEqual(['threat'])
+    st.toggleRunTimelineGroup('threat')
+    expect(tl().openGroups).toEqual([])
+    st.toggleRunTimelineSensor('s1')
+    st.toggleRunTimelineFold('f1')
+    expect(tl().openSensors).toEqual(['s1'])
+    expect(tl().openFolds).toEqual(['f1'])
+    st.toggleRunTimelineSensor('s1')
+    st.toggleRunTimelineFold('f1')
+    expect(tl().openSensors).toEqual([])
+    expect(tl().openFolds).toEqual([])
+    st.hideRunTimelineRow('r1')
+    st.hideRunTimelineRow('r1')
+    st.hideRunTimelineRow('r2')
+    expect(tl().hiddenRows).toEqual(['r1', 'r2'])
+    st.showAllRunTimelineRows()
+    expect(tl().hiddenRows).toEqual([])
+    st.setRunTimelineFollow(false)
+    expect(tl().follow).toBe(false)
+    st.setRunTimelineViewport({ t0S: 5, winS: 20 })
+    expect(tl().viewport).toEqual({ t0S: 5, winS: 20 })
+    st.setRunTimelineFollow(true)
+    expect(writes).not.toHaveBeenCalled()
+    expect([...storage]).toEqual([['sentinel', 'unchanged']])
   })
 })
