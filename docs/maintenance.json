@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "373aedf09f31828e757581d56a4dfd4d75780dfb20c765fda2778d42938a95c2",
-      "reviewedAt": "2026-09-26",
-      "note": "Rewritten in place 2026-09-26: Phase 1 record (commits, gate, reviews, spec departures), run timeline follow-ups and landmines added; Phase 2 selected; Row D record and candidates kept."
+      "sha256": "7b2ec5925b82ec5b8be95f22cd58cef4c7b9b91b4542344d9148e3bcb6ea4102",
+      "reviewedAt": "2026-09-27",
+      "note": "Phase 2 recorded (commits, gate, browser check, reviews, departures, follow-ups, landmines); Phase 3 selected; Phase 1 pushed as 019d747."
     },
     {
       "document": "docs/Plan.md",

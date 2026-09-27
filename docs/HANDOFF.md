@@ -12,20 +12,69 @@ commit, push or merge.
 
 [timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
-Phase 1 (the model, no UI) is merged to local `main`. Phase 2 is selected. [Plan.md](Plan.md) is the completed chrome refactor queue (Rows A
-to D merged and pushed as `f4363a3`); it selects nothing.
+Phase 1 (the model, no UI) is on `main`. Phase 2 (the strip) is on `timeline/p2` and
+is not merged. Phase 3 is selected. [Plan.md](Plan.md) is the completed chrome refactor
+queue (Rows A to D merged and pushed as `f4363a3`); it selects nothing.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. Local `main` carries run timeline Phase 1, a
-  fast-forward of `timeline/p1`, and is ahead of `origin/main` (`f4363a3`). It is not
-  pushed. No worktrees and no lane branches remain.
-- Run timeline Phase 1 (2026-09-26) on `timeline/p1` from `f4363a3`: the docs commit
-  `56f93d2` (`CONTEXT.md`, the spec, their index rows and reviews), the contract commit
-  `f50d209`, lane 1A `9913893` (`opus-medium`, the retention summary), lane 1B `91e75de`
-  (`opus-high`, the model), lane 1C `e33e1f1` (`opus-medium`, the viewport), then the
-  integration `3f12c45`, the integrator fixes `839f70f`, the review fixes `81e3bf9` and
-  this handoff. Lane 1B's first run stalled for 600 s with nothing on disk; resumed with
+- Repository `~/Projects/rangeboard`. `main` and `origin/main` are at `019d747` (run
+  timeline Phase 1, pushed 2026-09-26). `timeline/p2` carries Phase 2 on top of
+  `019d747` and ends with this handoff. It is not merged to `main` and not pushed. No
+  worktrees and no lane branches remain.
+- Run timeline Phase 2 (2026-09-27) on `timeline/p2`: the contract commit `4f63211` (the
+  `ui.runTimeline` slice with its session actions, and a stub lazy target), lane 2A
+  `8be6b60` and `bb9a182` (`opus-high`, the strip), lane 2B `c5b6449` and `3f1672c`
+  (`opus-medium`, persistence, mount, resizer, toggle, e2e), the merges `34c663f` and
+  `3cf96c0`, then the integration (`opus-high`): `d43ec18` (the old strip deleted),
+  `2bcacfb` (the layout order of the mockup), `020e540` (the entry-graph freeze
+  rewrite), `80d9de7` (evidence), `46b2897` (docs), `3e1c397` (the SPEC link), then the
+  review fixes `8e58df2` and `abb1b64` (`opus-medium`) and this handoff.
+- What Phase 2 built. `src/panels/timeline/`: `RunTimeline.tsx` is the connected root
+  and its own lazy chunk (about 8.3 kB gzip); `Gutter.tsx`, `Plot.tsx`, `LaneMarks.tsx`
+  (`LaneItems`), `Axis.tsx`, `Overview.tsx`; `fold.ts` (the GROUP_AT fold); `layout.ts`
+  (`stripLayout`, `playheadX`, `spanBox`, `panPx`); `useShownT0.ts` (`GLIDE`). The strip
+  draws groups collapsed to a summary row, group expansion, sensor sub-lanes, the fold,
+  the × hide control, `Show all (n hidden)`, the header with the horizon, the axis and
+  the overview. `ui.runTimeline` in `store.ts`: `open` persists under
+  `ENGSTRIP_OPEN_KEY`, `heightPx` under `RUN_TIMELINE_HEIGHT_KEY`
+  (`rangeboard.runtimeline.height`), the rest is session only. `App.tsx`:
+  `RunTimelineDock` and `RunTimelineResizer`. `TimelineBar.tsx`: the `Timeline` toggle
+  `#run-timeline-toggle`. Deleted: `EngagementStrip.tsx`, its test, `censorLane.ts` and
+  `SEVERITY_RANK`.
+- Phase 2 gate on `abb1b64` (2026-09-27): `npm run check` passes (215 files, 2,349
+  tests, docs and evidence gates green, entry graph 105 of 206, build green);
+  `check:silent` passes; `check:bundle` entry 367,029 against 380,000 and initial
+  385,027 against 400,000 (Phase 1: 368,901 and 386,438); `test:e2e` 13 of 13 on a dev
+  server at 5393. The build prints the Vite chunk-size warning (index 1,254.72 kB against
+  1,250 kB); `main` prints it at 1,260.26 kB.
+- Phase 2 browser check
+  ([evidence](field-te/evidence/run-timeline-p2-2026-09-27/README.md)), 1265 by 900,
+  JIATF-401 laydown (`detection-outside-rings.json`), 30x: frame intervals max 24.9 ms
+  with the strip open (one over 20 ms, none over 33 ms) and 16.8 ms closed; the drawn
+  marks equal the censored model at four paused times; a scrub leaves
+  `observedThroughS` unchanged; Analyze draws 532 of 532 marks and keeps them after a
+  scrub back; the height survives a reload; 0 page errors.
+- Phase 2 reviews. The `opus-high` diff review found no must-fix. Should-fix: the axis
+  jumped while the rows glided; the Analyze horizon followed the cursor; the playhead
+  was clipped at the run end; `stripLayout` had no test. Nits: the fold label count, a
+  storage write per drag frame, a click that saved a clamped height, the first paint at
+  scale 0, the playhead rounding. All closed in `8e58df2`.
+- Spec text Phase 2 departed from, each with its reason: the contract commit wrote the
+  slice and its session actions so both lanes built on real types (the SPEC table gives
+  the store to 2B; 2B added the persistence); the layout is header, rows, axis,
+  overview, as in the mockup; no dock mounts in Prepare, because the transport and its
+  toggle render only outside Prepare (D9), so the SPEC 1.1 Prepare line has no place;
+  the no-trial line reads the SPEC text; durations print on flight, burst and dwell spans
+  only, `after` on effector rows only and `text` on C2 assign marks only, as in the
+  mockup; fold rows and sub-lanes have no × control; no legend; burst uses `--de`; the
+  kind inks come from `KIND_INK`; `setRunTimelineHeight` takes `persist`; the SPEC line
+  5 link to the deleted strip is code text so `docs:check` passes, and
+  `docs/maintenance.json` moves the SPEC review input to `RunTimeline.tsx`. No tooltip,
+  row selection or mark seek exists until Phase 3; the old strip's name-click select and
+  plot drag scrub are gone.
+- Run timeline Phase 1 (2026-09-26) on `timeline/p1` from `f4363a3`, merged to `main` as
+  `019d747`. Lane 1B's first run stalled for 600 s with nothing on disk; resumed with
   writes of about 150 lines and a WIP commit, it finished.
 - What Phase 1 built. `ThreatAssessment.fusedTrack` (`FusedTrackSummary` in `sim.ts`):
   `boundAssessment` derives the first and last fused step, each C2 node that held the
@@ -35,26 +84,8 @@ to D merged and pushed as `f4363a3`); it selects nothing.
   horizon and `observedThroughS`, memoized per view with four models per horizon, a fully
   reached row returned as the same object. `src/charts/timeViewport.ts`: `clampViewport`,
   `followViewport`, `zoomViewport`, `viewportTicks`, `xOf` and `DEFAULT_WINDOW_S`,
-  `MIN_WINDOW_S`, `FOLLOW_AT`, `ZOOM_STEP`. No component imports the model or the
-  viewport yet. ENGINEERING_REFERENCE carries the model paragraph and the summary text.
-- Phase 1 gate on `timeline/p1` (2026-09-26): `npm run check` passes (213 files,
-  2,328 tests, docs and evidence gates green, entry graph 107 of 208, build green);
-  `check:silent` passes; `check:bundle` entry 368,901 against 380,000 and initial
-  386,438 against 400,000 (the retention summary adds 141 entry bytes over Row D's
-  368,760); `schema:check` passes unchanged, since the runtime schema reads only
-  `src/model/types.ts`. `test:e2e` was not run: Phase 1 changes no UI.
-- Phase 1 reviews. The integrator closed two leaks before review (`839f70f`): a later
-  kill hid a track's drop mark and a threat's CPA mark. The `opus-high` diff review found
-  one must-fix (a kill with no planned arrival drew no ghost) and should-fixes (in-range
-  windows ran past a kill; the summary kept only the first node, so a node that took the
-  picture later, or a board where the sensors fused first, lost its C2 marks; no test for
-  the last-member kill, the burst span or a run with no estimates; the zoom no-op skipped
-  the clamp; the tick spacing test asserted 64 px); all closed in `81e3bf9`. Its nit on
-  the formation count is moot: `trialResultOf` holds the attrition ship count equal to
-  the formation count. The `fable-high` censoring review found no must-fix: false track
-  numbering read the whole run (closed in `81e3bf9`), and the C2 assignment route reads
-  the full-run detecting set (open, engine side, see Follow-ups). Its re-check of
-  `81e3bf9` found no leak.
+  `MIN_WINDOW_S`, `FOLLOW_AT`, `ZOOM_STEP`. The Phase 2 strip imports both.
+  ENGINEERING_REFERENCE carries the model paragraph and the summary text.
 - Spec text Phase 1 departed from, each with its reason: the summary is `{ initAtS,
   lastAtS, nodes, members }` in place of `memberSensorIds` (the C2 row needs every node
   that held the picture; the track row meta needs first steps to censor the member
@@ -89,10 +120,7 @@ to D merged and pushed as `f4363a3`); it selects nothing.
   `fbe6ac5` (one must-fix: the drawer resizer wrote the list width from the editor view;
   four should-fix: two status sentences moved from an error line and an (i) to empty-state
   rows, the Run key hint hidden from the accessible name, and handler tests for Palette,
-  ContextMenu and LibraryEditor). The main checkout carries an uncommitted engine-profile
-  section in this file and a `maintenance.json` change from another session; neither is
-  in `chrome/d-int`. Merge `chrome/d-int` to `main` only with the user's authorization, and
-  let that session commit its section first or resolve this file by hand.
+  ContextMenu and LibraryEditor).
 - Row D gate on `chrome/d-int` (2026-09-25): `npm run check` passes (211 files, 2,287 tests,
   docs and evidence gates green, entry graph 107 of 208, build
   green), `test:e2e` 13 of 13 on a dev server at 5395, `check:bundle` entry 368,760 against
@@ -138,6 +166,20 @@ to D merged and pushed as `f4363a3`); it selects nothing.
 Handling: candidates, not rows. Row D took the Row C review items and the class 2, 3 and 4
 canvas deviations. What remains:
 
+From run timeline Phase 2:
+
+- The 172 px gutter truncates sensor names and meta (`Giraffe …`, `KuRFS …` on the
+  JIATF-401 laydown).
+- At the default 240 px height in Execute, the Threats group sits below the scroll fold.
+- The Analyze header reads `Shown through T+25:00`; the mockup reads `Complete · T+25:00`.
+  The mockup's legend is absent.
+- The strip component tests leave `openSensors` set between tests, so they depend on
+  order. No unit test drives the App resizer; the e2e and the capture cover it.
+- With the strip open, one frame interval of 10 s at 30x read 24.9 ms (none over 33 ms).
+  Phase 4 measures the 54-entity board.
+- `docs/Plan.md` line 214 names the deleted `EngagementStrip` mount; it is the completed
+  chrome plan.
+
 From run timeline Phase 1 (each needs a user decision):
 
 - The C2 assignment row: `runTimeline.ts` routes each assignment with `killChainRoutes`
@@ -181,8 +223,6 @@ From the Row D review:
   panel falls back to the analysis screens while the model edits on the left.
 - `DetailTable` cells in the collapsible sections (gates, doctrine, hops, timing) still
   wrap through the `:is(.tb th, .tb td, …)` block and carry no `title`.
-- `npm run test:e2e` needs a running Vite server (`E2E_URL`, default 5377); record that in
-  `VERIFICATION.md` or the lane template.
 
 From the engine profile of 2026-09-25 (100 replicates of the 54-entity board on one
 Node thread, 95 ms per replicate, flat profile; a Rust port was assessed and declined
@@ -241,43 +281,71 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Phase 2 of [timeline/SPEC.md](timeline/SPEC.md): the strip.**
+**Phase 3 of [timeline/SPEC.md](timeline/SPEC.md): interaction.**
 
-- Base: local `main` with Phase 1. Branch `timeline/p2` for the integration; lanes
-  `timeline/p2-a` and `p2-b` in worktrees `~/Projects/rangeboard-wt/tl-2a` and `tl-2b`
-  outside the repository with `node_modules` symlinked to the main checkout.
-- Outcome: the strip of SPEC sections 1.1 to 1.4 in `src/panels/timeline/`, fed by
-  `runTimelineOf` and `timeViewport.ts`; the `ui.runTimeline` slice; the lazy mount, the
-  resizer and the `Timeline` toggle; `EngagementStrip.tsx`, its test, the `.engstrip` CSS
-  and `censorLane.ts` deleted; the entry-graph freeze rewritten once with the reason.
-- Order: lanes 2A (`opus-high`) and 2B (`opus-medium`) in parallel with the file
-  ownership in the SPEC Phase 2 table, then the integration (`opus-high`).
-- Inputs from Phase 1: call `runTimelineOf(view, trial.horizon)` with
-  `view = trialViewOf(trial)`, the horizon `EngagementStrip` reads today. The component
-  never compares a time with the horizon. Key memoized rows by `row.key` and keep the row
-  object identity. Take the window constants from `timeViewport.ts`. Lane 2A builds the
-  GROUP_AT fold as a pure helper under `src/panels/timeline/` with a test.
+- Base: `main` once the user merges `timeline/p2`; until then, `timeline/p2`. Branch
+  `timeline/p3` for the integration; lanes `timeline/p3-a` and `p3-b` in worktrees
+  `~/Projects/rangeboard-wt/tl-3a` and `tl-3b` outside the repository with
+  `node_modules` symlinked to the main checkout.
+- Outcome: SPEC section 1.5 and the 1.3 controls. A row label click selects through the
+  existing selection action (a track row selects its threat; a false track selects
+  nothing). Board selection highlights the row and scrolls it into view. A mark click
+  seeks through `scrub` and turns Follow off. Hover shows a strip-relative tooltip with
+  times, quality and pk. Ctrl or Meta wheel and pinch zoom about the cursor; a
+  horizontal wheel and an overview drag pan and turn Follow off. Follow, Fit, Zoom in,
+  Zoom out, Collapse all and Expand all controls; Play and Follow turn Follow on;
+  Escape closes the tooltip; reduced motion is respected.
+- Order: a contract commit first (the integrator, on `timeline/p3`): the store actions
+  the lanes need (Collapse all and Expand all set `openGroups` whole; a seek sets
+  `follow` off) and the prop or hook signatures between the lanes and `RunTimeline.tsx`,
+  `Gutter.tsx`, `Plot.tsx`. Then lanes 3A and 3B (`opus-medium`) in parallel with the
+  file ownership in the SPEC Phase 3 table, then the integration (`opus-medium`).
+- Inputs from Phase 2: the row label in `Gutter.tsx` is plain text; Phase 3 makes it a
+  button. `setRunTimelineFollow` and `setRunTimelineViewport` exist and nothing calls
+  them yet. `Overview.tsx` exists; lane 3B adds the drag to it. The pan wrapper, the
+  playhead, the axis tick group and the overview window share one transform and the
+  `GLIDE` transition, keyed by scale; a drag pan must render without the glide. The
+  model horizon is `trial.horizon` in Execute and `selectTrialHorizon(s, Infinity)` in
+  Analyze.
 - Brief shape per `~/.claude/rules/delegation.md`. Tell each worker to write a large file
   in parts of about 150 lines and to make a WIP commit once it typechecks.
-- Exclusions: no engine or physics change; no edit to `runTimeline.ts` or
-  `timeViewport.ts` except an integrator fix with a test.
-- Completion checks: the SPEC Phase 2 gates, the browser check at 1265 px on the
-  JIATF-401 laydown with evidence under `docs/field-te/evidence/run-timeline-p2-<date>/`
-  and `oxipng`, the PROJECT_GUIDE, DESIGN_SYSTEM, VERIFICATION and ENGINEERING_REFERENCE
-  edits with `docs:review`, and the `opus-high` diff review with must-fix items closed.
-- Next action: branch `timeline/p2` from `main`, create the two worktrees, launch 2A
-  and 2B.
-- Stop condition: Phase 2 merged to `main` with the user's authorization, this file
-  rewritten to select Phase 3 with the Phase 2 evidence, worktrees removed.
+- Exclusions: no engine or physics change; no interaction advances `observedThroughS`;
+  no edit to `runTimeline.ts` or `timeViewport.ts` except an integrator fix with a test.
+- Completion checks: the SPEC Phase 3 gates; the browser check of every interaction in
+  section 1.5 with evidence under `docs/field-te/evidence/run-timeline-p3-<date>/` and
+  `oxipng`; the docs updated with `docs:review`; the `opus-high` diff review and the
+  `fable-high` check that no interaction advances `observedThroughS` (a store test and
+  browser evidence), must-fix items closed.
+- Next action: the user decides the merge of `timeline/p2` to `main` and the push. Then
+  branch `timeline/p3`, write the contract commit, create the two worktrees and launch
+  3A and 3B.
+- Stop condition: Phase 3 merged to `main` with the user's authorization, this file
+  rewritten to select Phase 4 with the Phase 3 evidence, worktrees removed.
 
 ## Landmines
 
 - Run timeline (see [timeline/SPEC.md](timeline/SPEC.md) section 5): keep
-  `ENGSTRIP_OPEN_KEY` exported with the value `rangeboard.engstrip.open`;
-  `storageManagement.ts` derives live keys from the exports. The e2e playback-bar tests
-  name the Engagement toggle; rename them with the toggle in Phase 2. Moving the strip to
-  a lazy chunk changes the entry-graph freeze; rewrite it once with `--write` and name
-  the reason in the commit.
+  `ENGSTRIP_OPEN_KEY` exported with the value `rangeboard.engstrip.open`; it holds the
+  run timeline open flag, and `RUN_TIMELINE_HEIGHT_KEY` holds the height.
+  `storageManagement.ts` derives live keys from the exports. The e2e reads
+  `#run-timeline-toggle`, `#run-timeline` and `.runtl-dock`.
+- `src/panels/timeline/` imports guarded modules (`analysis/runTimeline.ts`,
+  `charts/timeViewport.ts`, `panels/analysis/controls`). App loads the strip through
+  `lazy(import())`; a static import from the entry graph fails `check:entry-graph`.
+- `RunTimelineDock` in `App.tsx` reads `open` and `heightPx` itself, so a drag re-renders
+  only the dock. A drag calls `setRunTimelineHeight(px, false)` once per frame and saves
+  once at its end, only when the height changed.
+- The strip draws spans and marks at absolute run-time pixels. One wrapper pans them by
+  `panPx(t0S, pxPerS)`; the playhead, the axis tick group and the overview window take
+  the same transform and the `GLIDE` transition (`useShownT0.ts`). Each gliding element
+  is keyed by its scale, so a zoom or a width change remounts it without a glide. Only
+  the pan, the axis and the overview window subscribe to the Follow start; a row
+  re-renders on a model, scale or session change.
+- The model horizon is `trial.horizon` in Execute and `selectTrialHorizon(s, Infinity)`
+  in Analyze. The unobserved region compares only `model.horizonS` with 0 and the run
+  duration; no component compares an item time with the horizon.
+- `ui.runTimeline.hiddenRows` lives for the session across scenarios. A stale key that
+  matches a row of a new scenario hides it, and `Show all` appears.
 - `fusedTrack` exists only on a retained trial (`boundRetainedTrial`); a view built from
   an engine result has no fused track rows and no C2 init or firm marks. The summary is
   derived before the per-step drop and keeps no reference to the list.
@@ -443,6 +511,7 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Evidence
 
+- [Run timeline Phase 2 browser check, 2026-09-27](field-te/evidence/run-timeline-p2-2026-09-27/README.md)
 - [finishSummary time at the retained cap, 2026-09-23](field-te/evidence/finish-summary-cap-2026-09-23/README.md)
 - [Flight-horizon measurement, 2026-09-21](field-te/evidence/p3-gate-2026-09-10/flight-horizon-2026-09-21.md)
 - [Zero-kill kinetic finding, 2026-09-15](field-te/evidence/kinetic-zero-kill-2026-09-15/README.md)
