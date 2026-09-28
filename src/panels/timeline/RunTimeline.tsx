@@ -4,6 +4,7 @@ import { clampViewport, DEFAULT_WINDOW_S, type TimeViewport } from '../../charts
 import { selectBoardPhase } from '../../state/selectors'
 import { useStore } from '../../state/store'
 import { selectTrialHorizon, type TrialSelection } from '../../state/trialSelectors'
+import { KIND_INK } from '../../ui/ink'
 import { trialViewOf, useTrialResult } from '../analysis/controls'
 import { Axis } from './Axis'
 import { Controls } from './Controls'
@@ -21,6 +22,18 @@ import { useViewportGestures } from './useViewportGestures'
 /** The viewport a session starts with; one object so a clamp can return it as is. */
 const DEFAULT_VIEWPORT: TimeViewport = { t0S: 0, winS: DEFAULT_WINDOW_S }
 const NO_LINES: Placed[] = []
+
+/**
+ * The board's kind inks, handed to the .runtl rules, which map them onto the
+ * strip's ink tokens (the dark theme keeps them; daylight darkens them).
+ */
+const ROOT_STYLE = {
+  '--runtl-gutter': `${GUTTER_W}px`,
+  '--runtl-kind-sensor': KIND_INK.sensor,
+  '--runtl-kind-c2': KIND_INK.c2,
+  '--runtl-kind-effector': KIND_INK.effector,
+  '--runtl-kind-uas': KIND_INK.uas,
+} as CSSProperties
 
 /** The one status line while no trial can supply outcomes (SPEC 1.1). */
 function stateText(selection: TrialSelection): string {
@@ -96,15 +109,17 @@ export function RunTimeline() {
 
   // The header, the accessible name and the tooltip share one horizon text (SPEC 1.4).
   const scope = horizonText(model ? model.horizonS : -Infinity)
-  const style = { '--runtl-gutter': `${GUTTER_W}px` } as CSSProperties
+  // The accessible name also says when the whole run is shown.
+  const complete = model != null && model.durationS > 0 && model.horizonS >= model.durationS
+  const name = `Run timeline. ${complete ? 'Complete. ' : ''}${scope}`
   return (
     <div
       ref={rootRef}
       id="run-timeline"
       className="runtl"
       role="group"
-      aria-label={`Run timeline. ${scope}`}
-      style={style}
+      aria-label={name}
+      style={ROOT_STYLE}
     >
       {model && layout ? (
         <>

@@ -61,7 +61,10 @@ export function Controls({
       >
         −
       </button>
-      <span className="runtl-zoom">{windowReadout(base, durationS)}</span>
+      <span className="runtl-zoom">
+        <span className="runtl-zoom-name">Window </span>
+        {windowReadout(base, durationS)}
+      </span>
       <button
         type="button"
         className="mini"

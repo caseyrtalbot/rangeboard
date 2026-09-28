@@ -1,12 +1,15 @@
 import { memo, type ReactNode } from 'react'
 import type { RunTimelineMark, RunTimelineRow, RunTimelineSpan } from '../../analysis/runTimeline'
-import { KIND_INK } from '../../ui/ink'
 import { durationText, spanBox } from './layout'
 
-/** Kind inks from the board, so a row reads like its glyph. */
-const SENSOR_INK = KIND_INK.sensor
-const C2_INK = KIND_INK.c2
-const EFFECTOR_INK = KIND_INK.effector
+/**
+ * Kind inks: the strip's tokens (the .runtl rules in index.css). In the dark
+ * theme they are the board's `KIND_INK`, so a row reads like its glyph; the
+ * daylight theme darkens them to clear 3:1 on the paper panel.
+ */
+const SENSOR_INK = 'var(--runtl-sensor)'
+const C2_INK = 'var(--runtl-c2)'
+const EFFECTOR_INK = 'var(--runtl-effector)'
 
 /** Classification ramp: one hue, stepped light to dark (unknown, suspected, hostile). */
 const RAMP = {
@@ -71,7 +74,11 @@ function spanEl(
     case 'burst':
     case 'dwell': {
       const fill =
-        span.kind === 'flight' ? 'var(--accent)' : span.kind === 'dwell' ? 'var(--ew)' : 'var(--de)'
+        span.kind === 'flight'
+          ? 'var(--accent)'
+          : span.kind === 'dwell'
+            ? 'var(--runtl-ew)'
+            : 'var(--runtl-de)'
       const bar = box(y + 4, h - 8, { fill })
       if (summary || w < LABEL_MIN_PX) return bar
       return (
@@ -93,7 +100,7 @@ function spanEl(
           x2={x + w}
           y1={mid}
           y2={mid}
-          stroke={span.kind === 'ghost' ? 'var(--ghost)' : 'var(--rule-strong)'}
+          stroke={span.kind === 'ghost' ? 'var(--runtl-ghost)' : 'var(--runtl-quiet)'}
           strokeWidth={2}
           strokeDasharray={span.kind === 'ghost' ? '3 3' : undefined}
         />
@@ -133,7 +140,7 @@ function markGlyph(mark: RunTimelineMark, row: RunTimelineRow, cx: number, y: nu
         <path
           className={cls}
           d={`M${cx - 3} ${cy - 3}L${cx + 3} ${cy + 3}M${cx - 3} ${cy + 3}L${cx + 3} ${cy - 3}`}
-          stroke="var(--ghost)"
+          stroke="var(--runtl-ghost)"
           strokeWidth={1.5}
         />
       )
@@ -161,16 +168,16 @@ function markGlyph(mark: RunTimelineMark, row: RunTimelineRow, cx: number, y: nu
     case 'arrival':
       return <path className={cls} d={diamond(cx, cy)} fill="var(--danger)" />
     case 'mission-kill':
-      return <path className={cls} d={diamond(cx, cy)} fill="var(--ew)" />
+      return <path className={cls} d={diamond(cx, cy)} fill="var(--runtl-ew)" />
     case 'miss':
     case 'jam-decision':
     case 'cpa': {
       const stroke =
         mark.kind === 'miss'
-          ? 'var(--ghost)'
+          ? 'var(--runtl-ghost)'
           : mark.kind === 'cpa'
-            ? 'var(--text-tertiary)'
-            : 'var(--ew)'
+            ? 'var(--runtl-cpa)'
+            : 'var(--runtl-ew)'
       return (
         <path
           className={cls}

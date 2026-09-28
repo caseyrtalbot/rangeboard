@@ -19,6 +19,15 @@ describe('Controls', () => {
     expect(html).not.toContain('disabled')
   })
 
+  it('names the window readout for a screen reader without changing its text', () => {
+    const html = renderToStaticMarkup(
+      <Controls model={model} base={{ t0S: 0, winS: 120 }} follow />,
+    )
+    expect(html).toContain(
+      '<span class="runtl-zoom"><span class="runtl-zoom-name">Window </span>120 s</span>',
+    )
+  })
+
   it('reads fit at the whole run, with Follow off and Zoom out disabled', () => {
     const html = renderToStaticMarkup(
       <Controls model={model} base={{ t0S: 0, winS: 600 }} follow={false} />,

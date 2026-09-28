@@ -60,7 +60,7 @@ const Picture = memo(function Picture({
                 y={2}
                 width={2}
                 height={OVER_H - 4}
-                fill={mark.kind === 'hard-kill' ? 'var(--danger)' : 'var(--ew)'}
+                fill={mark.kind === 'hard-kill' ? 'var(--danger)' : 'var(--runtl-ew)'}
               />
             ) : null,
           )}

@@ -1,21 +1,20 @@
 import { memo } from 'react'
 import type { RunTimelineGroup, RunTimelineKind, RunTimelineRow } from '../../analysis/runTimeline'
 import { useStore } from '../../state/store'
-import { KIND_INK } from '../../ui/ink'
 import type { Placed } from './layout'
 import { selectRunTimelineRow } from './useRunTimelineSelection'
 
-/** Row ink per kind: the board glyph ink; a track reads as the C2 picture. */
+/** Row ink per kind: the strip's kind tokens; a track reads as the C2 picture. */
 const ROW_INK: Record<RunTimelineKind, string> = {
-  sensor: KIND_INK.sensor,
-  c2: KIND_INK.c2,
-  track: KIND_INK.c2,
-  effector: KIND_INK.effector,
-  threat: KIND_INK.uas,
+  sensor: 'var(--runtl-sensor)',
+  c2: 'var(--runtl-c2)',
+  track: 'var(--runtl-c2)',
+  effector: 'var(--runtl-effector)',
+  threat: 'var(--runtl-uas)',
 }
 
 /** Side ink: red for a threat, the sensor-blue family for every other kind. */
-const SIDE_INK = { blue: 'var(--ew)', red: 'var(--danger)' } as const
+const SIDE_INK = { blue: 'var(--runtl-ew)', red: 'var(--danger)' } as const
 
 /** The summary line under a collapsed group header. */
 function summaryLabel(group: RunTimelineGroup): string {
@@ -119,6 +118,11 @@ const RowLine = memo(function RowLine({
   )
 })
 
+/**
+ * A sensor sub-lane: one held track. Its label is the button that selects the
+ * track's threat on the board, as a track row label does; a false track has
+ * no threat, so its label is text.
+ */
 const SubLine = memo(function SubLine({
   row,
   selected,
@@ -127,8 +131,21 @@ const SubLine = memo(function SubLine({
   selected: boolean
 }) {
   return (
-    <div className={`runtl-line runtl-sub${sel(selected)}`} title={row.label}>
-      {row.label}
+    <div className={`runtl-line runtl-sub${sel(selected)}`}>
+      {row.entityId != null ? (
+        <button
+          type="button"
+          className="runtl-name runtl-select"
+          title={row.label}
+          onClick={() => selectRunTimelineRow(row)}
+        >
+          {row.label}
+        </button>
+      ) : (
+        <span className="runtl-name" title={row.label}>
+          {row.label}
+        </span>
+      )}
     </div>
   )
 })

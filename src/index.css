@@ -3667,6 +3667,34 @@ input[type='number'] {
 }
 
 .runtl {
+  /* The strip's inks. RunTimeline.tsx sets the --runtl-kind-* values from
+     KIND_INK, so the dark strip draws the board's kind inks. Each ink clears
+     3:1 on the panel, on the selected ground and at the summary row's 0.75
+     opacity (evidence run-timeline-p4-2026-09-28). The ghost and quiet inks
+     are lighter than --ghost and --rule-strong for that reason; quiet draws
+     the undetected span and the unobserved edge. */
+  --runtl-sensor: var(--runtl-kind-sensor);
+  --runtl-c2: var(--runtl-kind-c2);
+  --runtl-effector: var(--runtl-kind-effector);
+  --runtl-uas: var(--runtl-kind-uas);
+  --runtl-ew: var(--ew);
+  --runtl-de: var(--de);
+  --runtl-ghost: #7b838b;
+  --runtl-cpa: var(--text-tertiary);
+  --runtl-quiet: #7e8480;
+
+  /* On paper the channel inks fall under 3:1, so the strip darkens each one
+     in its own hue. The dwell and burst fills also carry a mono duration in
+     the paper board ink at 4.5:1. The two blocks after .runtl map them. */
+  --runtl-paper-sensor: #406d8d;
+  --runtl-paper-c2: #636a59;
+  --runtl-paper-effector: #8a602d;
+  --runtl-paper-ew: #29465a;
+  --runtl-paper-de: #394349;
+  --runtl-paper-ghost: #62686f;
+  --runtl-paper-cpa: #676860;
+  --runtl-paper-quiet: #6e6759;
+
   position: relative;
   display: flex;
   flex-direction: column;
@@ -3676,6 +3704,30 @@ input[type='number'] {
   border-top: 1px solid var(--border);
   font-size: var(--type-meta-size);
   user-select: none;
+}
+
+:root[data-theme='light'] .runtl {
+  --runtl-sensor: var(--runtl-paper-sensor);
+  --runtl-c2: var(--runtl-paper-c2);
+  --runtl-effector: var(--runtl-paper-effector);
+  --runtl-ew: var(--runtl-paper-ew);
+  --runtl-de: var(--runtl-paper-de);
+  --runtl-ghost: var(--runtl-paper-ghost);
+  --runtl-cpa: var(--runtl-paper-cpa);
+  --runtl-quiet: var(--runtl-paper-quiet);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) .runtl {
+    --runtl-sensor: var(--runtl-paper-sensor);
+    --runtl-c2: var(--runtl-paper-c2);
+    --runtl-effector: var(--runtl-paper-effector);
+    --runtl-ew: var(--runtl-paper-ew);
+    --runtl-de: var(--runtl-paper-de);
+    --runtl-ghost: var(--runtl-paper-ghost);
+    --runtl-cpa: var(--runtl-paper-cpa);
+    --runtl-quiet: var(--runtl-paper-quiet);
+  }
 }
 
 .runtl-empty {
@@ -3732,6 +3784,16 @@ input[type='number'] {
   font-family: var(--font-mono);
   font-size: var(--type-dense-size);
   text-align: center;
+}
+
+/* The readout's name for a screen reader (Window 120 s); it takes no space. */
+.runtl-zoom-name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .runtl-axis,
@@ -4043,7 +4105,7 @@ input[type='number'] {
 }
 
 .runtl-unobserved line {
-  stroke: var(--rule-strong);
+  stroke: var(--runtl-quiet);
   stroke-dasharray: 2 3;
 }
 

@@ -2,6 +2,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { RunTimelineRow } from '../../analysis/runTimeline'
 import { xOf } from '../../charts/timeViewport'
+import { formatTime } from '../../geometry/geo'
+import { durationOf } from '../../state/selectors'
 import type { RunTimelineUi } from '../../state/store'
 import { useStore } from '../../state/store'
 import { installTrial, observeTrial, unstartTrial } from '../analysis/trialTestState'
@@ -67,7 +69,28 @@ describe('RunTimeline states', () => {
     useStore.getState().setBoardPhase('analyze')
     const html = render()
     expect(html).toContain('>Shown through T+1:00<')
-    expect(html).toContain('aria-label="Run timeline. Shown through T+1:00"')
+    // The fixture run is 60 s long, so T+1:00 is the whole record.
+    expect(html).toContain('aria-label="Run timeline. Complete. Shown through T+1:00"')
+  })
+
+  it('updates the accessible name as the horizon moves', () => {
+    observeTrial(60, 20)
+    expect(render()).toContain('aria-label="Run timeline. Shown through T+0:20"')
+    observeTrial(60, 45)
+    expect(render()).toContain('aria-label="Run timeline. Shown through T+0:45"')
+  })
+
+  it('names the record complete only once the horizon reaches the run end', () => {
+    const endS = durationOf(useStore.getState().scenario)
+    useStore.getState().setBoardPhase('analyze')
+    observeTrial(endS - 20, 5)
+    const cut = `T+${formatTime(endS - 20)}`
+    expect(render()).toContain(`aria-label="Run timeline. Shown through ${cut}"`)
+    observeTrial(endS, 5)
+    const end = `T+${formatTime(endS)}`
+    const html = render()
+    expect(html).toContain(`aria-label="Run timeline. Complete. Shown through ${end}"`)
+    expect(html).toContain(`>Shown through ${end}<`)
   })
 
   it('puts the axis and the overview under the scrolling rows, as the mockup does', () => {
@@ -119,7 +142,10 @@ describe('RunTimeline rows', () => {
     const open = render()
     expect(open).toMatch(/aria-expanded="true" aria-label="Tracks held by radar"/)
     expect(count(open, 'class="runtl-line runtl-sub"')).toBe(1)
-    expect(open).toContain('title="swarm">swarm</div>')
+    // The sub-lane label is a button that selects the track's threat.
+    expect(open).toContain(
+      'class="runtl-line runtl-sub"><button type="button" class="runtl-name runtl-select" title="swarm">swarm</button>',
+    )
   })
 
   it('hides a row for the session and restores it with Show all', () => {
