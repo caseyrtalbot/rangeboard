@@ -92,7 +92,7 @@ import {
 const OBSERVED_PRESET_ID = 'run-summary'
 
 export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
-export type RightTab = 'inspect' | 'library' | 'analysis'
+export type RightTab = 'inspect' | 'analysis'
 /** Theme choice. `system` follows the OS colour-scheme query; the other two pin it. */
 export type Theme = 'system' | 'dark' | 'light'
 

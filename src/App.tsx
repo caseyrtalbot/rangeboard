@@ -44,6 +44,7 @@ import {
 import { FieldHelpProvider, State } from './ui/kit'
 import { usePopover } from './ui/usePopover'
 import { nextTabIndex } from './ui/rovingTabs'
+import { isTypingTarget } from './ui/typingTarget'
 
 // Right-panel tabs and the palette: each opens on demand, so each loads on demand.
 const AnalysisPanel = lazy(() =>
@@ -498,15 +499,6 @@ function escapeState(
   }
 }
 
-function isTypingTarget(t: EventTarget | null): boolean {
-  return (
-    t instanceof HTMLInputElement ||
-    t instanceof HTMLTextAreaElement ||
-    t instanceof HTMLSelectElement ||
-    (t instanceof HTMLElement && t.isContentEditable)
-  )
-}
-
 /** Modal shown when both calibration points are placed. */
 function CalibrateDialog() {
   const a = useStore((s) => s.ui.calibrateA)
@@ -685,7 +677,7 @@ export default function App() {
 
   useEffect(() => {
     // The Model library tab left the row; a saved view that holds it opens on analysis.
-    const saved = savedView().rightTab
+    const saved: string | undefined = savedView().rightTab
     if (saved == null || saved === 'library') setRightTab('analysis')
   }, [setRightTab])
   // Primitives only: a whole `selection` or `scenario` subscription would re-render
