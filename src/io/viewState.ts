@@ -73,7 +73,8 @@ function oneOf<T extends string>(v: unknown, allowed: T[]): T | undefined {
 /** Validated view state from localStorage; a field the record lacks or that fails validation is absent. */
 export function savedView(): SavedView {
   const BASEMAPS: BasemapMode[] = ['canvas', 'sat', 'airspace']
-  const RIGHT_TABS: RightTab[] = ['inspect', 'library', 'analysis']
+  // The retired 'library' tab is dropped here; App opens a view without a tab on analysis.
+  const RIGHT_TABS: RightTab[] = ['inspect', 'analysis']
   const THEMES: Theme[] = ['system', 'dark', 'light']
   const raw = readRaw()
   const out: SavedView = {}

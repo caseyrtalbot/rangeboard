@@ -21,6 +21,7 @@ import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
 import { pfaText } from '../../inspector/kit'
 import { STATE_LABEL, stateTone } from '../SystemStatus'
+import { EmptyRow } from '../controls'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
@@ -92,7 +93,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
           modelLine={modelLine}
           tags={modelsForEntity(scenario, entity.id)}
         />
-        <p className="muted small">No model linked.</p>
+        <EmptyRow>No model linked.</EmptyRow>
       </div>
     )
   }
@@ -210,7 +211,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
             yLabel="Pd"
           />
         ) : (
-          <p className="muted small">No Pd model for this sensor.</p>
+          <EmptyRow>No Pd model for this sensor.</EmptyRow>
         )}
       </DetailSection>
       <DetailSection
@@ -229,7 +230,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
             yLabel="km"
           />
         ) : (
-          <p className="muted small">No track observed.</p>
+          <EmptyRow>No track observed.</EmptyRow>
         )}
       </DetailSection>
       <DetailSection
@@ -251,7 +252,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
             <Legend entries={legend} />
           </>
         ) : (
-          <p className="muted small">No track observed.</p>
+          <EmptyRow>No track observed.</EmptyRow>
         )}
       </DetailSection>
       <DetailSection
@@ -273,7 +274,7 @@ export function SensorDetail({ entity }: { entity: Entity }) {
         {gateRows.length > 0 ? (
           <DetailTable head={['Threat', 'State', 'Last measured', 'Pd']} rows={gateRows} />
         ) : (
-          <p className="muted small">No threats with flight paths.</p>
+          <EmptyRow>No threats with flight paths.</EmptyRow>
         )}
       </DetailSection>
     </div>

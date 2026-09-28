@@ -1,0 +1,207 @@
+// Row E lane E2 capture: 1265 x 900, dark, the JIATF-401 laydown
+// (src/playback/__fixtures__/detection-outside-rings.json) on the dev server.
+// Usage: node chrome-e2-capture.mjs <base-url> <out-dir> <repo-root>
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT] = process.argv.slice(2)
+const FIXTURE = 'src/playback/__fixtures__/detection-outside-rings.json'
+const RAW = readFileSync(join(ROOT, FIXTURE), 'utf8')
+mkdirSync(OUT, { recursive: true })
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const waitFor = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 30000 })
+
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => {
+  if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+})
+
+const findings = {
+  capturedAt: new Date().toISOString(),
+  viewport: '1265x900 dark',
+  fixture: FIXTURE,
+  shots: {},
+  errors,
+}
+
+await page.goto(BASE, { waitUntil: 'load' })
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store, null, {
+  timeout: 60000,
+})
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setTheme('dark')
+  s.setShowFieldHelp(false)
+  s.setRunTimelineOpen(false)
+}, RAW)
+await sleep(400)
+
+/** What the item 6 rule checks in the right panel, read from the live page. */
+async function measure() {
+  return page.evaluate(() => {
+    const panel = document.querySelector('.right-panel')
+    const text = (el) => el.textContent.replace(/\s+/g, ' ').trim()
+    // checkVisibility treats the body of a closed <details> as hidden.
+    const shown = (el) => el.checkVisibility()
+    const font = (el) => {
+      const cs = getComputedStyle(el)
+      return `${cs.fontSize}/${cs.fontWeight} ${cs.fontFamily.split(',')[0]}`
+    }
+    // A probe tile: TrialOutcomeSummary is exported but no screen mounts it, so the
+    // .outcome-metric strong rule is read from a temporary node in the panel.
+    const probe = document.createElement('div')
+    probe.className = 'outcome-grid'
+    probe.innerHTML = '<div class="outcome-metric"><span>Probe</span><strong>12</strong></div>'
+    panel.appendChild(probe)
+    const probeFont = font(probe.querySelector('strong'))
+    probe.remove()
+    const tv = panel.querySelector('.tv')
+    return {
+      screen: document.querySelector('.insp-tab-group [aria-selected="true"]')?.textContent.trim() ?? null,
+      detail: panel.querySelector('.detail')?.getAttribute('data-detail') ?? null,
+      backLabel: panel.querySelector('.det-back')?.getAttribute('aria-label') ?? null,
+      mutedLines: [...panel.querySelectorAll('.muted')]
+        .filter(shown)
+        .map(text)
+        .filter((t) => t.length > 0),
+      emptyRows: [...panel.querySelectorAll('.empty-row')]
+        .filter(shown)
+        .map((el) => ({ text: text(el), h: Math.round(el.getBoundingClientRect().height) })),
+      emptyRowsHidden: [...panel.querySelectorAll('.empty-row')]
+        .filter((el) => !shown(el))
+        .map(text),
+      infoButtons: [...panel.querySelectorAll('.field-info, .det-info')]
+        .filter(shown)
+        .map((el) => ({ label: el.getAttribute('aria-label'), h: Math.round(el.getBoundingClientRect().height) })),
+      tileValueFont: tv ? font(tv) : null,
+      outcomeMetricProbeFont: probeFont,
+      liveStatus: [...panel.querySelectorAll('[role="status"]')].map(text).slice(0, 6),
+    }
+  })
+}
+
+async function shot(name, state) {
+  await sleep(350)
+  await page.screenshot({ path: join(OUT, `${name}.png`) })
+  findings.shots[name] = { state, ...(await measure()) }
+}
+
+/** Open every collapsible detail section and disclosure in the panel body. */
+async function openAll() {
+  await page.evaluate(() => {
+    document.querySelectorAll('.right-panel .det-s-toggle[aria-expanded="false"]').forEach((b) => b.click())
+    document.querySelectorAll('.right-panel details').forEach((d) => (d.open = true))
+  })
+  await sleep(300)
+}
+
+async function selectKind(kind, nth = 0) {
+  const id = await page.evaluate(
+    ([k, n]) => {
+      const s = window.__store.getState()
+      const e = s.scenario.entities.filter((x) => x.kind === k)[n]
+      s.select({ entityIds: [e.id] })
+      return e.id
+    },
+    [kind, nth],
+  )
+  await waitFor(page, () => document.querySelector('#entity-section-telemetry'))
+  if ((await page.getAttribute('#entity-section-telemetry', 'aria-selected')) !== 'true')
+    await page.click('#entity-section-telemetry')
+  await waitFor(page, () => document.querySelector('.right-panel .detail'))
+  return id
+}
+
+async function scrollPanelTo(selector) {
+  await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: 'start' }), selector)
+  await sleep(200)
+}
+
+// Prepare, before any trial: the detail panes show the empty rows.
+await selectKind('sensor')
+await openAll()
+await shot('prepare-sensor-detail', 'Prepare, no trial, first sensor selected, every section open')
+await page.evaluate(() => window.__store.getState().clearSelection())
+await sleep(200)
+
+// Execute: the pre-Play line keeps its inline Play control (PlayPrompt).
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+await shot('execute-before-play', 'Execute, no trial yet: the Run monitor with the inline Play prompt')
+// Start a trial, then complete the run and move to Analyze.
+await page.evaluate(() => window.__store.getState().startRun())
+await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status))
+findings.trialStatus = await page.evaluate(() => window.__store.getState().trial.status)
+await page.evaluate(async () => {
+  const s = window.__store.getState()
+  const { durationOf } = await import('/src/state/selectors.ts')
+  s.completeRun(durationOf(s.scenario))
+})
+await page.click('#board-phase-analyze')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="analyze"]'))
+await waitFor(page, () => document.querySelector('#insp-tabpanel .tiles'))
+findings.run = await page.evaluate(async () => {
+  const s = window.__store.getState()
+  const { durationOf } = await import('/src/state/selectors.ts')
+  return {
+    durationS: durationOf(s.scenario),
+    simTimeS: s.playback.simTimeS,
+    observedThroughS: s.playback.observedThroughS,
+    completedAtMs: s.playback.completedAtMs != null,
+    entities: s.scenario.entities.length,
+  }
+})
+await shot('analyze-outcome', 'Analyze, Outcome screen after completeRun, disclosures closed')
+
+// The Manifest disclosure holds the SystemStatus record and its (i).
+await page.evaluate(() => {
+  const d = [...document.querySelectorAll('#insp-tabpanel details.analysis-disclosure')].find((x) =>
+    x.querySelector('summary')?.textContent.startsWith('Manifest'),
+  )
+  d.open = true
+  // The manifest JSON runs long; the system record and its (i) sit under it.
+  d.querySelector('.system-telemetry-list')?.scrollIntoView({ block: 'start' })
+})
+await shot('analyze-outcome-manifest', 'Analyze, Outcome, the Manifest disclosure open: the system record with its (i)')
+
+// The debrief record below the outcome: Evidence products.
+await scrollPanelTo('#insp-tabpanel .debrief-record')
+await shot('analyze-debrief', 'Analyze, Outcome, the Evidence products debrief record in view')
+
+// Detail panes after the completed run, every section open.
+for (const [kind, name] of [
+  ['sensor', 'analyze-sensor-detail'],
+  ['effector', 'analyze-effector-detail'],
+  ['c2', 'analyze-c2-detail'],
+  ['uas', 'analyze-threat-detail'],
+]) {
+  await selectKind(kind)
+  await openAll()
+  await shot(name, `Analyze, completed run, first ${kind} selected, every section open`)
+}
+
+// Back to overview returns to the Outcome screen.
+const back = await page.getAttribute('.det-back', 'aria-label')
+await page.click('.det-back')
+await sleep(300)
+findings.backToOverview = {
+  label: back,
+  selectionCleared: await page.evaluate(() => window.__store.getState().selection.entityIds.length === 0),
+  focused: await page.evaluate(() => {
+    const el = document.activeElement
+    return el ? { id: el.id, text: el.textContent.trim().slice(0, 40) } : null
+  }),
+  detailOpen: await page.evaluate(() => document.querySelector('.right-panel .detail') != null),
+}
+
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2) + '\n')
+await browser.close()
+console.log(JSON.stringify({ shots: Object.keys(findings.shots), errors: errors.length }))

@@ -52,3 +52,13 @@ it('savedView reads and drops the retired analysis lens field', () => {
   store.set(VIEW_KEY, JSON.stringify({ theme: 'dark', analysis: 'not a layout' }))
   expect(savedView()).toEqual({ theme: 'dark' })
 })
+
+it('savedView drops the retired library tab', () => {
+  const store = new Map<string, string>()
+  vi.stubGlobal('localStorage', {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+  })
+  store.set(VIEW_KEY, JSON.stringify({ rightTab: 'library', theme: 'dark' }))
+  expect(savedView()).toEqual({ theme: 'dark' })
+})

@@ -56,7 +56,9 @@ describe('LiveStrip run line', () => {
     expect(execute).not.toContain('in Execute')
     useStore.setState(({ ui }) => ({ ui: { ...ui, boardPhase: 'prepare' } }))
     Object.assign(useStore.getInitialState(), useStore.getState())
-    expect(renderToStaticMarkup(<LiveStrip />)).toContain('Press Play in Execute to run one.')
+    expect(renderToStaticMarkup(<LiveStrip />)).toBe(
+      '<div role="status"><p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No trial yet. Press Play in Execute to run one.</span></p></div>',
+    )
   })
 
   it('shows completion and includes late defeats only after their effects', () => {

@@ -20,6 +20,9 @@ describe('SystemStatus visibility', () => {
   it('defaults DebriefRecord mounts to full-run telemetry', () => {
     const html = renderToStaticMarkup(<SystemStatus groups={groupsAt(2000)} expanded endOfRun />)
     expect(html).toContain('final sampled instant')
+    // The method note sits behind the (i), and no sentence is set muted.
+    expect(html).toContain('aria-label="About telemetry state" title="State shows the final')
+    expect(html).not.toContain('telemetry-note')
     expect(html).toMatch(/[1-9]\d* salvos/)
     expect(html).toMatch(/[1-9]\d* effects/)
   })
@@ -38,7 +41,12 @@ describe('SystemStatus visibility', () => {
     const html = renderToStaticMarkup(
       <SystemStatus groups={groupsAt(2000)} horizon={EMPTY_HORIZON} />,
     )
-    expect(html).toContain('No system telemetry yet.')
+    expect(html).toContain(
+      '<p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No system telemetry yet.</span></p>',
+    )
+    expect(renderToStaticMarkup(<SystemStatus groups={[]} />)).toContain(
+      'hollow" aria-hidden="true"></i>No sensors, C2, or effectors placed.</span></p>',
+    )
     expect(html).not.toContain('system-telemetry-head')
   })
 
@@ -51,7 +59,7 @@ describe('SystemStatus visibility', () => {
           sampledAtS={sampledAtS}
         />,
       )
-      expect(html).toContain(FORECAST_IN_ANALYZE)
+      expect(html).toContain(`hollow" aria-hidden="true"></i>${FORECAST_IN_ANALYZE}</span></p>`)
       expect(html).not.toContain('system-telemetry-head')
     }
   })

@@ -50,7 +50,7 @@ export function DetailHeader({
       <div className="det-h">
         <button
           className="mini det-back"
-          aria-label={onOverview ? 'Back to overview' : 'Back to the lens stack'}
+          aria-label="Back to overview"
           onClick={onOverview ?? clearSelection}
         >
           ‹ Back

@@ -99,7 +99,7 @@ describe('EntityWorkspace', () => {
     expect(html).not.toContain('No trial yet. Press Play in Execute to run one.')
     expect(html).not.toContain('class="analysis-scope"')
     expect(html).toContain('aria-label="Back to overview"')
-    expect(html).not.toContain('aria-label="Back to the lens stack"')
+    expect(html.split('aria-label="Back to overview"')).toHaveLength(2)
     expect(useStore.getState().selection).toBe(state.selection)
   })
 

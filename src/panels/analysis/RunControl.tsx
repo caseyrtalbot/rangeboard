@@ -14,6 +14,7 @@ import { toggleAnalysisRun } from '../../playback/runSession'
 import type { BoardPhase, McState } from '../../state/runState'
 import { selectPlayLabel } from '../../state/selectors'
 import { useStore } from '../../state/store'
+import { isTypingTarget } from '../../ui/typingTarget'
 
 /**
  * Why the loop ends, in words. The floor and the cap come from the settings, not the run.
@@ -113,17 +114,6 @@ function runPrimaryAction(phase: BoardPhase): void {
   if (running && state.mc.pool?.stopping === true) return
   if (running) state.cancelMonteCarlo()
   else state.runMonteCarlo()
-}
-
-/** A text field keeps Meta+Enter for itself. */
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) return false
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    target.isContentEditable
-  )
 }
 
 /**

@@ -6,7 +6,7 @@ import type { ThreatAssessment } from '../../playback/sim'
 import { trialResultOf, trialSnapshotAt, type TrialResultView } from '../../analysis/trialResult'
 import { selectTrialSelection } from '../../state/trialSelectors'
 import { selectRunComplete } from '../../state/selectors'
-import { useTrialResult, trialStateText } from './controls'
+import { useTrialResult, trialStateText, EmptyRow, NoteInfo } from './controls'
 import { buildRequirementGateReport } from '../../analysis/requirements'
 import type { RunValidityAssessment } from '../../analysis/runValidity'
 import { assessRunValidity } from '../../analysis/runValidity'
@@ -24,33 +24,8 @@ import { ThreatPicture } from './ThreatPicture'
 import { currentSensitivity, currentSummary } from './mc'
 import { SEVERITY_PILL, VALIDITY_TEXT } from './runValidityText'
 import { State } from '../../ui/kit'
-import { IconInfo } from '../../ui/icons'
 
-/** An empty-state row: the missing input or result named in a hollow warning state. */
-export function EmptyRow({ children }: { children: string }) {
-  return (
-    <p className="empty-row">
-      <State tone="warning" hollow>
-        {children}
-      </State>
-    </p>
-  )
-}
-
-/** A method note behind a 24 px (i); with field help on it also renders as a line. */
-export function NoteInfo({ label, note }: { label: string; note: string }) {
-  const showHelp = useStore((state) => state.ui.showFieldHelp)
-  return (
-    <>
-      <div className="frag-head">
-        <button type="button" className="field-info" aria-label={`About ${label}`} title={note}>
-          <IconInfo />
-        </button>
-      </div>
-      {showHelp && <p className="field-help">{note}</p>}
-    </>
-  )
-}
+export { EmptyRow, NoteInfo }
 
 function RunActions({
   scenario,

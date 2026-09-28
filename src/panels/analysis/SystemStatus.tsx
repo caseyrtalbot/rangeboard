@@ -6,6 +6,7 @@ import {
 } from '../../analysis/horizon'
 import { useState } from 'react'
 import { State } from '../../ui/kit'
+import { EmptyRow, NoteInfo } from './controls'
 import type { StateTone } from '../../ui/kit'
 import type {
   ComponentTelemetry,
@@ -133,20 +134,18 @@ export function SystemStatus({
   /** Time used by the caller to compute every group and component count. */
   sampledAtS?: number
 }) {
-  if (horizon.scoped && !reached(0, horizon))
-    return <p className="muted small">No system telemetry yet.</p>
+  if (horizon.scoped && !reached(0, horizon)) return <EmptyRow>No system telemetry yet.</EmptyRow>
   // Group totals and hover details must come from the same reached sample.
   if (horizon.scoped && !reached(sampledAtS, horizon))
-    return <p className="muted small">{FORECAST_IN_ANALYZE}</p>
-  if (groups.length === 0)
-    return <p className="muted small">No sensors, C2, or effectors placed.</p>
+    return <EmptyRow>{FORECAST_IN_ANALYZE}</EmptyRow>
+  if (groups.length === 0) return <EmptyRow>No sensors, C2, or effectors placed.</EmptyRow>
   return (
     <div className="system-telemetry-list">
       {endOfRun && (
-        <p className="muted small telemetry-note">
-          State shows the final sampled instant, not the run outcome; cumulative counts cover the
-          run.
-        </p>
+        <NoteInfo
+          label="telemetry state"
+          note="State shows the final sampled instant, not the run outcome; cumulative counts cover the run."
+        />
       )}
       {groups.map((group, index) => (
         <SystemCard

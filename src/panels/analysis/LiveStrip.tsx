@@ -4,6 +4,7 @@ import type { TrialResultView } from '../../analysis/trialResult'
 import { trialResultOf, trialSnapshotAt } from '../../analysis/trialResult'
 import { formatTime } from '../../geometry/geo'
 import { State } from '../../ui/kit'
+import { EmptyRow } from './controls'
 import { toggleAnalysisRun } from '../../playback/runSession'
 import { selectTrialHorizon, selectTrialSelection } from '../../state/trialSelectors'
 
@@ -64,20 +65,26 @@ export function LiveStrip({
     () => (view ? trialSnapshotAt(view, horizon).counts : undefined),
     [view, horizon],
   )
-  if (!view || !counts)
-    return (
-      <p className="muted small" role="status">
-        {selection.status === 'error' ? (
-          selection.message
-        ) : selection.status === 'preparing' ? (
-          'Preparing trial'
-        ) : execute ? (
+  if (!view || !counts) {
+    // PlayPrompt holds a control, so it stays a line; every other placeholder is a status.
+    if (execute && selection.status !== 'error' && selection.status !== 'preparing')
+      return (
+        <p className="muted small" role="status">
           <PlayPrompt />
-        ) : (
-          'No trial yet. Press Play in Execute to run one.'
-        )}
-      </p>
+        </p>
+      )
+    return (
+      <div role="status">
+        <EmptyRow>
+          {selection.status === 'error'
+            ? selection.message
+            : selection.status === 'preparing'
+              ? 'Preparing trial'
+              : 'No trial yet. Press Play in Execute to run one.'}
+        </EmptyRow>
+      </div>
     )
+  }
   const defeated =
     counts.preArrivalHardKills +
     counts.preArrivalSoftKills +
