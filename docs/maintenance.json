@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "e41ca654fe095256af23d6a459db7d1fc207b28267aaf7abe38f51e6007e0e43",
+      "sha256": "ea2500687450c0ede759a3118d032a870bc09a384c715b4800e4942a19ae1369",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 3 fast-forwarded to main as d0f26a3 and pushed with the user's authorization; the position says so and Phase 4 starts from main."
+      "note": "Phase 4 close: the handoff records Phase 4 on timeline/p4 (the lane commits, the windowing, the measurement, the contrast, the design review and its fixes, the gate on 691f301, the departures and the follow-ups), records that the SPEC plan is complete and selects nothing; the user's merge and push authorization is pending."
     },
     {
       "document": "docs/Plan.md",

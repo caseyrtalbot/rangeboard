@@ -13,19 +13,87 @@ commit, push or merge.
 [timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
 Phases 1 (the model, no UI), 2 (the strip) and 3 (interaction) are on `main` and
-`origin/main`. Phase 4 (hardening and close) is the selected task and starts from
-`main`. [Plan.md](Plan.md) is the completed chrome refactor queue (Rows A to D merged
-and pushed as `f4363a3`); it selects nothing.
+`origin/main`. Phase 4 (hardening and close) is complete on `timeline/p4`, not merged
+and not pushed. The SPEC plan is complete; this file selects nothing. [Plan.md](Plan.md)
+is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a3`); it
+selects nothing.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `main`. `main` and `origin/main`
-  hold run timeline Phase 3: `timeline/p3` was fast-forwarded to `main` at `d0f26a3`
-  and pushed with the user's authorization on 2026-09-28, then this handoff. The
-  `timeline/p3` branch is deleted. No lane worktree or lane branch remains;
-  `git worktree list` shows the main checkout only. Phase 4 starts on a new branch
-  `timeline/p4` from `main`.
-- Run timeline Phase 3 (2026-09-28), now on `main`: the contract `9c6b0e6`
+- Repository `~/Projects/rangeboard`, checked out on `timeline/p4`, branched from `main`
+  at `1c7cd00` (Phase 3). `timeline/p4` holds Phase 4 and waits for the user to
+  authorize a fast-forward merge to `main` and a push. No lane worktree or lane branch
+  exists; `git worktree list` shows the main checkout only.
+- Run timeline Phase 4 (2026-09-28) on `timeline/p4`: one `opus-high` lane in the main
+  checkout: the accessibility and contrast commit `c8550e1`, the dead exports `8ba3ec5`,
+  the first evidence `cd57691`, its docs `9a09c49`; the orchestrator's index `ef18139`;
+  the lane's row windowing `41476e2`, the evidence rerun `fe7e088` and its docs
+  `53f002d`; the `fable-medium` design review (read-only); the `opus-medium` fixes
+  `cd69b3c` and the evidence rerun `eed39bf`; the orchestrator's docs final review
+  `691f301` and this handoff.
+- What Phase 4 built. The strip's group name reads `Run timeline. Shown through T+m:ss`
+  and adds the word Complete once the horizon reaches the run end. A sensor sub-lane label is
+  a `.runtl-select` button that selects the track's threat (a false track sub-lane stays
+  text). The window readout carries a visually hidden prefix, the word Window and a
+  space (`.runtl-zoom-name`). Every strip ink is a `.runtl` token (`--runtl-*`):
+  `RunTimeline.tsx` hands `KIND_INK` to the root as `--runtl-kind-*`, the dark theme
+  keeps it with `--ew` and `--de` plus a lighter ghost (`#7b838b`) and a quiet ink
+  (`#7e8480`) for the undetected span and the unobserved edge; the two daylight blocks
+  map `--runtl-paper-*`, each the lightest value in its own hue that clears 3:1 on the
+  panel, the selected ground and at 0.75 opacity (a search). `KIND_INK` is unchanged.
+  Row windowing: `lineWindow` in `layout.ts` (one view height of overscan, at least
+  `MIN_OVERSCAN_PX` 120) and `useRowWindow.ts` (an external store of the scroll view,
+  fed once per frame and by a `ResizeObserver`); the gutter, the grounds and the rows
+  draw only the windowed lines while `stripLayout` keeps every line. Dead exports made
+  module private: `ROW_H`, `SUB_H`, `runTimeText`, `WHEEL_ZOOM_RATE`, `WHEEL_LINE_PX`.
+  Design review fixes: a row name's trailing instance number sits in `.runtl-name-tail`
+  and never shrinks, the meta shrinks four times as fast at most 40 percent wide and
+  drops when the name starts with it; the blue group square takes the sensor ink; the
+  overview draws the cursor (`OverPlayhead`, clock-only, no glide); the resizer shows a
+  36 by 2 px `--rule-strong` grip at rest; an effector's rounds-left chip and pk print
+  only with 44 px to the next mark in the row.
+- Phase 4 measurement
+  ([evidence](field-te/evidence/run-timeline-p4-2026-09-28/README.md)): the 54-entity
+  performance board at 30x, 1265 by 900, every group and sensor row open (119 lines,
+  3,761 SVG nodes before windowing, 1,011 after). Production build, the measurement of
+  record: before windowing the expanded strip added about 80 intervals of 20 to 25 ms
+  per 10 s (max 33.3 ms); after windowing 0 intervals over 20 ms and 18 over 16.7 ms
+  against 15 closed (max 17.5 ms), so the SPEC target passes in production. Dev server:
+  the expanded strip still adds 11 to 24 intervals over 33 ms beyond the closed run
+  (max 50 ms, down from 83 ms and 15 long tasks); the CPU profile after windowing puts
+  the strip's components at about 270 ms of 10 s against `CanvasStage` with
+  `trialSeriesOf` at about 820 ms and the React dev runtime, and the closed run itself
+  reaches 25 ms on publication frames. The Phase 1 row-reuse follow-up is measured and
+  closed without a change: the first build takes 5.7 ms, 265 horizon passes take 1.4 ms
+  in total, about 14.9 rows are new per pass. `runTimeline.ts` and `timeViewport.ts`
+  are unchanged.
+- Phase 4 accessibility and contrast: 187 gutter buttons all named on the full render;
+  106 ink pairs per theme, 100 with a floor (4.5:1 text, 3:1 text 3 and graphics,
+  summary marks judged at 0.75 opacity), 0 fail in either theme. Before the fix the
+  dark theme had 6 failures and daylight 43. Lowest graphic 3.13 dark and 3.01
+  daylight; lowest text 4.87 dark and 3.46 daylight. The duration on a dwell or burst
+  fill stays in the paper board ink (4.53 and 4.52); text 1 there cannot meet 4.5:1
+  while the 0.75 summary floor holds.
+- Phase 4 gate on `691f301` (2026-09-28, run by the orchestrator): `npm run check`
+  passes (222 files, 2,430 tests, docs and evidence gates green, entry graph 105 of 206,
+  build green); `check:silent` passes; `check:bundle` entry 367,140 against 380,000 and
+  initial 385,802 against 400,000 (Phase 3: 367,139 and 385,441); `test:e2e` 13 of 13 on
+  a dev server at 5411. Lint prints 31 warnings, the same count as `main`. The build
+  prints the Vite chunk-size warning as before.
+- Phase 4 design review (`fable-medium`, against the mockup): two must-fix (row identity
+  lost in the 172 px gutter; daylight inks darkened to 5:1 to 9:1, away from the board)
+  and four should-fix (the header square in the EW ink, no overview cursor, no resizer
+  grip at rest, effector texts colliding at Fit), all closed in `cd69b3c`. Its nits are
+  follow-ups below.
+- Phase 4 departures, each with its reason: the daylight inks differ from the board's
+  channel inks (the design system says channel colours are the same in both themes)
+  because the board inks fall under 3:1 on paper; the overview cursor is in the mockup
+  but not in SPEC 1.3; the harness opens every sensor row through
+  `expandAllRunTimeline` with whole-run keys, since Expand all opens only the sensor
+  rows that hold a track at the current horizon; the S4 gate reads the gap to the next
+  mark, so the last mark's pk still prints at Fit; the Phase 4 screenshots stand from
+  the review-fix rerun and windowing changes nothing visible.
+- Run timeline Phase 3 (2026-09-28), on `main`: the contract `9c6b0e6`
   (orchestrator), the handoff `cfd99d7`, lane 3A `49e6b41` and `ea10324`
   (`opus-medium`, the board link) merged as `2e8609d`, lane 3B `e27f83c` and `f3ce588`
   (`opus-medium`, pointer and keyboard) merged as `50650a4`, the integration `246661b`
@@ -238,34 +306,48 @@ and pushed as `f4363a3`); it selects nothing.
 Handling: candidates, not rows. Row D took the Row C review items and the class 2, 3 and 4
 canvas deviations. What remains:
 
-From run timeline Phase 3 (the review nits and the untested paths):
+From run timeline Phase 4:
 
-- No unit test drives the Controls handlers, the horizontal-wheel pan, the Overview drag
-  or the Escape close; the browser evidence covers them. The Node tests have no DOM.
-- The gutter sub-lane label (a threat name) is text; SPEC 1.5 names row labels as
-  buttons. The false-track choice is recorded above; the sub-lane is not.
-- The window readout `.runtl-zoom` has no accessible context; a screen reader hears a
-  bare `120 s` between Zoom out and Zoom in.
+- The dev-server frame rule fails on the 54-entity board fully expanded (11 to 24
+  intervals over 33 ms beyond the closed run) while the production build passes. The
+  profile after windowing puts the remaining cost in `CanvasStage` (`trialSeriesOf`), the
+  React dev runtime and react-konva, with the strip's components at about 270 ms per
+  10 s. A further cut would be horizontal windowing of the 5 s hold chunks, or row
+  object reuse in `runTimeline.ts` (about 14.9 new rows per horizon pass); both need a
+  new measurement first.
+- The C2 assign labels (`Coyote Block 2 interceptor 1`, printed at each assign mark)
+  overlap each other at Fit on JIATF-401; the 44 px gate covers effector rows only.
+- The duration on a dwell or burst fill prints in the paper board ink on daylight. Text 1
+  there needs the 0.75 summary-opacity floor to drop, a design decision.
+- Design review nits: the summary label is Archivo `All sensors` at a 26 px indent, the
+  mockup's is mono `all sensors` at 18 px; row meta is Archivo 11 px, the mockup's
+  `.count` is mono; the header buttons are 24 px `.mini` in the 28 px header, the mockup
+  uses 20 px; the playhead has no top cap, the mockup draws a 5 px triangle; the Analyze
+  header reads `Shown through T+25:00`, the mockup `Complete · T+25:00` (the accessible
+  name does say Complete). The mockup's legend is absent.
+- Expand all opens only the sensor rows that hold a track at the current horizon; a row
+  that gains its first track later stays collapsed. Expand all does not open threat
+  folds (`openFolds`).
+- A focused gutter button that scrolls far out of the row window unmounts and loses
+  focus; Tab order still reaches the next lines through the overscan.
+- No unit test drives the Controls handlers, the horizontal-wheel pan, the Overview drag,
+  the Escape close or the scroll listener of `useRowWindow`; the browser evidence covers
+  them. The Node tests have no DOM.
 - `.runtl-plot` takes `onClick` with no keyboard path; the transport covers the seek.
 - A Ctrl wheel over the gutter anchors at `t0S` because the anchor clamps to the plot's
   left edge.
-- Expand all does not open threat folds (`openFolds`).
 - The strip's Collapse all and Expand all share their names with the inspector ⋯ menu
   items.
-- Phase 4 (SPEC): frame time on the 54-entity board with every group and sensor open,
-  the contrast audit of every mark ink, dead CSS and dead exports, the final doc review.
+- `.chip.mc` (`index.css`) is dead, from the Row D list; the timeline phases left no
+  dead `.runtl` rule.
 
 From run timeline Phase 2:
 
-- The 172 px gutter truncates sensor names and meta (`Giraffe …`, `KuRFS …` on the
-  JIATF-401 laydown).
+- Long model names still truncate in the 172 px gutter; since Phase 4 the instance number
+  survives the ellipsis and the `title` holds the full name.
 - At the default 240 px height in Execute, the Threats group sits below the scroll fold.
-- The Analyze header reads `Shown through T+25:00`; the mockup reads `Complete · T+25:00`.
-  The mockup's legend is absent.
 - The strip component tests leave `openSensors` set between tests, so they depend on
   order. No unit test drives the App resizer; the e2e and the capture cover it.
-- With the strip open, one frame interval of 10 s at 30x read 24.9 ms (none over 33 ms).
-  Phase 4 measures the 54-entity board.
 - `docs/Plan.md` line 214 names the deleted `EngagementStrip` mount; it is the completed
   chrome plan.
 
@@ -279,9 +361,6 @@ From run timeline Phase 1 (each needs a user decision):
 - The engine sweep ignores kills: sensor holds, the fused track and the track ramp run to
   the path end after the last member falls, as the board's TrackLayer shows. The timeline
   follows the engine picture; clipping at the kill is a product decision.
-- A row with any item past the horizon is a new object at every horizon, even when its
-  reached content is the same. Phase 4 measures before adding reuse: 4 ms first build and
-  0.008 ms per horizon pass on the 54-entity perf board (1,322 s, 14,277 estimates).
 - A node that held the fused picture and lost it before the firm time still gets a firm
   mark on its C2 row. An empty trial and a zero duration have no model test.
 
@@ -370,50 +449,15 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Phase 4 of [timeline/SPEC.md](timeline/SPEC.md): hardening and close.**
+**Nothing is selected.** The [timeline/SPEC.md](timeline/SPEC.md) plan is complete:
+Phases 1 to 3 are on `main`, Phase 4 is on `timeline/p4` with the gates green, the
+evidence indexed, the docs reviewed and the design review fixes closed. The mockup link
+in the SPEC stays as the design record.
 
-- Base: `main` (Phase 3 on it, see Position). Branch `timeline/p4` from `main`.
-- Team, per `~/.claude/rules/delegation.md`: one lane, `opus-high`, on `timeline/p4` in
-  the main checkout, then a `fable-medium` design review against the mockup
-  (<https://claude.ai/artifact/PYWeMH5tEhE9fNS9uhrBEt>), read-only, then one worker
-  applies the fixes. The orchestrator owns the gates, the shared docs and this file.
-- Order:
-  1. Measure: frame time with the strip open on the 54-entity perf board at 30x, every
-     group expanded, sensors expanded, with the Performance panel or a
-     `requestAnimationFrame` interval record as the Phase 2 evidence did. Target: no canvas
-     frame over 16 ms attributable to the strip. Add row windowing only if the
-     measurement fails; record the numbers either way. The Phase 1 follow-up about row
-     object reuse per horizon is measured here before any change.
-  2. Accessibility: the strip group label carries the horizon; headers and labels are
-     buttons with names (decide the sub-lane label and the readout context from the
-     follow-ups); the contrast of every mark ink on the panel meets the design system
-     table in both themes. Record each contrast ratio in the evidence.
-  3. Remove dead CSS and dead exports the earlier phases left; keep the exports the
-     landmines protect (`selectObservedThroughWholeS`, `bandNote`, `bandStep`,
-     `TrialOutcomeSummary`, `ENGSTRIP_OPEN_KEY`).
-  4. Gates: `npm run check`, `npm run check:silent`, `npm run build && npm run
-     check:bundle`, `npm run test:e2e` with a dev server and `E2E_URL`.
-  5. Evidence under `docs/field-te/evidence/run-timeline-p4-<date>/` (findings.json, the
-     script as `.mjs.txt`, oxipng screenshots), indexed in `docs/README.md`,
-     `npm run check:evidence`.
-  6. Docs: the final review of PROJECT_GUIDE, ENGINEERING_REFERENCE, DESIGN_SYSTEM and
-     VERIFICATION with `npm run docs:review`; the mockup link in the SPEC stays as the
-     design record; `npm run docs:check`.
-  7. The design review and its fixes; the gates again.
-  8. Rewrite this file in place: record Phase 4, record that the SPEC plan is complete,
-     and select nothing.
-- Exclusions: no engine or physics change; no interaction advances `observedThroughS`;
-  no SPEC text change; no edit to `runTimeline.ts` or `timeViewport.ts` except a
-  measured performance fix with a test and fixed-ID parity.
-- Brief shape per `~/.claude/rules/delegation.md`: the working directory, the owned files,
-  the gate command, the report shape and a time budget. A worker's report is a claim: the
-  orchestrator runs the gates and reads the diff.
-- Next action: branch `timeline/p4` from `main`, then brief the `opus-high` lane with
-  the measurement (order item 1).
-- Stop condition: Phase 4 on `timeline/p4` with the gates green, the evidence indexed,
-  the docs reviewed, the design review fixes closed, and this file recording that the
-  plan is complete and selecting nothing. Then stop and ask the user to authorize the
-  merge and the push.
+- Pending user action: authorize a fast-forward merge of `timeline/p4` to `main` and a
+  push. After the merge, delete the `timeline/p4` branch and rewrite the Position here.
+- The follow-ups above are candidates, not rows. A next task needs a plan or a user
+  decision first.
 
 ## Landmines
 
@@ -422,6 +466,29 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
   run timeline open flag, and `RUN_TIMELINE_HEIGHT_KEY` holds the height.
   `storageManagement.ts` derives live keys from the exports. The e2e reads
   `#run-timeline-toggle`, `#run-timeline` and `.runtl-dock`.
+- The rows are windowed. `stripLayout` keeps every line; only the gutter, the grounds and
+  the rows slice it through `useWindowedLines(lines, view)`. A new component that draws
+  per line inside `.runtl-scroll` must take the same `view`, or it draws every line and
+  the frame cost returns. An unmeasured view (`heightPx: Infinity`) draws every line,
+  which the static tests rely on. A drawn line keeps its layout y: the gutter uses a
+  spacer for the first drawn line, the plot uses absolute y.
+- Strip components draw with `var(--runtl-*)` only, never `KIND_INK` or `--ew`, `--de`,
+  `--ghost` directly; `RunTimeline.tsx` passes `KIND_INK` in as `--runtl-kind-*`. The
+  `--runtl-paper-*` values are searched to the 3:1 floors (panel, selected ground, 0.75
+  opacity); a change to one, or a new ink, needs the contrast rerun of the Phase 4
+  capture script in both themes.
+- `OverPlayhead` in `Overview.tsx` subscribes to `selectSimTimeS` alone and has no glide;
+  the overview picture must not read the clock.
+- A row name with a trailing space and digits (`/ \d+$/`) renders as `.runtl-name-head` plus
+  `.runtl-name-tail`; the head keeps the trailing space, so the button text equals the
+  label. Tests match that markup. The meta is left out when the label starts with it.
+- An effector mark's `after` and pk print only when the gap to the next mark in the row
+  is at least `LABEL_MIN_PX` (44 px); marks come sorted by time from `laneOf`.
+- The window readout markup is `<span class="runtl-zoom"><span class="runtl-zoom-name">Window </span>120 s</span>`;
+  a test matches it exactly.
+- The strip's group name is `Run timeline. Complete. Shown through T+m:ss` once
+  `horizonS >= durationS`; the Analyze fixture run is 60 s, so its test expects
+  `Complete`.
 - Turn Follow off through
   `setRunTimelineViewport(shownViewport(base, follow, durationS), false)`.
   `setRunTimelineFollow(false)` alone jumps the view to the stale stored start. A store
@@ -636,6 +703,7 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Evidence
 
+- [Run timeline Phase 4 browser check, 2026-09-28](field-te/evidence/run-timeline-p4-2026-09-28/README.md)
 - [Run timeline Phase 3 browser check, 2026-09-28](field-te/evidence/run-timeline-p3-2026-09-28/README.md)
 
 - [Run timeline Phase 2 browser check, 2026-09-27](field-te/evidence/run-timeline-p2-2026-09-27/README.md)
