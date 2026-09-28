@@ -70,8 +70,8 @@ describe('RunTimeline states', () => {
     expect(render()).toContain('>Shown through T+0:05<')
     useStore.getState().setBoardPhase('analyze')
     const html = render()
-    expect(html).toContain('>Shown through T+1:00<')
     // The fixture run is 60 s long, so T+1:00 is the whole record.
+    expect(html).toContain('>Complete · T+1:00<')
     expect(html).toContain('aria-label="Run timeline. Complete. Shown through T+1:00"')
   })
 
@@ -87,12 +87,15 @@ describe('RunTimeline states', () => {
     useStore.getState().setBoardPhase('analyze')
     observeTrial(endS - 20, 5)
     const cut = `T+${formatTime(endS - 20)}`
-    expect(render()).toContain(`aria-label="Run timeline. Shown through ${cut}"`)
+    const partial = render()
+    expect(partial).toContain(`aria-label="Run timeline. Shown through ${cut}"`)
+    expect(partial).toContain(`>Shown through ${cut}<`)
     observeTrial(endS, 5)
     const end = `T+${formatTime(endS)}`
     const html = render()
     expect(html).toContain(`aria-label="Run timeline. Complete. Shown through ${end}"`)
-    expect(html).toContain(`>Shown through ${end}<`)
+    expect(html).toContain(`>Complete · ${end}<`)
+    expect(html).not.toContain(`>Shown through ${end}<`)
   })
 
   it('puts the axis and the overview under the scrolling rows, as the mockup does', () => {
@@ -113,7 +116,8 @@ describe('RunTimeline rows', () => {
 
   it('starts with every group collapsed to its summary row', () => {
     const html = render()
-    for (const name of ['All sensors', 'All effectors', 'All threats']) expect(html).toContain(name)
+    for (const name of ['>all sensors<', '>all effectors<', '>all threats<'])
+      expect(html).toContain(name)
     expect(count(html, 'aria-expanded="false"')).toBe(3)
     expect(html).not.toContain('aria-label="Hide')
     expect(count(html, 'class="runtl-summary"')).toBe(3)
@@ -122,8 +126,8 @@ describe('RunTimeline rows', () => {
   it('expands a group to its member rows with hide controls', () => {
     session({ openGroups: ['threat'] })
     const html = render()
-    expect(html).not.toContain('All threats')
-    expect(html).toContain('All sensors')
+    expect(html).not.toContain('all threats')
+    expect(html).toContain('all sensors')
     for (const id of ['swarm', 'moving', 'flyby']) expect(html).toContain(`aria-label="Hide ${id}"`)
     expect(html).not.toContain('aria-label="Hide radar"')
   })
@@ -471,5 +475,50 @@ describe('RunTimeline design review fixes', () => {
     const wide = draw(5)
     expect(wide).toContain('>3 left<')
     expect(wide).toContain('>pk 0.45<')
+  })
+
+  it('prints a C2 assign label only when the gap to the next mark holds it', () => {
+    const row: RunTimelineRow = {
+      key: 'c2:node',
+      kind: 'c2',
+      label: 'C2',
+      meta: '',
+      entityId: 'node',
+      spans: [],
+      marks: [
+        { kind: 'assign', tS: 40, text: 'Coyote 1' },
+        { kind: 'assign', tS: 50, text: 'Gun' },
+        { kind: 'assign', tS: 60, text: 'Coyote 2' },
+      ],
+    }
+    const draw = (pxPerS: number) =>
+      renderToStaticMarkup(
+        <svg>
+          <LaneItems row={row} y={0} h={18} pxPerS={pxPerS} hatch="url(#h)" />
+        </svg>,
+      )
+    // Coyote 1 needs ceil(12 + 8 * 6.6) = 65 px; Gun needs the 44 px floor.
+    const tight = draw(4.4)
+    expect(tight).not.toContain('>Coyote 1<')
+    expect(tight).toContain('>Gun<')
+    // The last mark has the row to itself.
+    expect(tight).toContain('>Coyote 2<')
+    expect(draw(4.3)).not.toContain('>Gun<')
+    expect(draw(6.4)).not.toContain('>Coyote 1<')
+    expect(draw(6.5)).toContain('>Coyote 1<')
+  })
+
+  it('draws the legend in the header after the horizon, as the mockup does', () => {
+    const html = render()
+    const words = ['hold', 'coast', 'classify', 'window', 'prep', 'flight', 'dwell']
+    const at = [
+      html.indexOf('class="runtl-scope"'),
+      ...[...words, 'hard kill', 'mission kill', 'miss'].map((w) => html.indexOf(`</i>${w}</li>`)),
+      html.indexOf('class="runtl-ctl"'),
+    ]
+    expect(at.every((i) => i >= 0)).toBe(true)
+    expect([...at].sort((a, b) => a - b)).toEqual(at)
+    expect(html).toContain('<ul class="runtl-legend" aria-label="Legend">')
+    expect(count(html, 'class="runtl-sw runtl-sw-')).toBe(10)
   })
 })

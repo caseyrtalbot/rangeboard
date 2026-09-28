@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from 'react'
 import type { RunTimelineMark, RunTimelineRow, RunTimelineSpan } from '../../analysis/runTimeline'
-import { durationText, spanBox } from './layout'
+import { assignLabelMinPx, durationText, LABEL_MIN_PX, spanBox } from './layout'
 
 /**
  * Kind inks: the strip's tokens (the .runtl rules in index.css). In the dark
@@ -17,13 +17,6 @@ const RAMP = {
   suspected: 'color-mix(in srgb, var(--danger) 55%, var(--bg-panel))',
   hostile: 'var(--danger)',
 } as const
-
-/**
- * Engagement spans print their duration once this wide, px (SPEC 1.5). An
- * effector mark prints its rounds-left chip or pk once the gap to the next
- * mark in its row is this wide.
- */
-const LABEL_MIN_PX = 44
 
 /** Hold chunk opacity: track quality 0..1 maps to 0.3..1, as the mockup shades it. */
 function holdOpacity(level: RunTimelineSpan['level']): number | undefined {
@@ -196,9 +189,9 @@ function markGlyph(mark: RunTimelineMark, row: RunTimelineRow, cx: number, y: nu
 }
 
 /**
- * A mark with its printed text: C2 assignments name the effector; effector rows
- * print `after` when `gapPx`, the room to the next mark in the row, is at
- * least LABEL_MIN_PX.
+ * A mark with its printed text: C2 assignments name the effector when `gapPx`,
+ * the room to the next mark in the row, holds the label (`assignLabelMinPx`);
+ * effector rows print `after` when the gap is at least LABEL_MIN_PX.
  */
 function markEl(
   mark: RunTimelineMark,
@@ -215,7 +208,12 @@ function markEl(
   const glyph = markGlyph(mark, row, cx, y, h)
   if (summary) return <g key={key}>{glyph}</g>
   let label: ReactNode = null
-  if (row.kind === 'c2' && mark.kind === 'assign' && mark.text) {
+  if (
+    row.kind === 'c2' &&
+    mark.kind === 'assign' &&
+    mark.text &&
+    gapPx >= assignLabelMinPx(mark.text)
+  ) {
     label = (
       <text className="runtl-label dim" x={cx + 6} y={cy + 4}>
         {mark.text}

@@ -36,11 +36,16 @@ export interface StripLayout {
   hiddenCount: number
 }
 
-type LineState = Pick<RunTimelineUi, 'openGroups' | 'openSensors' | 'openFolds' | 'hiddenRows'>
+type LineState = Pick<
+  RunTimelineUi,
+  'openGroups' | 'openSensors' | 'openSensorsAll' | 'openFolds' | 'hiddenRows'
+>
 
 /**
  * Groups in model order. A collapsed group is its header and one summary row;
  * an expanded group lists its visible rows, the threat group through the fold.
+ * A sensor row is open when listed, or when Expand all is in force and the row
+ * holds a track at this horizon, so a row that gains its first track opens.
  */
 export function stripLayout(model: RunTimelineModel, state: LineState): StripLayout {
   const hidden = new Set(state.hiddenRows)
@@ -52,9 +57,12 @@ export function stripLayout(model: RunTimelineModel, state: LineState): StripLay
     y += h
   }
   const pushRow = (row: RunTimelineRow, inFold: boolean) => {
-    const open = row.subLanes != null && state.openSensors.includes(row.key)
+    const subs = row.subLanes
+    const open =
+      subs != null &&
+      ((state.openSensorsAll && subs.length > 0) || state.openSensors.includes(row.key))
     push({ t: 'row', key: row.key, row, open, inFold }, ROW_H)
-    if (open) for (const sub of row.subLanes!) push({ t: 'sub', key: sub.key, row: sub }, SUB_H)
+    if (open) for (const sub of subs) push({ t: 'sub', key: sub.key, row: sub }, SUB_H)
   }
   for (const group of model.groups) {
     const visible = group.rows.filter((row) => !hidden.has(row.key))
@@ -87,6 +95,13 @@ export function stripLayout(model: RunTimelineModel, state: LineState): StripLay
   return { lines, heightPx: y, hiddenCount }
 }
 
+/** The sensor rows open on screen: row lines that draw their sub-lanes. */
+export function openSensorKeys(lines: readonly Placed[]): string[] {
+  const keys: string[] = []
+  for (const line of lines) if (line.t === 'row' && line.open) keys.push(line.key)
+  return keys
+}
+
 /**
  * A span at absolute run-time pixels: x is `startS * pxPerS`. The plot's pan
  * wrapper shifts every row by `panPx`, so the viewport x is `x + panPx`, which
@@ -109,6 +124,26 @@ export function panPx(t0S: number, pxPerS: number): number {
  */
 export function playheadX(tS: number, durationS: number, pxPerS: number): number {
   return Math.max(0, Math.min(tS * pxPerS, durationS * pxPerS - 1))
+}
+
+/**
+ * Engagement spans print their duration once this wide, px (SPEC 1.5). An
+ * effector mark prints its rounds-left chip or pk once the gap to the next
+ * mark in its row is this wide.
+ */
+export const LABEL_MIN_PX = 44
+
+/** Advance of one mono character at the 11 px dense size, px (0.6 em, as the chip sizes it). */
+const MONO_CHAR_PX = 6.6
+
+/**
+ * The gap a C2 assign label needs to the next mark in its row, px: the 6 px
+ * offset from its glyph, the label's estimated mono width, and 6 px so it ends
+ * clear of the next glyph (its 4 px half width plus 2 px). Never under
+ * LABEL_MIN_PX, the effector rule.
+ */
+export function assignLabelMinPx(text: string): number {
+  return Math.max(LABEL_MIN_PX, Math.ceil(12 + text.length * MONO_CHAR_PX))
 }
 
 /** A span's duration as printed on it. */

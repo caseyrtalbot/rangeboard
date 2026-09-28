@@ -1,7 +1,7 @@
-import { memo } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
 import type { RunTimelineGroup, RunTimelineKind, RunTimelineRow } from '../../analysis/runTimeline'
 import { useStore } from '../../state/store'
-import type { Placed } from './layout'
+import { openSensorKeys, type Placed } from './layout'
 import { useWindowedLines, type RowView } from './useRowWindow'
 import { selectRunTimelineRow } from './useRunTimelineSelection'
 
@@ -17,9 +17,9 @@ const ROW_INK: Record<RunTimelineKind, string> = {
 /** Side ink: red for a threat, the sensor ink for every other kind, as the sensor rows. */
 const SIDE_INK = { blue: 'var(--runtl-sensor)', red: 'var(--danger)' } as const
 
-/** The summary line under a collapsed group header. */
+/** The summary line under a collapsed group header, lower case as the mockup prints it. */
 function summaryLabel(group: RunTimelineGroup): string {
-  return group.key === 'c2' ? 'All C2 nodes' : `All ${group.label.toLowerCase()}`
+  return group.key === 'c2' ? 'all C2 nodes' : `all ${group.label.toLowerCase()}`
 }
 
 const GroupHeader = memo(function GroupHeader({
@@ -84,11 +84,13 @@ const RowLine = memo(function RowLine({
   open,
   inFold,
   selected,
+  onToggleSensor,
 }: {
   row: RunTimelineRow
   open: boolean
   inFold: boolean
   selected: boolean
+  onToggleSensor: (rowKey: string) => void
 }) {
   const expandable = row.subLanes != null && row.subLanes.length > 0
   // A meta the name already starts with repeats it; the name keeps the room.
@@ -101,7 +103,7 @@ const RowLine = memo(function RowLine({
           className="runtl-chev runtl-expand"
           aria-expanded={open}
           aria-label={`Tracks held by ${row.label}`}
-          onClick={() => useStore.getState().toggleRunTimelineSensor(row.key)}
+          onClick={() => onToggleSensor(row.key)}
         >
           {open ? '▾' : '▸'}
         </button>
@@ -219,6 +221,18 @@ export const Gutter = memo(function Gutter({
   selected: ReadonlySet<string>
 }) {
   const shown = useWindowedLines(lines, view)
+  // A sensor toggle hands the store the rows open on screen, so clearing the
+  // Expand all flag closes no other row. A ref keeps the callback stable, so
+  // the memoized rows skip a layout change.
+  const linesRef = useRef(lines)
+  useEffect(() => {
+    linesRef.current = lines
+  }, [lines])
+  const onToggleSensor = useCallback(
+    (rowKey: string) =>
+      useStore.getState().toggleRunTimelineSensor(rowKey, openSensorKeys(linesRef.current)),
+    [],
+  )
   return (
     <div className="runtl-gutter" style={{ height: heightPx }}>
       {shown.length > 0 && shown[0].y > 0 && <div style={{ height: shown[0].y }} />}
@@ -245,6 +259,7 @@ export const Gutter = memo(function Gutter({
                 open={line.open}
                 inFold={line.inFold}
                 selected={selected.has(line.key)}
+                onToggleSensor={onToggleSensor}
               />
             )
           case 'sub':

@@ -1,0 +1,696 @@
+// Run timeline Row E lane E1 capture: 1265 x 900, a fresh browser profile per board.
+// Boards: the JIATF-401 laydown (src/playback/__fixtures__/detection-outside-rings.json)
+// and the 54-entity performance board "Layered (Acoustic + MEROPS)"
+// (docs/field-te/evidence/perf-2026-09-06/scenario.json), each loaded through
+// parseAutosave and loadScenario. It checks items 1 to 8 of the lane E1 list in the
+// dark and daylight themes, records observedThroughS before and after each
+// interaction, takes the shots and reruns the Phase 4 contrast table with the new
+// legend and playhead cap pairs added.
+// Usage: node run-timeline-e1-capture.mjs <base-url> <out-dir> <repo-root>
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT] = process.argv.slice(2)
+mkdirSync(OUT, { recursive: true })
+const BOARDS = [
+  { id: 'jiatf', fixture: 'src/playback/__fixtures__/detection-outside-rings.json' },
+  { id: 'perf54', fixture: 'docs/field-te/evidence/perf-2026-09-06/scenario.json' },
+]
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const r4 = (x) => (x == null ? x : Math.round(x * 10000) / 10000)
+
+const browser = await chromium.launch({ headless: true })
+const findings = { capturedAt: new Date().toISOString(), viewport: '1265x900', boards: {}, shots: [], errors: [] }
+
+for (const board of BOARDS) {
+  const RAW = readFileSync(join(ROOT, board.fixture), 'utf8')
+  // A new context has empty storage: a fresh profile.
+  const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+  const page = await ctx.newPage()
+  page.on('pageerror', (e) => findings.errors.push(`${board.id}: ${e.message}`))
+  page.on('console', (m) => {
+    if (m.type() === 'error') findings.errors.push(`${board.id}: ${m.text().slice(0, 200)}`)
+  })
+  const out = { fixture: board.fixture }
+  findings.boards[board.id] = out
+  const waitFor = (fn, arg, timeout = 60000) => page.waitForFunction(fn, arg, { timeout })
+
+  await page.goto(BASE, { waitUntil: 'load' })
+  await waitFor(() => document.querySelector('.konvajs-content canvas') && window.__store)
+  out.freshProfile = await page.evaluate(async () => {
+    const { RUN_TIMELINE_HEIGHT_KEY } = await import('/src/io/storageKeys.ts')
+    return {
+      savedHeight: localStorage.getItem(RUN_TIMELINE_HEIGHT_KEY),
+      heightPx: window.__store.getState().ui.runTimeline.heightPx,
+    }
+  })
+  await page.evaluate(async (raw) => {
+    const { parseAutosave } = await import('/src/io/persist.ts')
+    const s = window.__store.getState()
+    s.loadScenario(parseAutosave(raw))
+    s.setTheme('dark')
+  }, RAW)
+  await sleep(400)
+
+  const clock = () =>
+    page.evaluate(async () => {
+      const { durationOf } = await import('/src/state/selectors.ts')
+      const s = window.__store.getState()
+      return {
+        simTimeS: s.playback.simTimeS,
+        observedThroughS: s.playback.observedThroughS,
+        durationS: durationOf(s.scenario),
+        name: s.scenario.name,
+        entities: s.scenario.entities.length,
+      }
+    })
+  /** Run `fn` and record the clock before and after; observation must not move. */
+  const steps = []
+  const step = async (label, fn) => {
+    const a = await clock()
+    const result = fn ? await fn() : undefined
+    await sleep(300)
+    const b = await clock()
+    const rec = {
+      label,
+      observedThroughS: [r4(a.observedThroughS), r4(b.observedThroughS)],
+      simTimeS: [r4(a.simTimeS), r4(b.simTimeS)],
+      observedUnchanged: a.observedThroughS === b.observedThroughS,
+    }
+    steps.push(rec)
+    return result
+  }
+  const shot = async (name, state) => {
+    await sleep(400)
+    await page.screenshot({ path: join(OUT, `${name}.png`) })
+    const c = await clock()
+    findings.shots.push({ file: `${name}.png`, board: board.id, state, simTimeS: r4(c.simTimeS), observedThroughS: r4(c.observedThroughS) })
+    console.log('shot', name)
+  }
+  const bothThemes = async (name, state) => {
+    await shot(`${name}-dark`, `${state}, dark theme`)
+    await page.evaluate(() => window.__store.getState().setTheme('light'))
+    await shot(`${name}-daylight`, `${state}, daylight theme`)
+    await page.evaluate(() => window.__store.getState().setTheme('dark'))
+    await sleep(200)
+  }
+
+  // Execute with a ready trial; the strip opens from the Timeline toggle.
+  await page.click('#board-phase-execute')
+  await waitFor(() => document.querySelector('.board-app[data-board-phase="execute"]'))
+  await page.evaluate(() => window.__store.getState().startRun())
+  await waitFor(() => ['ready', 'error'].includes(window.__store.getState().trial.status), null, 180000)
+  out.trialStatus = await page.evaluate(() => window.__store.getState().trial.status)
+  // startRun plays at 1x; pause, so each interaction below reads a held clock.
+  await page.evaluate(() => window.__store.getState().setPlaying(false))
+  await sleep(200)
+  out.board = await clock()
+  console.log(board.id, JSON.stringify(out.board), out.trialStatus)
+  await page.click('#run-timeline-toggle')
+  await waitFor(() => document.querySelector('#run-timeline .runtl-head'))
+  await sleep(400)
+
+  // Item 8: a fresh profile opens the dock at 264 px; every group header and
+  // summary row shows with no scroll.
+  const fold = () =>
+    page.evaluate(() => {
+      const sc = document.querySelector('#run-timeline .runtl-scroll')
+      const r = sc.getBoundingClientRect()
+      const lines = [...document.querySelectorAll('#run-timeline .runtl-gutter > .runtl-line')]
+      const inView = (el) => {
+        const b = el.getBoundingClientRect()
+        return b.top >= r.top - 0.5 && b.bottom <= r.bottom + 0.5
+      }
+      return {
+        dockPx: Math.round(document.querySelector('.runtl-dock').getBoundingClientRect().height),
+        headPx: Math.round(document.querySelector('.runtl-head').getBoundingClientRect().height),
+        axisPx: Math.round(document.querySelector('.runtl-axis').getBoundingClientRect().height),
+        overPx: Math.round(document.querySelector('.runtl-over').getBoundingClientRect().height),
+        scrollViewPx: sc.clientHeight,
+        scrollHeightPx: sc.scrollHeight,
+        scrolls: sc.scrollHeight > sc.clientHeight,
+        groupHeaders: lines.filter((l) => l.classList.contains('runtl-group')).map((l) => ({ text: l.textContent, inView: inView(l) })),
+        summaryRows: lines.filter((l) => l.classList.contains('runtl-summary-name')).map((l) => ({ text: l.textContent, inView: inView(l) })),
+      }
+    })
+  out.item8 = await step('open the strip, every group collapsed', fold)
+  out.item8.pass =
+    out.freshProfile.savedHeight == null &&
+    out.freshProfile.heightPx === 264 &&
+    !out.item8.scrolls &&
+    out.item8.groupHeaders.every((g) => g.inView) &&
+    out.item8.summaryRows.every((g) => g.inView) &&
+    out.item8.groupHeaders.length === out.item8.summaryRows.length
+  console.log('item8', JSON.stringify(out.item8))
+
+  // Item 2: the summary label.
+  out.item2 = await page.evaluate(() => {
+    const el = document.querySelector('#run-timeline .runtl-summary-name')
+    const cs = getComputedStyle(el)
+    return {
+      texts: [...document.querySelectorAll('#run-timeline .runtl-summary-name')].map((e) => e.textContent),
+      fontFamily: cs.fontFamily,
+      fontSize: cs.fontSize,
+      paddingLeft: cs.paddingLeft,
+    }
+  })
+  out.item2.pass =
+    out.item2.texts.every((t) => /^all [a-zC0-9 ]+$/.test(t)) &&
+    /mono/i.test(out.item2.fontFamily) &&
+    out.item2.fontSize === '11px' &&
+    out.item2.paddingLeft === '18px'
+  console.log('item2', JSON.stringify(out.item2))
+
+  // Item 3: header control heights; item 6: the legend in the header.
+  const header = () =>
+    page.evaluate(() => {
+      const head = document.querySelector('#run-timeline .runtl-head')
+      const hb = head.getBoundingClientRect()
+      const buttons = [...head.querySelectorAll('button')].map((b) => ({
+        name: b.getAttribute('aria-label') ?? b.textContent,
+        h: b.getBoundingClientRect().height,
+        cls: b.className,
+      }))
+      const legend = head.querySelector('.runtl-legend')
+      const lb = legend.getBoundingClientRect()
+      const items = [...legend.children].map((li) => {
+        const b = li.getBoundingClientRect()
+        const sw = li.querySelector('.runtl-sw')
+        const cs = getComputedStyle(sw)
+        return {
+          text: li.textContent,
+          shown: b.top < lb.bottom - 1 && b.right <= lb.right + 0.5,
+          left: Math.round(b.left),
+          right: Math.round(b.right),
+          swatch: { w: sw.getBoundingClientRect().width, bg: cs.backgroundColor, bgImage: cs.backgroundImage.slice(0, 80), border: cs.borderTopColor, borderStyle: cs.borderTopStyle },
+          fontSize: getComputedStyle(li).fontSize,
+          color: getComputedStyle(li).color,
+        }
+      })
+      const scope = head.querySelector('.runtl-scope').getBoundingClientRect()
+      const ctl = head.querySelector('.runtl-ctl').getBoundingClientRect()
+      return {
+        headPx: hb.height,
+        buttons,
+        legend: { left: Math.round(lb.left), right: Math.round(lb.right), height: lb.height, items },
+        shownItems: items.filter((i) => i.shown).map((i) => i.text),
+        clearOfScope: lb.left >= scope.right,
+        clearOfControls: lb.right <= ctl.left,
+        scopeText: head.querySelector('.runtl-scope').textContent,
+      }
+    })
+  out.item3 = await header()
+  out.item3.pass = out.item3.buttons.every((b) => b.h === 24) && out.item3.headPx === 28
+  out.item6 = { execute: out.item3.legend, shownItems: out.item3.shownItems, clearOfScope: out.item3.clearOfScope, clearOfControls: out.item3.clearOfControls }
+  console.log('item3/6', JSON.stringify({ buttons: out.item3.buttons.map((b) => b.h), shown: out.item3.shownItems }))
+  await bothThemes(`${board.id}-execute-fresh`, `${out.board.name}, Execute at T+0 with a fresh profile, strip at the 264 px default, every group collapsed`)
+
+  // Item 7: Expand all at T+0 sets the flag; rows that gain a track in play open.
+  const sensorFacts = () =>
+    page.evaluate(async () => {
+      const { selectTrialHorizon, selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+      const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+      const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+      const { stripLayout } = await import('/src/panels/timeline/layout.ts')
+      const s = window.__store.getState()
+      const sel = selectTrialSelection(s)
+      const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+      const h = selectTrialHorizon(s, s.playback.simTimeS)
+      const model = runTimelineOf(view, h)
+      const layout = stripLayout(model, s.ui.runTimeline)
+      const sensors = model.groups.find((g) => g.key === 'sensor')?.rows ?? []
+      const withTrack = sensors.filter((r) => (r.subLanes?.length ?? 0) > 0).map((r) => r.key)
+      const open = layout.lines.filter((l) => l.t === 'row' && l.open).map((l) => l.key)
+      return {
+        horizonS: h,
+        openSensorsAll: s.ui.runTimeline.openSensorsAll,
+        openSensors: s.ui.runTimeline.openSensors,
+        sensorRows: sensors.length,
+        withTrack,
+        open,
+        domExpanded: [...document.querySelectorAll('#run-timeline .runtl-expand')].map((b) => b.getAttribute('aria-expanded')),
+      }
+    })
+  const item7 = {}
+  item7.atStart = await step('Expand all at T+0', async () => {
+    await page.click('#run-timeline .runtl-ctl button:has-text("Expand all")')
+    await sleep(300)
+    return sensorFacts()
+  })
+  await page.evaluate(() => window.__store.getState().setSpeedMult(30))
+  const playMs = board.id === 'jiatf' ? 20000 : 10000
+  const p0 = await clock()
+  await page.evaluate(() => window.__store.getState().setPlaying(true))
+  await sleep(playMs)
+  await page.evaluate(() => window.__store.getState().setPlaying(false))
+  await sleep(400)
+  const p1 = await clock()
+  item7.play = { ms: playMs, speed: 30, observedThroughS: [r4(p0.observedThroughS), r4(p1.observedThroughS)], note: 'play advances observation by design' }
+  item7.afterPlay = await sensorFacts()
+  item7.gainedAfterExpand = item7.afterPlay.withTrack.filter((k) => !item7.atStart.openSensors.includes(k))
+  item7.everyTrackRowOpen = item7.afterPlay.withTrack.every((k) => item7.afterPlay.open.includes(k))
+  await bothThemes(`${board.id}-execute-expanded`, `Execute after Expand all at T+0 and ${playMs / 1000} s of play at 30x, paused; the sensor rows that gained a track during play are open`)
+  // A single row toggle clears the flag and closes only that row.
+  item7.toggle = await step('toggle the first open sensor row', async () => {
+    const before = await sensorFacts()
+    if (before.open.length === 0) return { skipped: 'no open sensor row' }
+    await page.locator('#run-timeline .runtl-expand[aria-expanded="true"]').first().click()
+    await sleep(300)
+    const after = await sensorFacts()
+    return { openBefore: before.open, openAfter: after.open, flagAfter: after.openSensorsAll }
+  })
+  item7.toggle.closesOnlyThatRow =
+    item7.toggle.openBefore == null ||
+    (item7.toggle.openAfter.length === item7.toggle.openBefore.length - 1 && item7.toggle.flagAfter === false)
+  item7.collapse = await step('Expand all, then Collapse all', async () => {
+    await page.click('#run-timeline .runtl-ctl button:has-text("Expand all")')
+    await sleep(200)
+    const on = (await sensorFacts()).openSensorsAll
+    await page.click('#run-timeline .runtl-ctl button:has-text("Collapse all")')
+    await sleep(200)
+    return { flagAfterExpand: on, flagAfterCollapse: (await sensorFacts()).openSensorsAll }
+  })
+  item7.pass =
+    item7.atStart.openSensorsAll === true &&
+    item7.everyTrackRowOpen &&
+    item7.toggle.closesOnlyThatRow &&
+    item7.collapse.flagAfterExpand === true &&
+    item7.collapse.flagAfterCollapse === false
+  out.item7 = item7
+  console.log('item7', JSON.stringify({ gained: item7.gainedAfterExpand, pass: item7.pass }))
+
+  // Item 4: the playhead cap glides with the playhead; reduced motion stops it.
+  const cap = () =>
+    page.evaluate(() => {
+      const ph = document.querySelector('#run-timeline .runtl-playhead')
+      const cs = getComputedStyle(ph)
+      const b = getComputedStyle(ph, '::before')
+      return {
+        playheadTransition: cs.transitionProperty + ' ' + cs.transitionDuration,
+        capContent: b.content,
+        capBorderTop: `${b.borderTopWidth} ${b.borderTopStyle} ${b.borderTopColor}`,
+        capBorderLeft: `${b.borderLeftWidth} ${b.borderLeftColor}`,
+        capBorderRight: `${b.borderRightWidth} ${b.borderRightColor}`,
+        capBox: `${b.width} x ${b.height}`,
+        capLeft: b.left,
+        capTop: b.top,
+        capTransition: b.transitionDuration,
+        lineColor: cs.backgroundColor,
+      }
+    })
+  out.item4 = { motion: await cap() }
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await sleep(200)
+  out.item4.reduced = await cap()
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  out.item4.pass =
+    out.item4.motion.capBorderTop.startsWith('5px solid') &&
+    out.item4.motion.capBorderTop.endsWith(out.item4.motion.lineColor) &&
+    out.item4.motion.capBorderLeft.startsWith('3px') &&
+    out.item4.motion.capBorderRight.startsWith('3px') &&
+    out.item4.motion.capBox === '1px x 0px' &&
+    !/^0s/.test(out.item4.motion.playheadTransition.split(' ').pop()) &&
+    /(^| )0s$/.test(out.item4.reduced.playheadTransition)
+  console.log('item4', JSON.stringify(out.item4))
+
+  // Item 5 and item 1: complete the run, Analyze.
+  await page.evaluate(async () => {
+    const { durationOf } = await import('/src/state/selectors.ts')
+    const s = window.__store.getState()
+    s.completeRun(durationOf(s.scenario))
+  })
+  await page.click('#board-phase-analyze')
+  await waitFor(() => document.querySelector('.board-app[data-board-phase="analyze"]'))
+  await waitFor(() => document.querySelector('#run-timeline .runtl-head'))
+  await sleep(500)
+  const names = () =>
+    page.evaluate(() => ({
+      header: document.querySelector('#run-timeline .runtl-scope').textContent,
+      name: document.querySelector('#run-timeline').getAttribute('aria-label'),
+    }))
+  const item5 = { analyze: await names() }
+  await step('Fit and open the C2 group', async () => {
+    await page.click('#run-timeline .runtl-ctl button:has-text("Fit")')
+    const c2 = page.locator('#run-timeline .runtl-group-btn', { hasText: 'C2' })
+    if ((await c2.count()) > 0 && (await c2.first().getAttribute('aria-expanded')) === 'false') await c2.first().click()
+  })
+  // The tooltip keeps its horizon line.
+  item5.tooltip = await step('hover a mark', async () => {
+    const box = await page.evaluate(() => {
+      const r = document.querySelector('#run-timeline .runtl-plot').getBoundingClientRect()
+      const m = [...document.querySelectorAll('#run-timeline .runtl-svg .runtl-m')].find((el) => {
+        const b = el.getBoundingClientRect()
+        return b.width > 0 && b.left > r.left && b.right < r.right && b.top > r.top && b.bottom < r.bottom
+      })
+      if (!m) return null
+      const b = m.getBoundingClientRect()
+      return { x: b.left + b.width / 2, y: b.top + b.height / 2 }
+    })
+    if (!box) return { skipped: 'no mark in view' }
+    await page.mouse.move(box.x, box.y)
+    await sleep(300)
+    const t = await page.evaluate(() => document.querySelector('#run-timeline .runtl-tip-horizon')?.textContent ?? null)
+    await page.mouse.move(5, 5)
+    return { horizonLine: t }
+  })
+  const c = await clock()
+  const end = `T+${Math.floor(c.durationS / 60)}:${String(Math.round(c.durationS % 60)).padStart(2, '0')}`
+  item5.expected = { header: `Complete · ${end}`, name: `Run timeline. Complete. Shown through ${end}`, horizonLine: `Shown through ${end}` }
+  item5.pass =
+    item5.analyze.header === item5.expected.header &&
+    item5.analyze.name === item5.expected.name &&
+    (item5.tooltip.horizonLine == null || item5.tooltip.horizonLine === item5.expected.horizonLine)
+  out.item5 = item5
+  console.log('item5', JSON.stringify(item5))
+
+  // Item 1: the C2 assign labels at Fit and in a zoomed window, and their overlaps.
+  const labels = () =>
+    page.evaluate(() => {
+      const plot = document.querySelector('#run-timeline .runtl-plot').getBoundingClientRect()
+      const rows = [...document.querySelectorAll('#run-timeline .runtl-svg .runtl-lane')]
+      const out = []
+      for (const lane of rows) {
+        const assigns = [...lane.querySelectorAll('.runtl-m-assign')]
+        if (assigns.length === 0) continue
+        const texts = [...lane.querySelectorAll('text.runtl-label.dim')].map((t) => {
+          const b = t.getBoundingClientRect()
+          return { text: t.textContent, x: Math.round(b.left), r: Math.round(b.right), y: Math.round(b.top) }
+        })
+        const marks = [...lane.querySelectorAll('.runtl-m')].map((m) => {
+          const b = m.getBoundingClientRect()
+          return { x: Math.round(b.left), r: Math.round(b.right), y: Math.round(b.top) }
+        })
+        const overlaps = []
+        for (const t of texts) {
+          for (const o of texts) if (o !== t && o.y === t.y && o.x < t.r && o.r > t.x) overlaps.push(`${t.text} x ${o.text}`)
+          for (const m of marks) if (Math.abs(m.y - t.y) < 12 && m.x < t.r && m.r > t.x) overlaps.push(`${t.text} x glyph at ${m.x}`)
+        }
+        out.push({ assigns: assigns.length, texts, overlaps: [...new Set(overlaps)], inPlot: texts.filter((t) => t.x < plot.right && t.r > plot.left).length })
+      }
+      return { zoom: document.querySelector('#run-timeline .runtl-zoom').textContent, lanes: out }
+    })
+  const item1 = { fit: await labels() }
+  await bothThemes(`${board.id}-analyze-fit`, `Analyze after the run completes, Fit, the C2 group open: assign labels print only where the gap holds them`)
+  // A 90 s window from 5 s before the C2 row's first assign mark, Follow off.
+  item1.zoomWindow = await step('90 s window on the first C2 assign marks', () =>
+    page.evaluate(async () => {
+      const { selectTrialHorizon, selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+      const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+      const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+      const s = window.__store.getState()
+      const sel = selectTrialSelection(s)
+      const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+      const m = runTimelineOf(view, selectTrialHorizon(s, Infinity))
+      const rows = m.groups.find((g) => g.key === 'c2')?.rows ?? []
+      const row = [...rows].sort((a, b) => b.marks.filter((k) => k.kind === 'assign').length - a.marks.filter((k) => k.kind === 'assign').length)[0]
+      const first = row?.marks.find((k) => k.kind === 'assign')
+      if (!first) return null
+      const v = { t0S: Math.max(0, first.tS - 5), winS: 90 }
+      s.setRunTimelineViewport(v, false)
+      return { row: row.key, viewport: v, assignTimes: row.marks.filter((k) => k.kind === 'assign').map((k) => k.tS) }
+    }),
+  )
+  await sleep(400)
+  item1.zoomed = await labels()
+  item1.rule = 'A C2 assign label prints when the gap to the next mark in its row is at least max(44, ceil(12 + 6.6 * characters)) px (assignLabelMinPx in layout.ts)'
+  item1.pass = [item1.fit, item1.zoomed].every((v) => v.lanes.every((l) => l.overlaps.length === 0))
+  out.item1 = item1
+  console.log('item1', JSON.stringify(item1))
+  await page.click('#run-timeline .runtl-ctl button:has-text("Fit")')
+  await sleep(300)
+
+  // Item 8 again in Analyze, where a retained trial adds the Tracks group:
+  // every group collapsed at the default height, with no scroll.
+  out.item8.analyze = await step('Analyze, Collapse all at the 264 px default', async () => {
+    await page.click('#run-timeline .runtl-ctl button:has-text("Collapse all")')
+    await sleep(300)
+    return fold()
+  })
+  out.item8.analyze.pass =
+    !out.item8.analyze.scrolls &&
+    out.item8.analyze.dockPx === 264 &&
+    out.item8.analyze.groupHeaders.every((g) => g.inView) &&
+    out.item8.analyze.summaryRows.every((g) => g.inView)
+  out.item8.pass = out.item8.pass && out.item8.analyze.pass
+  console.log('item8 analyze', JSON.stringify(out.item8.analyze))
+
+  // Item 6: the legend in Analyze.
+  out.item6.analyze = (await header()).legend
+  out.item6.pass = out.item6.clearOfScope && out.item6.clearOfControls && out.item6.shownItems.length > 0
+  out.steps = steps
+  out.stepsObservedUnchanged = steps.every((s) => s.observedUnchanged)
+  if (board.id === 'perf54') {
+    // Every open group, sensor row and fold, so every ink draws (the Phase 4 contrast part).
+    await page.evaluate(async () => {
+      const { selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+      const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+      const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+      const { foldThreats } = await import('/src/panels/timeline/fold.ts')
+      const { expandAllKeys } = await import('/src/panels/timeline/viewportActions.ts')
+      const s = window.__store.getState()
+      const sel = selectTrialSelection(s)
+      const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+      const m = runTimelineOf(view, Infinity)
+      const threat = m.groups.find((g) => g.key === 'threat')
+      for (const e of threat ? foldThreats(threat.rows) : [])
+        if (e.t === 'fold' && !window.__store.getState().ui.runTimeline.openFolds.includes(e.key))
+          window.__store.getState().toggleRunTimelineFold(e.key)
+      const { groups, sensorRows } = expandAllKeys(m)
+      window.__store.getState().expandAllRunTimeline(groups, sensorRows)
+    })
+    await sleep(400)
+    /**
+     * The contrast table. `expr` is the colour the code draws with (LaneMarks.tsx,
+     * Gutter.tsx, Overview.tsx, the .runtl rules); `sel` and `prop` read a drawn
+     * element when one exists. `alpha` is the element or group opacity. Floors
+     * are the design system's: 4.5:1 for text 1, text 2 and other text, 3:1 for
+     * text 3 (its recorded floor) and for a graphic a reader needs (WCAG 1.4.11).
+     * A graded step (a hold below full quality, the unknown and suspected ramp
+     * steps) has no floor: the full-strength ink carries it and the tooltip prints
+     * the level.
+     */
+    const K = { sensor: 'var(--runtl-sensor)', c2: 'var(--runtl-c2)', effector: 'var(--runtl-effector)', uas: 'var(--runtl-uas)' }
+    const PLOT = ['panel', 'selected']
+    const g = (id, sel, prop, expr, extra = {}) => ({ id, role: 'graphic', sel, prop, expr, on: PLOT, required: 3, ...extra })
+    const t = (id, expr, on, required, extra = {}) => ({ id, role: 'text', expr, on: [on], required, ...extra })
+    const INKS = {
+      rule: 'WCAG 2.1 relative luminance; ratio (L1 + 0.05) / (L2 + 0.05); an ink with alpha is composited over its surface first',
+      surfaces: {
+        panel: 'var(--bg-panel)',
+        selected: 'color-mix(in srgb, var(--text) 6%, var(--bg-panel))',
+        group: 'color-mix(in srgb, var(--surface-sunken) 55%, var(--bg-panel))',
+        overview: 'color-mix(in srgb, var(--surface-sunken) 50%, var(--bg-panel))',
+        unobserved: 'color-mix(in srgb, var(--surface-sunken) 70%, var(--bg-panel))',
+        raised: 'var(--surface-raised)',
+        chip: 'var(--surface-sunken)',
+        flightBar: 'var(--accent)',
+        dwellBar: 'var(--runtl-ew)',
+        burstBar: 'var(--runtl-de)',
+        followPressed: 'var(--text)',
+      },
+      items: [
+        g('mark detect', '.runtl-svg .runtl-m-detect', 'fill', K.sensor),
+        g('mark C2 init tick', '.runtl-svg line.runtl-m-init', 'stroke', K.c2),
+        g('mark track init ring', '.runtl-svg circle.runtl-m-init', 'stroke', K.c2),
+        g('mark firm', '.runtl-svg .runtl-m-firm', 'fill', K.c2),
+        g('mark drop', '.runtl-svg .runtl-m-drop', 'stroke', 'var(--runtl-ghost)'),
+        g('mark assign', '.runtl-svg .runtl-m-assign', 'stroke', K.effector),
+        g('mark release', '.runtl-svg .runtl-m-release', 'fill', 'var(--text)'),
+        g('mark shot', '.runtl-svg .runtl-m-shot', 'stroke', 'var(--text)'),
+        g('mark hard kill', '.runtl-svg .runtl-m-hard-kill', 'fill', 'var(--danger)'),
+        g('mark arrival', '.runtl-svg .runtl-m-arrival', 'fill', 'var(--danger)'),
+        g('mark mission kill', '.runtl-svg .runtl-m-mission-kill', 'fill', 'var(--runtl-ew)'),
+        g('mark miss', '.runtl-svg .runtl-m-miss', 'stroke', 'var(--runtl-ghost)'),
+        g('mark jam decision', '.runtl-svg .runtl-m-jam-decision', 'stroke', 'var(--runtl-ew)'),
+        g('mark CPA', '.runtl-svg .runtl-m-cpa', 'stroke', 'var(--runtl-cpa)'),
+        g('span hold, quality 1', '.runtl-svg .runtl-s-hold', 'fill', K.sensor),
+        g('span coast', '.runtl-svg .runtl-s-coast', 'stroke', K.sensor),
+        g('span classify hostile', null, null, 'var(--danger)'),
+        g('span window', '.runtl-svg .runtl-s-window', 'fill', 'var(--accent)'),
+        g('span preparation edge', '.runtl-svg .runtl-s-prep', 'stroke', 'var(--warn)'),
+        g('span flight', '.runtl-svg .runtl-s-flight', 'fill', 'var(--accent)'),
+        g('span burst', '.runtl-svg .runtl-s-burst', 'fill', 'var(--runtl-de)'),
+        g('span dwell', '.runtl-svg .runtl-s-dwell', 'fill', 'var(--runtl-ew)'),
+        g('span ghost', '.runtl-svg .runtl-s-ghost', 'stroke', 'var(--runtl-ghost)'),
+        g('span undetected', '.runtl-svg .runtl-s-undetected', 'stroke', 'var(--runtl-quiet)'),
+        g('playhead', '.runtl-playhead', 'backgroundColor', 'var(--text)', { on: ['panel', 'selected', 'unobserved'] }),
+        g('unobserved edge', '.runtl-unobserved line', 'stroke', 'var(--runtl-quiet)', { on: ['panel', 'unobserved'] }),
+        g('selected line bar', null, null, 'var(--text)', { on: ['panel'] }),
+        ...[
+          ['detect', K.sensor],
+          ['firm', K.c2],
+          ['assign', K.effector],
+          ['release', 'var(--text)'],
+          ['hard kill', 'var(--danger)'],
+          ['mission kill', 'var(--runtl-ew)'],
+          ['miss', 'var(--runtl-ghost)'],
+          ['CPA', 'var(--runtl-cpa)'],
+          ['hold', K.sensor],
+          ['window', 'var(--accent)'],
+          ['flight', 'var(--accent)'],
+          ['burst', 'var(--runtl-de)'],
+          ['dwell', 'var(--runtl-ew)'],
+          ['undetected', 'var(--runtl-quiet)'],
+        ].map(([k, e]) => g(`summary ${k} at 0.75`, null, null, e, { alpha: 0.75, on: ['panel'] })),
+        ...['sensor', 'c2', 'effector', 'uas'].map((k) =>
+          g(`row ink square ${k}`, null, null, K[k], { role: 'identifier', on: ['panel'] }),
+        ),
+        g('group ink square blue', null, null, 'var(--runtl-sensor)', { role: 'identifier', on: ['group'] }),
+        g('group ink square red', null, null, 'var(--danger)', { role: 'identifier', on: ['group'] }),
+        g('overview hard kill', null, null, 'var(--danger)', { on: ['overview'] }),
+        g('overview mission kill', null, null, 'var(--runtl-ew)', { on: ['overview'] }),
+        g('overview classify hostile', null, null, 'var(--danger)', { on: ['overview'] }),
+        g('overview playhead', '.runtl-over-playhead', 'stroke', 'var(--text)', { on: ['overview'] }),
+        g('overview window edge', '.runtl-over-window', 'stroke', 'var(--text-tertiary)', { on: ['overview'] }),
+        g('hold, quality 0 (opacity 0.3)', null, null, K.sensor, { role: 'graded step', alpha: 0.3, required: null }),
+        g('hold, quality 0.5 (opacity 0.65)', null, null, K.sensor, { role: 'graded step', alpha: 0.65, required: null }),
+        g('classify unknown (25 percent)', null, null, 'color-mix(in srgb, var(--danger) 25%, var(--bg-panel))', { role: 'graded step', on: ['panel'], required: null }),
+        g('classify suspected (55 percent)', null, null, 'color-mix(in srgb, var(--danger) 55%, var(--bg-panel))', { role: 'graded step', on: ['panel'], required: null }),
+        t('header title (text 1)', 'var(--text)', 'panel', 4.5),
+        t('header horizon (text 3)', 'var(--text-tertiary)', 'panel', 3),
+        t('window readout (text 3)', 'var(--text-tertiary)', 'panel', 3),
+        t('group header name (text 3)', 'var(--text-tertiary)', 'group', 3),
+        t('row label (text 2)', 'var(--text-dim)', 'panel', 4.5),
+        t('selected row label (text 1)', 'var(--text)', 'selected', 4.5),
+        t('row meta, count, side (text 3)', 'var(--text-tertiary)', 'panel', 3),
+        t('sub-lane and summary name (text 3)', 'var(--text-tertiary)', 'panel', 3),
+        t('fold label (text 2)', 'var(--text-dim)', 'panel', 4.5),
+        t('axis tick (text 3)', 'var(--text-tertiary)', 'panel', 3),
+        t('overview gutter (text 3)', 'var(--text-tertiary)', 'overview', 3),
+        t('duration on flight', 'var(--accent-ink)', 'flightBar', 4.5),
+        t('duration on dwell', 'var(--accent-ink)', 'dwellBar', 4.5, { sel: '.runtl-svg .runtl-dur', prop: 'fill' }),
+        t('duration on burst', 'var(--accent-ink)', 'burstBar', 4.5, { sel: '.runtl-svg .runtl-dur', prop: 'fill' }),
+        t('effector pk label (text 1)', 'var(--text)', 'panel', 4.5),
+        t('rounds chip label (text 1)', 'var(--text)', 'chip', 4.5),
+        t('C2 assign label (text 3)', 'var(--text-tertiary)', 'panel', 3),
+        t('tooltip body (text 2)', 'var(--text-secondary)', 'raised', 4.5),
+        t('tooltip title and data (text 1)', 'var(--text)', 'raised', 4.5),
+        t('tooltip horizon (text 3)', 'var(--text-tertiary)', 'raised', 3),
+        t('Follow pressed', 'var(--ink)', 'followPressed', 4.5),
+        // Row E lane E1: the header legend and the playhead cap.
+        t('legend word (text 3)', 'var(--text-tertiary)', 'panel', 3, { sel: '.runtl-legend li', prop: 'color' }),
+        g('legend hold', '.runtl-sw-hold', 'backgroundColor', K.sensor, { on: ['panel'] }),
+        g('legend coast', '.runtl-sw-coast', 'borderTopColor', K.sensor, { on: ['panel'] }),
+        g('legend classify, hostile end', null, null, 'var(--danger)', { on: ['panel'] }),
+        g('legend window', '.runtl-sw-window', 'backgroundColor', 'var(--accent)', { on: ['panel'] }),
+        g('legend prep hatch', null, null, 'var(--warn)', { on: ['panel'] }),
+        g('legend flight', '.runtl-sw-flight', 'backgroundColor', 'var(--accent)', { on: ['panel'] }),
+        g('legend dwell', '.runtl-sw-dwell', 'backgroundColor', 'var(--runtl-ew)', { on: ['panel'] }),
+        g('legend hard kill', '.runtl-sw-hard-kill', 'backgroundColor', 'var(--danger)', { on: ['panel'] }),
+        g('legend mission kill', '.runtl-sw-mission-kill', 'backgroundColor', 'var(--runtl-ew)', { on: ['panel'] }),
+        g('legend miss', '.runtl-sw-miss', 'borderTopColor', 'var(--runtl-ghost)', { on: ['panel'] }),
+        g('legend classify, unknown end (25 percent)', null, null, 'color-mix(in srgb, var(--danger) 25%, var(--bg-panel))', { role: 'graded step', on: ['panel'], required: null }),
+        g('playhead cap', null, null, 'var(--text)', { on: ['panel', 'selected', 'unobserved'] }),
+      ],
+    }
+    
+    const contrast = await (async () => {
+      const out = { rule: INKS.rule, themes: {} }
+      for (const theme of ['dark', 'light']) {
+        await page.evaluate((t) => window.__store.getState().setTheme(t), theme)
+        await sleep(400)
+        out.themes[theme] = await page.evaluate((inks) => {
+          const root = document.querySelector('#run-timeline')
+          const probe = document.createElement('span')
+          probe.style.display = 'none'
+          root.appendChild(probe)
+          const parse = (c) => {
+            let m = c.match(/^rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)$/)
+            if (m) return { r: +m[1], g: +m[2], b: +m[3], a: m[4] == null ? 1 : +m[4] }
+            m = c.match(/^color\(srgb ([\d.e-]+) ([\d.e-]+) ([\d.e-]+)(?: \/ ([\d.]+))?\)$/)
+            if (m) return { r: +m[1] * 255, g: +m[2] * 255, b: +m[3] * 255, a: m[4] == null ? 1 : +m[4] }
+            throw new Error(`unparsed colour ${c}`)
+          }
+          const resolve = (expr) => {
+            probe.style.color = ''
+            probe.style.color = expr
+            if (!probe.style.color) throw new Error(`invalid expression ${expr}`)
+            return parse(getComputedStyle(probe).color)
+          }
+          const over = (fg, bg, alpha) => {
+            const a = alpha * fg.a
+            return { r: fg.r * a + bg.r * (1 - a), g: fg.g * a + bg.g * (1 - a), b: fg.b * a + bg.b * (1 - a), a: 1 }
+          }
+          const lum = ({ r, g, b }) => {
+            const f = (v) => {
+              v /= 255
+              return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+            }
+            return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+          }
+          const ratio = (a, b) => {
+            const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p)
+            return (x + 0.05) / (y + 0.05)
+          }
+          const hex = ({ r, g, b }) =>
+            '#' + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')
+          const surfaces = Object.fromEntries(Object.entries(inks.surfaces).map(([k, e]) => [k, resolve(e)]))
+          const rows = []
+          for (const ink of inks.items) {
+            let fg = null
+            let source = 'expression'
+            if (ink.sel) {
+              const el = root.querySelector(ink.sel)
+              if (el) {
+                const cs = getComputedStyle(el)
+                const v = cs[ink.prop]
+                if (v && v !== 'none') {
+                  fg = parse(v)
+                  source = `element ${ink.sel} ${ink.prop}`
+                }
+              }
+            }
+            if (!fg) fg = resolve(ink.expr)
+            for (const on of ink.on) {
+              const bg = surfaces[on]
+              const shown = over(fg, bg, ink.alpha ?? 1)
+              const value = Math.round(ratio(shown, bg) * 100) / 100
+              rows.push({
+                id: ink.id,
+                role: ink.role,
+                ink: hex(fg),
+                alpha: ink.alpha ?? 1,
+                shown: hex(shown),
+                surface: on,
+                surfaceColour: hex(bg),
+                source,
+                ratio: value,
+                required: ink.required,
+                pass: ink.required == null ? null : value >= ink.required,
+              })
+            }
+          }
+          probe.remove()
+          return { surfaces: Object.fromEntries(Object.entries(surfaces).map(([k, v]) => [k, hex(v)])), rows }
+        }, INKS)
+      }
+      return out
+    })()
+    for (const [t, v] of Object.entries(contrast.themes)) {
+      const fails = v.rows.filter((r) => r.pass === false)
+      contrast[`${t}Summary`] = {
+        pairs: v.rows.length,
+        required: v.rows.filter((r) => r.pass != null).length,
+        fail: fails.length,
+        failing: fails.map((r) => `${r.id} on ${r.surface} ${r.ratio}`),
+      }
+      console.log('contrast', board.id, t, JSON.stringify(contrast[`${t}Summary`]))
+    }
+    out.contrast = contrast
+    await page.evaluate(() => window.__store.getState().setTheme('dark'))
+  }
+  await ctx.close()
+}
+
+findings.pass = Object.fromEntries(
+  Object.entries(findings.boards).map(([k, b]) => [
+    k,
+    { item1: b.item1?.pass, item2: b.item2?.pass, item3: b.item3?.pass, item4: b.item4?.pass, item5: b.item5?.pass, item6: b.item6?.pass, item7: b.item7?.pass, item8: b.item8?.pass, observation: b.stepsObservedUnchanged },
+  ]),
+)
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2) + '\n')
+console.log('pass', JSON.stringify(findings.pass))
+console.log('errors', findings.errors.length)
+await browser.close()

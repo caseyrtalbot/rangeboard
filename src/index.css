@@ -3767,6 +3767,92 @@ input[type='number'] {
   font-family: var(--font-mono);
 }
 
+.runtl-legend {
+  display: flex;
+  flex: 0 100 auto;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  min-width: 0;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  list-style: none;
+}
+
+/* The header shrinks the legend first; an item that no longer fits wraps
+   to the clipped second line, so it drops whole. */
+.runtl-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+}
+
+.runtl-sw {
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  width: 14px;
+  height: 6px;
+  border-radius: 1px;
+}
+
+.runtl-sw-hold {
+  background: var(--runtl-sensor);
+}
+
+.runtl-sw-coast {
+  border: 1px dashed var(--runtl-sensor);
+}
+
+.runtl-sw-classify {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--danger) 25%, var(--bg-panel)),
+    var(--danger)
+  );
+}
+
+.runtl-sw-window {
+  height: 3px;
+  background: var(--accent);
+}
+
+.runtl-sw-prep {
+  background: repeating-linear-gradient(45deg, var(--warn) 0 1px, transparent 1px 3px);
+}
+
+.runtl-sw-flight {
+  background: var(--accent);
+}
+
+.runtl-sw-dwell {
+  background: var(--runtl-ew);
+}
+
+.runtl-sw-hard-kill,
+.runtl-sw-mission-kill,
+.runtl-sw-miss {
+  width: 6px;
+  margin: 0 1px;
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+
+.runtl-sw-hard-kill {
+  background: var(--danger);
+}
+
+.runtl-sw-mission-kill {
+  background: var(--runtl-ew);
+}
+
+.runtl-sw-miss {
+  border: 1.5px solid var(--runtl-ghost);
+}
+
 .runtl-spacer {
   flex: 1;
 }
@@ -4078,14 +4164,19 @@ input[type='number'] {
 
 .runtl-sub,
 .runtl-summary-name {
-  padding-left: 26px;
   color: var(--text-tertiary);
+  font-family: var(--font-mono);
   font-size: var(--type-dense-size);
 }
 
 .runtl-sub {
   height: 14px;
-  font-family: var(--font-mono);
+  padding-left: 26px;
+}
+
+/* The mockup's summary label: mono 11 px at an 18 px indent. */
+.runtl-summary-name {
+  padding-left: 18px;
 }
 
 /* The plot clips; the pan wrapper moves every row by one transform. */
@@ -4178,6 +4269,20 @@ input[type='number'] {
   width: 1px;
   background: var(--text);
   pointer-events: none;
+}
+
+/* The mockup's cap: a 5 px text 1 triangle, 7 px wide, that narrows to the
+   1 px line (whole-pixel borders, which Chromium does not snap). It is part
+   of the playhead box, so it glides with it and takes its reduced-motion rule. */
+.runtl-playhead::before {
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 1px;
+  border-top: 5px solid var(--text);
+  border-right: 3px solid transparent;
+  border-left: 3px solid transparent;
+  content: '';
 }
 
 /* Strip relative, so the rows' scroll container never clips it. Tooltip.tsx
