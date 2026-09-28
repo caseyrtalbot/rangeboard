@@ -2090,6 +2090,33 @@ p.muted.small {
   line-height: 1.4;
 }
 
+/* A rule shown only while its input is invalid, outside a Field. */
+.line-error {
+  display: block;
+  margin: 0;
+  color: var(--status-critical);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-body-weight);
+  line-height: 1.4;
+}
+
+/* An empty-state row: a hollow warning state that names the missing input. The
+   first result replaces it. */
+.empty-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--h-default);
+  margin: 0;
+}
+
+.empty-row > .state {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: normal;
+}
+
 .nu-row {
   display: flex;
   align-items: center;
@@ -3309,33 +3336,6 @@ select.nu-unit {
   background: transparent;
 }
 
-/* A rule shown only while its input is invalid, outside a Field. */
-.line-error {
-  display: block;
-  margin: 0;
-  color: var(--status-critical);
-  font-size: var(--type-dense-size);
-  font-weight: var(--type-body-weight);
-  line-height: 1.4;
-}
-
-/* An empty-state row: a hollow warning state that names the missing input. The
-   first result replaces it. */
-.empty-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--h-default);
-  margin: 0;
-}
-
-.empty-row > .state {
-  flex: 0 1 auto;
-  min-width: 0;
-  white-space: normal;
-}
-
 .run-reset {
   flex: 0 0 auto;
   padding: 2px 6px;
@@ -3373,10 +3373,6 @@ button.chip {
   border-radius: var(--radius-control);
   font-weight: inherit;
   line-height: inherit;
-}
-
-.chip.mc {
-  color: var(--accent);
 }
 
 .chip.warn {
@@ -4496,7 +4492,7 @@ input[type='number'] {
 
 .outcome-metric strong {
   font-family: var(--font-mono);
-  font-size: var(--type-value-size);
+  font-size: var(--type-lead-size);
   font-weight: var(--type-value-weight);
   font-variant-numeric: tabular-nums;
 }
@@ -5357,27 +5353,6 @@ input[type='number'] {
   transform: scaleX(-1);
 }
 
-/* The right panel's field and row fit, for the editor in the drawer. */
-.board-library-drawer .field-row {
-  flex-wrap: wrap;
-}
-
-.board-library-drawer .field-row > .field {
-  flex: 1 1 145px;
-  min-width: 0;
-}
-
-.board-library-drawer .insp-row {
-  margin: 0;
-  padding-right: 0;
-  padding-left: 0;
-}
-
-.board-library-drawer .insp-row-label {
-  flex: 0 1 42%;
-  min-width: 0;
-}
-
 /* The library header: 32 px, the title, then the ⋯ actions and Close. */
 .palette-header {
   display: flex;
@@ -5649,22 +5624,24 @@ input[type='number'] {
   text-overflow: ellipsis;
 }
 
-.board-app .right-panel .insp-row {
+/* The row and field fit, shared by the right panel and the model editor in the
+   Library drawer. */
+.board-app :is(.right-panel, .board-library-drawer) .insp-row {
   margin: 0;
   padding-right: 0;
   padding-left: 0;
 }
 
-.board-app .right-panel .insp-row-label {
+.board-app :is(.right-panel, .board-library-drawer) .insp-row-label {
   flex: 0 1 42%;
   min-width: 0;
 }
 
-.board-app .right-panel .field-row {
+.board-app :is(.right-panel, .board-library-drawer) .field-row {
   flex-wrap: wrap;
 }
 
-.board-app .right-panel .field-row > .field {
+.board-app :is(.right-panel, .board-library-drawer) .field-row > .field {
   flex: 1 1 145px;
   min-width: 0;
 }
