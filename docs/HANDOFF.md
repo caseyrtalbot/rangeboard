@@ -12,9 +12,11 @@ commit, push or merge.
 
 [timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
-All four phases are on `main` and `origin/main`; the plan is complete and this file
-selects nothing. [Plan.md](Plan.md) is the completed chrome refactor queue (Rows A to D
-merged and pushed as `f4363a3`); it selects nothing.
+All four phases are on `main` and `origin/main`; the plan is complete. [Plan.md](Plan.md)
+is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a3`). The
+Tasking below selects Row E (timeline polish and chrome cleanup, two lanes) and queues
+Row F (two engine decisions the user made on 2026-09-28). Execute one row per agent
+turn.
 
 ## Position
 
@@ -302,8 +304,10 @@ merged and pushed as `f4363a3`); it selects nothing.
 
 ## Follow-ups (not fixed)
 
-Handling: candidates, not rows. Row D took the Row C review items and the class 2, 3 and 4
-canvas deviations. What remains:
+Handling: candidates, not rows, except where the Tasking names one. Row E (selected)
+takes the timeline nits, the Expand all rule, the 240 px fold and the Row D items its lane
+E2 lists; Row F (queued) takes the two Phase 1 engine items. Row D took the Row C review
+items and the class 2, 3 and 4 canvas deviations. What remains:
 
 From run timeline Phase 4:
 
@@ -350,7 +354,7 @@ From run timeline Phase 2:
 - `docs/Plan.md` line 214 names the deleted `EngagementStrip` mount; it is the completed
   chrome plan.
 
-From run timeline Phase 1 (each needs a user decision):
+From run timeline Phase 1 (the first two are decided and queued as Row F):
 
 - The C2 assignment row: `runTimeline.ts` routes each assignment with `killChainRoutes`
   over the full-run `detectingSensorIds`, as `attrition.ts` does, so a sensor that first
@@ -448,13 +452,146 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Nothing is selected.** The [timeline/SPEC.md](timeline/SPEC.md) plan is complete:
-all four phases are on `main` and `origin/main` with the gates green, the evidence
-indexed, the docs reviewed and the design review fixes closed. The mockup link in the
-SPEC stays as the design record.
+**Row E: run timeline polish and chrome cleanup.** Selected by the user on 2026-09-28
+from the follow-ups above. Two lanes with disjoint files, then one integration and one
+gate. The [timeline/SPEC.md](timeline/SPEC.md) plan stays complete; the mockup
+(<https://claude.ai/artifact/PYWeMH5tEhE9fNS9uhrBEt>) is the design record for lane E1.
 
-- The follow-ups above are candidates, not rows. A next task needs a plan or a user
-  decision first.
+- Base: `main` at the commit that holds this handoff. Lanes run in worktrees outside the
+  repository (`~/Projects/rangeboard-wt/e1`, `~/Projects/rangeboard-wt/e2`) on branches
+  `polish/e1` and `polish/e2` from `main`, `node_modules` symlinked to the main checkout,
+  tests scoped with `--dir src`, no `git stash`. The orchestrator merges both with
+  `--no-ff` onto `polish/e` from `main`, runs the gates, reviews the diff (`opus-high`),
+  applies the fixes through one worker, and asks the user to authorize the merge and
+  the push.
+- Team, per `~/.claude/rules/delegation.md`: E1 `opus-medium`, E2 `opus-medium`, the diff
+  review `opus-high`. The orchestrator owns `src/state/**`, `src/App.tsx`, the shared
+  docs, `docs/README.md` and this file. Brief shape: the working directory, the owned
+  files, the gate command, the report shape and a time budget.
+
+Lane E1, timeline polish. Owns `src/panels/timeline/**`, the `.runtl` block in
+`src/index.css`, `RUN_TIMELINE_DEFAULT_H` in `src/state/store.ts` (one constant; the
+orchestrator resolves any conflict), and new evidence under
+`docs/field-te/evidence/run-timeline-e1-<date>/`. Deliver, each with a test where the
+Node render can see it and a browser check where it cannot:
+
+1. C2 assign labels: `LaneMarks.tsx` about 218 prints `mark.text` at every assign mark;
+   at Fit on JIATF-401 they overlap. Gate the text on the gap to the next mark in the
+   row, as `markEl` gates an effector's `after` and pk (44 px, `LABEL_MIN_PX`), with the
+   text width in mind (an assign label is longer than a chip; use the gap against the
+   label's measured or estimated width, and record the rule).
+2. Summary label: `Gutter.tsx:21` `summaryLabel` prints `All sensors` in Archivo at a
+   26 px indent (`.runtl-summary-name`, `index.css` about 4084); the mockup prints
+   `all sensors` in mono 11 px at an 18 px indent. Match the mockup.
+3. Header buttons: `Controls.tsx` uses five `button.mini` at 24 px in the 28 px header;
+   the mockup uses 20 px. Decide with the design system: either a 20 px variant scoped
+   to `.runtl-ctl` or keep 24 px and record why; do not change `.mini` globally.
+4. Playhead cap: `Plot.tsx:16` `Playhead` has no top cap; the mockup draws a 5 px
+   triangle (`.playhead::before`). Add it in the same text 1 ink; it glides with the
+   playhead and takes the reduced-motion rule (landmine).
+5. Analyze header: `tooltipText.ts:61` `horizonText` reads `Shown through T+25:00` in
+   Analyze; the mockup reads `Complete · T+25:00`. Print `Complete · T+m:ss` in the
+   header once `horizonS >= durationS` and keep the tooltip horizon line and the
+   accessible name (`Run timeline. Complete. Shown through T+m:ss`) as they are; update
+   the tests that match the header text.
+6. Legend: the mockup draws a legend and the strip has none. Read the mockup and build
+   the legend as it draws it (its place, its items, its inks from the `--runtl-*`
+   tokens, 11 px floor), or record in the evidence README one concrete reason not to.
+7. Expand all: `viewportActions.ts:117` `expandAllKeys(model)` opens only the sensor rows
+   that hold a track at the current horizon, so a row that gains its first track later
+   stays collapsed. Fix without reading the future: a session flag in `ui.runTimeline`
+   (for example `openSensorsAll`) that Expand all sets and Collapse all or a single row
+   toggle clears, and that `stripLayout` reads so a sensor row is open when it appears.
+   The store field is the orchestrator's; E1 writes the slice change and its store test
+   in its branch and names it in the report.
+8. Default height: `RUN_TIMELINE_DEFAULT_H` is 240 (`store.ts:169`); at 240 px in
+   Execute the Threats group sits below the scroll fold. Five collapsed groups with their
+   summary rows need 180 px plus the 28 px header, 20 px axis and 22 px overview, 250
+   in all. Set the default to 264 and check that a fresh profile shows every group
+   header and summary row with no scroll. A saved height is untouched.
+9. Evidence: a browser check on the JIATF-401 laydown and the 54-entity board, in both
+   themes, for items 1 to 8, `findings.json`, the script as `.mjs.txt`, oxipng shots,
+   `npm run check:evidence`. Rerun the Phase 4 contrast part for any new ink.
+
+Lane E2, chrome cleanup from the Row D list. Owns `src/panels/analysis/**` except the
+timeline, `src/panels/analysis/detail/**`, `src/io/viewState.ts`, `scripts/e2e/**`, and
+the `index.css` rules it names (not the `.runtl` block). `src/App.tsx` and
+`src/state/store.ts` belong to the orchestrator: E2 lists the exact lines it needs
+changed there in its report and the orchestrator applies them at integration. Deliver:
+
+1. `RightTab` (`store.ts:95`) still includes `'library'`; `src/io/viewState.ts:19`,
+   `store.test.ts:1055` and the e2e line 82 name it, and `App.tsx:689` maps a saved
+   `'library'` to `'analysis'`. Narrow the type to `'inspect' | 'analysis'`, keep the
+   saved-view mapping for old records (a string compare, not the type), update the
+   store test and the e2e. The `store.ts` and `App.tsx` lines go in the report.
+2. Dead CSS: `.chip.mc` (`index.css:3378`) has no user; delete it. `.chip.det`
+   (`index.css:3363`) has one user (`SystemsTab`); keep it. Move `.empty-row`
+   (`index.css:3324`) and `.line-error` (`index.css:3313`) beside the Field rules. Fold
+   the four drawer rules D1 added (`index.css` about 5312 to 5361) with the
+   `.right-panel` rules near 5205 through `:is(.right-panel, .board-library-drawer)`
+   where the declarations are the same; keep any that differ.
+3. `src/panels/analysis/detail/DetailHeader.tsx` aria-label `Back to the lens stack`
+   names the removed lens UI; rename to `Back to overview` and update
+   `Detail.test.tsx` and `EntityWorkspace.test.tsx`, which match it.
+4. `RunControl.tsx:119` duplicates App's `isTypingTarget` (`App.tsx:501`). Move one copy
+   to `src/ui/` or `src/state/` as a named export that imports no store (landmine:
+   `kit.tsx` imports no store) and use it from both; the `App.tsx` import line goes in
+   the report.
+5. `.outcome-metric strong` (`index.css:4497`) still uses the 24 px value size while
+   every other tile value is 15 px (Row D); set it to the 15 px tile value size and
+   check the Outcome screen.
+6. Muted full sentences on the Row D screens: the `No …` empty lines in `SensorDetail`
+   (5), `SystemDetail` (3), `ThreatDetail` (2), `EffectorDetail` (2) and the
+   `SystemStatus` lines (5) inside the Outcome and Debrief disclosures, plus
+   `LiveStrip.tsx:69` (the no-trial placeholder; `PlayPrompt` stays out of scope). Apply
+   the landmine rule: a first-run instruction or a status sentence is an `EmptyRow`, an
+   error line is for invalid input only, a method note goes behind the (i). Keep the
+   accessible text. List every line changed and every line kept, with the reason, in the
+   report.
+7. `TrialOutcomeSummary` stays exported (protected). Do not touch it.
+8. Static-render tests where a neighbouring test file exists; a browser check of the
+   Outcome, Debrief and detail panes on the JIATF-401 laydown with a completed run, under
+   `docs/field-te/evidence/chrome-e2-<date>/`, oxipng, `npm run check:evidence`.
+
+- Gates at integration: `npm run check`, `npm run check:silent`, `npm run build && npm
+  run check:bundle`, `npm run test:e2e` with a dev server and `E2E_URL`; `docs:review`
+  on every touched reference (PROJECT_GUIDE and ENGINEERING_REFERENCE fingerprint all of
+  `src/`; DESIGN_SYSTEM fingerprints `index.css`); `docs/README.md` indexes both evidence
+  folders. Exclusions for Row E: no engine, physics or playback change; no interaction
+  advances `observedThroughS`; no edit to `runTimeline.ts` or `timeViewport.ts`.
+- Stop condition: Row E on `polish/e` with the gates green, the evidence indexed, the
+  review fixes closed and this file rewritten to record Row E and select Row F. Then
+  stop and ask the user to authorize the merge and the push.
+
+**Row F, queued: two engine decisions.** The user decided both on 2026-09-28. Start Row F
+only when asked, after Row E is on `main`. One `fable-medium` lane on `engine/f` from
+`main`, then a `fable-high` review of the parity and the censoring semantics. The
+estimate-path expects (`225e027`, listed in Landmines) and the Coyote parameters are
+protected: the lane measures which expects move, reports the numbers, and waits for the
+user's authorization before any recapture.
+
+1. Record the assigning C2 node on `EngagementEvent`
+   (`src/playback/attritionReport.ts:134`). `attrition.ts` about 232 picks the route with
+   `killChainRoutes(scenario, new Set(a.detectingSensorIds))`; write the route's C2 node
+   id onto the event at assignment (a new optional field, absent in legacy ledgers).
+   `runTimeline.ts:427` then reads the event's node and falls back to the current
+   routing only when the field is absent, so a sensor that first detects after the
+   horizon no longer moves an assign mark between C2 rows. `npm run schema:generate`
+   (the ledger is in the runtime schema); a model test on the fixed-id fixture; the
+   Phase 3 evidence rule that no interaction advances `observedThroughS` is unchanged.
+2. Clip holds and tracks at the kill. Today the engine sweep runs sensor holds, the
+   fused track and the classification ramp to the path end after the last formation
+   member falls (`sweep.ts`, `tracker.ts`, `sim.ts` `trackSamples` and `fusedTracks`);
+   the board `TrackLayer` and the timeline follow. Clip each at the effect time of the
+   salvo that removes the last survival mass, so a dead threat holds no track. The
+   timeline's ghost span (kill to planned arrival) stays. This can move engagement counts
+   and the parity expects; measure first, report, then wait for authorization. Fixed-ID
+   numerical parity on every `*.parity.test.ts`; a TrackLayer browser check on the
+   JIATF-401 laydown under `docs/field-te/evidence/engine-f-<date>/`.
+
+- Row F exclusions: no change to `lethalRadiusM`, `guidanceNoiseM`, `engageTimeS` or the
+  terminal-homing model; no change to `runTimeline.ts` censoring; no expect changed
+  without the user's authorization in the session.
 
 ## Landmines
 

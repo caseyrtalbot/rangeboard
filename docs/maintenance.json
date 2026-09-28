@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "4ac6966b472a1f74dd7c3e3b35fb70cb08f60addbadd29e7f22e5d691d2a8cc2",
+      "sha256": "e0a1aa5f56dd5e3e9873730e58fd47ce38c3ec4b840da61eaf01ba072b20b6da",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 4 fast-forwarded to main as aabf928 and pushed with the user's authorization; the position says so, timeline/p4 is deleted, and the file selects nothing."
+      "note": "Row E selected (timeline polish lane E1 and chrome cleanup lane E2 from the follow-ups, user decision 2026-09-28) and Row F queued (record the assigning C2 node on EngagementEvent; clip holds and tracks at the kill; parity expects need re-authorization)."
     },
     {
       "document": "docs/Plan.md",
