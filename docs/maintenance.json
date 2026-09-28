@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "8af002112855e168b409ec84ffc6518520b5b7ff2fbe7b2c953dfacb8a4cd021",
+      "sha256": "f902592f4b87bb1b96b99287d6c93b678ef604970260ec1b20304cd7aa7d575f",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 3 contract 9c6b0e6 and lanes 3A and 3B built and verified; the tasking selects the Phase 3 integration for a fresh team."
+      "note": "Phase 3 integrated on timeline/p3 with the review fixes and the evidence rerun; the tasking selects Phase 4 and asks the user to authorize the merge and the push."
     },
     {
       "document": "docs/Plan.md",
