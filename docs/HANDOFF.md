@@ -13,18 +13,19 @@ commit, push or merge.
 [timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
 All four phases are on `main` and `origin/main`; the plan is complete. [Plan.md](Plan.md)
-is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a3`). Row E
-(timeline polish and chrome cleanup) is complete on `polish/e` and waits for the user to
-authorize the merge and the push. The Tasking below selects Row F (two engine decisions
-the user made on 2026-09-28). Execute one row per agent turn.
+is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a3`; Row E,
+timeline polish and chrome cleanup, merged and pushed as `353caee`). The Tasking below
+selects Row F (two engine decisions the user made on 2026-09-28). Execute one row per
+agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `polish/e`. `main` and `origin/main`
-  are at `b6cb858` (run timeline Phase 4 plus the Row E handoff). `polish/e` holds Row E,
-  not merged and not pushed: the user has not yet authorized either. The lane worktrees
-  `~/Projects/rangeboard-wt/e1` and `e2` (branches `polish/e1`, `polish/e2`) still exist;
-  remove them at the merge (`git worktree remove`, then delete the three branches).
+- Repository `~/Projects/rangeboard`, checked out on `main`. `main` and `origin/main`
+  hold Row E: `polish/e` was fast-forwarded to `main` at `353caee` and pushed with the
+  user's authorization on 2026-09-28, then this handoff. The lane worktrees
+  `~/Projects/rangeboard-wt/e1` and `e2` are removed and the branches `polish/e1`,
+  `polish/e2` and `polish/e` are deleted; `git worktree list` shows the main checkout
+  only, `git branch` shows `main` only and the stash list is empty.
 - Row E (2026-09-28) on `polish/e` from `b6cb858`: lane E2 (`opus-medium`, worktree e2)
   `8c32afe`, `4b7a419`, `0a7b7f8`, `525f501`, `8491e7b`, `de11787`, `bde5e48`, merged
   `--no-ff`; the orchestrator's `85892f6` (the `RightTab` type, App's `isTypingTarget`
@@ -513,9 +514,8 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 ## Tasking
 
 **Row F: two engine decisions.** Selected after Row E; the user decided both on
-2026-09-28. Start Row F only when asked, after Row E is on `main` (the merge and the push
-of `polish/e` wait for the user's authorization; then remove the e1 and e2 worktrees and
-the three `polish/*` branches). One `fable-medium` lane on `engine/f` from `main`, then a
+2026-09-28. Start Row F only when asked. Base: `main` at the commit that holds this
+handoff. One `fable-medium` lane on `engine/f` from `main`, then a
 `fable-high` review of the parity and the censoring semantics. The estimate-path expects
 (`225e027`, listed in Landmines) and the Coyote parameters are protected: the lane
 measures which expects move, reports the numbers, and waits for the user's authorization

@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "3e1828969c272fd3ffc3df729bf8b655e9cab22cf68d0b8544afa2d8c4a6faf8",
+      "sha256": "dc734f96fdc7c9b0b948269ee60eea24f8c5ba881460e08b915b834e764ad01e",
       "reviewedAt": "2026-09-28",
-      "note": "Workspace fact updated: Plan.md and timeline/SPEC.md are both complete; HANDOFF selects nothing."
+      "note": "Workspace fact: Row E merged as 353caee; HANDOFF selects Row F."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "7b8183e072628e7696c3d3ccc02f9a768a4d13b688ea3c0c540c17a23bfb2f4d",
+      "sha256": "81830ecd3051d50cdd46ca71356ee943efedba078de13f46f6178ac579cc60ad",
       "reviewedAt": "2026-09-28",
-      "note": "Reviewed the AGENTS.md workspace-fact edit (Plan.md and the run timeline SPEC complete). CLAUDE.md still only redirects to AGENTS.md; text unchanged."
+      "note": "Reviewed the AGENTS.md workspace-fact edit (Row E merged, Row F selected). CLAUDE.md still only redirects to AGENTS.md; text unchanged."
     },
     {
       "document": "CONTEXT.md",
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "15edb2e206af9425d1127bc8587ef8c3af1835ea09cdd4b86cbba10e94a0265f",
+      "sha256": "d52e5b277327bb6f9fcba84ac9ba6572403d92cee40094a8577b1948e706d8f9",
       "reviewedAt": "2026-09-28",
-      "note": "Row E recorded on polish/e (lanes E1 and E2, the integration, the docs, the opus-high review and its fixes 2c6c4e8, the gate on 2c6c4e8); Row F selected; the Row E follow-ups and landmines added."
+      "note": "Row E merged: polish/e fast-forwarded to main at 353caee and pushed on 2026-09-28; worktrees and the three polish branches removed; Row F selected from main."
     },
     {
       "document": "docs/Plan.md",
