@@ -1,0 +1,5221 @@
+{
+  "capturedAt": "2026-09-28T17:07:40.839Z",
+  "viewport": "1265x900",
+  "fixture": "docs/field-te/evidence/perf-2026-09-06/scenario.json",
+  "shots": [
+    {
+      "file": "execute-expanded-30x-dark.png",
+      "state": "Execute, paused at the observed time after 30x play, strip open at 420 px, every group and sensor row open, dark theme",
+      "simTimeS": 299.262,
+      "observedThroughS": 299.262
+    },
+    {
+      "file": "execute-expanded-30x-daylight.png",
+      "state": "The same state in the daylight theme",
+      "simTimeS": 299.262,
+      "observedThroughS": 299.262
+    }
+  ],
+  "errors": [],
+  "trialStatus": "ready",
+  "board": {
+    "simTimeS": 0,
+    "observedThroughS": 0,
+    "durationS": 1322,
+    "playing": true,
+    "entities": 54,
+    "name": "Layered (Acoustic + MEROPS)"
+  },
+  "frames": {
+    "speed": 30,
+    "recordMs": 10000,
+    "runs": [
+      {
+        "label": "open-1",
+        "strip": "open, every group and sensor row expanded",
+        "intervals": 921,
+        "over16ms": 82,
+        "over20ms": 78,
+        "over33ms": 40,
+        "maxMs": 83.3,
+        "meanMs": 10.87,
+        "p99Ms": 50,
+        "longtaskSupported": true,
+        "longtasks": 16,
+        "longtaskMaxMs": 88,
+        "longtaskTotalMs": 1012,
+        "simTimeS": [
+          0,
+          299.262
+        ],
+        "observedThroughS": [
+          9.3499,
+          299.262
+        ],
+        "domBefore": {
+          "lines": 56,
+          "subLanes": 0,
+          "marks": 1,
+          "spans": 0,
+          "svgNodes": 239,
+          "groupLabel": "Run timeline. Shown through T+0:00"
+        },
+        "domAfter": {
+          "lines": 119,
+          "subLanes": 55,
+          "marks": 656,
+          "spans": 1956,
+          "svgNodes": 3761,
+          "groupLabel": "Run timeline. Shown through T+4:59"
+        }
+      },
+      {
+        "label": "closed-1",
+        "strip": "closed",
+        "intervals": 1156,
+        "over16ms": 24,
+        "over20ms": 7,
+        "over33ms": 0,
+        "maxMs": 25.4,
+        "meanMs": 8.64,
+        "p99Ms": 16.7,
+        "longtaskSupported": true,
+        "longtasks": 0,
+        "longtaskMaxMs": 0,
+        "longtaskTotalMs": 0,
+        "simTimeS": [
+          0,
+          297.993
+        ],
+        "observedThroughS": [
+          299.262,
+          299.262
+        ],
+        "domBefore": null,
+        "domAfter": null
+      },
+      {
+        "label": "open-2",
+        "strip": "open, every group and sensor row expanded",
+        "intervals": 980,
+        "over16ms": 67,
+        "over20ms": 46,
+        "over33ms": 23,
+        "maxMs": 75.3,
+        "meanMs": 10.2,
+        "p99Ms": 50,
+        "longtaskSupported": true,
+        "longtasks": 15,
+        "longtaskMaxMs": 83,
+        "longtaskTotalMs": 918,
+        "simTimeS": [
+          0,
+          298.731
+        ],
+        "observedThroughS": [
+          299.262,
+          299.262
+        ],
+        "domBefore": {
+          "lines": 56,
+          "subLanes": 0,
+          "marks": 1,
+          "spans": 0,
+          "svgNodes": 239,
+          "groupLabel": "Run timeline. Shown through T+0:00"
+        },
+        "domAfter": {
+          "lines": 119,
+          "subLanes": 55,
+          "marks": 656,
+          "spans": 1956,
+          "svgNodes": 3761,
+          "groupLabel": "Run timeline. Shown through T+4:58"
+        }
+      },
+      {
+        "label": "closed-2",
+        "strip": "closed",
+        "intervals": 1163,
+        "over16ms": 6,
+        "over20ms": 2,
+        "over33ms": 0,
+        "maxMs": 25,
+        "meanMs": 8.59,
+        "p99Ms": 16.7,
+        "longtaskSupported": true,
+        "longtasks": 0,
+        "longtaskMaxMs": 0,
+        "longtaskTotalMs": 0,
+        "simTimeS": [
+          0,
+          298.869
+        ],
+        "observedThroughS": [
+          299.262,
+          299.262
+        ],
+        "domBefore": null,
+        "domAfter": null
+      }
+    ],
+    "pass": false,
+    "rule": "Phase 2 rule: an open run adds no interval over 33 ms beyond the closed runs"
+  },
+  "accessibility": {
+    "execute": [
+      {
+        "simTimeS": 75,
+        "observedThroughS": 299.262,
+        "label": "Run timeline. Shown through T+1:15",
+        "scope": "Shown through T+1:15",
+        "expected": "Run timeline. Shown through T+1:15",
+        "match": true
+      },
+      {
+        "simTimeS": 180,
+        "observedThroughS": 299.262,
+        "label": "Run timeline. Shown through T+3:00",
+        "scope": "Shown through T+3:00",
+        "expected": "Run timeline. Shown through T+3:00",
+        "match": true
+      },
+      {
+        "simTimeS": 299,
+        "observedThroughS": 299.262,
+        "label": "Run timeline. Shown through T+4:59",
+        "scope": "Shown through T+4:59",
+        "expected": "Run timeline. Shown through T+4:59",
+        "match": true
+      }
+    ],
+    "executeUpdates": true,
+    "controls": {
+      "gutterButtons": 187,
+      "unnamed": 0,
+      "groupHeaders": 5,
+      "foldHeaders": 0,
+      "rowLabels": 59,
+      "rowLabelText": 0,
+      "subLaneButtons": 55,
+      "subLanes": 55,
+      "expandControls": 9,
+      "hideControls": 59,
+      "headerButtons": [
+        "Follow",
+        "Zoom out",
+        "Zoom in",
+        "Fit",
+        "Collapse all",
+        "Expand all"
+      ]
+    },
+    "zoomReadout": {
+      "text": "Window 120 s",
+      "ariaSnapshot": "- button \"Follow\" [pressed]\n- button \"Zoom out\": \u2212\n- text: Window 120 s\n- button \"Zoom in\": +\n- button \"Fit\"\n- button \"Collapse all\"\n- button \"Expand all\""
+    },
+    "subLaneClick": {
+      "label": "THR-G1-Q-01 1",
+      "selection": {
+        "ids": [
+          "ent-mt5bqnfg-2x"
+        ],
+        "names": [
+          "THR-G1-Q-01 1"
+        ],
+        "kinds": [
+          "uas"
+        ]
+      },
+      "observedThroughS": [
+        299.262,
+        299.262
+      ],
+      "simTimeS": [
+        299,
+        299
+      ],
+      "selectsThreat": true,
+      "observedUnchanged": true
+    },
+    "analyze": {
+      "observedThroughS": [
+        299.262,
+        1322
+      ],
+      "note": "completeRun advances observation by design",
+      "label": "Run timeline. Complete. Shown through T+22:02",
+      "scope": "Shown through T+22:02"
+    },
+    "analyzeAfterScrub": {
+      "simTimeS": 120,
+      "label": "Run timeline. Complete. Shown through T+22:02"
+    }
+  },
+  "modelPasses": {
+    "durationS": 1322,
+    "observedThroughS": 1322,
+    "firstBuildMs": 6.5,
+    "passes": 265,
+    "passMeanMs": 0.005,
+    "passMedianMs": 0,
+    "passMaxMs": 0.1,
+    "rowsPerPassMax": 115,
+    "createdTotal": 3847,
+    "reusedTotal": 25716,
+    "createdMeanPerPass": 14.517,
+    "perPass": [
+      {
+        "horizonS": 5,
+        "ms": 0,
+        "rows": 91,
+        "reused": 29,
+        "created": 62
+      },
+      {
+        "horizonS": 10,
+        "ms": 0.1,
+        "rows": 93,
+        "reused": 30,
+        "created": 63
+      },
+      {
+        "horizonS": 15,
+        "ms": 0,
+        "rows": 95,
+        "reused": 30,
+        "created": 65
+      },
+      {
+        "horizonS": 20,
+        "ms": 0,
+        "rows": 95,
+        "reused": 30,
+        "created": 65
+      },
+      {
+        "horizonS": 25,
+        "ms": 0,
+        "rows": 95,
+        "reused": 30,
+        "created": 65
+      },
+      {
+        "horizonS": 30,
+        "ms": 0,
+        "rows": 95,
+        "reused": 30,
+        "created": 65
+      },
+      {
+        "horizonS": 35,
+        "ms": 0,
+        "rows": 95,
+        "reused": 30,
+        "created": 65
+      },
+      {
+        "horizonS": 40,
+        "ms": 0,
+        "rows": 95,
+        "reused": 30,
+        "created": 65
+      },
+      {
+        "horizonS": 45,
+        "ms": 0,
+        "rows": 95,
+        "reused": 31,
+        "created": 64
+      },
+      {
+        "horizonS": 50,
+        "ms": 0,
+        "rows": 95,
+        "reused": 31,
+        "created": 64
+      },
+      {
+        "horizonS": 55,
+        "ms": 0,
+        "rows": 95,
+        "reused": 33,
+        "created": 62
+      },
+      {
+        "horizonS": 60,
+        "ms": 0,
+        "rows": 95,
+        "reused": 33,
+        "created": 62
+      },
+      {
+        "horizonS": 65,
+        "ms": 0,
+        "rows": 95,
+        "reused": 34,
+        "created": 61
+      },
+      {
+        "horizonS": 70,
+        "ms": 0,
+        "rows": 95,
+        "reused": 36,
+        "created": 59
+      },
+      {
+        "horizonS": 75,
+        "ms": 0.1,
+        "rows": 95,
+        "reused": 37,
+        "created": 58
+      },
+      {
+        "horizonS": 80,
+        "ms": 0,
+        "rows": 95,
+        "reused": 39,
+        "created": 56
+      },
+      {
+        "horizonS": 85,
+        "ms": 0.1,
+        "rows": 95,
+        "reused": 42,
+        "created": 53
+      },
+      {
+        "horizonS": 90,
+        "ms": 0,
+        "rows": 95,
+        "reused": 43,
+        "created": 52
+      },
+      {
+        "horizonS": 95,
+        "ms": 0,
+        "rows": 95,
+        "reused": 43,
+        "created": 52
+      },
+      {
+        "horizonS": 100,
+        "ms": 0,
+        "rows": 96,
+        "reused": 45,
+        "created": 51
+      },
+      {
+        "horizonS": 105,
+        "ms": 0.1,
+        "rows": 97,
+        "reused": 45,
+        "created": 52
+      },
+      {
+        "horizonS": 110,
+        "ms": 0,
+        "rows": 97,
+        "reused": 47,
+        "created": 50
+      },
+      {
+        "horizonS": 115,
+        "ms": 0,
+        "rows": 98,
+        "reused": 49,
+        "created": 49
+      },
+      {
+        "horizonS": 120,
+        "ms": 0,
+        "rows": 98,
+        "reused": 49,
+        "created": 49
+      },
+      {
+        "horizonS": 125,
+        "ms": 0,
+        "rows": 99,
+        "reused": 51,
+        "created": 48
+      },
+      {
+        "horizonS": 130,
+        "ms": 0,
+        "rows": 100,
+        "reused": 52,
+        "created": 48
+      },
+      {
+        "horizonS": 135,
+        "ms": 0,
+        "rows": 101,
+        "reused": 53,
+        "created": 48
+      },
+      {
+        "horizonS": 140,
+        "ms": 0,
+        "rows": 101,
+        "reused": 54,
+        "created": 47
+      },
+      {
+        "horizonS": 145,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 150,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 155,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 160,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 165,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 170,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 175,
+        "ms": 0.1,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 180,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 185,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 190,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 195,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 200,
+        "ms": 0,
+        "rows": 101,
+        "reused": 58,
+        "created": 43
+      },
+      {
+        "horizonS": 205,
+        "ms": 0,
+        "rows": 102,
+        "reused": 59,
+        "created": 43
+      },
+      {
+        "horizonS": 210,
+        "ms": 0.1,
+        "rows": 103,
+        "reused": 59,
+        "created": 44
+      },
+      {
+        "horizonS": 215,
+        "ms": 0,
+        "rows": 104,
+        "reused": 59,
+        "created": 45
+      },
+      {
+        "horizonS": 220,
+        "ms": 0,
+        "rows": 107,
+        "reused": 59,
+        "created": 48
+      },
+      {
+        "horizonS": 225,
+        "ms": 0,
+        "rows": 111,
+        "reused": 59,
+        "created": 52
+      },
+      {
+        "horizonS": 230,
+        "ms": 0,
+        "rows": 113,
+        "reused": 59,
+        "created": 54
+      },
+      {
+        "horizonS": 235,
+        "ms": 0.1,
+        "rows": 114,
+        "reused": 60,
+        "created": 54
+      },
+      {
+        "horizonS": 240,
+        "ms": 0,
+        "rows": 114,
+        "reused": 60,
+        "created": 54
+      },
+      {
+        "horizonS": 245,
+        "ms": 0,
+        "rows": 114,
+        "reused": 61,
+        "created": 53
+      },
+      {
+        "horizonS": 250,
+        "ms": 0,
+        "rows": 114,
+        "reused": 62,
+        "created": 52
+      },
+      {
+        "horizonS": 255,
+        "ms": 0,
+        "rows": 114,
+        "reused": 62,
+        "created": 52
+      },
+      {
+        "horizonS": 260,
+        "ms": 0,
+        "rows": 114,
+        "reused": 62,
+        "created": 52
+      },
+      {
+        "horizonS": 265,
+        "ms": 0,
+        "rows": 114,
+        "reused": 62,
+        "created": 52
+      },
+      {
+        "horizonS": 270,
+        "ms": 0,
+        "rows": 114,
+        "reused": 62,
+        "created": 52
+      },
+      {
+        "horizonS": 275,
+        "ms": 0,
+        "rows": 114,
+        "reused": 62,
+        "created": 52
+      },
+      {
+        "horizonS": 280,
+        "ms": 0,
+        "rows": 114,
+        "reused": 62,
+        "created": 52
+      },
+      {
+        "horizonS": 285,
+        "ms": 0,
+        "rows": 114,
+        "reused": 62,
+        "created": 52
+      },
+      {
+        "horizonS": 290,
+        "ms": 0,
+        "rows": 114,
+        "reused": 72,
+        "created": 42
+      },
+      {
+        "horizonS": 295,
+        "ms": 0.1,
+        "rows": 114,
+        "reused": 97,
+        "created": 17
+      },
+      {
+        "horizonS": 300,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 305,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 310,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 315,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 320,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 325,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 330,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 335,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 340,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 345,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 350,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 355,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 360,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 365,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 370,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 375,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 380,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 385,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 390,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 395,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 400,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 405,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 410,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 415,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 420,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 425,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 430,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 435,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 440,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 445,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 450,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 455,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 460,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 465,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 470,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 475,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 480,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 485,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 490,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 495,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 500,
+        "ms": 0.1,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 505,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 510,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 515,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 520,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 525,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 530,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 535,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 540,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 545,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 550,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 555,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 560,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 565,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 570,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 575,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 580,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 585,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 590,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 595,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 600,
+        "ms": 0.1,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 605,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 610,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 615,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 620,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 625,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 630,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 635,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 640,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 645,
+        "ms": 0,
+        "rows": 114,
+        "reused": 108,
+        "created": 6
+      },
+      {
+        "horizonS": 650,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 655,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 660,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 665,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 670,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 675,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 680,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 685,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 690,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 695,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 700,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 705,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 710,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 715,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 720,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 725,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 730,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 735,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 740,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 745,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 750,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 755,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 760,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 765,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 770,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 775,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 780,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 785,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 790,
+        "ms": 0,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 795,
+        "ms": 0.1,
+        "rows": 114,
+        "reused": 109,
+        "created": 5
+      },
+      {
+        "horizonS": 800,
+        "ms": 0,
+        "rows": 114,
+        "reused": 110,
+        "created": 4
+      },
+      {
+        "horizonS": 805,
+        "ms": 0,
+        "rows": 114,
+        "reused": 110,
+        "created": 4
+      },
+      {
+        "horizonS": 810,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 815,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 820,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 825,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 830,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 835,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 840,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 845,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 850,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 855,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 860,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 865,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 870,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 875,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 880,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 885,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 890,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 895,
+        "ms": 0.1,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 900,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 905,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 910,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 915,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 920,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 925,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 930,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 935,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 940,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 945,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 950,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 955,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 960,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 965,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 970,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 975,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 980,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 985,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 990,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 995,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 1000,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 1005,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 1010,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 1015,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 1020,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 1025,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 1030,
+        "ms": 0,
+        "rows": 114,
+        "reused": 111,
+        "created": 3
+      },
+      {
+        "horizonS": 1035,
+        "ms": 0,
+        "rows": 115,
+        "reused": 111,
+        "created": 4
+      },
+      {
+        "horizonS": 1040,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1045,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1050,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1055,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1060,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1065,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1070,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1075,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1080,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1085,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1090,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1095,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1100,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1105,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1110,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1115,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1120,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1125,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1130,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1135,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1140,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1145,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1150,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1155,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1160,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1165,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1170,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1175,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1180,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1185,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1190,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1195,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1200,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1205,
+        "ms": 0,
+        "rows": 115,
+        "reused": 113,
+        "created": 2
+      },
+      {
+        "horizonS": 1210,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1215,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1220,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1225,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1230,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1235,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1240,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1245,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1250,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1255,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1260,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1265,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1270,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1275,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1280,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1285,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1290,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1295,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1300,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1305,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1310,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1315,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1320,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      },
+      {
+        "horizonS": 1322,
+        "ms": 0,
+        "rows": 115,
+        "reused": 114,
+        "created": 1
+      }
+    ],
+    "passTotalMs": 1.2,
+    "timerNote": "performance.now() in this page is coarsened to 0.1 ms, so one pass reads 0 or 0.1 ms; passTotalMs sums the rounded reads."
+  },
+  "contrast": {
+    "rule": "WCAG 2.1 relative luminance; ratio (L1 + 0.05) / (L2 + 0.05); an ink with alpha is composited over its surface first",
+    "themes": {
+      "dark": {
+        "surfaces": {
+          "panel": "#191a1a",
+          "selected": "#262626",
+          "group": "#131414",
+          "overview": "#141515",
+          "unobserved": "#111212",
+          "raised": "#202121",
+          "chip": "#0e0f0f",
+          "flightBar": "#7ba7e8",
+          "dwellBar": "#7da7c4",
+          "burstBar": "#9aa8b0",
+          "followPressed": "#ebe9e3"
+        },
+        "rows": [
+          {
+            "id": "mark detect",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-m-detect fill",
+            "ratio": 6.81,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark detect",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-m-detect fill",
+            "ratio": 5.89,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark C2 init tick",
+            "role": "graphic",
+            "ink": "#d6d9d2",
+            "alpha": 1,
+            "shown": "#d6d9d2",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg line.runtl-m-init stroke",
+            "ratio": 12.22,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark C2 init tick",
+            "role": "graphic",
+            "ink": "#d6d9d2",
+            "alpha": 1,
+            "shown": "#d6d9d2",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg line.runtl-m-init stroke",
+            "ratio": 10.57,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark track init ring",
+            "role": "graphic",
+            "ink": "#d6d9d2",
+            "alpha": 1,
+            "shown": "#d6d9d2",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg circle.runtl-m-init stroke",
+            "ratio": 12.22,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark track init ring",
+            "role": "graphic",
+            "ink": "#d6d9d2",
+            "alpha": 1,
+            "shown": "#d6d9d2",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg circle.runtl-m-init stroke",
+            "ratio": 10.57,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark firm",
+            "role": "graphic",
+            "ink": "#d6d9d2",
+            "alpha": 1,
+            "shown": "#d6d9d2",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-m-firm fill",
+            "ratio": 12.22,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark firm",
+            "role": "graphic",
+            "ink": "#d6d9d2",
+            "alpha": 1,
+            "shown": "#d6d9d2",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-m-firm fill",
+            "ratio": 10.57,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark drop",
+            "role": "graphic",
+            "ink": "#7b838b",
+            "alpha": 1,
+            "shown": "#7b838b",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-m-drop stroke",
+            "ratio": 4.54,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark drop",
+            "role": "graphic",
+            "ink": "#7b838b",
+            "alpha": 1,
+            "shown": "#7b838b",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-m-drop stroke",
+            "ratio": 3.92,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark assign",
+            "role": "graphic",
+            "ink": "#c9975a",
+            "alpha": 1,
+            "shown": "#c9975a",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-m-assign stroke",
+            "ratio": 6.69,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark assign",
+            "role": "graphic",
+            "ink": "#c9975a",
+            "alpha": 1,
+            "shown": "#c9975a",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-m-assign stroke",
+            "ratio": 5.79,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark release",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-m-release fill",
+            "ratio": 14.37,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark release",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-m-release fill",
+            "ratio": 12.43,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark shot",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-m-shot stroke",
+            "ratio": 14.37,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark shot",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-m-shot stroke",
+            "ratio": 12.43,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark hard kill",
+            "role": "graphic",
+            "ink": "#e46f62",
+            "alpha": 1,
+            "shown": "#e46f62",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-m-hard-kill fill",
+            "ratio": 5.61,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark hard kill",
+            "role": "graphic",
+            "ink": "#e46f62",
+            "alpha": 1,
+            "shown": "#e46f62",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-m-hard-kill fill",
+            "ratio": 4.85,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark arrival",
+            "role": "graphic",
+            "ink": "#e46f62",
+            "alpha": 1,
+            "shown": "#e46f62",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 5.61,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark arrival",
+            "role": "graphic",
+            "ink": "#e46f62",
+            "alpha": 1,
+            "shown": "#e46f62",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "expression",
+            "ratio": 4.85,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark mission kill",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 6.81,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark mission kill",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "expression",
+            "ratio": 5.89,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark miss",
+            "role": "graphic",
+            "ink": "#7b838b",
+            "alpha": 1,
+            "shown": "#7b838b",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-m-miss stroke",
+            "ratio": 4.54,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark miss",
+            "role": "graphic",
+            "ink": "#7b838b",
+            "alpha": 1,
+            "shown": "#7b838b",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-m-miss stroke",
+            "ratio": 3.92,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark jam decision",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 6.81,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark jam decision",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "expression",
+            "ratio": 5.89,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark CPA",
+            "role": "graphic",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-m-cpa stroke",
+            "ratio": 5.27,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark CPA",
+            "role": "graphic",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-m-cpa stroke",
+            "ratio": 4.56,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span hold, quality 1",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-s-hold fill",
+            "ratio": 6.81,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span hold, quality 1",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-s-hold fill",
+            "ratio": 5.89,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span coast",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-s-coast stroke",
+            "ratio": 6.81,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span coast",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-s-coast stroke",
+            "ratio": 5.89,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span classify hostile",
+            "role": "graphic",
+            "ink": "#e46f62",
+            "alpha": 1,
+            "shown": "#e46f62",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 5.61,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span classify hostile",
+            "role": "graphic",
+            "ink": "#e46f62",
+            "alpha": 1,
+            "shown": "#e46f62",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "expression",
+            "ratio": 4.85,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span window",
+            "role": "graphic",
+            "ink": "#7ba7e8",
+            "alpha": 1,
+            "shown": "#7ba7e8",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-s-window fill",
+            "ratio": 7.09,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span window",
+            "role": "graphic",
+            "ink": "#7ba7e8",
+            "alpha": 1,
+            "shown": "#7ba7e8",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-s-window fill",
+            "ratio": 6.13,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span preparation edge",
+            "role": "graphic",
+            "ink": "#e2ad55",
+            "alpha": 1,
+            "shown": "#e2ad55",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-s-prep stroke",
+            "ratio": 8.59,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span preparation edge",
+            "role": "graphic",
+            "ink": "#e2ad55",
+            "alpha": 1,
+            "shown": "#e2ad55",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-s-prep stroke",
+            "ratio": 7.43,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span flight",
+            "role": "graphic",
+            "ink": "#7ba7e8",
+            "alpha": 1,
+            "shown": "#7ba7e8",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-s-flight fill",
+            "ratio": 7.09,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span flight",
+            "role": "graphic",
+            "ink": "#7ba7e8",
+            "alpha": 1,
+            "shown": "#7ba7e8",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-s-flight fill",
+            "ratio": 6.13,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span burst",
+            "role": "graphic",
+            "ink": "#9aa8b0",
+            "alpha": 1,
+            "shown": "#9aa8b0",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 7.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span burst",
+            "role": "graphic",
+            "ink": "#9aa8b0",
+            "alpha": 1,
+            "shown": "#9aa8b0",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "expression",
+            "ratio": 6.18,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span dwell",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 6.81,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span dwell",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "expression",
+            "ratio": 5.89,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span ghost",
+            "role": "graphic",
+            "ink": "#7b838b",
+            "alpha": 1,
+            "shown": "#7b838b",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-s-ghost stroke",
+            "ratio": 4.54,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span ghost",
+            "role": "graphic",
+            "ink": "#7b838b",
+            "alpha": 1,
+            "shown": "#7b838b",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-s-ghost stroke",
+            "ratio": 3.92,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span undetected",
+            "role": "graphic",
+            "ink": "#7e8480",
+            "alpha": 1,
+            "shown": "#7e8480",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-svg .runtl-s-undetected stroke",
+            "ratio": 4.57,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span undetected",
+            "role": "graphic",
+            "ink": "#7e8480",
+            "alpha": 1,
+            "shown": "#7e8480",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-svg .runtl-s-undetected stroke",
+            "ratio": 3.95,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "playhead",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "element .runtl-playhead backgroundColor",
+            "ratio": 14.37,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "playhead",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "element .runtl-playhead backgroundColor",
+            "ratio": 12.43,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "playhead",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "unobserved",
+            "surfaceColour": "#111212",
+            "source": "element .runtl-playhead backgroundColor",
+            "ratio": 15.42,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "unobserved edge",
+            "role": "graphic",
+            "ink": "#7e8480",
+            "alpha": 1,
+            "shown": "#7e8480",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.57,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "unobserved edge",
+            "role": "graphic",
+            "ink": "#7e8480",
+            "alpha": 1,
+            "shown": "#7e8480",
+            "surface": "unobserved",
+            "surfaceColour": "#111212",
+            "source": "expression",
+            "ratio": 4.9,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "selected line bar",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 14.37,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary detect at 0.75",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 0.75,
+            "shown": "#64849a",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.4,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary firm at 0.75",
+            "role": "graphic",
+            "ink": "#d6d9d2",
+            "alpha": 0.75,
+            "shown": "#a7a9a4",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 7.37,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary assign at 0.75",
+            "role": "graphic",
+            "ink": "#c9975a",
+            "alpha": 0.75,
+            "shown": "#9d784a",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.32,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary release at 0.75",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 0.75,
+            "shown": "#b7b5b1",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 8.52,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary hard kill at 0.75",
+            "role": "graphic",
+            "ink": "#e46f62",
+            "alpha": 0.75,
+            "shown": "#b15a50",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 3.69,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary mission kill at 0.75",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 0.75,
+            "shown": "#64849a",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.4,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary miss at 0.75",
+            "role": "graphic",
+            "ink": "#7b838b",
+            "alpha": 0.75,
+            "shown": "#63696f",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 3.13,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary CPA at 0.75",
+            "role": "graphic",
+            "ink": "#8c8e88",
+            "alpha": 0.75,
+            "shown": "#6f716d",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 3.54,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary hold at 0.75",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 0.75,
+            "shown": "#64849a",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.4,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary window at 0.75",
+            "role": "graphic",
+            "ink": "#7ba7e8",
+            "alpha": 0.75,
+            "shown": "#6384b5",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.55,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary flight at 0.75",
+            "role": "graphic",
+            "ink": "#7ba7e8",
+            "alpha": 0.75,
+            "shown": "#6384b5",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.55,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary burst at 0.75",
+            "role": "graphic",
+            "ink": "#9aa8b0",
+            "alpha": 0.75,
+            "shown": "#7a858b",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.59,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary dwell at 0.75",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 0.75,
+            "shown": "#64849a",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.4,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary undetected at 0.75",
+            "role": "graphic",
+            "ink": "#7e8480",
+            "alpha": 0.75,
+            "shown": "#656a67",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 3.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row ink square sensor",
+            "role": "identifier",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 6.81,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row ink square c2",
+            "role": "identifier",
+            "ink": "#d6d9d2",
+            "alpha": 1,
+            "shown": "#d6d9d2",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 12.22,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row ink square effector",
+            "role": "identifier",
+            "ink": "#c9975a",
+            "alpha": 1,
+            "shown": "#c9975a",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 6.69,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row ink square uas",
+            "role": "identifier",
+            "ink": "#c46a5a",
+            "alpha": 1,
+            "shown": "#c46a5a",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 4.61,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "group ink square blue",
+            "role": "identifier",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "group",
+            "surfaceColour": "#131414",
+            "source": "expression",
+            "ratio": 7.21,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "group ink square red",
+            "role": "identifier",
+            "ink": "#e46f62",
+            "alpha": 1,
+            "shown": "#e46f62",
+            "surface": "group",
+            "surfaceColour": "#131414",
+            "source": "expression",
+            "ratio": 5.93,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview hard kill",
+            "role": "graphic",
+            "ink": "#e46f62",
+            "alpha": 1,
+            "shown": "#e46f62",
+            "surface": "overview",
+            "surfaceColour": "#141515",
+            "source": "expression",
+            "ratio": 5.91,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview mission kill",
+            "role": "graphic",
+            "ink": "#7da7c4",
+            "alpha": 1,
+            "shown": "#7da7c4",
+            "surface": "overview",
+            "surfaceColour": "#141515",
+            "source": "expression",
+            "ratio": 7.17,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview classify hostile",
+            "role": "graphic",
+            "ink": "#e46f62",
+            "alpha": 1,
+            "shown": "#e46f62",
+            "surface": "overview",
+            "surfaceColour": "#141515",
+            "source": "expression",
+            "ratio": 5.91,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview window edge",
+            "role": "graphic",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "overview",
+            "surfaceColour": "#141515",
+            "source": "element .runtl-over-window stroke",
+            "ratio": 5.55,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "hold, quality 0 (opacity 0.3)",
+            "role": "graded step",
+            "ink": "#7da7c4",
+            "alpha": 0.3,
+            "shown": "#37444d",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 1.75,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "hold, quality 0 (opacity 0.3)",
+            "role": "graded step",
+            "ink": "#7da7c4",
+            "alpha": 0.3,
+            "shown": "#404d55",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "expression",
+            "ratio": 1.73,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "hold, quality 0.5 (opacity 0.65)",
+            "role": "graded step",
+            "ink": "#7da7c4",
+            "alpha": 0.65,
+            "shown": "#5a7689",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 3.63,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "hold, quality 0.5 (opacity 0.65)",
+            "role": "graded step",
+            "ink": "#7da7c4",
+            "alpha": 0.65,
+            "shown": "#5e7a8d",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "expression",
+            "ratio": 3.34,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "classify unknown (25 percent)",
+            "role": "graded step",
+            "ink": "#4c2f2c",
+            "alpha": 1,
+            "shown": "#4c2f2c",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 1.46,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "classify suspected (55 percent)",
+            "role": "graded step",
+            "ink": "#894942",
+            "alpha": 1,
+            "shown": "#894942",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 2.56,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "header title (text 1)",
+            "role": "text",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 14.37,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "header horizon (text 3)",
+            "role": "text",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 5.27,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "window readout (text 3)",
+            "role": "text",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 5.27,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "group header name (text 3)",
+            "role": "text",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "group",
+            "surfaceColour": "#131414",
+            "source": "expression",
+            "ratio": 5.57,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row label (text 2)",
+            "role": "text",
+            "ink": "#a9a9a3",
+            "alpha": 1,
+            "shown": "#a9a9a3",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 7.38,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "selected row label (text 1)",
+            "role": "text",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "selected",
+            "surfaceColour": "#262626",
+            "source": "expression",
+            "ratio": 12.43,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "row meta, count, side (text 3)",
+            "role": "text",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 5.27,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "sub-lane and summary name (text 3)",
+            "role": "text",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 5.27,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "fold label (text 2)",
+            "role": "text",
+            "ink": "#a9a9a3",
+            "alpha": 1,
+            "shown": "#a9a9a3",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 7.38,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "axis tick (text 3)",
+            "role": "text",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 5.27,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview gutter (text 3)",
+            "role": "text",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "overview",
+            "surfaceColour": "#141515",
+            "source": "expression",
+            "ratio": 5.55,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "duration on flight",
+            "role": "text",
+            "ink": "#121313",
+            "alpha": 1,
+            "shown": "#121313",
+            "surface": "flightBar",
+            "surfaceColour": "#7ba7e8",
+            "source": "expression",
+            "ratio": 7.56,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "duration on dwell",
+            "role": "text",
+            "ink": "#121313",
+            "alpha": 1,
+            "shown": "#121313",
+            "surface": "dwellBar",
+            "surfaceColour": "#7da7c4",
+            "source": "expression",
+            "ratio": 7.26,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "duration on burst",
+            "role": "text",
+            "ink": "#121313",
+            "alpha": 1,
+            "shown": "#121313",
+            "surface": "burstBar",
+            "surfaceColour": "#9aa8b0",
+            "source": "expression",
+            "ratio": 7.62,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "effector pk label (text 1)",
+            "role": "text",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 14.37,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "rounds chip label (text 1)",
+            "role": "text",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "chip",
+            "surfaceColour": "#0e0f0f",
+            "source": "expression",
+            "ratio": 15.81,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "C2 assign label (text 3)",
+            "role": "text",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "panel",
+            "surfaceColour": "#191a1a",
+            "source": "expression",
+            "ratio": 5.27,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "tooltip body (text 2)",
+            "role": "text",
+            "ink": "#a9a9a3",
+            "alpha": 1,
+            "shown": "#a9a9a3",
+            "surface": "raised",
+            "surfaceColour": "#202121",
+            "source": "expression",
+            "ratio": 6.83,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "tooltip title and data (text 1)",
+            "role": "text",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "raised",
+            "surfaceColour": "#202121",
+            "source": "expression",
+            "ratio": 13.3,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "tooltip horizon (text 3)",
+            "role": "text",
+            "ink": "#8c8e88",
+            "alpha": 1,
+            "shown": "#8c8e88",
+            "surface": "raised",
+            "surfaceColour": "#202121",
+            "source": "expression",
+            "ratio": 4.87,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "Follow pressed",
+            "role": "text",
+            "ink": "#121313",
+            "alpha": 1,
+            "shown": "#121313",
+            "surface": "followPressed",
+            "surfaceColour": "#ebe9e3",
+            "source": "expression",
+            "ratio": 15.33,
+            "required": 4.5,
+            "pass": true
+          }
+        ]
+      },
+      "light": {
+        "surfaces": {
+          "panel": "#f7f5f0",
+          "selected": "#eae8e4",
+          "group": "#ede9e3",
+          "overview": "#eeebe4",
+          "unobserved": "#eae6df",
+          "raised": "#fbfaf7",
+          "chip": "#e4e0d8",
+          "flightBar": "#2862b0",
+          "dwellBar": "#29465a",
+          "burstBar": "#394349",
+          "followPressed": "#212220"
+        },
+        "rows": [
+          {
+            "id": "mark detect",
+            "role": "graphic",
+            "ink": "#406d8d",
+            "alpha": 1,
+            "shown": "#406d8d",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-m-detect fill",
+            "ratio": 5.09,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark detect",
+            "role": "graphic",
+            "ink": "#406d8d",
+            "alpha": 1,
+            "shown": "#406d8d",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-m-detect fill",
+            "ratio": 4.54,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark C2 init tick",
+            "role": "graphic",
+            "ink": "#636a59",
+            "alpha": 1,
+            "shown": "#636a59",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg line.runtl-m-init stroke",
+            "ratio": 5.16,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark C2 init tick",
+            "role": "graphic",
+            "ink": "#636a59",
+            "alpha": 1,
+            "shown": "#636a59",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg line.runtl-m-init stroke",
+            "ratio": 4.6,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark track init ring",
+            "role": "graphic",
+            "ink": "#636a59",
+            "alpha": 1,
+            "shown": "#636a59",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg circle.runtl-m-init stroke",
+            "ratio": 5.16,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark track init ring",
+            "role": "graphic",
+            "ink": "#636a59",
+            "alpha": 1,
+            "shown": "#636a59",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg circle.runtl-m-init stroke",
+            "ratio": 4.6,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark firm",
+            "role": "graphic",
+            "ink": "#636a59",
+            "alpha": 1,
+            "shown": "#636a59",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-m-firm fill",
+            "ratio": 5.16,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark firm",
+            "role": "graphic",
+            "ink": "#636a59",
+            "alpha": 1,
+            "shown": "#636a59",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-m-firm fill",
+            "ratio": 4.6,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark drop",
+            "role": "graphic",
+            "ink": "#62686f",
+            "alpha": 1,
+            "shown": "#62686f",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-m-drop stroke",
+            "ratio": 5.17,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark drop",
+            "role": "graphic",
+            "ink": "#62686f",
+            "alpha": 1,
+            "shown": "#62686f",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-m-drop stroke",
+            "ratio": 4.61,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark assign",
+            "role": "graphic",
+            "ink": "#8a602d",
+            "alpha": 1,
+            "shown": "#8a602d",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-m-assign stroke",
+            "ratio": 5.08,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark assign",
+            "role": "graphic",
+            "ink": "#8a602d",
+            "alpha": 1,
+            "shown": "#8a602d",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-m-assign stroke",
+            "ratio": 4.54,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark release",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-m-release fill",
+            "ratio": 14.66,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark release",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-m-release fill",
+            "ratio": 13.09,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark shot",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-m-shot stroke",
+            "ratio": 14.66,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark shot",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-m-shot stroke",
+            "ratio": 13.09,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark hard kill",
+            "role": "graphic",
+            "ink": "#d43725",
+            "alpha": 1,
+            "shown": "#d43725",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-m-hard-kill fill",
+            "ratio": 4.41,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark hard kill",
+            "role": "graphic",
+            "ink": "#d43725",
+            "alpha": 1,
+            "shown": "#d43725",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-m-hard-kill fill",
+            "ratio": 3.93,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark arrival",
+            "role": "graphic",
+            "ink": "#d43725",
+            "alpha": 1,
+            "shown": "#d43725",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 4.41,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark arrival",
+            "role": "graphic",
+            "ink": "#d43725",
+            "alpha": 1,
+            "shown": "#d43725",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "expression",
+            "ratio": 3.93,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark mission kill",
+            "role": "graphic",
+            "ink": "#29465a",
+            "alpha": 1,
+            "shown": "#29465a",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 9.1,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark mission kill",
+            "role": "graphic",
+            "ink": "#29465a",
+            "alpha": 1,
+            "shown": "#29465a",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "expression",
+            "ratio": 8.12,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark miss",
+            "role": "graphic",
+            "ink": "#62686f",
+            "alpha": 1,
+            "shown": "#62686f",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-m-miss stroke",
+            "ratio": 5.17,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark miss",
+            "role": "graphic",
+            "ink": "#62686f",
+            "alpha": 1,
+            "shown": "#62686f",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-m-miss stroke",
+            "ratio": 4.61,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark jam decision",
+            "role": "graphic",
+            "ink": "#29465a",
+            "alpha": 1,
+            "shown": "#29465a",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 9.1,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark jam decision",
+            "role": "graphic",
+            "ink": "#29465a",
+            "alpha": 1,
+            "shown": "#29465a",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "expression",
+            "ratio": 8.12,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark CPA",
+            "role": "graphic",
+            "ink": "#676860",
+            "alpha": 1,
+            "shown": "#676860",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-m-cpa stroke",
+            "ratio": 5.17,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "mark CPA",
+            "role": "graphic",
+            "ink": "#676860",
+            "alpha": 1,
+            "shown": "#676860",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-m-cpa stroke",
+            "ratio": 4.62,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span hold, quality 1",
+            "role": "graphic",
+            "ink": "#406d8d",
+            "alpha": 1,
+            "shown": "#406d8d",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-s-hold fill",
+            "ratio": 5.09,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span hold, quality 1",
+            "role": "graphic",
+            "ink": "#406d8d",
+            "alpha": 1,
+            "shown": "#406d8d",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-s-hold fill",
+            "ratio": 4.54,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span coast",
+            "role": "graphic",
+            "ink": "#406d8d",
+            "alpha": 1,
+            "shown": "#406d8d",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-s-coast stroke",
+            "ratio": 5.09,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span coast",
+            "role": "graphic",
+            "ink": "#406d8d",
+            "alpha": 1,
+            "shown": "#406d8d",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-s-coast stroke",
+            "ratio": 4.54,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span classify hostile",
+            "role": "graphic",
+            "ink": "#d43725",
+            "alpha": 1,
+            "shown": "#d43725",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 4.41,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span classify hostile",
+            "role": "graphic",
+            "ink": "#d43725",
+            "alpha": 1,
+            "shown": "#d43725",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "expression",
+            "ratio": 3.93,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span window",
+            "role": "graphic",
+            "ink": "#2862b0",
+            "alpha": 1,
+            "shown": "#2862b0",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-s-window fill",
+            "ratio": 5.56,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span window",
+            "role": "graphic",
+            "ink": "#2862b0",
+            "alpha": 1,
+            "shown": "#2862b0",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-s-window fill",
+            "ratio": 4.97,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span preparation edge",
+            "role": "graphic",
+            "ink": "#98691b",
+            "alpha": 1,
+            "shown": "#98691b",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-s-prep stroke",
+            "ratio": 4.41,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span preparation edge",
+            "role": "graphic",
+            "ink": "#98691b",
+            "alpha": 1,
+            "shown": "#98691b",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-s-prep stroke",
+            "ratio": 3.93,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span flight",
+            "role": "graphic",
+            "ink": "#2862b0",
+            "alpha": 1,
+            "shown": "#2862b0",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-s-flight fill",
+            "ratio": 5.56,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span flight",
+            "role": "graphic",
+            "ink": "#2862b0",
+            "alpha": 1,
+            "shown": "#2862b0",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-s-flight fill",
+            "ratio": 4.97,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span burst",
+            "role": "graphic",
+            "ink": "#394349",
+            "alpha": 1,
+            "shown": "#394349",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 9.3,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span burst",
+            "role": "graphic",
+            "ink": "#394349",
+            "alpha": 1,
+            "shown": "#394349",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "expression",
+            "ratio": 8.3,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span dwell",
+            "role": "graphic",
+            "ink": "#29465a",
+            "alpha": 1,
+            "shown": "#29465a",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 9.1,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span dwell",
+            "role": "graphic",
+            "ink": "#29465a",
+            "alpha": 1,
+            "shown": "#29465a",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "expression",
+            "ratio": 8.12,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span ghost",
+            "role": "graphic",
+            "ink": "#62686f",
+            "alpha": 1,
+            "shown": "#62686f",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-s-ghost stroke",
+            "ratio": 5.17,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span ghost",
+            "role": "graphic",
+            "ink": "#62686f",
+            "alpha": 1,
+            "shown": "#62686f",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-s-ghost stroke",
+            "ratio": 4.61,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span undetected",
+            "role": "graphic",
+            "ink": "#6e6759",
+            "alpha": 1,
+            "shown": "#6e6759",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-svg .runtl-s-undetected stroke",
+            "ratio": 5.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "span undetected",
+            "role": "graphic",
+            "ink": "#6e6759",
+            "alpha": 1,
+            "shown": "#6e6759",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-svg .runtl-s-undetected stroke",
+            "ratio": 4.59,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "playhead",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "element .runtl-playhead backgroundColor",
+            "ratio": 14.66,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "playhead",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "element .runtl-playhead backgroundColor",
+            "ratio": 13.09,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "playhead",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "unobserved",
+            "surfaceColour": "#eae6df",
+            "source": "element .runtl-playhead backgroundColor",
+            "ratio": 12.86,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "unobserved edge",
+            "role": "graphic",
+            "ink": "#6e6759",
+            "alpha": 1,
+            "shown": "#6e6759",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 5.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "unobserved edge",
+            "role": "graphic",
+            "ink": "#6e6759",
+            "alpha": 1,
+            "shown": "#6e6759",
+            "surface": "unobserved",
+            "surfaceColour": "#eae6df",
+            "source": "expression",
+            "ratio": 4.51,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "selected line bar",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 14.66,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary detect at 0.75",
+            "role": "graphic",
+            "ink": "#406d8d",
+            "alpha": 0.75,
+            "shown": "#6e8fa6",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary firm at 0.75",
+            "role": "graphic",
+            "ink": "#636a59",
+            "alpha": 0.75,
+            "shown": "#888d7f",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary assign at 0.75",
+            "role": "graphic",
+            "ink": "#8a602d",
+            "alpha": 0.75,
+            "shown": "#a5855e",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary release at 0.75",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 0.75,
+            "shown": "#575754",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 6.68,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary hard kill at 0.75",
+            "role": "graphic",
+            "ink": "#d43725",
+            "alpha": 0.75,
+            "shown": "#dd6758",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.15,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary mission kill at 0.75",
+            "role": "graphic",
+            "ink": "#29465a",
+            "alpha": 0.75,
+            "shown": "#5d7280",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 4.63,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary miss at 0.75",
+            "role": "graphic",
+            "ink": "#62686f",
+            "alpha": 0.75,
+            "shown": "#878b8f",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary CPA at 0.75",
+            "role": "graphic",
+            "ink": "#676860",
+            "alpha": 0.75,
+            "shown": "#8b8b84",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary hold at 0.75",
+            "role": "graphic",
+            "ink": "#406d8d",
+            "alpha": 0.75,
+            "shown": "#6e8fa6",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.14,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary window at 0.75",
+            "role": "graphic",
+            "ink": "#2862b0",
+            "alpha": 0.75,
+            "shown": "#5c87c0",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.4,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary flight at 0.75",
+            "role": "graphic",
+            "ink": "#2862b0",
+            "alpha": 0.75,
+            "shown": "#5c87c0",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.4,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary burst at 0.75",
+            "role": "graphic",
+            "ink": "#394349",
+            "alpha": 0.75,
+            "shown": "#697073",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 4.66,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary dwell at 0.75",
+            "role": "graphic",
+            "ink": "#29465a",
+            "alpha": 0.75,
+            "shown": "#5d7280",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 4.63,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "summary undetected at 0.75",
+            "role": "graphic",
+            "ink": "#6e6759",
+            "alpha": 0.75,
+            "shown": "#908b7f",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.13,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row ink square sensor",
+            "role": "identifier",
+            "ink": "#406d8d",
+            "alpha": 1,
+            "shown": "#406d8d",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 5.09,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row ink square c2",
+            "role": "identifier",
+            "ink": "#636a59",
+            "alpha": 1,
+            "shown": "#636a59",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 5.16,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row ink square effector",
+            "role": "identifier",
+            "ink": "#8a602d",
+            "alpha": 1,
+            "shown": "#8a602d",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 5.08,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row ink square uas",
+            "role": "identifier",
+            "ink": "#c46a5a",
+            "alpha": 1,
+            "shown": "#c46a5a",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.47,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "group ink square blue",
+            "role": "identifier",
+            "ink": "#29465a",
+            "alpha": 1,
+            "shown": "#29465a",
+            "surface": "group",
+            "surfaceColour": "#ede9e3",
+            "source": "expression",
+            "ratio": 8.21,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "group ink square red",
+            "role": "identifier",
+            "ink": "#d43725",
+            "alpha": 1,
+            "shown": "#d43725",
+            "surface": "group",
+            "surfaceColour": "#ede9e3",
+            "source": "expression",
+            "ratio": 3.98,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview hard kill",
+            "role": "graphic",
+            "ink": "#d43725",
+            "alpha": 1,
+            "shown": "#d43725",
+            "surface": "overview",
+            "surfaceColour": "#eeebe4",
+            "source": "expression",
+            "ratio": 4.02,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview mission kill",
+            "role": "graphic",
+            "ink": "#29465a",
+            "alpha": 1,
+            "shown": "#29465a",
+            "surface": "overview",
+            "surfaceColour": "#eeebe4",
+            "source": "expression",
+            "ratio": 8.29,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview classify hostile",
+            "role": "graphic",
+            "ink": "#d43725",
+            "alpha": 1,
+            "shown": "#d43725",
+            "surface": "overview",
+            "surfaceColour": "#eeebe4",
+            "source": "expression",
+            "ratio": 4.02,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview window edge",
+            "role": "graphic",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "overview",
+            "surfaceColour": "#eeebe4",
+            "source": "element .runtl-over-window stroke",
+            "ratio": 3.5,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "hold, quality 0 (opacity 0.3)",
+            "role": "graded step",
+            "ink": "#406d8d",
+            "alpha": 0.3,
+            "shown": "#c0ccd2",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 1.5,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "hold, quality 0 (opacity 0.3)",
+            "role": "graded step",
+            "ink": "#406d8d",
+            "alpha": 0.3,
+            "shown": "#b7c3ca",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "expression",
+            "ratio": 1.47,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "hold, quality 0.5 (opacity 0.65)",
+            "role": "graded step",
+            "ink": "#406d8d",
+            "alpha": 0.65,
+            "shown": "#809db0",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 2.63,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "hold, quality 0.5 (opacity 0.65)",
+            "role": "graded step",
+            "ink": "#406d8d",
+            "alpha": 0.65,
+            "shown": "#7c98ab",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "expression",
+            "ratio": 2.48,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "classify unknown (25 percent)",
+            "role": "graded step",
+            "ink": "#eec6bd",
+            "alpha": 1,
+            "shown": "#eec6bd",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 1.44,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "classify suspected (55 percent)",
+            "role": "graded step",
+            "ink": "#e48c80",
+            "alpha": 1,
+            "shown": "#e48c80",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 2.3,
+            "required": null,
+            "pass": null
+          },
+          {
+            "id": "header title (text 1)",
+            "role": "text",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 14.66,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "header horizon (text 3)",
+            "role": "text",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.84,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "window readout (text 3)",
+            "role": "text",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.84,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "group header name (text 3)",
+            "role": "text",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "group",
+            "surfaceColour": "#ede9e3",
+            "source": "expression",
+            "ratio": 3.46,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "row label (text 2)",
+            "role": "text",
+            "ink": "#4e504b",
+            "alpha": 1,
+            "shown": "#4e504b",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 7.49,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "selected row label (text 1)",
+            "role": "text",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "selected",
+            "surfaceColour": "#eae8e4",
+            "source": "expression",
+            "ratio": 13.09,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "row meta, count, side (text 3)",
+            "role": "text",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.84,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "sub-lane and summary name (text 3)",
+            "role": "text",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.84,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "fold label (text 2)",
+            "role": "text",
+            "ink": "#4e504b",
+            "alpha": 1,
+            "shown": "#4e504b",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 7.49,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "axis tick (text 3)",
+            "role": "text",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.84,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview gutter (text 3)",
+            "role": "text",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "overview",
+            "surfaceColour": "#eeebe4",
+            "source": "expression",
+            "ratio": 3.5,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "duration on flight",
+            "role": "text",
+            "ink": "#eeebe4",
+            "alpha": 1,
+            "shown": "#eeebe4",
+            "surface": "flightBar",
+            "surfaceColour": "#2862b0",
+            "source": "expression",
+            "ratio": 5.09,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "duration on dwell",
+            "role": "text",
+            "ink": "#eeebe4",
+            "alpha": 1,
+            "shown": "#eeebe4",
+            "surface": "dwellBar",
+            "surfaceColour": "#29465a",
+            "source": "expression",
+            "ratio": 8.33,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "duration on burst",
+            "role": "text",
+            "ink": "#eeebe4",
+            "alpha": 1,
+            "shown": "#eeebe4",
+            "surface": "burstBar",
+            "surfaceColour": "#394349",
+            "source": "expression",
+            "ratio": 8.51,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "effector pk label (text 1)",
+            "role": "text",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 14.66,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "rounds chip label (text 1)",
+            "role": "text",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "chip",
+            "surfaceColour": "#e4e0d8",
+            "source": "expression",
+            "ratio": 12.14,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "C2 assign label (text 3)",
+            "role": "text",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "panel",
+            "surfaceColour": "#f7f5f0",
+            "source": "expression",
+            "ratio": 3.84,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "tooltip body (text 2)",
+            "role": "text",
+            "ink": "#4e504b",
+            "alpha": 1,
+            "shown": "#4e504b",
+            "surface": "raised",
+            "surfaceColour": "#fbfaf7",
+            "source": "expression",
+            "ratio": 7.82,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "tooltip title and data (text 1)",
+            "role": "text",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "raised",
+            "surfaceColour": "#fbfaf7",
+            "source": "expression",
+            "ratio": 15.31,
+            "required": 4.5,
+            "pass": true
+          },
+          {
+            "id": "tooltip horizon (text 3)",
+            "role": "text",
+            "ink": "#7b7d73",
+            "alpha": 1,
+            "shown": "#7b7d73",
+            "surface": "raised",
+            "surfaceColour": "#fbfaf7",
+            "source": "expression",
+            "ratio": 4.01,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "Follow pressed",
+            "role": "text",
+            "ink": "#eeebe4",
+            "alpha": 1,
+            "shown": "#eeebe4",
+            "surface": "followPressed",
+            "surfaceColour": "#212220",
+            "source": "expression",
+            "ratio": 13.42,
+            "required": 4.5,
+            "pass": true
+          }
+        ]
+      }
+    },
+    "darkSummary": {
+      "pairs": 105,
+      "required": 99,
+      "fail": 0,
+      "failing": []
+    },
+    "lightSummary": {
+      "pairs": 105,
+      "required": 99,
+      "fail": 0,
+      "failing": []
+    }
+  },
+  "commit": "8ba3ec5",
+  "baseline": {
+    "commit": "1c7cd00",
+    "note": "Frames measured before any Phase 4 source change, with the same script and expansion.",
+    "devFrames": {
+      "speed": 30,
+      "recordMs": 10000,
+      "runs": [
+        {
+          "label": "open-1",
+          "strip": "open, every group and sensor row expanded",
+          "intervals": 934,
+          "over16ms": 86,
+          "over20ms": 77,
+          "over33ms": 36,
+          "maxMs": 83.4,
+          "meanMs": 10.72,
+          "p99Ms": 50,
+          "longtaskSupported": true,
+          "longtasks": 11,
+          "longtaskMaxMs": 86,
+          "longtaskTotalMs": 751,
+          "simTimeS": [
+            0,
+            298.188
+          ],
+          "observedThroughS": [
+            9.5947,
+            298.188
+          ],
+          "domBefore": {
+            "lines": 56,
+            "subLanes": 0,
+            "marks": 1,
+            "spans": 0,
+            "svgNodes": 239,
+            "groupLabel": "Run timeline. Shown through T+0:00"
+          },
+          "domAfter": {
+            "lines": 119,
+            "subLanes": 56,
+            "marks": 660,
+            "spans": 1952,
+            "svgNodes": 3766,
+            "groupLabel": "Run timeline. Shown through T+4:58"
+          }
+        },
+        {
+          "label": "closed-1",
+          "strip": "closed",
+          "intervals": 1169,
+          "over16ms": 8,
+          "over20ms": 2,
+          "over33ms": 0,
+          "maxMs": 24.9,
+          "meanMs": 8.54,
+          "p99Ms": 16.6,
+          "longtaskSupported": true,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "longtaskTotalMs": 0,
+          "simTimeS": [
+            0,
+            296.484
+          ],
+          "observedThroughS": [
+            298.188,
+            298.188
+          ],
+          "domBefore": null,
+          "domAfter": null
+        },
+        {
+          "label": "open-2",
+          "strip": "open, every group and sensor row expanded",
+          "intervals": 986,
+          "over16ms": 72,
+          "over20ms": 49,
+          "over33ms": 25,
+          "maxMs": 66.6,
+          "meanMs": 10.13,
+          "p99Ms": 50,
+          "longtaskSupported": true,
+          "longtasks": 15,
+          "longtaskMaxMs": 74,
+          "longtaskTotalMs": 881,
+          "simTimeS": [
+            0,
+            297.699
+          ],
+          "observedThroughS": [
+            298.188,
+            298.188
+          ],
+          "domBefore": {
+            "lines": 56,
+            "subLanes": 0,
+            "marks": 1,
+            "spans": 0,
+            "svgNodes": 239,
+            "groupLabel": "Run timeline. Shown through T+0:00"
+          },
+          "domAfter": {
+            "lines": 119,
+            "subLanes": 56,
+            "marks": 660,
+            "spans": 1952,
+            "svgNodes": 3766,
+            "groupLabel": "Run timeline. Shown through T+4:57"
+          }
+        },
+        {
+          "label": "closed-2",
+          "strip": "closed",
+          "intervals": 1159,
+          "over16ms": 5,
+          "over20ms": 2,
+          "over33ms": 0,
+          "maxMs": 25.1,
+          "meanMs": 8.62,
+          "p99Ms": 16.7,
+          "longtaskSupported": true,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "longtaskTotalMs": 0,
+          "simTimeS": [
+            0,
+            299.304
+          ],
+          "observedThroughS": [
+            298.188,
+            299.304
+          ],
+          "domBefore": null,
+          "domAfter": null
+        }
+      ],
+      "pass": false,
+      "rule": "Phase 2 rule: an open run adds no interval over 33 ms beyond the closed runs"
+    },
+    "prodFrames": {
+      "build": "vite production build, served statically",
+      "note": "No __store in production: driven through the transport. Segments run back to back at 30x.",
+      "segments": [
+        {
+          "label": "A open, Expand all at T+0",
+          "intervals": 1115,
+          "over16ms": 10,
+          "over20ms": 0,
+          "over33ms": 0,
+          "maxMs": 17.1,
+          "p99Ms": 16.7,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "endScope": "Shown through T+5:01"
+        },
+        {
+          "label": "B open, Expand all again, every sensor row with a track open",
+          "lines": 118,
+          "intervals": 1016,
+          "over16ms": 88,
+          "over20ms": 80,
+          "over33ms": 0,
+          "maxMs": 25.1,
+          "p99Ms": 25,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "endScope": "Shown through T+10:01"
+        },
+        {
+          "label": "C closed",
+          "intervals": 1179,
+          "over16ms": 11,
+          "over20ms": 0,
+          "over33ms": 0,
+          "maxMs": 16.9,
+          "p99Ms": 16.6,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "endScope": "Shown through T+15:01"
+        }
+      ],
+      "errors": []
+    }
+  },
+  "prodFrames": {
+    "build": "vite production build, served statically",
+    "note": "No __store in production: driven through the transport. Segments run back to back at 30x.",
+    "segments": [
+      {
+        "label": "A open, Expand all at T+0",
+        "intervals": 1127,
+        "over16ms": 23,
+        "over20ms": 0,
+        "over33ms": 0,
+        "maxMs": 17.4,
+        "p99Ms": 16.7,
+        "longtasks": 0,
+        "longtaskMaxMs": 0,
+        "endScope": "Shown through T+5:02"
+      },
+      {
+        "label": "B open, Expand all again, every sensor row with a track open",
+        "lines": 119,
+        "intervals": 1017,
+        "over16ms": 88,
+        "over20ms": 80,
+        "over33ms": 1,
+        "maxMs": 33.3,
+        "p99Ms": 25,
+        "longtasks": 0,
+        "longtaskMaxMs": 0,
+        "endScope": "Shown through T+10:02"
+      },
+      {
+        "label": "C closed",
+        "intervals": 1179,
+        "over16ms": 6,
+        "over20ms": 0,
+        "over33ms": 0,
+        "maxMs": 16.7,
+        "p99Ms": 16.7,
+        "longtasks": 0,
+        "longtaskMaxMs": 0,
+        "endScope": "Shown through T+15:03"
+      }
+    ],
+    "errors": []
+  },
+  "contrastBefore": {
+    "note": "The strip inks before the fix: the same table with the tokens at the Phase 3 values (KIND_INK, --ew, --de, --ghost, --text-tertiary for CPA, --rule-strong for the undetected span and the unobserved edge).",
+    "dark": {
+      "pairs": 105,
+      "required": 99,
+      "fail": 6,
+      "failing": [
+        "span undetected on panel 1.88",
+        "span undetected on selected 1.63",
+        "unobserved edge on panel 1.88",
+        "unobserved edge on unobserved 2.02",
+        "summary miss at 0.75 on panel 2.55",
+        "summary undetected at 0.75 on panel 1.58"
+      ]
+    },
+    "light": {
+      "pairs": 105,
+      "required": 99,
+      "fail": 43,
+      "failing": [
+        "mark detect on panel 2.35",
+        "mark detect on selected 2.1",
+        "mark C2 init tick on panel 1.31",
+        "mark C2 init tick on selected 1.17",
+        "mark track init ring on panel 1.31",
+        "mark track init ring on selected 1.17",
+        "mark firm on panel 1.31",
+        "mark firm on selected 1.17",
+        "mark assign on panel 2.39",
+        "mark assign on selected 2.13",
+        "mark mission kill on panel 2.35",
+        "mark mission kill on selected 2.1",
+        "mark jam decision on panel 2.35",
+        "mark jam decision on selected 2.1",
+        "span hold, quality 1 on panel 2.35",
+        "span hold, quality 1 on selected 2.1",
+        "span coast on panel 2.35",
+        "span coast on selected 2.1",
+        "span burst on panel 2.24",
+        "span burst on selected 2",
+        "span dwell on panel 2.35",
+        "span dwell on selected 2.1",
+        "span undetected on panel 2.12",
+        "span undetected on selected 1.89",
+        "unobserved edge on panel 2.12",
+        "unobserved edge on unobserved 1.86",
+        "summary detect at 0.75 on panel 1.86",
+        "summary firm at 0.75 on panel 1.22",
+        "summary assign at 0.75 on panel 1.89",
+        "summary mission kill at 0.75 on panel 1.86",
+        "summary miss at 0.75 on panel 2.88",
+        "summary CPA at 0.75 on panel 2.58",
+        "summary hold at 0.75 on panel 1.86",
+        "summary burst at 0.75 on panel 1.79",
+        "summary dwell at 0.75 on panel 1.86",
+        "summary undetected at 0.75 on panel 1.72",
+        "row ink square sensor on panel 2.35",
+        "row ink square c2 on panel 1.31",
+        "row ink square effector on panel 2.39",
+        "group ink square blue on group 2.12",
+        "overview mission kill on overview 2.14",
+        "duration on dwell on dwellBar 2.15",
+        "duration on burst on burstBar 2.05"
+      ]
+    }
+  },
+  "contrastReuse": {
+    "source": "docs/field-te/evidence/design-step4-2026-09-05/findings.json",
+    "same colour on the same surface": [
+      {
+        "ink": "--ew #7da7c4",
+        "surface": "paper panel #f7f5f0",
+        "design-step4": 2.35,
+        "here": 2.35
+      },
+      {
+        "ink": "--de #9aa8b0",
+        "surface": "paper panel #f7f5f0",
+        "design-step4": 2.24,
+        "here": 2.24
+      }
+    ],
+    "different colour": "design-step4 measured the canvas --c2 #d3d5cf, --sensor #6cb0e6 and --effector #e4934f; the strip draws KIND_INK #d6d9d2, #7da7c4 and #c9975a, so those findings do not apply. Its --ghost row is on the paper panel at full opacity (4.54); the strip also checks the ghost at the summary 0.75 opacity."
+  }
+}

@@ -1,0 +1,624 @@
+// Run timeline Phase 4 capture: 1265 x 900, the 54-entity performance board
+// "Layered (Acoustic + MEROPS)" (docs/field-te/evidence/perf-2026-09-06/scenario.json),
+// loaded through parseAutosave and loadScenario. It measures frame intervals at 30x
+// with the strip open and fully expanded, then closed; times runTimelineOf per
+// horizon and counts reused rows; reads the strip's accessible names; and computes
+// the WCAG 2.1 contrast of every strip ink in the dark and daylight themes from
+// computed colors. It records observedThroughS before and after each segment.
+// Usage: node run-timeline-p4-capture.mjs <base-url> <out-dir> <repo-root> [--frames-only]
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT, FLAG] = process.argv.slice(2)
+const FRAMES_ONLY = FLAG === '--frames-only'
+const SCEN = 'docs/field-te/evidence/perf-2026-09-06/scenario.json'
+const RAW = readFileSync(join(ROOT, SCEN), 'utf8')
+mkdirSync(OUT, { recursive: true })
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const waitFor = (page, fn, arg, timeout = 60000) => page.waitForFunction(fn, arg, { timeout })
+const r2 = (x) => Math.round(x * 100) / 100
+const r4 = (x) => Math.round(x * 10000) / 10000
+
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => {
+  if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+})
+
+const findings = {
+  capturedAt: new Date().toISOString(),
+  viewport: '1265x900',
+  fixture: SCEN,
+  shots: [],
+  errors,
+}
+
+await page.goto(BASE, { waitUntil: 'load' })
+await waitFor(page, () => document.querySelector('.konvajs-content canvas') && window.__store)
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setTheme('dark')
+  s.setRunTimelineOpen(false)
+}, RAW)
+await sleep(500)
+
+const clock = () =>
+  page.evaluate(async () => {
+    const { durationOf } = await import('/src/state/selectors.ts')
+    const s = window.__store.getState()
+    return {
+      simTimeS: s.playback.simTimeS,
+      observedThroughS: s.playback.observedThroughS,
+      durationS: durationOf(s.scenario),
+      playing: s.playback.playing,
+      entities: s.scenario.entities.length,
+      name: s.scenario.name,
+    }
+  })
+
+/** Play for `ms` and record every requestAnimationFrame interval and long task. */
+const playAndRecord = (ms) =>
+  page.evaluate(
+    (ms) =>
+      new Promise((resolve) => {
+        const longtasks = []
+        let obs = null
+        try {
+          obs = new PerformanceObserver((list) => {
+            for (const e of list.getEntries()) longtasks.push({ startMs: e.startTime, durationMs: e.duration })
+          })
+          obs.observe({ type: 'longtask', buffered: false })
+        } catch {
+          obs = null
+        }
+        const st = window.__store.getState()
+        st.setPlaying(true)
+        const gaps = []
+        let last = null
+        const stop = performance.now() + ms
+        function frame(t) {
+          if (last != null) gaps.push(t - last)
+          last = t
+          if (t < stop) requestAnimationFrame(frame)
+          else {
+            window.__store.getState().setPlaying(false)
+            setTimeout(() => {
+              obs?.disconnect()
+              resolve({ gaps, longtasks, longtaskSupported: obs != null })
+            }, 50)
+          }
+        }
+        requestAnimationFrame(frame)
+      }),
+    ms,
+  )
+
+// over16ms counts intervals over 16.7 ms, one 60 Hz frame.
+function frameStats({ gaps, longtasks, longtaskSupported }) {
+  const sorted = [...gaps].sort((a, b) => a - b)
+  return {
+    intervals: gaps.length,
+    over16ms: gaps.filter((g) => g > 16.7).length,
+    over20ms: gaps.filter((g) => g > 20).length,
+    over33ms: gaps.filter((g) => g > 33).length,
+    maxMs: r2(sorted[sorted.length - 1]),
+    meanMs: r2(gaps.reduce((a, b) => a + b, 0) / gaps.length),
+    p99Ms: r2(sorted[Math.floor(sorted.length * 0.99)]),
+    longtaskSupported,
+    longtasks: longtasks.length,
+    longtaskMaxMs: longtasks.length ? r2(Math.max(...longtasks.map((l) => l.durationMs))) : 0,
+    longtaskTotalMs: r2(longtasks.reduce((a, l) => a + l.durationMs, 0)),
+  }
+}
+
+const dom = () =>
+  page.evaluate(() => ({
+    lines: document.querySelectorAll('#run-timeline .runtl-line').length,
+    subLanes: document.querySelectorAll('#run-timeline .runtl-sub').length,
+    marks: document.querySelectorAll('#run-timeline .runtl-svg .runtl-m').length,
+    spans: document.querySelectorAll('#run-timeline .runtl-svg .runtl-s').length,
+    svgNodes: document.querySelectorAll('#run-timeline svg *').length,
+    groupLabel: document.querySelector('#run-timeline')?.getAttribute('aria-label') ?? null,
+  }))
+
+async function shot(name, state) {
+  await sleep(500)
+  await page.screenshot({ path: join(OUT, `${name}.png`) })
+  const at = await clock()
+  findings.shots.push({ file: `${name}.png`, state, simTimeS: r4(at.simTimeS), observedThroughS: r4(at.observedThroughS) })
+  console.log('shot', name)
+}
+
+const scrub = async (t) => {
+  await page.evaluate((t) => window.__store.getState().scrubTo(t), t)
+  await sleep(400)
+}
+
+/**
+ * Every group and every sensor row open. The Expand all button opens the sensor
+ * rows that hold a track at the current horizon; the script then calls the same
+ * store action with the keys of the whole run, so a sensor row that gains its
+ * first track during play is open too.
+ */
+async function expandAll() {
+  await page.click('#run-timeline .runtl-ctl button:has-text("Expand all")')
+  await page.evaluate(async () => {
+    const { selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+    const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+    const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+    const { expandAllKeys } = await import('/src/panels/timeline/viewportActions.ts')
+    const s = window.__store.getState()
+    const sel = selectTrialSelection(s)
+    const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+    const full = runTimelineOf({ ...view, observedThroughS: view.durationS }, view.durationS)
+    const { groups, sensorRows } = expandAllKeys(full)
+    s.expandAllRunTimeline(groups, sensorRows)
+  })
+  await sleep(300)
+}
+
+// Execute, a ready trial, the strip opened from the Timeline toggle and fully expanded.
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+await page.evaluate(() => window.__store.getState().startRun())
+await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status), null, 180000)
+findings.trialStatus = await page.evaluate(() => window.__store.getState().trial.status)
+findings.board = await clock()
+console.log('board', JSON.stringify(findings.board), findings.trialStatus)
+await page.click('#run-timeline-toggle')
+await waitFor(page, () => document.querySelector('#run-timeline .runtl-head'))
+await page.evaluate(() => window.__store.getState().setSpeedMult(30))
+await expandAll()
+
+// 1. Frames: open and expanded from T+0, closed from T+0, then open again from T+0.
+const frames = { speed: 30, recordMs: 10000, runs: [] }
+async function frameRun(label, open) {
+  await scrub(0)
+  const isOpen = await page.evaluate(() => !!document.querySelector('#run-timeline'))
+  if (isOpen !== open) {
+    await page.click('#run-timeline-toggle')
+    await sleep(400)
+  }
+  if (open) await expandAll()
+  const before = await clock()
+  const domBefore = open ? await dom() : null
+  const rec = await playAndRecord(10000)
+  const after = await clock()
+  const domAfter = open ? await dom() : null
+  const run = {
+    label,
+    strip: open ? 'open, every group and sensor row expanded' : 'closed',
+    ...frameStats(rec),
+    simTimeS: [r4(before.simTimeS), r4(after.simTimeS)],
+    observedThroughS: [r4(before.observedThroughS), r4(after.observedThroughS)],
+    domBefore,
+    domAfter,
+  }
+  frames.runs.push(run)
+  console.log('frames', JSON.stringify(run))
+  return run
+}
+await frameRun('open-1', true)
+await frameRun('closed-1', false)
+await frameRun('open-2', true)
+await frameRun('closed-2', false)
+const opens = frames.runs.filter((r) => r.label.startsWith('open'))
+const closeds = frames.runs.filter((r) => r.label.startsWith('closed'))
+frames.pass = opens.every((o) => o.over33ms <= Math.max(...closeds.map((c) => c.over33ms)))
+frames.rule = 'Phase 2 rule: an open run adds no interval over 33 ms beyond the closed runs'
+findings.frames = frames
+
+// Strip open and expanded, paused at the observed time: the dark shot.
+await page.click('#run-timeline-toggle')
+await waitFor(page, () => document.querySelector('#run-timeline .runtl-head'))
+await expandAll()
+const obsNow = (await clock()).observedThroughS
+await scrub(obsNow)
+// A 420 px dock for the shots, so more of the expanded rows show; not saved.
+await page.evaluate(() => window.__store.getState().setRunTimelineHeight(420, false))
+await shot('execute-expanded-30x-dark', 'Execute, paused at the observed time after 30x play, strip open at 420 px, every group and sensor row open, dark theme')
+await page.evaluate(() => window.__store.getState().setTheme('light'))
+await sleep(400)
+await shot('execute-expanded-30x-daylight', 'The same state in the daylight theme')
+await page.evaluate(() => window.__store.getState().setTheme('dark'))
+await page.evaluate(() => window.__store.getState().setRunTimelineHeight(240, false))
+await sleep(300)
+
+if (FRAMES_ONLY) {
+  writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2) + '\n')
+  console.log('errors', errors.length)
+  await browser.close()
+  process.exit(0)
+}
+
+// 2. Accessible names in Execute: the group label follows the horizon.
+const a11y = { execute: [] }
+const labelAt = async (t) => {
+  await scrub(t)
+  const c = await clock()
+  const d = await page.evaluate(async () => {
+    const { formatTime } = await import('/src/geometry/geo.ts')
+    const { selectTrialHorizon } = await import('/src/state/trialSelectors.ts')
+    const s = window.__store.getState()
+    const h = Math.min(selectTrialHorizon(s, s.playback.simTimeS), s.playback.observedThroughS)
+    return {
+      label: document.querySelector('#run-timeline').getAttribute('aria-label'),
+      scope: document.querySelector('.runtl-scope')?.textContent,
+      expected: `Run timeline. Shown through T+${formatTime(h)}`,
+    }
+  })
+  return { simTimeS: r4(c.simTimeS), observedThroughS: r4(c.observedThroughS), ...d, match: d.label === d.expected }
+}
+for (const f of [0.25, 0.6, 1]) a11y.execute.push(await labelAt(Math.round(obsNow * f)))
+a11y.executeUpdates = new Set(a11y.execute.map((x) => x.label)).size === a11y.execute.length
+console.log('a11y execute', JSON.stringify(a11y.execute))
+
+// Names of every gutter control, and the window readout's accessible name.
+a11y.controls = await page.evaluate(() => {
+  const root = document.querySelector('#run-timeline')
+  const name = (el) => el.getAttribute('aria-label') ?? el.textContent.trim()
+  const buttons = [...root.querySelectorAll('.runtl-gutter button')]
+  const byClass = (c) => buttons.filter((b) => b.classList.contains(c))
+  return {
+    gutterButtons: buttons.length,
+    unnamed: buttons.filter((b) => name(b) === '').length,
+    groupHeaders: byClass('runtl-group-btn').filter((b) => b.closest('.runtl-group')).length,
+    foldHeaders: byClass('runtl-group-btn').filter((b) => b.closest('.runtl-fold')).length,
+    rowLabels: [...root.querySelectorAll('.runtl-row .runtl-select')].length,
+    rowLabelText: [...root.querySelectorAll('.runtl-row span.runtl-name')].length,
+    subLaneButtons: [...root.querySelectorAll('.runtl-sub .runtl-select')].length,
+    subLanes: root.querySelectorAll('.runtl-sub').length,
+    expandControls: byClass('runtl-expand').length,
+    hideControls: byClass('runtl-hide').length,
+    headerButtons: [...root.querySelectorAll('.runtl-head button')].map(name),
+  }
+})
+a11y.zoomReadout = {
+  text: await page.locator('.runtl-zoom').textContent(),
+  ariaSnapshot: await page.locator('.runtl-ctl').ariaSnapshot(),
+}
+console.log('a11y controls', JSON.stringify(a11y.controls), JSON.stringify(a11y.zoomReadout))
+
+// A sub-lane label selects its threat (when it is a button); observation must not move.
+{
+  const before = await clock()
+  const sub = await page.evaluate(() => {
+    const b = document.querySelector('#run-timeline .runtl-sub .runtl-select')
+    return b ? b.textContent : null
+  })
+  if (sub != null) {
+    await page.locator('#run-timeline .runtl-sub .runtl-select').first().click()
+    await sleep(300)
+  }
+  const after = await clock()
+  const sel = await page.evaluate(async () => {
+    const s = window.__store.getState()
+    const ids = s.selection.entityIds
+    const names = ids.map((id) => s.scenario.entities.find((e) => e.id === id)?.name ?? id)
+    const kinds = ids.map((id) => s.scenario.entities.find((e) => e.id === id)?.kind ?? null)
+    return { ids, names, kinds }
+  })
+  a11y.subLaneClick = {
+    label: sub,
+    selection: sel,
+    observedThroughS: [r4(before.observedThroughS), r4(after.observedThroughS)],
+    simTimeS: [r4(before.simTimeS), r4(after.simTimeS)],
+    selectsThreat: sub != null && sel.kinds.length === 1 && sel.kinds[0] === 'uas',
+    observedUnchanged: before.observedThroughS === after.observedThroughS,
+  }
+  console.log('sub-lane click', JSON.stringify(a11y.subLaneClick))
+  await page.evaluate(() => window.__store.getState().select({ entityIds: [] }))
+}
+
+// 3. Complete the run: Analyze shows the whole record; the label names it complete.
+{
+  const before = await clock()
+  await page.evaluate(async () => {
+    const { durationOf } = await import('/src/state/selectors.ts')
+    const s = window.__store.getState()
+    s.completeRun(durationOf(s.scenario))
+  })
+  await page.click('#board-phase-analyze')
+  await waitFor(page, () => document.querySelector('.board-app[data-board-phase="analyze"]'))
+  await waitFor(page, () => document.querySelector('#run-timeline .runtl-head'))
+  await sleep(500)
+  const after = await clock()
+  a11y.analyze = {
+    observedThroughS: [r4(before.observedThroughS), r4(after.observedThroughS)],
+    note: 'completeRun advances observation by design',
+    label: await page.evaluate(() => document.querySelector('#run-timeline').getAttribute('aria-label')),
+    scope: await page.evaluate(() => document.querySelector('.runtl-scope')?.textContent),
+  }
+  await scrub(120)
+  a11y.analyzeAfterScrub = {
+    simTimeS: r4((await clock()).simTimeS),
+    label: await page.evaluate(() => document.querySelector('#run-timeline').getAttribute('aria-label')),
+  }
+  console.log('a11y analyze', JSON.stringify(a11y.analyze), JSON.stringify(a11y.analyzeAfterScrub))
+}
+findings.accessibility = a11y
+
+// 4. runTimelineOf per horizon on a fresh view copy: the first build, each pass,
+// and how many row objects are new or reused against the previous pass.
+findings.modelPasses = await page.evaluate(async () => {
+  const { selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+  const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+  const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+  const s = window.__store.getState()
+  const sel = selectTrialSelection(s)
+  const base = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+  const view = { ...base }
+  const allRows = (m) => m.groups.flatMap((g) => g.rows.flatMap((r) => [r, ...(r.subLanes ?? [])]))
+  const round = (x) => Math.round(x * 1000) / 1000
+  const t0 = performance.now()
+  const first = runTimelineOf(view, 0)
+  const firstBuildMs = round(performance.now() - t0)
+  const passes = []
+  let prev = new Map(allRows(first).map((r) => [r.key, r]))
+  const horizons = []
+  for (let h = 5; h <= view.durationS; h += 5) horizons.push(h)
+  if (horizons[horizons.length - 1] !== view.durationS) horizons.push(view.durationS)
+  for (const h of horizons) {
+    const a = performance.now()
+    const m = runTimelineOf(view, h)
+    const ms = performance.now() - a
+    const rows = allRows(m)
+    let reused = 0
+    for (const r of rows) if (prev.get(r.key) === r) reused++
+    passes.push({ horizonS: h, ms: round(ms), rows: rows.length, reused, created: rows.length - reused })
+    prev = new Map(rows.map((r) => [r.key, r]))
+  }
+  const ms = passes.map((p) => p.ms).sort((a, b) => a - b)
+  const sum = (k) => passes.reduce((a, p) => a + p[k], 0)
+  return {
+    durationS: view.durationS,
+    observedThroughS: view.observedThroughS,
+    firstBuildMs,
+    passes: passes.length,
+    passMeanMs: round(sum('ms') / passes.length),
+    passMedianMs: ms[Math.floor(ms.length / 2)],
+    passMaxMs: ms[ms.length - 1],
+    rowsPerPassMax: Math.max(...passes.map((p) => p.rows)),
+    createdTotal: sum('created'),
+    reusedTotal: sum('reused'),
+    createdMeanPerPass: round(sum('created') / passes.length),
+    perPass: passes,
+  }
+})
+console.log('model passes', JSON.stringify({ ...findings.modelPasses, perPass: undefined }))
+
+// 5. Contrast. Every open group, sensor row and fold, so every ink draws; each
+// foreground is read from a drawn element where one exists, else resolved from
+// the expression the code uses, inside the .runtl root, in each theme.
+await page.evaluate(async () => {
+  const { selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+  const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+  const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+  const { foldThreats } = await import('/src/panels/timeline/fold.ts')
+  const s = window.__store.getState()
+  const sel = selectTrialSelection(s)
+  const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+  const m = runTimelineOf(view, Infinity)
+  const threat = m.groups.find((g) => g.key === 'threat')
+  for (const e of threat ? foldThreats(threat.rows) : [])
+    if (e.t === 'fold' && !window.__store.getState().ui.runTimeline.openFolds.includes(e.key))
+      window.__store.getState().toggleRunTimelineFold(e.key)
+})
+await expandAll()
+
+/**
+ * The contrast table. `expr` is the colour the code draws with (LaneMarks.tsx,
+ * Gutter.tsx, Overview.tsx, the .runtl rules); `sel` and `prop` read a drawn
+ * element when one exists. `alpha` is the element or group opacity. Floors
+ * are the design system's: 4.5:1 for text 1, text 2 and other text, 3:1 for
+ * text 3 (its recorded floor) and for a graphic a reader needs (WCAG 1.4.11).
+ * A graded step (a hold below full quality, the unknown and suspected ramp
+ * steps) has no floor: the full-strength ink carries it and the tooltip prints
+ * the level.
+ */
+const K = { sensor: 'var(--runtl-sensor)', c2: 'var(--runtl-c2)', effector: 'var(--runtl-effector)', uas: 'var(--runtl-uas)' }
+const PLOT = ['panel', 'selected']
+const g = (id, sel, prop, expr, extra = {}) => ({ id, role: 'graphic', sel, prop, expr, on: PLOT, required: 3, ...extra })
+const t = (id, expr, on, required, extra = {}) => ({ id, role: 'text', expr, on: [on], required, ...extra })
+const INKS = {
+  rule: 'WCAG 2.1 relative luminance; ratio (L1 + 0.05) / (L2 + 0.05); an ink with alpha is composited over its surface first',
+  surfaces: {
+    panel: 'var(--bg-panel)',
+    selected: 'color-mix(in srgb, var(--text) 6%, var(--bg-panel))',
+    group: 'color-mix(in srgb, var(--surface-sunken) 55%, var(--bg-panel))',
+    overview: 'color-mix(in srgb, var(--surface-sunken) 50%, var(--bg-panel))',
+    unobserved: 'color-mix(in srgb, var(--surface-sunken) 70%, var(--bg-panel))',
+    raised: 'var(--surface-raised)',
+    chip: 'var(--surface-sunken)',
+    flightBar: 'var(--accent)',
+    dwellBar: 'var(--runtl-ew)',
+    burstBar: 'var(--runtl-de)',
+    followPressed: 'var(--text)',
+  },
+  items: [
+    g('mark detect', '.runtl-svg .runtl-m-detect', 'fill', K.sensor),
+    g('mark C2 init tick', '.runtl-svg line.runtl-m-init', 'stroke', K.c2),
+    g('mark track init ring', '.runtl-svg circle.runtl-m-init', 'stroke', K.c2),
+    g('mark firm', '.runtl-svg .runtl-m-firm', 'fill', K.c2),
+    g('mark drop', '.runtl-svg .runtl-m-drop', 'stroke', 'var(--runtl-ghost)'),
+    g('mark assign', '.runtl-svg .runtl-m-assign', 'stroke', K.effector),
+    g('mark release', '.runtl-svg .runtl-m-release', 'fill', 'var(--text)'),
+    g('mark shot', '.runtl-svg .runtl-m-shot', 'stroke', 'var(--text)'),
+    g('mark hard kill', '.runtl-svg .runtl-m-hard-kill', 'fill', 'var(--danger)'),
+    g('mark arrival', '.runtl-svg .runtl-m-arrival', 'fill', 'var(--danger)'),
+    g('mark mission kill', '.runtl-svg .runtl-m-mission-kill', 'fill', 'var(--runtl-ew)'),
+    g('mark miss', '.runtl-svg .runtl-m-miss', 'stroke', 'var(--runtl-ghost)'),
+    g('mark jam decision', '.runtl-svg .runtl-m-jam-decision', 'stroke', 'var(--runtl-ew)'),
+    g('mark CPA', '.runtl-svg .runtl-m-cpa', 'stroke', 'var(--runtl-cpa)'),
+    g('span hold, quality 1', '.runtl-svg .runtl-s-hold', 'fill', K.sensor),
+    g('span coast', '.runtl-svg .runtl-s-coast', 'stroke', K.sensor),
+    g('span classify hostile', null, null, 'var(--danger)'),
+    g('span window', '.runtl-svg .runtl-s-window', 'fill', 'var(--accent)'),
+    g('span preparation edge', '.runtl-svg .runtl-s-prep', 'stroke', 'var(--warn)'),
+    g('span flight', '.runtl-svg .runtl-s-flight', 'fill', 'var(--accent)'),
+    g('span burst', '.runtl-svg .runtl-s-burst', 'fill', 'var(--runtl-de)'),
+    g('span dwell', '.runtl-svg .runtl-s-dwell', 'fill', 'var(--runtl-ew)'),
+    g('span ghost', '.runtl-svg .runtl-s-ghost', 'stroke', 'var(--runtl-ghost)'),
+    g('span undetected', '.runtl-svg .runtl-s-undetected', 'stroke', 'var(--runtl-quiet)'),
+    g('playhead', '.runtl-playhead', 'backgroundColor', 'var(--text)', { on: ['panel', 'selected', 'unobserved'] }),
+    g('unobserved edge', '.runtl-unobserved line', 'stroke', 'var(--runtl-quiet)', { on: ['panel', 'unobserved'] }),
+    g('selected line bar', null, null, 'var(--text)', { on: ['panel'] }),
+    ...[
+      ['detect', K.sensor],
+      ['firm', K.c2],
+      ['assign', K.effector],
+      ['release', 'var(--text)'],
+      ['hard kill', 'var(--danger)'],
+      ['mission kill', 'var(--runtl-ew)'],
+      ['miss', 'var(--runtl-ghost)'],
+      ['CPA', 'var(--runtl-cpa)'],
+      ['hold', K.sensor],
+      ['window', 'var(--accent)'],
+      ['flight', 'var(--accent)'],
+      ['burst', 'var(--runtl-de)'],
+      ['dwell', 'var(--runtl-ew)'],
+      ['undetected', 'var(--runtl-quiet)'],
+    ].map(([k, e]) => g(`summary ${k} at 0.75`, null, null, e, { alpha: 0.75, on: ['panel'] })),
+    ...['sensor', 'c2', 'effector', 'uas'].map((k) =>
+      g(`row ink square ${k}`, null, null, K[k], { role: 'identifier', on: ['panel'] }),
+    ),
+    g('group ink square blue', null, null, 'var(--runtl-ew)', { role: 'identifier', on: ['group'] }),
+    g('group ink square red', null, null, 'var(--danger)', { role: 'identifier', on: ['group'] }),
+    g('overview hard kill', null, null, 'var(--danger)', { on: ['overview'] }),
+    g('overview mission kill', null, null, 'var(--runtl-ew)', { on: ['overview'] }),
+    g('overview classify hostile', null, null, 'var(--danger)', { on: ['overview'] }),
+    g('overview window edge', '.runtl-over-window', 'stroke', 'var(--text-tertiary)', { on: ['overview'] }),
+    g('hold, quality 0 (opacity 0.3)', null, null, K.sensor, { role: 'graded step', alpha: 0.3, required: null }),
+    g('hold, quality 0.5 (opacity 0.65)', null, null, K.sensor, { role: 'graded step', alpha: 0.65, required: null }),
+    g('classify unknown (25 percent)', null, null, 'color-mix(in srgb, var(--danger) 25%, var(--bg-panel))', { role: 'graded step', on: ['panel'], required: null }),
+    g('classify suspected (55 percent)', null, null, 'color-mix(in srgb, var(--danger) 55%, var(--bg-panel))', { role: 'graded step', on: ['panel'], required: null }),
+    t('header title (text 1)', 'var(--text)', 'panel', 4.5),
+    t('header horizon (text 3)', 'var(--text-tertiary)', 'panel', 3),
+    t('window readout (text 3)', 'var(--text-tertiary)', 'panel', 3),
+    t('group header name (text 3)', 'var(--text-tertiary)', 'group', 3),
+    t('row label (text 2)', 'var(--text-dim)', 'panel', 4.5),
+    t('selected row label (text 1)', 'var(--text)', 'selected', 4.5),
+    t('row meta, count, side (text 3)', 'var(--text-tertiary)', 'panel', 3),
+    t('sub-lane and summary name (text 3)', 'var(--text-tertiary)', 'panel', 3),
+    t('fold label (text 2)', 'var(--text-dim)', 'panel', 4.5),
+    t('axis tick (text 3)', 'var(--text-tertiary)', 'panel', 3),
+    t('overview gutter (text 3)', 'var(--text-tertiary)', 'overview', 3),
+    t('duration on flight', 'var(--accent-ink)', 'flightBar', 4.5),
+    t('duration on dwell', 'var(--accent-ink)', 'dwellBar', 4.5),
+    t('duration on burst', 'var(--accent-ink)', 'burstBar', 4.5),
+    t('effector pk label (text 1)', 'var(--text)', 'panel', 4.5),
+    t('rounds chip label (text 1)', 'var(--text)', 'chip', 4.5),
+    t('C2 assign label (text 3)', 'var(--text-tertiary)', 'panel', 3),
+    t('tooltip body (text 2)', 'var(--text-secondary)', 'raised', 4.5),
+    t('tooltip title and data (text 1)', 'var(--text)', 'raised', 4.5),
+    t('tooltip horizon (text 3)', 'var(--text-tertiary)', 'raised', 3),
+    t('Follow pressed', 'var(--ink)', 'followPressed', 4.5),
+  ],
+}
+
+const contrast = await (async () => {
+  const out = { rule: INKS.rule, themes: {} }
+  for (const theme of ['dark', 'light']) {
+    await page.evaluate((t) => window.__store.getState().setTheme(t), theme)
+    await sleep(400)
+    out.themes[theme] = await page.evaluate((inks) => {
+      const root = document.querySelector('#run-timeline')
+      const probe = document.createElement('span')
+      probe.style.display = 'none'
+      root.appendChild(probe)
+      const parse = (c) => {
+        let m = c.match(/^rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)$/)
+        if (m) return { r: +m[1], g: +m[2], b: +m[3], a: m[4] == null ? 1 : +m[4] }
+        m = c.match(/^color\(srgb ([\d.e-]+) ([\d.e-]+) ([\d.e-]+)(?: \/ ([\d.]+))?\)$/)
+        if (m) return { r: +m[1] * 255, g: +m[2] * 255, b: +m[3] * 255, a: m[4] == null ? 1 : +m[4] }
+        throw new Error(`unparsed colour ${c}`)
+      }
+      const resolve = (expr) => {
+        probe.style.color = ''
+        probe.style.color = expr
+        if (!probe.style.color) throw new Error(`invalid expression ${expr}`)
+        return parse(getComputedStyle(probe).color)
+      }
+      const over = (fg, bg, alpha) => {
+        const a = alpha * fg.a
+        return { r: fg.r * a + bg.r * (1 - a), g: fg.g * a + bg.g * (1 - a), b: fg.b * a + bg.b * (1 - a), a: 1 }
+      }
+      const lum = ({ r, g, b }) => {
+        const f = (v) => {
+          v /= 255
+          return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4
+        }
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+      }
+      const ratio = (a, b) => {
+        const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p)
+        return (x + 0.05) / (y + 0.05)
+      }
+      const hex = ({ r, g, b }) =>
+        '#' + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')
+      const surfaces = Object.fromEntries(Object.entries(inks.surfaces).map(([k, e]) => [k, resolve(e)]))
+      const rows = []
+      for (const ink of inks.items) {
+        let fg = null
+        let source = 'expression'
+        if (ink.sel) {
+          const el = root.querySelector(ink.sel)
+          if (el) {
+            const cs = getComputedStyle(el)
+            const v = cs[ink.prop]
+            if (v && v !== 'none') {
+              fg = parse(v)
+              source = `element ${ink.sel} ${ink.prop}`
+            }
+          }
+        }
+        if (!fg) fg = resolve(ink.expr)
+        for (const on of ink.on) {
+          const bg = surfaces[on]
+          const shown = over(fg, bg, ink.alpha ?? 1)
+          const value = Math.round(ratio(shown, bg) * 100) / 100
+          rows.push({
+            id: ink.id,
+            role: ink.role,
+            ink: hex(fg),
+            alpha: ink.alpha ?? 1,
+            shown: hex(shown),
+            surface: on,
+            surfaceColour: hex(bg),
+            source,
+            ratio: value,
+            required: ink.required,
+            pass: ink.required == null ? null : value >= ink.required,
+          })
+        }
+      }
+      probe.remove()
+      return { surfaces: Object.fromEntries(Object.entries(surfaces).map(([k, v]) => [k, hex(v)])), rows }
+    }, INKS)
+  }
+  return out
+})()
+for (const [t, v] of Object.entries(contrast.themes)) {
+  const fails = v.rows.filter((r) => r.pass === false)
+  contrast[`${t}Summary`] = {
+    pairs: v.rows.length,
+    required: v.rows.filter((r) => r.pass != null).length,
+    fail: fails.length,
+    failing: fails.map((r) => `${r.id} on ${r.surface} ${r.ratio}`),
+  }
+  console.log('contrast', t, JSON.stringify(contrast[`${t}Summary`]))
+}
+findings.contrast = contrast
+await page.evaluate(() => window.__store.getState().setTheme('dark'))
+
+findings.errors = errors
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2) + '\n')
+console.log('errors', errors.length)
+await browser.close()

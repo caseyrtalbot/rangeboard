@@ -1,0 +1,116 @@
+// Supplementary: frame intervals on the production build (no __store), driven
+// through the UI. Usage: node prod-frames.mjs <dist-dir> <port> <scenario.json> <out.json>
+import { createReadStream, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import http from 'node:http'
+import { extname, join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [DIST, PORT, SCEN, OUTF] = process.argv.slice(2)
+const types = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.wasm': 'application/wasm', '.json': 'application/json' }
+const server = http.createServer((req, res) => {
+  let file = join(DIST, decodeURIComponent(new URL(req.url, 'http://x').pathname))
+  if (!existsSync(file) || statSync(file).isDirectory()) file = join(DIST, 'index.html')
+  res.writeHead(200, { 'content-type': types[extname(file)] || 'application/octet-stream' })
+  createReadStream(file).pipe(res)
+})
+await new Promise((r) => server.listen(Number(PORT), '127.0.0.1', r))
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const r2 = (x) => Math.round(x * 100) / 100
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+await ctx.addInitScript((s) => {
+  if (!sessionStorage.getItem('seeded')) {
+    localStorage.clear()
+    localStorage.setItem('rangeboard.scenario.v1', s)
+    sessionStorage.setItem('seeded', '1')
+  }
+}, readFileSync(SCEN, 'utf8'))
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'load' })
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas'), null, { timeout: 60000 })
+await page.click('#board-phase-execute')
+await page.waitForSelector('.timeline select')
+await page.selectOption('.timeline select', '30')
+if (!(await page.$('#run-timeline'))) await page.click('#run-timeline-toggle')
+
+const record = (ms) =>
+  page.evaluate(
+    (ms) =>
+      new Promise((resolve) => {
+        const longtasks = []
+        const obs = new PerformanceObserver((l) => longtasks.push(...l.getEntries().map((e) => e.duration)))
+        obs.observe({ type: 'longtask' })
+        const gaps = []
+        let last = null
+        const stop = performance.now() + ms
+        const frame = (t) => {
+          if (last != null) gaps.push(t - last)
+          last = t
+          if (t < stop) requestAnimationFrame(frame)
+          else setTimeout(() => (obs.disconnect(), resolve({ gaps, longtasks })), 50)
+        }
+        requestAnimationFrame(frame)
+      }),
+    ms,
+  )
+const stats = ({ gaps, longtasks }) => {
+  const s = [...gaps].sort((a, b) => a - b)
+  return {
+    intervals: gaps.length,
+    over16ms: gaps.filter((g) => g > 16.7).length,
+    over20ms: gaps.filter((g) => g > 20).length,
+    over33ms: gaps.filter((g) => g > 33).length,
+    maxMs: r2(s[s.length - 1]),
+    p99Ms: r2(s[Math.floor(s.length * 0.99)]),
+    longtasks: longtasks.length,
+    longtaskMaxMs: longtasks.length ? r2(Math.max(...longtasks)) : 0,
+  }
+}
+const clockText = () => page.evaluate(() => document.querySelector('.runtl-scope')?.textContent ?? null)
+const play = async () => {
+  await page.click('.timeline .mini.play')
+}
+// Segment A: play from T+0 until the trial is ready and 10 s pass, strip open, then pause.
+await play()
+await page.waitForFunction(() => document.querySelector('#run-timeline .runtl-head'), null, { timeout: 180000 })
+await page.click('#run-timeline .runtl-ctl button:has-text("Expand all")')
+const a = stats(await record(10000))
+await play()
+await sleep(300)
+// Expand again: the sensor rows and groups that exist now.
+await page.click('#run-timeline .runtl-ctl button:has-text("Expand all")')
+await sleep(300)
+const scopeA = await clockText()
+const lines = await page.evaluate(() => document.querySelectorAll('#run-timeline .runtl-line').length)
+// Segment B: strip open and expanded, 10 s more.
+await play()
+const b = stats(await record(10000))
+await play()
+await sleep(300)
+const scopeB = await clockText()
+// Segment C: strip closed, 10 s more.
+await page.click('#run-timeline-toggle')
+await sleep(300)
+await play()
+const c = stats(await record(10000))
+await play()
+await sleep(300)
+await page.click('#run-timeline-toggle')
+await sleep(300)
+const scopeC = await clockText()
+const out = {
+  build: 'vite production build, served statically',
+  note: 'No __store in production: driven through the transport. Segments run back to back at 30x.',
+  segments: [
+    { label: 'A open, Expand all at T+0', ...a, endScope: scopeA },
+    { label: 'B open, Expand all again, every sensor row with a track open', lines, ...b, endScope: scopeB },
+    { label: 'C closed', ...c, endScope: scopeC },
+  ],
+  errors,
+}
+writeFileSync(OUTF, JSON.stringify(out, null, 2) + '\n')
+console.log(JSON.stringify(out, null, 1))
+await browser.close()
+server.close()
