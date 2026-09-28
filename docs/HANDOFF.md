@@ -13,15 +13,66 @@ commit, push or merge.
 [timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
 Phases 1 (the model, no UI) and 2 (the strip) are on `main` and `origin/main`. Phase 3
-is selected. [Plan.md](Plan.md) is the completed chrome refactor
+(interaction) is built in two lanes on a contract commit; its integration on
+`timeline/p3` is the current task. [Plan.md](Plan.md) is the completed chrome refactor
 queue (Rows A to D merged and pushed as `f4363a3`); it selects nothing.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`. `main` and `origin/main` carry run timeline Phase
-  2, a fast-forward of `timeline/p2` onto Phase 1 (`019d747`), merged and pushed on
-  2026-09-27 with the user's authorization. No worktrees, lane branches or phase branch
-  remain.
+- Repository `~/Projects/rangeboard`, checked out on `timeline/p3`. `main` and
+  `origin/main` are at `55e02dd` (run timeline Phase 2, pushed 2026-09-27). `timeline/p3`
+  is `main` plus the Phase 3 contract commit `9c6b0e6` and this handoff. No lane is merged
+  into `timeline/p3` yet.
+- Phase 3 lane branches, both from `9c6b0e6`, each in a worktree outside the repository
+  with `node_modules` symlinked to the main checkout: `timeline/p3-a` in
+  `~/Projects/rangeboard-wt/tl-3a` (`49e6b41`, `ea10324`) and `timeline/p3-b` in
+  `~/Projects/rangeboard-wt/tl-3b` (`e27f83c`, `f3ce588`). Both trees are clean and no
+  lane dev server runs. `git merge-tree` of the two lanes onto `9c6b0e6` reports no
+  conflict.
+- The Phase 3 contract `9c6b0e6` (orchestrator, 2026-09-27). Store:
+  `collapseAllRunTimeline`, `expandAllRunTimeline(groups, sensorRows)`,
+  `seekRunTimeline(tS, shown)` (Follow off, the viewport held at `shown`, then `scrub`)
+  and `setRunTimelineViewport(v, follow?)`; in `playbackCommand` a transition to playing
+  sets Follow on. `useShownT0.ts`: `shownViewport` (the viewport on screen, read at event
+  time) and `panGlide` (the pan, the axis ticks and the overview window glide only while
+  Follow is on; the playhead always glides). `hit.ts`: `hitAt(lines, tS, yPx, pxPerS)`
+  returns the nearest mark within 6 px, else the span drawn on top. `Plot.tsx` maps a
+  pointer through the pan box at event time, emits `onItemClick` and `onItemHover`, and
+  draws `.runtl-ground-selected`. `Gutter.tsx`: the row label is the `.runtl-select`
+  button (text for a false track); a selected line takes `.selected`. `RunTimeline.tsx`
+  wires the lane hooks and components. Contract gate: 2,359 tests, typecheck, format,
+  silent, entry graph 105 of 206. `docs:check` asks for reviews of PROJECT_GUIDE,
+  ENGINEERING_REFERENCE, SPEC and DESIGN_SYSTEM; that is expected until the integration.
+- Lane 3A (`opus-medium`, board link): `useRunTimelineSelection.ts`
+  (`selectRunTimelineRow`, `selectedLineKeys`, `useSelectedLines`, `scrollTopFor`,
+  `useScrollToSelection`) and `useRunTimelineSeek.ts` (`seekRunTimelineHit`,
+  `useRunTimelineSeek`), with tests. Orchestrator gate in its worktree: 2,369 tests,
+  typecheck, format, silent, no lint warning in `src/panels/timeline`.
+- Lane 3B (`opus-medium`, pointer and keyboard): `Tooltip.tsx`, `tooltipText.ts`,
+  `Controls.tsx`, `viewportActions.ts`, `useViewportGestures.ts`, the `Overview.tsx`
+  drag, and the `.runtl` CSS (tooltip, controls, grab cursor, reduced motion), with tests.
+  Orchestrator gate in its worktree: 2,399 tests, typecheck, format, silent, entry graph
+  105 of 206, no lint warning in `src/panels/timeline`.
+- Lane browser checks. These are the lanes' own reports (headless, JIATF-401 laydown); the
+  orchestrator did not repeat them and they are not evidence. Row label click selects;
+  board selection highlights the row or the summary line and scrolls to the nearest edge;
+  a mark click moved `simTimeS` from 239.1 to 164.5 with Follow off and
+  `observedThroughS` unchanged; the tooltip sits inside `#run-timeline` and Escape closes
+  it; the zoom buttons step by 1.5 about the center; Fit reads `fit`; Ctrl wheel held the
+  cursor fraction (0.2502 against 0.25); a horizontal wheel pans and turns Follow off; a
+  vertical wheel scrolls the rows only; an overview drag moves the window and turns Follow
+  off; Play turns Follow on; `observedThroughS` unchanged after every interaction; 0 page
+  errors. WebKit pinch (`gesture*` events) is untested.
+- Phase 3 departures from the SPEC so far, each with its reason: new files `hit.ts` (both
+  lanes need one hit rule, and the Node tests have no DOM, so the hit test is geometric),
+  `Controls.tsx`, `tooltipText.ts` and `viewportActions.ts` (a `.tsx` file exports
+  components only); Expand all also opens every sensor row (the mockup); a summary or fold
+  line highlights for a selected member (groups start collapsed); a false track label is
+  text (it selects nothing); the pan glides only with Follow on (a gesture pan renders at
+  once); a mark click seeks and a span click does nothing (SPEC 1.5 names marks; the
+  mockup also seeks on spans); the tooltip omits a mark `text` or span `label` equal to
+  the row label; the overview SVG sets `touch-action: none`; the zoom buttons disable at
+  the window limits.
 - Run timeline Phase 2 (2026-09-27) on `timeline/p2`: the contract commit `4f63211` (the
   `ui.runTimeline` slice with its session actions, and a stub lazy target), lane 2A
   `8be6b60` and `bb9a182` (`opus-high`, the strip), lane 2B `c5b6449` and `3f1672c`
@@ -281,44 +332,66 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Phase 3 of [timeline/SPEC.md](timeline/SPEC.md): interaction.**
+**Phase 3 of [timeline/SPEC.md](timeline/SPEC.md): the integration.** The lanes are
+built and verified; the merge, the integration decisions, the gates, the evidence, the
+docs and the reviews remain.
 
-- Base: `main` with Phase 2. Branch `timeline/p3` for the integration; lanes
-  `timeline/p3-a` and `p3-b` in worktrees `~/Projects/rangeboard-wt/tl-3a` and `tl-3b`
-  outside the repository with `node_modules` symlinked to the main checkout.
-- Outcome: SPEC section 1.5 and the 1.3 controls. A row label click selects through the
-  existing selection action (a track row selects its threat; a false track selects
-  nothing). Board selection highlights the row and scrolls it into view. A mark click
-  seeks through `scrub` and turns Follow off. Hover shows a strip-relative tooltip with
-  times, quality and pk. Ctrl or Meta wheel and pinch zoom about the cursor; a
-  horizontal wheel and an overview drag pan and turn Follow off. Follow, Fit, Zoom in,
-  Zoom out, Collapse all and Expand all controls; Play and Follow turn Follow on;
-  Escape closes the tooltip; reduced motion is respected.
-- Order: a contract commit first (the integrator, on `timeline/p3`): the store actions
-  the lanes need (Collapse all and Expand all set `openGroups` whole; a seek sets
-  `follow` off) and the prop or hook signatures between the lanes and `RunTimeline.tsx`,
-  `Gutter.tsx`, `Plot.tsx`. Then lanes 3A and 3B (`opus-medium`) in parallel with the
-  file ownership in the SPEC Phase 3 table, then the integration (`opus-medium`).
-- Inputs from Phase 2: the row label in `Gutter.tsx` is plain text; Phase 3 makes it a
-  button. `setRunTimelineFollow` and `setRunTimelineViewport` exist and nothing calls
-  them yet. `Overview.tsx` exists; lane 3B adds the drag to it. The pan wrapper, the
-  playhead, the axis tick group and the overview window share one transform and the
-  `GLIDE` transition, keyed by scale; a drag pan must render without the glide. The
-  model horizon is `trial.horizon` in Execute and `selectTrialHorizon(s, Infinity)` in
-  Analyze.
-- Brief shape per `~/.claude/rules/delegation.md`. Tell each worker to write a large file
-  in parts of about 150 lines and to make a WIP commit once it typechecks.
-- Exclusions: no engine or physics change; no interaction advances `observedThroughS`;
-  no edit to `runTimeline.ts` or `timeViewport.ts` except an integrator fix with a test.
-- Completion checks: the SPEC Phase 3 gates; the browser check of every interaction in
-  section 1.5 with evidence under `docs/field-te/evidence/run-timeline-p3-<date>/` and
-  `oxipng`; the docs updated with `docs:review`; the `opus-high` diff review and the
-  `fable-high` check that no interaction advances `observedThroughS` (a store test and
-  browser evidence), must-fix items closed.
-- Next action: branch `timeline/p3` from `main`, write the contract commit, create the
-  two worktrees and launch 3A and 3B.
-- Stop condition: Phase 3 merged to `main` with the user's authorization, this file
-  rewritten to select Phase 4 with the Phase 3 evidence, worktrees removed.
+- Base: `timeline/p3` in the main checkout: the contract `9c6b0e6` plus this handoff.
+  Inputs: `timeline/p3-a` and `timeline/p3-b` (see Position).
+- Team, per `~/.claude/rules/delegation.md`. The orchestrator (a fresh session) owns
+  `timeline/p3`, the merges, the gates, `store.ts`, the shared docs and this file; it
+  delegates and verifies. Workers:
+  - Integration and browser evidence: `opus-medium` on `timeline/p3` in the main
+    checkout, the only writer while it runs.
+  - Diff review: `opus-high`, read-only, on `main..timeline/p3`.
+  - Observation check: `fable-high`, read-only. It confirms that no interaction advances
+    `observedThroughS`, from the store tests and the browser evidence.
+  - The two reviews run in parallel after the integration commits. One worker applies the
+    fixes on `timeline/p3`.
+- Order:
+  1. Merge `timeline/p3-a`, then `timeline/p3-b`, into `timeline/p3` with `--no-ff`, as
+     Phase 2 did (`34c663f`, `3cf96c0`). Then remove both worktrees with
+     `git worktree remove` and delete both lane branches.
+  2. Integration decisions, each with a test where code changes. (a) An open tooltip
+     keeps its item after the model re-censors, until the next pointer move: hide it on a
+     model change, or record it. (b) Ctrl wheel with Follow on keeps the zoomed width,
+     but Follow sets the start again from the clock, so the cursor anchor holds only with
+     Follow off; the mockup behaves the same; record it, or turn Follow off on a cursor
+     zoom. (c) `horizonText` in `tooltipText.ts` duplicates `scopeText` in
+     `RunTimeline.tsx`: keep one. (d) `useScrollToSelection` does not scroll to a
+     selection that exists when the strip opens: record it.
+  3. Gates: `npm run check`, `npm run check:silent`, `npm run build && npm run
+     check:bundle` (entry under 380,000; Phase 2 read 367,029), and `npm run test:e2e`
+     with a dev server on a free port and `E2E_URL`.
+  4. Browser check at 1265 by 900 on the JIATF-401 laydown
+     (`src/playback/__fixtures__/detection-outside-rings.json`). Cover every SPEC 1.5
+     interaction and the 1.3 controls: row label click, board selection highlight and
+     scroll, mark seek, tooltip and Escape, Ctrl wheel, horizontal wheel, overview drag,
+     Follow, Fit, Zoom in, Zoom out, Collapse all, Expand all, Play turning Follow on,
+     and reduced motion (emulated). Record `observedThroughS` before and after each
+     interaction. Capture under `docs/field-te/evidence/run-timeline-p3-<date>/` with
+     `findings.json`, the script as `.mjs.txt` and `oxipng` screenshots, as the Phase 2
+     evidence does. Index it in `docs/README.md` and run `npm run check:evidence`.
+  5. Docs: the interaction paragraph in PROJECT_GUIDE; the controls, tooltip and
+     selection rules in DESIGN_SYSTEM; the new store actions and the Follow and glide
+     rule in ENGINEERING_REFERENCE; VERIFICATION only if the e2e changes. The SPEC text
+     stays as it is; review it with a note. Run `npm run docs:review -- <document> --note
+     "..."` for each, then `npm run docs:check`.
+  6. The two reviews. Close every must-fix item and run the gates again.
+  7. Rewrite this file in place: record Phase 3 (commits, gates, evidence, departures,
+     review results, follow-ups) and select Phase 4.
+- Exclusions: no engine or physics change; no interaction advances `observedThroughS`; no
+  edit to `runTimeline.ts` or `timeViewport.ts` except an integrator fix with a test; no
+  SPEC text change; no Phase 4 work (row windowing, the contrast audit, dead CSS).
+- Brief shape per `~/.claude/rules/delegation.md`: the working directory, the owned files,
+  the gate command, the report shape and a time budget. Tell each worker to write a large
+  file in parts of about 150 lines and to make a WIP commit once it typechecks. A worker's
+  report is a claim: the orchestrator runs the gates and reads the diff.
+- Next action: merge `timeline/p3-a` into `timeline/p3`.
+- Stop condition: Phase 3 integrated on `timeline/p3` with the gates green, the evidence
+  indexed, the docs reviewed, every review must-fix closed, the worktrees and lane
+  branches removed, and this file selecting Phase 4. Then stop and ask the user to
+  authorize the merge to `main` and the push.
 
 ## Landmines
 
@@ -327,6 +400,25 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
   run timeline open flag, and `RUN_TIMELINE_HEIGHT_KEY` holds the height.
   `storageManagement.ts` derives live keys from the exports. The e2e reads
   `#run-timeline-toggle`, `#run-timeline` and `.runtl-dock`.
+- Phase 3 (on the lane branches until the merge): turn Follow off through
+  `setRunTimelineViewport(shownViewport(base, follow, durationS), false)`.
+  `setRunTimelineFollow(false)` alone jumps the view to the stale stored start.
+- `panGlide(follow)` gives the pan, the axis tick group and the overview window
+  `transition: none` while Follow is off. The reduced-motion rule in `index.css`
+  overrides the inline transition with `!important` on `.runtl-pan`, `.runtl-playhead`,
+  `.runtl-axis-svg > g` and `.runtl-over-window`. A new gliding element needs both.
+- `seekRunTimeline` calls `scrubTo`, which stops playback and never advances
+  observation. The store test `seeks with Follow off and the shown viewport held, and
+  never advances observation` guards it.
+- `hitAt` reads the `stripLayout` line list that the gutter and the plot draw. `Plot`
+  maps the pointer through the pan wrapper's `getBoundingClientRect`, so a hit stays
+  right during a Follow glide.
+- The wheel listener is native with `passive: false` on `.runtl-scroll`; React's
+  `onWheel` is passive and cannot prevent the default. The tooltip's state lives in
+  `Tooltip.tsx` behind `TooltipHandle`; a pointer move must not re-render `RunTimeline`,
+  `Plot`, `Gutter`, `Axis` or `Overview`.
+- `Controls.tsx` and `Tooltip.tsx` export components and types only; pure helpers live in
+  `viewportActions.ts` and `tooltipText.ts` (`only-export-components`).
 - `src/panels/timeline/` imports guarded modules (`analysis/runTimeline.ts`,
   `charts/timeViewport.ts`, `panels/analysis/controls`). App loads the strip through
   `lazy(import())`; a static import from the entry graph fails `check:entry-graph`.
