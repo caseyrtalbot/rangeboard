@@ -12,25 +12,25 @@ commit, push or merge.
 
 [timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
-Phases 1 (the model, no UI) and 2 (the strip) are on `main` and `origin/main`. Phase 3
-(interaction) is integrated on `timeline/p3` and waits for the user's authorization to
-merge and push. Phase 4 (hardening and close) is the selected task and starts from
-`main` once Phase 3 is on it. [Plan.md](Plan.md) is the completed chrome refactor queue
-(Rows A to D merged and pushed as `f4363a3`); it selects nothing.
+Phases 1 (the model, no UI), 2 (the strip) and 3 (interaction) are on `main` and
+`origin/main`. Phase 4 (hardening and close) is the selected task and starts from
+`main`. [Plan.md](Plan.md) is the completed chrome refactor queue (Rows A to D merged
+and pushed as `f4363a3`); it selects nothing.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `timeline/p3`: `b6b7c0a` plus this
-  handoff. `main` and `origin/main` are at `55e02dd` (run timeline Phase 2, pushed
-  2026-09-27). `timeline/p3` is `main` plus the Phase 3 commits below. It is not merged
-  and not pushed; the merge to `main` and the push need the user's authorization. No
-  lane worktree or lane branch remains; `git worktree list` shows the main checkout only.
-- Run timeline Phase 3 (2026-09-28) on `timeline/p3`: the contract `9c6b0e6`
+- Repository `~/Projects/rangeboard`, checked out on `main`. `main` and `origin/main`
+  hold run timeline Phase 3: `timeline/p3` was fast-forwarded to `main` at `d0f26a3`
+  and pushed with the user's authorization on 2026-09-28, then this handoff. The
+  `timeline/p3` branch is deleted. No lane worktree or lane branch remains;
+  `git worktree list` shows the main checkout only. Phase 4 starts on a new branch
+  `timeline/p4` from `main`.
+- Run timeline Phase 3 (2026-09-28), now on `main`: the contract `9c6b0e6`
   (orchestrator), the handoff `cfd99d7`, lane 3A `49e6b41` and `ea10324`
   (`opus-medium`, the board link) merged as `2e8609d`, lane 3B `e27f83c` and `f3ce588`
   (`opus-medium`, pointer and keyboard) merged as `50650a4`, the integration `246661b`
   (`opus-medium`), the evidence `000475f`, the docs `f8cc3c1`, the review fixes
-  `e643e19` and the evidence rerun `b6b7c0a` (`opus-medium`), and this handoff.
+  `e643e19` and the evidence rerun `b6b7c0a` (`opus-medium`), and the close `d0f26a3`.
 - What Phase 3 built. Store (`ui.runTimeline`): `collapseAllRunTimeline`,
   `expandAllRunTimeline(groups, sensorRows)`, `seekRunTimeline(tS, shown)` (Follow off,
   the viewport held at `shown`, then `scrubTo`) and a `follow` argument on
@@ -370,12 +370,9 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Phase 4 of [timeline/SPEC.md](timeline/SPEC.md): hardening and close.** It starts
-only after the user authorizes the merge of `timeline/p3` to `main` and the push; do not
-start it from `timeline/p3`.
+**Phase 4 of [timeline/SPEC.md](timeline/SPEC.md): hardening and close.**
 
-- Base: `main` once it holds Phase 3 (a fast-forward of `timeline/p3`, as Phase 2 was
-  merged in `55e02dd`). Branch `timeline/p4`.
+- Base: `main` (Phase 3 on it, see Position). Branch `timeline/p4` from `main`.
 - Team, per `~/.claude/rules/delegation.md`: one lane, `opus-high`, on `timeline/p4` in
   the main checkout, then a `fable-medium` design review against the mockup
   (<https://claude.ai/artifact/PYWeMH5tEhE9fNS9uhrBEt>), read-only, then one worker
@@ -411,8 +408,8 @@ start it from `timeline/p3`.
 - Brief shape per `~/.claude/rules/delegation.md`: the working directory, the owned files,
   the gate command, the report shape and a time budget. A worker's report is a claim: the
   orchestrator runs the gates and reads the diff.
-- Next action: ask the user to authorize the merge of `timeline/p3` to `main` and the
-  push. Then branch `timeline/p4` from `main`.
+- Next action: branch `timeline/p4` from `main`, then brief the `opus-high` lane with
+  the measurement (order item 1).
 - Stop condition: Phase 4 on `timeline/p4` with the gates green, the evidence indexed,
   the docs reviewed, the design review fixes closed, and this file recording that the
   plan is complete and selecting nothing. Then stop and ask the user to authorize the
