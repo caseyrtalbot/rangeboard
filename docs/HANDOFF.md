@@ -14,18 +14,19 @@ commit, push or merge.
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
 All four phases are on `main` and `origin/main`; the plan is complete. [Plan.md](Plan.md)
 is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a3`; Row E,
-timeline polish and chrome cleanup, merged and pushed as `353caee`). Row F (two engine
-decisions the user made on 2026-09-28) is complete on `engine/f` and waits for the user's
-merge and push authorization. The Tasking below selects nothing. Execute one row per
+timeline polish and chrome cleanup, merged and pushed as `353caee`; Row F, two engine
+decisions the user made on 2026-09-28, merged and pushed as `6cb16f9`). The Tasking below
+selects nothing. Execute one row per
 agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `engine/f`, branched from `main` at
-  `40591b8`. `main` and `origin/main` hold Row E (`353caee`) and that handoff. `engine/f`
-  holds Row F: item 1 `5fef8dd`, item 2 with the review fixes and the authorized
-  recapture `eb19eab`, then this handoff. Not merged, not pushed. `git worktree list`
-  shows the main checkout only and the stash list is empty.
+- Repository `~/Projects/rangeboard`, checked out on `main`. `main` and `origin/main`
+  hold Row F: `engine/f` (from `40591b8`; item 1 `5fef8dd`, item 2 with the review fixes
+  and the authorized recapture `eb19eab`, the close `6cb16f9`) was fast-forwarded to
+  `main` and pushed with the user's authorization on 2026-09-28, then this handoff. The
+  branch `engine/f` is deleted; `git branch` shows `main` only, `git worktree list` shows
+  the main checkout only and the stash list is empty.
 - Row F (2026-09-28) on `engine/f`: one `fable-medium` lane in the main checkout (item 1
   committed, item 2 left in the tree because a protected expect moved), the `fable-high`
   parity and censoring review (read-only), the `opus-medium` review fixes and evidence
@@ -595,11 +596,9 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-No task is selected. Row F is complete on `engine/f` at the commit that holds this
-handoff, with the gates green, the parity numbers recorded above, the evidence indexed
-and the review closed. The next action is the user's: authorize the fast-forward of
-`engine/f` to `main` and the push. A new row needs a user decision; the follow-ups above
-are candidates, not a queue.
+No task is selected. Row F is on `main` and `origin/main` at `6cb16f9` with the gates
+green, the parity numbers recorded above, the evidence indexed and the review closed. A
+new row needs a user decision; the follow-ups above are candidates, not a queue.
 
 ## Landmines
 

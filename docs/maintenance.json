@@ -6,16 +6,16 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "ea88ef70031b33a5ffa7b43730b32d25eeee8c4901d303541cba2920ab1b2d63",
+      "sha256": "d4f2d933504ca5ac31d3867daf5ea47e356eae2077309012b722917378e1f7e6",
       "reviewedAt": "2026-09-28",
-      "note": "Row F on engine/f awaiting merge"
+      "note": "Row F merged"
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "654cbb4734f18e7edba19e3ba9976effa77c22bc4d2ff1f0aef9cbdcdcb49248",
+      "sha256": "094ed1bf0580c93b940ccea4e499a95767ad095e73b1339f94ffd4107bb2ffe2",
       "reviewedAt": "2026-09-28",
       "note": "AGENTS.md workspace fact changed"
     },
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "98ebe46cdbf4e29677ae50f08e20f1dca02a6df2707ef08bcafd33defc46db67",
+      "sha256": "1d8ed6eca8c053cff4bbc456933147e2aeec6eaebcf1dd7483cfa979aa13d67e",
       "reviewedAt": "2026-09-28",
-      "note": "Row F recorded, nothing selected"
+      "note": "Row F merged and pushed as 6cb16f9"
     },
     {
       "document": "docs/Plan.md",
