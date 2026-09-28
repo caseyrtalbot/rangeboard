@@ -1348,7 +1348,11 @@ value)` holds the rule of every edited spec field. It owns the value that clears
 - **Engagement vocabulary.** A salvo record is an _event_ (`report.events`), never a
   ledger. `tS` is assignment time: magazine, cooldown and salvo counts land here.
   Newly produced events add `tReleaseS = tS + engageTimeS` using the resolved delay;
-  `tEffectS` is the unchanged effect time. `readyS` is the first possible assignment
+  `tEffectS` is the unchanged effect time. `c2Id` is the assigning C2 node, the last node
+  of the kill-chain route the salvo was assigned over (null on a direct route, absent in a
+  legacy ledger); `runTimeline.ts` reads it first and routes over the full-run detecting
+  sensors only when it is absent, so a sensor that first detects after the horizon never
+  moves an assign mark between C2 rows. `readyS` is the first possible assignment
   under the doctrine gate; `flightCapped` marks a flight cut at the envelope end; an _infeasible_ intercept
   (interceptor cannot reach the credited point) is declined and leaves no event. Shot
   eligibility (in-range interval, intercept, reach, effect containment, envelope, jam link)

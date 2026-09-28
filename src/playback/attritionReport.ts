@@ -163,6 +163,14 @@ export interface EngagementEvent {
   /** Expected-kill mass removed when the effect applied; 0 for 'continue' jams. */
   killDelta: number
   /**
+   * The C2 node that assigned the salvo: the last node on the kill-chain route
+   * (`KillChainRoute.viaC2Ids`) from the sensors that had detected the threat
+   * when the route was built. Null on a direct or standalone route with no C2
+   * node. Absent in a legacy ledger, whose reader falls back to routing the
+   * effector over the full-run detecting sensors.
+   */
+  c2Id?: string | null
+  /**
    * Present only when the flight time was capped at the end of the in-range
    * window: the target would have left the envelope before the interceptor
    * arrived, so the effect lands at the window end.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Entity } from '../model/types'
+import type { Entity, Scenario } from '../model/types'
 import { mixedTrial, trialEvent } from '../playback/__fixtures__/trialFixture'
 import type { TrackEstimate } from '../playback/trackTypes'
 import { trackId } from '../playback/tracker'
@@ -29,7 +29,10 @@ function estimate(id: string, tS: number, quality: number, coasting = false): Tr
  * platform, fused track summaries, a track ledger with one false track, a
  * killed threat (moving), a fly-by (flyby) and an event with no release time.
  */
-function timelineTrial(edit?: (result: TrialResult) => void) {
+function timelineTrial(
+  edit?: (result: TrialResult) => void,
+  editScenario?: (scenario: Scenario) => void,
+) {
   const base = mixedTrial()
   const scenario = structuredClone(base.scenario)
   scenario.sweepStepS = 0.5
@@ -53,6 +56,7 @@ function timelineTrial(edit?: (result: TrialResult) => void) {
     ['c2', 'gun'],
     ['c2', 'jammer'],
   ].map(([fromId, toId]) => ({ id: `${fromId}-${toId}`, fromId, toId, label: '' }))
+  editScenario?.(scenario)
 
   const result = structuredClone(base.result)
   const swarm = result.assessments.find((a) => a.uasId === 'swarm')!
@@ -220,6 +224,51 @@ describe('runTimelineOf rows (SPEC 1.2)', () => {
       ['init', 10, 'flyby'],
       ['assign', 13, 'gun'],
     ])
+  })
+
+  it('keeps an assign mark on the assigning C2 node when a sensor first detects after the horizon', () => {
+    // A second node with the faster route to the gun, fed by the eo sensor alone.
+    // The eo sensor first held the swarm at 7 s, after the last gun assignment at 5.5.
+    const twoNodes = (scenario: Scenario) => {
+      scenario.entities.push({
+        id: 'c2b',
+        name: 'c2b',
+        kind: 'c2',
+        specId: null,
+        pos: { x: 0, y: 0 },
+        headingDeg: 90,
+        color: null,
+        notes: '',
+      })
+      scenario.connections.find((c) => c.id === 'radar-c2')!.latencyS = 10
+      scenario.connections.push(
+        { id: 'eo-c2b', fromId: 'eo', toId: 'c2b', label: '' },
+        { id: 'c2b-gun', fromId: 'c2b', toId: 'gun', label: '' },
+      )
+    }
+    const fullRun = (result: TrialResult) => {
+      result.assessments.find((a) => a.uasId === 'swarm')!.detectingSensorIds = ['radar', 'eo']
+    }
+    const gunAssigns = (model: RunTimelineModel, key: string) =>
+      marks(row(model, key)).filter(([kind, , text]) => kind === 'assign' && text === 'gun')
+
+    // The ledger names the node that assigned each salvo: the marks stay on it.
+    const recorded = timelineTrial((result) => {
+      fullRun(result)
+      for (const e of result.report.events) if (e.uasId === 'swarm') e.c2Id = 'c2'
+    }, twoNodes).view
+    const model = runTimelineOf(recorded, 6)
+    expect(gunAssigns(model, 'c2:c2')).toEqual([
+      ['assign', 1.3, 'gun'],
+      ['assign', 2.5, 'gun'],
+      ['assign', 5.5, 'gun'],
+    ])
+    expect(gunAssigns(model, 'c2:c2b')).toEqual([])
+
+    // A legacy ledger has no field: the full-run routing puts the gun on c2b.
+    const legacy = runTimelineOf(timelineTrial(fullRun, twoNodes).view, 6)
+    expect(gunAssigns(legacy, 'c2:c2')).toEqual([])
+    expect(gunAssigns(legacy, 'c2:c2b').map((m) => m[1])).toEqual([1.3, 2.5, 5.5])
   })
 
   it('builds real track rows with the ramp from init, assignments and a drop', () => {

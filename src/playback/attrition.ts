@@ -227,6 +227,7 @@ export function resolveEngagements(
     const count = entity.formation && entity.formation.count > 1 ? entity.formation.count : 1
     const windows = new Map<string, Array<[number, number]>>()
     const routeLatencyS = new Map<string, number>()
+    const assignC2Ids = new Map<string, string | null>()
     const effectorReadyS = new Map((a.effectorGates ?? []).map((g) => [g.effectorId, g.readyS]))
     if (a.status === 'engageable') {
       const routes = killChainRoutes(scenario, new Set(a.detectingSensorIds))
@@ -240,6 +241,8 @@ export function resolveEngagements(
         }
         windows.set(w.effectorId, w.intervals)
         routeLatencyS.set(w.effectorId, route.latencyS)
+        // The node that assigns this effector's salvos, fixed at route time.
+        assignC2Ids.set(w.effectorId, route.viaC2Ids.at(-1) ?? null)
         if (!operator.active) continue
         // Both operator decisions delay this pair's release-ready time: the
         // legacy path reads gateS + routeLatencyS, doctrine reads effectorReadyS.
@@ -277,6 +280,7 @@ export function resolveEngagements(
       jamBehavior: uasSpec ? defaultJamBehavior(uasSpec) : 'drift',
       windows,
       routeLatencyS,
+      assignC2Ids,
       gateS: a.engageGateS,
       effectorReadyS,
       shotsFired: 0,
@@ -413,6 +417,9 @@ export function resolveEngagements(
     const salvoKey = `${es.entity.id}:${target.a.uasId}:${shipIdx}`
     const salvoIdx = salvoCounts.get(salvoKey) ?? 0
     salvoCounts.set(salvoKey, salvoIdx + 1)
+    // The assigning node is read once at assignment; a sensor that joins the
+    // chain later never moves this salvo to another node.
+    const c2Id = target.assignC2Ids?.get(es.entity.id)
     const event: EngagementEvent = {
       tS: t,
       tReleaseS: t + releaseDelayS,
@@ -428,6 +435,7 @@ export function resolveEngagements(
       lateEffect: target.a.arrivalS != null && tEffect > target.a.arrivalS + EPS,
       pk,
       killDelta: 0,
+      ...(c2Id !== undefined ? { c2Id } : {}),
       ...(capped ? { flightCapped: true as const } : {}),
     }
     events.push(event)

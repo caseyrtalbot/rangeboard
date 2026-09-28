@@ -72,6 +72,12 @@ export interface ThreatState {
    * to reach the shooter before it can be told to fire.
    */
   routeLatencyS: Map<string, number>
+  /**
+   * The assigning C2 node per connected effector: the last node of the route
+   * `routeLatencyS` was read from, null on a route with no C2 node. Written onto
+   * each salvo's event (`EngagementEvent.c2Id`). Absent on legacy unit fixtures.
+   */
+  assignC2Ids?: Map<string, string | null>
   /** Time the required track quality was met; shots start no earlier. */
   gateS: number | null
   /**

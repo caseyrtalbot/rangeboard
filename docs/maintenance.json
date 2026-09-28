@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "080525aaed6778d14ea8ee37994b87dfbc851a6c6b0f05e6f69a8d08ef939671",
+      "sha256": "c789104a0b31c0eaf714c5a241bf6b1d939ea883963222db30a87e169107bafb",
       "reviewedAt": "2026-09-28",
-      "note": "Row E review fixes (2c6c4e8): NowScreen's preparing and error placeholder is an EmptyRow; no guide text changes."
+      "note": "Row F item 1: source fingerprint after the assigning C2 node on the engagement ledger"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "6bc764b1c5500f4207731194e9b3267e56d64c4fbb45024be6737861a7aa7624",
+      "sha256": "483e03968700472289b2a975f6300134b9f1ebed6b5474ad024b484fca9e488f",
       "reviewedAt": "2026-09-28",
-      "note": "Row E review fixes (2c6c4e8): toggleRunTimelineSensor under openSensorsAll unions the stored list with shownOpen; the reference text reads against the source."
+      "note": "Row F item 1: EngagementEvent.c2Id records the assigning C2 node; the run timeline reads it before routing"
     },
     {
       "document": "docs/VERIFICATION.md",

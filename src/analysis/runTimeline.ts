@@ -417,10 +417,13 @@ function derive(view: TrialResultView): Derived {
     return laneOf(row, true, { sub: subs })
   })
 
-  // Kill-chain routes once per threat; the last C2 on the route assigns.
+  // The event names its assigning node (attrition.ts, read at assignment). A
+  // legacy ledger has no field: route once per threat over the full-run
+  // detecting sensors, and the last C2 on the route assigns.
   const assessments = new Map(view.assessments.map((a) => [a.uasId, a]))
   const routes = new Map<string, Map<string, KillChainRoute>>()
   const assignerOf = (event: EngagementEvent): string | undefined => {
+    if (event.c2Id !== undefined) return event.c2Id ?? undefined
     let byEffector = routes.get(event.uasId)
     if (!byEffector) {
       const a = assessments.get(event.uasId)

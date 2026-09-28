@@ -189,6 +189,26 @@ describe('single threat, single effector window math', () => {
   })
 })
 
+describe('assigning C2 node on the ledger', () => {
+  it('records the last C2 node of the route on each event, null on a direct route', () => {
+    const model = interceptor({ pk: 0.5, magazineSize: 10, salvoCooldownS: 1000 })
+    const direct = singleThreatScenario(model)
+    const directEvents = resolveEngagements(direct.scenario).events
+    expect(directEvents.length).toBeGreaterThan(0)
+    expect(directEvents.every((e) => e.c2Id === null)).toBe(true)
+
+    // The same laydown routed sensor -> c2 -> effector.
+    const routed = singleThreatScenario(model)
+    const [sensor, eff] = routed.scenario.entities
+    const c2 = { ...ent('c2', SENSOR.id, { x: 0, y: 0 }), specId: null }
+    routed.scenario.entities = [...routed.scenario.entities, c2]
+    routed.scenario.connections = [link(sensor.id, c2.id), link(c2.id, eff.id)]
+    const routedEvents = resolveEngagements(routed.scenario).events
+    expect(routedEvents.length).toBeGreaterThan(0)
+    expect(routedEvents.every((e) => e.c2Id === c2.id)).toBe(true)
+  })
+})
+
 describe('magazine exhaustion mid-raid', () => {
   it('stops shooting when the expected-rounds ledger is empty', () => {
     // Window is ~50 s and the cooldown 2 s, but only 2 rounds are carried.
