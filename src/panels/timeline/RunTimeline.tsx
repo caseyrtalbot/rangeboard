@@ -1,7 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { runTimelineOf } from '../../analysis/runTimeline'
 import { clampViewport, DEFAULT_WINDOW_S, type TimeViewport } from '../../charts/timeViewport'
-import { formatTime } from '../../geometry/geo'
 import { selectBoardPhase } from '../../state/selectors'
 import { useStore } from '../../state/store'
 import { selectTrialHorizon, type TrialSelection } from '../../state/trialSelectors'
@@ -14,6 +13,7 @@ import { GUTTER_W, stripLayout, type Placed } from './layout'
 import { Overview } from './Overview'
 import { Plot } from './Plot'
 import { Tooltip, type TooltipHandle } from './Tooltip'
+import { horizonText } from './tooltipText'
 import { useRunTimelineSeek } from './useRunTimelineSeek'
 import { useScrollToSelection, useSelectedLines } from './useRunTimelineSelection'
 import { useViewportGestures } from './useViewportGestures'
@@ -28,13 +28,6 @@ function stateText(selection: TrialSelection): string {
   if (selection.status === 'error') return selection.message
   if (selection.status === 'cancelled') return 'Trial cancelled'
   return 'No trial yet. Press Play in Execute to run one.'
-}
-
-/** The horizon text the header and the accessible name share (SPEC 1.4). */
-function scopeText(horizonS: number | null): string {
-  return horizonS != null && Number.isFinite(horizonS)
-    ? `Shown through T+${formatTime(horizonS)}`
-    : 'No outcomes observed yet'
 }
 
 /**
@@ -101,7 +94,8 @@ export function RunTimeline() {
   }, [])
   useViewportGestures(scrollRef, plotRef, { base, follow, durationS, widthPx })
 
-  const scope = scopeText(model ? model.horizonS : null)
+  // The header, the accessible name and the tooltip share one horizon text (SPEC 1.4).
+  const scope = horizonText(model ? model.horizonS : -Infinity)
   const style = { '--runtl-gutter': `${GUTTER_W}px` } as CSSProperties
   return (
     <div
@@ -155,7 +149,7 @@ export function RunTimeline() {
             pxPerS={pxPerS}
           />
           <Overview model={model} base={base} follow={follow} widthPx={widthPx} />
-          <Tooltip ref={tipRef} rootRef={rootRef} horizonS={model.horizonS} />
+          <Tooltip ref={tipRef} rootRef={rootRef} model={model} />
         </>
       ) : (
         <p className="runtl-empty" role="status">

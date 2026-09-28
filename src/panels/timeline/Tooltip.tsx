@@ -1,5 +1,6 @@
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 import type { Ref, RefObject } from 'react'
+import type { RunTimelineModel } from '../../analysis/runTimeline'
 import type { RunTimelineHit } from './hit'
 import { tooltipText } from './tooltipText'
 
@@ -38,22 +39,33 @@ function placeBox(
  * The hover tooltip (SPEC 1.5): exact times, quality and pk, and the horizon
  * (SPEC 1.4). Positioned inside `rootRef` (the `.runtl` root), so the rows'
  * scroll container never clips it. Escape closes it. The hover state lives
- * here: a move over the same item only moves the box, with no render.
+ * here: a move over the same item only moves the box, with no render. A new
+ * model hides it: the hit holds the old model's row, mark and span objects.
  */
 export function Tooltip({
   ref,
   rootRef,
-  horizonS,
+  model,
 }: {
   ref: Ref<TooltipHandle>
   rootRef: RefObject<HTMLElement | null>
-  /** `model.horizonS`; -Infinity when nothing is observed. */
-  horizonS: number
+  /** The model the hits come from; the tooltip reads its horizon. */
+  model: RunTimelineModel
 }) {
   const [hit, setHit] = useState<RunTimelineHit | null>(null)
   const hitRef = useRef<RunTimelineHit | null>(null)
   const pointRef = useRef({ x: 0, y: 0 })
   const boxRef = useRef<HTMLDivElement | null>(null)
+  const modelRef = useRef(model)
+
+  // A re-censored model makes the hit stale, so hide before the paint. The
+  // mount keeps its model, so the first run hides nothing.
+  useLayoutEffect(() => {
+    if (modelRef.current === model) return
+    modelRef.current = model
+    hitRef.current = null
+    setHit(null)
+  }, [model])
 
   useImperativeHandle(
     ref,
@@ -94,7 +106,7 @@ export function Tooltip({
   }, [hit])
 
   if (!hit) return null
-  const text = tooltipText(hit, horizonS)
+  const text = tooltipText(hit, model.horizonS)
   return (
     <div ref={boxRef} className="runtl-tip" role="tooltip">
       <div>
