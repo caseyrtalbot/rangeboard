@@ -3,8 +3,10 @@
 Captured on branch `timeline/p4` at `41476e2` (row windowing), on top of the
 accessibility and contrast commit `c8550e1` and the dead export commit `8ba3ec5`. The
 frames before windowing are from `8ba3ec5`, and the baseline frames from `1c7cd00`,
-before any Phase 4 source change, with the same scripts. The shots are from the
-`8ba3ec5` run: windowing does not change what the strip draws in its view. The Vite dev
+before any Phase 4 source change, with the same scripts. The shots, the accessibility
+section and the contrast section are from the design review rerun at `cd69b3c` (see
+Design review fixes); the frames, the windowing check and the model passes stay from
+`41476e2`. The Vite dev
 server ran the source. Playwright used headless Chromium at a 1265 by 900 viewport, dark theme unless a
 row says daylight. The fixture is the 54-entity performance board "Layered (Acoustic +
 MEROPS)",
@@ -139,7 +141,8 @@ after) and the Analyze scrub. `completeRun` moves it to 1,322 by design.
 - Buttons. At `8ba3ec5`, before windowing, the expanded gutter held 187 buttons, none
   without a name: 5 group headers, 59 row labels, 55 sub-lane labels, 9 sensor expand
   controls and 59 hide controls (`beforeWindowing.gutterButtons`). At `41476e2` the 33
-  drawn buttons near the view all have names. The board has no threat fold (fold headers
+  drawn buttons near the view all have names, and again at `cd69b3c`. The board has no
+  threat fold (fold headers
   are the same button as a group header).
 - Decision (a), the sub-lane label: a `.runtl-select` button that selects the track's
   threat through `selectRunTimelineRow`, the path a track row label takes. Reason: SPEC
@@ -165,25 +168,27 @@ bar, the ink squares, the overview marks, each summary mark at 0.75 opacity). A 
 step (a hold below quality 1, the unknown and suspected classification steps) has no
 floor: the full-strength ink carries it and the tooltip prints the level.
 
-Each theme has 105 pairs, 99 with a floor. Before the fix, 6 failed in the dark theme
-and 43 in daylight; after it, 0 fail in either. The lowest passing graphic is 3.13 in
-both themes (the summary miss in dark, the summary undetected span in daylight); the
-lowest text pair is 4.87 in dark (text 3 on the raised tooltip) and 3.46 in daylight
-(text 3 on the paper group header ground), each against the text 3 floor of 3:1.
+At `c8550e1` each theme had 105 pairs, 99 with a floor. Before that fix, 6 failed in the
+dark theme and 43 in daylight; after it, 0 failed in either. The rerun at `cd69b3c` adds
+the overview playhead: 106 pairs, 100 with a floor, 0 fail in either theme. The lowest
+passing graphic is 3.13 in dark (the summary miss) and 3.01 in daylight (the summary
+assign at 0.75); the lowest text pair is 4.87 in dark (text 3 on the raised tooltip)
+and 3.46 in daylight (text 3 on the paper group header ground), each against the text 3
+floor of 3:1.
 
-| Ink (surface: panel unless named) | Dark before | Dark after | Daylight before | Daylight after |
-| --- | --- | --- | --- | --- |
-| Sensor: detect, hold, coast | `#7da7c4` 6.81 | same | 2.35 | `#406d8d` 5.09 |
-| C2: init, firm, ink square | `#d6d9d2` 12.22 | same | 1.31 | `#636a59` 5.16 |
-| Effector: assign | `#c9975a` 6.69 | same | 2.39 | `#8a602d` 5.08 |
-| EW: jam, mission kill, dwell | `#7da7c4` 6.81 | same | 2.35 | `#29465a` 9.10 |
-| DE: burst | `#9aa8b0` 7.14 | same | 2.24 | `#394349` 9.30 |
-| Undetected span, unobserved edge (`--rule-strong`) | 1.88 | `#7e8480` 4.57 | 2.12 | `#6e6759` 5.14 |
-| Miss at 0.75 (`--ghost`) | 2.55 | `#7b838b` 3.13 | 2.88 | `#62686f` 3.14 |
-| CPA at 0.75 (text 3) | 3.54 | same | 2.58 | `#676860` 3.14 |
-| Undetected at 0.75 | 1.58 | 3.14 | 1.72 | 3.13 |
-| Duration on dwell (accent ink) | 7.26 | same | 2.15 | 8.33 |
-| Duration on burst (accent ink) | 7.62 | same | 2.05 | 8.51 |
+| Ink (surface: panel unless named) | Dark before | Dark after | Daylight before | Daylight `c8550e1` | Daylight `cd69b3c` |
+| --- | --- | --- | --- | --- | --- |
+| Sensor: detect, hold, coast | `#7da7c4` 6.81 | same | 2.35 | `#406d8d` 5.09 | `#437193` 4.79 |
+| C2: init, firm, ink square | `#d6d9d2` 12.22 | same | 1.31 | `#636a59` 5.16 | `#666e5c` 4.88 |
+| Effector: assign | `#c9975a` 6.69 | same | 2.39 | `#8a602d` 5.08 | `#90642f` 4.76 |
+| EW: jam, mission kill, dwell | `#7da7c4` 6.81 | same | 2.35 | `#29465a` 9.10 | `#416f8f` 4.95 |
+| DE: burst | `#9aa8b0` 7.14 | same | 2.24 | `#394349` 9.30 | `#5c6d76` 4.94 |
+| Undetected span, unobserved edge (`--rule-strong`) | 1.88 | `#7e8480` 4.57 | 2.12 | `#6e6759` 5.14 | `#726a5c` 4.90 |
+| Miss at 0.75 (`--ghost`) | 2.55 | `#7b838b` 3.13 | 2.88 | `#62686f` 3.14 | `#666c74` 3.02 |
+| CPA at 0.75 (text 3) | 3.54 | same | 2.58 | `#676860` 3.14 | `#6b6c64` 3.02 |
+| Undetected at 0.75 | 1.58 | 3.14 | 1.72 | 3.13 | 3.03 |
+| Duration on dwell (accent ink) | 7.26 | same | 2.15 | 8.33 | 4.53 |
+| Duration on burst (accent ink) | 7.62 | same | 2.05 | 8.51 | 4.52 |
 
 The fix stays in the strip: each ink is a `.runtl` token (`--runtl-sensor`,
 `--runtl-c2`, `--runtl-effector`, `--runtl-uas`, `--runtl-ew`, `--runtl-de`,
@@ -210,6 +215,40 @@ pure seams their hook or component calls, tested in Node without a DOM; `StripLa
 result; `RunTimelineSide` is in `runTimeline.ts`, which this phase does not change.
 
 - Page errors: 0.
+
+## Design review fixes
+
+Commit `cd69b3c`. The browser check (`designReview.browserCheck` in `findings.json`)
+used the dev server at 1265 by 900, dark theme. `observedThroughS` stayed 1,500 through
+the JIATF-401 steps.
+
+1. M1, gutter row identity. A trailing instance number sits in `.runtl-name-tail`,
+   which never shrinks; the meta shrinks four times as fast with at most 40 percent of
+   the line, and a meta the name starts with is left out; the `title` keeps the full
+   name. On the 54-entity board the Sensors rows read `RfOne Mk2 RF … 1` and `… 2`,
+   `EchoShield trac… 1` and `… 2`, `Discovair G2 ac… 1` and `… 2`: the head is 95 px
+   of 195 to 222 px and the number shows in each row.
+2. M2, daylight inks. Each `--runtl-paper-*` ink is the lightest value in its own hue
+   that clears 3:1 on the paper panel, on the selected ground, at 0.75 opacity and on
+   the other grounds it draws on (`designReview.inkSearch`, a lightness search). The
+   brief's step 1, a text 1 duration on the dwell and burst fills, is infeasible with
+   the 0.75 floor: that floor needs a fill luminance of at most 0.150, and text 1 at
+   4.5:1 needs at least 0.247. The duration stays in the paper board ink, at 4.53 on
+   dwell and 4.52 on burst. The new values and ratios are in the Contrast table.
+3. S1, group square. The blue group square takes the sensor ink: 4.33 on the paper
+   group ground and 7.21 in dark.
+4. S2, overview cursor. `OverPlayhead` draws a 1 px text 1 line at
+   `simTimeS * widthPx / durationS` and subscribes to the clock alone. At T+10:00 of the
+   1,500 s run on a 641 px overview it sat at x 256.4, as expected. The overview does
+   not pan, so the line takes no glide and needs no reduced-motion rule. It clears 15.14
+   in dark and 13.36 in daylight on the overview ground.
+5. S3, resizer grip. A 36 by 2 px `--rule-strong` grip (`::after`) sits at the centre
+   of the 6 px handle at rest (computed 36 by 2 px, top 2 px); the hover and focus
+   rule that fills the band is unchanged.
+6. S4, effector text. The rounds-left chip and pk print only with 44 px to the next mark
+   in the row. At Fit on JIATF-401 (Analyze, complete, four engagements) only the last
+   `pk 0.52` printed, with no overlap; at a 198 s window all eight texts printed with no
+   overlap.
 
 ## Rerun
 

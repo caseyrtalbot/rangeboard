@@ -6,14 +6,14 @@
     {
       "file": "execute-expanded-30x-dark.png",
       "state": "Execute, paused at the observed time after 30x play, strip open at 420 px, every group and sensor row open, dark theme",
-      "simTimeS": 299.262,
-      "observedThroughS": 299.262
+      "simTimeS": 299.532,
+      "observedThroughS": 299.532
     },
     {
       "file": "execute-expanded-30x-daylight.png",
       "state": "The same state in the daylight theme",
-      "simTimeS": 299.262,
-      "observedThroughS": 299.262
+      "simTimeS": 299.532,
+      "observedThroughS": 299.532
     }
   ],
   "errors": [],
@@ -184,7 +184,7 @@
           299.121
         ],
         "selectedInView": false,
-        "firstLine": "\u25beSensors25blue",
+        "firstLine": "▾Sensors25blue",
         "lastLine": "THR-G1-Q-01 1",
         "fullHeight": true
       },
@@ -207,8 +207,8 @@
           299.121
         ],
         "selectedInView": true,
-        "firstLine": "MEROPS fixed-wing interceptor 1MEROPS fixed-wing interceptor\u00d7",
-        "lastLine": "THR-G1-Q-01 6Red air: DJI Mavic 3 (G1 quad)\u00d7",
+        "firstLine": "MEROPS fixed-wing interceptor 1MEROPS fixed-wing interceptor×",
+        "lastLine": "THR-G1-Q-01 6Red air: DJI Mavic 3 (G1 quad)×",
         "fullHeight": true
       },
       {
@@ -230,7 +230,7 @@
           299.121
         ],
         "selectedInView": false,
-        "firstLine": "\u25beSensors25blue",
+        "firstLine": "▾Sensors25blue",
         "lastLine": "THR-G1-Q-01 1",
         "fullHeight": true
       },
@@ -253,7 +253,7 @@
           299.121
         ],
         "selectedInView": true,
-        "firstLine": "Acoustic picket node (Sky Fortress class) 1Acoustic picket node (Sky Fortress class)\u00d7",
+        "firstLine": "Acoustic picket node (Sky Fortress class) 1Acoustic picket node (Sky Fortress class)×",
         "lastLine": "THR-G1-Q-01 6",
         "fullHeight": true
       },
@@ -276,8 +276,8 @@
           299.121
         ],
         "selectedInView": true,
-        "firstLine": "MEROPS fixed-wing interceptor 1MEROPS fixed-wing interceptor\u00d7",
-        "lastLine": "THR-G1-Q-01 6Red air: DJI Mavic 3 (G1 quad)\u00d7",
+        "firstLine": "MEROPS fixed-wing interceptor 1MEROPS fixed-wing interceptor×",
+        "lastLine": "THR-G1-Q-01 6Red air: DJI Mavic 3 (G1 quad)×",
         "fullHeight": true
       },
       {
@@ -299,7 +299,7 @@
           299.121
         ],
         "selectedInView": true,
-        "firstLine": "\u25b8Sensors25blue",
+        "firstLine": "▸Sensors25blue",
         "lastLine": "All threats",
         "fullHeight": true
       },
@@ -322,7 +322,7 @@
           299.121
         ],
         "selectedInView": true,
-        "firstLine": "\u25beSensors25blue",
+        "firstLine": "▾Sensors25blue",
         "lastLine": "THR-G1-Q-01 2",
         "fullHeight": true
       },
@@ -345,7 +345,7 @@
           299.121
         ],
         "selectedInView": true,
-        "firstLine": "\u25beSensors24 \u00b7 1 hiddenblue",
+        "firstLine": "▾Sensors24 · 1 hiddenblue",
         "lastLine": "THR-G1-Q-01 3",
         "fullHeight": true
       },
@@ -368,7 +368,7 @@
           299.121
         ],
         "selectedInView": true,
-        "firstLine": "\u25beSensors25blue",
+        "firstLine": "▾Sensors25blue",
         "lastLine": "THR-G1-Q-01 2",
         "fullHeight": true
       },
@@ -391,7 +391,7 @@
           221.5
         ],
         "selectedInView": true,
-        "firstLine": "\u25beSensors25blue",
+        "firstLine": "▾Sensors25blue",
         "lastLine": "THR-G1-Q-01 2",
         "fullHeight": true
       }
@@ -402,23 +402,23 @@
     "execute": [
       {
         "simTimeS": 75,
-        "observedThroughS": 299.121,
+        "observedThroughS": 299.532,
         "label": "Run timeline. Shown through T+1:15",
         "scope": "Shown through T+1:15",
         "expected": "Run timeline. Shown through T+1:15",
         "match": true
       },
       {
-        "simTimeS": 179,
-        "observedThroughS": 299.121,
-        "label": "Run timeline. Shown through T+2:59",
-        "scope": "Shown through T+2:59",
-        "expected": "Run timeline. Shown through T+2:59",
+        "simTimeS": 180,
+        "observedThroughS": 299.532,
+        "label": "Run timeline. Shown through T+3:00",
+        "scope": "Shown through T+3:00",
+        "expected": "Run timeline. Shown through T+3:00",
         "match": true
       },
       {
-        "simTimeS": 299,
-        "observedThroughS": 299.121,
+        "simTimeS": 300,
+        "observedThroughS": 299.532,
         "label": "Run timeline. Shown through T+4:59",
         "scope": "Shown through T+4:59",
         "expected": "Run timeline. Shown through T+4:59",
@@ -448,7 +448,7 @@
     },
     "zoomReadout": {
       "text": "Window 120 s",
-      "ariaSnapshot": "- button \"Follow\"\n- button \"Zoom out\": \u2212\n- text: Window 120 s\n- button \"Zoom in\": +\n- button \"Fit\"\n- button \"Collapse all\"\n- button \"Expand all\""
+      "ariaSnapshot": "- button \"Follow\"\n- button \"Zoom out\": −\n- text: Window 120 s\n- button \"Zoom in\": +\n- button \"Fit\"\n- button \"Collapse all\"\n- button \"Expand all\""
     },
     "subLaneClick": {
       "label": "THR-G1-Q-01 1",
@@ -464,19 +464,19 @@
         ]
       },
       "observedThroughS": [
-        299.121,
-        299.121
+        299.532,
+        299.532
       ],
       "simTimeS": [
-        299,
-        299
+        300,
+        300
       ],
       "selectsThreat": true,
       "observedUnchanged": true
     },
     "analyze": {
       "observedThroughS": [
-        299.121,
+        299.532,
         1322
       ],
       "note": "completeRun advances observation by design",
@@ -3378,6 +3378,19 @@
             "pass": true
           },
           {
+            "id": "overview playhead",
+            "role": "graphic",
+            "ink": "#ebe9e3",
+            "alpha": 1,
+            "shown": "#ebe9e3",
+            "surface": "overview",
+            "surfaceColour": "#141515",
+            "source": "element .runtl-over-playhead stroke",
+            "ratio": 15.14,
+            "required": 3,
+            "pass": true
+          },
+          {
             "id": "overview window edge",
             "role": "graphic",
             "ink": "#8c8e88",
@@ -3632,7 +3645,7 @@
             "shown": "#121313",
             "surface": "dwellBar",
             "surfaceColour": "#7da7c4",
-            "source": "expression",
+            "source": "element .runtl-svg .runtl-dur fill",
             "ratio": 7.26,
             "required": 4.5,
             "pass": true
@@ -3645,7 +3658,7 @@
             "shown": "#121313",
             "surface": "burstBar",
             "surfaceColour": "#9aa8b0",
-            "source": "expression",
+            "source": "element .runtl-svg .runtl-dur fill",
             "ratio": 7.62,
             "required": 4.5,
             "pass": true
@@ -3753,164 +3766,164 @@
           "raised": "#fbfaf7",
           "chip": "#e4e0d8",
           "flightBar": "#2862b0",
-          "dwellBar": "#29465a",
-          "burstBar": "#394349",
+          "dwellBar": "#416f8f",
+          "burstBar": "#5c6d76",
           "followPressed": "#212220"
         },
         "rows": [
           {
             "id": "mark detect",
             "role": "graphic",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 1,
-            "shown": "#406d8d",
+            "shown": "#437193",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 5.09,
+            "ratio": 4.79,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark detect",
             "role": "graphic",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 1,
-            "shown": "#406d8d",
+            "shown": "#437193",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 4.54,
+            "ratio": 4.28,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark C2 init tick",
             "role": "graphic",
-            "ink": "#636a59",
+            "ink": "#666e5c",
             "alpha": 1,
-            "shown": "#636a59",
+            "shown": "#666e5c",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 5.16,
+            "ratio": 4.88,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark C2 init tick",
             "role": "graphic",
-            "ink": "#636a59",
+            "ink": "#666e5c",
             "alpha": 1,
-            "shown": "#636a59",
+            "shown": "#666e5c",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 4.6,
+            "ratio": 4.35,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark track init ring",
             "role": "graphic",
-            "ink": "#636a59",
+            "ink": "#666e5c",
             "alpha": 1,
-            "shown": "#636a59",
+            "shown": "#666e5c",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "element .runtl-svg circle.runtl-m-init stroke",
-            "ratio": 5.16,
+            "ratio": 4.88,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark track init ring",
             "role": "graphic",
-            "ink": "#636a59",
+            "ink": "#666e5c",
             "alpha": 1,
-            "shown": "#636a59",
+            "shown": "#666e5c",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "element .runtl-svg circle.runtl-m-init stroke",
-            "ratio": 4.6,
+            "ratio": 4.35,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark firm",
             "role": "graphic",
-            "ink": "#636a59",
+            "ink": "#666e5c",
             "alpha": 1,
-            "shown": "#636a59",
+            "shown": "#666e5c",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "element .runtl-svg .runtl-m-firm fill",
-            "ratio": 5.16,
+            "ratio": 4.88,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark firm",
             "role": "graphic",
-            "ink": "#636a59",
+            "ink": "#666e5c",
             "alpha": 1,
-            "shown": "#636a59",
+            "shown": "#666e5c",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "element .runtl-svg .runtl-m-firm fill",
-            "ratio": 4.6,
+            "ratio": 4.35,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark drop",
             "role": "graphic",
-            "ink": "#62686f",
+            "ink": "#666c74",
             "alpha": 1,
-            "shown": "#62686f",
+            "shown": "#666c74",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 5.17,
+            "ratio": 4.86,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark drop",
             "role": "graphic",
-            "ink": "#62686f",
+            "ink": "#666c74",
             "alpha": 1,
-            "shown": "#62686f",
+            "shown": "#666c74",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 4.61,
+            "ratio": 4.34,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark assign",
             "role": "graphic",
-            "ink": "#8a602d",
+            "ink": "#90642f",
             "alpha": 1,
-            "shown": "#8a602d",
+            "shown": "#90642f",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "element .runtl-svg .runtl-m-assign stroke",
-            "ratio": 5.08,
+            "ratio": 4.76,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark assign",
             "role": "graphic",
-            "ink": "#8a602d",
+            "ink": "#90642f",
             "alpha": 1,
-            "shown": "#8a602d",
+            "shown": "#90642f",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "element .runtl-svg .runtl-m-assign stroke",
-            "ratio": 4.54,
+            "ratio": 4.25,
             "required": 3,
             "pass": true
           },
@@ -4021,156 +4034,156 @@
           {
             "id": "mark mission kill",
             "role": "graphic",
-            "ink": "#29465a",
+            "ink": "#416f8f",
             "alpha": 1,
-            "shown": "#29465a",
+            "shown": "#416f8f",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 9.1,
+            "ratio": 4.95,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark mission kill",
             "role": "graphic",
-            "ink": "#29465a",
+            "ink": "#416f8f",
             "alpha": 1,
-            "shown": "#29465a",
+            "shown": "#416f8f",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 8.12,
+            "ratio": 4.42,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark miss",
             "role": "graphic",
-            "ink": "#62686f",
+            "ink": "#666c74",
             "alpha": 1,
-            "shown": "#62686f",
+            "shown": "#666c74",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "element .runtl-svg .runtl-m-miss stroke",
-            "ratio": 5.17,
+            "ratio": 4.86,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark miss",
             "role": "graphic",
-            "ink": "#62686f",
+            "ink": "#666c74",
             "alpha": 1,
-            "shown": "#62686f",
+            "shown": "#666c74",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "element .runtl-svg .runtl-m-miss stroke",
-            "ratio": 4.61,
+            "ratio": 4.34,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark jam decision",
             "role": "graphic",
-            "ink": "#29465a",
+            "ink": "#416f8f",
             "alpha": 1,
-            "shown": "#29465a",
+            "shown": "#416f8f",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 9.1,
+            "ratio": 4.95,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark jam decision",
             "role": "graphic",
-            "ink": "#29465a",
+            "ink": "#416f8f",
             "alpha": 1,
-            "shown": "#29465a",
+            "shown": "#416f8f",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 8.12,
+            "ratio": 4.42,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark CPA",
             "role": "graphic",
-            "ink": "#676860",
+            "ink": "#6b6c64",
             "alpha": 1,
-            "shown": "#676860",
+            "shown": "#6b6c64",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "element .runtl-svg .runtl-m-cpa stroke",
-            "ratio": 5.17,
+            "ratio": 4.87,
             "required": 3,
             "pass": true
           },
           {
             "id": "mark CPA",
             "role": "graphic",
-            "ink": "#676860",
+            "ink": "#6b6c64",
             "alpha": 1,
-            "shown": "#676860",
+            "shown": "#6b6c64",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "element .runtl-svg .runtl-m-cpa stroke",
-            "ratio": 4.62,
+            "ratio": 4.35,
             "required": 3,
             "pass": true
           },
           {
             "id": "span hold, quality 1",
             "role": "graphic",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 1,
-            "shown": "#406d8d",
+            "shown": "#437193",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 5.09,
+            "ratio": 4.79,
             "required": 3,
             "pass": true
           },
           {
             "id": "span hold, quality 1",
             "role": "graphic",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 1,
-            "shown": "#406d8d",
+            "shown": "#437193",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 4.54,
+            "ratio": 4.28,
             "required": 3,
             "pass": true
           },
           {
             "id": "span coast",
             "role": "graphic",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 1,
-            "shown": "#406d8d",
+            "shown": "#437193",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 5.09,
+            "ratio": 4.79,
             "required": 3,
             "pass": true
           },
           {
             "id": "span coast",
             "role": "graphic",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 1,
-            "shown": "#406d8d",
+            "shown": "#437193",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 4.54,
+            "ratio": 4.28,
             "required": 3,
             "pass": true
           },
@@ -4281,104 +4294,104 @@
           {
             "id": "span burst",
             "role": "graphic",
-            "ink": "#394349",
+            "ink": "#5c6d76",
             "alpha": 1,
-            "shown": "#394349",
+            "shown": "#5c6d76",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 9.3,
+            "ratio": 4.94,
             "required": 3,
             "pass": true
           },
           {
             "id": "span burst",
             "role": "graphic",
-            "ink": "#394349",
+            "ink": "#5c6d76",
             "alpha": 1,
-            "shown": "#394349",
+            "shown": "#5c6d76",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 8.3,
+            "ratio": 4.41,
             "required": 3,
             "pass": true
           },
           {
             "id": "span dwell",
             "role": "graphic",
-            "ink": "#29465a",
+            "ink": "#416f8f",
             "alpha": 1,
-            "shown": "#29465a",
+            "shown": "#416f8f",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 9.1,
+            "ratio": 4.95,
             "required": 3,
             "pass": true
           },
           {
             "id": "span dwell",
             "role": "graphic",
-            "ink": "#29465a",
+            "ink": "#416f8f",
             "alpha": 1,
-            "shown": "#29465a",
+            "shown": "#416f8f",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 8.12,
+            "ratio": 4.42,
             "required": 3,
             "pass": true
           },
           {
             "id": "span ghost",
             "role": "graphic",
-            "ink": "#62686f",
+            "ink": "#666c74",
             "alpha": 1,
-            "shown": "#62686f",
+            "shown": "#666c74",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "element .runtl-svg .runtl-s-ghost stroke",
-            "ratio": 5.17,
+            "ratio": 4.86,
             "required": 3,
             "pass": true
           },
           {
             "id": "span ghost",
             "role": "graphic",
-            "ink": "#62686f",
+            "ink": "#666c74",
             "alpha": 1,
-            "shown": "#62686f",
+            "shown": "#666c74",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "element .runtl-svg .runtl-s-ghost stroke",
-            "ratio": 4.61,
+            "ratio": 4.34,
             "required": 3,
             "pass": true
           },
           {
             "id": "span undetected",
             "role": "graphic",
-            "ink": "#6e6759",
+            "ink": "#726a5c",
             "alpha": 1,
-            "shown": "#6e6759",
+            "shown": "#726a5c",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "element .runtl-svg .runtl-s-undetected stroke",
-            "ratio": 5.14,
+            "ratio": 4.9,
             "required": 3,
             "pass": true
           },
           {
             "id": "span undetected",
             "role": "graphic",
-            "ink": "#6e6759",
+            "ink": "#726a5c",
             "alpha": 1,
-            "shown": "#6e6759",
+            "shown": "#726a5c",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "element .runtl-svg .runtl-s-undetected stroke",
-            "ratio": 4.59,
+            "ratio": 4.37,
             "required": 3,
             "pass": true
           },
@@ -4424,26 +4437,26 @@
           {
             "id": "unobserved edge",
             "role": "graphic",
-            "ink": "#6e6759",
+            "ink": "#726a5c",
             "alpha": 1,
-            "shown": "#6e6759",
+            "shown": "#726a5c",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 5.14,
+            "ratio": 4.9,
             "required": 3,
             "pass": true
           },
           {
             "id": "unobserved edge",
             "role": "graphic",
-            "ink": "#6e6759",
+            "ink": "#726a5c",
             "alpha": 1,
-            "shown": "#6e6759",
+            "shown": "#726a5c",
             "surface": "unobserved",
             "surfaceColour": "#eae6df",
             "source": "expression",
-            "ratio": 4.51,
+            "ratio": 4.3,
             "required": 3,
             "pass": true
           },
@@ -4463,39 +4476,39 @@
           {
             "id": "summary detect at 0.75",
             "role": "graphic",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 0.75,
-            "shown": "#6e8fa6",
+            "shown": "#7092aa",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 3.14,
+            "ratio": 3.02,
             "required": 3,
             "pass": true
           },
           {
             "id": "summary firm at 0.75",
             "role": "graphic",
-            "ink": "#636a59",
+            "ink": "#666e5c",
             "alpha": 0.75,
-            "shown": "#888d7f",
+            "shown": "#8a9081",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 3.14,
+            "ratio": 3.02,
             "required": 3,
             "pass": true
           },
           {
             "id": "summary assign at 0.75",
             "role": "graphic",
-            "ink": "#8a602d",
+            "ink": "#90642f",
             "alpha": 0.75,
-            "shown": "#a5855e",
+            "shown": "#aa885f",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 3.14,
+            "ratio": 3.01,
             "required": 3,
             "pass": true
           },
@@ -4528,52 +4541,52 @@
           {
             "id": "summary mission kill at 0.75",
             "role": "graphic",
-            "ink": "#29465a",
+            "ink": "#416f8f",
             "alpha": 0.75,
-            "shown": "#5d7280",
+            "shown": "#6f91a7",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 4.63,
+            "ratio": 3.08,
             "required": 3,
             "pass": true
           },
           {
             "id": "summary miss at 0.75",
             "role": "graphic",
-            "ink": "#62686f",
+            "ink": "#666c74",
             "alpha": 0.75,
-            "shown": "#878b8f",
+            "shown": "#8a8e93",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 3.14,
+            "ratio": 3.02,
             "required": 3,
             "pass": true
           },
           {
             "id": "summary CPA at 0.75",
             "role": "graphic",
-            "ink": "#676860",
+            "ink": "#6b6c64",
             "alpha": 0.75,
-            "shown": "#8b8b84",
+            "shown": "#8e8e87",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 3.14,
+            "ratio": 3.02,
             "required": 3,
             "pass": true
           },
           {
             "id": "summary hold at 0.75",
             "role": "graphic",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 0.75,
-            "shown": "#6e8fa6",
+            "shown": "#7092aa",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 3.14,
+            "ratio": 3.02,
             "required": 3,
             "pass": true
           },
@@ -4606,78 +4619,78 @@
           {
             "id": "summary burst at 0.75",
             "role": "graphic",
-            "ink": "#394349",
+            "ink": "#5c6d76",
             "alpha": 0.75,
-            "shown": "#697073",
+            "shown": "#838f95",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 4.66,
+            "ratio": 3.05,
             "required": 3,
             "pass": true
           },
           {
             "id": "summary dwell at 0.75",
             "role": "graphic",
-            "ink": "#29465a",
+            "ink": "#416f8f",
             "alpha": 0.75,
-            "shown": "#5d7280",
+            "shown": "#6f91a7",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 4.63,
+            "ratio": 3.08,
             "required": 3,
             "pass": true
           },
           {
             "id": "summary undetected at 0.75",
             "role": "graphic",
-            "ink": "#6e6759",
+            "ink": "#726a5c",
             "alpha": 0.75,
-            "shown": "#908b7f",
+            "shown": "#938d81",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 3.13,
+            "ratio": 3.03,
             "required": 3,
             "pass": true
           },
           {
             "id": "row ink square sensor",
             "role": "identifier",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 1,
-            "shown": "#406d8d",
+            "shown": "#437193",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 5.09,
+            "ratio": 4.79,
             "required": 3,
             "pass": true
           },
           {
             "id": "row ink square c2",
             "role": "identifier",
-            "ink": "#636a59",
+            "ink": "#666e5c",
             "alpha": 1,
-            "shown": "#636a59",
+            "shown": "#666e5c",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 5.16,
+            "ratio": 4.88,
             "required": 3,
             "pass": true
           },
           {
             "id": "row ink square effector",
             "role": "identifier",
-            "ink": "#8a602d",
+            "ink": "#90642f",
             "alpha": 1,
-            "shown": "#8a602d",
+            "shown": "#90642f",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 5.08,
+            "ratio": 4.76,
             "required": 3,
             "pass": true
           },
@@ -4697,13 +4710,13 @@
           {
             "id": "group ink square blue",
             "role": "identifier",
-            "ink": "#29465a",
+            "ink": "#437193",
             "alpha": 1,
-            "shown": "#29465a",
+            "shown": "#437193",
             "surface": "group",
             "surfaceColour": "#ede9e3",
             "source": "expression",
-            "ratio": 8.21,
+            "ratio": 4.33,
             "required": 3,
             "pass": true
           },
@@ -4736,13 +4749,13 @@
           {
             "id": "overview mission kill",
             "role": "graphic",
-            "ink": "#29465a",
+            "ink": "#416f8f",
             "alpha": 1,
-            "shown": "#29465a",
+            "shown": "#416f8f",
             "surface": "overview",
             "surfaceColour": "#eeebe4",
             "source": "expression",
-            "ratio": 8.29,
+            "ratio": 4.51,
             "required": 3,
             "pass": true
           },
@@ -4756,6 +4769,19 @@
             "surfaceColour": "#eeebe4",
             "source": "expression",
             "ratio": 4.02,
+            "required": 3,
+            "pass": true
+          },
+          {
+            "id": "overview playhead",
+            "role": "graphic",
+            "ink": "#212220",
+            "alpha": 1,
+            "shown": "#212220",
+            "surface": "overview",
+            "surfaceColour": "#eeebe4",
+            "source": "element .runtl-over-playhead stroke",
+            "ratio": 13.36,
             "required": 3,
             "pass": true
           },
@@ -4775,52 +4801,52 @@
           {
             "id": "hold, quality 0 (opacity 0.3)",
             "role": "graded step",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 0.3,
-            "shown": "#c0ccd2",
+            "shown": "#c1cdd4",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 1.5,
+            "ratio": 1.48,
             "required": null,
             "pass": null
           },
           {
             "id": "hold, quality 0 (opacity 0.3)",
             "role": "graded step",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 0.3,
-            "shown": "#b7c3ca",
+            "shown": "#b8c5cb",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 1.47,
+            "ratio": 1.45,
             "required": null,
             "pass": null
           },
           {
             "id": "hold, quality 0.5 (opacity 0.65)",
             "role": "graded step",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 0.65,
-            "shown": "#809db0",
+            "shown": "#829fb4",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
             "source": "expression",
-            "ratio": 2.63,
+            "ratio": 2.54,
             "required": null,
             "pass": null
           },
           {
             "id": "hold, quality 0.5 (opacity 0.65)",
             "role": "graded step",
-            "ink": "#406d8d",
+            "ink": "#437193",
             "alpha": 0.65,
-            "shown": "#7c98ab",
+            "shown": "#7e9baf",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
             "source": "expression",
-            "ratio": 2.48,
+            "ratio": 2.4,
             "required": null,
             "pass": null
           },
@@ -5013,9 +5039,9 @@
             "alpha": 1,
             "shown": "#eeebe4",
             "surface": "dwellBar",
-            "surfaceColour": "#29465a",
-            "source": "expression",
-            "ratio": 8.33,
+            "surfaceColour": "#416f8f",
+            "source": "element .runtl-svg .runtl-dur fill",
+            "ratio": 4.53,
             "required": 4.5,
             "pass": true
           },
@@ -5026,9 +5052,9 @@
             "alpha": 1,
             "shown": "#eeebe4",
             "surface": "burstBar",
-            "surfaceColour": "#394349",
-            "source": "expression",
-            "ratio": 8.51,
+            "surfaceColour": "#5c6d76",
+            "source": "element .runtl-svg .runtl-dur fill",
+            "ratio": 4.52,
             "required": 4.5,
             "pass": true
           },
@@ -5127,20 +5153,20 @@
       }
     },
     "darkSummary": {
-      "pairs": 105,
-      "required": 99,
+      "pairs": 106,
+      "required": 100,
       "fail": 0,
       "failing": []
     },
     "lightSummary": {
-      "pairs": 105,
-      "required": 99,
+      "pairs": 106,
+      "required": 100,
       "fail": 0,
       "failing": []
     }
   },
   "commit": "41476e2",
-  "shotsNote": "The shots are from the 8ba3ec5 run; windowing does not change what the strip draws in its view, so they were not retaken.",
+  "shotsNote": "The shots, the accessibility section and the contrast section are from the design review rerun at cd69b3c (designReview.capturedAt); the frames, windowing and model passes stay from 41476e2.",
   "baseline": {
     "commit": "1c7cd00",
     "note": "Frames measured before any Phase 4 source change, with the same script and expansion.",
@@ -5609,6 +5635,257 @@
       "trialSeries.ts": 740,
       "react-dom_client.js": 256,
       "(garbage collector)": 135
+    }
+  },
+  "designReview": {
+    "commit": "cd69b3c",
+    "capturedAt": "2026-09-28T17:46:31.496Z",
+    "replaced": [
+      "shots",
+      "accessibility",
+      "contrast"
+    ],
+    "errors": [],
+    "inkSearch": {
+      "rule": "Lightest value in each paper ink's own HSL hue and saturation (0.05 percent lightness steps) that clears 3.01 on the paper panel #f7f5f0, on the selected ground (text 1 at 6 percent over the panel), at 0.75 opacity over the panel and on each other ground the ink draws on (sensor on the group ground, EW on the overview ground, quiet on the unobserved ground), and for EW and DE a duration at 4.51 on the fill.",
+      "values": {
+        "sensor": "#437193",
+        "c2": "#666e5c",
+        "effector": "#90642f",
+        "ew": "#416f8f",
+        "de": "#5c6d76",
+        "ghost": "#666c74",
+        "cpa": "#6b6c64",
+        "quiet": "#726a5c"
+      },
+      "before": {
+        "sensor": "#406d8d",
+        "c2": "#636a59",
+        "effector": "#8a602d",
+        "ew": "#29465a",
+        "de": "#394349",
+        "ghost": "#62686f",
+        "cpa": "#676860",
+        "quiet": "#6e6759"
+      },
+      "text1OnFill": "Infeasible for EW and DE: the 0.75 floor needs a fill luminance of at most 0.150 (EW) and 0.149 (DE); text 1 at 4.5:1 needs at least 0.247. The duration stays in the paper board ink (--accent-ink)."
+    },
+    "browserCheck": {
+      "m1": [
+        {
+          "title": "RfOne Mk2 RF sensor (DroneShield) 1",
+          "text": "RfOne Mk2 RF sensor (DroneShield) 1",
+          "nameW": 105,
+          "headW": 95,
+          "headScroll": 195,
+          "tail": "1",
+          "tailVisible": true,
+          "meta": null,
+          "metaW": null
+        },
+        {
+          "title": "RfOne Mk2 RF sensor (DroneShield) 2",
+          "text": "RfOne Mk2 RF sensor (DroneShield) 2",
+          "nameW": 105,
+          "headW": 95,
+          "headScroll": 195,
+          "tail": "2",
+          "tailVisible": true,
+          "meta": null,
+          "metaW": null
+        },
+        {
+          "title": "EchoShield tracking radar (Echodyne) 1",
+          "text": "EchoShield tracking radar (Echodyne) 1",
+          "nameW": 105,
+          "headW": 95,
+          "headScroll": 202,
+          "tail": "1",
+          "tailVisible": true,
+          "meta": null,
+          "metaW": null
+        },
+        {
+          "title": "EchoShield tracking radar (Echodyne) 2",
+          "text": "EchoShield tracking radar (Echodyne) 2",
+          "nameW": 105,
+          "headW": 95,
+          "headScroll": 202,
+          "tail": "2",
+          "tailVisible": true,
+          "meta": null,
+          "metaW": null
+        },
+        {
+          "title": "Discovair G2 acoustic array (Squarehead) 1",
+          "text": "Discovair G2 acoustic array (Squarehead) 1",
+          "nameW": 105,
+          "headW": 95,
+          "headScroll": 222,
+          "tail": "1",
+          "tailVisible": true,
+          "meta": null,
+          "metaW": null
+        },
+        {
+          "title": "Discovair G2 acoustic array (Squarehead) 2",
+          "text": "Discovair G2 acoustic array (Squarehead) 2",
+          "nameW": 105,
+          "headW": 95,
+          "headScroll": 222,
+          "tail": "2",
+          "tailVisible": true,
+          "meta": null,
+          "metaW": null
+        },
+        {
+          "title": "Ranger R8SS-3D panel radar (FLIR)",
+          "text": "Ranger R8SS-3D panel radar (FLIR)",
+          "nameW": 105,
+          "headW": null,
+          "headScroll": null,
+          "tail": null,
+          "tailVisible": null,
+          "meta": null,
+          "metaW": null
+        },
+        {
+          "title": "LSTAR / AN/TPQ-50 EW radar (SRC)",
+          "text": "LSTAR / AN/TPQ-50 EW radar (SRC)",
+          "nameW": 105,
+          "headW": null,
+          "headScroll": null,
+          "tail": null,
+          "tailVisible": null,
+          "meta": null,
+          "metaW": null
+        }
+      ],
+      "s3": {
+        "handle": {
+          "w": 813,
+          "h": 6
+        },
+        "grip": {
+          "w": "36px",
+          "h": "2px",
+          "bg": "rgb(69, 72, 70)",
+          "top": "2px"
+        },
+        "handleBg": "rgba(0, 0, 0, 0)"
+      },
+      "s4Fit": {
+        "label": "fit",
+        "lanes": 8,
+        "labels": [
+          {
+            "text": "pk 0.52",
+            "x": 672,
+            "r": 718,
+            "y": 811
+          }
+        ],
+        "overlaps": [],
+        "markXs": [
+          476,
+          508,
+          538,
+          564,
+          595,
+          615,
+          646,
+          661,
+          508,
+          564,
+          615,
+          661
+        ],
+        "zoom": "Window fit"
+      },
+      "s4Zoomed": {
+        "label": "zoomed",
+        "lanes": 8,
+        "labels": [
+          {
+            "text": "3 left",
+            "x": 706,
+            "r": 746,
+            "y": 811
+          },
+          {
+            "text": "pk 0.45",
+            "x": 950,
+            "r": 996,
+            "y": 811
+          },
+          {
+            "text": "2 left",
+            "x": 1180,
+            "r": 1220,
+            "y": 811
+          },
+          {
+            "text": "pk 0.48",
+            "x": 1377,
+            "r": 1424,
+            "y": 811
+          },
+          {
+            "text": "1 left",
+            "x": 1609,
+            "r": 1648,
+            "y": 811
+          },
+          {
+            "text": "pk 0.50",
+            "x": 1764,
+            "r": 1811,
+            "y": 811
+          },
+          {
+            "text": "0 left",
+            "x": 1995,
+            "r": 2034,
+            "y": 811
+          },
+          {
+            "text": "pk 0.52",
+            "x": 2114,
+            "r": 2161,
+            "y": 811
+          }
+        ],
+        "overlaps": [],
+        "markXs": [
+          693,
+          939,
+          1167,
+          1366,
+          1596,
+          1753,
+          1982,
+          2103,
+          939,
+          1366,
+          1753,
+          2103
+        ],
+        "zoom": "Window 198 s"
+      },
+      "s2": {
+        "x1": 256.4,
+        "widthPx": 641,
+        "simTimeS": 600,
+        "follow": true,
+        "stroke": "rgb(235, 233, 227)",
+        "durationS": 1500,
+        "expected": 256.4
+      },
+      "observed": [
+        1500,
+        1500
+      ],
+      "errors": []
     }
   }
 }
