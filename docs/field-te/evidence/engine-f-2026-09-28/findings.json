@@ -1,0 +1,300 @@
+{
+  "capturedAt": "2026-09-28T22:41:04.868Z",
+  "viewport": "1265x900",
+  "fixture": "src/playback/__fixtures__/detection-outside-rings.json",
+  "shots": [
+    {
+      "file": "board-before-kill-dark.png",
+      "state": "Execute, complete run, paused 5 s before the kill at T+1051.16: the threat's track marker and ellipse on the board, its holds in the strip",
+      "simTimeS": 1046.16,
+      "observedThroughS": 1500
+    },
+    {
+      "file": "board-after-kill-dark.png",
+      "state": "Execute, complete run, paused 30 s after the kill: no track for the dead threat on the board, the threat row's ghost span in the strip",
+      "simTimeS": 1081.16,
+      "observedThroughS": 1500
+    },
+    {
+      "file": "board-after-kill-daylight.png",
+      "state": "The same state in the daylight theme",
+      "simTimeS": 1081.16,
+      "observedThroughS": 1500
+    }
+  ],
+  "errors": [],
+  "attempts": [
+    {
+      "attempt": 1,
+      "runId": "simrun-mulu058n-2",
+      "status": "ready",
+      "events": 4,
+      "killS": 1051.163400852874
+    }
+  ],
+  "trial": {
+    "status": "ready",
+    "runId": "simrun-mulu058n-2",
+    "events": 4,
+    "killS": 1051.163400852874,
+    "uasId": "ent-mtnvzhmr-25",
+    "c2Ids": [
+      "ent-mtnvzhmr-23",
+      "ent-mtnvzhmr-23",
+      "ent-mtnvzhmr-23",
+      "ent-mtnvzhmr-23"
+    ]
+  },
+  "durationS": 1500,
+  "killS": 1051.163400852874,
+  "uasId": "ent-mtnvzhmr-25",
+  "before": {
+    "horizonS": 1046.163400852874,
+    "stepS": 0.5,
+    "observedThroughS": 1500,
+    "simTimeS": 1500,
+    "latestPerId": 2,
+    "latestOfThreat": [
+      {
+        "id": "ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "tS": 1046
+      },
+      {
+        "id": "ent-mtnvzhmr-22:ent-mtnvzhmr-25",
+        "tS": 1042
+      }
+    ],
+    "drawn": 1,
+    "drawnOfThreat": [
+      {
+        "id": "ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "tS": 1046
+      }
+    ],
+    "rows": [
+      {
+        "key": "sensor:ent-mtnvzhmr-22:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1042.5,
+        "ghost": [],
+        "holdEndS": 1042.5,
+        "classifyEndS": -1,
+        "marks": []
+      },
+      {
+        "key": "sensor:ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1046.163400852874,
+        "ghost": [],
+        "holdEndS": 1046.163400852874,
+        "classifyEndS": -1,
+        "marks": []
+      },
+      {
+        "key": "track:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1046.163400852874,
+        "ghost": [],
+        "holdEndS": -1,
+        "classifyEndS": 1046.163400852874,
+        "marks": []
+      },
+      {
+        "key": "threat:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1046.163400852874,
+        "ghost": [],
+        "holdEndS": -1,
+        "classifyEndS": 1046.163400852874,
+        "marks": []
+      }
+    ]
+  },
+  "atKill": {
+    "horizonS": 1051.163400852874,
+    "stepS": 0.5,
+    "observedThroughS": 1500,
+    "simTimeS": 1500,
+    "latestPerId": 2,
+    "latestOfThreat": [
+      {
+        "id": "ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "tS": 1051
+      },
+      {
+        "id": "ent-mtnvzhmr-22:ent-mtnvzhmr-25",
+        "tS": 1049
+      }
+    ],
+    "drawn": 1,
+    "drawnOfThreat": [
+      {
+        "id": "ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "tS": 1051
+      }
+    ],
+    "rows": [
+      {
+        "key": "sensor:ent-mtnvzhmr-22:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1049.5,
+        "ghost": [],
+        "holdEndS": 1049.5,
+        "classifyEndS": -1,
+        "marks": []
+      },
+      {
+        "key": "sensor:ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1051.163400852874,
+        "ghost": [],
+        "holdEndS": 1051.163400852874,
+        "classifyEndS": -1,
+        "marks": []
+      },
+      {
+        "key": "track:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1051.163400852874,
+        "ghost": [],
+        "holdEndS": -1,
+        "classifyEndS": 1051.163400852874,
+        "marks": []
+      },
+      {
+        "key": "threat:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1051.163400852874,
+        "ghost": [],
+        "holdEndS": -1,
+        "classifyEndS": 1051.163400852874,
+        "marks": [
+          [
+            "hard-kill",
+            1051.163400852874
+          ]
+        ]
+      }
+    ]
+  },
+  "after": {
+    "horizonS": 1081.163400852874,
+    "stepS": 0.5,
+    "observedThroughS": 1500,
+    "simTimeS": 1500,
+    "latestPerId": 2,
+    "latestOfThreat": [
+      {
+        "id": "ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "tS": 1051
+      },
+      {
+        "id": "ent-mtnvzhmr-22:ent-mtnvzhmr-25",
+        "tS": 1049
+      }
+    ],
+    "drawn": 0,
+    "drawnOfThreat": [],
+    "rows": [
+      {
+        "key": "sensor:ent-mtnvzhmr-22:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1049.5,
+        "ghost": [],
+        "holdEndS": 1049.5,
+        "classifyEndS": -1,
+        "marks": []
+      },
+      {
+        "key": "sensor:ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1051.5,
+        "ghost": [],
+        "holdEndS": 1051.5,
+        "classifyEndS": -1,
+        "marks": []
+      },
+      {
+        "key": "track:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1051.5,
+        "ghost": [],
+        "holdEndS": -1,
+        "classifyEndS": 1051.5,
+        "marks": []
+      },
+      {
+        "key": "threat:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1081.163400852874,
+        "ghost": [
+          {
+            "kind": "ghost",
+            "startS": 1051.163400852874,
+            "endS": 1081.163400852874
+          }
+        ],
+        "holdEndS": -1,
+        "classifyEndS": 1051.163400852874,
+        "marks": [
+          [
+            "hard-kill",
+            1051.163400852874
+          ]
+        ]
+      }
+    ]
+  },
+  "end": {
+    "horizonS": 1500,
+    "stepS": 0.5,
+    "observedThroughS": 1500,
+    "simTimeS": 1500,
+    "latestPerId": 2,
+    "latestOfThreat": [
+      {
+        "id": "ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "tS": 1051
+      },
+      {
+        "id": "ent-mtnvzhmr-22:ent-mtnvzhmr-25",
+        "tS": 1049
+      }
+    ],
+    "drawn": 0,
+    "drawnOfThreat": [],
+    "rows": [
+      {
+        "key": "sensor:ent-mtnvzhmr-22:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1049.5,
+        "ghost": [],
+        "holdEndS": 1049.5,
+        "classifyEndS": -1,
+        "marks": []
+      },
+      {
+        "key": "sensor:ent-mtnvzhmx-29:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1051.5,
+        "ghost": [],
+        "holdEndS": 1051.5,
+        "classifyEndS": -1,
+        "marks": []
+      },
+      {
+        "key": "track:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1051.5,
+        "ghost": [],
+        "holdEndS": -1,
+        "classifyEndS": 1051.5,
+        "marks": []
+      },
+      {
+        "key": "threat:ent-mtnvzhmr-25",
+        "lastSpanEndS": 1475,
+        "ghost": [
+          {
+            "kind": "ghost",
+            "startS": 1051.163400852874,
+            "endS": 1475
+          }
+        ],
+        "holdEndS": -1,
+        "classifyEndS": 1051.163400852874,
+        "marks": [
+          [
+            "hard-kill",
+            1051.163400852874
+          ]
+        ]
+      }
+    ]
+  }
+}

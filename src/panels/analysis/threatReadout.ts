@@ -155,6 +155,16 @@ export interface TrialTelemetryState {
 const telemetryCache = new WeakMap<TrialSweep, Map<string, TrialTelemetryState>>()
 const eligibilityCache = new WeakMap<TrialResultView, Map<string, number>>()
 
+/** Expected-dead times of a retained trial, cached per view. */
+function deadTimesOf(view: TrialResultView): Map<string, number> {
+  let cutoffs = eligibilityCache.get(view)
+  if (!cutoffs) {
+    cutoffs = expectedDeadTimes(view.attrition)
+    eligibilityCache.set(view, cutoffs)
+  }
+  return cutoffs
+}
+
 /** Only retained facts reached at this horizon; never runs a forecast sweep. */
 export function trialTelemetryAt(
   view: TrialResultView,
@@ -166,11 +176,7 @@ export function trialTelemetryAt(
   const sweep = supplied?.timeS === t ? supplied : trialSweepAt(view, t)
   const cached = telemetryCache.get(sweep)?.get(uasId)
   if (cached) return cached
-  let cutoffs = eligibilityCache.get(view)
-  if (!cutoffs) {
-    cutoffs = expectedDeadTimes(view.attrition)
-    eligibilityCache.set(view, cutoffs)
-  }
+  const cutoffs = deadTimesOf(view)
   const members = trialMemberStatesAt(view, uasId, t)
   const assessment = view.assessments.find((a) => a.uasId === uasId)
   const sensors = sweep.sensors.filter((s) => s.threatId === uasId && s.stateAtTime !== 'not-held')
@@ -178,9 +184,12 @@ export function trialTelemetryAt(
   const coasting = sensors.length > 0 && sensors.every((s) => s.stateAtTime === 'coasting')
   const cls = assessment?.classificationAtS
   const hasReached = (time: number | null | undefined) => time != null && time <= t
-  const classification = hasReached(cls?.hostileAtS)
+  // A dead threat's classification rung reads no later than the kill.
+  const tLive = Math.min(t, cutoffs.get(uasId) ?? t)
+  const classifiedBy = (time: number | null | undefined) => time != null && time <= tLive
+  const classification = classifiedBy(cls?.hostileAtS)
     ? 'hostile'
-    : hasReached(cls?.suspectedAtS)
+    : classifiedBy(cls?.suspectedAtS)
       ? 'suspected'
       : 'unknown'
   const events = view.attrition.events.filter((e) => e.uasId === uasId && e.tS <= t)
@@ -311,7 +320,11 @@ export function threatReadoutAt({
     return `${name} (${mode}${sensor?.lastMeasurementTimeS != null ? ` · last T+${formatTime(sensor.lastMeasurementTimeS)}` : ''})`
   })
   const continuity =
-    assessment && !untouched ? trackQualityAt(assessment, tObs)?.continuity : undefined
+    assessment && trial && !untouched
+      ? // A dead threat holds no track: quality reads no later than the kill.
+        trackQualityAt(assessment, Math.min(tObs, deadTimesOf(trial).get(entity.id) ?? tObs))
+          ?.continuity
+      : undefined
   const altitudeText = `${threatAltitudeFt(scenario, entity).toLocaleString()} ft AGL`
 
   const hasAsset =

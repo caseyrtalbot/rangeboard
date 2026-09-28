@@ -519,7 +519,8 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex, stepCount, createSweepClock: the
                intercept, launch releases, predictedStateAt, interceptFromEstimate and
                the interceptFor selector),
                shot.ts (evaluateShot: per-ship shot eligibility shared by both
-               firing passes), attritionReport.ts (report types), sweepState.ts (sweep
+               firing passes), attritionReport.ts (report types), deadTimes.ts
+               (expectedDeadTimes, the expected-dead rule), sweepState.ts (sweep
                state types), attrition.ts (resolveEngagements: fire distribution,
                expected kills, events), trackState.ts
                (phase at t, trackTimelineOf), sweepAt.ts (the per-publication sweep memo:
@@ -748,7 +749,20 @@ Each fact below has exactly one definition. Read it there; never add a second co
   sigma equal to its detect range, while simultaneous nodes of the same model derive a
   cross-bearing range sigma from their maximum baseline and signal-to-noise. Capture is opt-in:
   `runTrial` attaches the sink that fills `TrialResult.tracks`, so the ensemble path
-  allocates no estimate history. The page does not keep that return. `acceptTrialMessage`
+  allocates no estimate history. The sweep, the tracker and the fusion stage finish
+  before the engagement pass reads their fused track, so they run to the path end;
+  `runTrial` and the replicate loop then run `clipAtKill` (`killClip.ts`): the per-step
+  fused tracks, each sensor observation's hold and coast intervals, the track estimates
+  and the scan records of a killed threat end at the last sweep sample at or before the
+  effect time of the salvo that removed its last survival mass (`expectedDeadTimes` in
+  `deadTimes.ts`, the engine's expected-dead rule). A sample at or before the kill
+  measured a live target and is kept with its one drawn step; the first sample after it
+  is dropped. The report is not touched, `trackQuality` stays as swept, and the
+  timeline's ghost span reads the report. `threatPictureAt` and the threat readout read
+  track quality and the classification rung no later than the kill, so neither changes
+  for a dead threat. `TRIAL_ENGINE_REVISION` moved to `rangeboard-trial-r4-v2` with the
+  clip, so a stored trial swept without it fails the manifest gate. The
+  page does not keep that return. `acceptTrialMessage`
   stores `boundRetainedTrial`: per-step fused tracks are omitted once the ledger is
   resolved, and each assessment keeps a `fusedTrack` summary in their place: the first
   and last fused step, each C2 node that held the fused picture and each member sensor,
@@ -1106,8 +1120,11 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   track history, the latest entry per track id at or before the horizon and nothing past
   it. A list with a read bound through `bindHorizonRead` uses that read in place of the
   scan; the retained-trial ledger binds one binary search per id over its per-id index,
-  and a plain array is scanned. `TrackLayer` memoizes the picture on `[tracks, horizonS]`,
-  so a zoom does not re-read it; `positionEllipse` is the one error ellipse, the eigenpair of the position block of
+  and a plain array is scanned. `TrackLayer` memoizes the picture on `[tracks, horizonS,
+  stepS]`, so a zoom does not re-read it; with the trial's sweep step it draws only an
+  estimate within one step of the horizon, the rule `attrition.ts` reads a fused track
+  by, so a killed or dropped track leaves the board at its last step. `positionEllipse`
+  is the one error ellipse, the eigenpair of the position block of
   a `Covariance4`. `TrackLayer` draws the 1 sigma ellipse and a position marker on the
   live Layer: a coasting track dashes, an updated track draws solid, a truth track has no
   error so it draws the marker alone, and a false track takes the muted ink. The ellipse

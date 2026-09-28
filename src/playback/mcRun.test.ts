@@ -22,6 +22,8 @@ import * as uncertainty from '../analysis/uncertainty'
 import { PF_SPREAD, sampleScenario, uncertainFields } from '../analysis/uncertainty'
 import { betaQuantile, wilson } from '../analysis/stats'
 import { resolveEngagements } from './attrition'
+import { clipAtKill } from './killClip'
+import { expectedDeadTimes } from './deadTimes'
 import { FALLOFF_AT_MAX } from './pk'
 import {
   halfWidthReached,
@@ -307,11 +309,24 @@ describe('runReplicates', () => {
     const policy = monteCarloPolicy(runSettings(scenario).seed, 0, thresholdsOf(scenario))
     const assessments = assessAllThreats(scenario, policy)
     const report = resolveEngagements(scenario, assessments, policy)
-    const tracks = assessments.filter((a) => a.status !== 'no-path')
+    // The loop clips each replicate's holds at the kill (killClip.ts).
+    const clipped = clipAtKill({ assessments, report, stepS: runSettings(scenario).sweepStepS })
+    const tracks = clipped.assessments.filter((a) => a.status !== 'no-path')
     const enabledSensorIds = new Set(
       scenario.entities.filter((e) => e.kind === 'sensor' && entityActive(e)).map((e) => e.id),
     )
     expect(summary.tracked.mean).toEqual(heldTracksOnGrid(tracks, enabledSensorIds, n))
+    // A dead threat holds no track: every step after the kill step reads zero,
+    // where the swept holds still count it.
+    const killS = expectedDeadTimes(report).get(uasId)!
+    const killStep = Math.floor(killS / DT + 1e-9)
+    const swept = heldTracksOnGrid(
+      assessments.filter((a) => a.status !== 'no-path'),
+      enabledSensorIds,
+      n,
+    )
+    expect(swept.slice(killStep + 1).some((v) => v > 0)).toBe(true)
+    expect(summary.tracked.mean.slice(killStep + 1).every((v) => v === 0)).toBe(true)
     expect(summary.perThreat[uasId].residual.mean).toEqual(residualOnGrid(report, uasId, n))
     const timeline = buildLiveTimeline(assessments, report)
     const kills: number[] = []

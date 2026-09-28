@@ -1,0 +1,190 @@
+// Row F engine lane capture: 1265 x 900, the JIATF-401 laydown
+// (src/playback/__fixtures__/detection-outside-rings.json) on the dev server. It starts
+// sampled trials in Execute until one kills the threat, completes the run, and reads the
+// board track picture and the run timeline before and after the kill.
+// Usage: node engine-f-capture.mjs <base-url> <out-dir> <repo-root>
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT] = process.argv.slice(2)
+const FIXTURE = 'src/playback/__fixtures__/detection-outside-rings.json'
+const RAW = readFileSync(join(ROOT, FIXTURE), 'utf8')
+mkdirSync(OUT, { recursive: true })
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const waitFor = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 60000 })
+const r2 = (x) => Math.round(x * 100) / 100
+
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => {
+  if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+})
+page.on('dialog', (d) => d.accept())
+
+const findings = { capturedAt: new Date().toISOString(), viewport: '1265x900', fixture: FIXTURE, shots: [], errors }
+
+await page.goto(BASE, { waitUntil: 'load' })
+await waitFor(page, () => document.querySelector('.konvajs-content canvas') && window.__store)
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setTheme('dark')
+  s.setShowFieldHelp(false)
+  s.setRunTimelineOpen(false)
+}, RAW)
+await sleep(400)
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+
+// The trial is sampled: start runs until one removes the threat's last survival mass.
+const trialInfo = () =>
+  page.evaluate(() => {
+    const t = window.__store.getState().trial
+    const events = t.result?.report.events ?? []
+    const kill = events.find((e) => e.killDelta === 1)
+    return {
+      status: t.status,
+      runId: t.manifest?.runId ?? null,
+      events: events.length,
+      killS: kill?.tEffectS ?? null,
+      uasId: kill?.uasId ?? null,
+      c2Ids: events.map((e) => e.c2Id ?? 'absent'),
+    }
+  })
+let info = null
+const attempts = []
+for (let attempt = 1; attempt <= 60; attempt += 1) {
+  await page.evaluate(() => window.__store.getState().startRun())
+  await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status))
+  info = await trialInfo()
+  attempts.push({ attempt, runId: info.runId, status: info.status, events: info.events, killS: info.killS })
+  if (info.killS != null) break
+  await page.evaluate(() => window.__store.getState().resetRun('manual'))
+  await sleep(150)
+}
+findings.attempts = attempts
+findings.trial = info
+if (info?.killS == null) {
+  console.log('no kill in 60 sampled trials')
+  writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2))
+  await browser.close()
+  process.exit(1)
+}
+const { killS, uasId } = info
+
+await page.evaluate(async () => {
+  const s = window.__store.getState()
+  s.setPlaying(false)
+  const { durationOf } = await import('/src/state/selectors.ts')
+  s.completeRun(durationOf(s.scenario))
+})
+await sleep(200)
+
+/** The board track picture and the run timeline rows of the killed threat at a horizon. */
+const readAt = (h) =>
+  page.evaluate(
+    async ({ h, uasId }) => {
+      const { latestEstimatesAt } = await import('/src/playback/trackEstimateView.ts')
+      const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+      const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+      const s = window.__store.getState()
+      const t = s.trial
+      const stepS = t.manifest.sweepStepS
+      const latest = latestEstimatesAt(t.result.tracks, h)
+      const mine = (list) => list.filter((e) => e.uasId === uasId)
+      const drawn = latest.filter((e) => h - e.state.tS <= stepS + 1e-9)
+      const view = trialResultOf(t.scenario, t.manifest, t.result)
+      const model = runTimelineOf(view, h)
+      const rows = []
+      for (const g of model.groups)
+        for (const r of g.rows) {
+          if (r.entityId === uasId) rows.push(r)
+          for (const sub of r.subLanes ?? []) if (sub.entityId === uasId) rows.push(sub)
+        }
+      const span = (sp) => ({ kind: sp.kind, startS: sp.startS, endS: sp.endS })
+      return {
+        horizonS: h,
+        stepS,
+        observedThroughS: s.playback.observedThroughS,
+        simTimeS: s.playback.simTimeS,
+        latestPerId: latest.length,
+        latestOfThreat: mine(latest).map((e) => ({ id: e.id, tS: e.state.tS })),
+        drawn: drawn.length,
+        drawnOfThreat: mine(drawn).map((e) => ({ id: e.id, tS: e.state.tS })),
+        rows: rows.map((r) => ({
+          key: r.key,
+          lastSpanEndS: r.spans.length ? Math.max(...r.spans.map((x) => x.endS)) : null,
+          ghost: r.spans.filter((x) => x.kind === 'ghost').map(span),
+          holdEndS: Math.max(-1, ...r.spans.filter((x) => x.kind === 'hold' || x.kind === 'coast').map((x) => x.endS)),
+          classifyEndS: Math.max(-1, ...r.spans.filter((x) => x.kind === 'classify').map((x) => x.endS)),
+          marks: r.marks.filter((m) => m.tS >= (window.__killS ?? 0) - 1).map((m) => [m.kind, m.tS]),
+        })),
+      }
+    },
+    { h, uasId },
+  )
+await page.evaluate((killS) => {
+  window.__killS = killS
+}, killS)
+
+const durationS = await page.evaluate(async () => {
+  const { durationOf } = await import('/src/state/selectors.ts')
+  return durationOf(window.__store.getState().scenario)
+})
+findings.durationS = durationS
+findings.killS = killS
+findings.uasId = uasId
+findings.before = await readAt(killS - 5)
+findings.atKill = await readAt(killS)
+findings.after = await readAt(Math.min(durationS, killS + 30))
+findings.end = await readAt(durationS)
+
+// Open the strip on every group first, so the camera fit reads the canvas host at its
+// final size, then frame the board on the threat's last estimate.
+await page.evaluate(() => {
+  const s = window.__store.getState()
+  s.setRunTimelineOpen(true)
+  s.setRunTimelineHeight(420, false)
+  s.expandAllRunTimeline(['sensor', 'c2', 'track', 'effector', 'threat'], [])
+})
+await sleep(400)
+await page.evaluate(async ({ uasId, killS }) => {
+  const { latestEstimatesAt } = await import('/src/playback/trackEstimateView.ts')
+  const { fitCameraTo } = await import('/src/state/camera.ts')
+  const s = window.__store.getState()
+  const last = latestEstimatesAt(s.trial.result.tracks, killS).find((e) => e.uasId === uasId)
+  const p = last?.state ?? { x: 0, y: 0 }
+  const cam = fitCameraTo([
+    { x: p.x - 2500, y: p.y - 2500 },
+    { x: p.x + 2500, y: p.y + 2500 },
+  ])
+  if (cam) s.setCamera(cam)
+}, { uasId, killS })
+await sleep(300)
+
+async function shot(name, t, state) {
+  await page.evaluate((t) => window.__store.getState().scrubTo(t), t)
+  await sleep(500)
+  await page.screenshot({ path: join(OUT, `${name}.png`) })
+  const at = await page.evaluate(() => {
+    const s = window.__store.getState()
+    return { simTimeS: s.playback.simTimeS, observedThroughS: s.playback.observedThroughS }
+  })
+  findings.shots.push({ file: `${name}.png`, state, simTimeS: r2(at.simTimeS), observedThroughS: r2(at.observedThroughS) })
+  console.log('shot', name)
+}
+await shot('board-before-kill-dark', killS - 5, `Execute, complete run, paused 5 s before the kill at T+${r2(killS)}: the threat's track marker and ellipse on the board, its holds in the strip`)
+await shot('board-after-kill-dark', Math.min(durationS, killS + 30), `Execute, complete run, paused 30 s after the kill: no track for the dead threat on the board, the threat row's ghost span in the strip`)
+await page.evaluate(() => window.__store.getState().setTheme('light'))
+await sleep(300)
+await shot('board-after-kill-daylight', Math.min(durationS, killS + 30), 'The same state in the daylight theme')
+
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2))
+console.log(JSON.stringify({ killS, uasId, before: findings.before.drawnOfThreat.length, after: findings.after.drawnOfThreat.length, staleAfter: findings.after.latestOfThreat.length, errors: errors.length }))
+await browser.close()

@@ -254,7 +254,11 @@ export function LiveScene(props: Props) {
         displayTimeS={displayTimeS}
       />
       <StaticPathLayer mouseWorld={mouseWorld} />
-      <TrackLayer tracks={trial?.result.tracks} horizonS={outcomeTimeS} />
+      <TrackLayer
+        tracks={trial?.result.tracks}
+        horizonS={outcomeTimeS}
+        stepS={trial?.manifest.sweepStepS}
+      />
       <EngagementLayer shots={shots} displayTimeS={outcomeTimeS ?? 0} />
       <EntityLayer
         tracks={tracks}

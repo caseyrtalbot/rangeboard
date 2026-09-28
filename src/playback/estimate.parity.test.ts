@@ -88,7 +88,7 @@ describe('estimate-path parity: the trial at seed 4821, replicate of the gate ru
     ])
     expect(r.report.events).toHaveLength(11)
     expect(killMass(r)).toBe(1)
-    expect(r.tracks).toHaveLength(14192)
+    expect(r.tracks).toHaveLength(12982)
   })
 })
 

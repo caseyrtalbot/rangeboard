@@ -245,6 +245,41 @@ describe('an expected-dead track is not a target', () => {
     expect(row.targetableNow).toBe(false)
   })
 
+  it('holds track quality and the classification rung at the kill', () => {
+    // The kill clip ends the hold at the kill (T+20); a hostile declaration
+    // swept for T+30 never happened for the living target.
+    const scenario = oneThreatScenario()
+    const a = assessment('1', {
+      windowS: [8, 60],
+      effectorWindows: [{ effectorId: 'e1', intervals: [[8, 60]] }],
+      classificationAtS: { unknownAtS: 5, suspectedAtS: 5, hostileAtS: 30 },
+      sensorObservations: [
+        {
+          sensorId: 's1',
+          sensorType: 'radar',
+          firstDetectS: 5,
+          lastDetectS: 20,
+          firstClassifyS: null,
+          heldSamples: 31,
+          resolvedEver: true,
+          minSlantM: 2000,
+          intervals: [[5, 20]],
+          trackInitAtS: 7,
+          coastIntervals: [],
+        },
+      ],
+    })
+    const at = (tS: number) =>
+      threatPictureAt(scenario, [a], deadReport(), tS, new Map())[0].members[0]
+    const kill = at(20)
+    const later = at(20 + 120)
+    expect(kill.trackContinuity).toBe(1)
+    expect(later.trackContinuity).toBe(kill.trackContinuity)
+    expect(later.longestTrackGapS).toBe(kill.longestTrackGapS)
+    expect(kill.identified).toBe(false)
+    expect(later.identified).toBe(false)
+  })
+
   it('leaves a damaged but living formation targetable', () => {
     const scenario = oneThreatScenario()
     const a = assessment('1', {

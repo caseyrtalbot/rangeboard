@@ -17,6 +17,7 @@ import type { SweepFactor } from './sweepFactors'
 import { applySweepValue, SWEEP_VALUES_MAX, SWEEP_VALUES_MIN } from './sweepFactors'
 import { meanInterval, sortedMeanInterval, sortedQuantile, wilson } from '../analysis/stats'
 import { resolveEngagements } from './attrition'
+import { clipAtKill } from './killClip'
 import type { DrawPolicy } from './policy'
 import { monteCarloPolicy } from './policy'
 import { assessAllThreats } from './sim'
@@ -754,8 +755,10 @@ function* rangeLoopInto(
       const policy = monteCarloPolicy(seed, i, thresholds)
       // Under aleatory the sampler never runs.
       const s = total ? sampleScenario(scenario, draws(policy, i)) : scenario
-      const assessments = assessAllThreats(s, policy)
-      const report = resolveEngagements(s, assessments, policy)
+      const swept = assessAllThreats(s, policy)
+      const report = resolveEngagements(s, swept, policy)
+      // A dead threat holds no track: its holds end at the kill (killClip.ts).
+      const { assessments } = clipAtKill({ assessments: swept, report, stepS: settings.sweepStepS })
       const tracks = assessments.filter((a) => a.status !== 'no-path')
       const row = i - start
 

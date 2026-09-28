@@ -4,6 +4,7 @@ import { applyOverrides } from '../model/applyOverrides'
 import { idHash } from '../geometry/prng'
 import { resolveEngagements } from './attrition'
 import { resolvedThresholds } from './detection'
+import { clipAtKill } from './killClip'
 import { prepareFalseTracks, scenarioHorizonS } from './falseTracks'
 import { monteCarloPolicy } from './policy'
 import { assessAllThreats } from './sim'
@@ -57,12 +58,20 @@ export function runTrial(scenario: Scenario, manifest: TrialManifest): TrialResu
     tracks.push(estimate),
   )
   const report = resolveEngagements(s, assessments, draw, falseLoad)
-  return {
-    manifest: Object.freeze({ ...manifest }),
+  // A dead threat holds no track: the sweep products end at the kill (killClip.ts).
+  const clipped = clipAtKill({
     assessments,
     report,
-    observations,
-    jamDecisions,
+    stepS: settings.sweepStepS,
     tracks,
+    observations,
+  })
+  return {
+    manifest: Object.freeze({ ...manifest }),
+    assessments: clipped.assessments,
+    report,
+    observations: clipped.observations ?? observations,
+    jamDecisions,
+    tracks: clipped.tracks ?? tracks,
   }
 }

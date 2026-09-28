@@ -44,27 +44,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "37cb7c12426a0c8f25e89300cc90a8e880fc646e41c3cb7d284cb00848711a75",
+      "sha256": "46528e13cdd77cde0fef5a44c4b39921a2eb53e43e7cbafcd56d991372971026",
       "reviewedAt": "2026-09-28",
-      "note": "Indexes the Row E evidence: run timeline lane E1 and chrome cleanup lane E2, both 2026-09-28."
+      "note": "Row F: the engine lane evidence indexed"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "c789104a0b31c0eaf714c5a241bf6b1d939ea883963222db30a87e169107bafb",
+      "sha256": "33fcc16fb8bb81f4e7c3316e80d9761069a3a5ed824118b547564a0a4d3f3087",
       "reviewedAt": "2026-09-28",
-      "note": "Row F item 1: source fingerprint after the assigning C2 node on the engagement ledger"
+      "note": "Row F review fixes"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "483e03968700472289b2a975f6300134b9f1ebed6b5474ad024b484fca9e488f",
+      "sha256": "3f472dc5e9b38ae5d1f5588328cccb35c1a6d66b3938ed918bddb544dcee1700",
       "reviewedAt": "2026-09-28",
-      "note": "Row F item 1: EngagementEvent.c2Id records the assigning C2 node; the run timeline reads it before routing"
+      "note": "Row F review fixes"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "15b207f63bcbffd28185a0d0e3420492c38edd8bbcc006da102a589bb25b8938",
+      "sha256": "5e825a6fbdd36a78a4c2a7c3ca1f51ade0ef84b838826fe908dc5bfbbebc49fb",
       "reviewedAt": "2026-09-28",
-      "note": "Row E review fixes (2c6c4e8): no scripts/ or src/io change; text unchanged."
+      "note": "Row F review fixes"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -98,9 +98,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "f9367d38c3a38529428b0550eed00c9eef616d17582d960d9d61f5c487268e0e",
+      "sha256": "9bdb18fc88a4cab9e174b2b78fac83b797d7c18ac327063c4ddad7842db30cbd",
       "reviewedAt": "2026-09-28",
-      "note": "Row E review fixes (2c6c4e8): no scripts/ change; text unchanged."
+      "note": "Row F review fixes"
     },
     {
       "document": "docs/HANDOFF.md",

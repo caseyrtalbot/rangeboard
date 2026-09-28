@@ -15,6 +15,12 @@ interface Props {
   tracks: readonly TrackEstimate[] | undefined
   /** Bounded observation horizon, seconds. Null before a trial observation. */
   horizonS: number | null
+  /**
+   * Sweep step of the trial, seconds. An estimate older than one step at the
+   * horizon is a dropped track (the rule attrition.ts reads a fused track by)
+   * and draws nothing. Undefined draws the latest entry per track whatever its age.
+   */
+  stepS?: number
 }
 
 /** Cross arms in screen px, drawn inside a group that cancels the camera scale. */
@@ -34,14 +40,18 @@ function inkFor(source: TrackEstimate['source']): string {
  * track takes the dash, an updated track draws solid. The ellipse radii are a
  * distance and ride the world transform; the stroke and the marker hold pixel size.
  */
-export function TrackLayer({ tracks, horizonS }: Props) {
+export function TrackLayer({ tracks, horizonS, stepS }: Props) {
   // Only the scale is read; the stage transform carries the pan.
   const k = useStore((s) => s.camera.scale)
   // A zoom re-renders the layer; the picture only changes with the horizon.
-  const latest = useMemo(
-    () => (horizonS == null ? [] : latestEstimatesAt(tracks, horizonS)),
-    [tracks, horizonS],
-  )
+  const latest = useMemo(() => {
+    if (horizonS == null) return []
+    const picture = latestEstimatesAt(tracks, horizonS)
+    // A killed or dropped track has no entry after its last step: it leaves the board.
+    return stepS == null
+      ? picture
+      : picture.filter((track) => horizonS - track.state.tS <= stepS + 1e-9)
+  }, [tracks, horizonS, stepS])
   if (latest.length === 0) return null
 
   return (

@@ -9,7 +9,7 @@ import type { ThreatAssessment } from './sim'
 import type { TrackEstimate } from './trackTypes'
 
 /** Compatibility tags, bumped when engine semantics or existing draw keys change. */
-export const TRIAL_ENGINE_REVISION = 'rangeboard-trial-r4-v1'
+export const TRIAL_ENGINE_REVISION = 'rangeboard-trial-r4-v2'
 export const TRIAL_DRAW_POLICY_VERSION = 'counter-fnv1a-fmix32-v1'
 /** No build provenance is injected into local builds. Do not substitute a stale commit id. */
 export const TRIAL_BUILD_REVISION: string | null = null

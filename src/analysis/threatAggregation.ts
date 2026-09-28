@@ -8,6 +8,7 @@ import type { DetectionHit } from '../playback/detection'
 import { waveIndexFor } from '../playback/raid'
 import { THREAT_TACTICS } from '../playback/tactics'
 import { SHIP_DEAD_BELOW } from '../playback/pk'
+import { expectedDeadTimes } from '../playback/deadTimes'
 
 export interface ThreatOperationalRow {
   uasId: string
@@ -90,42 +91,8 @@ function minTime(values: Array<number | null>): number | null {
   return min
 }
 
-/**
- * Time each threat's expected residual first falls below the engine's
- * expected-dead cutoff, keyed by uasId: residual fraction strictly below
- * SHIP_DEAD_BELOW, prefix-aggregated over the ledger in effect-time order,
- * the same rule trackState.ts latches its GHOST phase on. killDelta is never
- * negative, so residual only falls and the latch is one-way. A threat that
- * never reaches the cutoff is absent from the map.
- *
- * Late kill mass counts here exactly like pre-arrival mass: whether the
- * airframe still flies is a survival question, and a late kill still
- * destroys it.
- */
-export function expectedDeadTimes(report: AttritionReport): Map<string, number> {
-  const shipCounts = new Map(report.threats.map((row) => [row.uasId, row.shipCount]))
-  const byThreat = new Map<string, AttritionReport['events']>()
-  for (const event of report.events) {
-    const events = byThreat.get(event.uasId) ?? []
-    events.push(event)
-    byThreat.set(event.uasId, events)
-  }
-  const out = new Map<string, number>()
-  for (const [uasId, events] of byThreat) {
-    // No attrition row means no resolved formation: treat it as one ship.
-    const shipCount = shipCounts.get(uasId) ?? 1
-    if (shipCount <= 0) continue
-    let killed = 0
-    for (const event of [...events].sort((a, b) => a.tEffectS - b.tEffectS)) {
-      killed += event.killDelta
-      if (Math.max(0, shipCount - killed) / shipCount < SHIP_DEAD_BELOW) {
-        out.set(uasId, event.tEffectS)
-        break
-      }
-    }
-  }
-  return out
-}
+// The dead rule lives beside the engine so the playback bundle need not load this module.
+export { expectedDeadTimes }
 
 /** Track quality up to t, not the whole run. Null before the first detection. */
 export function trackQualityAt(
@@ -213,7 +180,11 @@ export function threatPictureAt(
     const firstJamEffectS = minTime(
       events.filter((event) => event.channel === 'jam').map((event) => event.tEffectS),
     )
-    const trackQuality = trackQualityAt(assessment, tS)
+    // A dead threat holds no track: quality and the classification rung read
+    // no later than the kill, so neither changes after it.
+    const deadS = deadAtS.get(assessment.uasId) ?? null
+    const tLive = tS != null && deadS != null ? Math.min(tS, deadS) : tS
+    const trackQuality = trackQualityAt(assessment, tLive)
     const decisionS = att?.firstShotS ?? assessment.windowS?.[0] ?? assessment.arrivalS
     const trackedAtDecision =
       decisionS != null &&
@@ -223,7 +194,6 @@ export function threatPictureAt(
     // An expected-dead track is not a target. targetableNow is a gauge and
     // drops the instant the residual crosses the cutoff; targetAcquired is a
     // latch and asks the same question at the moment the window opened.
-    const deadS = deadAtS.get(assessment.uasId) ?? null
     const targetAcquired =
       tS != null &&
       assessment.status === 'engageable' &&
@@ -249,7 +219,7 @@ export function threatPictureAt(
       detected: timeReached(assessment.firstDetectS, tS),
       trackNow: currentHits.has(assessment.uasId),
       trackedAtDecision,
-      identified: timeReached(assessment.classificationAtS.hostileAtS, tS),
+      identified: timeReached(assessment.classificationAtS.hostileAtS, tLive),
       targetAcquired,
       targetableNow,
       engaged: visibleEvents.length > 0,

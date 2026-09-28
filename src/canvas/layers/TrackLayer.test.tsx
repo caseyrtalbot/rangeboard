@@ -113,6 +113,23 @@ describe('TrackLayer', () => {
     expect(markerStrokes(late)).toContain(TRACK_FALSE_INK)
   })
 
+  it('drops a track older than one sweep step at the horizon when the step is known', () => {
+    const stale = (horizonS: number) =>
+      renderToStaticMarkup(<TrackLayer tracks={fixture} horizonS={horizonS} stepS={0.5} />)
+    // The truth track has entries at 0 and 4.5 s only: at 1.5 s it is three
+    // steps old and leaves the board; the estimate track updated at 1.5 s stays.
+    expect(markerStrokes(stale(1.5))).toEqual(Array(2).fill(TRACK_ESTIMATE_INK))
+    expect(ellipses(stale(1.5))).toHaveLength(1)
+    // The false track has one entry at 2 s: it draws within one step of it, then leaves.
+    expect(markerStrokes(stale(2.4))).toContain(TRACK_FALSE_INK)
+    expect(markerStrokes(stale(2.6))).not.toContain(TRACK_FALSE_INK)
+    // The estimate and truth histories end at 4.5 s: past one step nothing draws.
+    expect(markerStrokes(stale(4.9))).toHaveLength(4)
+    expect(stale(5.1)).toBe('')
+    // Without the step the latest entry per track draws whatever its age.
+    expect(markerStrokes(render(5.1))).toHaveLength(6)
+  })
+
   it('renders nothing past the horizon', () => {
     // The last estimate before 2 s is step 4 at 2 s; the later, larger
     // covariances must not reach the board.
