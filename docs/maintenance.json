@@ -55,7 +55,7 @@
       ],
       "sha256": "b79ee2e1a96a2a01da70b62490bf2cfacc19ab4c19b0715a44fed16813f9f4a0",
       "reviewedAt": "2026-09-28",
-      "note": "The overview marks the cursor time on the whole run"
+      "note": "Timeline P4 final review: the run timeline text (the strip, its interaction, the ink tokens, the row window, the design review fixes) reads against the source at eed39bf; VERIFICATION lists the preserved run timeline scripts and names the production frame script as the frame measurement of record."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
@@ -64,7 +64,7 @@
       ],
       "sha256": "d847e5a3264bab19f7a76470113ab3751e28495410567070dc345e4b4ec7b607",
       "reviewedAt": "2026-09-28",
-      "note": "The overview cursor line subscribes to the clock alone and takes no glide"
+      "note": "Timeline P4 final review: the run timeline text (the strip, its interaction, the ink tokens, the row window, the design review fixes) reads against the source at eed39bf; VERIFICATION lists the preserved run timeline scripts and names the production frame script as the frame measurement of record."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "9366471f390f0619fd45cf4e46f8bcae8df30193e531fd7365254041dea83bfb",
-      "reviewedAt": "2026-09-27",
-      "note": "Timeline P2: the e2e paragraph names the Timeline toggle, #run-timeline, the dock height checks and the height key, and says test:e2e needs a running Vite server (E2E_URL, default 5377)."
+      "sha256": "6af560691d86953df3a0d7b1bc3b791d32b8709c37b19fe6d300461e013bf387",
+      "reviewedAt": "2026-09-28",
+      "note": "Timeline P4 final review: the run timeline text (the strip, its interaction, the ink tokens, the row window, the design review fixes) reads against the source at eed39bf; VERIFICATION lists the preserved run timeline scripts and names the production frame script as the frame measurement of record."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -138,7 +138,7 @@
       ],
       "sha256": "9b2370d02adc7eb5749e27712029ec2ed2f763f2c4264aacd954a8e3e2ff18d0",
       "reviewedAt": "2026-09-28",
-      "note": "Run timeline design review fixes: row meta shrinks first and drops when the name starts with it, the instance number never shrinks, the blue group square takes the sensor ink, the overview draws the cursor, effector chip and pk print with 44 px to the next mark, the resizer grip shows at rest, and the daylight inks are the lightest that meet the floors"
+      "note": "Timeline P4 final review: the run timeline text (the strip, its interaction, the ink tokens, the row window, the design review fixes) reads against the source at eed39bf; VERIFICATION lists the preserved run timeline scripts and names the production frame script as the frame measurement of record."
     }
   ],
   "historical": [

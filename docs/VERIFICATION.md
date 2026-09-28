@@ -382,6 +382,17 @@ These scripts are evidence of a dated run. Adapt and inspect them against curren
   spawn-in-ring and unvalidated-model findings limit it to integration checks; it is not
   detection evidence. Measured results remain in Git history as
   `docs/field-te/WAVE_C2_C3_E1_COMPLETION.md`.
+- The run timeline scripts drive the strip through `window.__store`:
+  [Phase 2](field-te/evidence/run-timeline-p2-2026-09-27/run-timeline-capture.mjs.txt)
+  (frame intervals, censoring, scrub, height),
+  [Phase 3](field-te/evidence/run-timeline-p3-2026-09-28/run-timeline-p3-capture.mjs.txt)
+  (every SPEC 1.5 interaction with `observedThroughS` read before and after each item) and
+  [Phase 4](field-te/evidence/run-timeline-p4-2026-09-28/run-timeline-p4-capture.mjs.txt)
+  (the 54-entity board fully expanded at 30x, the accessible names, every ink's contrast
+  ratio in both themes, the row window). The
+  [production frame script](field-te/evidence/run-timeline-p4-2026-09-28/run-timeline-p4-prod-frames.mjs.txt)
+  plays the same board through the transport on a built `dist/`, since a production build
+  has no store hook; it is the measurement of record for the strip's frame cost.
 - For native file input, image decoding, library import and recovery, use the
   [native import recipe](field-te/evidence/wave-c2-c3-e1-2026-09-05/native-import-recipe.md)
   and the [recovery harness](field-te/evidence/wave-c2-c3-e1-2026-09-05/wave-recovery.js.txt).
