@@ -126,7 +126,7 @@ describe('DetailPane', () => {
     const sensor = entityOf('sensor')
     const html = render(sensor.id)
     expect(html).toContain('data-detail="sensor"')
-    expect(html).toContain('aria-label="Back to the lens stack"')
+    expect(html).toContain('aria-label="Back to overview"')
     expect(html).toContain('‹ Back')
     expect(html).toContain(sensor.name)
     expect(html).toContain(
