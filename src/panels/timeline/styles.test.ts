@@ -1,3 +1,4 @@
+// @ts-expect-error node types are not in the app tsconfig; vitest runs this file in node.
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
