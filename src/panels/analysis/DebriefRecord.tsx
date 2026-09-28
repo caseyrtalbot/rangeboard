@@ -6,7 +6,7 @@ import type { ThreatAssessment } from '../../playback/sim'
 import { trialResultOf, trialSnapshotAt, type TrialResultView } from '../../analysis/trialResult'
 import { selectTrialSelection } from '../../state/trialSelectors'
 import { selectRunComplete } from '../../state/selectors'
-import { useTrialResult, trialStateText } from './controls'
+import { useTrialResult, trialStateText, EmptyRow, NoteInfo } from './controls'
 import { buildRequirementGateReport } from '../../analysis/requirements'
 import type { RunValidityAssessment } from '../../analysis/runValidity'
 import { assessRunValidity } from '../../analysis/runValidity'
@@ -24,7 +24,6 @@ import { ThreatPicture } from './ThreatPicture'
 import { currentSensitivity, currentSummary } from './mc'
 import { SEVERITY_PILL, VALIDITY_TEXT } from './runValidityText'
 import { State } from '../../ui/kit'
-import { EmptyRow, NoteInfo } from './notes'
 
 export { EmptyRow, NoteInfo }
 

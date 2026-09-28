@@ -4,7 +4,7 @@ import type { TrialResultView } from '../../analysis/trialResult'
 import { trialResultOf, trialSnapshotAt } from '../../analysis/trialResult'
 import { formatTime } from '../../geometry/geo'
 import { State } from '../../ui/kit'
-import { EmptyRow } from './notes'
+import { EmptyRow } from './controls'
 import { toggleAnalysisRun } from '../../playback/runSession'
 import { selectTrialHorizon, selectTrialSelection } from '../../state/trialSelectors'
 

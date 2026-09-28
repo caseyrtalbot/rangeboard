@@ -6,7 +6,7 @@ import {
 } from '../../analysis/horizon'
 import { useState } from 'react'
 import { State } from '../../ui/kit'
-import { EmptyRow, NoteInfo } from './notes'
+import { EmptyRow, NoteInfo } from './controls'
 import type { StateTone } from '../../ui/kit'
 import type {
   ComponentTelemetry,

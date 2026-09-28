@@ -6,6 +6,9 @@ import { useMemo } from 'react'
 import type { Scenario } from '../../model/types'
 import type { EngagementPicture } from '../../analysis/impact'
 import { engagementPicture } from '../../analysis/impact'
+import { useStore } from '../../state/store'
+import { State } from '../../ui/kit'
+import { IconInfo } from '../../ui/icons'
 
 /**
  * Segmented control that carries a `data-role` for browser checks. The shared
@@ -63,4 +66,33 @@ export function trialStateText(selection: TrialSelection, horizonS?: number): st
   return horizonS == null
     ? 'Simulated trial · ready'
     : `Simulated trial · T+${formatTime(horizonS)} observed`
+}
+
+// EmptyRow and NoteInfo live here so SystemStatus and the detail panes can use them
+// without importing DebriefRecord, which imports SystemStatus. DebriefRecord re-exports both.
+
+/** An empty-state row: the missing input or result named in a hollow warning state. */
+export function EmptyRow({ children }: { children: string }) {
+  return (
+    <p className="empty-row">
+      <State tone="warning" hollow>
+        {children}
+      </State>
+    </p>
+  )
+}
+
+/** A method note behind a 24 px (i); with field help on it also renders as a line. */
+export function NoteInfo({ label, note }: { label: string; note: string }) {
+  const showHelp = useStore((state) => state.ui.showFieldHelp)
+  return (
+    <>
+      <div className="frag-head">
+        <button type="button" className="field-info" aria-label={`About ${label}`} title={note}>
+          <IconInfo />
+        </button>
+      </div>
+      {showHelp && <p className="field-help">{note}</p>}
+    </>
+  )
 }
