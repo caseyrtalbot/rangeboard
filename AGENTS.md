@@ -61,6 +61,6 @@ One zustand store holds the Board; persistence is localStorage.
 
 ## Learned Workspace Facts
 
-- `docs/Plan.md` is the open chrome refactor queue (Option C and the inspector text-density pass, rows A to C, 2026-09-24); `docs/HANDOFF.md` selects its row and holds the position and landmines.
+- `docs/Plan.md` is the completed chrome refactor queue (Rows A to D, merged as `f4363a3`) and `docs/timeline/SPEC.md` is the completed run timeline plan (four phases, on `main` at `aabf928`); `docs/HANDOFF.md` holds the position, the follow-ups and the landmines, and selects nothing until a new plan or a user decision exists.
 - `src/analysis/series.ts` is deleted; use trialSeries and mc helpers (`heldTracksOnGrid`, `liveKpisAt`, `residualOnGrid`)—do not restore `series.ts` or retired ENGINEERING_REFERENCE symbols (`withBands`, `TRACK_LADDER_STYLE`).
 - Run `npm run check:silent` before each commit (CI checks added lines only); intentional matches need `// silent-ok: <reason>`; `check:silent:all` lists pre-existing tree findings that are out of lane unless owned; rules live under `scripts/silent/rules` (see docs/VERIFICATION.md).

@@ -12,18 +12,17 @@ commit, push or merge.
 
 [timeline/SPEC.md](timeline/SPEC.md) is the run timeline spec and plan (2026-09-26):
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
-Phases 1 (the model, no UI), 2 (the strip) and 3 (interaction) are on `main` and
-`origin/main`. Phase 4 (hardening and close) is complete on `timeline/p4`, not merged
-and not pushed. The SPEC plan is complete; this file selects nothing. [Plan.md](Plan.md)
-is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a3`); it
-selects nothing.
+All four phases are on `main` and `origin/main`; the plan is complete and this file
+selects nothing. [Plan.md](Plan.md) is the completed chrome refactor queue (Rows A to D
+merged and pushed as `f4363a3`); it selects nothing.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `timeline/p4`, branched from `main`
-  at `1c7cd00` (Phase 3). `timeline/p4` holds Phase 4 and waits for the user to
-  authorize a fast-forward merge to `main` and a push. No lane worktree or lane branch
-  exists; `git worktree list` shows the main checkout only.
+- Repository `~/Projects/rangeboard`, checked out on `main`. `main` and `origin/main`
+  hold run timeline Phase 4: `timeline/p4` was fast-forwarded to `main` at `aabf928`
+  and pushed with the user's authorization on 2026-09-28, then this handoff. The
+  `timeline/p4` branch is deleted. No lane worktree or lane branch exists;
+  `git worktree list` shows the main checkout only.
 - Run timeline Phase 4 (2026-09-28) on `timeline/p4`: one `opus-high` lane in the main
   checkout: the accessibility and contrast commit `c8550e1`, the dead exports `8ba3ec5`,
   the first evidence `cd57691`, its docs `9a09c49`; the orchestrator's index `ef18139`;
@@ -450,12 +449,10 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 ## Tasking
 
 **Nothing is selected.** The [timeline/SPEC.md](timeline/SPEC.md) plan is complete:
-Phases 1 to 3 are on `main`, Phase 4 is on `timeline/p4` with the gates green, the
-evidence indexed, the docs reviewed and the design review fixes closed. The mockup link
-in the SPEC stays as the design record.
+all four phases are on `main` and `origin/main` with the gates green, the evidence
+indexed, the docs reviewed and the design review fixes closed. The mockup link in the
+SPEC stays as the design record.
 
-- Pending user action: authorize a fast-forward merge of `timeline/p4` to `main` and a
-  push. After the merge, delete the `timeline/p4` branch and rewrite the Position here.
 - The follow-ups above are candidates, not rows. A next task needs a plan or a user
   decision first.
 
