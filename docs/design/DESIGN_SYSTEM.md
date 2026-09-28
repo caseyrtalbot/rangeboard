@@ -303,7 +303,12 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
 - **Run timeline** (`src/panels/timeline/`, every class under the `.runtl` prefix in
   `index.css`). The strip sits in `.runtl-dock` between the board and the playback bar in
   Execute and Analyze. From the top: a 28 px header (title, then the horizon in mono
-  text 3, `Shown through T+m:ss`), the rows, a 20 px axis and a 22 px overview. Only the
+  text 3, `Shown through T+m:ss`, or `Complete · T+m:ss` once the whole run shows, then
+  the legend), the rows, a 20 px axis and a 22 px overview. The legend (`.runtl-legend`)
+  is a 16 px row of 14 by 6 px swatches and words in text 3 at 11 px, in the strip's
+  ink tokens: hold, coast, classify, window, prep, flight, dwell, hard kill, mission
+  kill, miss; the header shrinks it first and an item that no longer fits drops whole.
+  Only the
   rows scroll. The axis has a `--rule-strong` top rule and the overview a `--rule` top
   rule. Only the lines near the rows' view draw, one view height (at least 120 px)
   either side; a drawn line keeps its place, so the scroll bar reads the whole list. The
@@ -334,14 +339,18 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   tick for a shot or a C2 init; a cross in `--ghost` for a drop. The unobserved region is
   sunken 70 percent with a dashed quiet-ink edge, and an undetected span is a quiet-ink
   line; the playhead is a 1 px text 1
-  line, and the overview draws the cursor as a 1 px text 1 line too. A duration prints on
+  line under a 5 px text 1 triangle cap (`.runtl-playhead::before`, 7 px wide) that
+  glides with it, and the overview draws the cursor as a 1 px text 1 line too. A duration prints on
   a span at least 44 px wide; an effector's rounds-left chip and pk print only with
-  44 px to the next mark in the row. The resizer above the dock is a 6 px `row-resize`
+  44 px to the next mark in the row, and a C2 assign label only with room for its text
+  (`assignLabelMinPx`: 12 px plus 6.6 px per character, never under 44 px). The resizer above the dock is a 6 px `row-resize`
   handle that overlaps the boundary and takes no layout space. At rest a 36 by 2 px
   `--rule-strong` grip sits at its centre; the whole handle shows `--rule-strong` on hover
   and focus. No
   strip text is under 11 px (`--type-dense-size`). Times, counts, sides, sub-lane names,
-  durations and printed values are mono; group and row names are Archivo.
+  durations, printed values and a collapsed group's summary label (`all sensors`, lower
+  case, at an 18 px indent) are mono; group and row names are Archivo. The header
+  buttons stay 24 px `.mini` (the mockup's 20 px would be a fourth button height).
   The header controls (`.runtl-ctl`, 4 px gap) are `button.mini` buttons in the mockup
   order: Follow, Zoom out, the window readout, Zoom in, Fit, Collapse all, Expand all.
   Follow carries `aria-pressed`; pressed, it fills in text 1 with `--ink` text. The

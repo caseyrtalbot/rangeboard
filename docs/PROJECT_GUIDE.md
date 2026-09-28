@@ -129,7 +129,10 @@ time on the whole run. Dragging the overview moves the window and turns Follow o
 in, Fit, Collapse all and Expand all. Play turns Follow on. No strip interaction
 advances observation: a seek stops playback, moves the cursor and turns Follow off, and
 never advances observation. The strip is one labelled group whose name carries the
-horizon, `Shown through T+m:ss`, with `Complete` once the whole run shows.
+horizon, `Shown through T+m:ss`, with `Complete` once the whole run shows; the header
+then reads `Complete · T+m:ss` and draws a legend of the span and mark kinds. Expand all
+stays in force for the session, so a sensor row opens when it gains its first track,
+until Collapse all or a single row toggle.
 
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers

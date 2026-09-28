@@ -37,34 +37,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "b83bf5641f82204dc92aa3bddd641d7cb11aa88bc18d13536534554f0878910a",
-      "reviewedAt": "2026-09-27",
-      "note": "Timeline P2 review fixes (8e58df2): axis and overview window share the rows' pan glide, Analyze horizon is the observed end, playhead clamped inside the plot, fold label counts shown members, resizer drag saves once; the text still matches the source."
+      "sha256": "575b79105de33a1a03e06c692e674e68179c21645c6c4869418525a61f960095",
+      "reviewedAt": "2026-09-28",
+      "note": "Row E: App imports isTypingTarget from ui/typingTarget.ts and compares a saved right tab as a string; the text still matches the source."
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "7fb49ce35d8e6680529075999bd28701596dc6f6b3ef05c9420b36e8463e4a1d",
+      "sha256": "37cb7c12426a0c8f25e89300cc90a8e880fc646e41c3cb7d284cb00848711a75",
       "reviewedAt": "2026-09-28",
-      "note": "Indexes the run timeline Phase 4 browser check evidence of 2026-09-28."
+      "note": "Indexes the Row E evidence: run timeline lane E1 and chrome cleanup lane E2, both 2026-09-28."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "b79ee2e1a96a2a01da70b62490bf2cfacc19ab4c19b0715a44fed16813f9f4a0",
+      "sha256": "1268af7fbf1f805f40647e54080f21bb7d68849db405d55af4cc801e04b46eef",
       "reviewedAt": "2026-09-28",
-      "note": "Timeline P4 final review: the run timeline text (the strip, its interaction, the ink tokens, the row window, the design review fixes) reads against the source at eed39bf; VERIFICATION lists the preserved run timeline scripts and names the production frame script as the frame measurement of record."
+      "note": "Row E: the header reads Complete · T+m:ss with a legend, Expand all stays in force so a sensor row opens when it gains its first track; the Row E chrome cleanup (EmptyRow on the detail panes, Back to overview, RightTab narrowed) changes no guide text."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "d847e5a3264bab19f7a76470113ab3751e28495410567070dc345e4b4ec7b607",
+      "sha256": "cefb3fe95b95f52f103e18a88246ecfced1e66cc1bde5f65dcc5288c9cc08d50",
       "reviewedAt": "2026-09-28",
-      "note": "Timeline P4 final review: the run timeline text (the strip, its interaction, the ink tokens, the row window, the design review fixes) reads against the source at eed39bf; VERIFICATION lists the preserved run timeline scripts and names the production frame script as the frame measurement of record."
+      "note": "Row E: openSensorsAll flag and toggleRunTimelineSensor(rowKey, shownOpen), RUN_TIMELINE_DEFAULT_H 264, EmptyRow and NoteInfo in controls.tsx, one isTypingTarget in ui/typingTarget.ts, RightTab narrowed."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "6af560691d86953df3a0d7b1bc3b791d32b8709c37b19fe6d300461e013bf387",
+      "sha256": "15b207f63bcbffd28185a0d0e3420492c38edd8bbcc006da102a589bb25b8938",
       "reviewedAt": "2026-09-28",
-      "note": "Timeline P4 final review: the run timeline text (the strip, its interaction, the ink tokens, the row window, the design review fixes) reads against the source at eed39bf; VERIFICATION lists the preserved run timeline scripts and names the production frame script as the frame measurement of record."
+      "note": "Row E: the e2e phase test now sets the inspect tab before each phase switch (the library tab is retired); the script list and the gate text are unchanged."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -98,9 +98,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "4cab980ae08e8ef8364303579d6a5211b5a80cfc97e1a0ffa30103db0a16f723",
-      "reviewedAt": "2026-09-27",
-      "note": "Timeline P2: the e2e spec and the entry-graph freeze changed; the workflow text on the freeze rewrite and the gates is unchanged and still correct."
+      "sha256": "f9367d38c3a38529428b0550eed00c9eef616d17582d960d9d61f5c487268e0e",
+      "reviewedAt": "2026-09-28",
+      "note": "Row E: the only scripts/ change is the e2e phase test's tab name; the workflow text is unchanged."
     },
     {
       "document": "docs/HANDOFF.md",
@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "de892533ef4deed79aa81c9cfa5364fec6dedce0577952b48f7384957cc17a47",
+      "sha256": "5ab2b4968b9b07cae8cddddc1e634a9adf79b90bbacd944074d523aa1bee724f",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 4 windowing: RunTimeline.tsx now binds the row view; the SPEC text stands (Phase 4 adds windowing only when the measurement fails)."
+      "note": "Row E: RunTimeline.tsx now prints Complete · T+m:ss in the header and draws the mockup legend; the accessible name and tooltip keep Shown through per section 1.4. The plan stays complete."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "9b2370d02adc7eb5749e27712029ec2ed2f763f2c4264aacd954a8e3e2ff18d0",
+      "sha256": "83f3e9e63972a4300fda3f8d78cbf073bcb0997a1a0fc71a5a09d6282bef14a3",
       "reviewedAt": "2026-09-28",
-      "note": "Timeline P4 final review: the run timeline text (the strip, its interaction, the ink tokens, the row window, the design review fixes) reads against the source at eed39bf; VERIFICATION lists the preserved run timeline scripts and names the production frame script as the frame measurement of record."
+      "note": "Row E: the header legend, the playhead cap, the mono summary label at 18 px, the C2 assign label gate, the 24 px header button decision; E2's CSS placement (.empty-row and .line-error beside the Field rules, the drawer fit folded into the right-panel rules, .chip.mc deleted, .outcome-metric strong at the lead size)."
     }
   ],
   "historical": [

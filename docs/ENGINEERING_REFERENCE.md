@@ -1141,6 +1141,11 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   Analyze too. DebriefRecord retains completion guards, current-result readers and exports
   behind Evidence products and exports `TrialEventLedger` and `TrialManifestRecord`, which
   the Outcome records rows open in place; the outcome tiles render once, on Outcome.
+  `EmptyRow` and `NoteInfo` live in `panels/analysis/controls.tsx` (DebriefRecord
+  re-exports them), so SystemStatus and the detail panes use them without importing
+  DebriefRecord. `isTypingTarget` is one export in `ui/typingTarget.ts`, used by App's
+  keyboard map and RunControl's run shortcut. `RightTab` is `'inspect' | 'analysis'`;
+  `savedView` drops a saved `'library'` and App opens such a view on analysis.
   Now samples within the execution horizon: event counts include reached assignments,
   while effect times, Pk and kill deltas wait for the effect. The run timeline draws the
   model `runTimelineOf` returns, already censored; no component compares a time with the
@@ -1202,10 +1207,15 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   about an anchor, absolute ticks through `tickStepS`, and `xOf`. `RunTimeline.tsx` in
   `src/panels/timeline/` reads both. It does not copy, sort or mutate a row, a span list or a mark list.
 - **Run timeline interaction** (`src/panels/timeline/`, the `ui.runTimeline` actions in
-  `store.ts`). `collapseAllRunTimeline` empties `openGroups`;
-  `expandAllRunTimeline(groups, sensorRows)` opens the groups and sensor rows it is
-  given; `expandAllKeys` in `viewportActions.ts` lists every group and every row with
-  sub-lanes.
+  `store.ts`). `collapseAllRunTimeline` empties `openGroups` and clears
+  `openSensorsAll`; `expandAllRunTimeline(groups, sensorRows)` opens the groups and
+  sensor rows it is given and sets `openSensorsAll`, which `stripLayout` reads so a
+  sensor row with a held track is open even when it appears later;
+  `toggleRunTimelineSensor(rowKey, shownOpen?)` clears the flag and, while it was on,
+  starts from the rows open on screen (`openSensorKeys`), so no other row closes.
+  `expandAllKeys` in `viewportActions.ts` lists every group and every row with
+  sub-lanes. `RUN_TIMELINE_DEFAULT_H` is 264 px, so five collapsed groups show with no
+  scroll on a fresh profile.
   `setRunTimelineViewport(v, follow?)` sets the window and, when `follow` is given, Follow.
   `seekRunTimeline(tS, shown)` turns Follow off, holds the viewport at `shown` and calls
   `scrubTo`, which stops playback and never advances observation; a store test guards
