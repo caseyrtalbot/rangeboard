@@ -16,9 +16,9 @@ import { foldThreats } from './fold'
 /** Gutter width, px (the mockup's `--gutter`). */
 export const GUTTER_W = 172
 /** Row, group header, summary and fold row height, px. */
-export const ROW_H = 18
+const ROW_H = 18
 /** Sensor sub-lane height, px. */
-export const SUB_H = 14
+const SUB_H = 14
 
 export type Line =
   | { t: 'group'; key: string; group: RunTimelineGroup; open: boolean; shown: number }

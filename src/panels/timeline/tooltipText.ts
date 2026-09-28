@@ -53,7 +53,7 @@ const SPAN_TITLE: Record<Exclude<RunTimelineSpan['kind'], 'classify'>, string> =
 const CLASS_TITLE = { unknown: 'Unknown', suspected: 'Suspected', hostile: 'Hostile' } as const
 
 /** A run time as `T+m:ss`. */
-export function runTimeText(tS: number): string {
+function runTimeText(tS: number): string {
   return `T+${formatTime(tS)}`
 }
 

@@ -14,9 +14,9 @@ import {
 } from '../../charts/timeViewport'
 
 /** The mockup's wheel zoom rate: the factor is exp(deltaY * WHEEL_ZOOM_RATE). */
-export const WHEEL_ZOOM_RATE = 0.004
+const WHEEL_ZOOM_RATE = 0.004
 /** Pixels per wheel line (`deltaMode` 1), as browsers scroll a line. */
-export const WHEEL_LINE_PX = 16
+const WHEEL_LINE_PX = 16
 
 /** Zoom in or Zoom out one step about the viewport center (SPEC 1.3). */
 export function zoomStep(shown: TimeViewport, dir: 'in' | 'out', durationS: number): TimeViewport {
