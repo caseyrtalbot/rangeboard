@@ -16,7 +16,9 @@ describe('run timeline styles', () => {
   it('caps the playhead with a 5 px text 1 triangle that moves with it', () => {
     const cap = rule('.runtl-playhead::before')
     expect(cap).toContain('border-top: 5px solid var(--text)')
-    expect(cap).toContain('border: 3.5px solid transparent')
+    expect(cap).toContain('border-left: 3px solid transparent')
+    expect(cap).toContain('border-right: 3px solid transparent')
+    expect(cap).toContain('width: 1px')
     expect(cap).not.toContain('transition')
     // The cap is part of the playhead box, which the reduced-motion rule stops.
     const reduced = css.slice(

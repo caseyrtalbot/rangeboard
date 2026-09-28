@@ -4275,15 +4275,17 @@ input[type='number'] {
   pointer-events: none;
 }
 
-/* The mockup's cap: a 5 px text 1 triangle on the line's top. It is part of
-   the playhead box, so it glides with it and takes its reduced-motion rule. */
+/* The mockup's cap: a 5 px text 1 triangle, 7 px wide, that narrows to the
+   1 px line (whole-pixel borders, which Chromium does not snap). It is part
+   of the playhead box, so it glides with it and takes its reduced-motion rule. */
 .runtl-playhead::before {
   position: absolute;
   top: 0;
   left: -3px;
-  border: 3.5px solid transparent;
+  width: 1px;
   border-top: 5px solid var(--text);
-  border-bottom: 0;
+  border-right: 3px solid transparent;
+  border-left: 3px solid transparent;
   content: '';
 }
 
