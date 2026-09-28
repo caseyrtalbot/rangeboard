@@ -169,6 +169,7 @@ export const Overview = memo(function Overview({
         }}
         onPointerUp={end}
         onPointerCancel={end}
+        onLostPointerCapture={end}
       >
         <Picture model={model} widthPx={widthPx} />
         <Window base={base} follow={follow} durationS={durationS} widthPx={widthPx} />

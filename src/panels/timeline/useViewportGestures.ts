@@ -2,7 +2,7 @@ import { useEffect, useRef, type RefObject } from 'react'
 import { zoomViewport, type TimeViewport } from '../../charts/timeViewport'
 import { useStore } from '../../state/store'
 import { shownViewport } from './useShownT0'
-import { anchorTime, panBy, wheelPx, wheelZoom } from './viewportActions'
+import { anchorTime, panBy, pinchFactor, wheelPx, wheelZoom } from './viewportActions'
 
 /** What a gesture reads at event time. */
 export interface GestureView {
@@ -67,7 +67,7 @@ function bind(
     const g = e as GestureEvent
     const { base, follow, durationS, widthPx } = viewRef.current
     if (!(g.scale > 0) || !(widthPx > 0) || !(durationS > 0)) return
-    const factor = lastScale / g.scale
+    const factor = pinchFactor(lastScale, g.scale)
     lastScale = g.scale
     const shown = shownViewport(base, follow, durationS)
     const v = zoomViewport(shown, factor, anchorAt(shown, g.clientX, widthPx), durationS)

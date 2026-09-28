@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "eb8558a4db83951d49ec5ce0498e1de5bc009f4398b89d8212978d19ef67e334",
+      "sha256": "5e913830c8d8549959e2d984a127a3f1fde6683e50e451a64d87fd46fa25d2bb",
       "reviewedAt": "2026-09-28",
-      "note": "Adds the run timeline interaction paragraph for Phase 3: row select, board selection highlight and scroll, mark seek, tooltip, wheel, pinch, overview drag, the header controls and Play turning Follow on."
+      "note": "Phase 3 review fixes: a board selection scrolls the entity's own row, Escape keeps the selection, the Follow anchor rule, and the seek sentence."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "1eca2be4f1f3a0c3872413e1ba5ab4bf8a3e2b512901ea215174f62fb4a33e82",
+      "sha256": "bf98a1defebec6df4a58ae7d6223be803494761e1b8f6f4f33ffc928652ef469",
       "reviewedAt": "2026-09-28",
-      "note": "Adds the run timeline interaction bullet: the Phase 3 store actions, the Follow and glide rule, the hit rule, the one-way seek and the tooltip hide on a model change."
+      "note": "Phase 3 review fixes: expandAllRunTimeline opens what it is given, the tooltip liveHit and capture-phase Escape, and scrollTargetLine."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "53e3f7844c4307277349a4676ec1ff01d6c246f49694e99493e07413bc763815",
+      "sha256": "f5980ce214d15694651c72bf3564acd248490acc2869baefacd865e3ea65b8e3",
       "reviewedAt": "2026-09-28",
-      "note": "Adds the run timeline controls, tooltip, selection, cursor and reduced-motion rules from the Phase 3 .runtl CSS."
+      "note": "Phase 3 review fixes: the .runtl-select label keeps no fill on hover and press and takes text 1, as the CSS now does."
     }
   ],
   "historical": [

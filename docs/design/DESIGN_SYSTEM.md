@@ -334,8 +334,9 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   events. Its lines: the item kind in text 1 at the title weight, then the row label; any
   model note, a mono text 1 data line (`.runtl-tip-data`: the times, a duration, quality,
   pk or rounds left, joined by a middle dot) and a mono text 3 horizon line at 11 px
-  (`.runtl-tip-horizon`). A row label is a `.runtl-select` button with no chrome (a false
-  track label is plain text). A line that draws a board-selected entity takes `.selected`:
+  (`.runtl-tip-horizon`). A row label is a `.runtl-select` button with no chrome: no
+  fill at rest, on hover or on press, and text 1 on hover and press, as a group header
+  takes on hover (a false track label is plain text). A line that draws a board-selected entity takes `.selected`:
   text 1 and a 2 px inset text 1 bar at its left edge; its plot ground takes
   `.runtl-ground-selected`, text 1 at 6 percent. A mark under the pointer sets the pointer
   cursor; the overview takes `grab`, `grabbing` while dragged, and `touch-action: none`.

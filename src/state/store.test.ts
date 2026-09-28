@@ -1950,15 +1950,44 @@ describe('run timeline state', () => {
 
   it('turns Follow on when playback starts, and leaves it on pause', () => {
     const st = useStore.getState()
+    const observed = () => useStore.getState().playback.observedThroughS
     st.setRunTimelineViewport({ t0S: 0, winS: 30 }, false)
     prepareReadyTrial()
     st.startRun()
     expect(useStore.getState().ui.runTimeline.follow).toBe(true)
-    useStore.getState().setRunTimelineViewport({ t0S: 0, winS: 30 }, false)
+    useStore.getState().advanceRun(7.5)
+    const seen = observed()
+    // A pause with Follow on leaves Follow on.
     useStore.getState().pauseRun()
+    expect(useStore.getState().ui.runTimeline.follow).toBe(true)
+    expect(observed()).toBe(seen)
+    useStore.getState().setRunTimelineViewport({ t0S: 0, winS: 30 }, false)
     expect(useStore.getState().ui.runTimeline.follow).toBe(false)
     useStore.getState().playbackCommand({ type: 'toggle' })
     expect(useStore.getState().playback.playing).toBe(true)
     expect(useStore.getState().ui.runTimeline.follow).toBe(true)
+    expect(observed()).toBe(seen)
+  })
+
+  it('leaves playback untouched through every strip action and a board select', () => {
+    prepareReadyTrial()
+    useStore.getState().startRun()
+    useStore.getState().advanceRun(12.5)
+    const before = useStore.getState().playback
+    const st = useStore.getState()
+    const v = { t0S: 10, winS: 30 }
+    st.setRunTimelineViewport(v)
+    st.setRunTimelineFollow(true)
+    st.setRunTimelineViewport(v, false)
+    st.toggleRunTimelineGroup('threat')
+    st.toggleRunTimelineSensor('sensor:s1')
+    st.toggleRunTimelineFold('fold:f1')
+    st.hideRunTimelineRow('threat:t1')
+    st.showAllRunTimelineRows()
+    st.collapseAllRunTimeline()
+    st.expandAllRunTimeline(['sensor', 'threat'], ['sensor:s1'])
+    st.select({ entityIds: ['x'] })
+    expect(useStore.getState().playback).toBe(before)
+    expect(useStore.getState().playback.observedThroughS).toBe(12.5)
   })
 })

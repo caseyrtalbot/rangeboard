@@ -3968,6 +3968,13 @@ input[type='number'] {
   cursor: pointer;
 }
 
+/* Beat the global button hover and active fills: the label keeps no chrome. */
+.runtl-select:hover,
+.runtl-select:active {
+  background: transparent;
+  color: var(--text);
+}
+
 /* A line that draws a board-selected entity. */
 .runtl-line.selected {
   color: var(--text);

@@ -118,14 +118,17 @@ state and the height are saved. The [spec](timeline/SPEC.md) holds the plan.
 
 A click on a row label selects that entity on the board; a track row selects its threat
 and a false track selects nothing. A board selection highlights every line that draws
-the entity and scrolls the first of them into view. A click on a mark seeks the playhead
-to the mark time and turns Follow off. Hovering an item shows a tooltip with its exact
-times and values and the horizon; Escape closes it. A Ctrl or Meta wheel, or a pinch,
-zooms about the time under the cursor. A horizontal wheel pans and turns Follow off, and
-a vertical wheel scrolls the rows. Dragging the overview moves the window and turns
-Follow off. The header holds Follow, Zoom out, the window readout, Zoom in, Fit, Collapse
-all and Expand all. Play turns Follow on. No strip interaction advances observation: a
-seek moves the cursor only, as a scrub does.
+the entity and scrolls the entity's own row into view, or the summary or fold line that
+holds it. A click on a mark seeks the playhead to the mark time and turns Follow off.
+Hovering an item shows a tooltip with its exact times and values and the horizon; Escape
+closes it and keeps the board selection. A Ctrl or Meta wheel, or a pinch, zooms about
+the time under the cursor. With Follow on, Follow sets the window start from the clock
+again, so the cursor anchor holds only with Follow off. A horizontal wheel pans and
+turns Follow off, and a vertical wheel scrolls the rows. Dragging the overview moves the
+window and turns Follow off. The header holds Follow, Zoom out, the window readout, Zoom
+in, Fit, Collapse all and Expand all. Play turns Follow on. No strip interaction
+advances observation: a seek stops playback, moves the cursor and turns Follow off, and
+never advances observation.
 
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers

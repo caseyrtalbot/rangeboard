@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import type { RunTimelineMark, RunTimelineRow, RunTimelineSpan } from '../../analysis/runTimeline'
-import { horizonText, tooltipText } from './tooltipText'
+import type {
+  RunTimelineMark,
+  RunTimelineModel,
+  RunTimelineRow,
+  RunTimelineSpan,
+} from '../../analysis/runTimeline'
+import { horizonText, liveHit, tooltipText } from './tooltipText'
 
 const row: RunTimelineRow = {
   key: 'effector:gun',
@@ -95,5 +100,19 @@ describe('horizonText', () => {
   it('reads the horizon, or that nothing is observed', () => {
     expect(mark({ kind: 'miss', tS: 1 }).horizon).toBe('Shown through T+3:20')
     expect(horizonText(-Infinity)).toBe('No outcomes observed yet')
+  })
+})
+
+describe('liveHit', () => {
+  const model: RunTimelineModel = { durationS: 60, horizonS: 30, groups: [] }
+  const hit = { t: 'mark', row, mark: { kind: 'detect', tS: 12 } } as const
+
+  it('keeps the hit while its model is current', () => {
+    expect(liveHit({ hit, model }, model)).toBe(hit)
+  })
+
+  it('shows nothing for a new model object, or when nothing is held', () => {
+    expect(liveHit({ hit, model }, { ...model, horizonS: 32 })).toBeNull()
+    expect(liveHit(null, model)).toBeNull()
   })
 })

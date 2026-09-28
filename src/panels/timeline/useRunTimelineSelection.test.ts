@@ -3,7 +3,12 @@ import type { RunTimelineGroup, RunTimelineRow } from '../../analysis/runTimelin
 import { useStore } from '../../state/store'
 import { installTrial } from '../analysis/trialTestState'
 import type { Placed } from './layout'
-import { scrollTopFor, selectedLineKeys, selectRunTimelineRow } from './useRunTimelineSelection'
+import {
+  scrollTargetLine,
+  scrollTopFor,
+  selectedLineKeys,
+  selectRunTimelineRow,
+} from './useRunTimelineSelection'
 
 function row(kind: RunTimelineRow['kind'], id: string, entityId: string | null): RunTimelineRow {
   return { key: `${kind}:${id}`, kind, label: id, meta: '', entityId, spans: [], marks: [] }
@@ -60,6 +65,44 @@ describe('scrollTopFor', () => {
 
   it('aligns the top of a line taller than the view', () => {
     expect(scrollTopFor(400, 300, 100, 200)).toBe(400)
+  })
+})
+
+describe('scrollTargetLine', () => {
+  const trackRow = row('track', 'T1-row', 'orlan')
+  const tracks: RunTimelineGroup = { key: 'track', side: 'blue', label: 'Tracks', rows: [trackRow] }
+  // Every group open: the sensor sub-lane and the track row sit above the threat row.
+  const open: Placed[] = [
+    { t: 'group', key: 'group:sensor', group: sensors, open: true, shown: 1, y: 0, h: 18 },
+    { t: 'row', key: radar.key, row: radar, open: true, inFold: false, y: 18, h: 18 },
+    { t: 'sub', key: trackA.key, row: trackA, y: 36, h: 14 },
+    { t: 'sub', key: falseTrack.key, row: falseTrack, y: 50, h: 14 },
+    { t: 'group', key: 'group:track', group: tracks, open: true, shown: 1, y: 64, h: 18 },
+    { t: 'row', key: trackRow.key, row: trackRow, open: false, inFold: false, y: 82, h: 18 },
+    { t: 'group', key: 'group:threat', group: threats, open: true, shown: 2, y: 100, h: 18 },
+    { t: 'row', key: orlan.key, row: orlan, open: false, inFold: false, y: 118, h: 18 },
+    { t: 'row', key: shahed.key, row: shahed, open: false, inFold: false, y: 136, h: 18 },
+  ]
+  const target = (ls: Placed[], ids: string[]) =>
+    scrollTargetLine(ls, selectedLineKeys(ls, ids))?.key ?? null
+
+  it('targets the threat row over its sub-lane and its track row', () => {
+    expect([...selectedLineKeys(open, ['orlan'])]).toEqual([trackA.key, trackRow.key, orlan.key])
+    expect(target(open, ['orlan'])).toBe(orlan.key)
+  })
+
+  it('targets the summary line of a collapsed Threats group', () => {
+    expect(target(lines, ['orlan'])).toBe('summary:threat')
+  })
+
+  it('targets a sensor row', () => {
+    expect(target(open, ['radar'])).toBe(radar.key)
+  })
+
+  it('gives null for a false track, which has no entity', () => {
+    // Its row carries a null entityId, so it selects no id and draws no selected line.
+    const ids = [falseTrack.entityId].filter((id): id is string => id != null)
+    expect(target(open, ids)).toBeNull()
   })
 })
 

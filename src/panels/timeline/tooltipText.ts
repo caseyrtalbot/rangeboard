@@ -4,7 +4,7 @@
  * the item carries and never fills a missing value.
  */
 
-import type { RunTimelineMark, RunTimelineSpan } from '../../analysis/runTimeline'
+import type { RunTimelineMark, RunTimelineModel, RunTimelineSpan } from '../../analysis/runTimeline'
 import { formatTime } from '../../geometry/geo'
 import type { RunTimelineHit } from './hit'
 import { durationText } from './layout'
@@ -91,4 +91,19 @@ export function tooltipText(hit: RunTimelineHit, horizonS: number): TooltipText 
     if (typeof span.level === 'number') data.push(`quality ${span.level.toFixed(2)}`)
   }
   return { title, subject, notes, data, horizon: horizonText(horizonS) }
+}
+
+/** A hovered item and the model it came from. */
+export interface HeldHit {
+  hit: RunTimelineHit
+  model: RunTimelineModel
+}
+
+/**
+ * The hit the tooltip shows: the held hit while its model is current, else
+ * null. A new model object holds new row, mark and span objects, so a hit from
+ * the old one is stale and shows nothing.
+ */
+export function liveHit(held: HeldHit | null, model: RunTimelineModel): RunTimelineHit | null {
+  return held && held.model === model ? held.hit : null
 }

@@ -11,6 +11,7 @@ import {
   overviewPlace,
   overviewTime,
   panBy,
+  pinchFactor,
   wheelPx,
   wheelZoom,
   windowReadout,
@@ -47,6 +48,12 @@ describe('zoom', () => {
     expect(canZoomIn({ t0S: 0, winS: 20 }, DUR)).toBe(true)
     expect(canZoomOut({ t0S: 0, winS: DUR }, DUR)).toBe(false)
     expect(canZoomOut({ t0S: 0, winS: 120 }, DUR)).toBe(true)
+  })
+
+  it('narrows the window on a pinch spread and widens it on a pinch close', () => {
+    expect(pinchFactor(1, 1.25)).toBeCloseTo(0.8)
+    expect(pinchFactor(1.25, 1)).toBeCloseTo(1.25)
+    expect(pinchFactor(1.1, 1.1)).toBe(1)
   })
 
   it('holds the anchor inside the plot for a pointer past either edge', () => {

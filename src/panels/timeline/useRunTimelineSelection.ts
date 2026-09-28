@@ -77,9 +77,35 @@ export function scrollTopFor(
 }
 
 /**
- * When the board selection changes, scrolls the first selected line into the
- * rows' scroll container, nearest edge. A layout change alone does not scroll:
- * the effect runs on every input change but acts only on a new `entityIds`.
+ * The selected line to scroll to. A threat's id is also the `entityId` of its
+ * sensor sub-lane and its track row, which sit above the Threats group, so the
+ * first selected line is often not the entity's own row. In order: a selected
+ * row line that is not a track row; else a selected summary or fold line that
+ * holds a row that is not a track row; else the first selected line; else null.
+ * A summary or fold line is selected only through a member with a selected id,
+ * and a group holds one kind, so its non-track member is the selected entity.
+ */
+export function scrollTargetLine(
+  lines: readonly Placed[],
+  selected: ReadonlySet<string>,
+): Placed | null {
+  if (selected.size === 0) return null
+  const own = lines.find((l) => l.t === 'row' && l.row.kind !== 'track' && selected.has(l.key))
+  if (own) return own
+  const holder = lines.find(
+    (l) =>
+      (l.t === 'summary' || l.t === 'fold') &&
+      selected.has(l.key) &&
+      l.rows.some((row) => row.kind !== 'track'),
+  )
+  return holder ?? lines.find((l) => selected.has(l.key)) ?? null
+}
+
+/**
+ * When the board selection changes, scrolls the entity's own line
+ * (`scrollTargetLine`) into the rows' scroll container, nearest edge. A layout
+ * change alone does not scroll: the effect runs on every input change but acts
+ * only on a new `entityIds`.
  */
 export function useScrollToSelection(
   scrollRef: RefObject<HTMLElement | null>,
@@ -93,7 +119,7 @@ export function useScrollToSelection(
     seen.current = entityIds
     const el = scrollRef.current
     if (!el || selected.size === 0) return
-    const line = lines.find((l) => selected.has(l.key))
+    const line = scrollTargetLine(lines, selected)
     if (!line) return
     const top = scrollTopFor(line.y, line.h, el.scrollTop, el.clientHeight)
     if (top != null) el.scrollTop = top

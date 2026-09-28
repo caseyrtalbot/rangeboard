@@ -2,7 +2,7 @@ import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } fro
 import type { Ref, RefObject } from 'react'
 import type { RunTimelineModel } from '../../analysis/runTimeline'
 import type { RunTimelineHit } from './hit'
-import { tooltipText } from './tooltipText'
+import { liveHit, tooltipText, type HeldHit } from './tooltipText'
 
 /** RunTimeline drives the tooltip through this handle, so a pointer move re-renders only it. */
 export interface TooltipHandle {
@@ -35,12 +35,32 @@ function placeBox(
   box.style.top = `${top}px`
 }
 
+/** The tooltip lines for one item (SPEC 1.4, 1.5): kind, subject, notes, data and horizon. */
+export function TipBody({ hit, horizonS }: { hit: RunTimelineHit; horizonS: number }) {
+  const text = tooltipText(hit, horizonS)
+  return (
+    <>
+      <div>
+        <b>{text.title}</b> {text.subject}
+      </div>
+      {text.notes.map((note, i) => (
+        <div key={`n${i}`}>{note}</div>
+      ))}
+      <div className="runtl-tip-data">{text.data.join(' · ')}</div>
+      <div className="runtl-tip-horizon">{text.horizon}</div>
+    </>
+  )
+}
+
 /**
  * The hover tooltip (SPEC 1.5): exact times, quality and pk, and the horizon
  * (SPEC 1.4). Positioned inside `rootRef` (the `.runtl` root), so the rows'
- * scroll container never clips it. Escape closes it. The hover state lives
- * here: a move over the same item only moves the box, with no render. A new
- * model hides it: the hit holds the old model's row, mark and span objects.
+ * scroll container never clips it. The hover state lives here: a move over the
+ * same item only moves the box, with no render. The state holds the hit with
+ * its model, and a new model shows nothing (`liveHit`): the hit holds the old
+ * model's row, mark and span objects. Escape closes the tip before App's board
+ * Escape sees the key, and the closed item stays closed until the pointer
+ * leaves it or moves to another item.
  */
 export function Tooltip({
   ref,
@@ -52,41 +72,39 @@ export function Tooltip({
   /** The model the hits come from; the tooltip reads its horizon. */
   model: RunTimelineModel
 }) {
-  const [hit, setHit] = useState<RunTimelineHit | null>(null)
-  const hitRef = useRef<RunTimelineHit | null>(null)
+  const [held, setHeld] = useState<HeldHit | null>(null)
+  const heldRef = useRef<HeldHit | null>(null)
+  // The item Escape closed; a move over it does not reopen the tip.
+  const dismissedRef = useRef<RunTimelineHit | null>(null)
   const pointRef = useRef({ x: 0, y: 0 })
   const boxRef = useRef<HTMLDivElement | null>(null)
-  const modelRef = useRef(model)
-
-  // A re-censored model makes the hit stale, so hide before the paint. The
-  // mount keeps its model, so the first run hides nothing.
-  useLayoutEffect(() => {
-    if (modelRef.current === model) return
-    modelRef.current = model
-    hitRef.current = null
-    setHit(null)
-  }, [model])
+  const hit = liveHit(held, model)
 
   useImperativeHandle(
     ref,
     () => ({
       show(next, clientX, clientY) {
         pointRef.current = { x: clientX, y: clientY }
-        if (sameItem(hitRef.current, next)) {
+        if (sameItem(dismissedRef.current, next)) return
+        dismissedRef.current = null
+        const cur = heldRef.current
+        if (cur && cur.model === model && sameItem(cur.hit, next)) {
           placeBox(boxRef.current, rootRef.current, pointRef.current)
           return
         }
-        hitRef.current = next
-        setHit(next)
+        const nextHeld = { hit: next, model }
+        heldRef.current = nextHeld
+        setHeld(nextHeld)
       },
       hide() {
-        if (!hitRef.current) return
-        hitRef.current = null
-        setHit(null)
+        dismissedRef.current = null
+        if (!heldRef.current) return
+        heldRef.current = null
+        setHeld(null)
       },
     }),
-    // Refs only, so the handle stays stable.
-    [rootRef],
+    // A new model makes a new handle; RunTimeline reads it through its ref.
+    [rootRef, model],
   )
 
   // A new item changes the box size, so place it after the render.
@@ -94,29 +112,24 @@ export function Tooltip({
     if (hit) placeBox(boxRef.current, rootRef.current, pointRef.current)
   })
 
+  // Capture phase, so the tip closes before App's window Escape clears the selection.
   useEffect(() => {
     if (!hit) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      hitRef.current = null
-      setHit(null)
+      if (e.key !== 'Escape' || !heldRef.current) return
+      e.stopPropagation()
+      dismissedRef.current = heldRef.current.hit
+      heldRef.current = null
+      setHeld(null)
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, { capture: true })
+    return () => window.removeEventListener('keydown', onKey, { capture: true })
   }, [hit])
 
   if (!hit) return null
-  const text = tooltipText(hit, model.horizonS)
   return (
     <div ref={boxRef} className="runtl-tip" role="tooltip">
-      <div>
-        <b>{text.title}</b> {text.subject}
-      </div>
-      {text.notes.map((note, i) => (
-        <div key={`n${i}`}>{note}</div>
-      ))}
-      <div className="runtl-tip-data">{text.data.join(' · ')}</div>
-      <div className="runtl-tip-horizon">{text.horizon}</div>
+      <TipBody hit={hit} horizonS={model.horizonS} />
     </div>
   )
 }

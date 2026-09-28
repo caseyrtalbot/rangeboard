@@ -1203,7 +1203,9 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   `src/panels/timeline/` reads both. It does not copy, sort or mutate a row, a span list or a mark list.
 - **Run timeline interaction** (`src/panels/timeline/`, the `ui.runTimeline` actions in
   `store.ts`). `collapseAllRunTimeline` empties `openGroups`;
-  `expandAllRunTimeline(groups, sensorRows)` opens every group and every sensor row.
+  `expandAllRunTimeline(groups, sensorRows)` opens the groups and sensor rows it is
+  given; `expandAllKeys` in `viewportActions.ts` lists every group and every row with
+  sub-lanes.
   `setRunTimelineViewport(v, follow?)` sets the window and, when `follow` is given, Follow.
   `seekRunTimeline(tS, shown)` turns Follow off, holds the viewport at `shown` and calls
   `scrubTo`, which stops playback and never advances observation; a store test guards
@@ -1220,8 +1222,13 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   stays right during a glide. A mark click seeks; a span click does nothing. The wheel
   listener is native with `passive: false` on `.runtl-scroll`. The tooltip keeps its
   state in `Tooltip.tsx` behind `TooltipHandle`, so a pointer move re-renders only the
-  tooltip, and it hides when the model changes because its hit holds the old model's
-  objects. Pure helpers live in `viewportActions.ts` and `tooltipText.ts`.
+  tooltip. It holds the hit with its model and shows nothing once the model changes
+  (`liveHit`), because the hit holds the old model's objects. Its Escape listener runs
+  in the capture phase and stops the key, so App's Escape keeps the board selection;
+  the item Escape closed stays closed until the pointer leaves it or reaches another
+  item. A board selection scrolls to `scrollTargetLine`: the entity's own row, else the
+  summary or fold line that holds it, since a threat's id also marks its sub-lane and
+  its track row. Pure helpers live in `viewportActions.ts` and `tooltipText.ts`.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `src/model/libraryLifecycle.ts` is the one seed

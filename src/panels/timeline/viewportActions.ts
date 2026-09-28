@@ -68,6 +68,14 @@ export function wheelZoom(
   return zoomViewport(shown, Math.exp(deltaYPx * WHEEL_ZOOM_RATE), anchorS, durationS)
 }
 
+/**
+ * The zoom factor for one WebKit pinch change, from the last scale to the new
+ * one: a spread (`scale` above `lastScale`) narrows the window, below 1.
+ */
+export function pinchFactor(lastScale: number, scale: number): number {
+  return lastScale / scale
+}
+
 /** A horizontal pan by `deltaPx` of plot width; positive moves later in the run. */
 export function panBy(
   shown: TimeViewport,
