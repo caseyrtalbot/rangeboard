@@ -307,9 +307,17 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   rows scroll. The axis has a `--rule-strong` top rule and the overview a `--rule` top
   rule. The gutter is 172 px. Group headers, rows, summary rows and fold rows are 18 px;
   a sensor sub-lane is 14 px. A group header sits on sunken 55 percent over the panel. A
-  collapsed group draws its summary row at 0.75 opacity. Inks come from `KIND_INK`:
-  sensor holds and detect dots in the sensor ink, C2 init and firm marks in the C2 ink,
-  assignment diamonds hollow in the effector ink. A hold chunk's opacity maps track
+  collapsed group draws its summary row at 0.75 opacity. Every ink is a `.runtl` token
+  (`--runtl-*`). In the dark theme the kind inks are `KIND_INK`, which `RunTimeline.tsx`
+  passes to the root as `--runtl-kind-*`, and the EW and DE inks are `--ew` and `--de`;
+  the ghost and quiet inks are lighter than `--ghost` and `--rule-strong`. The daylight
+  theme darkens the kind, EW, DE, ghost, CPA and quiet inks in their own hue. Each ink
+  clears 3:1 on the panel, on the selected ground and at 0.75 opacity in both themes, and
+  a duration on a dwell or burst fill clears 4.5:1
+  ([evidence](../field-te/evidence/run-timeline-p4-2026-09-28/README.md)). Sensor holds
+  and detect dots take the sensor ink, C2 init and firm marks the C2 ink, assignment
+  diamonds hollow in the effector ink. Below, `--ew`, `--de`, `--ghost` and the CPA's
+  text 3 name the strip's EW, DE, ghost and CPA inks. A hold chunk's opacity maps track
   quality 0 to 1 onto 0.3 to 1; a coast is a dashed sensor outline. The classification
   ramp is one hue, `--danger` at 25, 55 and 100 percent over the panel. A window is a
   2.5 px `--accent` bar. A preparation span is a `--warn` hatch; a flight is `--accent`,
@@ -317,7 +325,8 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   kill or an arrival and in `--ew` for a mission kill; a hollow diamond for a miss
   (`--ghost`), a jam decision (`--ew`) and a CPA (text 3); a triangle for a release; a
   tick for a shot or a C2 init; a cross in `--ghost` for a drop. The unobserved region is
-  sunken 70 percent with a dashed `--rule-strong` edge; the playhead is a 1 px text 1
+  sunken 70 percent with a dashed quiet-ink edge, and an undetected span is a quiet-ink
+  line; the playhead is a 1 px text 1
   line. The resizer above the dock is a 6 px `row-resize` handle that overlaps the
   boundary and takes no layout space; it shows `--rule-strong` on hover and focus. No
   strip text is under 11 px (`--type-dense-size`). Times, counts, sides, sub-lane names,
@@ -326,7 +335,8 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   order: Follow, Zoom out, the window readout, Zoom in, Fit, Collapse all, Expand all.
   Follow carries `aria-pressed`; pressed, it fills in text 1 with `--ink` text. The
   readout (`.runtl-zoom`) is mono text 3 at 11 px, at least 44 px wide and centered, and
-  reads whole seconds or `fit`. Zoom in and Zoom out disable at the window limits. The
+  reads whole seconds or `fit`; a visually hidden prefix (`.runtl-zoom-name`) names it
+  `Window 120 s` for a screen reader. Zoom in and Zoom out disable at the window limits. The
   tooltip (`.runtl-tip`) sits inside the `.runtl` root, 12 px right of and 14 px below
   the pointer, clamped inside the strip, so the rows' scroll never clips it. It is at
   most 280 px wide with 5 by 8 px padding, `--surface-raised` on a 1 px `--rule-strong`
@@ -334,9 +344,9 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   events. Its lines: the item kind in text 1 at the title weight, then the row label; any
   model note, a mono text 1 data line (`.runtl-tip-data`: the times, a duration, quality,
   pk or rounds left, joined by a middle dot) and a mono text 3 horizon line at 11 px
-  (`.runtl-tip-horizon`). A row label is a `.runtl-select` button with no chrome: no
+  (`.runtl-tip-horizon`). A row label and a sensor sub-lane label are `.runtl-select` buttons with no chrome: no
   fill at rest, on hover or on press, and text 1 on hover and press, as a group header
-  takes on hover (a false track label is plain text). A line that draws a board-selected entity takes `.selected`:
+  takes on hover (a false track label is plain text, in a row or a sub-lane). A line that draws a board-selected entity takes `.selected`:
   text 1 and a 2 px inset text 1 bar at its left edge; its plot ground takes
   `.runtl-ground-selected`, text 1 at 6 percent. A mark under the pointer sets the pointer
   cursor; the overview takes `grab`, `grabbing` while dragged, and `touch-action: none`.

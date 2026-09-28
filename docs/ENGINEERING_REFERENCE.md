@@ -1228,7 +1228,10 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   the item Escape closed stays closed until the pointer leaves it or reaches another
   item. A board selection scrolls to `scrollTargetLine`: the entity's own row, else the
   summary or fold line that holds it, since a threat's id also marks its sub-lane and
-  its track row. Pure helpers live in `viewportActions.ts` and `tooltipText.ts`.
+  its track row. Pure helpers live in `viewportActions.ts` and `tooltipText.ts`. The
+  strip draws with `.runtl` ink tokens (`--runtl-*`): `RunTimeline.tsx` passes
+  `KIND_INK` to the root as `--runtl-kind-*`, and the daylight blocks in `index.css`
+  override the inks that fall under 3:1 on paper. `KIND_INK` stays the board's ink.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `src/model/libraryLifecycle.ts` is the one seed

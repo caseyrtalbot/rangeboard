@@ -116,8 +116,8 @@ from [runTimeline.ts](../src/analysis/runTimeline.ts) and loads in its own lazy 
 resizer above the strip sets its height from 120 px to 60 percent of the window. The open
 state and the height are saved. The [spec](timeline/SPEC.md) holds the plan.
 
-A click on a row label selects that entity on the board; a track row selects its threat
-and a false track selects nothing. A board selection highlights every line that draws
+A click on a row label selects that entity on the board; a track row and a sensor's
+sub-lane select their threat, and a false track selects nothing. A board selection highlights every line that draws
 the entity and scrolls the entity's own row into view, or the summary or fold line that
 holds it. A click on a mark seeks the playhead to the mark time and turns Follow off.
 Hovering an item shows a tooltip with its exact times and values and the horizon; Escape
@@ -128,7 +128,8 @@ turns Follow off, and a vertical wheel scrolls the rows. Dragging the overview m
 window and turns Follow off. The header holds Follow, Zoom out, the window readout, Zoom
 in, Fit, Collapse all and Expand all. Play turns Follow on. No strip interaction
 advances observation: a seek stops playback, moves the cursor and turns Follow off, and
-never advances observation.
+never advances observation. The strip is one labelled group whose name carries the
+horizon, `Shown through T+m:ss`, with `Complete` once the whole run shows.
 
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers

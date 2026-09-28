@@ -107,7 +107,7 @@ Analyze scrub. `completeRun` moves it to 1,322 by design.
   `entityId` is the threat's id already. A false track sub-lane has no threat and stays
   text, as the false track row does. A click on `THR-G1-Q-01 1` selected that `uas`
   entity; `observedThroughS` stayed 299.262.
-- Decision (b), the window readout: a visually hidden `Window ` prefix inside
+- Decision (b), the window readout: a visually hidden prefix, the word Window, inside
   `.runtl-zoom` (`.runtl-zoom-name`). Reason: an `aria-label` on a span with no role is
   not reliably read, and a live `output` would announce every zoom. The ARIA snapshot
   reads `text: Window 120 s` between Zoom out and Zoom in; the visible text stays

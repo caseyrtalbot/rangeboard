@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "5e913830c8d8549959e2d984a127a3f1fde6683e50e451a64d87fd46fa25d2bb",
+      "sha256": "3bc7d6c61014f9fae8d96d19823e386fc9056dbba702d97dace77d026577f7e2",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 3 review fixes: a board selection scrolls the entity's own row, Escape keeps the selection, the Follow anchor rule, and the seek sentence."
+      "note": "Phase 4: a sensor sub-lane label selects its threat, and the strip's group name carries the horizon and Complete; read from Gutter.tsx and RunTimeline.tsx."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "bf98a1defebec6df4a58ae7d6223be803494761e1b8f6f4f33ffc928652ef469",
+      "sha256": "ea0fb3776f3241f5c8dd3b99ec36a3372f28699546ae748254d3d4331faa67ef",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 3 review fixes: expandAllRunTimeline opens what it is given, the tooltip liveHit and capture-phase Escape, and scrollTargetLine."
+      "note": "Phase 4: the run timeline interaction bullet names the .runtl ink tokens and KIND_INK handed to the root; the dead exports removed from layout.ts, tooltipText.ts and viewportActions.ts were not named here."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "f55ba23ee3ccc7a3ebcbdf7a1b863ad67125808fe50405f7f6ee97f235f5dc2f",
+      "sha256": "e389649645881e8b22ee6f56bed6641c8b987f63f2fb1b34cecbe887e22204ef",
       "reviewedAt": "2026-09-28",
-      "note": "The Phase 3 code is integrated on timeline/p3 and the SPEC text stands; the departures are recorded in the Phase 3 evidence and the handoff."
+      "note": "Phase 4: RunTimeline.tsx changed (the Complete accessible name and the ink tokens); the SPEC text stands, and 1.4's accessibility text still reads Shown through T+m:ss."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "f5980ce214d15694651c72bf3564acd248490acc2869baefacd865e3ea65b8e3",
+      "sha256": "be49172ad1f5d624dee163f931c319a8d84f06fd271bfdf95488f2f8211fef16",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 3 review fixes: the .runtl-select label keeps no fill on hover and press and takes text 1, as the CSS now does."
+      "note": "Phase 4: the run timeline block names the .runtl ink tokens, the daylight overrides and their contrast evidence, the quiet-ink undetected span and unobserved edge, the sub-lane label button and the readout's hidden Window prefix; read from index.css and src/panels/timeline."
     }
   ],
   "historical": [
