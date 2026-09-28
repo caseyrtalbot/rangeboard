@@ -1232,6 +1232,14 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   strip draws with `.runtl` ink tokens (`--runtl-*`): `RunTimeline.tsx` passes
   `KIND_INK` to the root as `--runtl-kind-*`, and the daylight blocks in `index.css`
   override the inks that fall under 3:1 on paper. `KIND_INK` stays the board's ink.
+  The rows are windowed: the gutter, the grounds and the rows draw only the lines whose
+  y range meets the scroll view plus one view height of overscan, at least 120 px
+  (`lineWindow` in `layout.ts`). `stripLayout` keeps every line, so `hitAt`,
+  `scrollTargetLine`, `scrollTopFor` and the scroll height read the full list, and a
+  drawn line keeps its layout y. `useRowWindow.ts` holds the scroll view in an external
+  store below `RunTimeline`, fed once per animation frame by a passive scroll listener
+  and by a `ResizeObserver`, so a vertical scroll re-renders only the gutter, the grounds
+  and the rows.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `src/model/libraryLifecycle.ts` is the one seed

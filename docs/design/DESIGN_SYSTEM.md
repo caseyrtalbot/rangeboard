@@ -305,7 +305,9 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   Execute and Analyze. From the top: a 28 px header (title, then the horizon in mono
   text 3, `Shown through T+m:ss`), the rows, a 20 px axis and a 22 px overview. Only the
   rows scroll. The axis has a `--rule-strong` top rule and the overview a `--rule` top
-  rule. The gutter is 172 px. Group headers, rows, summary rows and fold rows are 18 px;
+  rule. Only the lines near the rows' view draw, one view height (at least 120 px)
+  either side; a drawn line keeps its place, so the scroll bar reads the whole list. The
+  gutter is 172 px. Group headers, rows, summary rows and fold rows are 18 px;
   a sensor sub-lane is 14 px. A group header sits on sunken 55 percent over the panel. A
   collapsed group draws its summary row at 0.75 opacity. Every ink is a `.runtl` token
   (`--runtl-*`). In the dark theme the kind inks are `KIND_INK`, which `RunTimeline.tsx`

@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "3bc7d6c61014f9fae8d96d19823e386fc9056dbba702d97dace77d026577f7e2",
+      "sha256": "a9ad4332bf67bc3e9adeb64d5fcccefdcdcac98253833ef598d592a7589f68e4",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 4: a sensor sub-lane label selects its threat, and the strip's group name carries the horizon and Complete; read from Gutter.tsx and RunTimeline.tsx."
+      "note": "Phase 4 windowing: no user-facing behavior changed; the run timeline paragraphs still hold (labels, selection scroll, controls)."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "ea0fb3776f3241f5c8dd3b99ec36a3372f28699546ae748254d3d4331faa67ef",
+      "sha256": "f562820743ca47895745170d71237e6415cbe8315f152e9cff1353d54cf3ef45",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 4: the run timeline interaction bullet names the .runtl ink tokens and KIND_INK handed to the root; the dead exports removed from layout.ts, tooltipText.ts and viewportActions.ts were not named here."
+      "note": "Phase 4 windowing: the run timeline interaction bullet states the window rule (lineWindow, overscan one view height, at least 120 px), that stripLayout keeps every line for the hit test, the scroll target and the scroll height, and the useRowWindow store; read from layout.ts, useRowWindow.ts, Gutter.tsx and Plot.tsx."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "e389649645881e8b22ee6f56bed6641c8b987f63f2fb1b34cecbe887e22204ef",
+      "sha256": "de892533ef4deed79aa81c9cfa5364fec6dedce0577952b48f7384957cc17a47",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 4: RunTimeline.tsx changed (the Complete accessible name and the ink tokens); the SPEC text stands, and 1.4's accessibility text still reads Shown through T+m:ss."
+      "note": "Phase 4 windowing: RunTimeline.tsx now binds the row view; the SPEC text stands (Phase 4 adds windowing only when the measurement fails)."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "be49172ad1f5d624dee163f931c319a8d84f06fd271bfdf95488f2f8211fef16",
+      "sha256": "0f663a81f7e2ca8cc3e92af79b78ad854c9c7b8fe8fd89d4a2f60d647356198d",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 4: the run timeline block names the .runtl ink tokens, the daylight overrides and their contrast evidence, the quiet-ink undetected span and unobserved edge, the sub-lane label button and the readout's hidden Window prefix; read from index.css and src/panels/timeline."
+      "note": "Phase 4 windowing: the run timeline block says only the lines near the rows' view draw, with the overscan, and the scroll height is the whole list; read from layout.ts and Gutter.tsx."
     }
   ],
   "historical": [
