@@ -1215,7 +1215,10 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   off only through `setRunTimelineViewport(shownViewport(...), false)`;
   `setRunTimelineFollow(false)` alone jumps the view to the stale stored start.
   `panGlide(follow)` gives the pan, the axis tick group and the overview window the
-  `GLIDE` transition only while Follow is on; the playhead always glides. `hit.ts` holds
+  `GLIDE` transition only while Follow is on; the playhead always glides. The overview's
+  cursor line (`OverPlayhead` in `Overview.tsx`) subscribes to the clock alone, so the
+  overview picture does not re-render per publication; the overview does not pan, so the
+  line takes no glide and needs no reduced-motion rule. `hit.ts` holds
   the hit rule: `hitAt(lines, tS, yPx, pxPerS)` returns the nearest mark within
   `MARK_HIT_PX` (6 px), else the span drawn on top, and a summary or fold line hits its
   member rows. `Plot` maps the pointer through the pan wrapper's on-screen box, so a hit

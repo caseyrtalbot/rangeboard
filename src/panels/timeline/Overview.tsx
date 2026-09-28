@@ -1,7 +1,9 @@
 import { memo, useRef, useState, type PointerEvent } from 'react'
 import type { RunTimelineModel } from '../../analysis/runTimeline'
 import type { TimeViewport } from '../../charts/timeViewport'
+import { selectSimTimeS } from '../../state/selectors'
 import { useStore } from '../../state/store'
+import { playheadX } from './layout'
 import { panGlide, shownViewport, useShownT0 } from './useShownT0'
 import { overviewGrab, overviewPlace, overviewTime } from './viewportActions'
 
@@ -76,6 +78,35 @@ const Picture = memo(function Picture({
         />
       )}
     </>
+  )
+})
+
+/**
+ * The cursor on the whole run: a 1 px text 1 line. It subscribes to the clock
+ * alone, so the picture does not re-render per publication. The overview has
+ * a fixed scale and does not pan, so the line takes no glide.
+ */
+const OverPlayhead = memo(function OverPlayhead({
+  durationS,
+  widthPx,
+}: {
+  durationS: number
+  widthPx: number
+}) {
+  const t = useStore(selectSimTimeS)
+  if (!(durationS > 0) || !(widthPx > 0)) return null
+  const x = playheadX(t, durationS, widthPx / durationS)
+  return (
+    <line
+      className="runtl-over-playhead"
+      x1={x}
+      x2={x}
+      y1={0}
+      y2={OVER_H}
+      stroke="var(--text)"
+      strokeWidth={1}
+      shapeRendering="crispEdges"
+    />
   )
 })
 
@@ -173,6 +204,7 @@ export const Overview = memo(function Overview({
       >
         <Picture model={model} widthPx={widthPx} />
         <Window base={base} follow={follow} durationS={durationS} widthPx={widthPx} />
+        <OverPlayhead durationS={durationS} widthPx={widthPx} />
       </svg>
     </div>
   )

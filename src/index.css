@@ -3661,6 +3661,18 @@ input[type='number'] {
   background: var(--rule-strong);
 }
 
+/* The grip at rest: 36 by 2 px of --rule-strong at the handle centre. */
+.runtl-resizer::after {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  width: 36px;
+  height: 2px;
+  margin-left: -18px;
+  background: var(--rule-strong);
+  content: '';
+}
+
 .runtl-resizer:focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 0;
@@ -3684,16 +3696,18 @@ input[type='number'] {
   --runtl-quiet: #7e8480;
 
   /* On paper the channel inks fall under 3:1, so the strip darkens each one
-     in its own hue. The dwell and burst fills also carry a mono duration in
-     the paper board ink at 4.5:1. The two blocks after .runtl map them. */
-  --runtl-paper-sensor: #406d8d;
-  --runtl-paper-c2: #636a59;
-  --runtl-paper-effector: #8a602d;
-  --runtl-paper-ew: #29465a;
-  --runtl-paper-de: #394349;
-  --runtl-paper-ghost: #62686f;
-  --runtl-paper-cpa: #676860;
-  --runtl-paper-quiet: #6e6759;
+     in its own hue: the lightest value that clears 3:1 on the panel, on the
+     selected ground and at the summary row's 0.75 opacity (a search, not by
+     eye). The dwell and burst fills also carry a mono duration in the paper
+     board ink at 4.5:1. The two blocks after .runtl map them. */
+  --runtl-paper-sensor: #437193;
+  --runtl-paper-c2: #666e5c;
+  --runtl-paper-effector: #90642f;
+  --runtl-paper-ew: #416f8f;
+  --runtl-paper-de: #5c6d76;
+  --runtl-paper-ghost: #666c74;
+  --runtl-paper-cpa: #6b6c64;
+  --runtl-paper-quiet: #726a5c;
 
   position: relative;
   display: flex;
@@ -3958,6 +3972,22 @@ input[type='number'] {
   text-overflow: ellipsis;
 }
 
+/* A name with an instance number: the head takes the ellipsis, the number stays. */
+.runtl-split {
+  display: flex;
+}
+
+.runtl-name-head {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.runtl-name-tail {
+  flex: none;
+  margin-left: 0.25em;
+}
+
 .runtl-count,
 .runtl-meta {
   flex: 0 1 auto;
@@ -3967,6 +3997,13 @@ input[type='number'] {
   color: var(--text-tertiary);
   font-size: var(--type-dense-size);
   text-overflow: ellipsis;
+}
+
+/* The row name has priority: the meta shrinks four times as fast and takes
+   at most 40 percent of the line. */
+.runtl-meta {
+  flex: 0 4 auto;
+  max-width: 40%;
 }
 
 .runtl-count,

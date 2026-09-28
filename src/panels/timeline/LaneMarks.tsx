@@ -18,7 +18,11 @@ const RAMP = {
   hostile: 'var(--danger)',
 } as const
 
-/** Engagement spans print their duration once this wide, px (SPEC 1.5). */
+/**
+ * Engagement spans print their duration once this wide, px (SPEC 1.5). An
+ * effector mark prints its rounds-left chip or pk once the gap to the next
+ * mark in its row is this wide.
+ */
 const LABEL_MIN_PX = 44
 
 /** Hold chunk opacity: track quality 0..1 maps to 0.3..1, as the mockup shades it. */
@@ -191,7 +195,11 @@ function markGlyph(mark: RunTimelineMark, row: RunTimelineRow, cx: number, y: nu
   }
 }
 
-/** A mark with its printed text: C2 assignments name the effector; effector rows print `after`. */
+/**
+ * A mark with its printed text: C2 assignments name the effector; effector rows
+ * print `after` when `gapPx`, the room to the next mark in the row, is at
+ * least LABEL_MIN_PX.
+ */
 function markEl(
   mark: RunTimelineMark,
   key: string,
@@ -200,6 +208,7 @@ function markEl(
   h: number,
   pxPerS: number,
   summary: boolean,
+  gapPx: number,
 ): ReactNode {
   const cx = mark.tS * pxPerS
   const cy = y + h / 2
@@ -212,7 +221,7 @@ function markEl(
         {mark.text}
       </text>
     )
-  } else if (row.kind === 'effector' && mark.after) {
+  } else if (row.kind === 'effector' && mark.after && gapPx >= LABEL_MIN_PX) {
     // Rounds left sit in a chip after the release; pk follows the effect.
     label =
       mark.kind === 'release' ? (
@@ -267,7 +276,12 @@ export const LaneItems = memo(function LaneItems({
   return (
     <g className="runtl-lane">
       {row.spans.map((span, i) => spanEl(span, `s${i}`, row, y, h, pxPerS, summary, hatch))}
-      {row.marks.map((mark, i) => markEl(mark, `m${i}`, row, y, h, pxPerS, summary))}
+      {row.marks.map((mark, i) => {
+        // Marks are sorted by time (laneOf); the last one has the row to itself.
+        const next = row.marks[i + 1]
+        const gapPx = next == null ? Infinity : (next.tS - mark.tS) * pxPerS
+        return markEl(mark, `m${i}`, row, y, h, pxPerS, summary, gapPx)
+      })}
     </g>
   )
 })

@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "a9ad4332bf67bc3e9adeb64d5fcccefdcdcac98253833ef598d592a7589f68e4",
+      "sha256": "b79ee2e1a96a2a01da70b62490bf2cfacc19ab4c19b0715a44fed16813f9f4a0",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 4 windowing: no user-facing behavior changed; the run timeline paragraphs still hold (labels, selection scroll, controls)."
+      "note": "The overview marks the cursor time on the whole run"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "f562820743ca47895745170d71237e6415cbe8315f152e9cff1353d54cf3ef45",
+      "sha256": "d847e5a3264bab19f7a76470113ab3751e28495410567070dc345e4b4ec7b607",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 4 windowing: the run timeline interaction bullet states the window rule (lineWindow, overscan one view height, at least 120 px), that stripLayout keeps every line for the hit test, the scroll target and the scroll height, and the useRowWindow store; read from layout.ts, useRowWindow.ts, Gutter.tsx and Plot.tsx."
+      "note": "The overview cursor line subscribes to the clock alone and takes no glide"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "0f663a81f7e2ca8cc3e92af79b78ad854c9c7b8fe8fd89d4a2f60d647356198d",
+      "sha256": "9b2370d02adc7eb5749e27712029ec2ed2f763f2c4264aacd954a8e3e2ff18d0",
       "reviewedAt": "2026-09-28",
-      "note": "Phase 4 windowing: the run timeline block says only the lines near the rows' view draw, with the overscan, and the scroll height is the whole list; read from layout.ts and Gutter.tsx."
+      "note": "Run timeline design review fixes: row meta shrinks first and drops when the name starts with it, the instance number never shrinks, the blue group square takes the sensor ink, the overview draws the cursor, effector chip and pk print with 44 px to the next mark, the resizer grip shows at rest, and the daylight inks are the lightest that meet the floors"
     }
   ],
   "historical": [

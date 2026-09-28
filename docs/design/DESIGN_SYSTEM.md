@@ -308,12 +308,17 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   rule. Only the lines near the rows' view draw, one view height (at least 120 px)
   either side; a drawn line keeps its place, so the scroll bar reads the whole list. The
   gutter is 172 px. Group headers, rows, summary rows and fold rows are 18 px;
-  a sensor sub-lane is 14 px. A group header sits on sunken 55 percent over the panel. A
+  a sensor sub-lane is 14 px. A row's meta shrinks four times as fast as its name and
+  takes at most 40 percent of the line; a meta that the name starts with is left out, and
+  a trailing instance number (`.runtl-name-tail`) never shrinks, so the ellipsis cuts the
+  model text. A group header sits on sunken 55 percent over the panel; its ink square is
+  the sensor ink for blue and `--danger` for red. A
   collapsed group draws its summary row at 0.75 opacity. Every ink is a `.runtl` token
   (`--runtl-*`). In the dark theme the kind inks are `KIND_INK`, which `RunTimeline.tsx`
   passes to the root as `--runtl-kind-*`, and the EW and DE inks are `--ew` and `--de`;
   the ghost and quiet inks are lighter than `--ghost` and `--rule-strong`. The daylight
-  theme darkens the kind, EW, DE, ghost, CPA and quiet inks in their own hue. Each ink
+  theme darkens the kind, EW, DE, ghost, CPA and quiet inks in their own hue, each to the
+  lightest value that meets these floors, found by a search. Each ink
   clears 3:1 on the panel, on the selected ground and at 0.75 opacity in both themes, and
   a duration on a dwell or burst fill clears 4.5:1
   ([evidence](../field-te/evidence/run-timeline-p4-2026-09-28/README.md)). Sensor holds
@@ -329,8 +334,12 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   tick for a shot or a C2 init; a cross in `--ghost` for a drop. The unobserved region is
   sunken 70 percent with a dashed quiet-ink edge, and an undetected span is a quiet-ink
   line; the playhead is a 1 px text 1
-  line. The resizer above the dock is a 6 px `row-resize` handle that overlaps the
-  boundary and takes no layout space; it shows `--rule-strong` on hover and focus. No
+  line, and the overview draws the cursor as a 1 px text 1 line too. A duration prints on
+  a span at least 44 px wide; an effector's rounds-left chip and pk print only with
+  44 px to the next mark in the row. The resizer above the dock is a 6 px `row-resize`
+  handle that overlaps the boundary and takes no layout space. At rest a 36 by 2 px
+  `--rule-strong` grip sits at its centre; the whole handle shows `--rule-strong` on hover
+  and focus. No
   strip text is under 11 px (`--type-dense-size`). Times, counts, sides, sub-lane names,
   durations and printed values are mono; group and row names are Archivo.
   The header controls (`.runtl-ctl`, 4 px gap) are `button.mini` buttons in the mockup

@@ -124,8 +124,8 @@ Hovering an item shows a tooltip with its exact times and values and the horizon
 closes it and keeps the board selection. A Ctrl or Meta wheel, or a pinch, zooms about
 the time under the cursor. With Follow on, Follow sets the window start from the clock
 again, so the cursor anchor holds only with Follow off. A horizontal wheel pans and
-turns Follow off, and a vertical wheel scrolls the rows. Dragging the overview moves the
-window and turns Follow off. The header holds Follow, Zoom out, the window readout, Zoom
+turns Follow off, and a vertical wheel scrolls the rows. The overview marks the cursor
+time on the whole run. Dragging the overview moves the window and turns Follow off. The header holds Follow, Zoom out, the window readout, Zoom
 in, Fit, Collapse all and Expand all. Play turns Follow on. No strip interaction
 advances observation: a seek stops playback, moves the cursor and turns Follow off, and
 never advances observation. The strip is one labelled group whose name carries the

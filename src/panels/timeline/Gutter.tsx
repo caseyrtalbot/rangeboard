@@ -14,8 +14,8 @@ const ROW_INK: Record<RunTimelineKind, string> = {
   threat: 'var(--runtl-uas)',
 }
 
-/** Side ink: red for a threat, the sensor-blue family for every other kind. */
-const SIDE_INK = { blue: 'var(--runtl-ew)', red: 'var(--danger)' } as const
+/** Side ink: red for a threat, the sensor ink for every other kind, as the sensor rows. */
+const SIDE_INK = { blue: 'var(--runtl-sensor)', red: 'var(--danger)' } as const
 
 /** The summary line under a collapsed group header. */
 function summaryLabel(group: RunTimelineGroup): string {
@@ -52,6 +52,25 @@ const GroupHeader = memo(function GroupHeader({
   )
 })
 
+/**
+ * A row name. A trailing instance number (`Radar 2`) sits in its own span that
+ * never shrinks, so an ellipsis cuts the model text and the number stays. The
+ * head keeps the space, so the text and the accessible name are the label.
+ */
+function NameText({ label }: { label: string }) {
+  const tail = / \d+$/.exec(label)
+  if (tail == null) return label
+  return (
+    <>
+      <span className="runtl-name-head">{label.slice(0, tail.index + 1)}</span>
+      <span className="runtl-name-tail">{label.slice(tail.index + 1)}</span>
+    </>
+  )
+}
+
+/** The name class: a split name lays out its head and number in a row. */
+const nameClass = (label: string) => (/ \d+$/.test(label) ? 'runtl-name runtl-split' : 'runtl-name')
+
 /** The class suffix of a line the board selection highlights. */
 const sel = (selected: boolean) => (selected ? ' selected' : '')
 
@@ -72,6 +91,8 @@ const RowLine = memo(function RowLine({
   selected: boolean
 }) {
   const expandable = row.subLanes != null && row.subLanes.length > 0
+  // A meta the name already starts with repeats it; the name keeps the room.
+  const showMeta = row.meta !== '' && !row.label.startsWith(row.meta)
   return (
     <div className={`runtl-line runtl-row${inFold ? ' in-fold' : ''}${sel(selected)}`}>
       {expandable ? (
@@ -91,18 +112,18 @@ const RowLine = memo(function RowLine({
       {row.entityId != null ? (
         <button
           type="button"
-          className="runtl-name runtl-select"
+          className={`${nameClass(row.label)} runtl-select`}
           title={row.label}
           onClick={() => selectRunTimelineRow(row)}
         >
-          {row.label}
+          <NameText label={row.label} />
         </button>
       ) : (
-        <span className="runtl-name" title={row.label}>
-          {row.label}
+        <span className={nameClass(row.label)} title={row.label}>
+          <NameText label={row.label} />
         </span>
       )}
-      {row.meta !== '' && (
+      {showMeta && (
         <span className="runtl-meta" title={row.meta}>
           {row.meta}
         </span>

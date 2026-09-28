@@ -168,13 +168,14 @@ describe('RunTimeline rows', () => {
     const early = render()
     expect(early).not.toContain('runtl-m-miss"')
     expect(early).not.toContain('runtl-m-arrival')
-    expect(early).toContain('>9 left<')
+    // A server render has no width, so a chip prints only on a row's last mark.
+    expect(early).toContain('runtl-m-release')
     expect(early).not.toContain('>6 left<')
     observeTrial(60)
     const late = render()
     expect(late).toContain('runtl-m-miss"')
     expect(late).toContain('runtl-m-arrival')
-    expect(late).toContain('>6 left<')
+    expect(count(late, 'runtl-m-release')).toBeGreaterThan(count(early, 'runtl-m-release'))
   })
 })
 
@@ -379,5 +380,96 @@ describe('RunTimeline row windowing', () => {
     // Row 13's rule sits at its layout y (234 + 18 - 0.5); row 12 draws none.
     expect(plot).toContain('y1="251.5"')
     expect(plot).not.toContain('y1="233.5"')
+  })
+})
+
+describe('RunTimeline design review fixes', () => {
+  const rowLine = (row: RunTimelineRow) =>
+    renderToStaticMarkup(
+      <Gutter
+        lines={[{ t: 'row', key: row.key, row, open: false, inFold: false, y: 0, h: 18 }]}
+        view={createRowView()}
+        heightPx={18}
+        selected={new Set()}
+      />,
+    )
+  const text = (html: string) => html.replace(/<[^>]*>/g, '')
+
+  it('keeps a long row name and its instance number whole, with the full title', () => {
+    const label = 'RfOne Mk2 RF sensor (DroneShield) 2'
+    const html = rowLine({
+      key: 'sensor:rf2',
+      kind: 'sensor',
+      label,
+      meta: 'RfOne Mk2 RF sensor (DroneShield)',
+      entityId: 'rf2',
+      spans: [],
+      marks: [],
+    })
+    const name = /<button[^>]*runtl-select[^>]*>(.*?)<\/button>/.exec(html)?.[1] ?? ''
+    expect(text(name)).toBe(label)
+    expect(name).toContain('<span class="runtl-name-tail">2</span>')
+    expect(html).toContain(`title="${label}"`)
+    // The meta repeats the name's head, so the name keeps the room.
+    expect(html).not.toContain('runtl-meta')
+  })
+
+  it('keeps a meta that adds to the name', () => {
+    const html = rowLine({
+      key: 'effector:gun',
+      kind: 'effector',
+      label: 'Gun 1',
+      meta: 'Coyote Block 2 · 4 rds',
+      entityId: 'gun',
+      spans: [],
+      marks: [],
+    })
+    expect(html).toContain('title="Coyote Block 2 · 4 rds"')
+    expect(text(/<button[^>]*runtl-select[^>]*>(.*?)<\/button>/.exec(html)?.[1] ?? '')).toBe(
+      'Gun 1',
+    )
+  })
+
+  it('draws the overview cursor at the clock time on the whole run', () => {
+    installTrial(300)
+    useStore.setState({ playback: { ...useStore.getState().playback, simTimeS: 150 } })
+    Object.assign(useStore.getInitialState(), useStore.getState())
+    const model = { durationS: 300, horizonS: 300, groups: [] }
+    const html = renderToStaticMarkup(
+      <Overview model={model} base={{ t0S: 0, winS: 60 }} follow={false} widthPx={600} />,
+    )
+    expect(html).toContain('class="runtl-over-playhead" x1="300" x2="300" y1="0" y2="22"')
+  })
+
+  it('prints rounds left and pk only with 44 px to the next mark', () => {
+    const row: RunTimelineRow = {
+      key: 'effector:gun',
+      kind: 'effector',
+      label: 'Gun',
+      meta: '',
+      entityId: 'gun',
+      spans: [],
+      marks: [
+        { kind: 'release', tS: 40, after: '3 left' },
+        { kind: 'hard-kill', tS: 50, after: 'pk 0.45' },
+        { kind: 'release', tS: 60, after: '2 left' },
+      ],
+    }
+    const draw = (pxPerS: number) =>
+      renderToStaticMarkup(
+        <svg>
+          <LaneItems row={row} y={0} h={18} pxPerS={pxPerS} hatch="url(#h)" />
+        </svg>,
+      )
+    // 10 s gaps: 40 px under the rule, 50 px over it.
+    const tight = draw(4)
+    expect(tight).not.toContain('>3 left<')
+    expect(tight).not.toContain('>pk 0.45<')
+    expect(tight).not.toContain('runtl-chip" x="166"')
+    // The last mark has the row to itself.
+    expect(tight).toContain('>2 left<')
+    const wide = draw(5)
+    expect(wide).toContain('>3 left<')
+    expect(wide).toContain('>pk 0.45<')
   })
 })
