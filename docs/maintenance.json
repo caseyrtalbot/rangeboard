@@ -44,9 +44,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "6abe3155119cb2cbb45df000ff49a5f88fa68481b175b8c411d1f7272d02832d",
+      "sha256": "7fb49ce35d8e6680529075999bd28701596dc6f6b3ef05c9420b36e8463e4a1d",
       "reviewedAt": "2026-09-28",
-      "note": "Indexes the run timeline Phase 3 browser check evidence of 2026-09-28."
+      "note": "Indexes the run timeline Phase 4 browser check evidence of 2026-09-28."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
