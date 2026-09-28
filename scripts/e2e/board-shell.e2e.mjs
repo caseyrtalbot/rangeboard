@@ -79,7 +79,7 @@ async function openRangeSetup(page, item) {
 test('phase switching sets the phase, the analysis tab and aria-selected', async (t) => {
   const { page, errors } = await open(t)
   for (const phase of ['execute', 'analyze', 'prepare']) {
-    await page.evaluate(() => window.__store.getState().setRightTab('library'))
+    await page.evaluate(() => window.__store.getState().setRightTab('inspect'))
     await page.click(`#board-phase-${phase}`)
     await waitFor(page, (p) => document.querySelector(`.board-app[data-board-phase="${p}"]`), phase)
     assert.equal(await read(page, 'ui.rightTab'), 'analysis', `${phase}: rightTab`)
