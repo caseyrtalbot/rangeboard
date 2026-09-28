@@ -1,0 +1,5293 @@
+{
+  "capturedAt": "2026-09-28T20:51:22.137Z",
+  "viewport": "1265x900",
+  "boards": {
+    "jiatf": {
+      "fixture": "src/playback/__fixtures__/detection-outside-rings.json",
+      "freshProfile": {
+        "savedHeight": null,
+        "heightPx": 264
+      },
+      "trialStatus": "ready",
+      "board": {
+        "simTimeS": 0,
+        "observedThroughS": 0,
+        "durationS": 1500,
+        "name": "Detection fixture: KuRFS chain, spawn outside every ring",
+        "entities": 6
+      },
+      "item8": {
+        "dockPx": 264,
+        "headPx": 28,
+        "axisPx": 20,
+        "overPx": 22,
+        "scrollViewPx": 193,
+        "scrollHeightPx": 193,
+        "scrolls": false,
+        "groupHeaders": [
+          {
+            "text": "▸Sensors2blue",
+            "inView": true
+          },
+          {
+            "text": "▸C21blue",
+            "inView": true
+          },
+          {
+            "text": "▸Effectors1blue",
+            "inView": true
+          },
+          {
+            "text": "▸Threats1red",
+            "inView": true
+          }
+        ],
+        "summaryRows": [
+          {
+            "text": "all sensors",
+            "inView": true
+          },
+          {
+            "text": "all C2 nodes",
+            "inView": true
+          },
+          {
+            "text": "all effectors",
+            "inView": true
+          },
+          {
+            "text": "all threats",
+            "inView": true
+          }
+        ],
+        "pass": true,
+        "analyze": {
+          "dockPx": 264,
+          "headPx": 28,
+          "axisPx": 20,
+          "overPx": 22,
+          "scrollViewPx": 193,
+          "scrollHeightPx": 193,
+          "scrolls": false,
+          "groupHeaders": [
+            {
+              "text": "▸Sensors2blue",
+              "inView": true
+            },
+            {
+              "text": "▸C21blue",
+              "inView": true
+            },
+            {
+              "text": "▸Tracks1blue",
+              "inView": true
+            },
+            {
+              "text": "▸Effectors1blue",
+              "inView": true
+            },
+            {
+              "text": "▸Threats1red",
+              "inView": true
+            }
+          ],
+          "summaryRows": [
+            {
+              "text": "all sensors",
+              "inView": true
+            },
+            {
+              "text": "all C2 nodes",
+              "inView": true
+            },
+            {
+              "text": "all tracks",
+              "inView": true
+            },
+            {
+              "text": "all effectors",
+              "inView": true
+            },
+            {
+              "text": "all threats",
+              "inView": true
+            }
+          ],
+          "pass": true
+        }
+      },
+      "item2": {
+        "texts": [
+          "all sensors",
+          "all C2 nodes",
+          "all effectors",
+          "all threats"
+        ],
+        "fontFamily": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace",
+        "fontSize": "11px",
+        "paddingLeft": "18px",
+        "pass": true
+      },
+      "item3": {
+        "headPx": 28,
+        "buttons": [
+          {
+            "name": "Follow",
+            "h": 24,
+            "cls": "mini runtl-follow"
+          },
+          {
+            "name": "Zoom out",
+            "h": 24,
+            "cls": "mini"
+          },
+          {
+            "name": "Zoom in",
+            "h": 24,
+            "cls": "mini"
+          },
+          {
+            "name": "Fit",
+            "h": 24,
+            "cls": "mini"
+          },
+          {
+            "name": "Collapse all",
+            "h": 24,
+            "cls": "mini"
+          },
+          {
+            "name": "Expand all",
+            "h": 24,
+            "cls": "mini"
+          }
+        ],
+        "legend": {
+          "left": 283,
+          "right": 485,
+          "height": 16,
+          "items": [
+            {
+              "text": "hold",
+              "shown": true,
+              "left": 283,
+              "right": 325,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "coast",
+              "shown": true,
+              "left": 335,
+              "right": 382,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(125, 167, 196)",
+                "borderStyle": "dashed"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "classify",
+              "shown": true,
+              "left": 392,
+              "right": 450,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "linear-gradient(90deg, color(srgb 0.297059 0.185294 0.172549), rgb(228, 111, 98)",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "window",
+              "shown": false,
+              "left": 283,
+              "right": 342,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "prep",
+              "shown": false,
+              "left": 352,
+              "right": 394,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "repeating-linear-gradient(45deg, rgb(226, 173, 85) 0px, rgb(226, 173, 85) 1px, r",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "flight",
+              "shown": false,
+              "left": 404,
+              "right": 448,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "dwell",
+              "shown": false,
+              "left": 283,
+              "right": 329,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "hard kill",
+              "shown": false,
+              "left": 339,
+              "right": 392,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(228, 111, 98)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "mission kill",
+              "shown": false,
+              "left": 402,
+              "right": 472,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "miss",
+              "shown": false,
+              "left": 283,
+              "right": 321,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(123, 131, 139)",
+                "borderStyle": "solid"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            }
+          ]
+        },
+        "shownItems": [
+          "hold",
+          "coast",
+          "classify"
+        ],
+        "clearOfScope": true,
+        "clearOfControls": true,
+        "scopeText": "Shown through T+0:00",
+        "pass": true
+      },
+      "item6": {
+        "execute": {
+          "left": 283,
+          "right": 485,
+          "height": 16,
+          "items": [
+            {
+              "text": "hold",
+              "shown": true,
+              "left": 283,
+              "right": 325,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "coast",
+              "shown": true,
+              "left": 335,
+              "right": 382,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(125, 167, 196)",
+                "borderStyle": "dashed"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "classify",
+              "shown": true,
+              "left": 392,
+              "right": 450,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "linear-gradient(90deg, color(srgb 0.297059 0.185294 0.172549), rgb(228, 111, 98)",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "window",
+              "shown": false,
+              "left": 283,
+              "right": 342,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "prep",
+              "shown": false,
+              "left": 352,
+              "right": 394,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "repeating-linear-gradient(45deg, rgb(226, 173, 85) 0px, rgb(226, 173, 85) 1px, r",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "flight",
+              "shown": false,
+              "left": 404,
+              "right": 448,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "dwell",
+              "shown": false,
+              "left": 283,
+              "right": 329,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "hard kill",
+              "shown": false,
+              "left": 339,
+              "right": 392,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(228, 111, 98)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "mission kill",
+              "shown": false,
+              "left": 402,
+              "right": 472,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "miss",
+              "shown": false,
+              "left": 283,
+              "right": 321,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(123, 131, 139)",
+                "borderStyle": "solid"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            }
+          ]
+        },
+        "shownItems": [
+          "hold",
+          "coast",
+          "classify"
+        ],
+        "clearOfScope": true,
+        "clearOfControls": true,
+        "analyze": {
+          "left": 269,
+          "right": 485,
+          "height": 16,
+          "items": [
+            {
+              "text": "hold",
+              "shown": true,
+              "left": 269,
+              "right": 310,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "coast",
+              "shown": true,
+              "left": 320,
+              "right": 367,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(125, 167, 196)",
+                "borderStyle": "dashed"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "classify",
+              "shown": true,
+              "left": 377,
+              "right": 435,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "linear-gradient(90deg, color(srgb 0.297059 0.185294 0.172549), rgb(228, 111, 98)",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "window",
+              "shown": false,
+              "left": 269,
+              "right": 327,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "prep",
+              "shown": false,
+              "left": 337,
+              "right": 380,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "repeating-linear-gradient(45deg, rgb(226, 173, 85) 0px, rgb(226, 173, 85) 1px, r",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "flight",
+              "shown": false,
+              "left": 390,
+              "right": 433,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "dwell",
+              "shown": false,
+              "left": 269,
+              "right": 314,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "hard kill",
+              "shown": false,
+              "left": 324,
+              "right": 377,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(228, 111, 98)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "mission kill",
+              "shown": false,
+              "left": 387,
+              "right": 458,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "miss",
+              "shown": false,
+              "left": 269,
+              "right": 306,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(123, 131, 139)",
+                "borderStyle": "solid"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            }
+          ]
+        },
+        "pass": true
+      },
+      "item7": {
+        "atStart": {
+          "horizonS": 0,
+          "openSensorsAll": true,
+          "openSensors": [],
+          "sensorRows": 2,
+          "withTrack": [],
+          "open": [],
+          "domExpanded": []
+        },
+        "play": {
+          "ms": 20000,
+          "speed": 30,
+          "observedThroughS": [
+            0,
+            599.058
+          ],
+          "note": "play advances observation by design"
+        },
+        "afterPlay": {
+          "horizonS": 599.0579999998207,
+          "openSensorsAll": true,
+          "openSensors": [],
+          "sensorRows": 2,
+          "withTrack": [
+            "sensor:ent-mtnvzhmx-29"
+          ],
+          "open": [
+            "sensor:ent-mtnvzhmx-29"
+          ],
+          "domExpanded": [
+            "true"
+          ]
+        },
+        "gainedAfterExpand": [
+          "sensor:ent-mtnvzhmx-29"
+        ],
+        "everyTrackRowOpen": true,
+        "toggle": {
+          "openBefore": [
+            "sensor:ent-mtnvzhmx-29"
+          ],
+          "openAfter": [],
+          "flagAfter": false,
+          "closesOnlyThatRow": true
+        },
+        "collapse": {
+          "flagAfterExpand": true,
+          "flagAfterCollapse": false
+        },
+        "pass": true
+      },
+      "item4": {
+        "motion": {
+          "playheadTransition": "transform 0.1s",
+          "capContent": "\"\"",
+          "capBorderTop": "5px solid rgb(235, 233, 227)",
+          "capBorderLeft": "3px rgba(0, 0, 0, 0)",
+          "capBorderRight": "3px rgba(0, 0, 0, 0)",
+          "capBox": "1px x 0px",
+          "capLeft": "-3px",
+          "capTop": "0px",
+          "capTransition": "0s",
+          "lineColor": "rgb(235, 233, 227)"
+        },
+        "reduced": {
+          "playheadTransition": "none 0s",
+          "capContent": "\"\"",
+          "capBorderTop": "5px solid rgb(235, 233, 227)",
+          "capBorderLeft": "3px rgba(0, 0, 0, 0)",
+          "capBorderRight": "3px rgba(0, 0, 0, 0)",
+          "capBox": "1px x 0px",
+          "capLeft": "-3px",
+          "capTop": "0px",
+          "capTransition": "0.001s",
+          "lineColor": "rgb(235, 233, 227)"
+        },
+        "pass": true
+      },
+      "item5": {
+        "analyze": {
+          "header": "Complete · T+25:00",
+          "name": "Run timeline. Complete. Shown through T+25:00"
+        },
+        "tooltip": {
+          "horizonLine": "Shown through T+25:00"
+        },
+        "expected": {
+          "header": "Complete · T+25:00",
+          "name": "Run timeline. Complete. Shown through T+25:00",
+          "horizonLine": "Shown through T+25:00"
+        },
+        "pass": true
+      },
+      "item1": {
+        "fit": {
+          "zoom": "Window fit",
+          "lanes": [
+            {
+              "assigns": 1,
+              "texts": [
+                {
+                  "text": "Coyote Block 2 interceptor 1",
+                  "x": 460,
+                  "r": 645,
+                  "y": 669
+                }
+              ],
+              "overlaps": [],
+              "inPlot": 1
+            },
+            {
+              "assigns": 1,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            }
+          ]
+        },
+        "zoomWindow": {
+          "row": "c2:ent-mtnvzhmr-23",
+          "viewport": {
+            "t0S": 551.5,
+            "winS": 90
+          },
+          "assignTimes": [
+            556.5
+          ]
+        },
+        "zoomed": {
+          "zoom": "Window 90 s",
+          "lanes": [
+            {
+              "assigns": 1,
+              "texts": [
+                {
+                  "text": "Coyote Block 2 interceptor 1",
+                  "x": 258,
+                  "r": 442,
+                  "y": 669
+                }
+              ],
+              "overlaps": [],
+              "inPlot": 1
+            },
+            {
+              "assigns": 1,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            }
+          ]
+        },
+        "rule": "A C2 assign label prints when the gap to the next mark in its row is at least max(44, ceil(12 + 6.6 * characters)) px (assignLabelMinPx in layout.ts)",
+        "pass": true
+      },
+      "steps": [
+        {
+          "label": "open the strip, every group collapsed",
+          "observedThroughS": [
+            0,
+            0
+          ],
+          "simTimeS": [
+            0,
+            0
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "Expand all at T+0",
+          "observedThroughS": [
+            0,
+            0
+          ],
+          "simTimeS": [
+            0,
+            0
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "toggle the first open sensor row",
+          "observedThroughS": [
+            599.058,
+            599.058
+          ],
+          "simTimeS": [
+            599.058,
+            599.058
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "Expand all, then Collapse all",
+          "observedThroughS": [
+            599.058,
+            599.058
+          ],
+          "simTimeS": [
+            599.058,
+            599.058
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "Fit and open the C2 group",
+          "observedThroughS": [
+            1500,
+            1500
+          ],
+          "simTimeS": [
+            1500,
+            1500
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "hover a mark",
+          "observedThroughS": [
+            1500,
+            1500
+          ],
+          "simTimeS": [
+            1500,
+            1500
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "90 s window on the first C2 assign marks",
+          "observedThroughS": [
+            1500,
+            1500
+          ],
+          "simTimeS": [
+            1500,
+            1500
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "Analyze, Collapse all at the 264 px default",
+          "observedThroughS": [
+            1500,
+            1500
+          ],
+          "simTimeS": [
+            1500,
+            1500
+          ],
+          "observedUnchanged": true
+        }
+      ],
+      "stepsObservedUnchanged": true
+    },
+    "perf54": {
+      "fixture": "docs/field-te/evidence/perf-2026-09-06/scenario.json",
+      "freshProfile": {
+        "savedHeight": null,
+        "heightPx": 264
+      },
+      "trialStatus": "ready",
+      "board": {
+        "simTimeS": 0,
+        "observedThroughS": 0,
+        "durationS": 1322,
+        "name": "Layered (Acoustic + MEROPS)",
+        "entities": 54
+      },
+      "item8": {
+        "dockPx": 264,
+        "headPx": 28,
+        "axisPx": 20,
+        "overPx": 22,
+        "scrollViewPx": 193,
+        "scrollHeightPx": 193,
+        "scrolls": false,
+        "groupHeaders": [
+          {
+            "text": "▸Sensors25blue",
+            "inView": true
+          },
+          {
+            "text": "▸C28blue",
+            "inView": true
+          },
+          {
+            "text": "▸Effectors10blue",
+            "inView": true
+          },
+          {
+            "text": "▸Threats9red",
+            "inView": true
+          }
+        ],
+        "summaryRows": [
+          {
+            "text": "all sensors",
+            "inView": true
+          },
+          {
+            "text": "all C2 nodes",
+            "inView": true
+          },
+          {
+            "text": "all effectors",
+            "inView": true
+          },
+          {
+            "text": "all threats",
+            "inView": true
+          }
+        ],
+        "pass": true,
+        "analyze": {
+          "dockPx": 264,
+          "headPx": 28,
+          "axisPx": 20,
+          "overPx": 22,
+          "scrollViewPx": 193,
+          "scrollHeightPx": 193,
+          "scrolls": false,
+          "groupHeaders": [
+            {
+              "text": "▸Sensors25blue",
+              "inView": true
+            },
+            {
+              "text": "▸C28blue",
+              "inView": true
+            },
+            {
+              "text": "▸Tracks7blue",
+              "inView": true
+            },
+            {
+              "text": "▸Effectors10blue",
+              "inView": true
+            },
+            {
+              "text": "▸Threats9red",
+              "inView": true
+            }
+          ],
+          "summaryRows": [
+            {
+              "text": "all sensors",
+              "inView": true
+            },
+            {
+              "text": "all C2 nodes",
+              "inView": true
+            },
+            {
+              "text": "all tracks",
+              "inView": true
+            },
+            {
+              "text": "all effectors",
+              "inView": true
+            },
+            {
+              "text": "all threats",
+              "inView": true
+            }
+          ],
+          "pass": true
+        }
+      },
+      "item2": {
+        "texts": [
+          "all sensors",
+          "all C2 nodes",
+          "all effectors",
+          "all threats"
+        ],
+        "fontFamily": "\"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, monospace",
+        "fontSize": "11px",
+        "paddingLeft": "18px",
+        "pass": true
+      },
+      "item3": {
+        "headPx": 28,
+        "buttons": [
+          {
+            "name": "Follow",
+            "h": 24,
+            "cls": "mini runtl-follow"
+          },
+          {
+            "name": "Zoom out",
+            "h": 24,
+            "cls": "mini"
+          },
+          {
+            "name": "Zoom in",
+            "h": 24,
+            "cls": "mini"
+          },
+          {
+            "name": "Fit",
+            "h": 24,
+            "cls": "mini"
+          },
+          {
+            "name": "Collapse all",
+            "h": 24,
+            "cls": "mini"
+          },
+          {
+            "name": "Expand all",
+            "h": 24,
+            "cls": "mini"
+          }
+        ],
+        "legend": {
+          "left": 283,
+          "right": 485,
+          "height": 16,
+          "items": [
+            {
+              "text": "hold",
+              "shown": true,
+              "left": 283,
+              "right": 325,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "coast",
+              "shown": true,
+              "left": 335,
+              "right": 382,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(125, 167, 196)",
+                "borderStyle": "dashed"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "classify",
+              "shown": true,
+              "left": 392,
+              "right": 450,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "linear-gradient(90deg, color(srgb 0.297059 0.185294 0.172549), rgb(228, 111, 98)",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "window",
+              "shown": false,
+              "left": 283,
+              "right": 342,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "prep",
+              "shown": false,
+              "left": 352,
+              "right": 394,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "repeating-linear-gradient(45deg, rgb(226, 173, 85) 0px, rgb(226, 173, 85) 1px, r",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "flight",
+              "shown": false,
+              "left": 404,
+              "right": 448,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "dwell",
+              "shown": false,
+              "left": 283,
+              "right": 329,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "hard kill",
+              "shown": false,
+              "left": 339,
+              "right": 392,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(228, 111, 98)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "mission kill",
+              "shown": false,
+              "left": 402,
+              "right": 472,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "miss",
+              "shown": false,
+              "left": 283,
+              "right": 321,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(123, 131, 139)",
+                "borderStyle": "solid"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            }
+          ]
+        },
+        "shownItems": [
+          "hold",
+          "coast",
+          "classify"
+        ],
+        "clearOfScope": true,
+        "clearOfControls": true,
+        "scopeText": "Shown through T+0:00",
+        "pass": true
+      },
+      "item6": {
+        "execute": {
+          "left": 283,
+          "right": 485,
+          "height": 16,
+          "items": [
+            {
+              "text": "hold",
+              "shown": true,
+              "left": 283,
+              "right": 325,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "coast",
+              "shown": true,
+              "left": 335,
+              "right": 382,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(125, 167, 196)",
+                "borderStyle": "dashed"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "classify",
+              "shown": true,
+              "left": 392,
+              "right": 450,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "linear-gradient(90deg, color(srgb 0.297059 0.185294 0.172549), rgb(228, 111, 98)",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "window",
+              "shown": false,
+              "left": 283,
+              "right": 342,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "prep",
+              "shown": false,
+              "left": 352,
+              "right": 394,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "repeating-linear-gradient(45deg, rgb(226, 173, 85) 0px, rgb(226, 173, 85) 1px, r",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "flight",
+              "shown": false,
+              "left": 404,
+              "right": 448,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "dwell",
+              "shown": false,
+              "left": 283,
+              "right": 329,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "hard kill",
+              "shown": false,
+              "left": 339,
+              "right": 392,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(228, 111, 98)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "mission kill",
+              "shown": false,
+              "left": 402,
+              "right": 472,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "miss",
+              "shown": false,
+              "left": 283,
+              "right": 321,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(123, 131, 139)",
+                "borderStyle": "solid"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            }
+          ]
+        },
+        "shownItems": [
+          "hold",
+          "coast",
+          "classify"
+        ],
+        "clearOfScope": true,
+        "clearOfControls": true,
+        "analyze": {
+          "left": 269,
+          "right": 485,
+          "height": 16,
+          "items": [
+            {
+              "text": "hold",
+              "shown": true,
+              "left": 269,
+              "right": 310,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "coast",
+              "shown": true,
+              "left": 320,
+              "right": 367,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(125, 167, 196)",
+                "borderStyle": "dashed"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "classify",
+              "shown": true,
+              "left": 377,
+              "right": 435,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "linear-gradient(90deg, color(srgb 0.297059 0.185294 0.172549), rgb(228, 111, 98)",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "window",
+              "shown": false,
+              "left": 269,
+              "right": 327,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "prep",
+              "shown": false,
+              "left": 337,
+              "right": 380,
+              "swatch": {
+                "w": 14,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "repeating-linear-gradient(45deg, rgb(226, 173, 85) 0px, rgb(226, 173, 85) 1px, r",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "flight",
+              "shown": false,
+              "left": 390,
+              "right": 433,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(123, 167, 232)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "dwell",
+              "shown": false,
+              "left": 269,
+              "right": 314,
+              "swatch": {
+                "w": 14,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "hard kill",
+              "shown": false,
+              "left": 324,
+              "right": 377,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(228, 111, 98)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "mission kill",
+              "shown": false,
+              "left": 387,
+              "right": 458,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgb(125, 167, 196)",
+                "bgImage": "none",
+                "border": "rgb(140, 142, 136)",
+                "borderStyle": "none"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            },
+            {
+              "text": "miss",
+              "shown": false,
+              "left": 269,
+              "right": 306,
+              "swatch": {
+                "w": 8.48529052734375,
+                "bg": "rgba(0, 0, 0, 0)",
+                "bgImage": "none",
+                "border": "rgb(123, 131, 139)",
+                "borderStyle": "solid"
+              },
+              "fontSize": "12px",
+              "color": "rgb(140, 142, 136)"
+            }
+          ]
+        },
+        "pass": true
+      },
+      "item7": {
+        "atStart": {
+          "horizonS": 0,
+          "openSensorsAll": true,
+          "openSensors": [],
+          "sensorRows": 25,
+          "withTrack": [],
+          "open": [],
+          "domExpanded": []
+        },
+        "play": {
+          "ms": 10000,
+          "speed": 30,
+          "observedThroughS": [
+            0,
+            299.877
+          ],
+          "note": "play advances observation by design"
+        },
+        "afterPlay": {
+          "horizonS": 299.87700000026797,
+          "openSensorsAll": true,
+          "openSensors": [],
+          "sensorRows": 25,
+          "withTrack": [
+            "sensor:ent-mt5bn8cr-26",
+            "sensor:ent-mt5bn8cr-29",
+            "sensor:ent-mt5briiz-3a",
+            "sensor:ent-mt5brxu5-3t",
+            "sensor:ent-mt5brxu5-3u",
+            "sensor:ent-mt5brxu5-3w",
+            "sensor:ent-mt5brxu5-3x",
+            "sensor:ent-mt5bs2vv-4f",
+            "sensor:ent-mt5bs2vv-4i"
+          ],
+          "open": [
+            "sensor:ent-mt5bn8cr-26",
+            "sensor:ent-mt5bn8cr-29",
+            "sensor:ent-mt5briiz-3a",
+            "sensor:ent-mt5brxu5-3t",
+            "sensor:ent-mt5brxu5-3u",
+            "sensor:ent-mt5brxu5-3w",
+            "sensor:ent-mt5brxu5-3x",
+            "sensor:ent-mt5bs2vv-4f",
+            "sensor:ent-mt5bs2vv-4i"
+          ],
+          "domExpanded": [
+            "true",
+            "true",
+            "true"
+          ]
+        },
+        "gainedAfterExpand": [
+          "sensor:ent-mt5bn8cr-26",
+          "sensor:ent-mt5bn8cr-29",
+          "sensor:ent-mt5briiz-3a",
+          "sensor:ent-mt5brxu5-3t",
+          "sensor:ent-mt5brxu5-3u",
+          "sensor:ent-mt5brxu5-3w",
+          "sensor:ent-mt5brxu5-3x",
+          "sensor:ent-mt5bs2vv-4f",
+          "sensor:ent-mt5bs2vv-4i"
+        ],
+        "everyTrackRowOpen": true,
+        "toggle": {
+          "openBefore": [
+            "sensor:ent-mt5bn8cr-26",
+            "sensor:ent-mt5bn8cr-29",
+            "sensor:ent-mt5briiz-3a",
+            "sensor:ent-mt5brxu5-3t",
+            "sensor:ent-mt5brxu5-3u",
+            "sensor:ent-mt5brxu5-3w",
+            "sensor:ent-mt5brxu5-3x",
+            "sensor:ent-mt5bs2vv-4f",
+            "sensor:ent-mt5bs2vv-4i"
+          ],
+          "openAfter": [
+            "sensor:ent-mt5bn8cr-29",
+            "sensor:ent-mt5briiz-3a",
+            "sensor:ent-mt5brxu5-3t",
+            "sensor:ent-mt5brxu5-3u",
+            "sensor:ent-mt5brxu5-3w",
+            "sensor:ent-mt5brxu5-3x",
+            "sensor:ent-mt5bs2vv-4f",
+            "sensor:ent-mt5bs2vv-4i"
+          ],
+          "flagAfter": false,
+          "closesOnlyThatRow": true
+        },
+        "collapse": {
+          "flagAfterExpand": true,
+          "flagAfterCollapse": false
+        },
+        "pass": true
+      },
+      "item4": {
+        "motion": {
+          "playheadTransition": "transform 0.1s",
+          "capContent": "\"\"",
+          "capBorderTop": "5px solid rgb(235, 233, 227)",
+          "capBorderLeft": "3px rgba(0, 0, 0, 0)",
+          "capBorderRight": "3px rgba(0, 0, 0, 0)",
+          "capBox": "1px x 0px",
+          "capLeft": "-3px",
+          "capTop": "0px",
+          "capTransition": "0s",
+          "lineColor": "rgb(235, 233, 227)"
+        },
+        "reduced": {
+          "playheadTransition": "none 0s",
+          "capContent": "\"\"",
+          "capBorderTop": "5px solid rgb(235, 233, 227)",
+          "capBorderLeft": "3px rgba(0, 0, 0, 0)",
+          "capBorderRight": "3px rgba(0, 0, 0, 0)",
+          "capBox": "1px x 0px",
+          "capLeft": "-3px",
+          "capTop": "0px",
+          "capTransition": "0.001s",
+          "lineColor": "rgb(235, 233, 227)"
+        },
+        "pass": true
+      },
+      "item5": {
+        "analyze": {
+          "header": "Complete · T+22:02",
+          "name": "Run timeline. Complete. Shown through T+22:02"
+        },
+        "tooltip": {
+          "horizonLine": "Shown through T+22:02"
+        },
+        "expected": {
+          "header": "Complete · T+22:02",
+          "name": "Run timeline. Complete. Shown through T+22:02",
+          "horizonLine": "Shown through T+22:02"
+        },
+        "pass": true
+      },
+      "item1": {
+        "fit": {
+          "zoom": "Window fit",
+          "lanes": [
+            {
+              "assigns": 7,
+              "texts": [
+                {
+                  "text": "Coyote Block 2 interceptor 2",
+                  "x": 292,
+                  "r": 476,
+                  "y": 741
+                }
+              ],
+              "overlaps": [],
+              "inPlot": 1
+            },
+            {
+              "assigns": 3,
+              "texts": [
+                {
+                  "text": "Anvil interceptor (Anduril)",
+                  "x": 274,
+                  "r": 452,
+                  "y": 777
+                }
+              ],
+              "overlaps": [],
+              "inPlot": 1
+            },
+            {
+              "assigns": 1,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 1,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 2,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 2,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 2,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 2,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            }
+          ]
+        },
+        "zoomWindow": {
+          "row": "c2:ent-mt5brxu5-41",
+          "viewport": {
+            "t0S": 14.5,
+            "winS": 90
+          },
+          "assignTimes": [
+            19.5,
+            19.5,
+            49.5,
+            49.5,
+            108,
+            143,
+            143.5
+          ]
+        },
+        "zoomed": {
+          "zoom": "Window 90 s",
+          "lanes": [
+            {
+              "assigns": 7,
+              "texts": [
+                {
+                  "text": "Coyote Block 2 interceptor 2",
+                  "x": 258,
+                  "r": 442,
+                  "y": 741
+                },
+                {
+                  "text": "Coyote Block 2 interceptor 2",
+                  "x": 471,
+                  "r": 656,
+                  "y": 741
+                },
+                {
+                  "text": "Coyote Block 2 interceptor 1",
+                  "x": 888,
+                  "r": 1073,
+                  "y": 741
+                },
+                {
+                  "text": "Coyote Block 2 interceptor 2",
+                  "x": 1141,
+                  "r": 1326,
+                  "y": 741
+                }
+              ],
+              "overlaps": [],
+              "inPlot": 2
+            },
+            {
+              "assigns": 3,
+              "texts": [
+                {
+                  "text": "Anvil interceptor (Anduril)",
+                  "x": 315,
+                  "r": 493,
+                  "y": 777
+                },
+                {
+                  "text": "Anvil interceptor (Anduril)",
+                  "x": 528,
+                  "r": 706,
+                  "y": 777
+                },
+                {
+                  "text": "Anvil interceptor (Anduril)",
+                  "x": 881,
+                  "r": 1059,
+                  "y": 777
+                }
+              ],
+              "overlaps": [],
+              "inPlot": 2
+            },
+            {
+              "assigns": 1,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 1,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 2,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 2,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 2,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            },
+            {
+              "assigns": 2,
+              "texts": [],
+              "overlaps": [],
+              "inPlot": 0
+            }
+          ]
+        },
+        "rule": "A C2 assign label prints when the gap to the next mark in its row is at least max(44, ceil(12 + 6.6 * characters)) px (assignLabelMinPx in layout.ts)",
+        "pass": true
+      },
+      "steps": [
+        {
+          "label": "open the strip, every group collapsed",
+          "observedThroughS": [
+            0,
+            0
+          ],
+          "simTimeS": [
+            0,
+            0
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "Expand all at T+0",
+          "observedThroughS": [
+            0,
+            0
+          ],
+          "simTimeS": [
+            0,
+            0
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "toggle the first open sensor row",
+          "observedThroughS": [
+            299.877,
+            299.877
+          ],
+          "simTimeS": [
+            299.877,
+            299.877
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "Expand all, then Collapse all",
+          "observedThroughS": [
+            299.877,
+            299.877
+          ],
+          "simTimeS": [
+            299.877,
+            299.877
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "Fit and open the C2 group",
+          "observedThroughS": [
+            1322,
+            1322
+          ],
+          "simTimeS": [
+            1322,
+            1322
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "hover a mark",
+          "observedThroughS": [
+            1322,
+            1322
+          ],
+          "simTimeS": [
+            1322,
+            1322
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "90 s window on the first C2 assign marks",
+          "observedThroughS": [
+            1322,
+            1322
+          ],
+          "simTimeS": [
+            1322,
+            1322
+          ],
+          "observedUnchanged": true
+        },
+        {
+          "label": "Analyze, Collapse all at the 264 px default",
+          "observedThroughS": [
+            1322,
+            1322
+          ],
+          "simTimeS": [
+            1322,
+            1322
+          ],
+          "observedUnchanged": true
+        }
+      ],
+      "stepsObservedUnchanged": true,
+      "contrast": {
+        "rule": "WCAG 2.1 relative luminance; ratio (L1 + 0.05) / (L2 + 0.05); an ink with alpha is composited over its surface first",
+        "themes": {
+          "dark": {
+            "surfaces": {
+              "panel": "#191a1a",
+              "selected": "#262626",
+              "group": "#131414",
+              "overview": "#141515",
+              "unobserved": "#111212",
+              "raised": "#202121",
+              "chip": "#0e0f0f",
+              "flightBar": "#7ba7e8",
+              "dwellBar": "#7da7c4",
+              "burstBar": "#9aa8b0",
+              "followPressed": "#ebe9e3"
+            },
+            "rows": [
+              {
+                "id": "mark detect",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-svg .runtl-m-detect fill",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark detect",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "element .runtl-svg .runtl-m-detect fill",
+                "ratio": 5.89,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark C2 init tick",
+                "role": "graphic",
+                "ink": "#d6d9d2",
+                "alpha": 1,
+                "shown": "#d6d9d2",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 12.22,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark C2 init tick",
+                "role": "graphic",
+                "ink": "#d6d9d2",
+                "alpha": 1,
+                "shown": "#d6d9d2",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 10.57,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark track init ring",
+                "role": "graphic",
+                "ink": "#d6d9d2",
+                "alpha": 1,
+                "shown": "#d6d9d2",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 12.22,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark track init ring",
+                "role": "graphic",
+                "ink": "#d6d9d2",
+                "alpha": 1,
+                "shown": "#d6d9d2",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 10.57,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark firm",
+                "role": "graphic",
+                "ink": "#d6d9d2",
+                "alpha": 1,
+                "shown": "#d6d9d2",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 12.22,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark firm",
+                "role": "graphic",
+                "ink": "#d6d9d2",
+                "alpha": 1,
+                "shown": "#d6d9d2",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 10.57,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark drop",
+                "role": "graphic",
+                "ink": "#7b838b",
+                "alpha": 1,
+                "shown": "#7b838b",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.54,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark drop",
+                "role": "graphic",
+                "ink": "#7b838b",
+                "alpha": 1,
+                "shown": "#7b838b",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 3.92,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark assign",
+                "role": "graphic",
+                "ink": "#c9975a",
+                "alpha": 1,
+                "shown": "#c9975a",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 6.69,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark assign",
+                "role": "graphic",
+                "ink": "#c9975a",
+                "alpha": 1,
+                "shown": "#c9975a",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 5.79,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark release",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 14.37,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark release",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 12.43,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark shot",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 14.37,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark shot",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 12.43,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark hard kill",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.61,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark hard kill",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 4.85,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark arrival",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.61,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark arrival",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 4.85,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark mission kill",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark mission kill",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 5.89,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark miss",
+                "role": "graphic",
+                "ink": "#7b838b",
+                "alpha": 1,
+                "shown": "#7b838b",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.54,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark miss",
+                "role": "graphic",
+                "ink": "#7b838b",
+                "alpha": 1,
+                "shown": "#7b838b",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 3.92,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark jam decision",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark jam decision",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 5.89,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark CPA",
+                "role": "graphic",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.27,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark CPA",
+                "role": "graphic",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 4.56,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span hold, quality 1",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-svg .runtl-s-hold fill",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span hold, quality 1",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "element .runtl-svg .runtl-s-hold fill",
+                "ratio": 5.89,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span coast",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-svg .runtl-s-coast stroke",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span coast",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "element .runtl-svg .runtl-s-coast stroke",
+                "ratio": 5.89,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span classify hostile",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.61,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span classify hostile",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 4.85,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span window",
+                "role": "graphic",
+                "ink": "#7ba7e8",
+                "alpha": 1,
+                "shown": "#7ba7e8",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 7.09,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span window",
+                "role": "graphic",
+                "ink": "#7ba7e8",
+                "alpha": 1,
+                "shown": "#7ba7e8",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 6.13,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span preparation edge",
+                "role": "graphic",
+                "ink": "#e2ad55",
+                "alpha": 1,
+                "shown": "#e2ad55",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 8.59,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span preparation edge",
+                "role": "graphic",
+                "ink": "#e2ad55",
+                "alpha": 1,
+                "shown": "#e2ad55",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 7.43,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span flight",
+                "role": "graphic",
+                "ink": "#7ba7e8",
+                "alpha": 1,
+                "shown": "#7ba7e8",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 7.09,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span flight",
+                "role": "graphic",
+                "ink": "#7ba7e8",
+                "alpha": 1,
+                "shown": "#7ba7e8",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 6.13,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span burst",
+                "role": "graphic",
+                "ink": "#9aa8b0",
+                "alpha": 1,
+                "shown": "#9aa8b0",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 7.14,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span burst",
+                "role": "graphic",
+                "ink": "#9aa8b0",
+                "alpha": 1,
+                "shown": "#9aa8b0",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 6.18,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span dwell",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span dwell",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 5.89,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span ghost",
+                "role": "graphic",
+                "ink": "#7b838b",
+                "alpha": 1,
+                "shown": "#7b838b",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.54,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span ghost",
+                "role": "graphic",
+                "ink": "#7b838b",
+                "alpha": 1,
+                "shown": "#7b838b",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 3.92,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span undetected",
+                "role": "graphic",
+                "ink": "#7e8480",
+                "alpha": 1,
+                "shown": "#7e8480",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.57,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span undetected",
+                "role": "graphic",
+                "ink": "#7e8480",
+                "alpha": 1,
+                "shown": "#7e8480",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 3.95,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-playhead backgroundColor",
+                "ratio": 14.37,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "element .runtl-playhead backgroundColor",
+                "ratio": 12.43,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "unobserved",
+                "surfaceColour": "#111212",
+                "source": "element .runtl-playhead backgroundColor",
+                "ratio": 15.42,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "unobserved edge",
+                "role": "graphic",
+                "ink": "#7e8480",
+                "alpha": 1,
+                "shown": "#7e8480",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.57,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "unobserved edge",
+                "role": "graphic",
+                "ink": "#7e8480",
+                "alpha": 1,
+                "shown": "#7e8480",
+                "surface": "unobserved",
+                "surfaceColour": "#111212",
+                "source": "expression",
+                "ratio": 4.9,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "selected line bar",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 14.37,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary detect at 0.75",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 0.75,
+                "shown": "#64849a",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.4,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary firm at 0.75",
+                "role": "graphic",
+                "ink": "#d6d9d2",
+                "alpha": 0.75,
+                "shown": "#a7a9a4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 7.37,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary assign at 0.75",
+                "role": "graphic",
+                "ink": "#c9975a",
+                "alpha": 0.75,
+                "shown": "#9d784a",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.32,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary release at 0.75",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 0.75,
+                "shown": "#b7b5b1",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 8.52,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary hard kill at 0.75",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 0.75,
+                "shown": "#b15a50",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 3.69,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary mission kill at 0.75",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 0.75,
+                "shown": "#64849a",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.4,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary miss at 0.75",
+                "role": "graphic",
+                "ink": "#7b838b",
+                "alpha": 0.75,
+                "shown": "#63696f",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 3.13,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary CPA at 0.75",
+                "role": "graphic",
+                "ink": "#8c8e88",
+                "alpha": 0.75,
+                "shown": "#6f716d",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 3.54,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary hold at 0.75",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 0.75,
+                "shown": "#64849a",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.4,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary window at 0.75",
+                "role": "graphic",
+                "ink": "#7ba7e8",
+                "alpha": 0.75,
+                "shown": "#6384b5",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.55,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary flight at 0.75",
+                "role": "graphic",
+                "ink": "#7ba7e8",
+                "alpha": 0.75,
+                "shown": "#6384b5",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.55,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary burst at 0.75",
+                "role": "graphic",
+                "ink": "#9aa8b0",
+                "alpha": 0.75,
+                "shown": "#7a858b",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.59,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary dwell at 0.75",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 0.75,
+                "shown": "#64849a",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.4,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary undetected at 0.75",
+                "role": "graphic",
+                "ink": "#7e8480",
+                "alpha": 0.75,
+                "shown": "#656a67",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 3.14,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row ink square sensor",
+                "role": "identifier",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row ink square c2",
+                "role": "identifier",
+                "ink": "#d6d9d2",
+                "alpha": 1,
+                "shown": "#d6d9d2",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 12.22,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row ink square effector",
+                "role": "identifier",
+                "ink": "#c9975a",
+                "alpha": 1,
+                "shown": "#c9975a",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 6.69,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row ink square uas",
+                "role": "identifier",
+                "ink": "#c46a5a",
+                "alpha": 1,
+                "shown": "#c46a5a",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 4.61,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "group ink square blue",
+                "role": "identifier",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "group",
+                "surfaceColour": "#131414",
+                "source": "expression",
+                "ratio": 7.21,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "group ink square red",
+                "role": "identifier",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "group",
+                "surfaceColour": "#131414",
+                "source": "expression",
+                "ratio": 5.93,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview hard kill",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "overview",
+                "surfaceColour": "#141515",
+                "source": "expression",
+                "ratio": 5.91,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview mission kill",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "overview",
+                "surfaceColour": "#141515",
+                "source": "expression",
+                "ratio": 7.17,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview classify hostile",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "overview",
+                "surfaceColour": "#141515",
+                "source": "expression",
+                "ratio": 5.91,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview playhead",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "overview",
+                "surfaceColour": "#141515",
+                "source": "element .runtl-over-playhead stroke",
+                "ratio": 15.14,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview window edge",
+                "role": "graphic",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "overview",
+                "surfaceColour": "#141515",
+                "source": "element .runtl-over-window stroke",
+                "ratio": 5.55,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "hold, quality 0 (opacity 0.3)",
+                "role": "graded step",
+                "ink": "#7da7c4",
+                "alpha": 0.3,
+                "shown": "#37444d",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 1.75,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "hold, quality 0 (opacity 0.3)",
+                "role": "graded step",
+                "ink": "#7da7c4",
+                "alpha": 0.3,
+                "shown": "#404d55",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 1.73,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "hold, quality 0.5 (opacity 0.65)",
+                "role": "graded step",
+                "ink": "#7da7c4",
+                "alpha": 0.65,
+                "shown": "#5a7689",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 3.63,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "hold, quality 0.5 (opacity 0.65)",
+                "role": "graded step",
+                "ink": "#7da7c4",
+                "alpha": 0.65,
+                "shown": "#5e7a8d",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 3.34,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "classify unknown (25 percent)",
+                "role": "graded step",
+                "ink": "#4c2f2c",
+                "alpha": 1,
+                "shown": "#4c2f2c",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 1.46,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "classify suspected (55 percent)",
+                "role": "graded step",
+                "ink": "#894942",
+                "alpha": 1,
+                "shown": "#894942",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 2.56,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "header title (text 1)",
+                "role": "text",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 14.37,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "header horizon (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.27,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "window readout (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.27,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "group header name (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "group",
+                "surfaceColour": "#131414",
+                "source": "expression",
+                "ratio": 5.57,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row label (text 2)",
+                "role": "text",
+                "ink": "#a9a9a3",
+                "alpha": 1,
+                "shown": "#a9a9a3",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 7.38,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "selected row label (text 1)",
+                "role": "text",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 12.43,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "row meta, count, side (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.27,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "sub-lane and summary name (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.27,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "fold label (text 2)",
+                "role": "text",
+                "ink": "#a9a9a3",
+                "alpha": 1,
+                "shown": "#a9a9a3",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 7.38,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "axis tick (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.27,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview gutter (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "overview",
+                "surfaceColour": "#141515",
+                "source": "expression",
+                "ratio": 5.55,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "duration on flight",
+                "role": "text",
+                "ink": "#121313",
+                "alpha": 1,
+                "shown": "#121313",
+                "surface": "flightBar",
+                "surfaceColour": "#7ba7e8",
+                "source": "expression",
+                "ratio": 7.56,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "duration on dwell",
+                "role": "text",
+                "ink": "#121313",
+                "alpha": 1,
+                "shown": "#121313",
+                "surface": "dwellBar",
+                "surfaceColour": "#7da7c4",
+                "source": "expression",
+                "ratio": 7.26,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "duration on burst",
+                "role": "text",
+                "ink": "#121313",
+                "alpha": 1,
+                "shown": "#121313",
+                "surface": "burstBar",
+                "surfaceColour": "#9aa8b0",
+                "source": "expression",
+                "ratio": 7.62,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "effector pk label (text 1)",
+                "role": "text",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 14.37,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "rounds chip label (text 1)",
+                "role": "text",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "chip",
+                "surfaceColour": "#0e0f0f",
+                "source": "expression",
+                "ratio": 15.81,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "C2 assign label (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.27,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "tooltip body (text 2)",
+                "role": "text",
+                "ink": "#a9a9a3",
+                "alpha": 1,
+                "shown": "#a9a9a3",
+                "surface": "raised",
+                "surfaceColour": "#202121",
+                "source": "expression",
+                "ratio": 6.83,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "tooltip title and data (text 1)",
+                "role": "text",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "raised",
+                "surfaceColour": "#202121",
+                "source": "expression",
+                "ratio": 13.3,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "tooltip horizon (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "raised",
+                "surfaceColour": "#202121",
+                "source": "expression",
+                "ratio": 4.87,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "Follow pressed",
+                "role": "text",
+                "ink": "#121313",
+                "alpha": 1,
+                "shown": "#121313",
+                "surface": "followPressed",
+                "surfaceColour": "#ebe9e3",
+                "source": "expression",
+                "ratio": 15.33,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "legend word (text 3)",
+                "role": "text",
+                "ink": "#8c8e88",
+                "alpha": 1,
+                "shown": "#8c8e88",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-legend li color",
+                "ratio": 5.27,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend hold",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-sw-hold backgroundColor",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend coast",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-sw-coast borderTopColor",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend classify, hostile end",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 5.61,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend window",
+                "role": "graphic",
+                "ink": "#7ba7e8",
+                "alpha": 1,
+                "shown": "#7ba7e8",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-sw-window backgroundColor",
+                "ratio": 7.09,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend prep hatch",
+                "role": "graphic",
+                "ink": "#e2ad55",
+                "alpha": 1,
+                "shown": "#e2ad55",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 8.59,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend flight",
+                "role": "graphic",
+                "ink": "#7ba7e8",
+                "alpha": 1,
+                "shown": "#7ba7e8",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-sw-flight backgroundColor",
+                "ratio": 7.09,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend dwell",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-sw-dwell backgroundColor",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend hard kill",
+                "role": "graphic",
+                "ink": "#e46f62",
+                "alpha": 1,
+                "shown": "#e46f62",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-sw-hard-kill backgroundColor",
+                "ratio": 5.61,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend mission kill",
+                "role": "graphic",
+                "ink": "#7da7c4",
+                "alpha": 1,
+                "shown": "#7da7c4",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-sw-mission-kill backgroundColor",
+                "ratio": 6.81,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend miss",
+                "role": "graphic",
+                "ink": "#7b838b",
+                "alpha": 1,
+                "shown": "#7b838b",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "element .runtl-sw-miss borderTopColor",
+                "ratio": 4.54,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend classify, unknown end (25 percent)",
+                "role": "graded step",
+                "ink": "#4c2f2c",
+                "alpha": 1,
+                "shown": "#4c2f2c",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 1.46,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "playhead cap",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "panel",
+                "surfaceColour": "#191a1a",
+                "source": "expression",
+                "ratio": 14.37,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead cap",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "selected",
+                "surfaceColour": "#262626",
+                "source": "expression",
+                "ratio": 12.43,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead cap",
+                "role": "graphic",
+                "ink": "#ebe9e3",
+                "alpha": 1,
+                "shown": "#ebe9e3",
+                "surface": "unobserved",
+                "surfaceColour": "#111212",
+                "source": "expression",
+                "ratio": 15.42,
+                "required": 3,
+                "pass": true
+              }
+            ]
+          },
+          "light": {
+            "surfaces": {
+              "panel": "#f7f5f0",
+              "selected": "#eae8e4",
+              "group": "#ede9e3",
+              "overview": "#eeebe4",
+              "unobserved": "#eae6df",
+              "raised": "#fbfaf7",
+              "chip": "#e4e0d8",
+              "flightBar": "#2862b0",
+              "dwellBar": "#416f8f",
+              "burstBar": "#5c6d76",
+              "followPressed": "#212220"
+            },
+            "rows": [
+              {
+                "id": "mark detect",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-svg .runtl-m-detect fill",
+                "ratio": 4.79,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark detect",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "element .runtl-svg .runtl-m-detect fill",
+                "ratio": 4.28,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark C2 init tick",
+                "role": "graphic",
+                "ink": "#666e5c",
+                "alpha": 1,
+                "shown": "#666e5c",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.88,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark C2 init tick",
+                "role": "graphic",
+                "ink": "#666e5c",
+                "alpha": 1,
+                "shown": "#666e5c",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.35,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark track init ring",
+                "role": "graphic",
+                "ink": "#666e5c",
+                "alpha": 1,
+                "shown": "#666e5c",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.88,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark track init ring",
+                "role": "graphic",
+                "ink": "#666e5c",
+                "alpha": 1,
+                "shown": "#666e5c",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.35,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark firm",
+                "role": "graphic",
+                "ink": "#666e5c",
+                "alpha": 1,
+                "shown": "#666e5c",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.88,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark firm",
+                "role": "graphic",
+                "ink": "#666e5c",
+                "alpha": 1,
+                "shown": "#666e5c",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.35,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark drop",
+                "role": "graphic",
+                "ink": "#666c74",
+                "alpha": 1,
+                "shown": "#666c74",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.86,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark drop",
+                "role": "graphic",
+                "ink": "#666c74",
+                "alpha": 1,
+                "shown": "#666c74",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.34,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark assign",
+                "role": "graphic",
+                "ink": "#90642f",
+                "alpha": 1,
+                "shown": "#90642f",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.76,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark assign",
+                "role": "graphic",
+                "ink": "#90642f",
+                "alpha": 1,
+                "shown": "#90642f",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.25,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark release",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 14.66,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark release",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 13.09,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark shot",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 14.66,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark shot",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 13.09,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark hard kill",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.41,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark hard kill",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 3.93,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark arrival",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.41,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark arrival",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 3.93,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark mission kill",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 1,
+                "shown": "#416f8f",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.95,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark mission kill",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 1,
+                "shown": "#416f8f",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.42,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark miss",
+                "role": "graphic",
+                "ink": "#666c74",
+                "alpha": 1,
+                "shown": "#666c74",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.86,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark miss",
+                "role": "graphic",
+                "ink": "#666c74",
+                "alpha": 1,
+                "shown": "#666c74",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.34,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark jam decision",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 1,
+                "shown": "#416f8f",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.95,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark jam decision",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 1,
+                "shown": "#416f8f",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.42,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark CPA",
+                "role": "graphic",
+                "ink": "#6b6c64",
+                "alpha": 1,
+                "shown": "#6b6c64",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.87,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "mark CPA",
+                "role": "graphic",
+                "ink": "#6b6c64",
+                "alpha": 1,
+                "shown": "#6b6c64",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.35,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span hold, quality 1",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-svg .runtl-s-hold fill",
+                "ratio": 4.79,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span hold, quality 1",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "element .runtl-svg .runtl-s-hold fill",
+                "ratio": 4.28,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span coast",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-svg .runtl-s-coast stroke",
+                "ratio": 4.79,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span coast",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "element .runtl-svg .runtl-s-coast stroke",
+                "ratio": 4.28,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span classify hostile",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.41,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span classify hostile",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 3.93,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span window",
+                "role": "graphic",
+                "ink": "#2862b0",
+                "alpha": 1,
+                "shown": "#2862b0",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 5.56,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span window",
+                "role": "graphic",
+                "ink": "#2862b0",
+                "alpha": 1,
+                "shown": "#2862b0",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.97,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span preparation edge",
+                "role": "graphic",
+                "ink": "#98691b",
+                "alpha": 1,
+                "shown": "#98691b",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.41,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span preparation edge",
+                "role": "graphic",
+                "ink": "#98691b",
+                "alpha": 1,
+                "shown": "#98691b",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 3.93,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span flight",
+                "role": "graphic",
+                "ink": "#2862b0",
+                "alpha": 1,
+                "shown": "#2862b0",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 5.56,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span flight",
+                "role": "graphic",
+                "ink": "#2862b0",
+                "alpha": 1,
+                "shown": "#2862b0",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.97,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span burst",
+                "role": "graphic",
+                "ink": "#5c6d76",
+                "alpha": 1,
+                "shown": "#5c6d76",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.94,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span burst",
+                "role": "graphic",
+                "ink": "#5c6d76",
+                "alpha": 1,
+                "shown": "#5c6d76",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.41,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span dwell",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 1,
+                "shown": "#416f8f",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.95,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span dwell",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 1,
+                "shown": "#416f8f",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.42,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span ghost",
+                "role": "graphic",
+                "ink": "#666c74",
+                "alpha": 1,
+                "shown": "#666c74",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.86,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span ghost",
+                "role": "graphic",
+                "ink": "#666c74",
+                "alpha": 1,
+                "shown": "#666c74",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.34,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span undetected",
+                "role": "graphic",
+                "ink": "#726a5c",
+                "alpha": 1,
+                "shown": "#726a5c",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.9,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "span undetected",
+                "role": "graphic",
+                "ink": "#726a5c",
+                "alpha": 1,
+                "shown": "#726a5c",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 4.37,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-playhead backgroundColor",
+                "ratio": 14.66,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "element .runtl-playhead backgroundColor",
+                "ratio": 13.09,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "unobserved",
+                "surfaceColour": "#eae6df",
+                "source": "element .runtl-playhead backgroundColor",
+                "ratio": 12.86,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "unobserved edge",
+                "role": "graphic",
+                "ink": "#726a5c",
+                "alpha": 1,
+                "shown": "#726a5c",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.9,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "unobserved edge",
+                "role": "graphic",
+                "ink": "#726a5c",
+                "alpha": 1,
+                "shown": "#726a5c",
+                "surface": "unobserved",
+                "surfaceColour": "#eae6df",
+                "source": "expression",
+                "ratio": 4.3,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "selected line bar",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 14.66,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary detect at 0.75",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 0.75,
+                "shown": "#7092aa",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.02,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary firm at 0.75",
+                "role": "graphic",
+                "ink": "#666e5c",
+                "alpha": 0.75,
+                "shown": "#8a9081",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.02,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary assign at 0.75",
+                "role": "graphic",
+                "ink": "#90642f",
+                "alpha": 0.75,
+                "shown": "#aa885f",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.01,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary release at 0.75",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 0.75,
+                "shown": "#575754",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 6.68,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary hard kill at 0.75",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 0.75,
+                "shown": "#dd6758",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.15,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary mission kill at 0.75",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 0.75,
+                "shown": "#6f91a7",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.08,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary miss at 0.75",
+                "role": "graphic",
+                "ink": "#666c74",
+                "alpha": 0.75,
+                "shown": "#8a8e93",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.02,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary CPA at 0.75",
+                "role": "graphic",
+                "ink": "#6b6c64",
+                "alpha": 0.75,
+                "shown": "#8e8e87",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.02,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary hold at 0.75",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 0.75,
+                "shown": "#7092aa",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.02,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary window at 0.75",
+                "role": "graphic",
+                "ink": "#2862b0",
+                "alpha": 0.75,
+                "shown": "#5c87c0",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.4,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary flight at 0.75",
+                "role": "graphic",
+                "ink": "#2862b0",
+                "alpha": 0.75,
+                "shown": "#5c87c0",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.4,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary burst at 0.75",
+                "role": "graphic",
+                "ink": "#5c6d76",
+                "alpha": 0.75,
+                "shown": "#838f95",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.05,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary dwell at 0.75",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 0.75,
+                "shown": "#6f91a7",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.08,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "summary undetected at 0.75",
+                "role": "graphic",
+                "ink": "#726a5c",
+                "alpha": 0.75,
+                "shown": "#938d81",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.03,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row ink square sensor",
+                "role": "identifier",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.79,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row ink square c2",
+                "role": "identifier",
+                "ink": "#666e5c",
+                "alpha": 1,
+                "shown": "#666e5c",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.88,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row ink square effector",
+                "role": "identifier",
+                "ink": "#90642f",
+                "alpha": 1,
+                "shown": "#90642f",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.76,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row ink square uas",
+                "role": "identifier",
+                "ink": "#c46a5a",
+                "alpha": 1,
+                "shown": "#c46a5a",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.47,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "group ink square blue",
+                "role": "identifier",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "group",
+                "surfaceColour": "#ede9e3",
+                "source": "expression",
+                "ratio": 4.33,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "group ink square red",
+                "role": "identifier",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "group",
+                "surfaceColour": "#ede9e3",
+                "source": "expression",
+                "ratio": 3.98,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview hard kill",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "overview",
+                "surfaceColour": "#eeebe4",
+                "source": "expression",
+                "ratio": 4.02,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview mission kill",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 1,
+                "shown": "#416f8f",
+                "surface": "overview",
+                "surfaceColour": "#eeebe4",
+                "source": "expression",
+                "ratio": 4.51,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview classify hostile",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "overview",
+                "surfaceColour": "#eeebe4",
+                "source": "expression",
+                "ratio": 4.02,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview playhead",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "overview",
+                "surfaceColour": "#eeebe4",
+                "source": "element .runtl-over-playhead stroke",
+                "ratio": 13.36,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview window edge",
+                "role": "graphic",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "overview",
+                "surfaceColour": "#eeebe4",
+                "source": "element .runtl-over-window stroke",
+                "ratio": 3.5,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "hold, quality 0 (opacity 0.3)",
+                "role": "graded step",
+                "ink": "#437193",
+                "alpha": 0.3,
+                "shown": "#c1cdd4",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 1.48,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "hold, quality 0 (opacity 0.3)",
+                "role": "graded step",
+                "ink": "#437193",
+                "alpha": 0.3,
+                "shown": "#b8c5cb",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 1.45,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "hold, quality 0.5 (opacity 0.65)",
+                "role": "graded step",
+                "ink": "#437193",
+                "alpha": 0.65,
+                "shown": "#829fb4",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 2.54,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "hold, quality 0.5 (opacity 0.65)",
+                "role": "graded step",
+                "ink": "#437193",
+                "alpha": 0.65,
+                "shown": "#7e9baf",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 2.4,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "classify unknown (25 percent)",
+                "role": "graded step",
+                "ink": "#eec6bd",
+                "alpha": 1,
+                "shown": "#eec6bd",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 1.44,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "classify suspected (55 percent)",
+                "role": "graded step",
+                "ink": "#e48c80",
+                "alpha": 1,
+                "shown": "#e48c80",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 2.3,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "header title (text 1)",
+                "role": "text",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 14.66,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "header horizon (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.84,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "window readout (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.84,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "group header name (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "group",
+                "surfaceColour": "#ede9e3",
+                "source": "expression",
+                "ratio": 3.46,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "row label (text 2)",
+                "role": "text",
+                "ink": "#4e504b",
+                "alpha": 1,
+                "shown": "#4e504b",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 7.49,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "selected row label (text 1)",
+                "role": "text",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 13.09,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "row meta, count, side (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.84,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "sub-lane and summary name (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.84,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "fold label (text 2)",
+                "role": "text",
+                "ink": "#4e504b",
+                "alpha": 1,
+                "shown": "#4e504b",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 7.49,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "axis tick (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.84,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "overview gutter (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "overview",
+                "surfaceColour": "#eeebe4",
+                "source": "expression",
+                "ratio": 3.5,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "duration on flight",
+                "role": "text",
+                "ink": "#eeebe4",
+                "alpha": 1,
+                "shown": "#eeebe4",
+                "surface": "flightBar",
+                "surfaceColour": "#2862b0",
+                "source": "expression",
+                "ratio": 5.09,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "duration on dwell",
+                "role": "text",
+                "ink": "#eeebe4",
+                "alpha": 1,
+                "shown": "#eeebe4",
+                "surface": "dwellBar",
+                "surfaceColour": "#416f8f",
+                "source": "expression",
+                "ratio": 4.53,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "duration on burst",
+                "role": "text",
+                "ink": "#eeebe4",
+                "alpha": 1,
+                "shown": "#eeebe4",
+                "surface": "burstBar",
+                "surfaceColour": "#5c6d76",
+                "source": "expression",
+                "ratio": 4.52,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "effector pk label (text 1)",
+                "role": "text",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 14.66,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "rounds chip label (text 1)",
+                "role": "text",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "chip",
+                "surfaceColour": "#e4e0d8",
+                "source": "expression",
+                "ratio": 12.14,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "C2 assign label (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 3.84,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "tooltip body (text 2)",
+                "role": "text",
+                "ink": "#4e504b",
+                "alpha": 1,
+                "shown": "#4e504b",
+                "surface": "raised",
+                "surfaceColour": "#fbfaf7",
+                "source": "expression",
+                "ratio": 7.82,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "tooltip title and data (text 1)",
+                "role": "text",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "raised",
+                "surfaceColour": "#fbfaf7",
+                "source": "expression",
+                "ratio": 15.31,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "tooltip horizon (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "raised",
+                "surfaceColour": "#fbfaf7",
+                "source": "expression",
+                "ratio": 4.01,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "Follow pressed",
+                "role": "text",
+                "ink": "#eeebe4",
+                "alpha": 1,
+                "shown": "#eeebe4",
+                "surface": "followPressed",
+                "surfaceColour": "#212220",
+                "source": "expression",
+                "ratio": 13.42,
+                "required": 4.5,
+                "pass": true
+              },
+              {
+                "id": "legend word (text 3)",
+                "role": "text",
+                "ink": "#7b7d73",
+                "alpha": 1,
+                "shown": "#7b7d73",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-legend li color",
+                "ratio": 3.84,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend hold",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-sw-hold backgroundColor",
+                "ratio": 4.79,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend coast",
+                "role": "graphic",
+                "ink": "#437193",
+                "alpha": 1,
+                "shown": "#437193",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-sw-coast borderTopColor",
+                "ratio": 4.79,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend classify, hostile end",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.41,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend window",
+                "role": "graphic",
+                "ink": "#2862b0",
+                "alpha": 1,
+                "shown": "#2862b0",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-sw-window backgroundColor",
+                "ratio": 5.56,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend prep hatch",
+                "role": "graphic",
+                "ink": "#98691b",
+                "alpha": 1,
+                "shown": "#98691b",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 4.41,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend flight",
+                "role": "graphic",
+                "ink": "#2862b0",
+                "alpha": 1,
+                "shown": "#2862b0",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-sw-flight backgroundColor",
+                "ratio": 5.56,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend dwell",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 1,
+                "shown": "#416f8f",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-sw-dwell backgroundColor",
+                "ratio": 4.95,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend hard kill",
+                "role": "graphic",
+                "ink": "#d43725",
+                "alpha": 1,
+                "shown": "#d43725",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-sw-hard-kill backgroundColor",
+                "ratio": 4.41,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend mission kill",
+                "role": "graphic",
+                "ink": "#416f8f",
+                "alpha": 1,
+                "shown": "#416f8f",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-sw-mission-kill backgroundColor",
+                "ratio": 4.95,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend miss",
+                "role": "graphic",
+                "ink": "#666c74",
+                "alpha": 1,
+                "shown": "#666c74",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "element .runtl-sw-miss borderTopColor",
+                "ratio": 4.86,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "legend classify, unknown end (25 percent)",
+                "role": "graded step",
+                "ink": "#eec6bd",
+                "alpha": 1,
+                "shown": "#eec6bd",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 1.44,
+                "required": null,
+                "pass": null
+              },
+              {
+                "id": "playhead cap",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "panel",
+                "surfaceColour": "#f7f5f0",
+                "source": "expression",
+                "ratio": 14.66,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead cap",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "selected",
+                "surfaceColour": "#eae8e4",
+                "source": "expression",
+                "ratio": 13.09,
+                "required": 3,
+                "pass": true
+              },
+              {
+                "id": "playhead cap",
+                "role": "graphic",
+                "ink": "#212220",
+                "alpha": 1,
+                "shown": "#212220",
+                "surface": "unobserved",
+                "surfaceColour": "#eae6df",
+                "source": "expression",
+                "ratio": 12.86,
+                "required": 3,
+                "pass": true
+              }
+            ]
+          }
+        },
+        "darkSummary": {
+          "pairs": 121,
+          "required": 114,
+          "fail": 0,
+          "failing": []
+        },
+        "lightSummary": {
+          "pairs": 121,
+          "required": 114,
+          "fail": 0,
+          "failing": []
+        }
+      }
+    }
+  },
+  "shots": [
+    {
+      "file": "jiatf-execute-fresh-dark.png",
+      "board": "jiatf",
+      "state": "Detection fixture: KuRFS chain, spawn outside every ring, Execute at T+0 with a fresh profile, strip at the 264 px default, every group collapsed, dark theme",
+      "simTimeS": 0,
+      "observedThroughS": 0
+    },
+    {
+      "file": "jiatf-execute-fresh-daylight.png",
+      "board": "jiatf",
+      "state": "Detection fixture: KuRFS chain, spawn outside every ring, Execute at T+0 with a fresh profile, strip at the 264 px default, every group collapsed, daylight theme",
+      "simTimeS": 0,
+      "observedThroughS": 0
+    },
+    {
+      "file": "jiatf-execute-expanded-dark.png",
+      "board": "jiatf",
+      "state": "Execute after Expand all at T+0 and 20 s of play at 30x, paused; the sensor rows that gained a track during play are open, dark theme",
+      "simTimeS": 599.058,
+      "observedThroughS": 599.058
+    },
+    {
+      "file": "jiatf-execute-expanded-daylight.png",
+      "board": "jiatf",
+      "state": "Execute after Expand all at T+0 and 20 s of play at 30x, paused; the sensor rows that gained a track during play are open, daylight theme",
+      "simTimeS": 599.058,
+      "observedThroughS": 599.058
+    },
+    {
+      "file": "jiatf-analyze-fit-dark.png",
+      "board": "jiatf",
+      "state": "Analyze after the run completes, Fit, the C2 group open: assign labels print only where the gap holds them, dark theme",
+      "simTimeS": 1500,
+      "observedThroughS": 1500
+    },
+    {
+      "file": "jiatf-analyze-fit-daylight.png",
+      "board": "jiatf",
+      "state": "Analyze after the run completes, Fit, the C2 group open: assign labels print only where the gap holds them, daylight theme",
+      "simTimeS": 1500,
+      "observedThroughS": 1500
+    },
+    {
+      "file": "perf54-execute-fresh-dark.png",
+      "board": "perf54",
+      "state": "Layered (Acoustic + MEROPS), Execute at T+0 with a fresh profile, strip at the 264 px default, every group collapsed, dark theme",
+      "simTimeS": 0,
+      "observedThroughS": 0
+    },
+    {
+      "file": "perf54-execute-fresh-daylight.png",
+      "board": "perf54",
+      "state": "Layered (Acoustic + MEROPS), Execute at T+0 with a fresh profile, strip at the 264 px default, every group collapsed, daylight theme",
+      "simTimeS": 0,
+      "observedThroughS": 0
+    },
+    {
+      "file": "perf54-execute-expanded-dark.png",
+      "board": "perf54",
+      "state": "Execute after Expand all at T+0 and 10 s of play at 30x, paused; the sensor rows that gained a track during play are open, dark theme",
+      "simTimeS": 299.877,
+      "observedThroughS": 299.877
+    },
+    {
+      "file": "perf54-execute-expanded-daylight.png",
+      "board": "perf54",
+      "state": "Execute after Expand all at T+0 and 10 s of play at 30x, paused; the sensor rows that gained a track during play are open, daylight theme",
+      "simTimeS": 299.877,
+      "observedThroughS": 299.877
+    },
+    {
+      "file": "perf54-analyze-fit-dark.png",
+      "board": "perf54",
+      "state": "Analyze after the run completes, Fit, the C2 group open: assign labels print only where the gap holds them, dark theme",
+      "simTimeS": 1322,
+      "observedThroughS": 1322
+    },
+    {
+      "file": "perf54-analyze-fit-daylight.png",
+      "board": "perf54",
+      "state": "Analyze after the run completes, Fit, the C2 group open: assign labels print only where the gap holds them, daylight theme",
+      "simTimeS": 1322,
+      "observedThroughS": 1322
+    }
+  ],
+  "errors": [],
+  "pass": {
+    "jiatf": {
+      "item1": true,
+      "item2": true,
+      "item3": true,
+      "item4": true,
+      "item5": true,
+      "item6": true,
+      "item7": true,
+      "item8": true,
+      "observation": true
+    },
+    "perf54": {
+      "item1": true,
+      "item2": true,
+      "item3": true,
+      "item4": true,
+      "item5": true,
+      "item6": true,
+      "item7": true,
+      "item8": true,
+      "observation": true
+    }
+  }
+}
