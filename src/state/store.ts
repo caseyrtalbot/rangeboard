@@ -362,8 +362,10 @@ export interface Store {
   toggleRunTimelineGroup: (key: RunTimelineKind) => void
   /**
    * One sensor row open or closed; clears `openSensorsAll`. `shownOpen` lists
-   * the sensor rows open on screen; while the flag is on the toggle starts
-   * from them, so clearing it closes no other row.
+   * the sensor rows open on screen and is required while the flag is on. The
+   * toggle then starts from `openSensors` plus `shownOpen`, so clearing the flag
+   * closes no other row, including a hidden row or one in a collapsed group or
+   * a closed fold.
    */
   toggleRunTimelineSensor: (rowKey: string, shownOpen?: readonly string[]) => void
   toggleRunTimelineFold: (foldKey: string) => void
@@ -1473,7 +1475,9 @@ export const useStore = create<Store>()((set, get) => {
       patchRunTimeline({ openGroups: toggled(get().ui.runTimeline.openGroups, key) }),
     toggleRunTimelineSensor: (rowKey, shownOpen) => {
       const { openSensors, openSensorsAll } = get().ui.runTimeline
-      const from = openSensorsAll && shownOpen ? shownOpen : openSensors
+      const from = openSensorsAll
+        ? [...new Set([...openSensors, ...(shownOpen ?? [])])]
+        : openSensors
       patchRunTimeline({ openSensors: toggled(from, rowKey), openSensorsAll: false })
     },
     toggleRunTimelineFold: (foldKey) =>

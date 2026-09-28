@@ -1950,6 +1950,14 @@ describe('run timeline state', () => {
     // With the flag off the stored list is the start.
     st.toggleRunTimelineSensor('sensor:s3', ['sensor:s9'])
     expect(tl().openSensors).toEqual(['sensor:s2', 'sensor:s3'])
+    // Under the flag the start is the stored list plus the rows on screen, so an
+    // open row that is not shown (hidden, collapsed group, closed fold) stays open.
+    st.expandAllRunTimeline(['sensor'], ['sensor:s1', 'sensor:hidden'])
+    st.toggleRunTimelineSensor('sensor:s1', ['sensor:s1', 'sensor:s2'])
+    expect(tl()).toMatchObject({
+      openSensors: ['sensor:hidden', 'sensor:s2'],
+      openSensorsAll: false,
+    })
   })
 
   it('seeks with Follow off and the shown viewport held, and never advances observation', () => {

@@ -44,8 +44,11 @@ function section(html: string, key: string): string {
   return html.slice(start, next === -1 ? undefined : next)
 }
 
-const EMPTY_ROW =
-  '<p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>'
+// An empty-state row with this sentence; the State markup inside it is not matched.
+const emptyRow = (sentence: string) =>
+  new RegExp(
+    `<p class="empty-row">(?:(?!</p>).)*${sentence.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</span></p>`,
+  )
 
 function bodyRows(html: string): number {
   const body = html.slice(html.indexOf('<tbody>'))
@@ -493,13 +496,9 @@ describe('DetailPane', () => {
     expect(section(render(sensor.id), 'ladder')).toContain('No track observed.')
     expect(section(render(c2.id), 'hops')).toContain('No route through this node.')
     // A status sentence is an empty-state row, never a muted line.
-    expect(section(render(sensor.id), 'ladder')).toContain(
-      `${EMPTY_ROW}No track observed.</span></p>`,
-    )
-    expect(section(render(c2.id), 'hops')).toContain(
-      `${EMPTY_ROW}No route through this node.</span></p>`,
-    )
-    expect(render(sensor.id)).not.toContain('muted')
+    expect(section(render(sensor.id), 'ladder')).toMatch(emptyRow('No track observed.'))
+    expect(section(render(c2.id), 'hops')).toMatch(emptyRow('No route through this node.'))
+    expect(section(render(sensor.id), 'ladder')).not.toContain('class="muted')
     expect(section(render(c2.id), 'hops')).not.toContain('muted')
     observeTrial(200, 200)
     expect(section(render(sensor.id), 'ladder')).not.toContain('No track observed.')

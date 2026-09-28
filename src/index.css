@@ -137,7 +137,6 @@
      Sentence case is the rule: no tracked caps, no condensed cuts. */
   --type-display-size: 26px;
   --type-display-weight: 500;
-  --type-value-size: 24px;
   --type-value-weight: 400;
   --type-title-size: 13px;
   --type-title-weight: 500;
@@ -5170,10 +5169,6 @@ input[type='number'] {
 
 .fid-tag[data-validation='none'] {
   color: var(--warn);
-}
-
-.telemetry-note {
-  margin: 0 0 2px;
 }
 
 .debrief-actions {

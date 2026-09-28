@@ -676,9 +676,9 @@ export default function App() {
   const setBoardPhase = useStore((s) => s.setBoardPhase)
 
   useEffect(() => {
-    // The Model library tab left the row; a saved view that holds it opens on analysis.
-    const saved: string | undefined = savedView().rightTab
-    if (saved == null || saved === 'library') setRightTab('analysis')
+    // savedView drops the retired Model library tab, so a view without a tab opens on analysis.
+    const saved = savedView().rightTab
+    if (saved == null) setRightTab('analysis')
   }, [setRightTab])
   // Primitives only: a whole `selection` or `scenario` subscription would re-render
   // the Board tree on every click and every edit.

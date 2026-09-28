@@ -13,6 +13,12 @@ function render() {
 
 afterEach(() => vi.restoreAllMocks())
 
+// A status line inside role="status" renders as an EmptyRow; the State markup is not matched.
+const emptyRow = (sentence: string) =>
+  new RegExp(
+    `<div role="status"><p class="empty-row">(?:(?!</p>).)*${sentence.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</span></p></div>`,
+  )
+
 // Execute holds the Play control, so the placeholder carries it inline.
 const nowPlay =
   '<p class="muted small">No trial yet. Press <button class="mini">Play</button> to run one.</p>'
@@ -126,9 +132,9 @@ describe('NowScreen cursor telemetry', () => {
     installTrial()
     const trial = useStore.getState().trial
     useStore.setState({ trial: { ...trial, status: 'preparing' } })
-    expect(render()).toContain('Preparing trial')
+    expect(render()).toMatch(emptyRow('Preparing trial'))
     useStore.setState({ trial: { ...trial, status: 'error', error: 'Preparation failed' } })
-    expect(render()).toContain('Preparation failed')
+    expect(render()).toMatch(emptyRow('Preparation failed'))
     expect(render()).not.toContain('<table')
   })
 })

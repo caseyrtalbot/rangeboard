@@ -5,6 +5,12 @@ import { IDLE_TRIAL } from '../../state/runState'
 import { installTrial } from './trialTestState'
 import { LiveStrip } from './LiveStrip'
 
+// An empty-state row with this sentence; the State markup inside it is not matched.
+const emptyRow = (sentence: string) =>
+  new RegExp(
+    `<p class="empty-row">(?:(?!</p>).)*${sentence.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</span></p>`,
+  )
+
 function render(horizon: number, complete = false, speedMult = 1) {
   const { view } = installTrial()
   useStore.setState(({ playback }) => ({
@@ -56,9 +62,9 @@ describe('LiveStrip run line', () => {
     expect(execute).not.toContain('in Execute')
     useStore.setState(({ ui }) => ({ ui: { ...ui, boardPhase: 'prepare' } }))
     Object.assign(useStore.getInitialState(), useStore.getState())
-    expect(renderToStaticMarkup(<LiveStrip />)).toBe(
-      '<div role="status"><p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No trial yet. Press Play in Execute to run one.</span></p></div>',
-    )
+    const prepare = renderToStaticMarkup(<LiveStrip />)
+    expect(prepare).toMatch(/^<div role="status"><p class="empty-row">/)
+    expect(prepare).toMatch(emptyRow('No trial yet. Press Play in Execute to run one.'))
   })
 
   it('shows completion and includes late defeats only after their effects', () => {

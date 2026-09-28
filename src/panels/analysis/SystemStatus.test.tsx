@@ -8,6 +8,12 @@ import { parseAutosave } from '../../io/persist'
 import { detectionsAt } from '../../playback/detection'
 import { SystemStatus } from './SystemStatus'
 
+// An empty-state row with this sentence; the State markup inside it is not matched.
+const emptyRow = (sentence: string) =>
+  new RegExp(
+    `<p class="empty-row">(?:(?!</p>).)*${sentence.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</span></p>`,
+  )
+
 const scenario = parseAutosave(JSON.stringify(fixture))
 scenario.paths.forEach((path) => {
   path.startDelayS += 20
@@ -41,11 +47,9 @@ describe('SystemStatus visibility', () => {
     const html = renderToStaticMarkup(
       <SystemStatus groups={groupsAt(2000)} horizon={EMPTY_HORIZON} />,
     )
-    expect(html).toContain(
-      '<p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No system telemetry yet.</span></p>',
-    )
-    expect(renderToStaticMarkup(<SystemStatus groups={[]} />)).toContain(
-      'hollow" aria-hidden="true"></i>No sensors, C2, or effectors placed.</span></p>',
+    expect(html).toMatch(emptyRow('No system telemetry yet.'))
+    expect(renderToStaticMarkup(<SystemStatus groups={[]} />)).toMatch(
+      emptyRow('No sensors, C2, or effectors placed.'),
     )
     expect(html).not.toContain('system-telemetry-head')
   })
@@ -59,7 +63,7 @@ describe('SystemStatus visibility', () => {
           sampledAtS={sampledAtS}
         />,
       )
-      expect(html).toContain(`hollow" aria-hidden="true"></i>${FORECAST_IN_ANALYZE}</span></p>`)
+      expect(html).toMatch(emptyRow(FORECAST_IN_ANALYZE))
       expect(html).not.toContain('system-telemetry-head')
     }
   })

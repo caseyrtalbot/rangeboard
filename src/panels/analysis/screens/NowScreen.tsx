@@ -9,6 +9,7 @@ import { formatTime } from '../../../geometry/geo'
 import { State } from '../../../ui/kit'
 import { LiveStrip, PlayPrompt } from '../LiveStrip'
 import { stateTone } from '../SystemStatus'
+import { EmptyRow } from '../controls'
 
 const SettingsPanel = lazy(() =>
   import('../../SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
@@ -147,9 +148,9 @@ export function NowScreen() {
   }
   if (!view || !data || !index) {
     return (
-      <p className="muted small" role="status">
-        {selection.status === 'error' ? selection.message : 'Preparing trial'}
-      </p>
+      <div role="status">
+        <EmptyRow>{selection.status === 'error' ? selection.message : 'Preparing trial'}</EmptyRow>
+      </div>
     )
   }
 
