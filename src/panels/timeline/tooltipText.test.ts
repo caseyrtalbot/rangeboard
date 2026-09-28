@@ -5,7 +5,7 @@ import type {
   RunTimelineRow,
   RunTimelineSpan,
 } from '../../analysis/runTimeline'
-import { horizonText, liveHit, tooltipText } from './tooltipText'
+import { headerText, horizonText, liveHit, tooltipText } from './tooltipText'
 
 const row: RunTimelineRow = {
   key: 'effector:gun',
@@ -100,6 +100,16 @@ describe('horizonText', () => {
   it('reads the horizon, or that nothing is observed', () => {
     expect(mark({ kind: 'miss', tS: 1 }).horizon).toBe('Shown through T+3:20')
     expect(horizonText(-Infinity)).toBe('No outcomes observed yet')
+  })
+})
+
+describe('headerText', () => {
+  it('reads Complete at the run end once the horizon reaches it, else the horizon line', () => {
+    expect(headerText(1500, 1500)).toBe('Complete · T+25:00')
+    expect(headerText(1499, 1500)).toBe('Shown through T+24:59')
+    expect(headerText(-Infinity, 1500)).toBe('No outcomes observed yet')
+    // A run of no length is never complete.
+    expect(headerText(0, 0)).toBe('Shown through T+0:00')
   })
 })
 

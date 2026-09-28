@@ -1930,6 +1930,28 @@ describe('run timeline state', () => {
     st.toggleRunTimelineSensor('sensor:s1')
   })
 
+  it('keeps sensor rows open through Expand all until Collapse all or a row toggle', () => {
+    const st = useStore.getState()
+    const tl = () => useStore.getState().ui.runTimeline
+    expect(tl().openSensorsAll).toBe(false)
+    st.expandAllRunTimeline(['sensor'], ['sensor:s1'])
+    expect(tl()).toMatchObject({ openSensors: ['sensor:s1'], openSensorsAll: true })
+    st.collapseAllRunTimeline()
+    expect(tl()).toMatchObject({
+      openGroups: [],
+      openSensors: ['sensor:s1'],
+      openSensorsAll: false,
+    })
+    // A row toggle under the flag starts from the rows open on screen, so a row
+    // opened by the flag alone (s2) stays open.
+    st.expandAllRunTimeline(['sensor'], ['sensor:s1'])
+    st.toggleRunTimelineSensor('sensor:s1', ['sensor:s1', 'sensor:s2'])
+    expect(tl()).toMatchObject({ openSensors: ['sensor:s2'], openSensorsAll: false })
+    // With the flag off the stored list is the start.
+    st.toggleRunTimelineSensor('sensor:s3', ['sensor:s9'])
+    expect(tl().openSensors).toEqual(['sensor:s2', 'sensor:s3'])
+  })
+
   it('seeks with Follow off and the shown viewport held, and never advances observation', () => {
     const st = useStore.getState()
     prepareReadyTrial()

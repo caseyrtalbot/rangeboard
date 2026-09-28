@@ -64,6 +64,17 @@ export function horizonText(horizonS: number): string {
     : 'No outcomes observed yet'
 }
 
+/**
+ * The header's horizon text: `Complete · T+m:ss` (the run end) once the
+ * horizon reaches a run of positive length, as the mockup reads in Analyze;
+ * else the horizon line. The accessible name and the tooltip keep `horizonText`.
+ */
+export function headerText(horizonS: number, durationS: number): string {
+  return durationS > 0 && horizonS >= durationS
+    ? `Complete · ${runTimeText(durationS)}`
+    : horizonText(horizonS)
+}
+
 function spanTitle(span: RunTimelineSpan): string {
   if (span.kind !== 'classify') return SPAN_TITLE[span.kind]
   // A classify span without a band draws as unknown (LaneMarks, Overview).

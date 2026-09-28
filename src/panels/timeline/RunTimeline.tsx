@@ -11,10 +11,11 @@ import { Controls } from './Controls'
 import { Gutter } from './Gutter'
 import type { RunTimelineHit } from './hit'
 import { GUTTER_W, stripLayout, type Placed } from './layout'
+import { Legend } from './Legend'
 import { Overview } from './Overview'
 import { Plot } from './Plot'
 import { Tooltip, type TooltipHandle } from './Tooltip'
-import { horizonText } from './tooltipText'
+import { headerText, horizonText } from './tooltipText'
 import { useRunTimelineSeek } from './useRunTimelineSeek'
 import { useBindRowView, createRowView } from './useRowWindow'
 import { useScrollToSelection, useSelectedLines } from './useRunTimelineSelection'
@@ -65,14 +66,18 @@ export function RunTimeline() {
   const model = useMemo(() => (view ? runTimelineOf(view, horizonS) : null), [view, horizonS])
   const openGroups = useStore((s) => s.ui.runTimeline.openGroups)
   const openSensors = useStore((s) => s.ui.runTimeline.openSensors)
+  const openSensorsAll = useStore((s) => s.ui.runTimeline.openSensorsAll)
   const openFolds = useStore((s) => s.ui.runTimeline.openFolds)
   const hiddenRows = useStore((s) => s.ui.runTimeline.hiddenRows)
   const follow = useStore((s) => s.ui.runTimeline.follow)
   const viewport = useStore((s) => s.ui.runTimeline.viewport)
 
   const layout = useMemo(
-    () => (model ? stripLayout(model, { openGroups, openSensors, openFolds, hiddenRows }) : null),
-    [model, openGroups, openSensors, openFolds, hiddenRows],
+    () =>
+      model
+        ? stripLayout(model, { openGroups, openSensors, openSensorsAll, openFolds, hiddenRows })
+        : null,
+    [model, openGroups, openSensors, openSensorsAll, openFolds, hiddenRows],
   )
   const durationS = model?.durationS ?? 0
   const base = useMemo(
@@ -112,9 +117,10 @@ export function RunTimeline() {
   }, [])
   useViewportGestures(scrollRef, plotRef, { base, follow, durationS, widthPx })
 
-  // The header, the accessible name and the tooltip share one horizon text (SPEC 1.4).
+  // The accessible name and the tooltip share one horizon text (SPEC 1.4).
   const scope = horizonText(model ? model.horizonS : -Infinity)
-  // The accessible name also says when the whole run is shown.
+  // The accessible name also says when the whole run is shown; the header
+  // then reads `Complete · T+m:ss`, as the mockup does.
   const complete = model != null && model.durationS > 0 && model.horizonS >= model.durationS
   const name = `Run timeline. ${complete ? 'Complete. ' : ''}${scope}`
   return (
@@ -130,7 +136,8 @@ export function RunTimeline() {
         <>
           <div className="runtl-head">
             <span className="runtl-title">Run timeline</span>
-            <span className="runtl-scope">{scope}</span>
+            <span className="runtl-scope">{headerText(model.horizonS, model.durationS)}</span>
+            <Legend />
             <span className="runtl-spacer" />
             {layout.hiddenCount > 0 && (
               <button

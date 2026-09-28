@@ -166,7 +166,7 @@ export interface UiState {
 
 /** Strip height limits, px. The upper limit is this fraction of the window height. */
 export const RUN_TIMELINE_MIN_H = 120
-export const RUN_TIMELINE_DEFAULT_H = 240
+export const RUN_TIMELINE_DEFAULT_H = 264
 export const RUN_TIMELINE_MAX_FRACTION = 0.6
 
 /** Run timeline state. Only `open` and `heightPx` persist; the rest is session only. */
@@ -177,6 +177,12 @@ export interface RunTimelineUi {
   openGroups: readonly RunTimelineKind[]
   /** Sensor row keys expanded to one sub-lane per held track. */
   openSensors: readonly string[]
+  /**
+   * Expand all is in force: every sensor row with a held track is open,
+   * including a row that gains its first track later. Collapse all or a
+   * single sensor toggle clears it.
+   */
+  openSensorsAll: boolean
   /** Same-name threat folds (past GROUP_AT rows) expanded to their members, by fold key. */
   openFolds: readonly string[]
   /** Row keys hidden with the row's × control. */
@@ -354,7 +360,12 @@ export interface Store {
    */
   setRunTimelineHeight: (px: number, persist?: boolean) => void
   toggleRunTimelineGroup: (key: RunTimelineKind) => void
-  toggleRunTimelineSensor: (rowKey: string) => void
+  /**
+   * One sensor row open or closed; clears `openSensorsAll`. `shownOpen` lists
+   * the sensor rows open on screen; while the flag is on the toggle starts
+   * from them, so clearing it closes no other row.
+   */
+  toggleRunTimelineSensor: (rowKey: string, shownOpen?: readonly string[]) => void
   toggleRunTimelineFold: (foldKey: string) => void
   hideRunTimelineRow: (rowKey: string) => void
   showAllRunTimelineRows: () => void
@@ -365,9 +376,15 @@ export interface Store {
    * and false; Follow off passes the shown viewport and false, so nothing jumps.
    */
   setRunTimelineViewport: (viewport: TimeViewport, follow?: boolean) => void
-  /** Collapse all: every group back to its summary row. Sensor rows keep their state. */
+  /**
+   * Collapse all: every group back to its summary row and `openSensorsAll`
+   * off. Sensor rows opened one by one keep their state.
+   */
   collapseAllRunTimeline: () => void
-  /** Expand all: `groups` open and `sensorRows` open to their sub-lanes, in one write. */
+  /**
+   * Expand all: `groups` open, `sensorRows` open to their sub-lanes and
+   * `openSensorsAll` on, in one write.
+   */
   expandAllRunTimeline: (groups: readonly RunTimelineKind[], sensorRows: readonly string[]) => void
   /**
    * A mark seek (SPEC 1.5): Follow off with the viewport held at `shown`, then
@@ -620,6 +637,7 @@ export const useStore = create<Store>()((set, get) => {
         heightPx: savedRunTimelineHeight(),
         openGroups: [],
         openSensors: [],
+        openSensorsAll: false,
         openFolds: [],
         hiddenRows: [],
         follow: true,
@@ -1453,8 +1471,11 @@ export const useStore = create<Store>()((set, get) => {
     },
     toggleRunTimelineGroup: (key) =>
       patchRunTimeline({ openGroups: toggled(get().ui.runTimeline.openGroups, key) }),
-    toggleRunTimelineSensor: (rowKey) =>
-      patchRunTimeline({ openSensors: toggled(get().ui.runTimeline.openSensors, rowKey) }),
+    toggleRunTimelineSensor: (rowKey, shownOpen) => {
+      const { openSensors, openSensorsAll } = get().ui.runTimeline
+      const from = openSensorsAll && shownOpen ? shownOpen : openSensors
+      patchRunTimeline({ openSensors: toggled(from, rowKey), openSensorsAll: false })
+    },
     toggleRunTimelineFold: (foldKey) =>
       patchRunTimeline({ openFolds: toggled(get().ui.runTimeline.openFolds, foldKey) }),
     hideRunTimelineRow: (rowKey) => {
@@ -1465,9 +1486,13 @@ export const useStore = create<Store>()((set, get) => {
     setRunTimelineFollow: (follow) => patchRunTimeline({ follow }),
     setRunTimelineViewport: (viewport, follow) =>
       patchRunTimeline(follow == null ? { viewport } : { viewport, follow }),
-    collapseAllRunTimeline: () => patchRunTimeline({ openGroups: [] }),
+    collapseAllRunTimeline: () => patchRunTimeline({ openGroups: [], openSensorsAll: false }),
     expandAllRunTimeline: (groups, sensorRows) =>
-      patchRunTimeline({ openGroups: [...groups], openSensors: [...sensorRows] }),
+      patchRunTimeline({
+        openGroups: [...groups],
+        openSensors: [...sensorRows],
+        openSensorsAll: true,
+      }),
     seekRunTimeline: (tS, shown) => {
       patchRunTimeline({ viewport: shown, follow: false })
       get().scrubTo(tS)

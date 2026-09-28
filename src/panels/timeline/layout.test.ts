@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { RunTimelineModel, RunTimelineRow } from '../../analysis/runTimeline'
-import { lineWindow, MIN_OVERSCAN_PX, playheadX, stripLayout, type Placed } from './layout'
+import {
+  assignLabelMinPx,
+  LABEL_MIN_PX,
+  lineWindow,
+  MIN_OVERSCAN_PX,
+  openSensorKeys,
+  playheadX,
+  stripLayout,
+  type Placed,
+} from './layout'
 
 function row(kind: RunTimelineRow['kind'], id: string, label: string): RunTimelineRow {
   return { key: `${kind}:${id}`, kind, label, meta: '', entityId: id, spans: [], marks: [] }
@@ -30,7 +39,13 @@ const model: RunTimelineModel = {
   ],
 }
 
-const CLOSED = { openGroups: [], openSensors: [], openFolds: [], hiddenRows: [] }
+const CLOSED = {
+  openGroups: [],
+  openSensors: [],
+  openSensorsAll: false,
+  openFolds: [],
+  hiddenRows: [],
+}
 const keys = (lines: Placed[]) => lines.map((line) => line.key)
 const find = (lines: Placed[], key: string) => lines.find((line) => line.key === key)
 
@@ -98,6 +113,44 @@ describe('stripLayout', () => {
     expect(find(layout.lines, 'fold:Lancet')).toBeUndefined()
     expect(find(layout.lines, 'fold:Shahed')).toBeDefined()
     expect(layout.hiddenCount).toBe(2)
+  })
+
+  it('opens a sensor row that holds a track while Expand all is in force', () => {
+    const eo: RunTimelineRow = { ...row('sensor', 'eo', 'EO'), subLanes: [] }
+    const early: RunTimelineModel = {
+      ...model,
+      groups: [{ ...model.groups[0], rows: [radar, eo] }, model.groups[1]],
+    }
+    const state = { ...CLOSED, openGroups: ['sensor' as const], openSensorsAll: true }
+    // EO holds no track yet: it stays a closed row with no sub-lanes.
+    const before = stripLayout(early, state)
+    expect(find(before.lines, 'sensor:eo')).toMatchObject({ open: false })
+    expect(find(before.lines, 'sensor:radar')).toMatchObject({ open: true })
+    // A later horizon gives EO its first track; it opens with no new action.
+    const later: RunTimelineModel = {
+      ...early,
+      groups: [
+        {
+          ...early.groups[0],
+          rows: [radar, { ...eo, subLanes: [row('track', 'eo:s3', 'Shahed 3')] }],
+        },
+        early.groups[1],
+      ],
+    }
+    const after = stripLayout(later, state)
+    expect(find(after.lines, 'sensor:eo')).toMatchObject({ open: true })
+    expect(find(after.lines, 'track:eo:s3')).toBeDefined()
+    expect(openSensorKeys(after.lines)).toEqual(['sensor:radar', 'sensor:eo'])
+    // Without the flag only the listed rows open.
+    const listed = stripLayout(later, { ...state, openSensorsAll: false })
+    expect(openSensorKeys(listed.lines)).toEqual([])
+  })
+
+  it('sizes the C2 assign label gap by its text, never under the 44 px rule', () => {
+    expect(LABEL_MIN_PX).toBe(44)
+    expect(assignLabelMinPx('Gun')).toBe(44)
+    expect(assignLabelMinPx('Coyote 1')).toBe(65)
+    expect(assignLabelMinPx('RfOne Mk2 RF 1')).toBe(105)
   })
 
   it('drops a hidden sensor with its sub-lanes', () => {

@@ -19,6 +19,15 @@ describe('Controls', () => {
     expect(html).not.toContain('disabled')
   })
 
+  it('keeps every header control at the 24 px mini height', () => {
+    const html = renderToStaticMarkup(
+      <Controls model={model} base={{ t0S: 0, winS: 120 }} follow />,
+    )
+    const buttons = html.match(/<button [^>]*>/g) ?? []
+    expect(buttons).toHaveLength(6)
+    for (const b of buttons) expect(b).toMatch(/class="mini( runtl-follow)?"/)
+  })
+
   it('names the window readout for a screen reader without changing its text', () => {
     const html = renderToStaticMarkup(
       <Controls model={model} base={{ t0S: 0, winS: 120 }} follow />,
