@@ -103,6 +103,13 @@ describe('RunTimeline rows', () => {
     expect(html).not.toContain('aria-label="Hide radar"')
   })
 
+  it('makes each entity row label a button', () => {
+    session({ openGroups: ['threat'] })
+    const html = render()
+    expect(count(html, 'class="runtl-name runtl-select"')).toBe(3)
+    expect(html).toContain('class="runtl-name runtl-select" title="swarm">swarm</button>')
+  })
+
   it('expands a sensor row to one sub-lane per held track', () => {
     session({ openGroups: ['sensor'] })
     const closed = render()
@@ -187,12 +194,18 @@ describe('RunTimeline viewport mapping', () => {
 describe('RunTimeline transforms', () => {
   const base = { t0S: 30, winS: 60 }
   const glide = 'transition:transform 100ms linear'
+  const still = 'transition:none'
 
-  it('draws axis ticks at absolute run-time x inside the rows pan and glide', () => {
+  it('draws axis ticks at absolute run-time x inside the rows pan, gliding only with Follow', () => {
     const html = renderToStaticMarkup(
       <Axis base={base} follow={false} durationS={300} widthPx={600} pxPerS={10} />,
     )
-    expect(html).toContain(`style="transform:translateX(${panPx(30, 10)}px);${glide}"`)
+    expect(html).toContain(`style="transform:translateX(${panPx(30, 10)}px);${still}"`)
+    expect(
+      renderToStaticMarkup(
+        <Axis base={base} follow={true} durationS={300} widthPx={600} pxPerS={10} />,
+      ),
+    ).toContain(glide)
     // One window either side of the shown one, clipped at 0: ticks 0 to 150 s every 10 s.
     expect(html).toContain('x1="0"')
     expect(html).toContain('x1="600"')
@@ -200,12 +213,15 @@ describe('RunTimeline transforms', () => {
     expect(html).not.toContain('x1="1600"')
   })
 
-  it('moves the overview window with the same glide', () => {
+  it('moves the overview window with the same transition', () => {
     const model = { durationS: 300, horizonS: 300, groups: [] }
     const html = renderToStaticMarkup(
       <Overview model={model} base={base} follow={false} widthPx={600} />,
     )
-    expect(html).toContain(`style="transform:translateX(60px);${glide}" x="0"`)
+    expect(html).toContain(`style="transform:translateX(60px);${still}" x="0"`)
+    expect(
+      renderToStaticMarkup(<Overview model={model} base={base} follow={true} widthPx={600} />),
+    ).toContain(glide)
   })
 
   it('keeps the playhead inside the plot at the run end, unrounded like the pan', () => {
@@ -224,11 +240,39 @@ describe('RunTimeline transforms', () => {
           follow={false}
           durationS={300}
           horizonS={300}
+          selected={new Set()}
+          onItemClick={() => {}}
+          onItemHover={() => {}}
         />,
       )
     }
+    const row: RunTimelineRow = {
+      key: 'threat:t1',
+      kind: 'threat',
+      label: 't1',
+      meta: '',
+      entityId: 't1',
+      spans: [],
+      marks: [],
+    }
+    const selected = renderToStaticMarkup(
+      <Plot
+        lines={[{ t: 'row', key: row.key, row, open: false, inFold: false, y: 18, h: 18 }]}
+        heightPx={36}
+        widthPx={600}
+        pxPerS={5}
+        base={{ t0S: 0, winS: 120 }}
+        follow={false}
+        durationS={300}
+        horizonS={300}
+        selected={new Set([row.key])}
+        onItemClick={() => {}}
+        onItemHover={() => {}}
+      />,
+    )
+    expect(selected).toContain('class="runtl-ground-selected" x="0" y="18" width="600" height="18"')
     const end = plot(180)
-    expect(end).toContain(`class="runtl-pan" style="transform:translateX(-900px);${glide}"`)
+    expect(end).toContain(`class="runtl-pan" style="transform:translateX(-900px);${still}"`)
     // 1499 - 900 = 599: the playhead's one pixel is the plot's last column.
     expect(end).toContain(`class="runtl-playhead" style="transform:translateX(1499px);${glide}"`)
     observeTrial(300, 100.1)

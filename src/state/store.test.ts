@@ -1902,4 +1902,63 @@ describe('run timeline state', () => {
     expect(writes).not.toHaveBeenCalled()
     expect([...storage]).toEqual([['sentinel', 'unchanged']])
   })
+
+  it('sets the viewport alone, or with Follow in the same write', () => {
+    const st = useStore.getState()
+    const tl = () => useStore.getState().ui.runTimeline
+    st.setRunTimelineFollow(true)
+    st.setRunTimelineViewport({ t0S: 5, winS: 20 })
+    expect(tl().follow).toBe(true)
+    let writes = 0
+    const unsubscribe = useStore.subscribe(() => writes++)
+    st.setRunTimelineViewport({ t0S: 40, winS: 20 }, false)
+    unsubscribe()
+    expect(writes).toBe(1)
+    expect(tl()).toMatchObject({ viewport: { t0S: 40, winS: 20 }, follow: false })
+  })
+
+  it('collapses every group, and expands the given groups and sensor rows', () => {
+    const st = useStore.getState()
+    const tl = () => useStore.getState().ui.runTimeline
+    st.toggleRunTimelineGroup('c2')
+    st.expandAllRunTimeline(['sensor', 'threat'], ['sensor:s1'])
+    expect(tl().openGroups).toEqual(['sensor', 'threat'])
+    expect(tl().openSensors).toEqual(['sensor:s1'])
+    st.collapseAllRunTimeline()
+    expect(tl().openGroups).toEqual([])
+    expect(tl().openSensors).toEqual(['sensor:s1'])
+    st.toggleRunTimelineSensor('sensor:s1')
+  })
+
+  it('seeks with Follow off and the shown viewport held, and never advances observation', () => {
+    const st = useStore.getState()
+    prepareReadyTrial()
+    st.startRun()
+    st.advanceRun(12.5)
+    expect(useStore.getState().ui.runTimeline.follow).toBe(true)
+    const shown = { t0S: 0, winS: 30 }
+    useStore.getState().seekRunTimeline(50, shown)
+    const after = useStore.getState()
+    expect(after.ui.runTimeline.follow).toBe(false)
+    expect(after.ui.runTimeline.viewport).toBe(shown)
+    expect(after.playback.playing).toBe(false)
+    expect(after.playback.simTimeS).toBe(50)
+    expect(after.playback.observedThroughS).toBe(12.5)
+    useStore.getState().seekRunTimeline(4, shown)
+    expect(useStore.getState().playback.observedThroughS).toBe(12.5)
+  })
+
+  it('turns Follow on when playback starts, and leaves it on pause', () => {
+    const st = useStore.getState()
+    st.setRunTimelineViewport({ t0S: 0, winS: 30 }, false)
+    prepareReadyTrial()
+    st.startRun()
+    expect(useStore.getState().ui.runTimeline.follow).toBe(true)
+    useStore.getState().setRunTimelineViewport({ t0S: 0, winS: 30 }, false)
+    useStore.getState().pauseRun()
+    expect(useStore.getState().ui.runTimeline.follow).toBe(false)
+    useStore.getState().playbackCommand({ type: 'toggle' })
+    expect(useStore.getState().playback.playing).toBe(true)
+    expect(useStore.getState().ui.runTimeline.follow).toBe(true)
+  })
 })

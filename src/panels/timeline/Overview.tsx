@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import type { RunTimelineModel } from '../../analysis/runTimeline'
 import type { TimeViewport } from '../../charts/timeViewport'
-import { GLIDE, useShownT0 } from './useShownT0'
+import { panGlide, useShownT0 } from './useShownT0'
 
 const OVER_H = 22
 /** Threat ramp band height, px; many threats share the band. */
@@ -99,7 +99,7 @@ function Window({
     <rect
       key={scale}
       className="runtl-over-window"
-      style={{ transform: `translateX(${t0S * scale}px)`, transition: GLIDE }}
+      style={{ transform: `translateX(${t0S * scale}px)`, transition: panGlide(follow) }}
       x={0}
       y={0.5}
       width={Math.max(2, base.winS * scale)}

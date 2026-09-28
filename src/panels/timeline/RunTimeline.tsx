@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { runTimelineOf } from '../../analysis/runTimeline'
 import { clampViewport, DEFAULT_WINDOW_S, type TimeViewport } from '../../charts/timeViewport'
 import { formatTime } from '../../geometry/geo'
@@ -7,13 +7,20 @@ import { useStore } from '../../state/store'
 import { selectTrialHorizon, type TrialSelection } from '../../state/trialSelectors'
 import { trialViewOf, useTrialResult } from '../analysis/controls'
 import { Axis } from './Axis'
+import { Controls } from './Controls'
 import { Gutter } from './Gutter'
-import { GUTTER_W, stripLayout } from './layout'
+import type { RunTimelineHit } from './hit'
+import { GUTTER_W, stripLayout, type Placed } from './layout'
 import { Overview } from './Overview'
 import { Plot } from './Plot'
+import { Tooltip, type TooltipHandle } from './Tooltip'
+import { useRunTimelineSeek } from './useRunTimelineSeek'
+import { useScrollToSelection, useSelectedLines } from './useRunTimelineSelection'
+import { useViewportGestures } from './useViewportGestures'
 
 /** The viewport a session starts with; one object so a clamp can return it as is. */
 const DEFAULT_VIEWPORT: TimeViewport = { t0S: 0, winS: DEFAULT_WINDOW_S }
+const NO_LINES: Placed[] = []
 
 /** The one status line while no trial can supply outcomes (SPEC 1.1). */
 function stateText(selection: TrialSelection): string {
@@ -35,7 +42,9 @@ function scopeText(horizonS: number | null): string {
  * inside `.runtl-dock`, which holds the height; the root fills it. The model
  * arrives censored at the horizon; this component maps times to pixels and
  * never compares a time with the horizon. Session state lives in
- * `ui.runTimeline`; each field has its own selector.
+ * `ui.runTimeline`; each field has its own selector. Phase 3 wires the board
+ * link (`useRunTimelineSelection`, `useRunTimelineSeek`) and the pointer and
+ * keyboard controls (`Controls`, `Tooltip`, `useViewportGestures`) here.
  */
 export function RunTimeline() {
   const trial = useTrialResult()
@@ -79,10 +88,24 @@ export function RunTimeline() {
   }, [hasModel])
   const pxPerS = widthPx > 0 && base.winS > 0 ? widthPx / base.winS : 0
 
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const tipRef = useRef<TooltipHandle | null>(null)
+  const lines = layout ? layout.lines : NO_LINES
+  const selected = useSelectedLines(lines)
+  useScrollToSelection(scrollRef, lines, selected)
+  const seek = useRunTimelineSeek(base, follow, durationS)
+  const hover = useCallback((hit: RunTimelineHit | null, clientX: number, clientY: number) => {
+    if (hit) tipRef.current?.show(hit, clientX, clientY)
+    else tipRef.current?.hide()
+  }, [])
+  useViewportGestures(scrollRef, plotRef, { base, follow, durationS, widthPx })
+
   const scope = scopeText(model ? model.horizonS : null)
   const style = { '--runtl-gutter': `${GUTTER_W}px` } as CSSProperties
   return (
     <div
+      ref={rootRef}
       id="run-timeline"
       className="runtl"
       role="group"
@@ -104,9 +127,10 @@ export function RunTimeline() {
                 {`Show all (${layout.hiddenCount} hidden)`}
               </button>
             )}
+            <Controls model={model} base={base} follow={follow} />
           </div>
-          <div className="runtl-scroll">
-            <Gutter lines={layout.lines} />
+          <div className="runtl-scroll" ref={scrollRef}>
+            <Gutter lines={layout.lines} selected={selected} />
             <div className="runtl-plotcol" ref={plotRef}>
               <Plot
                 lines={layout.lines}
@@ -117,6 +141,9 @@ export function RunTimeline() {
                 follow={follow}
                 durationS={durationS}
                 horizonS={model.horizonS}
+                selected={selected}
+                onItemClick={seek}
+                onItemHover={hover}
               />
             </div>
           </div>
@@ -128,6 +155,7 @@ export function RunTimeline() {
             pxPerS={pxPerS}
           />
           <Overview model={model} base={base} follow={follow} widthPx={widthPx} />
+          <Tooltip ref={tipRef} rootRef={rootRef} horizonS={model.horizonS} />
         </>
       ) : (
         <p className="runtl-empty" role="status">

@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { viewportTicks, type TimeViewport } from '../../charts/timeViewport'
 import { formatTime } from '../../geometry/geo'
 import { panPx } from './layout'
-import { GLIDE, useShownT0 } from './useShownT0'
+import { panGlide, useShownT0 } from './useShownT0'
 
 const AXIS_H = 20
 
@@ -11,7 +11,8 @@ const AXIS_H = 20
  * `viewportTicks`, drawn at absolute run-time x inside the same pan transform
  * and glide as the rows, so the ticks and the rows move together. The tick set
  * spans one window either side of the shown one, so a glide never uncovers a
- * gap; the SVG clips at the plot width. Keyed by scale: only a pan glides.
+ * gap; the SVG clips at the plot width. Keyed by scale: only a Follow pan
+ * glides.
  */
 export const Axis = memo(function Axis({
   base,
@@ -36,7 +37,7 @@ export const Axis = memo(function Axis({
       <svg className="runtl-axis-svg" width={widthPx} height={AXIS_H} aria-hidden="true">
         <g
           key={pxPerS}
-          style={{ transform: `translateX(${panPx(t0S, pxPerS)}px)`, transition: GLIDE }}
+          style={{ transform: `translateX(${panPx(t0S, pxPerS)}px)`, transition: panGlide(follow) }}
         >
           {ticks.map((t) => (
             <g key={t}>

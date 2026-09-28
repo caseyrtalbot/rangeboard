@@ -3,6 +3,7 @@ import type { RunTimelineGroup, RunTimelineKind, RunTimelineRow } from '../../an
 import { useStore } from '../../state/store'
 import { KIND_INK } from '../../ui/ink'
 import type { Placed } from './layout'
+import { selectRunTimelineRow } from './useRunTimelineSelection'
 
 /** Row ink per kind: the board glyph ink; a track reads as the C2 picture. */
 const ROW_INK: Record<RunTimelineKind, string> = {
@@ -51,22 +52,28 @@ const GroupHeader = memo(function GroupHeader({
   )
 })
 
+/** The class suffix of a line the board selection highlights. */
+const sel = (selected: boolean) => (selected ? ' selected' : '')
+
 /**
- * A platform or track row. The label is plain text in Phase 2; Phase 3 makes it
- * the selecting button. A sensor with held tracks expands to its sub-lanes.
+ * A platform or track row. The label is the button that selects the row's
+ * entity on the board; a false track has none, so its label is text. A sensor
+ * with held tracks expands to its sub-lanes.
  */
 const RowLine = memo(function RowLine({
   row,
   open,
   inFold,
+  selected,
 }: {
   row: RunTimelineRow
   open: boolean
   inFold: boolean
+  selected: boolean
 }) {
   const expandable = row.subLanes != null && row.subLanes.length > 0
   return (
-    <div className={`runtl-line runtl-row${inFold ? ' in-fold' : ''}`}>
+    <div className={`runtl-line runtl-row${inFold ? ' in-fold' : ''}${sel(selected)}`}>
       {expandable ? (
         <button
           type="button"
@@ -81,9 +88,20 @@ const RowLine = memo(function RowLine({
         <span className="runtl-chev" aria-hidden="true" />
       )}
       <i className="runtl-ink" style={{ background: ROW_INK[row.kind] }} aria-hidden="true" />
-      <span className="runtl-name" title={row.label}>
-        {row.label}
-      </span>
+      {row.entityId != null ? (
+        <button
+          type="button"
+          className="runtl-name runtl-select"
+          title={row.label}
+          onClick={() => selectRunTimelineRow(row)}
+        >
+          {row.label}
+        </button>
+      ) : (
+        <span className="runtl-name" title={row.label}>
+          {row.label}
+        </span>
+      )}
       {row.meta !== '' && (
         <span className="runtl-meta" title={row.meta}>
           {row.meta}
@@ -101,9 +119,15 @@ const RowLine = memo(function RowLine({
   )
 })
 
-const SubLine = memo(function SubLine({ row }: { row: RunTimelineRow }) {
+const SubLine = memo(function SubLine({
+  row,
+  selected,
+}: {
+  row: RunTimelineRow
+  selected: boolean
+}) {
   return (
-    <div className="runtl-line runtl-sub" title={row.label}>
+    <div className={`runtl-line runtl-sub${sel(selected)}`} title={row.label}>
       {row.label}
     </div>
   )
@@ -113,13 +137,15 @@ const FoldLine = memo(function FoldLine({
   foldKey,
   label,
   open,
+  selected,
 }: {
   foldKey: string
   label: string
   open: boolean
+  selected: boolean
 }) {
   return (
-    <div className="runtl-line runtl-fold">
+    <div className={`runtl-line runtl-fold${sel(selected)}`}>
       <button
         type="button"
         className="runtl-group-btn"
@@ -136,8 +162,17 @@ const FoldLine = memo(function FoldLine({
   )
 })
 
-/** The gutter: one line per plot line, in the same order and at the same heights. */
-export const Gutter = memo(function Gutter({ lines }: { lines: Placed[] }) {
+/**
+ * The gutter: one line per plot line, in the same order and at the same
+ * heights. `selected` holds the line keys the board selection highlights.
+ */
+export const Gutter = memo(function Gutter({
+  lines,
+  selected,
+}: {
+  lines: Placed[]
+  selected: ReadonlySet<string>
+}) {
   return (
     <div className="runtl-gutter">
       {lines.map((line) => {
@@ -148,17 +183,34 @@ export const Gutter = memo(function Gutter({ lines }: { lines: Placed[] }) {
             )
           case 'summary':
             return (
-              <div key={line.key} className="runtl-line runtl-summary-name">
+              <div
+                key={line.key}
+                className={`runtl-line runtl-summary-name${sel(selected.has(line.key))}`}
+              >
                 {summaryLabel(line.group)}
               </div>
             )
           case 'row':
-            return <RowLine key={line.key} row={line.row} open={line.open} inFold={line.inFold} />
+            return (
+              <RowLine
+                key={line.key}
+                row={line.row}
+                open={line.open}
+                inFold={line.inFold}
+                selected={selected.has(line.key)}
+              />
+            )
           case 'sub':
-            return <SubLine key={line.key} row={line.row} />
+            return <SubLine key={line.key} row={line.row} selected={selected.has(line.key)} />
           case 'fold':
             return (
-              <FoldLine key={line.key} foldKey={line.key} label={line.label} open={line.open} />
+              <FoldLine
+                key={line.key}
+                foldKey={line.key}
+                label={line.label}
+                open={line.open}
+                selected={selected.has(line.key)}
+              />
             )
         }
       })}

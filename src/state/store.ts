@@ -358,8 +358,22 @@ export interface Store {
   toggleRunTimelineFold: (foldKey: string) => void
   hideRunTimelineRow: (rowKey: string) => void
   showAllRunTimelineRows: () => void
+  /** Follow on. To turn it off, pass the shown viewport to `setRunTimelineViewport`. */
   setRunTimelineFollow: (follow: boolean) => void
-  setRunTimelineViewport: (viewport: TimeViewport) => void
+  /**
+   * With `follow`, sets Follow in the same write. A pan passes the panned viewport
+   * and false; Follow off passes the shown viewport and false, so nothing jumps.
+   */
+  setRunTimelineViewport: (viewport: TimeViewport, follow?: boolean) => void
+  /** Collapse all: every group back to its summary row. Sensor rows keep their state. */
+  collapseAllRunTimeline: () => void
+  /** Expand all: `groups` open and `sensorRows` open to their sub-lanes, in one write. */
+  expandAllRunTimeline: (groups: readonly RunTimelineKind[], sensorRows: readonly string[]) => void
+  /**
+   * A mark seek (SPEC 1.5): Follow off with the viewport held at `shown`, then
+   * the `scrub` command to `tS`. Observation never advances.
+   */
+  seekRunTimeline: (tS: number, shown: TimeViewport) => void
   setBoardPhase: (phase: BoardPhase) => void
   setLayer: (key: LayerKey, v: boolean) => void
   toggleLayer: (key: LayerKey) => void
@@ -1449,7 +1463,15 @@ export const useStore = create<Store>()((set, get) => {
     },
     showAllRunTimelineRows: () => patchRunTimeline({ hiddenRows: [] }),
     setRunTimelineFollow: (follow) => patchRunTimeline({ follow }),
-    setRunTimelineViewport: (viewport) => patchRunTimeline({ viewport }),
+    setRunTimelineViewport: (viewport, follow) =>
+      patchRunTimeline(follow == null ? { viewport } : { viewport, follow }),
+    collapseAllRunTimeline: () => patchRunTimeline({ openGroups: [] }),
+    expandAllRunTimeline: (groups, sensorRows) =>
+      patchRunTimeline({ openGroups: [...groups], openSensors: [...sensorRows] }),
+    seekRunTimeline: (tS, shown) => {
+      patchRunTimeline({ viewport: shown, follow: false })
+      get().scrubTo(tS)
+    },
     // Editing tools belong to Prepare: leaving it drops any drawing tool back to Select.
     setBoardPhase: (boardPhase) =>
       set((st) =>
@@ -1537,11 +1559,20 @@ export const useStore = create<Store>()((set, get) => {
       if (next.writeRunSeq != null) writeRunSeq(next.writeRunSeq)
       const { camera, basemap, ...slices } = next.patch
       if (camera && basemap) writeView({ camera: { ...camera }, basemap })
-      set((cur) => ({
-        ...slices,
-        ...(camera ? { camera } : {}),
-        ...(basemap ? { ui: { ...cur.ui, basemap } } : {}),
-      }))
+      set((cur) => {
+        // Play turns the run timeline's Follow on (SPEC 1.3).
+        const follows =
+          slices.playback?.playing === true && !cur.playback.playing && !cur.ui.runTimeline.follow
+        const ui =
+          basemap || follows
+            ? {
+                ...cur.ui,
+                ...(basemap ? { basemap } : {}),
+                ...(follows ? { runTimeline: { ...cur.ui.runTimeline, follow: true } } : {}),
+              }
+            : null
+        return { ...slices, ...(camera ? { camera } : {}), ...(ui ? { ui } : {}) }
+      })
       if (next.prepare) get().prepareTrial()
     },
 

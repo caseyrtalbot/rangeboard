@@ -3827,7 +3827,8 @@ input[type='number'] {
 
 .runtl-group-btn:focus-visible,
 .runtl-expand:focus-visible,
-.runtl-hide:focus-visible {
+.runtl-hide:focus-visible,
+.runtl-select:focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: -2px;
 }
@@ -3919,6 +3920,25 @@ input[type='number'] {
   padding-left: 18px;
 }
 
+/* The row label selects the row's entity on the board. */
+.runtl-select {
+  height: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* A line that draws a board-selected entity. */
+.runtl-line.selected {
+  color: var(--text);
+  box-shadow: inset 2px 0 0 var(--text);
+}
+
 .runtl-sub,
 .runtl-summary-name {
   padding-left: 26px;
@@ -3961,6 +3981,14 @@ input[type='number'] {
 
 .runtl-ground-group {
   fill: color-mix(in srgb, var(--surface-sunken) 55%, var(--bg-panel));
+}
+
+.runtl-ground-selected {
+  fill: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.runtl-plot[data-hit='mark'] {
+  cursor: pointer;
 }
 
 .runtl-rule {
