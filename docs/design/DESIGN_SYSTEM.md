@@ -322,6 +322,25 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   boundary and takes no layout space; it shows `--rule-strong` on hover and focus. No
   strip text is under 11 px (`--type-dense-size`). Times, counts, sides, sub-lane names,
   durations and printed values are mono; group and row names are Archivo.
+  The header controls (`.runtl-ctl`, 4 px gap) are `button.mini` buttons in the mockup
+  order: Follow, Zoom out, the window readout, Zoom in, Fit, Collapse all, Expand all.
+  Follow carries `aria-pressed`; pressed, it fills in text 1 with `--ink` text. The
+  readout (`.runtl-zoom`) is mono text 3 at 11 px, at least 44 px wide and centered, and
+  reads whole seconds or `fit`. Zoom in and Zoom out disable at the window limits. The
+  tooltip (`.runtl-tip`) sits inside the `.runtl` root, 12 px right of and 14 px below
+  the pointer, clamped inside the strip, so the rows' scroll never clips it. It is at
+  most 280 px wide with 5 by 8 px padding, `--surface-raised` on a 1 px `--rule-strong`
+  border at `--radius-surface` with `--elev-1`, text 2 at 12 px, and takes no pointer
+  events. Its lines: the item kind in text 1 at the title weight, then the row label; any
+  model note, a mono text 1 data line (`.runtl-tip-data`: the times, a duration, quality,
+  pk or rounds left, joined by a middle dot) and a mono text 3 horizon line at 11 px
+  (`.runtl-tip-horizon`). A row label is a `.runtl-select` button with no chrome (a false
+  track label is plain text). A line that draws a board-selected entity takes `.selected`:
+  text 1 and a 2 px inset text 1 bar at its left edge; its plot ground takes
+  `.runtl-ground-selected`, text 1 at 6 percent. A mark under the pointer sets the pointer
+  cursor; the overview takes `grab`, `grabbing` while dragged, and `touch-action: none`.
+  Under `prefers-reduced-motion: reduce` the pan, the playhead, the axis tick group and
+  the overview window take `transition: none !important`, which beats the inline glide.
 - **Inspector rows** (`.insp-row`). Flex rows, 28 px minimum height, baseline aligned,
   bleeding to the panel padding line.
 - **Per-threat table** (`.tb.tb-dense`, the kill-chain table on Now and the outcome table

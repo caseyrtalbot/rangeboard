@@ -116,6 +116,17 @@ from [runTimeline.ts](../src/analysis/runTimeline.ts) and loads in its own lazy 
 resizer above the strip sets its height from 120 px to 60 percent of the window. The open
 state and the height are saved. The [spec](timeline/SPEC.md) holds the plan.
 
+A click on a row label selects that entity on the board; a track row selects its threat
+and a false track selects nothing. A board selection highlights every line that draws
+the entity and scrolls the first of them into view. A click on a mark seeks the playhead
+to the mark time and turns Follow off. Hovering an item shows a tooltip with its exact
+times and values and the horizon; Escape closes it. A Ctrl or Meta wheel, or a pinch,
+zooms about the time under the cursor. A horizontal wheel pans and turns Follow off, and
+a vertical wheel scrolls the rows. Dragging the overview moves the window and turns
+Follow off. The header holds Follow, Zoom out, the window readout, Zoom in, Fit, Collapse
+all and Expand all. Play turns Follow on. No strip interaction advances observation: a
+seek moves the cursor only, as a scrub does.
+
 The right panel presents one [analysis screen](../src/panels/AnalysisPanel.tsx) per
 question, each on one result basis. Prepare offers Fragility and Inputs. Execute offers
 Now. Analyze offers Outcome and Compare. Prepare also offers Placement after Inputs.

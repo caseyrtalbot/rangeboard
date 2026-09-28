@@ -44,27 +44,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "4b1da27b66c3a1335f38cb54a77087d49dbabfa4c454b57ec74691f2fc4dcbf2",
-      "reviewedAt": "2026-09-27",
-      "note": "Timeline P2: the run timeline Phase 2 browser check (2026-09-27) is indexed beside the chrome capture."
+      "sha256": "6abe3155119cb2cbb45df000ff49a5f88fa68481b175b8c411d1f7272d02832d",
+      "reviewedAt": "2026-09-28",
+      "note": "Indexes the run timeline Phase 3 browser check evidence of 2026-09-28."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "5bc6fd6fa79c54c4643620fb3ef3473699053d222d225ce0262bffd1825e7599",
-      "reviewedAt": "2026-09-27",
-      "note": "Timeline P2 review fixes (8e58df2): axis and overview window share the rows' pan glide, Analyze horizon is the observed end, playhead clamped inside the plot, fold label counts shown members, resizer drag saves once; the text still matches the source."
+      "sha256": "eb8558a4db83951d49ec5ce0498e1de5bc009f4398b89d8212978d19ef67e334",
+      "reviewedAt": "2026-09-28",
+      "note": "Adds the run timeline interaction paragraph for Phase 3: row select, board selection highlight and scroll, mark seek, tooltip, wheel, pinch, overview drag, the header controls and Play turning Follow on."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "7829b84303fa4de06efbd553e8ad69e4970d0548054300327df63c2afc67c720",
-      "reviewedAt": "2026-09-27",
-      "note": "Timeline P2 review fixes (8e58df2): axis and overview window share the rows' pan glide, Analyze horizon is the observed end, playhead clamped inside the plot, fold label counts shown members, resizer drag saves once; the text still matches the source."
+      "sha256": "1eca2be4f1f3a0c3872413e1ba5ab4bf8a3e2b512901ea215174f62fb4a33e82",
+      "reviewedAt": "2026-09-28",
+      "note": "Adds the run timeline interaction bullet: the Phase 3 store actions, the Follow and glide rule, the hit rule, the one-way seek and the tooltip hide on a model change."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "a057e69f7a826d8b6343e179a7da6e7e5ee480ec6a309000d6748c1aef5ce1fe",
-      "reviewedAt": "2026-09-27",
-      "note": "Timeline P2 review fixes (8e58df2): axis and overview window share the rows' pan glide, Analyze horizon is the observed end, playhead clamped inside the plot, fold label counts shown members, resizer drag saves once; the text still matches the source. Section 1.4 now holds in Analyze; SPEC text unchanged."
+      "sha256": "f55ba23ee3ccc7a3ebcbdf7a1b863ad67125808fe50405f7f6ee97f235f5dc2f",
+      "reviewedAt": "2026-09-28",
+      "note": "The Phase 3 code is integrated on timeline/p3 and the SPEC text stands; the departures are recorded in the Phase 3 evidence and the handoff."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "bc556280483cc267b0f4b88635e6c7cabb8ed97cb993ade0ef93de51dd58c5f4",
-      "reviewedAt": "2026-09-27",
-      "note": "Timeline P2: the run timeline rules (the .runtl prefix, the order, row and sub-lane heights, inks, glyphs, the resizer, the 11 px floor, mono for machine data) and the Timeline toggle in the transport."
+      "sha256": "53e3f7844c4307277349a4676ec1ff01d6c246f49694e99493e07413bc763815",
+      "reviewedAt": "2026-09-28",
+      "note": "Adds the run timeline controls, tooltip, selection, cursor and reduced-motion rules from the Phase 3 .runtl CSS."
     }
   ],
   "historical": [

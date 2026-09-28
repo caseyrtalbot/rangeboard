@@ -1201,6 +1201,27 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   comes first, and false tracks are numbered by their first estimate. `timeViewport.ts` holds the window math: clamp, follow at two thirds, zoom
   about an anchor, absolute ticks through `tickStepS`, and `xOf`. `RunTimeline.tsx` in
   `src/panels/timeline/` reads both. It does not copy, sort or mutate a row, a span list or a mark list.
+- **Run timeline interaction** (`src/panels/timeline/`, the `ui.runTimeline` actions in
+  `store.ts`). `collapseAllRunTimeline` empties `openGroups`;
+  `expandAllRunTimeline(groups, sensorRows)` opens every group and every sensor row.
+  `setRunTimelineViewport(v, follow?)` sets the window and, when `follow` is given, Follow.
+  `seekRunTimeline(tS, shown)` turns Follow off, holds the viewport at `shown` and calls
+  `scrubTo`, which stops playback and never advances observation; a store test guards
+  that. In `playbackCommand` a transition to playing turns Follow on. `useShownT0.ts`
+  holds the Follow rule: `shownViewport(base, follow, durationS)` is the viewport on
+  screen, read at event time, and every control or gesture starts from it. Turn Follow
+  off only through `setRunTimelineViewport(shownViewport(...), false)`;
+  `setRunTimelineFollow(false)` alone jumps the view to the stale stored start.
+  `panGlide(follow)` gives the pan, the axis tick group and the overview window the
+  `GLIDE` transition only while Follow is on; the playhead always glides. `hit.ts` holds
+  the hit rule: `hitAt(lines, tS, yPx, pxPerS)` returns the nearest mark within
+  `MARK_HIT_PX` (6 px), else the span drawn on top, and a summary or fold line hits its
+  member rows. `Plot` maps the pointer through the pan wrapper's on-screen box, so a hit
+  stays right during a glide. A mark click seeks; a span click does nothing. The wheel
+  listener is native with `passive: false` on `.runtl-scroll`. The tooltip keeps its
+  state in `Tooltip.tsx` behind `TooltipHandle`, so a pointer move re-renders only the
+  tooltip, and it hides when the model changes because its hit holds the old model's
+  objects. Pure helpers live in `viewportActions.ts` and `tooltipText.ts`.
 - **Model versus instance:** `SpecModel` (library entry, `builtin` flag,
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `src/model/libraryLifecycle.ts` is the one seed
