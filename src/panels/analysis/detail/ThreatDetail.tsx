@@ -14,6 +14,7 @@ import { threatReadoutAt } from '../threatReadout'
 import type { ThreatReadoutField } from '../threatReadout'
 import { SURVIVAL_LABELS } from '../labels'
 import { DetailHeader, InfoButton } from './DetailHeader'
+import { EmptyRow } from '../notes'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
 import { bareSpans, DASH, Legend, PfTag, Rows, useDetailRun } from './detailRows'
@@ -284,7 +285,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
             yLabel="Pd"
           />
         ) : (
-          <p className="muted small">No radar Pd model observed this track.</p>
+          <EmptyRow>No radar Pd model observed this track.</EmptyRow>
         )}
       </DetailSection>
       <DetailSection id="survival" title="Survival" meta="Simulated trial counts">
@@ -299,7 +300,7 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
             marks={survivalMarks}
           />
         ) : (
-          <p className="muted small">No threats with flight paths.</p>
+          <EmptyRow>No threats with flight paths.</EmptyRow>
         )}
       </DetailSection>
     </div>

@@ -8,6 +8,7 @@ import { killChainRoutes } from '../../../playback/killChain'
 import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
 import { STATE_LABEL, stateTone } from '../SystemStatus'
+import { EmptyRow } from '../notes'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow } from './detailRows'
@@ -131,7 +132,7 @@ export function SystemDetail({ entity }: { entity: Entity }) {
         {hopRows.length > 0 ? (
           <DetailTable head={['Effector', 'Via', 'Medium', 'Latency']} rows={hopRows} />
         ) : (
-          <p className="muted small">No route through this node.</p>
+          <EmptyRow>No route through this node.</EmptyRow>
         )}
       </DetailSection>
       <DetailSection
@@ -144,7 +145,7 @@ export function SystemDetail({ entity }: { entity: Entity }) {
         {timingRows.length > 0 ? (
           <DetailTable head={['Threat', 'Detect', 'Effect', 'Delta']} rows={timingRows} />
         ) : (
-          <p className="muted small">No threats with flight paths.</p>
+          <EmptyRow>No threats with flight paths.</EmptyRow>
         )}
       </DetailSection>
       <DetailSection

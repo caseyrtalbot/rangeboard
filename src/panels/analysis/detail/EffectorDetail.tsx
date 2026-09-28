@@ -12,6 +12,7 @@ import { effectiveDoctrine } from '../../../model/types'
 import { modelFor } from '../../../model/scenario'
 import { entityInk } from '../../../ui/ink'
 import { STATE_LABEL, stateTone } from '../SystemStatus'
+import { EmptyRow } from '../notes'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
@@ -136,7 +137,7 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
     : { word: 'OFFLINE', tone: 'critical' as const }
   const modelLine = model && spec ? `${model.name} · ${spec.effectorType}` : 'no model linked'
   const doctrineMeta = doctrine.enabled ? launchPolicyLabel(doctrine.launchPolicy) : 'doctrine off'
-  const none = <p className="muted small">No salvo assigned.</p>
+  const none = <EmptyRow>No salvo assigned.</EmptyRow>
   const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
   const magazineSummary = rounds
     ? magazineSize != null
@@ -236,7 +237,7 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
         {doctrineRows.length > 0 ? (
           <DetailTable head={['Threat', 'Gate', 'Ready', 'Commit Pk']} rows={doctrineRows} />
         ) : (
-          <p className="muted small">No threats with flight paths.</p>
+          <EmptyRow>No threats with flight paths.</EmptyRow>
         )}
       </DetailSection>
       <DetailSection
