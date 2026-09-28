@@ -14,18 +14,86 @@ commit, push or merge.
 four phases that replace the threat-only engagement strip with a multi-row run timeline.
 All four phases are on `main` and `origin/main`; the plan is complete. [Plan.md](Plan.md)
 is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a3`; Row E,
-timeline polish and chrome cleanup, merged and pushed as `353caee`). The Tasking below
-selects Row F (two engine decisions the user made on 2026-09-28). Execute one row per
+timeline polish and chrome cleanup, merged and pushed as `353caee`). Row F (two engine
+decisions the user made on 2026-09-28) is complete on `engine/f` and waits for the user's
+merge and push authorization. The Tasking below selects nothing. Execute one row per
 agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `main`. `main` and `origin/main`
-  hold Row E: `polish/e` was fast-forwarded to `main` at `353caee` and pushed with the
-  user's authorization on 2026-09-28, then this handoff. The lane worktrees
-  `~/Projects/rangeboard-wt/e1` and `e2` are removed and the branches `polish/e1`,
-  `polish/e2` and `polish/e` are deleted; `git worktree list` shows the main checkout
-  only, `git branch` shows `main` only and the stash list is empty.
+- Repository `~/Projects/rangeboard`, checked out on `engine/f`, branched from `main` at
+  `40591b8`. `main` and `origin/main` hold Row E (`353caee`) and that handoff. `engine/f`
+  holds Row F: item 1 `5fef8dd`, item 2 with the review fixes and the authorized
+  recapture `eb19eab`, then this handoff. Not merged, not pushed. `git worktree list`
+  shows the main checkout only and the stash list is empty.
+- Row F (2026-09-28) on `engine/f`: one `fable-medium` lane in the main checkout (item 1
+  committed, item 2 left in the tree because a protected expect moved), the `fable-high`
+  parity and censoring review (read-only), the `opus-medium` review fixes and evidence
+  rerun, the user's recapture authorization, the orchestrator's item 2 commit and this
+  handoff. The orchestrator ran every gate itself on the tree and on the commit.
+- What Row F built. Item 1: `EngagementEvent.c2Id` (`attritionReport.ts`) is the last C2
+  node of the kill-chain route the salvo was assigned over, written in `attrition.ts`
+  from `ThreatState.assignC2Ids` (read once when the threat's routes are built), `null`
+  on a direct route, absent in a legacy ledger; `runTimeline.ts` `assignerOf` reads the
+  field first and routes over the full-run detecting sensors only when it is absent, so
+  a sensor that first detects after the horizon no longer moves an assign mark between
+  C2 rows. Item 2: `clipAtKill` (`src/playback/killClip.ts`) runs after the engagement
+  pass in `runTrial` and in the replicate loop (`mcRun.ts` `rangeLoopInto`) and clips a
+  killed threat's per-step fused tracks, each sensor observation's hold and coast
+  intervals (`lastDetectS`, `heldSamples`, `firstClassifyS`, `trackInitAtS`,
+  `pdSeries`), `firstConfirmS`, the track estimates and the scan records at the last
+  sweep sample at or before the kill; the kill is `expectedDeadTimes(report)`, now in
+  `src/playback/deadTimes.ts` (re-exported from `threatAggregation.ts`): the effect time
+  of the salvo after which the residual falls below `SHIP_DEAD_BELOW`. The report is
+  untouched, so every engagement count and the timeline ghost span stand. `TrackLayer`
+  takes `stepS` (LiveScene passes `trial.manifest.sweepStepS`) and hides an estimate
+  older than one step at the horizon. `threatPictureAt` and `threatReadout.ts` bound
+  track quality and the classification rung at the dead time. `TRIAL_ENGINE_REVISION`
+  is `rangeboard-trial-r4-v2`. `scripts/entry-graph.json` adds `killClip.ts` and
+  `deadTimes.ts` (both reached through modules already frozen).
+- Row F parity: the report is byte-identical with the clip. One expect moved and was
+  recaptured with the user's authorization: `estimate.parity.test.ts` layered trial
+  `r.tracks` length 14192 to 12982, the 1210 estimates of the one killed threat after
+  its kill at 118.5 s (0 dropped elsewhere, decomposed by the reviewer). Every named
+  expect stands: layered events 11, kill mass 1, kills mean 1.115, firmTrackS 1.5; JIATF
+  events 2, kill mass 0, tracks 3168, leakers 0.895, kills 0.105, firmTrackS 505.0625;
+  every sensitivity parity row. The Coyote parameters and terminal homing are untouched.
+  `schema:generate` produced no diff: the ledger is not in the runtime schema (the
+  schema covers Scenario and SpecModel), so the earlier handoff claim was wrong.
+- Row F gate on `eb19eab` plus the review stamps (2026-09-28, run by the orchestrator):
+  `npm run check` passes (224 files, 2,450 tests, docs and evidence gates green, entry
+  graph 107 of 209, build green); `check:silent` passes; `check:bundle` entry 367,372
+  against 380,000 and initial 386,277 against 400,000 (Row E: 367,220 and 386,125);
+  `schema:check` passes; `test:e2e` 13 of 13 on a dev server at 5437; the two parity
+  files 5 of 5. Lint prints 31 warnings, the same count as `main`.
+- Row F evidence: [engine lane browser check](field-te/evidence/engine-f-2026-09-28/README.md),
+  JIATF-401 `detection-outside-rings.json`, headless Chromium 1265 by 900, a sampled
+  trial with the last survival mass removed at T+1051.16 (off the 0.5 s grid): before the
+  kill the board draws the KuRFS cross and ellipse; after it the hard-kill glyph stands
+  alone, the KuRFS sub-lane and the fused track row both end at 1051.5 with no drop mark,
+  the threat row carries the ghost span from the kill to the planned arrival at 1475, the
+  ledger events carry `c2Id`, `observedThroughS` stays 1,500 through every scrub, 0 page
+  errors. Three shots, dark and daylight.
+- Row F review (`fable-high`): censoring and the board pass. One must-fix, closed:
+  `trackQualityAt` at a horizon past the kill counted kill to horizon as a gap (0.497 at
+  kill plus 120 s against 1.0); both callers now bound the horizon at the dead time.
+  Should-fix, all closed: the interval cut snaps to the sweep grid (an off-grid kill left
+  `heldSamples` one high and the sub-lane end at 692.80 against the fused row at 692.5);
+  `expectedDeadTimes` moved beside the engine so `killClip.ts` no longer pulls the
+  picture layer into the replicate loop and the engine bundle; the engine revision bump;
+  the object-identity claim made true; the Monte Carlo grid test asserts the clip
+  directly; the entry-graph reason named in the commit. Nits are follow-ups below.
+- Row F departures, each with its reason: the clip is a post-pass, not a change inside
+  the sweep (the sweep, the tracker and fusion finish per threat before the engagement
+  pass reads their fused track, so interleaving would be a large refactor for the same
+  picture); a sample at or before the kill is kept and draws its one step, so a hold can
+  overhang an off-grid kill by under a step (ending at the step before drew a spurious
+  drop mark); the `TrackLayer` step rule also removes a sensor-dropped track and an ended
+  false track from the board at their last step, where they stayed drawn before (the
+  engine's own drop rule; the layer has no report to tell a kill from a drop);
+  `trackState.ts` keeps its own dead rule because it counts a threat with no attrition
+  row by formation count where `expectedDeadTimes` uses one ship; a killed threat's track
+  quality at an unbounded horizon now reads up to the kill, not the swept value.
 - Row E (2026-09-28) on `polish/e` from `b6cb858`: lane E2 (`opus-medium`, worktree e2)
   `8c32afe`, `4b7a419`, `0a7b7f8`, `525f501`, `8491e7b`, `de11787`, `bde5e48`, merged
   `--no-ff`; the orchestrator's `85892f6` (the `RightTab` type, App's `isTypingTarget`
@@ -364,16 +432,38 @@ agent turn.
   (`#121313`) with a 3.5 percent grain, and the capture's `#212528` matches the grid inks
   in `src/ui/ink.ts`, so the sample hit a grid line; the sweep-map chip is a second chip
   keyed to the sweep response, separate from the sensitivity chip.
-- The authorized estimate-path recapture is `225e027`. Its expects: layered events 11,
-  layered kill mass 1, layered kills mean 1.115, JIATF leakers mean 0.895, JIATF kills
-  mean 0.105. `4.68` is not a pin.
+- The authorized estimate-path recaptures are `225e027` and `eb19eab`. The expects:
+  layered events 11, layered kill mass 1, layered kills mean 1.115, JIATF leakers mean
+  0.895, JIATF kills mean 0.105, and since `eb19eab` the layered trial `r.tracks` length
+  12982. `4.68` is not a pin.
 - The flight horizon is `7fdcb1e`.
 
 ## Follow-ups (not fixed)
 
-Handling: candidates, not rows, except where the Tasking names one. Row F (selected)
-takes the two Phase 1 engine items. Row E took the timeline nits, the Expand all rule, the
-240 px fold and the Row D items it listed. What remains:
+Handling: candidates, not rows, except where the Tasking names one. Row F took the two
+Phase 1 engine items. Row E took the timeline nits, the Expand all rule, the 240 px fold
+and the Row D items it listed. What remains:
+
+From Row F:
+
+- `trialOutcomeRows` in `threatReadout.ts` (the `identify` milestone) still reads
+  `classificationAtS.hostileAtS` with no bound at the kill, and `clipAtKill` does not
+  clip `classificationAtS`; the rung and the picture are bounded, the milestone table is
+  not.
+- The unclipped paths: `endOfRunResponses` (`mcRun.ts`; morris, sobol, optimize),
+  `engagementPicture` (`impact.ts`; the Prepare forecast, `StatusBar`, `trialResult.ts`)
+  and `raidSizeOf` (`optimize/loop.ts`). Their consumers read the report, `status`,
+  `firstDetectS` and `warningS`, so the numbers are identical today; the forecast
+  assessments carry unclipped holds for any future reader.
+- The timeline kill rule (`runTimeline.ts` about 486, the count-th `killDelta === 1`
+  event) and `expectedDeadTimes` coincide for whole-ship draws (every retained trial)
+  and differ for fractional mass. Pre-existing.
+- `trackState.ts` `eliminatedAtS` is a second copy of the dead rule that differs only for
+  a threat with no attrition row (formation count against one ship).
+- `trackQuality` on the assessment (continuity to closest approach) stays as swept; the
+  per-horizon `trackQualityAt` is bounded at the kill instead.
+- No fixture runs a multi-ship kill or a soft kill through the clip; the rule was read
+  from `attrition.ts` and `expectedDeadTimes`.
 
 From Row E:
 
@@ -427,16 +517,8 @@ From run timeline Phase 2:
 - `docs/Plan.md` line 214 names the deleted `EngagementStrip` mount; it is the completed
   chrome plan.
 
-From run timeline Phase 1 (the first two are decided and queued as Row F):
+From run timeline Phase 1 (the C2 assignment row and the kill clip were done in Row F):
 
-- The C2 assignment row: `runTimeline.ts` routes each assignment with `killChainRoutes`
-  over the full-run `detectingSensorIds`, as `attrition.ts` does, so a sensor that first
-  detects after the horizon can move an assignment mark between C2 rows. The fix records
-  the assigning node on `EngagementEvent` in attrition, an engine change that SPEC 1.6
-  excludes from this plan.
-- The engine sweep ignores kills: sensor holds, the fused track and the track ramp run to
-  the path end after the last member falls, as the board's TrackLayer shows. The timeline
-  follows the engine picture; clipping at the kill is a product decision.
 - A node that held the fused picture and lost it before the firm time still gets a firm
   mark on its C2 row. An empty trial and a zero duration have no model test.
 
@@ -513,48 +595,39 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Row F: two engine decisions.** Selected after Row E; the user decided both on
-2026-09-28. Start Row F only when asked. Base: `main` at the commit that holds this
-handoff. One `fable-medium` lane on `engine/f` from `main`, then a
-`fable-high` review of the parity and the censoring semantics. The estimate-path expects
-(`225e027`, listed in Landmines) and the Coyote parameters are protected: the lane
-measures which expects move, reports the numbers, and waits for the user's authorization
-before any recapture. Brief shape per `~/.claude/rules/delegation.md`: the working
-directory, the owned files, the gate command, the report shape and a time budget.
-
-1. Record the assigning C2 node on `EngagementEvent`
-   (`src/playback/attritionReport.ts:134`). `attrition.ts` about 232 picks the route with
-   `killChainRoutes(scenario, new Set(a.detectingSensorIds))`; write the route's C2 node
-   id onto the event at assignment (a new optional field, absent in legacy ledgers).
-   `runTimeline.ts:427` then reads the event's node and falls back to the current
-   routing only when the field is absent, so a sensor that first detects after the
-   horizon no longer moves an assign mark between C2 rows. `npm run schema:generate`
-   (the ledger is in the runtime schema); a model test on the fixed-id fixture; the
-   Phase 3 evidence rule that no interaction advances `observedThroughS` is unchanged.
-2. Clip holds and tracks at the kill. Today the engine sweep runs sensor holds, the
-   fused track and the classification ramp to the path end after the last formation
-   member falls (`sweep.ts`, `tracker.ts`, `sim.ts` `trackSamples` and `fusedTracks`);
-   the board `TrackLayer` and the timeline follow. Clip each at the effect time of the
-   salvo that removes the last survival mass, so a dead threat holds no track. The
-   timeline's ghost span (kill to planned arrival) stays. This can move engagement counts
-   and the parity expects; measure first, report, then wait for authorization. Fixed-ID
-   numerical parity on every `*.parity.test.ts`; a TrackLayer browser check on the
-   JIATF-401 laydown under `docs/field-te/evidence/engine-f-<date>/`.
-
-- Row F exclusions: no change to `lethalRadiusM`, `guidanceNoiseM`, `engageTimeS` or the
-  terminal-homing model; no change to `runTimeline.ts` censoring; no expect changed
-  without the user's authorization in the session.
-- Gates: `npm run check`, `npm run check:silent`, `npm run build && npm run
-  check:bundle`, `npm run test:e2e` with a dev server and `E2E_URL`, `npm run
-  schema:generate` then `schema:check`, every `*.parity.test.ts`, `docs:review` on every
-  touched reference, the evidence indexed in `docs/README.md`.
-- Stop condition: Row F on `engine/f` with the gates green, the parity numbers reported
-  (no expect changed without authorization), the evidence indexed, the review closed and
-  this file rewritten to record Row F and select nothing. Then stop and ask the user to
-  authorize the merge and the push.
+No task is selected. Row F is complete on `engine/f` at the commit that holds this
+handoff, with the gates green, the parity numbers recorded above, the evidence indexed
+and the review closed. The next action is the user's: authorize the fast-forward of
+`engine/f` to `main` and the push. A new row needs a user decision; the follow-ups above
+are candidates, not a queue.
 
 ## Landmines
 
+- `EngagementEvent.c2Id` is written once per (threat, effector) when `attrition.ts`
+  builds the threat's routes (`ThreatState.assignC2Ids`), `null` on a direct route and
+  absent on a legacy ledger or a unit fixture without the map. `runTimeline.ts`
+  `assignerOf` returns the field when it is not `undefined` (a `null` yields no assign
+  mark) and routes only when it is absent. A test that builds events by hand and expects
+  routing must leave the field out.
+- `clipAtKill` (`killClip.ts`) is the only place the sweep products of a killed threat
+  are cut. It is wired in `runTrial` and in `rangeLoopInto`; `endOfRunResponses`,
+  `engagementPicture` and `raidSizeOf` read unclipped assessments and must keep reading
+  only the report, `status`, `firstDetectS` and `warningS`. The cut is the last sweep
+  sample at or before `expectedDeadTimes(report)`; interval ends snap to the sweep grid
+  from their start, so an off-grid kill never leaves an off-grid end. A killed threat
+  with nothing to clip and every unchanged list come back as the same object; a test may
+  rely on identity.
+- `expectedDeadTimes` lives in `src/playback/deadTimes.ts`; `threatAggregation.ts`
+  re-exports it. No module under `src/playback/` or `src/engine/` may import
+  `analysis/threatAggregation`, or the engine bundle loads the picture layer.
+- `TrackLayer` hides an estimate older than `stepS` at the horizon. LiveScene passes
+  `trial.manifest.sweepStepS`, the same step the clip used (the `runTrial` guard). A
+  caller that omits `stepS` gets the old picture, the latest entry per track at any age.
+- `TRIAL_ENGINE_REVISION` is `rangeboard-trial-r4-v2`. A stored pre-clip trial fails the
+  manifest gate by design. Dated evidence files still carry `r4-v1`; leave them.
+- `threatPictureAt` and `trialTelemetryAt` bound the track quality and the classification
+  rung at the dead time (`tLive`). `Math.min(null, x)` is 0, so the bound guards a null
+  horizon; keep the guard.
 - Run timeline (see [timeline/SPEC.md](timeline/SPEC.md) section 5): keep
   `ENGSTRIP_OPEN_KEY` exported with the value `rangeboard.engstrip.open`; it holds the
   run timeline open flag, and `RUN_TIMELINE_HEIGHT_KEY` holds the height.
@@ -818,6 +891,7 @@ directory, the owned files, the gate command, the report shape and a time budget
 
 ## Evidence
 
+- [Row F engine lane browser check, 2026-09-28](field-te/evidence/engine-f-2026-09-28/README.md)
 - [Run timeline Row E lane E1 browser check, 2026-09-28](field-te/evidence/run-timeline-e1-2026-09-28/README.md)
 - [Chrome cleanup lane E2 browser check, 2026-09-28](field-te/evidence/chrome-e2-2026-09-28/README.md)
 - [Run timeline Phase 4 browser check, 2026-09-28](field-te/evidence/run-timeline-p4-2026-09-28/README.md)
