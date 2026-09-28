@@ -1,0 +1,505 @@
+// Run timeline Phase 3 capture: 1265 x 900, dark, the JIATF-401 laydown with the
+// threat spawned outside every ring (src/playback/__fixtures__/detection-outside-rings.json).
+// It drives every SPEC 1.5 interaction and the 1.3 controls and records
+// observedThroughS before and after each one.
+// Usage: node run-timeline-p3-capture.mjs <base-url> <out-dir> <repo-root>
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT] = process.argv.slice(2)
+const RAW = readFileSync(join(ROOT, 'src/playback/__fixtures__/detection-outside-rings.json'), 'utf8')
+mkdirSync(OUT, { recursive: true })
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const waitFor = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 30000 })
+const r4 = (x) => (x == null ? x : Math.round(x * 10000) / 10000)
+
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => {
+  if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+})
+
+const findings = {
+  capturedAt: new Date().toISOString(),
+  viewport: '1265x900 dark',
+  fixture: 'src/playback/__fixtures__/detection-outside-rings.json',
+  shots: [],
+  items: {},
+  errors,
+}
+
+await page.goto(BASE, { waitUntil: 'load' })
+await page.waitForFunction(() => document.querySelector('.konvajs-content canvas') && window.__store, null, {
+  timeout: 60000,
+})
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setTheme('dark')
+  s.setRunTimelineOpen(false)
+}, RAW)
+await sleep(400)
+
+/** Store facts and the viewport on screen now (`shownViewport`, as the handlers read it). */
+const st = () =>
+  page.evaluate(async () => {
+    const { clampViewport, DEFAULT_WINDOW_S } = await import('/src/charts/timeViewport.ts')
+    const { shownViewport } = await import('/src/panels/timeline/useShownT0.ts')
+    const { durationOf } = await import('/src/state/selectors.ts')
+    const { useStore } = await import('/src/state/store.ts')
+    const s = window.__store.getState()
+    const rt = s.ui.runTimeline
+    const durationS = durationOf(s.scenario)
+    const base = clampViewport(rt.viewport ?? { t0S: 0, winS: DEFAULT_WINDOW_S }, durationS)
+    return {
+      sameStore: useStore === window.__store,
+      simTimeS: s.playback.simTimeS,
+      observedThroughS: s.playback.observedThroughS,
+      playing: s.playback.playing,
+      follow: rt.follow,
+      base,
+      shown: shownViewport(base, rt.follow, durationS),
+      durationS,
+      openGroups: rt.openGroups,
+      openSensors: rt.openSensors,
+      entityIds: s.selection.entityIds,
+    }
+  })
+
+/** The run-time model the strip draws, and the plot scale. */
+const modelFacts = () =>
+  page.evaluate(async () => {
+    const { selectTrialHorizon, selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+    const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+    const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+    const s = window.__store.getState()
+    const sel = selectTrialSelection(s)
+    const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+    const horizonS = selectTrialHorizon(s, s.ui.boardPhase === 'analyze' ? Infinity : s.playback.simTimeS)
+    const model = runTimelineOf(view, horizonS)
+    const rows = model.groups.flatMap((g) => g.rows)
+    return {
+      groups: model.groups.map((g) => g.key),
+      subLaneCount: rows.reduce((n, r) => n + (r.subLanes?.length ?? 0), 0),
+      rows: rows.map((r) => ({ key: r.key, kind: r.kind, label: r.label, entityId: r.entityId })),
+      markTimes: rows.flatMap((r) => [...r.marks, ...(r.subLanes ?? []).flatMap((l) => l.marks)].map((m) => m.tS)),
+    }
+  })
+
+/** On-screen mark glyphs inside the visible plot, with their run times (cx / pxPerS, as Phase 2). */
+const visibleMarks = () =>
+  page.evaluate(() => {
+    const plot = document.querySelector('.runtl-plotcol').getBoundingClientRect()
+    const scroll = document.querySelector('.runtl-scroll').getBoundingClientRect()
+    const pan = document.querySelector('.runtl-pan').getBoundingClientRect()
+    const svg = document.querySelector('.runtl-svg')
+    const pxPerS = Number(document.querySelector('.runtl-plotcol').clientWidth) / window.__p3winS
+    const OFFSET = { release: 3.5, drop: 3 }
+    return [...svg.querySelectorAll('.runtl-m')]
+      .map((el) => {
+        const kind = [...el.classList].find((c) => c.startsWith('runtl-m-')).slice(8)
+        let cx
+        if (el.tagName === 'circle') cx = Number(el.getAttribute('cx'))
+        else if (el.tagName === 'line') cx = Number(el.getAttribute('x1'))
+        else cx = Number(el.getAttribute('d').slice(1).split(' ')[0]) + (OFFSET[kind] ?? 0)
+        const b = el.getBoundingClientRect()
+        return { kind, tS: cx / pxPerS, x: pan.left + cx, y: b.top + b.height / 2 }
+      })
+      .filter((m) => m.x > plot.left + 20 && m.x < plot.right - 20 && m.y > scroll.top + 4 && m.y < scroll.bottom - 4)
+  })
+
+const setWin = async () => {
+  const s = await st()
+  await page.evaluate((w) => (window.__p3winS = w), s.base.winS)
+}
+
+async function shot(name, state) {
+  await sleep(300)
+  const file = join(OUT, `${name}.png`)
+  await page.screenshot({ path: file })
+  const s = await st()
+  findings.shots.push({ file: `${name}.png`, state, simTimeS: s.simTimeS, observedThroughS: s.observedThroughS })
+  console.log('shot', name)
+}
+
+/** Runs one interaction and records observedThroughS before and after. */
+async function item(n, name, fn) {
+  const before = await st()
+  const result = await fn(before)
+  const after = await st()
+  findings.items[n] = {
+    name,
+    observedBeforeS: before.observedThroughS,
+    observedAfterS: after.observedThroughS,
+    observedUnchanged: before.observedThroughS === after.observedThroughS,
+    ...result,
+  }
+  console.log(n, name, JSON.stringify(findings.items[n]))
+}
+
+const plotPoint = async (fx, fy = 0.3) => {
+  const b = await page.locator('.runtl-plotcol').boundingBox()
+  const sc = await page.locator('.runtl-scroll').boundingBox()
+  return { x: b.x + fx * b.width, y: sc.y + fy * sc.height }
+}
+const tipText = () =>
+  page.evaluate(() => {
+    const tip = document.querySelector('#run-timeline .runtl-tip')
+    return tip ? tip.innerText : null
+  })
+
+// Execute, a ready trial, the strip open, 10 s at 30x, paused (about T+5:00).
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+await page.evaluate(() => window.__store.getState().startRun())
+await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status))
+findings.trialStatus = await page.evaluate(() => window.__store.getState().trial.status)
+await page.click('#run-timeline-toggle')
+await waitFor(page, () => document.querySelector('#run-timeline .runtl-head'))
+await page.evaluate(() => window.__store.getState().setSpeedMult(30))
+await page.evaluate(() => window.__store.getState().setPlaying(true))
+await sleep(10000)
+await page.evaluate(() => window.__store.getState().setPlaying(false))
+await sleep(400)
+findings.start = await st()
+await setWin()
+
+// 4. Tooltip: hover a mark, read it inside #run-timeline, Escape closes it.
+await item(4, 'tooltip and Escape', async () => {
+  const marks = await visibleMarks()
+  const m = marks[Math.floor(marks.length / 2)]
+  await page.mouse.move(m.x, m.y)
+  await sleep(200)
+  const inside = await page.evaluate(() => !!document.querySelector('#run-timeline .runtl-tip'))
+  const text = await tipText()
+  await shot('tooltip-over-mark', 'Execute, paused, the pointer over a mark, the tooltip open inside the strip')
+  await page.keyboard.press('Escape')
+  await sleep(150)
+  const afterEscape = await tipText()
+  return { mark: { kind: m.kind, tS: r4(m.tS) }, tipInsideStrip: inside, text, goneAfterEscape: afterEscape === null }
+})
+
+// 5. Tooltip after a model change: hover while paused, play 2 s, pause.
+await item(5, 'tooltip hides on a model change', async () => {
+  const marks = await visibleMarks()
+  const m = marks[Math.floor(marks.length / 3)]
+  await page.mouse.move(m.x - 1, m.y)
+  await page.mouse.move(m.x, m.y)
+  await sleep(200)
+  const shownBefore = (await tipText()) !== null
+  await page.evaluate(() => window.__store.getState().setPlaying(true))
+  await sleep(2000)
+  await page.evaluate(() => window.__store.getState().setPlaying(false))
+  await sleep(300)
+  const shownAfter = (await tipText()) !== null
+  return {
+    tipBeforePlay: shownBefore,
+    tipAfterPlayAndPause: shownAfter,
+    note: 'Play advances observation by design; the tooltip is the subject here.',
+  }
+})
+
+// 3. Mark click seeks: simTimeS to the mark time, Follow off, the shown viewport held.
+await item(3, 'mark click seeks', async (before) => {
+  await setWin()
+  const marks = await visibleMarks()
+  const m = marks.find((k) => k.tS < before.simTimeS - 20) ?? marks[0]
+  const facts = await modelFacts()
+  const shownAtClick = (await st()).shown
+  await page.mouse.move(m.x, m.y)
+  await page.mouse.click(m.x, m.y)
+  await sleep(300)
+  const a = await st()
+  const tol = 6 / ((await page.locator('.runtl-plotcol').boundingBox()).width / shownAtClick.winS)
+  return {
+    followBefore: before.follow,
+    glyphS: r4(m.tS),
+    simTimeBeforeS: r4(before.simTimeS),
+    simTimeAfterS: r4(a.simTimeS),
+    seekIsModelMark: facts.markTimes.some((t) => t === a.simTimeS),
+    withinHitReach: Math.abs(a.simTimeS - m.tS) <= tol,
+    followAfter: a.follow,
+    shownAtClick,
+    storedAfter: a.base,
+    viewportHeld: a.base.t0S === shownAtClick.t0S && a.base.winS === shownAtClick.winS,
+  }
+})
+await page.mouse.move(5, 5)
+await sleep(150)
+
+// 13. Collapse all, then Expand all: every group and every sensor row open.
+await item(13, 'Collapse all and Expand all', async () => {
+  await page.click('.runtl-ctl button:has-text("Collapse all")')
+  await sleep(200)
+  const collapsed = await st()
+  await page.click('.runtl-ctl button:has-text("Expand all")')
+  await sleep(300)
+  const expanded = await st()
+  const facts = await modelFacts()
+  const subLines = await page.evaluate(() => document.querySelectorAll('.runtl-gutter .runtl-sub').length)
+  return {
+    openGroupsAfterCollapse: collapsed.openGroups,
+    openGroupsAfterExpand: expanded.openGroups,
+    everyGroupOpen: facts.groups.every((g) => expanded.openGroups.includes(g)),
+    openSensorRows: expanded.openSensors.length,
+    subLines,
+    modelSubLanes: facts.subLaneCount,
+    everySubLaneDrawn: subLines === facts.subLaneCount,
+  }
+})
+
+// 1. Row label click selects the entity on the board.
+await item(1, 'row label click selects', async () => {
+  const facts = await modelFacts()
+  const btn = page.locator('.runtl-gutter .runtl-select').first()
+  const label = await btn.getAttribute('title')
+  await btn.click()
+  await sleep(200)
+  const a = await st()
+  const row = facts.rows.find((r) => r.label === label)
+  return { label, rowKey: row?.key, expectedEntityId: row?.entityId, entityIds: a.entityIds, selects: a.entityIds.length === 1 && a.entityIds[0] === row?.entityId }
+})
+
+// 2. Board selection of an entity whose row is off screen: highlight and scroll.
+// The hook scrolls to the first line that draws the entity (useScrollToSelection).
+// A threat also draws on a sensor sub-lane near the top, so the script scrolls to
+// the bottom and selects a sensor whose only line sits above the view.
+const selectedLines = () =>
+  page.evaluate(() => {
+    const sr = document.querySelector('.runtl-scroll').getBoundingClientRect()
+    return [...document.querySelectorAll('.runtl-gutter .runtl-line.selected')].map((l) => {
+      const r = l.getBoundingClientRect()
+      return { text: l.textContent.slice(0, 40), inView: r.top >= sr.top - 0.5 && r.bottom <= sr.bottom + 0.5 }
+    })
+  })
+await item(2, 'board selection highlights and scrolls', async () => {
+  const facts = await modelFacts()
+  // First, the threat case at the top of the list, for the record.
+  await page.evaluate(() => window.__store.getState().select({ entityIds: [] }))
+  await page.evaluate(() => (document.querySelector('.runtl-scroll').scrollTop = 0))
+  await sleep(100)
+  const threat = facts.rows.filter((r) => r.kind === 'threat').at(-1)
+  await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), threat.entityId)
+  await sleep(300)
+  const threatCase = {
+    label: threat.label,
+    scrollTop: await page.evaluate(() => document.querySelector('.runtl-scroll').scrollTop),
+    lines: await selectedLines(),
+  }
+  // The measured case: a sensor row above the view after a scroll to the bottom.
+  await page.evaluate(() => window.__store.getState().select({ entityIds: [] }))
+  await page.evaluate(() => {
+    const el = document.querySelector('.runtl-scroll')
+    el.scrollTop = el.scrollHeight
+  })
+  await sleep(150)
+  const target = await page.evaluate((rows) => {
+    const scroll = document.querySelector('.runtl-scroll').getBoundingClientRect()
+    const unique = (label) => rows.filter((r) => r.label === label).length === 1
+    const btn = [...document.querySelectorAll('.runtl-gutter .runtl-row .runtl-select')].find(
+      (b) => b.getBoundingClientRect().bottom < scroll.top && unique(b.title),
+    )
+    return btn ? btn.title : null
+  }, facts.rows)
+  const row = facts.rows.find((r) => r.label === target)
+  const scrollBefore = await page.evaluate(() => document.querySelector('.runtl-scroll').scrollTop)
+  await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), row.entityId)
+  await sleep(300)
+  const dom = await page.evaluate((label) => {
+    const scroll = document.querySelector('.runtl-scroll')
+    const sr = scroll.getBoundingClientRect()
+    const line = [...document.querySelectorAll('.runtl-gutter .runtl-line.selected')].find((l) =>
+      l.querySelector(`.runtl-select[title="${label}"]`),
+    )
+    const lr = line?.getBoundingClientRect()
+    return {
+      scrollTop: scroll.scrollTop,
+      selectedLines: document.querySelectorAll('.runtl-gutter .runtl-line.selected').length,
+      selectedGrounds: document.querySelectorAll('.runtl-ground-selected').length,
+      rowSelected: !!line,
+      rowInView: !!lr && lr.top >= sr.top - 0.5 && lr.bottom <= sr.bottom + 0.5,
+    }
+  }, target)
+  await shot('board-selected-row', 'Execute, paused, every group open, a sensor selected on the board, its row highlighted and scrolled into view')
+  return {
+    label: target,
+    kind: row.kind,
+    entityId: row.entityId,
+    scrollTopBefore: scrollBefore,
+    ...dom,
+    scrolled: dom.scrollTop !== scrollBefore,
+    threatCase,
+  }
+})
+
+// 10. Follow button turns Follow on.
+await item(10, 'Follow button', async (before) => {
+  await page.click('.runtl-follow')
+  await sleep(200)
+  const a = await st()
+  const pressed = await page.getAttribute('.runtl-follow', 'aria-pressed')
+  return { followBefore: before.follow, followAfter: a.follow, ariaPressed: pressed }
+})
+
+// 6. Ctrl wheel with Follow off: the window narrows about the cursor time.
+await item(6, 'Ctrl wheel zoom about the cursor', async () => {
+  await page.click('.runtl-follow') // Follow off through the shown viewport
+  await sleep(200)
+  const b = await st()
+  const p = await plotPoint(0.25)
+  const plot = await page.locator('.runtl-plotcol').boundingBox()
+  const fBefore = (p.x - plot.x) / plot.width
+  const anchorS = b.base.t0S + fBefore * b.base.winS
+  await page.mouse.move(p.x, p.y)
+  await page.keyboard.down('Control')
+  await page.mouse.wheel(0, -150)
+  await page.keyboard.up('Control')
+  await sleep(300)
+  const a = await st()
+  const fAfter = (anchorS - a.base.t0S) / a.base.winS
+  await page.mouse.move(5, 5)
+  await shot('header-follow-off-after-zoom', 'Execute, paused, Follow off after a Ctrl wheel zoom, the header controls and the window readout')
+  return {
+    followBefore: b.follow,
+    followAfter: a.follow,
+    winBeforeS: r4(b.base.winS),
+    winAfterS: r4(a.base.winS),
+    narrowed: a.base.winS < b.base.winS,
+    anchorS: r4(anchorS),
+    cursorFractionBefore: r4(fBefore),
+    cursorFractionAfter: r4(fAfter),
+    anchorHeld: Math.abs(fAfter - fBefore) <= 0.01,
+  }
+})
+
+// 7. Horizontal wheel pans and turns Follow off.
+await item(7, 'horizontal wheel pans', async () => {
+  await page.click('.runtl-follow')
+  await sleep(200)
+  const b = await st()
+  const p = await plotPoint(0.5)
+  await page.mouse.move(p.x, p.y)
+  await page.mouse.wheel(200, 0)
+  await sleep(300)
+  const a = await st()
+  await page.mouse.move(5, 5)
+  return { followBefore: b.follow, followAfter: a.follow, shownT0BeforeS: r4(b.shown.t0S), t0AfterS: r4(a.base.t0S), moved: a.base.t0S !== b.shown.t0S }
+})
+
+// 8. Vertical wheel scrolls the rows only.
+await item(8, 'vertical wheel scrolls rows', async () => {
+  await page.evaluate(() => (document.querySelector('.runtl-scroll').scrollTop = 0))
+  await sleep(100)
+  const b = await st()
+  const p = await plotPoint(0.5)
+  await page.mouse.move(p.x, p.y)
+  const top0 = await page.evaluate(() => document.querySelector('.runtl-scroll').scrollTop)
+  await page.mouse.wheel(0, 120)
+  await sleep(300)
+  const top1 = await page.evaluate(() => document.querySelector('.runtl-scroll').scrollTop)
+  const a = await st()
+  await page.mouse.move(5, 5)
+  return {
+    scrollTopBefore: top0,
+    scrollTopAfter: top1,
+    scrolled: top1 !== top0,
+    viewportBefore: b.base,
+    viewportAfter: a.base,
+    viewportUnchanged: a.base.t0S === b.base.t0S && a.base.winS === b.base.winS && a.follow === b.follow,
+  }
+})
+
+// 9. Overview drag moves the window and turns Follow off.
+await item(9, 'overview drag', async () => {
+  await page.click('.runtl-follow')
+  await sleep(200)
+  const b = await st()
+  const ov = await page.locator('.runtl-over-svg').boundingBox()
+  const y = ov.y + ov.height / 2
+  await page.mouse.move(ov.x + ov.width * 0.3, y)
+  await page.mouse.down()
+  for (let i = 1; i <= 10; i++) await page.mouse.move(ov.x + ov.width * (0.3 + 0.03 * i), y)
+  await page.mouse.up()
+  await sleep(300)
+  const a = await st()
+  await page.mouse.move(5, 5)
+  return { followBefore: b.follow, followAfter: a.follow, shownT0BeforeS: r4(b.shown.t0S), t0AfterS: r4(a.base.t0S), winS: r4(a.base.winS), moved: a.base.t0S !== b.shown.t0S }
+})
+
+// 11. Fit shows the whole run.
+await item(11, 'Fit', async () => {
+  await page.click('.runtl-ctl button:has-text("Fit")')
+  await sleep(200)
+  const a = await st()
+  const readout = await page.textContent('.runtl-zoom')
+  return { readout, winS: a.base.winS, durationS: a.durationS, fits: readout === 'fit' && a.base.winS === a.durationS }
+})
+
+// 12. Zoom in and Zoom out: a factor of 1.5 about the center; disabled at the limits.
+await item(12, 'Zoom in and Zoom out', async () => {
+  const dis = () =>
+    page.evaluate(() => ({
+      zoomIn: document.querySelector('.runtl-ctl [aria-label="Zoom in"]').disabled,
+      zoomOut: document.querySelector('.runtl-ctl [aria-label="Zoom out"]').disabled,
+    }))
+  const center = (v) => r4(v.t0S + v.winS / 2)
+  const atFit = await st()
+  const disabledAtFit = await dis()
+  const steps = []
+  const step = async (label) => {
+    const b = await st()
+    await page.click(`.runtl-ctl [aria-label="${label}"]`)
+    await sleep(150)
+    const a = await st()
+    steps.push({ label, winBeforeS: r4(b.base.winS), winAfterS: r4(a.base.winS), factor: r4(b.base.winS / a.base.winS), centerBeforeS: center(b.base), centerAfterS: center(a.base) })
+  }
+  await step('Zoom in')
+  await step('Zoom out')
+  for (let i = 0; i < 20 && !(await dis()).zoomIn; i++) await step('Zoom in')
+  const atMin = await st()
+  const disabledAtMin = await dis()
+  return { durationS: atFit.durationS, disabledAtFit, steps, minWinS: atMin.base.winS, disabledAtMin }
+})
+
+// 14. Play turns Follow on.
+await item(14, 'Play turns Follow on', async () => {
+  const b = await st()
+  await page.evaluate(() => window.__store.getState().playbackCommand({ type: 'play' }))
+  await sleep(100)
+  const a = await st()
+  await page.evaluate(() => window.__store.getState().pauseRun())
+  await sleep(200)
+  return { followBefore: b.follow, followAfterPlay: a.follow, playing: a.playing, note: 'Play advances observation by design.' }
+})
+
+// 15. Reduced motion: no 100 ms glide on the four gliding elements.
+await item(15, 'reduced motion', async () => {
+  const SEL = ['.runtl-pan', '.runtl-playhead', '.runtl-axis-svg > g', '.runtl-over-window']
+  const read = () =>
+    page.evaluate((sel) => Object.fromEntries(sel.map((s) => [s, getComputedStyle(document.querySelector(s)).transition])), SEL)
+  const follow = (await st()).follow
+  const normal = await read()
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await sleep(200)
+  const reduced = await read()
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  return {
+    follow,
+    normal,
+    reduced,
+    glideWithoutReduce: Object.values(normal).some((t) => t.includes('0.1s')),
+    noGlideWithReduce: Object.values(reduced).every((t) => !t.includes('0.1s')),
+  }
+})
+
+findings.items[16] = { name: 'page errors', count: errors.length }
+findings.end = await st()
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2) + '\n')
+console.log('errors', errors.length)
+await browser.close()

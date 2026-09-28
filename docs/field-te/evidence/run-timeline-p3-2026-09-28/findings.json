@@ -1,0 +1,435 @@
+{
+  "capturedAt": "2026-09-28T15:54:39.586Z",
+  "viewport": "1265x900 dark",
+  "fixture": "src/playback/__fixtures__/detection-outside-rings.json",
+  "shots": [
+    {
+      "file": "tooltip-over-mark.png",
+      "state": "Execute, paused, the pointer over a mark, the tooltip open inside the strip",
+      "simTimeS": 299.6172999999968,
+      "observedThroughS": 299.6172999999968
+    },
+    {
+      "file": "board-selected-row.png",
+      "state": "Execute, paused, every group open, a sensor selected on the board, its row highlighted and scrolled into view",
+      "simTimeS": 285,
+      "observedThroughS": 359.12229999999687
+    },
+    {
+      "file": "header-follow-off-after-zoom.png",
+      "state": "Execute, paused, Follow off after a Ctrl wheel zoom, the header controls and the window readout",
+      "simTimeS": 285,
+      "observedThroughS": 359.12229999999687
+    }
+  ],
+  "items": {
+    "1": {
+      "name": "row label click selects",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "label": "Giraffe 1X 3D radar (Saab) 1",
+      "rowKey": "sensor:ent-mtnvzhmr-22",
+      "expectedEntityId": "ent-mtnvzhmr-22",
+      "entityIds": [
+        "ent-mtnvzhmr-22"
+      ],
+      "selects": true
+    },
+    "2": {
+      "name": "board selection highlights and scrolls",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "label": "Giraffe 1X 3D radar (Saab) 1",
+      "kind": "sensor",
+      "entityId": "ent-mtnvzhmr-22",
+      "scrollTopBefore": 43,
+      "scrollTop": 18,
+      "selectedLines": 1,
+      "selectedGrounds": 1,
+      "rowSelected": true,
+      "rowInView": true,
+      "scrolled": true,
+      "threatCase": {
+        "label": "DJI Mavic 3 (G1 quad) 1",
+        "scrollTop": 0,
+        "lines": [
+          {
+            "text": "DJI Mavic 3 (G1 quad) 1",
+            "inView": true
+          },
+          {
+            "text": "DJI Mavic 3 (G1 quad) 1 trackKuRFS fire-",
+            "inView": true
+          },
+          {
+            "text": "DJI Mavic 3 (G1 quad) 1Red air: DJI Mavi",
+            "inView": false
+          }
+        ]
+      }
+    },
+    "3": {
+      "name": "mark click seeks",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "followBefore": true,
+      "glyphS": 285,
+      "simTimeBeforeS": 359.1223,
+      "simTimeAfterS": 285,
+      "seekIsModelMark": true,
+      "withinHitReach": true,
+      "followAfter": false,
+      "shownAtClick": {
+        "t0S": 279.12229999999687,
+        "winS": 120
+      },
+      "storedAfter": {
+        "t0S": 279.12229999999687,
+        "winS": 120
+      },
+      "viewportHeld": true
+    },
+    "4": {
+      "name": "tooltip and Escape",
+      "observedBeforeS": 299.6172999999968,
+      "observedAfterS": 299.6172999999968,
+      "observedUnchanged": true,
+      "mark": {
+        "kind": "detect",
+        "tS": 260.5
+      },
+      "tipInsideStrip": true,
+      "text": "Detect KuRFS fire-control radar (Raytheon) 1\nDJI Mavic 3 (G1 quad) 1\nT+4:20\nShown through T+4:59",
+      "goneAfterEscape": true
+    },
+    "5": {
+      "name": "tooltip hides on a model change",
+      "observedBeforeS": 299.6172999999968,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": false,
+      "tipBeforePlay": true,
+      "tipAfterPlayAndPause": false,
+      "note": "Play advances observation by design; the tooltip is the subject here."
+    },
+    "6": {
+      "name": "Ctrl wheel zoom about the cursor",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "followBefore": false,
+      "followAfter": false,
+      "winBeforeS": 120,
+      "winAfterS": 65.8574,
+      "narrowed": true,
+      "anchorS": 235,
+      "cursorFractionBefore": 0.25,
+      "cursorFractionAfter": 0.2503,
+      "anchorHeld": true
+    },
+    "7": {
+      "name": "horizontal wheel pans",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "followBefore": true,
+      "followAfter": false,
+      "shownT0BeforeS": 241.0951,
+      "t0AfterS": 261.6434,
+      "moved": true
+    },
+    "8": {
+      "name": "vertical wheel scrolls rows",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "scrollTopBefore": 0,
+      "scrollTopAfter": 43,
+      "scrolled": true,
+      "viewportBefore": {
+        "t0S": 261.6433987010218,
+        "winS": 65.85739633128317
+      },
+      "viewportAfter": {
+        "t0S": 261.6433987010218,
+        "winS": 65.85739633128317
+      },
+      "viewportUnchanged": true
+    },
+    "9": {
+      "name": "overview drag",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "followBefore": true,
+      "followAfter": false,
+      "shownT0BeforeS": 241.0951,
+      "t0AfterS": 867.0712,
+      "winS": 65.8574,
+      "moved": true
+    },
+    "10": {
+      "name": "Follow button",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "followBefore": false,
+      "followAfter": true,
+      "ariaPressed": "true"
+    },
+    "11": {
+      "name": "Fit",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "readout": "fit",
+      "winS": 1500,
+      "durationS": 1500,
+      "fits": true
+    },
+    "12": {
+      "name": "Zoom in and Zoom out",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "durationS": 1500,
+      "disabledAtFit": {
+        "zoomIn": false,
+        "zoomOut": true
+      },
+      "steps": [
+        {
+          "label": "Zoom in",
+          "winBeforeS": 1500,
+          "winAfterS": 1000,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom out",
+          "winBeforeS": 1000,
+          "winAfterS": 1500,
+          "factor": 0.6667,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 1500,
+          "winAfterS": 1000,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 1000,
+          "winAfterS": 666.6667,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 666.6667,
+          "winAfterS": 444.4444,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 444.4444,
+          "winAfterS": 296.2963,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 296.2963,
+          "winAfterS": 197.5309,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 197.5309,
+          "winAfterS": 131.6872,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 131.6872,
+          "winAfterS": 87.7915,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 87.7915,
+          "winAfterS": 58.5277,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 58.5277,
+          "winAfterS": 39.0184,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 39.0184,
+          "winAfterS": 26.0123,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 26.0123,
+          "winAfterS": 17.3415,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 17.3415,
+          "winAfterS": 11.561,
+          "factor": 1.5,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        },
+        {
+          "label": "Zoom in",
+          "winBeforeS": 11.561,
+          "winAfterS": 10,
+          "factor": 1.1561,
+          "centerBeforeS": 750,
+          "centerAfterS": 750
+        }
+      ],
+      "minWinS": 10,
+      "disabledAtMin": {
+        "zoomIn": true,
+        "zoomOut": false
+      }
+    },
+    "13": {
+      "name": "Collapse all and Expand all",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "openGroupsAfterCollapse": [],
+      "openGroupsAfterExpand": [
+        "sensor",
+        "c2",
+        "track",
+        "effector",
+        "threat"
+      ],
+      "everyGroupOpen": true,
+      "openSensorRows": 1,
+      "subLines": 1,
+      "modelSubLanes": 1,
+      "everySubLaneDrawn": true
+    },
+    "14": {
+      "name": "Play turns Follow on",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "followBefore": false,
+      "followAfterPlay": true,
+      "playing": true,
+      "note": "Play advances observation by design."
+    },
+    "15": {
+      "name": "reduced motion",
+      "observedBeforeS": 359.12229999999687,
+      "observedAfterS": 359.12229999999687,
+      "observedUnchanged": true,
+      "follow": true,
+      "normal": {
+        ".runtl-pan": "transform 0.1s linear",
+        ".runtl-playhead": "transform 0.1s linear",
+        ".runtl-axis-svg > g": "transform 0.1s linear",
+        ".runtl-over-window": "transform 0.1s linear"
+      },
+      "reduced": {
+        ".runtl-pan": "none",
+        ".runtl-playhead": "none",
+        ".runtl-axis-svg > g": "none",
+        ".runtl-over-window": "none"
+      },
+      "glideWithoutReduce": true,
+      "noGlideWithReduce": true
+    },
+    "16": {
+      "name": "page errors",
+      "count": 0
+    }
+  },
+  "errors": [],
+  "trialStatus": "ready",
+  "start": {
+    "sameStore": true,
+    "simTimeS": 299.6172999999968,
+    "observedThroughS": 299.6172999999968,
+    "playing": false,
+    "follow": true,
+    "base": {
+      "t0S": 0,
+      "winS": 120
+    },
+    "shown": {
+      "t0S": 219.61729999999682,
+      "winS": 120
+    },
+    "durationS": 1500,
+    "openGroups": [],
+    "openSensors": [],
+    "entityIds": []
+  },
+  "end": {
+    "sameStore": true,
+    "simTimeS": 288.02399999964234,
+    "observedThroughS": 359.12229999999687,
+    "playing": false,
+    "follow": true,
+    "base": {
+      "t0S": 745.0000000000001,
+      "winS": 10
+    },
+    "shown": {
+      "t0S": 281.35733333297566,
+      "winS": 10
+    },
+    "durationS": 1500,
+    "openGroups": [
+      "sensor",
+      "c2",
+      "track",
+      "effector",
+      "threat"
+    ],
+    "openSensors": [
+      "sensor:ent-mtnvzhmx-29"
+    ],
+    "entityIds": [
+      "ent-mtnvzhmr-22"
+    ]
+  }
+}

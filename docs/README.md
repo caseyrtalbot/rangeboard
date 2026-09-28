@@ -44,6 +44,7 @@ Proposals preserve design decisions as issued; the records below them show what 
 Earlier plans, earlier handoffs and the wave completion write-ups were removed on
 2026-09-16 and remain in Git history.
 
+- [Run timeline Phase 3 browser check, 2026-09-28](field-te/evidence/run-timeline-p3-2026-09-28/README.md)
 - [Run timeline Phase 2 browser check, 2026-09-27](field-te/evidence/run-timeline-p2-2026-09-27/README.md)
 - [Chrome refactor final capture after Row C, 2026-09-24](field-te/evidence/chrome-2026-09-24/README.md)
 - [Phase 3 review fixes CR-01 to CR-04, 2026-09-14](field-te/evidence/cr-fixes-2026-09-14/README.md)
