@@ -1,0 +1,223 @@
+{
+  "capturedAt": "2026-09-28T20:22:12.594Z",
+  "viewport": "1265x900 dark",
+  "fixture": "src/playback/__fixtures__/detection-outside-rings.json",
+  "shots": {
+    "prepare-sensor-detail": {
+      "state": "Prepare, no trial, first sensor selected, every section open",
+      "screen": null,
+      "detail": "sensor",
+      "backLabel": "Back to overview",
+      "mutedLines": [],
+      "emptyRows": [
+        {
+          "text": "No Pd model for this sensor.",
+          "h": 28
+        },
+        {
+          "text": "No track observed.",
+          "h": 28
+        },
+        {
+          "text": "No track observed.",
+          "h": 28
+        },
+        {
+          "text": "No threats with flight paths.",
+          "h": 28
+        }
+      ],
+      "emptyRowsHidden": [],
+      "infoButtons": [
+        {
+          "label": "About model basis",
+          "h": 24
+        }
+      ],
+      "tileValueFont": null,
+      "outcomeMetricProbeFont": "15px/400 \"JetBrains Mono\"",
+      "liveStatus": []
+    },
+    "execute-before-play": {
+      "state": "Execute, no trial yet: the Run monitor with the inline Play prompt",
+      "screen": "Run monitor",
+      "detail": null,
+      "backLabel": null,
+      "mutedLines": [
+        "No trial yet. Press Play to run one."
+      ],
+      "emptyRows": [],
+      "emptyRowsHidden": [],
+      "infoButtons": [],
+      "tileValueFont": null,
+      "outcomeMetricProbeFont": "15px/400 \"JetBrains Mono\"",
+      "liveStatus": []
+    },
+    "analyze-outcome": {
+      "state": "Analyze, Outcome screen after completeRun, disclosures closed",
+      "screen": "Outcome",
+      "detail": null,
+      "backLabel": null,
+      "mutedLines": [
+        "0 saved runs",
+        "No saved run yet."
+      ],
+      "emptyRows": [],
+      "emptyRowsHidden": [
+        "No trial validity assessment was captured."
+      ],
+      "infoButtons": [],
+      "tileValueFont": "15px/400 \"JetBrains Mono\"",
+      "outcomeMetricProbeFont": "15px/400 \"JetBrains Mono\"",
+      "liveStatus": [
+        "Evidence productsRUN-0001 · Complete"
+      ]
+    },
+    "analyze-outcome-manifest": {
+      "state": "Analyze, Outcome, the Manifest disclosure open: the system record with its (i)",
+      "screen": "Outcome",
+      "detail": null,
+      "backLabel": null,
+      "mutedLines": [
+        "0 saved runs",
+        "No saved run yet."
+      ],
+      "emptyRows": [],
+      "emptyRowsHidden": [
+        "No trial validity assessment was captured."
+      ],
+      "infoButtons": [
+        {
+          "label": "About telemetry state",
+          "h": 24
+        }
+      ],
+      "tileValueFont": "15px/400 \"JetBrains Mono\"",
+      "outcomeMetricProbeFont": "15px/400 \"JetBrains Mono\"",
+      "liveStatus": [
+        "Evidence productsRUN-0001 · Complete"
+      ]
+    },
+    "analyze-debrief": {
+      "state": "Analyze, Outcome, the Evidence products debrief record in view",
+      "screen": "Outcome",
+      "detail": null,
+      "backLabel": null,
+      "mutedLines": [
+        "0 saved runs",
+        "No saved run yet."
+      ],
+      "emptyRows": [],
+      "emptyRowsHidden": [
+        "No trial validity assessment was captured."
+      ],
+      "infoButtons": [
+        {
+          "label": "About telemetry state",
+          "h": 24
+        }
+      ],
+      "tileValueFont": "15px/400 \"JetBrains Mono\"",
+      "outcomeMetricProbeFont": "15px/400 \"JetBrains Mono\"",
+      "liveStatus": [
+        "Evidence productsRUN-0001 · Complete"
+      ]
+    },
+    "analyze-sensor-detail": {
+      "state": "Analyze, completed run, first sensor selected, every section open",
+      "screen": null,
+      "detail": "sensor",
+      "backLabel": "Back to overview",
+      "mutedLines": [],
+      "emptyRows": [],
+      "emptyRowsHidden": [],
+      "infoButtons": [
+        {
+          "label": "About model basis",
+          "h": 24
+        }
+      ],
+      "tileValueFont": null,
+      "outcomeMetricProbeFont": "15px/400 \"JetBrains Mono\"",
+      "liveStatus": []
+    },
+    "analyze-effector-detail": {
+      "state": "Analyze, completed run, first effector selected, every section open",
+      "screen": null,
+      "detail": "effector",
+      "backLabel": "Back to overview",
+      "mutedLines": [],
+      "emptyRows": [],
+      "emptyRowsHidden": [],
+      "infoButtons": [
+        {
+          "label": "About model basis",
+          "h": 24
+        }
+      ],
+      "tileValueFont": null,
+      "outcomeMetricProbeFont": "15px/400 \"JetBrains Mono\"",
+      "liveStatus": []
+    },
+    "analyze-c2-detail": {
+      "state": "Analyze, completed run, first c2 selected, every section open",
+      "screen": null,
+      "detail": "system",
+      "backLabel": "Back to overview",
+      "mutedLines": [
+        "Every detected threat routes through this node."
+      ],
+      "emptyRows": [],
+      "emptyRowsHidden": [],
+      "infoButtons": [
+        {
+          "label": "About model basis",
+          "h": 24
+        }
+      ],
+      "tileValueFont": null,
+      "outcomeMetricProbeFont": "15px/400 \"JetBrains Mono\"",
+      "liveStatus": []
+    },
+    "analyze-threat-detail": {
+      "state": "Analyze, completed run, first uas selected, every section open",
+      "screen": null,
+      "detail": "threat",
+      "backLabel": "Back to overview",
+      "mutedLines": [],
+      "emptyRows": [],
+      "emptyRowsHidden": [],
+      "infoButtons": [
+        {
+          "label": "About model basis",
+          "h": 24
+        },
+        {
+          "label": "About altitude",
+          "h": 24
+        }
+      ],
+      "tileValueFont": null,
+      "outcomeMetricProbeFont": "15px/400 \"JetBrains Mono\"",
+      "liveStatus": []
+    }
+  },
+  "errors": [],
+  "trialStatus": "ready",
+  "run": {
+    "durationS": 1500,
+    "simTimeS": 1500,
+    "observedThroughS": 1500,
+    "completedAtMs": true,
+    "entities": 6
+  },
+  "backToOverview": {
+    "label": "Back to overview",
+    "selectionCleared": false,
+    "focused": {
+      "id": "insp-tab-analysis",
+      "text": "Outcome"
+    },
+    "detailOpen": false
+  }
+}
