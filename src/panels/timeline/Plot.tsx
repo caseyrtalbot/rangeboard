@@ -5,6 +5,7 @@ import { useStore } from '../../state/store'
 import { hitAt, type RunTimelineHit } from './hit'
 import { LaneItems } from './LaneMarks'
 import { panPx, playheadX, type Placed } from './layout'
+import { useWindowedLines, type RowView } from './useRowWindow'
 import { GLIDE, panGlide, useShownT0 } from './useShownT0'
 
 /**
@@ -61,19 +62,22 @@ function Pan({
   )
 }
 
-/** Row grounds and separators; they span the plot and never pan. */
+/** Row grounds and separators of the drawn lines; they span the plot and never pan. */
 const Grounds = memo(function Grounds({
   lines,
+  view,
   widthPx,
   selected,
 }: {
   lines: Placed[]
+  view: RowView
   widthPx: number
   selected: ReadonlySet<string>
 }) {
+  const shown = useWindowedLines(lines, view)
   return (
     <>
-      {lines.map((line) => (
+      {shown.map((line) => (
         <g key={line.key}>
           {line.t === 'group' && (
             <rect className="runtl-ground-group" x={0} y={line.y} width={widthPx} height={line.h} />
@@ -100,19 +104,25 @@ const Grounds = memo(function Grounds({
   )
 })
 
-/** Every line's items; a summary or a fold draws its members at reduced opacity. */
+/**
+ * The drawn lines' items (`useWindowedLines`: the scroll view plus the
+ * overscan); a summary or a fold draws its members at reduced opacity.
+ */
 const Rows = memo(function Rows({
   lines,
+  view,
   pxPerS,
   hatch,
 }: {
   lines: Placed[]
+  view: RowView
   pxPerS: number
   hatch: string
 }) {
+  const shown = useWindowedLines(lines, view)
   return (
     <>
-      {lines.map((line) => {
+      {shown.map((line) => {
         if (line.t === 'group') return null
         if (line.t === 'summary' || line.t === 'fold')
           return (
@@ -155,6 +165,7 @@ const Rows = memo(function Rows({
  */
 export const Plot = memo(function Plot({
   lines,
+  view,
   heightPx,
   widthPx,
   pxPerS,
@@ -166,7 +177,10 @@ export const Plot = memo(function Plot({
   onItemClick,
   onItemHover,
 }: {
+  /** Every layout line; the hit test reads them all. */
   lines: Placed[]
+  /** The rows' scroll view: only the lines near it draw. */
+  view: RowView
   heightPx: number
   widthPx: number
   pxPerS: number
@@ -215,7 +229,7 @@ export const Plot = memo(function Plot({
       }}
     >
       <svg className="runtl-grounds" width={widthPx} height={heightPx} aria-hidden="true">
-        <Grounds lines={lines} widthPx={widthPx} selected={selected} />
+        <Grounds lines={lines} view={view} widthPx={widthPx} selected={selected} />
       </svg>
       <Pan
         key={pxPerS}
@@ -243,7 +257,7 @@ export const Plot = memo(function Plot({
               <line x1={shadeX} x2={shadeX} y1={0} y2={heightPx} />
             </g>
           )}
-          <Rows lines={lines} pxPerS={pxPerS} hatch={hatch} />
+          <Rows lines={lines} view={view} pxPerS={pxPerS} hatch={hatch} />
         </svg>
         <Playhead pxPerS={pxPerS} durationS={durationS} />
       </Pan>

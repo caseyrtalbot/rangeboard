@@ -115,3 +115,40 @@ export function playheadX(tS: number, durationS: number, pxPerS: number): number
 export function durationText(s: number): string {
   return s < 10 ? `${s.toFixed(1)} s` : `${Math.round(s)} s`
 }
+
+/** Rows drawn past each edge of the scroll view, px: at least this much. */
+export const MIN_OVERSCAN_PX = 120
+
+/**
+ * The lines to draw for a scroll view: indices `first` to `last` (exclusive)
+ * of every line whose y range meets `topPx - overscan` to
+ * `topPx + heightPx + overscan`. The overscan is one view height, at least
+ * `MIN_OVERSCAN_PX`. Lines are in y order with no gap, so a binary search
+ * finds each end; the layout keeps every line and a drawn line keeps its y.
+ */
+export function lineWindow(
+  lines: readonly Placed[],
+  topPx: number,
+  heightPx: number,
+): { first: number; last: number } {
+  const over = Math.max(MIN_OVERSCAN_PX, heightPx)
+  const lo = topPx - over
+  const hi = topPx + heightPx + over
+  // The first line that ends below lo.
+  let a = 0
+  let b = lines.length
+  while (a < b) {
+    const mid = (a + b) >>> 1
+    if (lines[mid].y + lines[mid].h <= lo) a = mid + 1
+    else b = mid
+  }
+  const first = a
+  // The first line that starts at or below hi.
+  b = lines.length
+  while (a < b) {
+    const mid = (a + b) >>> 1
+    if (lines[mid].y < hi) a = mid + 1
+    else b = mid
+  }
+  return { first, last: a }
+}

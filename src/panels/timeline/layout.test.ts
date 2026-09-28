@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { RunTimelineModel, RunTimelineRow } from '../../analysis/runTimeline'
-import { playheadX, stripLayout, type Placed } from './layout'
+import { lineWindow, MIN_OVERSCAN_PX, playheadX, stripLayout, type Placed } from './layout'
 
 function row(kind: RunTimelineRow['kind'], id: string, label: string): RunTimelineRow {
   return { key: `${kind}:${id}`, kind, label, meta: '', entityId: id, spans: [], marks: [] }
@@ -134,5 +134,34 @@ describe('playheadX', () => {
     expect(playheadX(40, 600, 5)).toBe(200)
     expect(playheadX(600, 600, 5)).toBe(2999)
     expect(playheadX(0, 600, 0)).toBe(0)
+  })
+})
+
+describe('lineWindow', () => {
+  // Thirty 18 px lines: 540 px.
+  const lines = Array.from({ length: 30 }, (_, i) => ({
+    ...stripLayout(model, CLOSED).lines[0],
+    key: `l${i}`,
+    y: i * 18,
+    h: 18,
+  })) as Placed[]
+
+  it('takes the view plus one view height of overscan, at least the floor', () => {
+    expect(MIN_OVERSCAN_PX).toBe(120)
+    // 180 to 234 px; the overscan is the 120 px floor: 60 to 354 px, lines 3 to 19.
+    expect(lineWindow(lines, 180, 54)).toEqual({ first: 3, last: 20 })
+    // A 200 px view overscans 200 px: -20 to 580 px, every line from 0.
+    expect(lineWindow(lines, 180, 200)).toEqual({ first: 0, last: 30 })
+  })
+
+  it('clamps at both ends', () => {
+    expect(lineWindow(lines, 0, 36)).toEqual({ first: 0, last: 9 })
+    // Scrolled to the bottom: 504 to 540 px, 384 px and down.
+    expect(lineWindow(lines, 504, 36)).toEqual({ first: 21, last: 30 })
+  })
+
+  it('draws every line for an unmeasured view and none from an empty list', () => {
+    expect(lineWindow(lines, 0, Infinity)).toEqual({ first: 0, last: 30 })
+    expect(lineWindow([], 100, 200)).toEqual({ first: 0, last: 0 })
   })
 })

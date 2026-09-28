@@ -8,11 +8,13 @@ import type { RunTimelineUi } from '../../state/store'
 import { useStore } from '../../state/store'
 import { installTrial, observeTrial, unstartTrial } from '../analysis/trialTestState'
 import { Axis } from './Axis'
+import { Gutter } from './Gutter'
 import { LaneItems } from './LaneMarks'
 import { panPx, spanBox } from './layout'
 import { Overview } from './Overview'
 import { Plot } from './Plot'
 import { RunTimeline } from './RunTimeline'
+import { createRowView } from './useRowWindow'
 
 function render() {
   Object.assign(useStore.getInitialState(), useStore.getState())
@@ -259,6 +261,7 @@ describe('RunTimeline transforms', () => {
       return renderToStaticMarkup(
         <Plot
           lines={[]}
+          view={createRowView()}
           heightPx={100}
           widthPx={600}
           pxPerS={5}
@@ -284,6 +287,7 @@ describe('RunTimeline transforms', () => {
     const selected = renderToStaticMarkup(
       <Plot
         lines={[{ t: 'row', key: row.key, row, open: false, inFold: false, y: 18, h: 18 }]}
+        view={createRowView()}
         heightPx={36}
         widthPx={600}
         pxPerS={5}
@@ -304,5 +308,76 @@ describe('RunTimeline transforms', () => {
     observeTrial(300, 100.1)
     expect(plot(10.3)).toContain('translateX(-51.5px)')
     expect(plot(10.3)).toContain('translateX(500.5px)')
+  })
+})
+
+describe('RunTimeline row windowing', () => {
+  // Forty 18 px rows, 720 px of layout; the view shows 36 px of it.
+  const rows: RunTimelineRow[] = Array.from({ length: 40 }, (_, i) => ({
+    key: `threat:t${i}`,
+    kind: 'threat',
+    label: `t${i}`,
+    meta: '',
+    entityId: `t${i}`,
+    spans: [],
+    marks: [{ kind: 'arrival', tS: 10 }],
+  }))
+  const lines = rows.map((row, i) => ({
+    t: 'row' as const,
+    key: row.key,
+    row,
+    open: false,
+    inFold: false,
+    y: i * 18,
+    h: 18,
+  }))
+  const draw = (topPx: number) => {
+    const view = createRowView({ topPx, heightPx: 36 })
+    const gutter = renderToStaticMarkup(
+      <Gutter lines={lines} view={view} heightPx={720} selected={new Set()} />,
+    )
+    const plot = renderToStaticMarkup(
+      <Plot
+        lines={lines}
+        view={view}
+        heightPx={720}
+        widthPx={600}
+        pxPerS={5}
+        base={{ t0S: 0, winS: 120 }}
+        follow={false}
+        durationS={300}
+        horizonS={300}
+        selected={new Set()}
+        onItemClick={() => {}}
+        onItemHover={() => {}}
+      />,
+    )
+    return { gutter, plot }
+  }
+
+  it('draws only the lines near the scroll view, at their layout y', () => {
+    // 0 to 36 px plus 120 px of overscan: rows 0 to 8 (y 0 to 144).
+    const { gutter, plot } = draw(0)
+    expect(count(gutter, 'class="runtl-line runtl-row"')).toBe(9)
+    expect(gutter).toContain('>t8</button>')
+    expect(gutter).not.toContain('>t9</button>')
+    expect(count(plot, 'runtl-m-arrival')).toBe(9)
+    // The gutter and the plot keep the full layout height.
+    expect(gutter).toContain('style="height:720px"')
+    expect(plot).toContain('style="height:720px"')
+    expect(lines).toHaveLength(40)
+  })
+
+  it('holds a scrolled window at the layout y with a spacer', () => {
+    // 360 to 396 px plus 120 px each side: rows 13 to 28.
+    const { gutter, plot } = draw(360)
+    expect(gutter).toContain('<div style="height:234px"></div>')
+    expect(gutter).not.toContain('>t12</button>')
+    expect(gutter).toContain('>t13</button>')
+    expect(gutter).toContain('>t28</button>')
+    expect(gutter).not.toContain('>t29</button>')
+    // Row 13's rule sits at its layout y (234 + 18 - 0.5); row 12 draws none.
+    expect(plot).toContain('y1="251.5"')
+    expect(plot).not.toContain('y1="233.5"')
   })
 })

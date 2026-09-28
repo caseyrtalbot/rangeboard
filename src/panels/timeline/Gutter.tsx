@@ -2,6 +2,7 @@ import { memo } from 'react'
 import type { RunTimelineGroup, RunTimelineKind, RunTimelineRow } from '../../analysis/runTimeline'
 import { useStore } from '../../state/store'
 import type { Placed } from './layout'
+import { useWindowedLines, type RowView } from './useRowWindow'
 import { selectRunTimelineRow } from './useRunTimelineSelection'
 
 /** Row ink per kind: the strip's kind tokens; a track reads as the C2 picture. */
@@ -180,19 +181,27 @@ const FoldLine = memo(function FoldLine({
 })
 
 /**
- * The gutter: one line per plot line, in the same order and at the same
- * heights. `selected` holds the line keys the board selection highlights.
+ * The gutter: one line per drawn plot line, in the same order and at the same
+ * heights. Only the lines near the scroll view render (`useWindowedLines`); a
+ * spacer holds the first one at its layout y, and the gutter keeps the full
+ * height. `selected` holds the line keys the board selection highlights.
  */
 export const Gutter = memo(function Gutter({
   lines,
+  view,
+  heightPx,
   selected,
 }: {
   lines: Placed[]
+  view: RowView
+  heightPx: number
   selected: ReadonlySet<string>
 }) {
+  const shown = useWindowedLines(lines, view)
   return (
-    <div className="runtl-gutter">
-      {lines.map((line) => {
+    <div className="runtl-gutter" style={{ height: heightPx }}>
+      {shown.length > 0 && shown[0].y > 0 && <div style={{ height: shown[0].y }} />}
+      {shown.map((line) => {
         switch (line.t) {
           case 'group':
             return (

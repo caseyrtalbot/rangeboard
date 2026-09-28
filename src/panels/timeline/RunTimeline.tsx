@@ -16,6 +16,7 @@ import { Plot } from './Plot'
 import { Tooltip, type TooltipHandle } from './Tooltip'
 import { horizonText } from './tooltipText'
 import { useRunTimelineSeek } from './useRunTimelineSeek'
+import { useBindRowView, createRowView } from './useRowWindow'
 import { useScrollToSelection, useSelectedLines } from './useRunTimelineSelection'
 import { useViewportGestures } from './useViewportGestures'
 
@@ -97,6 +98,10 @@ export function RunTimeline() {
   const rootRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const tipRef = useRef<TooltipHandle | null>(null)
+  // The rows' scroll view lives in its own store, so a vertical scroll
+  // re-renders only the gutter, the grounds and the rows, never this root.
+  const [rowView] = useState(createRowView)
+  useBindRowView(scrollRef, rowView, hasModel)
   const lines = layout ? layout.lines : NO_LINES
   const selected = useSelectedLines(lines)
   useScrollToSelection(scrollRef, lines, selected)
@@ -139,10 +144,16 @@ export function RunTimeline() {
             <Controls model={model} base={base} follow={follow} />
           </div>
           <div className="runtl-scroll" ref={scrollRef}>
-            <Gutter lines={layout.lines} selected={selected} />
+            <Gutter
+              lines={layout.lines}
+              view={rowView}
+              heightPx={layout.heightPx}
+              selected={selected}
+            />
             <div className="runtl-plotcol" ref={plotRef}>
               <Plot
                 lines={layout.lines}
+                view={rowView}
                 heightPx={layout.heightPx}
                 widthPx={widthPx}
                 pxPerS={pxPerS}
