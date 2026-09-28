@@ -305,9 +305,10 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   Execute and Analyze. From the top: a 28 px header (title, then the horizon in mono
   text 3, `Shown through T+m:ss`, or `Complete · T+m:ss` once the whole run shows, then
   the legend), the rows, a 20 px axis and a 22 px overview. The legend (`.runtl-legend`)
-  is a 16 px row of 14 by 6 px swatches and words in text 3 at 11 px, in the strip's
-  ink tokens: hold, coast, classify, window, prep, flight, dwell, hard kill, mission
-  kill, miss; the header shrinks it first and an item that no longer fits drops whole.
+  is a 16 px row of 14 by 6 px swatches and words in text 3 at the 12 px header size, in
+  the strip's ink tokens: hold, coast, classify, window, prep, flight, dwell, hard kill,
+  mission kill, miss; the header shrinks it first and an item that no longer fits wraps
+  to a clipped second line (a header narrower than the first item cuts that item).
   Only the
   rows scroll. The axis has a `--rule-strong` top rule and the overview a `--rule` top
   rule. Only the lines near the rows' view draw, one view height (at least 120 px)

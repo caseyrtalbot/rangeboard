@@ -37,9 +37,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "575b79105de33a1a03e06c692e674e68179c21645c6c4869418525a61f960095",
+      "sha256": "d547f26cd214d5f0bfe9863f87a97e99fb4dd4535af30bd423fa40b9ef78ebe2",
       "reviewedAt": "2026-09-28",
-      "note": "Row E: App imports isTypingTarget from ui/typingTarget.ts and compares a saved right tab as a string; the text still matches the source."
+      "note": "Row E review fixes (2c6c4e8): App drops the dead library compare after savedView; the text still matches the source."
     },
     {
       "document": "docs/README.md",
@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "1268af7fbf1f805f40647e54080f21bb7d68849db405d55af4cc801e04b46eef",
+      "sha256": "080525aaed6778d14ea8ee37994b87dfbc851a6c6b0f05e6f69a8d08ef939671",
       "reviewedAt": "2026-09-28",
-      "note": "Row E: the header reads Complete · T+m:ss with a legend, Expand all stays in force so a sensor row opens when it gains its first track; the Row E chrome cleanup (EmptyRow on the detail panes, Back to overview, RightTab narrowed) changes no guide text."
+      "note": "Row E review fixes (2c6c4e8): NowScreen's preparing and error placeholder is an EmptyRow; no guide text changes."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "cefb3fe95b95f52f103e18a88246ecfced1e66cc1bde5f65dcc5288c9cc08d50",
+      "sha256": "6bc764b1c5500f4207731194e9b3267e56d64c4fbb45024be6737861a7aa7624",
       "reviewedAt": "2026-09-28",
-      "note": "Row E: openSensorsAll flag and toggleRunTimelineSensor(rowKey, shownOpen), RUN_TIMELINE_DEFAULT_H 264, EmptyRow and NoteInfo in controls.tsx, one isTypingTarget in ui/typingTarget.ts, RightTab narrowed."
+      "note": "Row E review fixes (2c6c4e8): toggleRunTimelineSensor under openSensorsAll unions the stored list with shownOpen; the reference text reads against the source."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -81,7 +81,7 @@
       ],
       "sha256": "15b207f63bcbffd28185a0d0e3420492c38edd8bbcc006da102a589bb25b8938",
       "reviewedAt": "2026-09-28",
-      "note": "Row E: the e2e phase test now sets the inspect tab before each phase switch (the library tab is retired); the script list and the gate text are unchanged."
+      "note": "Row E review fixes (2c6c4e8): no scripts/ or src/io change; text unchanged."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -100,14 +100,14 @@
       ],
       "sha256": "f9367d38c3a38529428b0550eed00c9eef616d17582d960d9d61f5c487268e0e",
       "reviewedAt": "2026-09-28",
-      "note": "Row E: the only scripts/ change is the e2e phase test's tab name; the workflow text is unchanged."
+      "note": "Row E review fixes (2c6c4e8): no scripts/ change; text unchanged."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "e0a1aa5f56dd5e3e9873730e58fd47ce38c3ec4b840da61eaf01ba072b20b6da",
+      "sha256": "15edb2e206af9425d1127bc8587ef8c3af1835ea09cdd4b86cbba10e94a0265f",
       "reviewedAt": "2026-09-28",
-      "note": "Row E selected (timeline polish lane E1 and chrome cleanup lane E2 from the follow-ups, user decision 2026-09-28) and Row F queued (record the assigning C2 node on EngagementEvent; clip holds and tracks at the kill; parity expects need re-authorization)."
+      "note": "Row E recorded on polish/e (lanes E1 and E2, the integration, the docs, the opus-high review and its fixes 2c6c4e8, the gate on 2c6c4e8); Row F selected; the Row E follow-ups and landmines added."
     },
     {
       "document": "docs/Plan.md",
@@ -126,7 +126,7 @@
       ],
       "sha256": "5ab2b4968b9b07cae8cddddc1e634a9adf79b90bbacd944074d523aa1bee724f",
       "reviewedAt": "2026-09-28",
-      "note": "Row E: RunTimeline.tsx now prints Complete · T+m:ss in the header and draws the mockup legend; the accessible name and tooltip keep Shown through per section 1.4. The plan stays complete."
+      "note": "Row E review fixes (2c6c4e8): RunTimeline.tsx unchanged since e29a2c6; the plan stays complete."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "83f3e9e63972a4300fda3f8d78cbf073bcb0997a1a0fc71a5a09d6282bef14a3",
+      "sha256": "b8d1f4911be666493a8e8651beaeb86d979095cb48e035ea2dd8f52ed45c37ae",
       "reviewedAt": "2026-09-28",
-      "note": "Row E: the header legend, the playhead cap, the mono summary label at 18 px, the C2 assign label gate, the 24 px header button decision; E2's CSS placement (.empty-row and .line-error beside the Field rules, the drawer fit folded into the right-panel rules, .chip.mc deleted, .outcome-metric strong at the lead size)."
+      "note": "Row E review fixes (2c6c4e8): .telemetry-note and --type-value-size deleted; the legend words are text 3 at the 12 px header size and a narrow header cuts the first item."
     }
   ],
   "historical": [
