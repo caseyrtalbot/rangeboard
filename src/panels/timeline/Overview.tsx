@@ -1,7 +1,9 @@
-import { memo } from 'react'
+import { memo, useRef, useState, type PointerEvent } from 'react'
 import type { RunTimelineModel } from '../../analysis/runTimeline'
 import type { TimeViewport } from '../../charts/timeViewport'
-import { panGlide, useShownT0 } from './useShownT0'
+import { useStore } from '../../state/store'
+import { panGlide, shownViewport, useShownT0 } from './useShownT0'
+import { overviewGrab, overviewPlace, overviewTime } from './viewportActions'
 
 const OVER_H = 22
 /** Threat ramp band height, px; many threats share the band. */
@@ -108,7 +110,11 @@ function Window({
   )
 }
 
-/** The overview under the axis. Phase 3 adds the drag that moves the viewport. */
+/**
+ * The overview under the axis. A press takes pointer capture: outside the
+ * window it centers the window at the pointer time, inside it keeps the grab
+ * offset; each move pans the viewport and turns Follow off.
+ */
 export const Overview = memo(function Overview({
   model,
   base,
@@ -120,12 +126,52 @@ export const Overview = memo(function Overview({
   follow: boolean
   widthPx: number
 }) {
+  const { durationS } = model
+  // Seconds from the window start held under the pointer; null while no drag.
+  const grabRef = useRef<number | null>(null)
+  const [dragging, setDragging] = useState(false)
+
+  const timeAt = (e: PointerEvent<SVGSVGElement>) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    return overviewTime(e.clientX - r.left, r.width, durationS)
+  }
+  const moveTo = (tS: number, grabS: number) => {
+    const shown = shownViewport(base, follow, durationS)
+    useStore.getState().setRunTimelineViewport(overviewPlace(shown, tS, grabS, durationS), false)
+  }
+  const end = (e: PointerEvent<SVGSVGElement>) => {
+    if (grabRef.current == null) return
+    grabRef.current = null
+    setDragging(false)
+    if (e.currentTarget.hasPointerCapture(e.pointerId))
+      e.currentTarget.releasePointerCapture(e.pointerId)
+  }
+
   return (
     <div className="runtl-over">
       <div className="runtl-over-gutter">Whole run</div>
-      <svg className="runtl-over-svg" width={widthPx} height={OVER_H} aria-hidden="true">
+      <svg
+        className={dragging ? 'runtl-over-svg dragging' : 'runtl-over-svg'}
+        width={widthPx}
+        height={OVER_H}
+        aria-hidden="true"
+        onPointerDown={(e) => {
+          if (e.button !== 0 || !(durationS > 0)) return
+          e.currentTarget.setPointerCapture(e.pointerId)
+          const tS = timeAt(e)
+          const grabS = overviewGrab(shownViewport(base, follow, durationS), tS)
+          grabRef.current = grabS
+          setDragging(true)
+          moveTo(tS, grabS)
+        }}
+        onPointerMove={(e) => {
+          if (grabRef.current != null) moveTo(timeAt(e), grabRef.current)
+        }}
+        onPointerUp={end}
+        onPointerCancel={end}
+      >
         <Picture model={model} widthPx={widthPx} />
-        <Window base={base} follow={follow} durationS={model.durationS} widthPx={widthPx} />
+        <Window base={base} follow={follow} durationS={durationS} widthPx={widthPx} />
       </svg>
     </div>
   )

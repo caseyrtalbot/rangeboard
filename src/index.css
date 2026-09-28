@@ -3667,6 +3667,7 @@ input[type='number'] {
 }
 
 .runtl {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -3708,6 +3709,31 @@ input[type='number'] {
   flex: 1;
 }
 
+.runtl-ctl {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.runtl-ctl button.mini {
+  align-self: center;
+  margin-left: 0;
+}
+
+.runtl-ctl button.runtl-follow[aria-pressed='true'] {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--ink);
+}
+
+.runtl-zoom {
+  min-width: 44px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  text-align: center;
+}
+
 .runtl-axis,
 .runtl-over,
 .runtl-scroll {
@@ -3742,6 +3768,15 @@ input[type='number'] {
 .runtl-axis-svg,
 .runtl-over-svg {
   display: block;
+}
+
+.runtl-over-svg {
+  cursor: grab;
+  touch-action: none;
+}
+
+.runtl-over-svg.dragging {
+  cursor: grabbing;
 }
 
 .runtl-axis-svg line {
@@ -4041,6 +4076,48 @@ input[type='number'] {
   width: 1px;
   background: var(--text);
   pointer-events: none;
+}
+
+/* Strip relative, so the rows' scroll container never clips it. Tooltip.tsx
+   sets left and top. */
+.runtl-tip {
+  position: absolute;
+  z-index: 5;
+  max-width: 280px;
+  padding: 5px 8px;
+  background: var(--surface-raised);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--elev-1);
+  color: var(--text-secondary);
+  font-size: var(--type-meta-size);
+  pointer-events: none;
+}
+
+.runtl-tip b {
+  color: var(--text);
+  font-weight: var(--type-title-weight);
+}
+
+.runtl-tip-data {
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.runtl-tip-horizon {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+/* The inline GLIDE transition moves these; !important beats the inline style. */
+@media (prefers-reduced-motion: reduce) {
+  .runtl-pan,
+  .runtl-playhead,
+  .runtl-axis-svg > g,
+  .runtl-over-window {
+    transition: none !important;
+  }
 }
 
 /* ---------- Chart kit ---------- */
