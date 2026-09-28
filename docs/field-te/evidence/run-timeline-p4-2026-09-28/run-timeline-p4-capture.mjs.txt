@@ -238,6 +238,111 @@ if (FRAMES_ONLY) {
   process.exit(0)
 }
 
+// 1b. Row windowing: the layout keeps every line, only the lines near the
+// scroll view render, and a selection, a scroll, a toggle and a seek still work.
+{
+  const layoutFacts = () =>
+    page.evaluate(async () => {
+      const { selectTrialHorizon, selectTrialSelection } = await import('/src/state/trialSelectors.ts')
+      const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+      const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+      const { stripLayout } = await import('/src/panels/timeline/layout.ts')
+      const s = window.__store.getState()
+      const sel = selectTrialSelection(s)
+      const view = trialResultOf(sel.scenario, sel.result.manifest, sel.result)
+      const h = s.ui.boardPhase === 'analyze' ? selectTrialHorizon(s, Infinity) : selectTrialHorizon(s, s.playback.simTimeS)
+      const layout = stripLayout(runTimelineOf(view, h), s.ui.runTimeline)
+      const sc = document.querySelector('#run-timeline .runtl-scroll')
+      const gutterLines = [...document.querySelectorAll('#run-timeline .runtl-gutter > .runtl-line')]
+      const r = sc.getBoundingClientRect()
+      return {
+        layoutLines: layout.lines.length,
+        layoutHeightPx: layout.heightPx,
+        scrollHeightPx: sc.scrollHeight,
+        scrollTopPx: sc.scrollTop,
+        viewHeightPx: sc.clientHeight,
+        renderedGutterLines: gutterLines.length,
+        renderedGrounds: document.querySelectorAll('#run-timeline .runtl-grounds > g').length,
+        renderedLanes: document.querySelectorAll('#run-timeline .runtl-svg .runtl-lane').length,
+        observedThroughS: s.playback.observedThroughS,
+        simTimeS: s.playback.simTimeS,
+        selectedInView: [...document.querySelectorAll('#run-timeline .runtl-gutter > .runtl-line.selected')].some((el) => {
+          const b = el.getBoundingClientRect()
+          return b.top >= r.top - 0.5 && b.bottom <= r.bottom + 0.5
+        }),
+        keyTexts: gutterLines.map((el) => el.textContent),
+      }
+    })
+  const strip = ({ keyTexts, ...rest }) => ({ ...rest, firstLine: keyTexts[0] ?? null, lastLine: keyTexts[keyTexts.length - 1] ?? null })
+  const win = { overscan: 'one view height, at least 120 px (MIN_OVERSCAN_PX)', steps: [] }
+  const step = async (label, fn) => {
+    const before = await layoutFacts()
+    if (fn) await fn()
+    await sleep(350)
+    const after = await layoutFacts()
+    const out = {
+      label,
+      ...strip(after),
+      observedThroughS: [r4(before.observedThroughS), r4(after.observedThroughS)],
+      simTimeS: [r4(before.simTimeS), r4(after.simTimeS)],
+      fullHeight: after.scrollHeightPx === after.layoutHeightPx,
+    }
+    win.steps.push(out)
+    console.log('window', JSON.stringify(out))
+    return out
+  }
+  await step('expanded, rows at the top')
+  // A board selection of the last threat: its row sits at the bottom of the layout.
+  await step('board selection of the last threat', () =>
+    page.evaluate(() => {
+      const s = window.__store.getState()
+      const threats = s.scenario.entities.filter((e) => e.kind === 'uas')
+      s.select({ entityIds: [threats[threats.length - 1].id] })
+    }),
+  )
+  await step('scroll to the top', () => page.evaluate(() => (document.querySelector('#run-timeline .runtl-scroll').scrollTop = 0)))
+  await step('wheel scroll 600 px', async () => {
+    const b = await page.locator('#run-timeline .runtl-plot').boundingBox()
+    await page.mouse.move(b.x + 100, b.y + 40)
+    await page.mouse.wheel(0, 600)
+  })
+  await step('scroll to the bottom', () =>
+    page.evaluate(() => {
+      const el = document.querySelector('#run-timeline .runtl-scroll')
+      el.scrollTop = el.scrollHeight
+    }),
+  )
+  await step('Collapse all', () => page.click('#run-timeline .runtl-ctl button:has-text("Collapse all")'))
+  await step('Expand all', () => expandAll())
+  await step('hide the first row', () => page.locator('#run-timeline .runtl-hide').first().click({ force: true }))
+  await step('Show all', () => page.click('#run-timeline .runtl-head button:has-text("Show all")'))
+  await step('mark click seek', async () => {
+    await page.evaluate(() => (document.querySelector('#run-timeline .runtl-scroll').scrollTop = 0))
+    await sleep(200)
+    const box = await page.evaluate(() => {
+      const r = document.querySelector('#run-timeline .runtl-scroll').getBoundingClientRect()
+      const m = [...document.querySelectorAll('#run-timeline .runtl-svg .runtl-m')].find((el) => {
+        const b = el.getBoundingClientRect()
+        return b.width > 0 && b.left > r.left + 180 && b.right < r.right - 4 && b.top > r.top + 2 && b.bottom < r.bottom - 2
+      })
+      if (!m) return null
+      const b = m.getBoundingClientRect()
+      return { x: b.left + b.width / 2, y: b.top + b.height / 2 }
+    })
+    if (box) await page.mouse.click(box.x, box.y)
+  })
+  await page.evaluate(() => window.__store.getState().select({ entityIds: [] }))
+  const sel = win.steps[1]
+  win.pass =
+    win.steps.every((x) => x.fullHeight && x.observedThroughS[0] === x.observedThroughS[1]) &&
+    win.steps[0].renderedGutterLines < win.steps[0].layoutLines &&
+    sel.selectedInView &&
+    win.steps[4].lastLine != null &&
+    win.steps[9].simTimeS[0] !== win.steps[9].simTimeS[1]
+  findings.windowing = win
+  console.log('window pass', win.pass)
+}
+
 // 2. Accessible names in Execute: the group label follows the horizon.
 const a11y = { execute: [] }
 const labelAt = async (t) => {

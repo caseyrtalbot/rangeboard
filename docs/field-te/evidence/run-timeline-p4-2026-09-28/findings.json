@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-09-28T17:07:40.839Z",
+  "capturedAt": "2026-09-28T17:22:17.797Z",
   "viewport": "1265x900",
   "fixture": "docs/field-te/evidence/perf-2026-09-06/scenario.json",
   "shots": [
@@ -33,51 +33,51 @@
       {
         "label": "open-1",
         "strip": "open, every group and sensor row expanded",
-        "intervals": 921,
-        "over16ms": 82,
-        "over20ms": 78,
-        "over33ms": 40,
-        "maxMs": 83.3,
-        "meanMs": 10.87,
-        "p99Ms": 50,
+        "intervals": 1028,
+        "over16ms": 57,
+        "over20ms": 29,
+        "over33ms": 24,
+        "maxMs": 50.1,
+        "meanMs": 9.73,
+        "p99Ms": 41.6,
         "longtaskSupported": true,
-        "longtasks": 16,
-        "longtaskMaxMs": 88,
-        "longtaskTotalMs": 1012,
+        "longtasks": 1,
+        "longtaskMaxMs": 50,
+        "longtaskTotalMs": 50,
         "simTimeS": [
           0,
-          299.262
+          296.868
         ],
         "observedThroughS": [
-          9.3499,
-          299.262
+          9.3611,
+          296.868
         ],
         "domBefore": {
-          "lines": 56,
+          "lines": 19,
           "subLanes": 0,
-          "marks": 1,
+          "marks": 0,
           "spans": 0,
-          "svgNodes": 239,
+          "svgNodes": 126,
           "groupLabel": "Run timeline. Shown through T+0:00"
         },
         "domAfter": {
-          "lines": 119,
-          "subLanes": 55,
-          "marks": 656,
-          "spans": 1956,
-          "svgNodes": 3761,
-          "groupLabel": "Run timeline. Shown through T+4:59"
+          "lines": 22,
+          "subLanes": 13,
+          "marks": 287,
+          "spans": 272,
+          "svgNodes": 1011,
+          "groupLabel": "Run timeline. Shown through T+4:56"
         }
       },
       {
         "label": "closed-1",
         "strip": "closed",
-        "intervals": 1156,
-        "over16ms": 24,
+        "intervals": 1151,
+        "over16ms": 17,
         "over20ms": 7,
         "over33ms": 0,
-        "maxMs": 25.4,
-        "meanMs": 8.64,
+        "maxMs": 25.6,
+        "meanMs": 8.68,
         "p99Ms": 16.7,
         "longtaskSupported": true,
         "longtasks": 0,
@@ -85,11 +85,11 @@
         "longtaskTotalMs": 0,
         "simTimeS": [
           0,
-          297.993
+          296.55
         ],
         "observedThroughS": [
-          299.262,
-          299.262
+          296.868,
+          296.868
         ],
         "domBefore": null,
         "domAfter": null
@@ -97,51 +97,51 @@
       {
         "label": "open-2",
         "strip": "open, every group and sensor row expanded",
-        "intervals": 980,
-        "over16ms": 67,
-        "over20ms": 46,
-        "over33ms": 23,
-        "maxMs": 75.3,
-        "meanMs": 10.2,
-        "p99Ms": 50,
+        "intervals": 1108,
+        "over16ms": 40,
+        "over20ms": 34,
+        "over33ms": 11,
+        "maxMs": 33.4,
+        "meanMs": 9.01,
+        "p99Ms": 32.5,
         "longtaskSupported": true,
-        "longtasks": 15,
-        "longtaskMaxMs": 83,
-        "longtaskTotalMs": 918,
+        "longtasks": 0,
+        "longtaskMaxMs": 0,
+        "longtaskTotalMs": 0,
         "simTimeS": [
           0,
-          298.731
+          297.534
         ],
         "observedThroughS": [
-          299.262,
-          299.262
+          296.868,
+          297.534
         ],
         "domBefore": {
-          "lines": 56,
+          "lines": 19,
           "subLanes": 0,
-          "marks": 1,
+          "marks": 0,
           "spans": 0,
-          "svgNodes": 239,
+          "svgNodes": 126,
           "groupLabel": "Run timeline. Shown through T+0:00"
         },
         "domAfter": {
-          "lines": 119,
-          "subLanes": 55,
-          "marks": 656,
-          "spans": 1956,
-          "svgNodes": 3761,
-          "groupLabel": "Run timeline. Shown through T+4:58"
+          "lines": 22,
+          "subLanes": 13,
+          "marks": 287,
+          "spans": 272,
+          "svgNodes": 1011,
+          "groupLabel": "Run timeline. Shown through T+4:57"
         }
       },
       {
         "label": "closed-2",
         "strip": "closed",
-        "intervals": 1163,
-        "over16ms": 6,
-        "over20ms": 2,
+        "intervals": 1153,
+        "over16ms": 14,
+        "over20ms": 4,
         "over33ms": 0,
-        "maxMs": 25,
-        "meanMs": 8.59,
+        "maxMs": 25.1,
+        "meanMs": 8.67,
         "p99Ms": 16.7,
         "longtaskSupported": true,
         "longtasks": 0,
@@ -149,11 +149,11 @@
         "longtaskTotalMs": 0,
         "simTimeS": [
           0,
-          298.869
+          299.121
         ],
         "observedThroughS": [
-          299.262,
-          299.262
+          297.534,
+          299.121
         ],
         "domBefore": null,
         "domAfter": null
@@ -162,27 +162,263 @@
     "pass": false,
     "rule": "Phase 2 rule: an open run adds no interval over 33 ms beyond the closed runs"
   },
+  "windowing": {
+    "overscan": "one view height, at least 120 px (MIN_OVERSCAN_PX)",
+    "steps": [
+      {
+        "label": "expanded, rows at the top",
+        "layoutLines": 118,
+        "layoutHeightPx": 1904,
+        "scrollHeightPx": 1904,
+        "scrollTopPx": 0,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 22,
+        "renderedGrounds": 22,
+        "renderedLanes": 21,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          299.121
+        ],
+        "selectedInView": false,
+        "firstLine": "\u25beSensors25blue",
+        "lastLine": "THR-G1-Q-01 1",
+        "fullHeight": true
+      },
+      {
+        "label": "board selection of the last threat",
+        "layoutLines": 118,
+        "layoutHeightPx": 1904,
+        "scrollHeightPx": 1904,
+        "scrollTopPx": 1735,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 19,
+        "renderedGrounds": 19,
+        "renderedLanes": 18,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          299.121
+        ],
+        "selectedInView": true,
+        "firstLine": "MEROPS fixed-wing interceptor 1MEROPS fixed-wing interceptor\u00d7",
+        "lastLine": "THR-G1-Q-01 6Red air: DJI Mavic 3 (G1 quad)\u00d7",
+        "fullHeight": true
+      },
+      {
+        "label": "scroll to the top",
+        "layoutLines": 118,
+        "layoutHeightPx": 1904,
+        "scrollHeightPx": 1904,
+        "scrollTopPx": 0,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 22,
+        "renderedGrounds": 22,
+        "renderedLanes": 21,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          299.121
+        ],
+        "selectedInView": false,
+        "firstLine": "\u25beSensors25blue",
+        "lastLine": "THR-G1-Q-01 1",
+        "fullHeight": true
+      },
+      {
+        "label": "wheel scroll 600 px",
+        "layoutLines": 118,
+        "layoutHeightPx": 1904,
+        "scrollHeightPx": 1904,
+        "scrollTopPx": 600,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 35,
+        "renderedGrounds": 35,
+        "renderedLanes": 35,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          299.121
+        ],
+        "selectedInView": true,
+        "firstLine": "Acoustic picket node (Sky Fortress class) 1Acoustic picket node (Sky Fortress class)\u00d7",
+        "lastLine": "THR-G1-Q-01 6",
+        "fullHeight": true
+      },
+      {
+        "label": "scroll to the bottom",
+        "layoutLines": 118,
+        "layoutHeightPx": 1904,
+        "scrollHeightPx": 1904,
+        "scrollTopPx": 1735,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 19,
+        "renderedGrounds": 19,
+        "renderedLanes": 18,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          299.121
+        ],
+        "selectedInView": true,
+        "firstLine": "MEROPS fixed-wing interceptor 1MEROPS fixed-wing interceptor\u00d7",
+        "lastLine": "THR-G1-Q-01 6Red air: DJI Mavic 3 (G1 quad)\u00d7",
+        "fullHeight": true
+      },
+      {
+        "label": "Collapse all",
+        "layoutLines": 10,
+        "layoutHeightPx": 180,
+        "scrollHeightPx": 180,
+        "scrollTopPx": 11,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 10,
+        "renderedGrounds": 10,
+        "renderedLanes": 58,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          299.121
+        ],
+        "selectedInView": true,
+        "firstLine": "\u25b8Sensors25blue",
+        "lastLine": "All threats",
+        "fullHeight": true
+      },
+      {
+        "label": "Expand all",
+        "layoutLines": 118,
+        "layoutHeightPx": 1904,
+        "scrollHeightPx": 1904,
+        "scrollTopPx": 11,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 23,
+        "renderedGrounds": 23,
+        "renderedLanes": 22,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          299.121
+        ],
+        "selectedInView": true,
+        "firstLine": "\u25beSensors25blue",
+        "lastLine": "THR-G1-Q-01 2",
+        "fullHeight": true
+      },
+      {
+        "label": "hide the first row",
+        "layoutLines": 117,
+        "layoutHeightPx": 1886,
+        "scrollHeightPx": 1886,
+        "scrollTopPx": 11,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 23,
+        "renderedGrounds": 23,
+        "renderedLanes": 22,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          299.121
+        ],
+        "selectedInView": true,
+        "firstLine": "\u25beSensors24 \u00b7 1 hiddenblue",
+        "lastLine": "THR-G1-Q-01 3",
+        "fullHeight": true
+      },
+      {
+        "label": "Show all",
+        "layoutLines": 118,
+        "layoutHeightPx": 1904,
+        "scrollHeightPx": 1904,
+        "scrollTopPx": 11,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 23,
+        "renderedGrounds": 23,
+        "renderedLanes": 22,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          299.121
+        ],
+        "selectedInView": true,
+        "firstLine": "\u25beSensors25blue",
+        "lastLine": "THR-G1-Q-01 2",
+        "fullHeight": true
+      },
+      {
+        "label": "mark click seek",
+        "layoutLines": 113,
+        "layoutHeightPx": 1834,
+        "scrollHeightPx": 1834,
+        "scrollTopPx": 0,
+        "viewHeightPx": 169,
+        "renderedGutterLines": 22,
+        "renderedGrounds": 22,
+        "renderedLanes": 21,
+        "observedThroughS": [
+          299.121,
+          299.121
+        ],
+        "simTimeS": [
+          299.121,
+          221.5
+        ],
+        "selectedInView": true,
+        "firstLine": "\u25beSensors25blue",
+        "lastLine": "THR-G1-Q-01 2",
+        "fullHeight": true
+      }
+    ],
+    "pass": true
+  },
   "accessibility": {
     "execute": [
       {
         "simTimeS": 75,
-        "observedThroughS": 299.262,
+        "observedThroughS": 299.121,
         "label": "Run timeline. Shown through T+1:15",
         "scope": "Shown through T+1:15",
         "expected": "Run timeline. Shown through T+1:15",
         "match": true
       },
       {
-        "simTimeS": 180,
-        "observedThroughS": 299.262,
-        "label": "Run timeline. Shown through T+3:00",
-        "scope": "Shown through T+3:00",
-        "expected": "Run timeline. Shown through T+3:00",
+        "simTimeS": 179,
+        "observedThroughS": 299.121,
+        "label": "Run timeline. Shown through T+2:59",
+        "scope": "Shown through T+2:59",
+        "expected": "Run timeline. Shown through T+2:59",
         "match": true
       },
       {
         "simTimeS": 299,
-        "observedThroughS": 299.262,
+        "observedThroughS": 299.121,
         "label": "Run timeline. Shown through T+4:59",
         "scope": "Shown through T+4:59",
         "expected": "Run timeline. Shown through T+4:59",
@@ -191,16 +427,16 @@
     ],
     "executeUpdates": true,
     "controls": {
-      "gutterButtons": 187,
+      "gutterButtons": 33,
       "unnamed": 0,
-      "groupHeaders": 5,
+      "groupHeaders": 1,
       "foldHeaders": 0,
-      "rowLabels": 59,
+      "rowLabels": 8,
       "rowLabelText": 0,
-      "subLaneButtons": 55,
-      "subLanes": 55,
-      "expandControls": 9,
-      "hideControls": 59,
+      "subLaneButtons": 13,
+      "subLanes": 13,
+      "expandControls": 3,
+      "hideControls": 8,
       "headerButtons": [
         "Follow",
         "Zoom out",
@@ -212,7 +448,7 @@
     },
     "zoomReadout": {
       "text": "Window 120 s",
-      "ariaSnapshot": "- button \"Follow\" [pressed]\n- button \"Zoom out\": \u2212\n- text: Window 120 s\n- button \"Zoom in\": +\n- button \"Fit\"\n- button \"Collapse all\"\n- button \"Expand all\""
+      "ariaSnapshot": "- button \"Follow\"\n- button \"Zoom out\": \u2212\n- text: Window 120 s\n- button \"Zoom in\": +\n- button \"Fit\"\n- button \"Collapse all\"\n- button \"Expand all\""
     },
     "subLaneClick": {
       "label": "THR-G1-Q-01 1",
@@ -228,8 +464,8 @@
         ]
       },
       "observedThroughS": [
-        299.262,
-        299.262
+        299.121,
+        299.121
       ],
       "simTimeS": [
         299,
@@ -240,7 +476,7 @@
     },
     "analyze": {
       "observedThroughS": [
-        299.262,
+        299.121,
         1322
       ],
       "note": "completeRun advances observation by design",
@@ -255,57 +491,57 @@
   "modelPasses": {
     "durationS": 1322,
     "observedThroughS": 1322,
-    "firstBuildMs": 6.5,
+    "firstBuildMs": 5.7,
     "passes": 265,
     "passMeanMs": 0.005,
     "passMedianMs": 0,
     "passMaxMs": 0.1,
-    "rowsPerPassMax": 115,
-    "createdTotal": 3847,
-    "reusedTotal": 25716,
-    "createdMeanPerPass": 14.517,
+    "rowsPerPassMax": 116,
+    "createdTotal": 3947,
+    "reusedTotal": 25822,
+    "createdMeanPerPass": 14.894,
     "perPass": [
       {
         "horizonS": 5,
         "ms": 0,
-        "rows": 91,
-        "reused": 29,
-        "created": 62
+        "rows": 82,
+        "reused": 28,
+        "created": 54
       },
       {
         "horizonS": 10,
-        "ms": 0.1,
+        "ms": 0,
         "rows": 93,
-        "reused": 30,
-        "created": 63
+        "reused": 28,
+        "created": 65
       },
       {
         "horizonS": 15,
         "ms": 0,
         "rows": 95,
-        "reused": 30,
-        "created": 65
+        "reused": 28,
+        "created": 67
       },
       {
         "horizonS": 20,
         "ms": 0,
         "rows": 95,
-        "reused": 30,
-        "created": 65
+        "reused": 28,
+        "created": 67
       },
       {
         "horizonS": 25,
         "ms": 0,
         "rows": 95,
-        "reused": 30,
-        "created": 65
+        "reused": 28,
+        "created": 67
       },
       {
         "horizonS": 30,
         "ms": 0,
         "rows": 95,
-        "reused": 30,
-        "created": 65
+        "reused": 29,
+        "created": 66
       },
       {
         "horizonS": 35,
@@ -318,8 +554,8 @@
         "horizonS": 40,
         "ms": 0,
         "rows": 95,
-        "reused": 30,
-        "created": 65
+        "reused": 31,
+        "created": 64
       },
       {
         "horizonS": 45,
@@ -360,12 +596,12 @@
         "horizonS": 70,
         "ms": 0,
         "rows": 95,
-        "reused": 36,
-        "created": 59
+        "reused": 37,
+        "created": 58
       },
       {
         "horizonS": 75,
-        "ms": 0.1,
+        "ms": 0,
         "rows": 95,
         "reused": 37,
         "created": 58
@@ -374,1755 +610,1753 @@
         "horizonS": 80,
         "ms": 0,
         "rows": 95,
-        "reused": 39,
-        "created": 56
+        "reused": 37,
+        "created": 58
       },
       {
         "horizonS": 85,
-        "ms": 0.1,
+        "ms": 0,
         "rows": 95,
-        "reused": 42,
-        "created": 53
+        "reused": 37,
+        "created": 58
       },
       {
         "horizonS": 90,
         "ms": 0,
         "rows": 95,
-        "reused": 43,
-        "created": 52
+        "reused": 40,
+        "created": 55
       },
       {
         "horizonS": 95,
         "ms": 0,
         "rows": 95,
-        "reused": 43,
-        "created": 52
+        "reused": 44,
+        "created": 51
       },
       {
         "horizonS": 100,
+        "ms": 0,
+        "rows": 96,
+        "reused": 44,
+        "created": 52
+      },
+      {
+        "horizonS": 105,
         "ms": 0,
         "rows": 96,
         "reused": 45,
         "created": 51
       },
       {
-        "horizonS": 105,
-        "ms": 0.1,
-        "rows": 97,
-        "reused": 45,
-        "created": 52
-      },
-      {
         "horizonS": 110,
         "ms": 0,
         "rows": 97,
-        "reused": 47,
-        "created": 50
+        "reused": 46,
+        "created": 51
       },
       {
         "horizonS": 115,
         "ms": 0,
         "rows": 98,
-        "reused": 49,
-        "created": 49
+        "reused": 48,
+        "created": 50
       },
       {
         "horizonS": 120,
         "ms": 0,
-        "rows": 98,
-        "reused": 49,
-        "created": 49
+        "rows": 99,
+        "reused": 48,
+        "created": 51
       },
       {
         "horizonS": 125,
         "ms": 0,
         "rows": 99,
-        "reused": 51,
-        "created": 48
+        "reused": 50,
+        "created": 49
       },
       {
         "horizonS": 130,
-        "ms": 0,
+        "ms": 0.1,
         "rows": 100,
-        "reused": 52,
-        "created": 48
+        "reused": 51,
+        "created": 49
       },
       {
         "horizonS": 135,
+        "ms": 0,
+        "rows": 101,
+        "reused": 52,
+        "created": 49
+      },
+      {
+        "horizonS": 140,
         "ms": 0,
         "rows": 101,
         "reused": 53,
         "created": 48
       },
       {
-        "horizonS": 140,
-        "ms": 0,
-        "rows": 101,
-        "reused": 54,
-        "created": 47
-      },
-      {
         "horizonS": 145,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 150,
-        "ms": 0,
+        "ms": 0.1,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 155,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 160,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 165,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 170,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 175,
-        "ms": 0.1,
+        "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 180,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 185,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 190,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 195,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 200,
         "ms": 0,
         "rows": 101,
-        "reused": 58,
-        "created": 43
+        "reused": 57,
+        "created": 44
       },
       {
         "horizonS": 205,
         "ms": 0,
-        "rows": 102,
-        "reused": 59,
+        "rows": 101,
+        "reused": 58,
         "created": 43
       },
       {
         "horizonS": 210,
         "ms": 0.1,
         "rows": 103,
-        "reused": 59,
-        "created": 44
+        "reused": 58,
+        "created": 45
       },
       {
         "horizonS": 215,
         "ms": 0,
         "rows": 104,
-        "reused": 59,
-        "created": 45
+        "reused": 58,
+        "created": 46
       },
       {
         "horizonS": 220,
-        "ms": 0,
+        "ms": 0.1,
         "rows": 107,
-        "reused": 59,
-        "created": 48
+        "reused": 58,
+        "created": 49
       },
       {
         "horizonS": 225,
         "ms": 0,
         "rows": 111,
-        "reused": 59,
-        "created": 52
+        "reused": 58,
+        "created": 53
       },
       {
         "horizonS": 230,
+        "ms": 0,
+        "rows": 112,
+        "reused": 58,
+        "created": 54
+      },
+      {
+        "horizonS": 235,
+        "ms": 0.1,
+        "rows": 113,
+        "reused": 58,
+        "created": 55
+      },
+      {
+        "horizonS": 240,
         "ms": 0,
         "rows": 113,
         "reused": 59,
         "created": 54
       },
       {
-        "horizonS": 235,
-        "ms": 0.1,
-        "rows": 114,
-        "reused": 60,
-        "created": 54
-      },
-      {
-        "horizonS": 240,
-        "ms": 0,
-        "rows": 114,
-        "reused": 60,
-        "created": 54
-      },
-      {
         "horizonS": 245,
         "ms": 0,
-        "rows": 114,
-        "reused": 61,
-        "created": 53
+        "rows": 113,
+        "reused": 59,
+        "created": 54
       },
       {
         "horizonS": 250,
         "ms": 0,
-        "rows": 114,
-        "reused": 62,
-        "created": 52
+        "rows": 113,
+        "reused": 59,
+        "created": 54
       },
       {
         "horizonS": 255,
         "ms": 0,
-        "rows": 114,
-        "reused": 62,
-        "created": 52
+        "rows": 113,
+        "reused": 59,
+        "created": 54
       },
       {
         "horizonS": 260,
         "ms": 0,
-        "rows": 114,
-        "reused": 62,
-        "created": 52
+        "rows": 113,
+        "reused": 59,
+        "created": 54
       },
       {
         "horizonS": 265,
-        "ms": 0,
-        "rows": 114,
-        "reused": 62,
-        "created": 52
+        "ms": 0.1,
+        "rows": 113,
+        "reused": 59,
+        "created": 54
       },
       {
         "horizonS": 270,
         "ms": 0,
-        "rows": 114,
-        "reused": 62,
-        "created": 52
+        "rows": 113,
+        "reused": 59,
+        "created": 54
       },
       {
         "horizonS": 275,
         "ms": 0,
-        "rows": 114,
-        "reused": 62,
-        "created": 52
+        "rows": 113,
+        "reused": 60,
+        "created": 53
       },
       {
         "horizonS": 280,
         "ms": 0,
-        "rows": 114,
-        "reused": 62,
-        "created": 52
+        "rows": 113,
+        "reused": 60,
+        "created": 53
       },
       {
         "horizonS": 285,
         "ms": 0,
-        "rows": 114,
-        "reused": 62,
-        "created": 52
+        "rows": 113,
+        "reused": 60,
+        "created": 53
       },
       {
         "horizonS": 290,
         "ms": 0,
-        "rows": 114,
-        "reused": 72,
-        "created": 42
+        "rows": 113,
+        "reused": 69,
+        "created": 44
       },
       {
         "horizonS": 295,
-        "ms": 0.1,
-        "rows": 114,
-        "reused": 97,
-        "created": 17
+        "ms": 0,
+        "rows": 113,
+        "reused": 95,
+        "created": 18
       },
       {
         "horizonS": 300,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
-        "created": 6
+        "rows": 113,
+        "reused": 105,
+        "created": 8
       },
       {
         "horizonS": 305,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
-        "created": 6
+        "rows": 113,
+        "reused": 105,
+        "created": 8
       },
       {
         "horizonS": 310,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
-        "created": 6
+        "rows": 115,
+        "reused": 105,
+        "created": 10
       },
       {
         "horizonS": 315,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
-        "created": 6
+        "rows": 115,
+        "reused": 106,
+        "created": 9
       },
       {
         "horizonS": 320,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 325,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 330,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 335,
-        "ms": 0,
-        "rows": 114,
+        "ms": 0.1,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 340,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 345,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 350,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 355,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 360,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 365,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 370,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 375,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 380,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 385,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 390,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 395,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 400,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 405,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 410,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 415,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 420,
-        "ms": 0,
-        "rows": 114,
+        "ms": 0.1,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 425,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 430,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 435,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 440,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 445,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 450,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 455,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 460,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 465,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 470,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 475,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 480,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 108,
-        "created": 6
+        "created": 7
       },
       {
         "horizonS": 485,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 490,
-        "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "ms": 0.1,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 495,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 500,
-        "ms": 0.1,
-        "rows": 114,
-        "reused": 108,
+        "ms": 0,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 505,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 510,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 515,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 520,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 525,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 530,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 535,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 540,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 545,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 550,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 555,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 560,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 565,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 570,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 575,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 580,
-        "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "ms": 0.1,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 585,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 590,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 595,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 600,
-        "ms": 0.1,
-        "rows": 114,
-        "reused": 108,
+        "ms": 0,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 605,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 610,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 615,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 620,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 625,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 630,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 635,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 640,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 645,
         "ms": 0,
-        "rows": 114,
-        "reused": 108,
+        "rows": 115,
+        "reused": 109,
         "created": 6
       },
       {
         "horizonS": 650,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 655,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 660,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 665,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 670,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 675,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 680,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 685,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 690,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 695,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 700,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 705,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 710,
-        "ms": 0,
-        "rows": 114,
+        "ms": 0.1,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 715,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 720,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 725,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 730,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 735,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 740,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 745,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 750,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 755,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 760,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 765,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 770,
-        "ms": 0,
-        "rows": 114,
+        "ms": 0.1,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 775,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 780,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 785,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 790,
         "ms": 0,
-        "rows": 114,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 795,
-        "ms": 0.1,
-        "rows": 114,
+        "ms": 0,
+        "rows": 115,
         "reused": 109,
-        "created": 5
+        "created": 6
       },
       {
         "horizonS": 800,
         "ms": 0,
-        "rows": 114,
-        "reused": 110,
-        "created": 4
+        "rows": 115,
+        "reused": 109,
+        "created": 6
       },
       {
         "horizonS": 805,
         "ms": 0,
-        "rows": 114,
-        "reused": 110,
-        "created": 4
+        "rows": 115,
+        "reused": 109,
+        "created": 6
       },
       {
         "horizonS": 810,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 815,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 820,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 825,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 830,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 835,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 840,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 845,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 850,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 855,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 860,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 865,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 870,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 875,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 880,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 885,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 890,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
+        "rows": 115,
+        "reused": 112,
         "created": 3
       },
       {
         "horizonS": 895,
-        "ms": 0.1,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "ms": 0,
+        "rows": 116,
+        "reused": 112,
+        "created": 4
       },
       {
         "horizonS": 900,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 905,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 910,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 915,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 920,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 925,
-        "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "ms": 0.1,
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 930,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 935,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 940,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 945,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 950,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 955,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 960,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 965,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 970,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 975,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 980,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 985,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 990,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 995,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 1000,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 1005,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 1010,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 1015,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 1020,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 1025,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 1030,
         "ms": 0,
-        "rows": 114,
-        "reused": 111,
-        "created": 3
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 1035,
         "ms": 0,
-        "rows": 115,
-        "reused": 111,
-        "created": 4
+        "rows": 116,
+        "reused": 114,
+        "created": 2
       },
       {
         "horizonS": 1040,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1045,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1050,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1055,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1060,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1065,
-        "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "ms": 0.1,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1070,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1075,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1080,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1085,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1090,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1095,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1100,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1105,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1110,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1115,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1120,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1125,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1130,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1135,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1140,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1145,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1150,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1155,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1160,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1165,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1170,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1175,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1180,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1185,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1190,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1195,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1200,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1205,
         "ms": 0,
-        "rows": 115,
-        "reused": 113,
+        "rows": 116,
+        "reused": 114,
         "created": 2
       },
       {
         "horizonS": 1210,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1215,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1220,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1225,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1230,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1235,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1240,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1245,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1250,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1255,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1260,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1265,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1270,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1275,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1280,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1285,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1290,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1295,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1300,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1305,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1310,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1315,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1320,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       },
       {
         "horizonS": 1322,
         "ms": 0,
-        "rows": 115,
-        "reused": 114,
+        "rows": 116,
+        "reused": 115,
         "created": 1
       }
-    ],
-    "passTotalMs": 1.2,
-    "timerNote": "performance.now() in this page is coarsened to 0.1 ms, so one pass reads 0 or 0.1 ms; passTotalMs sums the rounded reads."
+    ]
   },
   "contrast": {
     "rule": "WCAG 2.1 relative luminance; ratio (L1 + 0.05) / (L2 + 0.05); an ink with alpha is composited over its surface first",
@@ -2150,7 +2384,7 @@
             "shown": "#7da7c4",
             "surface": "panel",
             "surfaceColour": "#191a1a",
-            "source": "element .runtl-svg .runtl-m-detect fill",
+            "source": "expression",
             "ratio": 6.81,
             "required": 3,
             "pass": true
@@ -2163,7 +2397,7 @@
             "shown": "#7da7c4",
             "surface": "selected",
             "surfaceColour": "#262626",
-            "source": "element .runtl-svg .runtl-m-detect fill",
+            "source": "expression",
             "ratio": 5.89,
             "required": 3,
             "pass": true
@@ -2176,7 +2410,7 @@
             "shown": "#d6d9d2",
             "surface": "panel",
             "surfaceColour": "#191a1a",
-            "source": "element .runtl-svg line.runtl-m-init stroke",
+            "source": "expression",
             "ratio": 12.22,
             "required": 3,
             "pass": true
@@ -2189,7 +2423,7 @@
             "shown": "#d6d9d2",
             "surface": "selected",
             "surfaceColour": "#262626",
-            "source": "element .runtl-svg line.runtl-m-init stroke",
+            "source": "expression",
             "ratio": 10.57,
             "required": 3,
             "pass": true
@@ -2254,7 +2488,7 @@
             "shown": "#7b838b",
             "surface": "panel",
             "surfaceColour": "#191a1a",
-            "source": "element .runtl-svg .runtl-m-drop stroke",
+            "source": "expression",
             "ratio": 4.54,
             "required": 3,
             "pass": true
@@ -2267,7 +2501,7 @@
             "shown": "#7b838b",
             "surface": "selected",
             "surfaceColour": "#262626",
-            "source": "element .runtl-svg .runtl-m-drop stroke",
+            "source": "expression",
             "ratio": 3.92,
             "required": 3,
             "pass": true
@@ -2514,7 +2748,7 @@
             "shown": "#7da7c4",
             "surface": "panel",
             "surfaceColour": "#191a1a",
-            "source": "element .runtl-svg .runtl-s-hold fill",
+            "source": "expression",
             "ratio": 6.81,
             "required": 3,
             "pass": true
@@ -2527,7 +2761,7 @@
             "shown": "#7da7c4",
             "surface": "selected",
             "surfaceColour": "#262626",
-            "source": "element .runtl-svg .runtl-s-hold fill",
+            "source": "expression",
             "ratio": 5.89,
             "required": 3,
             "pass": true
@@ -2540,7 +2774,7 @@
             "shown": "#7da7c4",
             "surface": "panel",
             "surfaceColour": "#191a1a",
-            "source": "element .runtl-svg .runtl-s-coast stroke",
+            "source": "expression",
             "ratio": 6.81,
             "required": 3,
             "pass": true
@@ -2553,7 +2787,7 @@
             "shown": "#7da7c4",
             "surface": "selected",
             "surfaceColour": "#262626",
-            "source": "element .runtl-svg .runtl-s-coast stroke",
+            "source": "expression",
             "ratio": 5.89,
             "required": 3,
             "pass": true
@@ -3532,7 +3766,7 @@
             "shown": "#406d8d",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
-            "source": "element .runtl-svg .runtl-m-detect fill",
+            "source": "expression",
             "ratio": 5.09,
             "required": 3,
             "pass": true
@@ -3545,7 +3779,7 @@
             "shown": "#406d8d",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
-            "source": "element .runtl-svg .runtl-m-detect fill",
+            "source": "expression",
             "ratio": 4.54,
             "required": 3,
             "pass": true
@@ -3558,7 +3792,7 @@
             "shown": "#636a59",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
-            "source": "element .runtl-svg line.runtl-m-init stroke",
+            "source": "expression",
             "ratio": 5.16,
             "required": 3,
             "pass": true
@@ -3571,7 +3805,7 @@
             "shown": "#636a59",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
-            "source": "element .runtl-svg line.runtl-m-init stroke",
+            "source": "expression",
             "ratio": 4.6,
             "required": 3,
             "pass": true
@@ -3636,7 +3870,7 @@
             "shown": "#62686f",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
-            "source": "element .runtl-svg .runtl-m-drop stroke",
+            "source": "expression",
             "ratio": 5.17,
             "required": 3,
             "pass": true
@@ -3649,7 +3883,7 @@
             "shown": "#62686f",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
-            "source": "element .runtl-svg .runtl-m-drop stroke",
+            "source": "expression",
             "ratio": 4.61,
             "required": 3,
             "pass": true
@@ -3896,7 +4130,7 @@
             "shown": "#406d8d",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
-            "source": "element .runtl-svg .runtl-s-hold fill",
+            "source": "expression",
             "ratio": 5.09,
             "required": 3,
             "pass": true
@@ -3909,7 +4143,7 @@
             "shown": "#406d8d",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
-            "source": "element .runtl-svg .runtl-s-hold fill",
+            "source": "expression",
             "ratio": 4.54,
             "required": 3,
             "pass": true
@@ -3922,7 +4156,7 @@
             "shown": "#406d8d",
             "surface": "panel",
             "surfaceColour": "#f7f5f0",
-            "source": "element .runtl-svg .runtl-s-coast stroke",
+            "source": "expression",
             "ratio": 5.09,
             "required": 3,
             "pass": true
@@ -3935,7 +4169,7 @@
             "shown": "#406d8d",
             "surface": "selected",
             "surfaceColour": "#eae8e4",
-            "source": "element .runtl-svg .runtl-s-coast stroke",
+            "source": "expression",
             "ratio": 4.54,
             "required": 3,
             "pass": true
@@ -4905,7 +5139,8 @@
       "failing": []
     }
   },
-  "commit": "8ba3ec5",
+  "commit": "41476e2",
+  "shotsNote": "The shots are from the 8ba3ec5 run; windowing does not change what the strip draws in its view, so they were not retaken.",
   "baseline": {
     "commit": "1c7cd00",
     "note": "Frames measured before any Phase 4 source change, with the same script and expansion.",
@@ -5090,42 +5325,245 @@
       "errors": []
     }
   },
+  "beforeWindowing": {
+    "commit": "8ba3ec5",
+    "devFrames": {
+      "speed": 30,
+      "recordMs": 10000,
+      "runs": [
+        {
+          "label": "open-1",
+          "strip": "open, every group and sensor row expanded",
+          "intervals": 921,
+          "over16ms": 82,
+          "over20ms": 78,
+          "over33ms": 40,
+          "maxMs": 83.3,
+          "meanMs": 10.87,
+          "p99Ms": 50,
+          "longtaskSupported": true,
+          "longtasks": 16,
+          "longtaskMaxMs": 88,
+          "longtaskTotalMs": 1012,
+          "simTimeS": [
+            0,
+            299.262
+          ],
+          "observedThroughS": [
+            9.3499,
+            299.262
+          ],
+          "domBefore": {
+            "lines": 56,
+            "subLanes": 0,
+            "marks": 1,
+            "spans": 0,
+            "svgNodes": 239,
+            "groupLabel": "Run timeline. Shown through T+0:00"
+          },
+          "domAfter": {
+            "lines": 119,
+            "subLanes": 55,
+            "marks": 656,
+            "spans": 1956,
+            "svgNodes": 3761,
+            "groupLabel": "Run timeline. Shown through T+4:59"
+          }
+        },
+        {
+          "label": "closed-1",
+          "strip": "closed",
+          "intervals": 1156,
+          "over16ms": 24,
+          "over20ms": 7,
+          "over33ms": 0,
+          "maxMs": 25.4,
+          "meanMs": 8.64,
+          "p99Ms": 16.7,
+          "longtaskSupported": true,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "longtaskTotalMs": 0,
+          "simTimeS": [
+            0,
+            297.993
+          ],
+          "observedThroughS": [
+            299.262,
+            299.262
+          ],
+          "domBefore": null,
+          "domAfter": null
+        },
+        {
+          "label": "open-2",
+          "strip": "open, every group and sensor row expanded",
+          "intervals": 980,
+          "over16ms": 67,
+          "over20ms": 46,
+          "over33ms": 23,
+          "maxMs": 75.3,
+          "meanMs": 10.2,
+          "p99Ms": 50,
+          "longtaskSupported": true,
+          "longtasks": 15,
+          "longtaskMaxMs": 83,
+          "longtaskTotalMs": 918,
+          "simTimeS": [
+            0,
+            298.731
+          ],
+          "observedThroughS": [
+            299.262,
+            299.262
+          ],
+          "domBefore": {
+            "lines": 56,
+            "subLanes": 0,
+            "marks": 1,
+            "spans": 0,
+            "svgNodes": 239,
+            "groupLabel": "Run timeline. Shown through T+0:00"
+          },
+          "domAfter": {
+            "lines": 119,
+            "subLanes": 55,
+            "marks": 656,
+            "spans": 1956,
+            "svgNodes": 3761,
+            "groupLabel": "Run timeline. Shown through T+4:58"
+          }
+        },
+        {
+          "label": "closed-2",
+          "strip": "closed",
+          "intervals": 1163,
+          "over16ms": 6,
+          "over20ms": 2,
+          "over33ms": 0,
+          "maxMs": 25,
+          "meanMs": 8.59,
+          "p99Ms": 16.7,
+          "longtaskSupported": true,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "longtaskTotalMs": 0,
+          "simTimeS": [
+            0,
+            298.869
+          ],
+          "observedThroughS": [
+            299.262,
+            299.262
+          ],
+          "domBefore": null,
+          "domAfter": null
+        }
+      ],
+      "pass": false,
+      "rule": "Phase 2 rule: an open run adds no interval over 33 ms beyond the closed runs"
+    },
+    "prodFrames": {
+      "build": "vite production build, served statically",
+      "note": "No __store in production: driven through the transport. Segments run back to back at 30x.",
+      "segments": [
+        {
+          "label": "A open, Expand all at T+0",
+          "intervals": 1127,
+          "over16ms": 23,
+          "over20ms": 0,
+          "over33ms": 0,
+          "maxMs": 17.4,
+          "p99Ms": 16.7,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "endScope": "Shown through T+5:02"
+        },
+        {
+          "label": "B open, Expand all again, every sensor row with a track open",
+          "lines": 119,
+          "intervals": 1017,
+          "over16ms": 88,
+          "over20ms": 80,
+          "over33ms": 1,
+          "maxMs": 33.3,
+          "p99Ms": 25,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "endScope": "Shown through T+10:02"
+        },
+        {
+          "label": "C closed",
+          "intervals": 1179,
+          "over16ms": 6,
+          "over20ms": 0,
+          "over33ms": 0,
+          "maxMs": 16.7,
+          "p99Ms": 16.7,
+          "longtasks": 0,
+          "longtaskMaxMs": 0,
+          "endScope": "Shown through T+15:03"
+        }
+      ],
+      "errors": []
+    },
+    "gutterButtons": {
+      "gutterButtons": 187,
+      "unnamed": 0,
+      "groupHeaders": 5,
+      "foldHeaders": 0,
+      "rowLabels": 59,
+      "rowLabelText": 0,
+      "subLaneButtons": 55,
+      "subLanes": 55,
+      "expandControls": 9,
+      "hideControls": 59,
+      "headerButtons": [
+        "Follow",
+        "Zoom out",
+        "Zoom in",
+        "Fit",
+        "Collapse all",
+        "Expand all"
+      ]
+    }
+  },
   "prodFrames": {
     "build": "vite production build, served statically",
     "note": "No __store in production: driven through the transport. Segments run back to back at 30x.",
     "segments": [
       {
         "label": "A open, Expand all at T+0",
-        "intervals": 1127,
-        "over16ms": 23,
+        "intervals": 1132,
+        "over16ms": 31,
         "over20ms": 0,
         "over33ms": 0,
-        "maxMs": 17.4,
+        "maxMs": 17.6,
         "p99Ms": 16.7,
         "longtasks": 0,
         "longtaskMaxMs": 0,
-        "endScope": "Shown through T+5:02"
+        "endScope": "Shown through T+5:01"
       },
       {
         "label": "B open, Expand all again, every sensor row with a track open",
-        "lines": 119,
-        "intervals": 1017,
-        "over16ms": 88,
-        "over20ms": 80,
-        "over33ms": 1,
-        "maxMs": 33.3,
-        "p99Ms": 25,
+        "lines": 22,
+        "intervals": 1134,
+        "over16ms": 18,
+        "over20ms": 0,
+        "over33ms": 0,
+        "maxMs": 17.5,
+        "p99Ms": 16.7,
         "longtasks": 0,
         "longtaskMaxMs": 0,
         "endScope": "Shown through T+10:02"
       },
       {
         "label": "C closed",
-        "intervals": 1179,
-        "over16ms": 6,
+        "intervals": 1172,
+        "over16ms": 15,
         "over20ms": 0,
         "over33ms": 0,
-        "maxMs": 16.7,
+        "maxMs": 17.5,
         "p99Ms": 16.7,
         "longtasks": 0,
         "longtaskMaxMs": 0,
@@ -5134,88 +5572,43 @@
     ],
     "errors": []
   },
-  "contrastBefore": {
-    "note": "The strip inks before the fix: the same table with the tokens at the Phase 3 values (KIND_INK, --ew, --de, --ghost, --text-tertiary for CPA, --rule-strong for the undetected span and the unobserved edge).",
-    "dark": {
-      "pairs": 105,
-      "required": 99,
-      "fail": 6,
-      "failing": [
-        "span undetected on panel 1.88",
-        "span undetected on selected 1.63",
-        "unobserved edge on panel 1.88",
-        "unobserved edge on unobserved 2.02",
-        "summary miss at 0.75 on panel 2.55",
-        "summary undetected at 0.75 on panel 1.58"
-      ]
-    },
-    "light": {
-      "pairs": 105,
-      "required": 99,
-      "fail": 43,
-      "failing": [
-        "mark detect on panel 2.35",
-        "mark detect on selected 2.1",
-        "mark C2 init tick on panel 1.31",
-        "mark C2 init tick on selected 1.17",
-        "mark track init ring on panel 1.31",
-        "mark track init ring on selected 1.17",
-        "mark firm on panel 1.31",
-        "mark firm on selected 1.17",
-        "mark assign on panel 2.39",
-        "mark assign on selected 2.13",
-        "mark mission kill on panel 2.35",
-        "mark mission kill on selected 2.1",
-        "mark jam decision on panel 2.35",
-        "mark jam decision on selected 2.1",
-        "span hold, quality 1 on panel 2.35",
-        "span hold, quality 1 on selected 2.1",
-        "span coast on panel 2.35",
-        "span coast on selected 2.1",
-        "span burst on panel 2.24",
-        "span burst on selected 2",
-        "span dwell on panel 2.35",
-        "span dwell on selected 2.1",
-        "span undetected on panel 2.12",
-        "span undetected on selected 1.89",
-        "unobserved edge on panel 2.12",
-        "unobserved edge on unobserved 1.86",
-        "summary detect at 0.75 on panel 1.86",
-        "summary firm at 0.75 on panel 1.22",
-        "summary assign at 0.75 on panel 1.89",
-        "summary mission kill at 0.75 on panel 1.86",
-        "summary miss at 0.75 on panel 2.88",
-        "summary CPA at 0.75 on panel 2.58",
-        "summary hold at 0.75 on panel 1.86",
-        "summary burst at 0.75 on panel 1.79",
-        "summary dwell at 0.75 on panel 1.86",
-        "summary undetected at 0.75 on panel 1.72",
-        "row ink square sensor on panel 2.35",
-        "row ink square c2 on panel 1.31",
-        "row ink square effector on panel 2.39",
-        "group ink square blue on group 2.12",
-        "overview mission kill on overview 2.14",
-        "duration on dwell on dwellBar 2.15",
-        "duration on burst on burstBar 2.05"
-      ]
-    }
+  "windowingDecision": {
+    "rule": "Draw the lines whose y range meets the rows scroll view plus an overscan of one view height, at least 120 px (lineWindow, MIN_OVERSCAN_PX in layout.ts). stripLayout keeps every line.",
+    "mechanism": "useRowWindow.ts: an external store of { topPx, heightPx } bound to .runtl-scroll by a passive scroll listener (one update per animation frame) and a ResizeObserver; Gutter, Grounds and Rows read it through useSyncExternalStore."
   },
-  "contrastReuse": {
-    "source": "docs/field-te/evidence/design-step4-2026-09-05/findings.json",
-    "same colour on the same surface": [
-      {
-        "ink": "--ew #7da7c4",
-        "surface": "paper panel #f7f5f0",
-        "design-step4": 2.35,
-        "here": 2.35
-      },
-      {
-        "ink": "--de #9aa8b0",
-        "surface": "paper panel #f7f5f0",
-        "design-step4": 2.24,
-        "here": 2.24
-      }
-    ],
-    "different colour": "design-step4 measured the canvas --c2 #d3d5cf, --sensor #6cb0e6 and --effector #e4934f; the strip draws KIND_INK #d6d9d2, #7da7c4 and #c9975a, so those findings do not apply. Its --ghost row is on the paper panel at full opacity (4.54); the strip also checks the ghost at the summary 0.75 opacity."
+  "windowingProfile": {
+    "note": "CPU profile (CDP sampling, 200 us) of 10 s at 30x, strip open and expanded, at 41476e2; inclusive ms. Before windowing LaneItems was about 455 ms, Grounds about 93 ms and Gutter rows about 60 ms. The strip entries are now small; the canvas and the analysis panel dominate, and the remaining long frames sit on top of them.",
+    "frames": {
+      "intervals": 994,
+      "over16ms": 63,
+      "over20ms": 37,
+      "over33ms": 24,
+      "maxMs": 57.7
+    },
+    "topInclusive": {
+      "CanvasStage": 844,
+      "useTrialResult (CanvasStage caller 846, RunTimeline 2)": 820,
+      "trialSeriesOf": 815,
+      "TrackLayer": 525,
+      "NowScreen": 257,
+      "EntityLayer": 228,
+      "LiveScene": 212,
+      "LaneItems": 140,
+      "Plot (anon)": 30,
+      "Axis": 24,
+      "RunTimeline": 22,
+      "Grounds": 19,
+      "Rows": 11,
+      "Overview Picture": 11,
+      "Gutter": 10
+    },
+    "topSelfByFile": {
+      "react_jsx-dev-runtime.js": 1555,
+      "react-konva.js": 1312,
+      "(program)": 1208,
+      "trialSeries.ts": 740,
+      "react-dom_client.js": 256,
+      "(garbage collector)": 135
+    }
   }
 }

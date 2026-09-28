@@ -1,9 +1,11 @@
 # Run timeline Phase 4 browser check, 2026-09-28
 
-Captured on branch `timeline/p4` at `8ba3ec5` (the Phase 4 accessibility and contrast
-commit `c8550e1` and the dead export commit). The baseline frames are from `1c7cd00`,
-before any Phase 4 source change, with the same script. The Vite dev server ran the
-source. Playwright used headless Chromium at a 1265 by 900 viewport, dark theme unless a
+Captured on branch `timeline/p4` at `41476e2` (row windowing), on top of the
+accessibility and contrast commit `c8550e1` and the dead export commit `8ba3ec5`. The
+frames before windowing are from `8ba3ec5`, and the baseline frames from `1c7cd00`,
+before any Phase 4 source change, with the same scripts. The shots are from the
+`8ba3ec5` run: windowing does not change what the strip draws in its view. The Vite dev
+server ran the source. Playwright used headless Chromium at a 1265 by 900 viewport, dark theme unless a
 row says daylight. The fixture is the 54-entity performance board "Layered (Acoustic +
 MEROPS)",
 [perf-2026-09-06/scenario.json](../perf-2026-09-06/scenario.json), loaded through
@@ -24,15 +26,17 @@ through the transport). They are evidence of a dated run, not tests.
 
 `findings.json` holds every measurement and ratio. The numbers below are from it.
 
-### Frames: the measurement fails
+### Frames: the dev server still fails after windowing; production passes
 
-Each run plays 10 s at 30x from T+0 and records every `requestAnimationFrame` interval
-and every `longtask` entry. "Open" is the strip open with every group and every sensor
-row open: the script presses Expand all, then calls the same store action
+Each dev run plays 10 s at 30x from T+0 and records every `requestAnimationFrame`
+interval and every `longtask` entry. "Open" is the strip open with every group and every
+sensor row open: the script presses Expand all, then calls the same store action
 (`expandAllRunTimeline`) with the keys of the whole run, so a sensor row that gains its
-first track during play is open too. At T+4:59 the open strip draws 119 lines, 55
-sub-lanes, 656 marks and 1,956 spans (3,761 SVG nodes). Over 16 ms means over 16.7 ms,
-one 60 Hz frame.
+first track during play is open too. At T+4:59 the layout holds 119 lines (118 in the
+windowed runs, a sampled trial). Before windowing all of them drew (3,761 SVG nodes);
+after it 22 lines draw in the 169 px view (1,011 SVG nodes). Over 16 ms means over
+16.7 ms, one 60 Hz frame. The pass rule: an open run adds no interval over 33 ms beyond
+the closed runs.
 
 | Commit | Run | Intervals | Over 16 ms | Over 20 ms | Over 33 ms | Max ms | p99 ms | Long tasks (max ms) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -44,16 +48,21 @@ one 60 Hz frame.
 | `8ba3ec5` | closed 1 | 1,156 | 24 | 7 | 0 | 25.4 | 16.7 | 0 |
 | `8ba3ec5` | open 2 | 980 | 67 | 46 | 23 | 75.3 | 50.0 | 15 (83) |
 | `8ba3ec5` | closed 2 | 1,163 | 6 | 2 | 0 | 25.0 | 16.7 | 0 |
+| `41476e2` windowed | open 1 | 1,028 | 57 | 29 | 24 | 50.1 | 41.6 | 1 (50) |
+| `41476e2` windowed | closed 1 | 1,151 | 17 | 7 | 0 | 25.6 | 16.7 | 0 |
+| `41476e2` windowed | open 2 | 1,108 | 40 | 34 | 11 | 33.4 | 32.5 | 0 |
+| `41476e2` windowed | closed 2 | 1,153 | 14 | 4 | 0 | 25.1 | 16.7 | 0 |
 
-The open runs add 23 to 40 intervals over 33 ms beyond the closed runs, so the Phase 2
-rule fails on the dev server, before and after the Phase 4 changes. The target (no
-frame over 16 ms from the strip) also fails.
+On the dev server windowing cuts the long tasks from 15 or 16 to 0 or 1 and the maximum
+from 83 ms to 50 ms, but the open runs still add 11 and 24 intervals over 33 ms beyond
+the closed runs. The dev rule fails. Over 16.7 ms the open runs read 57 and 40 against
+17 and 14 closed.
 
-The production build (`run-timeline-p4-prod-frames.mjs.txt`, `prodFrames` and
-`baseline.prodFrames`) has no `window.__store`, so it plays three 10 s segments back to
-back at 30x through the transport: A open with Expand all pressed at T+0 (the sensor
-rows had no tracks yet, so none opened), B open after Expand all again (119 lines), C
-closed.
+The production build (`run-timeline-p4-prod-frames.mjs.txt`, `prodFrames`,
+`beforeWindowing.prodFrames` and `baseline.prodFrames`) has no `window.__store`, so it
+plays three 10 s segments back to back at 30x through the transport: A open with Expand
+all pressed at T+0 (the sensor rows had no tracks yet, so none opened), B open after
+Expand all again (every sensor row with a track), C closed.
 
 | Commit | Segment | Intervals | Over 16 ms | Over 20 ms | Over 33 ms | Max ms | p99 ms | Long tasks |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -63,50 +72,81 @@ closed.
 | `8ba3ec5` | A open | 1,127 | 23 | 0 | 0 | 17.4 | 16.7 | 0 |
 | `8ba3ec5` | B open, expanded | 1,017 | 88 | 80 | 1 | 33.3 | 25.0 | 0 |
 | `8ba3ec5` | C closed | 1,179 | 6 | 0 | 0 | 16.7 | 16.7 | 0 |
+| `41476e2` windowed | A open | 1,132 | 31 | 0 | 0 | 17.6 | 16.7 | 0 |
+| `41476e2` windowed | B open, expanded | 1,134 | 18 | 0 | 0 | 17.5 | 16.7 | 0 |
+| `41476e2` windowed | C closed | 1,172 | 15 | 0 | 0 | 17.5 | 16.7 | 0 |
 
-In production the expanded strip costs about 80 frames in 10 s at 20 to 25 ms, about
-one per clock publication (100 ms), and 0 or 1 over 33 ms.
+In production the windowed, expanded strip passes: 0 intervals over 20 ms or 33 ms, and
+18 over 16.7 ms against 15 closed. Before windowing it drew about 80 frames of 20 to
+25 ms in 10 s.
 
-Cause. A CPU profile of the open dev run (not preserved) put the strip's time in React
-renders of `LaneItems` (about 450 ms inclusive over 10 s, most of it in `spanEl`), then
-`Plot` (`Grounds` about 90 ms) and `Gutter` rows; `runTimelineOf` did not reach the top
-50 functions. The model is cheap (below). A row with any item past the horizon is a new
-object at each horizon, so each publication re-renders those rows and every line's
-ground, and each sensor row draws hundreds of 5 s hold chunks. No windowing was built:
-the brief asks for the numbers first.
+Cause before windowing. A CPU profile of the open dev run put the strip's time in React
+renders of `LaneItems` (about 455 ms inclusive over 10 s, most of it in `spanEl`), then
+`Grounds` (about 93 ms) and the `Gutter` rows; `runTimelineOf` did not reach the top 50.
+A row with any item past the horizon is a new object at each horizon, so each
+publication re-rendered those rows and every line's ground.
+
+After windowing (`windowingProfile`, 41476e2, 10 s at 30x, inclusive ms): `LaneItems`
+140, `Plot` 30, `Axis` 24, `RunTimeline` 22, `Grounds` 19, `Rows` 11, `Overview` 11,
+`Gutter` 10. The same profile shows `CanvasStage` 844 (its `useTrialResult` and
+`trialSeriesOf` about 820; the strip's own `useTrialResult` call 2), `TrackLayer` 525,
+`NowScreen` 257 and `EntityLayer` 228. By file, self time is led by the React dev JSX
+runtime (1,555), `react-konva` (1,312) and `trialSeries.ts` (740). The closed runs
+already spend up to 25 ms on a publication frame, so the strip's few milliseconds of
+dev-build rendering push some of those frames past 33 ms.
+
+### Windowing
+
+- Rule: draw the lines whose y range meets the rows' scroll view plus an overscan of one
+  view height, at least 120 px (`lineWindow` and `MIN_OVERSCAN_PX` in `layout.ts`).
+  `stripLayout` keeps every line, so the hit test, the selection scroll target, the
+  resizer and the scroll height are unchanged. A drawn line keeps its layout y.
+- Mechanism: `useRowWindow.ts` holds `{ topPx, heightPx }` in a small external store
+  bound to `.runtl-scroll`. A passive scroll listener updates it once per animation
+  frame and a `ResizeObserver` reads a height change. The gutter, the grounds and the
+  rows read it; a vertical scroll re-renders only them.
+- Browser check (`windowing` in `findings.json`), every step with the scroll height equal
+  to the layout height and `observedThroughS` unchanged: with every row open, 22 of 118
+  lines drew at the top; a board selection of the last threat scrolled to 1,735 px and
+  drew its row, selected, inside the view; a scroll to the top, a 600 px wheel scroll and
+  a scroll to the bottom each drew the lines at the view; Collapse all, Expand all, a
+  hide control and Show all each redrew; a mark click moved the cursor from T+4:59 to
+  T+3:41.
 
 ### The model per horizon (the Phase 1 follow-up)
 
 On a fresh copy of the view with the whole run observed, `runTimelineOf(view, 0)` built
-in 6.5 ms. Then 265 passes at every 5 s to T+22:02 took 1.2 ms in total (each read 0 or
-0.1 ms; the page's timer resolution is 0.1 ms). A pass held at most 115 rows and
-sub-lanes. Against the previous pass, 3,847 row objects were new and 25,716 were the same
-object: 14.5 new rows per pass on average. `runTimeline.ts` is unchanged: the model is
+in 5.7 ms. Then 265 passes at every 5 s to T+22:02 took 1.4 ms in total (each read 0 or
+0.1 ms; the page's timer resolution is 0.1 ms). A pass held at most 116 rows and
+sub-lanes. Against the previous pass, 3,947 row objects were new and 25,822 were the same
+object: 14.9 new rows per pass on average. `runTimeline.ts` is unchanged: the model is
 not the cause of the long frames.
 
 ### Observation
 
 `observedThroughS` is read before and after each segment. Play advances it by design
-(the first open run from 9.35 to 299.26). No strip interaction moved it: the three
-horizon label reads (scrubs), the sub-lane click (299.262 before and after) and the
-Analyze scrub. `completeRun` moves it to 1,322 by design.
+(the first open run from 9.36 to 296.87). No strip interaction moved it: the three
+horizon label reads (scrubs), the windowing steps, the sub-lane click (299.121 before and
+after) and the Analyze scrub. `completeRun` moves it to 1,322 by design.
 
 ### Accessibility
 
 - Group name. In Execute the group label read `Run timeline. Shown through T+1:15`,
-  `T+2:59` and `T+4:58` at three scrubbed cursors, equal to the header each time. After
+  `T+2:59` and `T+4:59` at three scrubbed cursors, equal to the header each time. After
   `completeRun`, Analyze reads `Run timeline. Complete. Shown through T+22:02`, also
   after a scrub to T+2:00. A stopped run in Analyze keeps `Shown through` without
   `Complete` (component test).
-- Buttons. The expanded gutter holds 187 buttons, none without a name: 5 group headers,
-  59 row labels, 55 sub-lane labels, 9 sensor expand controls and 59 hide controls. The
-  board has no threat fold (fold headers are the same button as a group header).
+- Buttons. At `8ba3ec5`, before windowing, the expanded gutter held 187 buttons, none
+  without a name: 5 group headers, 59 row labels, 55 sub-lane labels, 9 sensor expand
+  controls and 59 hide controls (`beforeWindowing.gutterButtons`). At `41476e2` the 33
+  drawn buttons near the view all have names. The board has no threat fold (fold headers
+  are the same button as a group header).
 - Decision (a), the sub-lane label: a `.runtl-select` button that selects the track's
   threat through `selectRunTimelineRow`, the path a track row label takes. Reason: SPEC
   1.5 names row labels as buttons, a sub-lane is a track row under its sensor, and its
   `entityId` is the threat's id already. A false track sub-lane has no threat and stays
   text, as the false track row does. A click on `THR-G1-Q-01 1` selected that `uas`
-  entity; `observedThroughS` stayed 299.262.
+  entity; `observedThroughS` stayed 299.121.
 - Decision (b), the window readout: a visually hidden prefix, the word Window, inside
   `.runtl-zoom` (`.runtl-zoom-name`). Reason: an `aria-label` on a span with no role is
   not reliably read, and a live `output` would announce every zoom. The ARIA snapshot
