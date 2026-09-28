@@ -1,7 +1,8 @@
 // Run timeline Phase 3 capture: 1265 x 900, dark, the JIATF-401 laydown with the
 // threat spawned outside every ring (src/playback/__fixtures__/detection-outside-rings.json).
 // It drives every SPEC 1.5 interaction and the 1.3 controls and records
-// observedThroughS before and after each one.
+// observedThroughS before and after each one. Rerun at the Phase 3 review fix commit:
+// item 2 selects a threat, 2b a sensor, 4b checks Escape, 17 the hide control.
 // Usage: node run-timeline-p3-capture.mjs <base-url> <out-dir> <repo-root>
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -185,6 +186,51 @@ await item(4, 'tooltip and Escape', async () => {
   return { mark: { kind: m.kind, tS: r4(m.tS) }, tipInsideStrip: inside, text, goneAfterEscape: afterEscape === null }
 })
 
+// 4b. Escape closes the tip and keeps the board selection; a 1 px move over the same
+// mark does not reopen it; a move to another mark does.
+await item('4b', 'Escape keeps the selection and the closed tip', async () => {
+  // Leave the mark item 4 closed, so the next hover over it opens the tip again.
+  await page.mouse.move(5, 5)
+  await sleep(150)
+  const facts = await modelFacts()
+  const entity = facts.rows.find((r) => r.entityId != null)
+  await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), entity.entityId)
+  await sleep(300)
+  const selectedBefore = (await st()).entityIds
+  const marks = await visibleMarks()
+  const m = marks[Math.floor(marks.length / 2)]
+  const other = marks.find((k) => Math.hypot(k.x - m.x, k.y - m.y) > 20)
+  await page.mouse.move(m.x - 1, m.y)
+  await page.mouse.move(m.x, m.y)
+  await sleep(200)
+  const tipOpen = (await tipText()) !== null
+  await page.keyboard.press('Escape')
+  await sleep(150)
+  const tipAfterEscape = (await tipText()) !== null
+  const selectedAfter = (await st()).entityIds
+  await page.mouse.move(m.x + 1, m.y)
+  await sleep(200)
+  const tipAfterSmallMove = (await tipText()) !== null
+  await page.mouse.move(other.x, other.y)
+  await sleep(200)
+  const tipOnOther = (await tipText()) !== null
+  await page.mouse.move(5, 5)
+  await page.evaluate(() => window.__store.getState().select({ entityIds: [] }))
+  await sleep(150)
+  return {
+    entity: entity.label,
+    mark: { kind: m.kind, tS: r4(m.tS) },
+    otherMark: { kind: other.kind, tS: r4(other.tS) },
+    tipOpen,
+    tipAfterEscape,
+    selectedBefore,
+    selectedAfter,
+    selectionKept: JSON.stringify(selectedBefore) === JSON.stringify(selectedAfter) && selectedAfter.length === 1,
+    tipAfterSmallMove,
+    tipOnOther,
+  }
+})
+
 // 5. Tooltip after a model change: hover while paused, play 2 s, pause.
 await item(5, 'tooltip hides on a model change', async () => {
   const marks = await visibleMarks()
@@ -266,10 +312,9 @@ await item(1, 'row label click selects', async () => {
   return { label, rowKey: row?.key, expectedEntityId: row?.entityId, entityIds: a.entityIds, selects: a.entityIds.length === 1 && a.entityIds[0] === row?.entityId }
 })
 
-// 2. Board selection of an entity whose row is off screen: highlight and scroll.
-// The hook scrolls to the first line that draws the entity (useScrollToSelection).
-// A threat also draws on a sensor sub-lane near the top, so the script scrolls to
-// the bottom and selects a sensor whose only line sits above the view.
+// 2. Board selection of a threat: every group open and the rows at the top. The
+// threat also draws on its sensor sub-lane and its track row above the Threats
+// group; the strip scrolls to the threat row itself (scrollTargetLine).
 const selectedLines = () =>
   page.evaluate(() => {
     const sr = document.querySelector('.runtl-scroll').getBoundingClientRect()
@@ -278,21 +323,54 @@ const selectedLines = () =>
       return { text: l.textContent.slice(0, 40), inView: r.top >= sr.top - 0.5 && r.bottom <= sr.bottom + 0.5 }
     })
   })
-await item(2, 'board selection highlights and scrolls', async () => {
+/** The gutter row line (`t: 'row'`) of a label, its selection and whether it is in view. */
+const rowLine = (label) =>
+  page.evaluate((label) => {
+    const scroll = document.querySelector('.runtl-scroll')
+    const sr = scroll.getBoundingClientRect()
+    const line = [...document.querySelectorAll('.runtl-gutter .runtl-row')].find((l) =>
+      l.querySelector(`.runtl-select[title="${label}"]`),
+    )
+    const lr = line?.getBoundingClientRect()
+    return {
+      scrollTop: scroll.scrollTop,
+      selectedLines: document.querySelectorAll('.runtl-gutter .runtl-line.selected').length,
+      selectedGrounds: document.querySelectorAll('.runtl-ground-selected').length,
+      rowSelected: !!line && line.classList.contains('selected'),
+      rowInView: !!lr && lr.top >= sr.top - 0.5 && lr.bottom <= sr.bottom + 0.5,
+    }
+  }, label)
+const THREAT = 'DJI Mavic 3 (G1 quad) 1'
+await item(2, 'board selection of a threat scrolls to its threat row', async () => {
   const facts = await modelFacts()
-  // First, the threat case at the top of the list, for the record.
+  const threat = facts.rows.find((r) => r.kind === 'threat' && r.label === THREAT)
+  const before = await st()
   await page.evaluate(() => window.__store.getState().select({ entityIds: [] }))
   await page.evaluate(() => (document.querySelector('.runtl-scroll').scrollTop = 0))
-  await sleep(100)
-  const threat = facts.rows.filter((r) => r.kind === 'threat').at(-1)
+  await sleep(150)
+  const inViewBefore = (await rowLine(THREAT)).rowInView
+  const scrollBefore = await page.evaluate(() => document.querySelector('.runtl-scroll').scrollTop)
   await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), threat.entityId)
   await sleep(300)
-  const threatCase = {
-    label: threat.label,
-    scrollTop: await page.evaluate(() => document.querySelector('.runtl-scroll').scrollTop),
-    lines: await selectedLines(),
+  const dom = await rowLine(THREAT)
+  const lines = await selectedLines()
+  await shot('board-selected-row', 'Execute, paused, every group open, a threat selected on the board, its threat row highlighted and scrolled into view')
+  return {
+    label: THREAT,
+    kind: threat.kind,
+    entityId: threat.entityId,
+    everyGroupOpen: facts.groups.every((g) => before.openGroups.includes(g)),
+    rowInViewBefore: inViewBefore,
+    scrollTopBefore: scrollBefore,
+    ...dom,
+    scrolled: dom.scrollTop !== scrollBefore,
+    lines,
   }
-  // The measured case: a sensor row above the view after a scroll to the bottom.
+})
+
+// 2b. Board selection of a sensor whose row sits above the view after a scroll to the bottom.
+await item('2b', 'board selection of a sensor scrolls to its row', async () => {
+  const facts = await modelFacts()
   await page.evaluate(() => window.__store.getState().select({ entityIds: [] }))
   await page.evaluate(() => {
     const el = document.querySelector('.runtl-scroll')
@@ -311,22 +389,7 @@ await item(2, 'board selection highlights and scrolls', async () => {
   const scrollBefore = await page.evaluate(() => document.querySelector('.runtl-scroll').scrollTop)
   await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), row.entityId)
   await sleep(300)
-  const dom = await page.evaluate((label) => {
-    const scroll = document.querySelector('.runtl-scroll')
-    const sr = scroll.getBoundingClientRect()
-    const line = [...document.querySelectorAll('.runtl-gutter .runtl-line.selected')].find((l) =>
-      l.querySelector(`.runtl-select[title="${label}"]`),
-    )
-    const lr = line?.getBoundingClientRect()
-    return {
-      scrollTop: scroll.scrollTop,
-      selectedLines: document.querySelectorAll('.runtl-gutter .runtl-line.selected').length,
-      selectedGrounds: document.querySelectorAll('.runtl-ground-selected').length,
-      rowSelected: !!line,
-      rowInView: !!lr && lr.top >= sr.top - 0.5 && lr.bottom <= sr.bottom + 0.5,
-    }
-  }, target)
-  await shot('board-selected-row', 'Execute, paused, every group open, a sensor selected on the board, its row highlighted and scrolled into view')
+  const dom = await rowLine(target)
   return {
     label: target,
     kind: row.kind,
@@ -334,7 +397,6 @@ await item(2, 'board selection highlights and scrolls', async () => {
     scrollTopBefore: scrollBefore,
     ...dom,
     scrolled: dom.scrollTop !== scrollBefore,
-    threatCase,
   }
 })
 
@@ -495,6 +557,45 @@ await item(15, 'reduced motion', async () => {
     reduced,
     glideWithoutReduce: Object.values(normal).some((t) => t.includes('0.1s')),
     noGlideWithReduce: Object.values(reduced).every((t) => !t.includes('0.1s')),
+  }
+})
+
+// 17. The hide control hides a row; Show all shows it again.
+await item(17, 'hide a row and Show all', async () => {
+  const hidden = async () => page.evaluate(() => window.__store.getState().ui.runTimeline.hiddenRows)
+  const showAll = () => page.locator('.runtl-head button.mini', { hasText: 'Show all' })
+  const row = page.locator('.runtl-gutter .runtl-row').filter({ has: page.locator('.runtl-hide') }).first()
+  const label = await row.locator('.runtl-select, .runtl-name').first().getAttribute('title')
+  const facts = await modelFacts()
+  const key = facts.rows.find((r) => r.label === label)?.key
+  const hiddenBefore = await hidden()
+  const showAllBefore = await showAll().count()
+  await row.hover()
+  await row.locator('.runtl-hide').click()
+  await sleep(200)
+  const hiddenAfterHide = await hidden()
+  const showAllText = (await showAll().count()) > 0 ? await showAll().textContent() : null
+  const rowDrawn = await page.evaluate(
+    (label) => [...document.querySelectorAll('.runtl-gutter .runtl-row [title]')].some((e) => e.title === label),
+    label,
+  )
+  await showAll().click()
+  await sleep(200)
+  const hiddenAfterShowAll = await hidden()
+  const showAllAfter = await showAll().count()
+  await page.mouse.move(5, 5)
+  return {
+    label,
+    rowKey: key,
+    hiddenBefore,
+    showAllBefore,
+    hiddenAfterHide,
+    hidGainsRow: hiddenAfterHide.includes(key),
+    rowDrawnAfterHide: rowDrawn,
+    showAllText,
+    hiddenAfterShowAll,
+    showAllAfter,
+    cleared: hiddenAfterShowAll.length === 0 && showAllAfter === 0,
   }
 })
 

@@ -1,32 +1,32 @@
 {
-  "capturedAt": "2026-09-28T15:54:39.586Z",
+  "capturedAt": "2026-09-28T16:34:04.901Z",
   "viewport": "1265x900 dark",
   "fixture": "src/playback/__fixtures__/detection-outside-rings.json",
   "shots": [
     {
       "file": "tooltip-over-mark.png",
       "state": "Execute, paused, the pointer over a mark, the tooltip open inside the strip",
-      "simTimeS": 299.6172999999968,
-      "observedThroughS": 299.6172999999968
+      "simTimeS": 298.60310000000584,
+      "observedThroughS": 298.60310000000584
     },
     {
       "file": "board-selected-row.png",
-      "state": "Execute, paused, every group open, a sensor selected on the board, its row highlighted and scrolled into view",
-      "simTimeS": 285,
-      "observedThroughS": 359.12229999999687
+      "state": "Execute, paused, every group open, a threat selected on the board, its threat row highlighted and scrolled into view",
+      "simTimeS": 281.5,
+      "observedThroughS": 357.4271000001846
     },
     {
       "file": "header-follow-off-after-zoom.png",
       "state": "Execute, paused, Follow off after a Ctrl wheel zoom, the header controls and the window readout",
-      "simTimeS": 285,
-      "observedThroughS": 359.12229999999687
+      "simTimeS": 281.5,
+      "observedThroughS": 357.4271000001846
     }
   ],
   "items": {
     "1": {
       "name": "row label click selects",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "label": "Giraffe 1X 3D radar (Saab) 1",
       "rowKey": "sensor:ent-mtnvzhmr-22",
@@ -37,78 +37,76 @@
       "selects": true
     },
     "2": {
-      "name": "board selection highlights and scrolls",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "name": "board selection of a threat scrolls to its threat row",
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
-      "label": "Giraffe 1X 3D radar (Saab) 1",
-      "kind": "sensor",
-      "entityId": "ent-mtnvzhmr-22",
-      "scrollTopBefore": 43,
-      "scrollTop": 18,
-      "selectedLines": 1,
-      "selectedGrounds": 1,
+      "label": "DJI Mavic 3 (G1 quad) 1",
+      "kind": "threat",
+      "entityId": "ent-mtnvzhmr-25",
+      "everyGroupOpen": true,
+      "rowInViewBefore": false,
+      "scrollTopBefore": 0,
+      "scrollTop": 43,
+      "selectedLines": 3,
+      "selectedGrounds": 3,
       "rowSelected": true,
       "rowInView": true,
       "scrolled": true,
-      "threatCase": {
-        "label": "DJI Mavic 3 (G1 quad) 1",
-        "scrollTop": 0,
-        "lines": [
-          {
-            "text": "DJI Mavic 3 (G1 quad) 1",
-            "inView": true
-          },
-          {
-            "text": "DJI Mavic 3 (G1 quad) 1 trackKuRFS fire-",
-            "inView": true
-          },
-          {
-            "text": "DJI Mavic 3 (G1 quad) 1Red air: DJI Mavi",
-            "inView": false
-          }
-        ]
-      }
+      "lines": [
+        {
+          "text": "DJI Mavic 3 (G1 quad) 1",
+          "inView": true
+        },
+        {
+          "text": "DJI Mavic 3 (G1 quad) 1 trackKuRFS fire-",
+          "inView": true
+        },
+        {
+          "text": "DJI Mavic 3 (G1 quad) 1Red air: DJI Mavi",
+          "inView": true
+        }
+      ]
     },
     "3": {
       "name": "mark click seeks",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "followBefore": true,
-      "glyphS": 285,
-      "simTimeBeforeS": 359.1223,
-      "simTimeAfterS": 285,
+      "glyphS": 281.5,
+      "simTimeBeforeS": 357.4271,
+      "simTimeAfterS": 281.5,
       "seekIsModelMark": true,
       "withinHitReach": true,
       "followAfter": false,
       "shownAtClick": {
-        "t0S": 279.12229999999687,
+        "t0S": 277.4271000001846,
         "winS": 120
       },
       "storedAfter": {
-        "t0S": 279.12229999999687,
+        "t0S": 277.4271000001846,
         "winS": 120
       },
       "viewportHeld": true
     },
     "4": {
       "name": "tooltip and Escape",
-      "observedBeforeS": 299.6172999999968,
-      "observedAfterS": 299.6172999999968,
+      "observedBeforeS": 298.60310000000584,
+      "observedAfterS": 298.60310000000584,
       "observedUnchanged": true,
       "mark": {
         "kind": "detect",
-        "tS": 260.5
+        "tS": 257.5
       },
       "tipInsideStrip": true,
-      "text": "Detect KuRFS fire-control radar (Raytheon) 1\nDJI Mavic 3 (G1 quad) 1\nT+4:20\nShown through T+4:59",
+      "text": "Detect KuRFS fire-control radar (Raytheon) 1\nDJI Mavic 3 (G1 quad) 1\nT+4:17\nShown through T+4:58",
       "goneAfterEscape": true
     },
     "5": {
       "name": "tooltip hides on a model change",
-      "observedBeforeS": 299.6172999999968,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 298.60310000000584,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": false,
       "tipBeforePlay": true,
       "tipAfterPlayAndPause": false,
@@ -116,64 +114,64 @@
     },
     "6": {
       "name": "Ctrl wheel zoom about the cursor",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "followBefore": false,
       "followAfter": false,
       "winBeforeS": 120,
       "winAfterS": 65.8574,
       "narrowed": true,
-      "anchorS": 235,
+      "anchorS": 231.5,
       "cursorFractionBefore": 0.25,
       "cursorFractionAfter": 0.2503,
       "anchorHeld": true
     },
     "7": {
       "name": "horizontal wheel pans",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "followBefore": true,
       "followAfter": false,
-      "shownT0BeforeS": 241.0951,
-      "t0AfterS": 261.6434,
+      "shownT0BeforeS": 237.5951,
+      "t0AfterS": 258.1434,
       "moved": true
     },
     "8": {
       "name": "vertical wheel scrolls rows",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "scrollTopBefore": 0,
       "scrollTopAfter": 43,
       "scrolled": true,
       "viewportBefore": {
-        "t0S": 261.6433987010218,
+        "t0S": 258.1433987010218,
         "winS": 65.85739633128317
       },
       "viewportAfter": {
-        "t0S": 261.6433987010218,
+        "t0S": 258.1433987010218,
         "winS": 65.85739633128317
       },
       "viewportUnchanged": true
     },
     "9": {
       "name": "overview drag",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "followBefore": true,
       "followAfter": false,
-      "shownT0BeforeS": 241.0951,
+      "shownT0BeforeS": 237.5951,
       "t0AfterS": 867.0712,
       "winS": 65.8574,
       "moved": true
     },
     "10": {
       "name": "Follow button",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "followBefore": false,
       "followAfter": true,
@@ -181,8 +179,8 @@
     },
     "11": {
       "name": "Fit",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "readout": "fit",
       "winS": 1500,
@@ -191,8 +189,8 @@
     },
     "12": {
       "name": "Zoom in and Zoom out",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "durationS": 1500,
       "disabledAtFit": {
@@ -329,8 +327,8 @@
     },
     "13": {
       "name": "Collapse all and Expand all",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "openGroupsAfterCollapse": [],
       "openGroupsAfterExpand": [
@@ -348,8 +346,8 @@
     },
     "14": {
       "name": "Play turns Follow on",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "followBefore": false,
       "followAfterPlay": true,
@@ -358,8 +356,8 @@
     },
     "15": {
       "name": "reduced motion",
-      "observedBeforeS": 359.12229999999687,
-      "observedAfterS": 359.12229999999687,
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
       "observedUnchanged": true,
       "follow": true,
       "normal": {
@@ -380,14 +378,75 @@
     "16": {
       "name": "page errors",
       "count": 0
+    },
+    "17": {
+      "name": "hide a row and Show all",
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
+      "observedUnchanged": true,
+      "label": "Giraffe 1X 3D radar (Saab) 1",
+      "rowKey": "sensor:ent-mtnvzhmr-22",
+      "hiddenBefore": [],
+      "showAllBefore": 0,
+      "hiddenAfterHide": [
+        "sensor:ent-mtnvzhmr-22"
+      ],
+      "hidGainsRow": true,
+      "rowDrawnAfterHide": false,
+      "showAllText": "Show all (1 hidden)",
+      "hiddenAfterShowAll": [],
+      "showAllAfter": 0,
+      "cleared": true
+    },
+    "4b": {
+      "name": "Escape keeps the selection and the closed tip",
+      "observedBeforeS": 298.60310000000584,
+      "observedAfterS": 298.60310000000584,
+      "observedUnchanged": true,
+      "entity": "Giraffe 1X 3D radar (Saab) 1",
+      "mark": {
+        "kind": "detect",
+        "tS": 257.5
+      },
+      "otherMark": {
+        "kind": "detect",
+        "tS": 224
+      },
+      "tipOpen": true,
+      "tipAfterEscape": false,
+      "selectedBefore": [
+        "ent-mtnvzhmr-22"
+      ],
+      "selectedAfter": [
+        "ent-mtnvzhmr-22"
+      ],
+      "selectionKept": true,
+      "tipAfterSmallMove": false,
+      "tipOnOther": true
+    },
+    "2b": {
+      "name": "board selection of a sensor scrolls to its row",
+      "observedBeforeS": 357.4271000001846,
+      "observedAfterS": 357.4271000001846,
+      "observedUnchanged": true,
+      "label": "Giraffe 1X 3D radar (Saab) 1",
+      "kind": "sensor",
+      "entityId": "ent-mtnvzhmr-22",
+      "scrollTopBefore": 43,
+      "scrollTop": 18,
+      "selectedLines": 1,
+      "selectedGrounds": 1,
+      "rowSelected": true,
+      "rowInView": true,
+      "scrolled": true
     }
   },
   "errors": [],
   "trialStatus": "ready",
   "start": {
     "sameStore": true,
-    "simTimeS": 299.6172999999968,
-    "observedThroughS": 299.6172999999968,
+    "simTimeS": 298.60310000000584,
+    "observedThroughS": 298.60310000000584,
     "playing": false,
     "follow": true,
     "base": {
@@ -395,7 +454,7 @@
       "winS": 120
     },
     "shown": {
-      "t0S": 219.61729999999682,
+      "t0S": 218.60310000000584,
       "winS": 120
     },
     "durationS": 1500,
@@ -405,8 +464,8 @@
   },
   "end": {
     "sameStore": true,
-    "simTimeS": 288.02399999964234,
-    "observedThroughS": 359.12229999999687,
+    "simTimeS": 281.5,
+    "observedThroughS": 357.4271000001846,
     "playing": false,
     "follow": true,
     "base": {
@@ -414,7 +473,7 @@
       "winS": 10
     },
     "shown": {
-      "t0S": 281.35733333297566,
+      "t0S": 274.8333333333333,
       "winS": 10
     },
     "durationS": 1500,
