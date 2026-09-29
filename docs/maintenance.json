@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "2e764070a707a53fbe1a652ed9c39f9d35130ad5186f6a71b0c81002dd85ae16",
-      "reviewedAt": "2026-09-28",
-      "note": "Row F recapture: r.tracks 12982, text unchanged"
+      "sha256": "0589ee27f994991386562cafa46e126fc0129828c5124e4127071fc92a7d85b7",
+      "reviewedAt": "2026-09-29",
+      "note": "Row G lane G1: the trialSeries test now asserts the 21st member stays targetable under the one dead rule; no guide text changes"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "c14cceda1ea914f8c9b67236b6e931cb6e99c4be96ebfab7d7dfd63ba34e84ac",
-      "reviewedAt": "2026-09-28",
-      "note": "Row F recapture: r.tracks 12982, text unchanged"
+      "sha256": "0051a41edc06841eeb78e9b1e051edd33e7fbf45ed8894eb97ff1ac92ed6ca90",
+      "reviewedAt": "2026-09-29",
+      "note": "Row G lane G1: the trialSeries test now asserts the 21st member stays targetable under the one dead rule; the dead-rule paragraph stands"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "5e825a6fbdd36a78a4c2a7c3ca1f51ade0ef84b838826fe908dc5bfbbebc49fb",
-      "reviewedAt": "2026-09-28",
-      "note": "Row F review fixes"
+      "sha256": "75e80edaf9d4b88bf6981b397d105b1e8c55154944e522e3fd636593c7c235e3",
+      "reviewedAt": "2026-09-29",
+      "note": "Row G lane G1: beamAndFormationTrial engine fixture (DE, HPM, formation, jammer) added to trialFixture.ts"
     },
     {
       "document": "docs/WORKFLOW.md",

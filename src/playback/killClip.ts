@@ -1,5 +1,5 @@
 import type { AttritionReport } from './attritionReport'
-import { expectedDeadTimes } from './deadTimes'
+import { deadRecords } from './deadTimes'
 import type { SensorScanObservation } from './detection'
 import { EPS } from './intercept'
 import type { SensorObservation, ThreatAssessment } from './sim'
@@ -12,15 +12,26 @@ import type { TrackEstimate } from './trackTypes'
  * learn the kill while it runs. This pass runs after the engagement pass and
  * clips what the sweep produced at the kill: the per-step fused tracks, each
  * sensor observation's hold and coast intervals, the track estimates and the
- * scan records of the killed threat. The kill time is the engine's own
- * expected-dead rule (`expectedDeadTimes`): the effect time of the salvo after
- * which the residual falls below SHIP_DEAD_BELOW, the cutoff at which the
- * engagement pass stops targeting the threat. A sample at or before the kill
- * measured a live target and is kept; a hold or coast interval ends at the
- * last sweep sample at or before the kill (the sweep grid is delayS + k *
- * stepS, the kill is off it), and that sample draws its one step, so a hold
- * can overhang an off-grid kill by less than a step. The first sample after
- * the kill, and everything later, is dropped.
+ * scan records of the killed threat. The kill time is the one dead rule
+ * (`deadTimeOf`, deadTimes.ts): per ship, the effect at which its survival
+ * falls below SHIP_DEAD_BELOW, and for the threat the effect that killed its
+ * last ship. That rule is the engagement pass's own targeting cutoff (a ship
+ * below the cutoff draws no fire), so the clip and the engine agree on when
+ * the threat stopped being a target.
+ *
+ * Only a hard kill clips. A mission-killed airframe (a jammer's kill under
+ * `jamBehavior` drift or return-home) still flies, so its holds, estimates
+ * and fused track run to the path end; an all-soft defeat does not clip. A
+ * mixed defeat (one ship hard-killed, another mission-killed) does not clip
+ * either: a mission-killed airframe of that threat still flies and the threat
+ * has one picture. The clip applies when every ship of the threat latched
+ * hard (`!soft && !mixed`), at the last hard-kill latch.
+ *
+ * A sample at or before the kill measured a live target and is kept; a hold
+ * or coast interval ends at the last sweep sample at or before the kill (the
+ * sweep grid is delayS + k * stepS, the kill is off it), and that sample
+ * draws its one step, so a hold can overhang an off-grid kill by less than a
+ * step. The first sample after the kill, and everything later, is dropped.
  *
  * The report is never touched: every count the engagement pass produced
  * stands, and the timeline's ghost span (kill to planned arrival) reads the
@@ -150,8 +161,12 @@ function clipAssessment(a: ThreatAssessment, cut: number, stepS: number): Threat
 /** The sweep products of every killed threat clipped at its kill; see the module note. */
 export function clipAtKill(input: KillClipInput): KillClipResult {
   const { assessments, report, stepS, tracks, observations } = input
-  // The last sample time a live target could be measured at: the kill itself.
-  const dead = expectedDeadTimes(report)
+  // The last sample time a live target could be measured at: the hard kill
+  // itself. A soft or mixed defeat leaves an airframe flying and never clips.
+  const dead = new Map<string, number>()
+  for (const [uasId, death] of deadRecords(report)) {
+    if (!death.soft && !death.mixed) dead.set(uasId, death.tS)
+  }
   if (dead.size === 0) return { assessments, tracks, observations }
   const keep = (uasId: string | null, tS: number): boolean => {
     if (uasId == null) return true

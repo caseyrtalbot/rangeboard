@@ -2,7 +2,7 @@ import type { EffectorSpec, Entity, Scenario, Vec2 } from '../model/types'
 import type { ThreatAssessment, ThreatClassification } from './sim'
 import type { AttritionReport, EngagementEvent } from './attritionReport'
 import { intervalIndexAt } from './intercept'
-import { SHIP_DEAD_BELOW } from './pk'
+import { deadTimeOf } from './deadTimes'
 import { DANGER_INK } from '../ui/ink'
 import { memberPositions, sampleFlightPath } from './tracks'
 import { profileFor } from '../model/integration'
@@ -17,8 +17,9 @@ import { engagementIsKinetic, engagementReleaseS } from './engagementTiming'
  * Time semantics match the ledger: assignment is tS, physical release is
  * tReleaseS, and effect is tEffectS. Expenditure counts at assignment; kill
  * mass and jam mass count at effect. Unknown legacy release never draws flight.
- * A ghost is expected residual below SHIP_DEAD_BELOW; a jammed track is the
- * engine's continue-jam probability replayed to t.
+ * A ghost is a threat whose every ship is dead under the one dead rule
+ * (deadTimeOf, deadTimes.ts); a jammed track is the engine's continue-jam
+ * probability replayed to t.
  */
 
 /** Display-only hold for a beam or dwell with no modeled duration. */
@@ -120,11 +121,11 @@ export interface TrackFileState {
    * the engine fired count.
    */
   jammedNow: boolean
-  /** residualFraction < SHIP_DEAD_BELOW. */
+  /** Every ship dead under the one dead rule (deadTimeOf). */
   eliminated: boolean
-  /** Effect time at which it first fell below the cutoff; null while alive. */
+  /** Effect time of the salvo that killed the last ship; null while alive. */
   eliminatedAtS: number | null
-  /** True when the dominant landed kill mass came from jammers. */
+  /** True when that last salvo came from a jammer. */
   eliminatedBySoft: boolean
   arrivalS: number | null
   arrived: boolean
@@ -457,34 +458,18 @@ export function buildTrackTimeline(
     const byEffect = [...evs].sort((x, y) => x.tEffectS - y.tEffectS)
     const effectTS: number[] = []
     const killPrefix: number[] = []
-    const softPrefix: number[] = []
     let killSum = 0
-    let softSum = 0
     for (const ev of byEffect) {
       killSum += ev.killDelta
-      if (ev.softShot) softSum += ev.killDelta
       effectTS.push(ev.tEffectS)
       killPrefix.push(killSum)
-      softPrefix.push(softSum)
     }
 
-    // Ghost cutoff: the first effect that drops residual below SHIP_DEAD_BELOW.
-    // killDelta is never negative, so the latch is one-way.
-    let eliminatedAtS: number | null = null
-    if (shipCount > 0) {
-      for (let i = 0; i < byEffect.length; i++) {
-        if (Math.max(0, shipCount - killPrefix[i]) / shipCount < SHIP_DEAD_BELOW) {
-          eliminatedAtS = effectTS[i]
-          break
-        }
-      }
-    }
-    let eliminatedBySoft = false
-    if (eliminatedAtS != null) {
-      const n = countAtMost(effectTS, eliminatedAtS)
-      const soft = prefixAt(softPrefix, n)
-      eliminatedBySoft = soft > prefixAt(killPrefix, n) - soft
-    }
+    // Ghost cutoff: the one dead rule (deadTimes.ts), the effect that killed
+    // the last ship; the formation count stands in for a missing row.
+    const death = deadTimeOf(report, a.uasId, formationCount)
+    const eliminatedAtS = death?.tS ?? null
+    const eliminatedBySoft = death?.soft ?? false
 
     // Engine rule (JamHold): per (ship, jammer) the dwells compound inside one
     // in-range interval and the hold drops to zero at its end; independent

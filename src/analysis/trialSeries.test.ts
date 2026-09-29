@@ -157,7 +157,7 @@ describe('trial series and analysis adapters', () => {
   })
 })
 
-it('keeps a surviving member visible after the separate engine targeting cutoff', () => {
+it('keeps the 21st member alive and targetable after 20 removals under the one dead rule', () => {
   const mixed = mixedTrial()
   const scenario = {
     ...mixed.scenario,
@@ -189,7 +189,7 @@ it('keeps a surviving member visible after the separate engine targeting cutoff'
   const row = trialThreatPictureAt(view, 3)
     .flatMap((group) => group.members)
     .find((row) => row.uasId === 'swarm')!
-  expect(row).toMatchObject({ survivors: 1, kills: 20, effectMet: false, targetableNow: false })
+  expect(row).toMatchObject({ survivors: 1, kills: 20, effectMet: false, targetableNow: true })
   const set = trialSeriesOf(view, 3)
   expect(set.threats.swarm.find((s) => s.id === 'residual')!.values.at(-1)).toBe(1)
   expect(set.threats.swarm.find((s) => s.id === 'phase')!.values.at(-1)).not.toBe(6)

@@ -438,16 +438,17 @@ describe('phase transitions and precedence', () => {
 
 describe('ghost cutoff', () => {
   const four = [threatAtt('u1', 4)]
+  const one = [threatAtt('u1', 1)]
 
-  it('needs residual strictly below SHIP_DEAD_BELOW', () => {
+  it('needs ship survival strictly below SHIP_DEAD_BELOW', () => {
     expect(SHIP_DEAD_BELOW).toBe(0.05)
-    // 3.8 of 4 ships lands residualFraction on exactly the cutoff.
+    // 0.95 of one ship lands survival on exactly the cutoff.
     const at = stateAt(
       assessment({}),
-      reportOf([event({ tEffectS: 10, killDelta: 3.8 })], four),
+      reportOf([event({ tEffectS: 10, killDelta: 0.95 })], one),
       10,
     )
-    expect(at.residual).toBeCloseTo(0.2, 9)
+    expect(at.residual).toBeCloseTo(0.05, 9)
     expect(at.residualFraction).toBeCloseTo(0.05, 9)
     expect(at.eliminated).toBe(false)
     expect(at.eliminatedAtS).toBeNull()
@@ -455,12 +456,15 @@ describe('ghost cutoff', () => {
     expect(at.phase).toBe('engaged')
   })
 
-  it('flips at the first effect below the cutoff and reports that effect time', () => {
+  it('flips at the effect that kills the last ship and reports that effect time', () => {
+    // Per-ship latch: three of four ships dead leaves the threat alive.
     const report = reportOf(
       [
-        event({ tEffectS: 10, killDelta: 3.8 }),
-        event({ tEffectS: 20, killDelta: 0.1 }),
-        event({ tEffectS: 30, killDelta: 0.05 }),
+        event({ tEffectS: 10, shipIdx: 0, killDelta: 1 }),
+        event({ tEffectS: 10, shipIdx: 1, killDelta: 1 }),
+        event({ tEffectS: 15, shipIdx: 2, killDelta: 1 }),
+        event({ tEffectS: 20, shipIdx: 3, killDelta: 0.96 }),
+        event({ tEffectS: 30, shipIdx: 3, killDelta: 0.04 }),
       ],
       four,
     )
@@ -479,8 +483,8 @@ describe('ghost cutoff', () => {
     // A residual-restoring effect is impossible in the engine; feed one anyway
     // to prove the latch is a time comparison, not a live threshold test.
     const report = reportOf(
-      [event({ tEffectS: 10, killDelta: 3.95 }), event({ tEffectS: 20, killDelta: -3 })],
-      four,
+      [event({ tEffectS: 10, killDelta: 0.96 }), event({ tEffectS: 20, killDelta: -3 })],
+      one,
     )
     const a = assessment({})
     expect(stateAt(a, report, 10).eliminated).toBe(true)
@@ -500,10 +504,10 @@ describe('ghost cutoff', () => {
 })
 
 describe('eliminatedBySoft', () => {
-  it('is true when the landed jam mass dominates at the cutoff', () => {
+  it('is true when the salvo that killed the last ship came from a jammer', () => {
     const report = reportOf([
-      jamEvent({ tEffectS: 10, killDelta: 0.6 }),
-      event({ tEffectS: 20, killDelta: 0.36 }),
+      event({ tEffectS: 10, killDelta: 0.36 }),
+      jamEvent({ tEffectS: 20, killDelta: 0.6 }),
     ])
     const at = stateAt(assessment({}), report, 20)
     expect(at.eliminated).toBe(true)
@@ -511,10 +515,10 @@ describe('eliminatedBySoft', () => {
     expect(at.eliminatedBySoft).toBe(true)
   })
 
-  it('is false when the landed kinetic mass dominates at the cutoff', () => {
+  it('is false when the killing salvo was kinetic, whatever jam mass landed before', () => {
     const report = reportOf([
-      jamEvent({ tEffectS: 10, killDelta: 0.36 }),
-      event({ tEffectS: 20, killDelta: 0.6 }),
+      jamEvent({ tEffectS: 10, killDelta: 0.6 }),
+      event({ tEffectS: 20, killDelta: 0.36 }),
     ])
     const at = stateAt(assessment({}), report, 20)
     expect(at.eliminated).toBe(true)
@@ -523,8 +527,8 @@ describe('eliminatedBySoft', () => {
 
   it('stays false while the track is alive', () => {
     const report = reportOf([
-      jamEvent({ tEffectS: 10, killDelta: 0.6 }),
-      event({ tEffectS: 20, killDelta: 0.36 }),
+      event({ tEffectS: 10, killDelta: 0.36 }),
+      jamEvent({ tEffectS: 20, killDelta: 0.6 }),
     ])
     const at = stateAt(assessment({}), report, 15)
     expect(at.eliminated).toBe(false)

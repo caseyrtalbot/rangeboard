@@ -211,6 +211,12 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   `rfBandGate`, `eoirSpanRatio`, `legacyKineticPk` and `legacyBeamPk`. Radar dwell keeps
   its placard calibration, so `singlePulseRadar` is not needed for protected parity.
   Removing a pin changes their numbers; capture a timeline comparison before and after.
+- `playback/__fixtures__/trialFixture.ts` holds the hand-built `mixedTrial()` (hard,
+  soft, continue, miss, late hard and late soft salvos on two formations) and
+  `beamAndFormationTrial()`, which runs the real engine on fixed ids: four lanes, one
+  effector each, yielding a DE hard kill, an HPM hard kill, an interceptor formation kill
+  (two ships, two salvos) and a jammer mission kill. `playback/deadTimes.test.ts` and
+  `playback/killClip.test.ts` read them for the dead rule and the hard-only kill clip.
 - `npm test` scopes discovery to `src/`, excluding ignored historical checkouts such as
   `.claude/plans/`. Bare `npx vitest run` can still discover those copies; use the npm command
   or pass `--dir src` when selecting files. Record the scope with a test count.

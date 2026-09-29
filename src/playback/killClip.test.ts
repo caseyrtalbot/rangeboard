@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { mixedTrial, trialAssessment, trialEvent } from './__fixtures__/trialFixture'
+import {
+  beamAndFormationTrial,
+  mixedTrial,
+  trialAssessment,
+  trialEvent,
+} from './__fixtures__/trialFixture'
 import type { SensorScanObservation } from './detection'
+import { deadTimeOf } from './deadTimes'
 import { clipAtKill } from './killClip'
 import type { FusedTrack, TrackEstimate } from './trackTypes'
 
@@ -89,9 +95,10 @@ function killedAtTen() {
       { ...result.report.threats[0], uasId: 'swarm', shipCount: 1 },
       { ...result.report.threats[0], uasId: 'moving', shipCount: 1 },
     ],
+    // One ship: the salvos aim at shipIdx 0 (the fixture default is a formation ship).
     events: [
-      trialEvent({ tS: 5, tEffectS: 7, killDelta: 0 }),
-      trialEvent({ tS: 8, tEffectS: 10, killDelta: 1 }),
+      trialEvent({ tS: 5, tEffectS: 7, shipIdx: 0, killDelta: 0 }),
+      trialEvent({ tS: 8, tEffectS: 10, shipIdx: 0, killDelta: 1 }),
     ],
   }
   return { a, other, report }
@@ -187,5 +194,194 @@ describe('clipAtKill', () => {
       ['swarm', 10],
       ['moving', 10.5],
     ])
+  })
+})
+
+/** The `killedAtTen` ledger replaced by `events`; the swarm row keeps `shipCount`. */
+function withEvents(events: ReturnType<typeof trialEvent>[], shipCount = 1) {
+  const { a, other, report } = killedAtTen()
+  const threats = report.threats.map((row) => (row.uasId === 'swarm' ? { ...row, shipCount } : row))
+  return { a, other, report: { ...report, threats, events } }
+}
+
+const softEvent = (over: Partial<ReturnType<typeof trialEvent>>) =>
+  trialEvent({
+    shipIdx: 0,
+    softShot: true,
+    effectorId: 'jammer',
+    effectorType: 'jammer',
+    channelClass: 'ew',
+    ...over,
+  })
+
+/** Where the swarm radar hold ends after a clip: the kill, or the swept end with no clip. */
+function heldTo(out: ReturnType<typeof clipAtKill>): number {
+  return out.assessments[0].sensorObservations![0].lastDetectS
+}
+
+describe('clipAtKill by kill type', () => {
+  it('hard kinetic: clips at the kill', () => {
+    const { a, other, report } = killedAtTen()
+    expect(deadTimeOf(report, 'swarm')).toEqual({ tS: 10, soft: false, late: false, mixed: false })
+    const out = clipAtKill({ assessments: [a, other], report, stepS: STEP })
+    expect(heldTo(out)).toBe(10)
+  })
+
+  it('mission kill (drift): the airframe still flies, so nothing clips', () => {
+    const { a, other, report } = withEvents([
+      softEvent({ tS: 5, tEffectS: 7, killDelta: 0 }),
+      softEvent({ tS: 8, tEffectS: 10, killDelta: 1 }),
+    ])
+    expect(deadTimeOf(report, 'swarm')).toEqual({ tS: 10, soft: true, late: false, mixed: false })
+    const tracks = [estimate('swarm', 15)]
+    const out = clipAtKill({ assessments: [a, other], report, stepS: STEP, tracks })
+    expect(out.assessments[0]).toBe(a)
+    expect(out.tracks).toBe(tracks)
+  })
+
+  it('mission kill (return-home): the same soft ledger, no clip, holds to the path end', () => {
+    // The ledger carries no jamBehavior; drift and return-home both reach the
+    // clip as a jammer kill, and both leave the airframe flying.
+    const { a, other, report } = withEvents([softEvent({ tS: 8, tEffectS: 10, killDelta: 1 })])
+    const out = clipAtKill({ assessments: [a, other], report, stepS: STEP })
+    expect(heldTo(out)).toBe(20)
+    expect(out.assessments[0].fusedTracks!.map((f) => f.fusedAtS)).toEqual([1, 9.5, 10, 10.5])
+  })
+
+  it('continue jam: not dead, no clip', () => {
+    const { a, other, report } = withEvents([
+      softEvent({ tS: 8, tEffectS: 10, channel: 'jam', killDelta: 0 }),
+    ])
+    expect(deadTimeOf(report, 'swarm')).toBeNull()
+    expect(clipAtKill({ assessments: [a, other], report, stepS: STEP }).assessments[0]).toBe(a)
+  })
+
+  it('late hard: clips at the late effect', () => {
+    const { a, other, report } = withEvents([
+      trialEvent({ tS: 5, tEffectS: 7, shipIdx: 0, killDelta: 0 }),
+      trialEvent({ tS: 8, tEffectS: 10, shipIdx: 0, killDelta: 1, lateEffect: true }),
+    ])
+    expect(deadTimeOf(report, 'swarm')).toEqual({ tS: 10, soft: false, late: true, mixed: false })
+    expect(heldTo(clipAtKill({ assessments: [a, other], report, stepS: STEP }))).toBe(10)
+  })
+
+  it('late soft: no clip', () => {
+    const { a, other, report } = withEvents([
+      softEvent({ tS: 8, tEffectS: 10, killDelta: 1, lateEffect: true }),
+    ])
+    expect(deadTimeOf(report, 'swarm')).toEqual({ tS: 10, soft: true, late: true, mixed: false })
+    expect(clipAtKill({ assessments: [a, other], report, stepS: STEP }).assessments[0]).toBe(a)
+  })
+
+  it('flight-capped: the capped effect kills at its tEffectS and clips there', () => {
+    const { a, other, report } = withEvents([
+      trialEvent({ tS: 5, tEffectS: 10, shipIdx: 0, killDelta: 1, flightCapped: true }),
+    ])
+    expect(report.events[0].flightCapped).toBe(true)
+    expect(deadTimeOf(report, 'swarm')).toEqual({ tS: 10, soft: false, late: false, mixed: false })
+    expect(heldTo(clipAtKill({ assessments: [a, other], report, stepS: STEP }))).toBe(10)
+  })
+
+  it('formation of 2: one removal leaves it alive, two hard removals clip at the second', () => {
+    const one = withEvents([trialEvent({ tS: 5, tEffectS: 7, shipIdx: 0, killDelta: 1 })], 2)
+    expect(deadTimeOf(one.report, 'swarm')).toBeNull()
+    expect(
+      clipAtKill({ assessments: [one.a, one.other], report: one.report, stepS: STEP })
+        .assessments[0],
+    ).toBe(one.a)
+    const two = withEvents(
+      [
+        trialEvent({ tS: 5, tEffectS: 7, shipIdx: 0, killDelta: 1 }),
+        trialEvent({ tS: 8, tEffectS: 10, shipIdx: 1, killDelta: 1 }),
+      ],
+      2,
+    )
+    expect(deadTimeOf(two.report, 'swarm')!.tS).toBe(10)
+    expect(
+      heldTo(clipAtKill({ assessments: [two.a, two.other], report: two.report, stepS: STEP })),
+    ).toBe(10)
+  })
+
+  it('mixed defeat: one hard and one soft ship latch, no clip', () => {
+    const { a, other, report } = withEvents(
+      [
+        trialEvent({ tS: 5, tEffectS: 7, shipIdx: 0, killDelta: 1 }),
+        softEvent({ tS: 8, tEffectS: 10, shipIdx: 1, killDelta: 1 }),
+      ],
+      2,
+    )
+    expect(deadTimeOf(report, 'swarm')).toEqual({ tS: 10, soft: true, late: false, mixed: true })
+    expect(clipAtKill({ assessments: [a, other], report, stepS: STEP }).assessments[0]).toBe(a)
+  })
+
+  it('leakage: an arrived threat with no kill mass is alive, no clip', () => {
+    const { a, other, report } = withEvents([
+      trialEvent({ tS: 5, tEffectS: 7, shipIdx: 0, killDelta: 0 }),
+    ])
+    const arrived = { ...a, arrivalS: 15 }
+    expect(deadTimeOf(report, 'swarm')).toBeNull()
+    expect(clipAtKill({ assessments: [arrived, other], report, stepS: STEP }).assessments[0]).toBe(
+      arrived,
+    )
+  })
+
+  it('no path: no events, null, no clip', () => {
+    const { a, other, report } = withEvents([])
+    const parked = { ...a, status: 'no-path' as const }
+    expect(deadTimeOf(report, 'swarm')).toBeNull()
+    expect(clipAtKill({ assessments: [parked, other], report, stepS: STEP }).assessments[0]).toBe(
+      parked,
+    )
+  })
+})
+
+describe('clipAtKill on the engine fixture (DE, HPM, formation, jammer)', () => {
+  const { result, ids } = beamAndFormationTrial()
+  const hold = (uasId: string) =>
+    result.assessments.find((a) => a.uasId === uasId)!.sensorObservations![0]
+  const lastEstimateS = (uasId: string) =>
+    Math.max(...result.tracks!.filter((t) => t.uasId === uasId).map((t) => t.state.tS))
+  const hardAt = (uasId: string, tS: number) => {
+    expect(deadTimeOf(result.report, uasId)).toEqual({ tS, soft: false, late: false, mixed: false })
+    expect(hold(uasId).lastDetectS).toBe(tS)
+    expect(hold(uasId).intervals).toEqual([[0, tS]])
+    expect(lastEstimateS(uasId)).toBe(tS)
+  }
+
+  it('DE hard kill clips at the burst effect', () => {
+    const de = result.report.events.filter((e) => e.uasId === ids.de)
+    expect(de.map((e) => [e.effectorType, e.killDelta])).toEqual([['de', 1]])
+    hardAt(ids.de, 105.5)
+  })
+
+  it('HPM hard kill clips at the killing burst, not the misses before it', () => {
+    const hpm = result.report.events.filter((e) => e.uasId === ids.hpm)
+    expect(hpm.every((e) => e.effectorType === 'hpm')).toBe(true)
+    expect(hpm.map((e) => e.killDelta)).toEqual([0, 0, 0, 0, 0, 1])
+    hardAt(ids.hpm, 128.5)
+  })
+
+  it('formation hard kill clips at the salvo that killed the second ship', () => {
+    const salvos = result.report.events.filter((e) => e.uasId === ids.formation)
+    expect(salvos.map((e) => [e.shipIdx, e.tEffectS, e.killDelta])).toEqual([
+      [0, 108.5, 1],
+      [1, 113.5, 1],
+    ])
+    expect(result.report.threats.find((t) => t.uasId === ids.formation)!.shipCount).toBe(2)
+    hardAt(ids.formation, 113.5)
+  })
+
+  it('jammer mission kill (drift) is dead soft and holds to the path end', () => {
+    expect(deadTimeOf(result.report, ids.jammed)).toEqual({
+      tS: 99.5,
+      soft: true,
+      late: false,
+      mixed: false,
+    })
+    // The airframe drifts on: the hold, the estimates and the fused track run to the path end.
+    expect(hold(ids.jammed).lastDetectS).toBe(163)
+    expect(lastEstimateS(ids.jammed)).toBe(163)
+    const fused = result.assessments.find((a) => a.uasId === ids.jammed)!.fusedTracks!
+    expect(fused[fused.length - 1].fusedAtS).toBe(163)
   })
 })

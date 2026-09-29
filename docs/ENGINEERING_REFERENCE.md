@@ -520,7 +520,7 @@ src/playback/  clock.ts (DT = 0.5 s, stepIndex, stepCount, createSweepClock: the
                the interceptFor selector),
                shot.ts (evaluateShot: per-ship shot eligibility shared by both
                firing passes), attritionReport.ts (report types), deadTimes.ts
-               (expectedDeadTimes, the expected-dead rule), sweepState.ts (sweep
+               (deadTimeOf and expectedDeadTimes, the one per-ship dead rule), sweepState.ts (sweep
                state types), attrition.ts (resolveEngagements: fire distribution,
                expected kills, events), trackState.ts
                (phase at t, trackTimelineOf), sweepAt.ts (the per-publication sweep memo:
@@ -753,15 +753,26 @@ Each fact below has exactly one definition. Read it there; never add a second co
   before the engagement pass reads their fused track, so they run to the path end;
   `runTrial` and the replicate loop then run `clipAtKill` (`killClip.ts`): the per-step
   fused tracks, each sensor observation's hold and coast intervals, the track estimates
-  and the scan records of a killed threat end at the last sweep sample at or before the
-  effect time of the salvo that removed its last survival mass (`expectedDeadTimes` in
-  `deadTimes.ts`, the engine's expected-dead rule). A sample at or before the kill
+  and the scan records of a hard-killed threat end at the last sweep sample at or before
+  its death time. The death time is the one dead rule (`deadTimeOf` in `deadTimes.ts`),
+  a per-ship latch that matches the engine's targeting: per `shipIdx`, survival is 1
+  minus the summed `killDelta` of that ship's events in effect-time order, the ship
+  latches dead at the event where survival first falls strictly below `SHIP_DEAD_BELOW`,
+  and the threat is dead once every ship in `[0, shipCount)` has latched, at the latest
+  ship latch. `DeathRecord { tS, soft, late, mixed }` reads `soft` and `late` from that
+  last latching salvo and sets `mixed` when the ship latches include a hard and a soft
+  kill. `shipCount` is the report row's, else the caller's formation count, else
+  `max(shipIdx) + 1`; `expectedDeadTimes` is the map of `tS` over every threat, and the
+  per-ship latches are cached once per report. Only a hard kill clips: a mission-killed
+  airframe (a jammer kill under drift or return-home) still flies, so an all-soft or a
+  mixed defeat leaves the sweep products to the path end. A sample at or before the kill
   measured a live target and is kept with its one drawn step; the first sample after it
   is dropped. The report is not touched, `trackQuality` stays as swept, and the
   timeline's ghost span reads the report. `threatPictureAt` and the threat readout read
   track quality and the classification rung no later than the kill, so neither changes
-  for a dead threat. `TRIAL_ENGINE_REVISION` moved to `rangeboard-trial-r4-v2` with the
-  clip, so a stored trial swept without it fails the manifest gate. The
+  for a dead threat. `TRIAL_ENGINE_REVISION` moved to `rangeboard-trial-r4-v3` with the
+  hard-only clip (`r4-v2` clipped every kill under the threat-level residual rule), so
+  a stored trial swept without it fails the manifest gate. The
   page does not keep that return. `acceptTrialMessage`
   stores `boundRetainedTrial`: per-step fused tracks are omitted once the ledger is
   resolved, and each assessment keeps a `fusedTrack` summary in their place: the first

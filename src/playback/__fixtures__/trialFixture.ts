@@ -1,9 +1,12 @@
 import { emptyScenario } from '../../model/seed'
-import type { Entity } from '../../model/types'
+import type { Entity, Scenario, SpecModel, Vec2 } from '../../model/types'
+import { MOUNT_HEIGHT_M } from '../../model/types'
+import { FT_TO_M } from '../../analysis/sensorEnv'
 import { analysisBasisSignature } from '../../state/analysisBasis'
 import { trialResultOf } from '../../analysis/trialResult'
 import type { ThreatAssessment } from '../sim'
 import type { EngagementEvent, ThreatAttrition } from '../attritionReport'
+import { runTrial } from '../trial'
 import type { TrialResult } from '../trialTypes'
 import { createTrialManifest } from '../trialTypes'
 
@@ -327,4 +330,143 @@ export function mixedTrial() {
     ],
   }
   return { scenario, manifest, result, view: trialResultOf(scenario, manifest, result) }
+}
+
+const BEAM_RADAR: SpecModel = {
+  id: 'beam-radar',
+  name: 'radar',
+  kind: 'sensor',
+  description: '',
+  color: '#fff',
+  builtin: false,
+  sensor: {
+    sensorType: 'radar',
+    role: 'surveillance',
+    rangeBasis: 'planning',
+    detectRangeM: 80000,
+    classifyRangeM: null,
+    sectorDeg: 360,
+  },
+}
+
+const BEAM_UAS: SpecModel = {
+  id: 'beam-uas',
+  name: 'uas',
+  kind: 'uas',
+  description: '',
+  color: '#fff',
+  builtin: false,
+  uas: {
+    group: 4,
+    airframe: 'fixed-wing',
+    cruiseSpeedMps: 40,
+    maxSpeedMps: 60,
+    enduranceMin: 60,
+    altBandFt: [0, 5000],
+    // rf-manual with no jamBehavior: a jammer kill drifts the airframe (mission kill).
+    navMode: 'rf-manual',
+    emissionsNote: '',
+  },
+}
+
+function beamEffector(
+  id: string,
+  effectorType: NonNullable<SpecModel['effector']>['effectorType'],
+  extra: Partial<NonNullable<SpecModel['effector']>> = {},
+): SpecModel {
+  return {
+    id,
+    name: id,
+    kind: 'effector',
+    description: '',
+    color: '#fff',
+    builtin: false,
+    effector: { effectorType, minRangeM: 0, maxRangeM: 2500, engageTimeS: 1, pk: 0.8, ...extra },
+  }
+}
+
+export interface BeamAndFormationIds {
+  /** Lone airframe killed by the DE effector. */
+  de: string
+  /** Lone airframe killed by the HPM effector. */
+  hpm: string
+  /** Formation of two, both ships killed by the interceptor. */
+  formation: string
+  /** Lone airframe mission-killed by the jammer (drift): flies to the path end. */
+  jammed: string
+}
+
+/**
+ * The real engine, deterministic, fixed ids: four lanes 6 km apart, each with
+ * one effector of 2.5 km reach at its end and one threat flying east at 40
+ * m/s from 6 km out, all under one planning-basis radar. No lane reaches
+ * another, so each threat meets one effector: DE and HPM hard kills, an
+ * interceptor formation kill (two ships, two salvos) and a jammer mission
+ * kill. Fixed ids keep the draw stream fixed (`newId` embeds the clock).
+ */
+export function beamAndFormationTrial() {
+  const scenario: Scenario = emptyScenario()
+  scenario.runMode = 'deterministic'
+  scenario.uncertainty = 'aleatory'
+  scenario.targetHalfWidth = null
+  scenario.roe = 'free'
+  scenario.library = [
+    ...scenario.library,
+    BEAM_RADAR,
+    BEAM_UAS,
+    beamEffector('beam-de', 'de'),
+    beamEffector('beam-hpm', 'hpm'),
+    beamEffector('beam-int', 'interceptor', { magazineSize: 6, salvoCooldownS: 5 }),
+    beamEffector('beam-jam', 'jammer', { engageTimeS: 0 }),
+  ]
+  const altitudeFt = MOUNT_HEIGHT_M / FT_TO_M
+  const entity = (id: string, kind: Entity['kind'], specId: string, pos: Vec2): Entity => ({
+    id,
+    name: id,
+    kind,
+    specId,
+    pos,
+    headingDeg: 0,
+    color: null,
+    notes: '',
+    ...(kind === 'uas' ? { altitudeFt } : {}),
+  })
+  const radar = entity('beam-radar-1', 'sensor', 'beam-radar', { x: 0, y: 0 })
+  scenario.entities = [radar]
+  const lanes: Array<[keyof BeamAndFormationIds, string, number]> = [
+    ['de', 'beam-de', -9000],
+    ['hpm', 'beam-hpm', -3000],
+    ['formation', 'beam-int', 3000],
+    ['jammed', 'beam-jam', 9000],
+  ]
+  const ids = {} as BeamAndFormationIds
+  for (const [key, specId, y] of lanes) {
+    const effector = entity(`beam-${key}-effector`, 'effector', specId, { x: 0, y })
+    const uas = entity(`beam-${key}-uas`, 'uas', 'beam-uas', { x: -6000, y })
+    if (key === 'formation') uas.formation = { count: 2, shape: 'line', spacingM: 20 }
+    scenario.entities.push(effector, uas)
+    scenario.connections.push({
+      id: `beam-${key}-link`,
+      fromId: radar.id,
+      toId: effector.id,
+      label: '',
+    })
+    scenario.paths.push({
+      id: `beam-${key}-path`,
+      entityId: uas.id,
+      points: [
+        { x: -6000, y },
+        { x: 500, y },
+      ],
+      speedMps: 40,
+      startDelayS: 0,
+    })
+    ids[key] = uas.id
+  }
+  const manifest = createTrialManifest(
+    scenario,
+    'beam-and-formation-trial',
+    analysisBasisSignature(scenario),
+  )
+  return { scenario, manifest, ids, result: runTrial(scenario, manifest) }
 }

@@ -63,8 +63,9 @@ Kalman filter from the range and azimuth accuracy of its model, and the board dr
 estimated position with a 1 sigma error ellipse. The ellipse shrinks on a measurement and
 grows while the track coasts. A coasting track dashes, a truth track carries no error and
 draws its marker alone, a false track draws in a muted ink, and nothing draws past the
-observation horizon. A killed threat's sensor holds, track estimates and fused track end
-at the kill, so a dead threat holds no track; the run timeline keeps its ghost span from
+observation horizon. A hard-killed threat's sensor holds, track estimates and fused track
+end at the kill, so a destroyed threat holds no track; a mission-killed airframe still
+flies, so its track runs to the path end. The run timeline keeps its ghost span from
 the kill to the planned arrival. A C2 node fuses the sensor tracks that reach it after link latency;
 the fused track sets the firm-track time and, on the estimate path, predicts the intercept
 point. A sensor whose model states no accuracy reports the truth position instead.
