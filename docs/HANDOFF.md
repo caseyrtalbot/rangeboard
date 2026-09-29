@@ -20,19 +20,33 @@ dead rule, the kill types, and every milestone bounded at the kill), the user's 
 2026-09-28, is merged and pushed as `6733fc2`. The code-quality refactor (no behavior
 change) follows it as `ccfdf44`, pushed with the handoff update `418a893`.
 [code-quality/Plan.md](code-quality/Plan.md) is the frozen queue for the refactor's three
-follow-ups (rows Q1 to Q3, authored 2026-09-29). The Tasking selects Q1. Execute one row
-per agent turn.
+follow-ups (rows Q1 to Q3, authored 2026-09-29). Q1 is complete on `quality/q1` and waits
+for the user's merge. The Tasking selects Q2. Execute one row per agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `main`. `main` holds Row G on top of
-  `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
+- Repository `~/Projects/rangeboard`, checked out on `quality/q1`. `main` holds Row G on
+  top of `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
   evidence with the Now card fix `a570e23` and the Row G handoff `6733fc2`, fast-forwarded
   from `engine/g`. The code-quality refactor `ccfdf44` follows, fast-forwarded from
-  `refactor/code-quality`, then the handoff update `418a893`; `origin/main` is at
-  `418a893`. The code-quality plan and this handoff rewrite follow on `main`. Both
-  branches are deleted. `git branch` shows `main` only, `git worktree list` shows the main
-  checkout only and the stash list is empty.
+  `refactor/code-quality`, then the handoff update `418a893`, then the code-quality plan
+  `45d31ef`. `origin/main` is at `418a893`; `45d31ef` is not pushed. `quality/q1` holds
+  Q1 `6c15b71` and this handoff on top of `45d31ef`; it is not merged and not pushed.
+  `engine/g` and `refactor/code-quality` are deleted. `git branch` shows `main` and
+  `quality/q1`, `git worktree list` shows the main checkout only and the stash list is
+  empty.
+- Q1 (2026-09-29) `6c15b71`: the single-worker Monte Carlo slot is gone. `mcClient.ts`
+  keeps the pool and the sensitivity slot; `mc.worker.ts` has no replicate fall-through
+  and no `McWorkerMessage` in `Posted`; `McRunRequest` is deleted. `store.analysis.test.ts`
+  routes the pooled functions to a test-local `createWorkerSlot` transport; the
+  `trialClient` ownership test covers the trial and sensitivity slots. One `opus-medium`
+  worker made the change; the orchestrator added the `Posted` member and the two stale
+  slot counts (`ENGINEERING_REFERENCE.md`, `PROJECT_GUIDE.md`), ran the gate and read the
+  diff. Gate on `6c15b71`: `npm run check` passes (225 files, 2,507 tests; entry graph 107
+  guarded modules of 210 reachable); `check:silent` passes; `check:bundle` entry 367,742
+  and initial 386,514. The entry chunk's raw length is unchanged: the removed functions
+  were already tree-shaken, and the +9 gzip bytes are chunk hash names. No parity expect
+  moved.
 - Code-quality refactor (2026-09-29) `ccfdf44`, no behavior change: one store-free
   scenario fill, `fillScenarioReport` (`src/io/scenarioFill.ts`), serves
   `persist.fillScenario` and the engine `loadScenario`; dead code is deleted; duplicate
@@ -703,26 +717,28 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Row Q1: remove the single-worker Monte Carlo slot.** The row, its owned files, facts,
-work steps, checks and stop condition are in [code-quality/Plan.md](code-quality/Plan.md#q1-remove-the-single-worker-monte-carlo-slot-opus-medium).
-Start Q1 only when asked.
+**Row Q2: delete the orphaned test-card actions.** The row, its owned files, facts, work
+steps, checks and stop condition are in [code-quality/Plan.md](code-quality/Plan.md#q2-delete-the-orphaned-test-card-actions-opus-medium).
+Start Q2 only when asked, after the user merges `quality/q1`.
 
-- Base: `main` at the commit that holds the plan and this handoff. Branch `quality/q1`.
-  No dirty path belongs to Q1.
-- Outcome: no module, worker branch or test reaches the single-worker slot; production
-  behavior is unchanged. Decision D1 in the plan applies unless the user overrides it at
-  kickoff. The user confirmed D2 for Q2 on 2026-09-29: delete the card actions, keep the
-  card data.
-- Exclusions: the pool (`workerPool.ts`), the sensitivity slot, `replicateLoop`,
-  `workerSlot.ts` and every file the row does not own. Report other findings as
-  follow-ups.
+- Base: `main` after the merge of `quality/q1`. Branch `quality/q2`. No dirty path belongs
+  to Q2.
+- Outcome: the eight card actions, `bumpCardVersion` and `seedCards.ts` are gone; the card
+  data model and its cascade stay; production behavior is unchanged. The user confirmed
+  D2 on 2026-09-29: delete the card actions, keep the card data.
+- Exclusions: every item on the plan's Keep list (the card data model, the schema,
+  `validateScenario.ts`, the `deleteSelection` cascade, `Selection.cardId`, the
+  `EntityLayer.tsx` card ring, the fixtures and the `rangeboard.te.*` keys) and every file
+  the row does not own. Report other findings as follow-ups.
 - Verified facts: the pointers come from a read-only `opus-medium` survey on `418a893`
-  (2026-09-29); the orchestrator checked the callers, the store test mock and the worker
-  fall-through against the source. The base gate is the `ccfdf44` gate in Position.
-- Next action: brief one `opus-medium` worker with the Q1 row, the gate and a 900 s
+  (2026-09-29); the orchestrator checked the action list, the missing production callers
+  and the `2213e42` decision against the source. Q1 did not touch a Q2 file except
+  `store.analysis.test.ts`, where Q1 changed only the `mcClient` mock; confirm the line of
+  the `addCard()` call before the edit. The base gate is the Q1 gate in Position.
+- Next action: brief one `opus-medium` worker with the Q2 row, the gate and a 600 s
   budget, per `~/.claude/rules/delegation.md`. Run the gate and read the diff yourself
   before you count the row done.
-- Stop: the gate passes, the commit is on `quality/q1`, and this Tasking selects Q2. Do
+- Stop: the gate passes, the commit is on `quality/q2`, and this Tasking selects Q3. Do
   not merge or push without the user's word.
 
 The Follow-ups are candidates, not rows.

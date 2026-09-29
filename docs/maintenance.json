@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "08299b145106129c7d9b634ba8f965d25b72cba88e36f06cb4ce786740660681",
+      "sha256": "8eb4522dcf277f31b20888b447fbe18fcb82d02b0e5241fc9ac7b8a4d1391ad9",
       "reviewedAt": "2026-09-29",
-      "note": "Workspace fact names docs/code-quality/Plan.md (Q1 to Q3) and the handoff selecting Q1"
+      "note": "Workspace fact names docs/code-quality/Plan.md (Q1 to Q3); the handoff selects the current row"
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "9dc1acb6c40d50bd161383438a57722b0c5563da5f3d26e476033c603c79eef7",
+      "sha256": "70e4173514c9e0ca2cea50ae4dbcec23687196569ca4025ca0938f94b372e14e",
       "reviewedAt": "2026-09-29",
-      "note": "AGENTS.md workspace fact changed for the code-quality plan; CLAUDE.md still points to AGENTS.md"
+      "note": "AGENTS.md workspace fact changed for the current-row wording; CLAUDE.md still points to AGENTS.md"
     },
     {
       "document": "CONTEXT.md",
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "1e0312cd3a66094e5877793990c25e8bdee72e6fb477e9733b984a48728a6657",
+      "sha256": "606032042b453ab61a937c93522c3b93cbc75a13f356122710ace0bfc635ddce",
       "reviewedAt": "2026-09-29",
-      "note": "Tasking selects Q1 of docs/code-quality/Plan.md and records the user's D2 confirmation; Position records the push of 418a893 and the plan; Follow-ups add the undrawn card ring; Landmines add the card data model"
+      "note": "Q1 complete on quality/q1 (6c15b71) with its gate; Position records the branch state and the unpushed plan commit 45d31ef; Tasking selects Q2 with the user's D2 confirmation"
     },
     {
       "document": "docs/Plan.md",
