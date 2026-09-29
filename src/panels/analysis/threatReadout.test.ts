@@ -183,17 +183,24 @@ describe('dead-threat pill words', () => {
     const { trial } = movingDead([false, false, false], 1)
     const groups = trialThreatPictureAt(trial, trial.durationS)
     const moving = groups.flatMap((g) => g.members).find((r) => r.uasId === 'moving')!
-    expect(moving).toMatchObject({ leaked: true, effectMet: false, lateKillS: 2 })
+    // FX on the card is the pre-arrival death, blank for a late kill.
+    expect(moving).toMatchObject({
+      leaked: true,
+      effectMet: false,
+      lateKillS: 2,
+      firstEffectS: null,
+    })
     const html = renderToStaticMarkup(
       createElement(ThreatPicture, { groups, mode: 'debrief', membersOpen: true }),
     )
     expect(html).toContain('LEAKED')
     expect(html).toContain('late kill T+0:02')
+    expect(html).toContain('FX —')
     const defeated = movingDead([false, false, false])
     const row = trialThreatPictureAt(defeated.trial, defeated.trial.durationS)
       .flatMap((g) => g.members)
       .find((r) => r.uasId === 'moving')!
-    expect(row).toMatchObject({ leaked: false, effectMet: true, lateKillS: null })
+    expect(row).toMatchObject({ leaked: false, effectMet: true, lateKillS: null, firstEffectS: 2 })
   })
 })
 

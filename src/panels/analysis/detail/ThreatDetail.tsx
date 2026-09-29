@@ -6,6 +6,7 @@ import type { ChartMark } from '../../../charts/types'
 import { bearingDeg } from '../../../geometry/geo'
 import { rcsM2For, swerlingFor } from '../../../model/rcsFactors'
 import type { Entity } from '../../../model/types'
+import { deadTimeOf } from '../../../playback/deadTimes'
 import { PHASE_STYLE } from '../../../playback/trackState'
 import type { TrackPhase } from '../../../playback/trackState'
 import { modelFor } from '../../../model/scenario'
@@ -68,10 +69,10 @@ export function ThreatDetail({ entity }: { entity: Entity }) {
   const survivalMarks: ChartMark[] = (run.series?.marks[entity.id] ?? []).filter(
     (mark) => mark.label === 'ARR' || mark.label === 'CPA',
   )
-  const effect = report?.events.find(
-    (e) => e.uasId === entity.id && e.killDelta === 1 && e.tEffectS <= tObs,
-  )
-  if (effect) survivalMarks.push({ tS: effect.tEffectS, label: 'FX', color: 'danger' })
+  // FX is the threat's pre-arrival death under the one dead rule; a late kill is no defeat.
+  const death = report ? deadTimeOf(report, entity.id, shipCount) : null
+  if (death && !death.late && death.tS <= tObs)
+    survivalMarks.push({ tS: death.tS, label: 'FX', color: 'danger' })
 
   const phaseLegend: LegendEntry[] = [
     ...new Map(

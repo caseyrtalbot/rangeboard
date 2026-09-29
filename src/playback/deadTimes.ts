@@ -6,8 +6,9 @@ import { SHIP_DEAD_BELOW } from './pk'
  * (attrition.ts: a ship whose survival is below SHIP_DEAD_BELOW is never
  * targeted, and each event's killDelta is the mass that salvo removed from
  * ship `shipIdx`). Per ship, alive is 1 minus the summed killDelta of that
- * ship's events in effect-time order (ledger order on a tie); the ship
- * latches dead at the event where alive first falls strictly below the
+ * ship's events in effect-time order (ledger order on a tie; the engine may
+ * apply two effects within EPS of each other in the other order, a sum that
+ * differs by at most one ulp); the ship latches dead at the event where alive first falls strictly below the
  * cutoff. killDelta is never negative, so the latch is one-way. The threat is
  * dead once every ship in [0, shipCount) has latched, at the latest ship
  * latch: the effect that killed its last ship. A threat that never reaches

@@ -95,10 +95,15 @@ function minTime(values: Array<number | null>): number | null {
 // The dead rule lives beside the engine so the playback bundle need not load this module.
 export { deadTimeOf, expectedDeadTimes }
 
-/** Track quality up to t, not the whole run. Null before the first detection. */
+/**
+ * Track quality up to t, not the whole run. Null before the first detection.
+ * `stepS` is the sweep step the holds sit on (the default sweep step unless
+ * the trial manifest states another).
+ */
 export function trackQualityAt(
   assessment: ThreatAssessment,
   tS: number | null,
+  stepS = 0.5,
 ): { continuity: number; longestGapS: number } | null {
   if (tS == null || assessment.firstDetectS == null || tS < assessment.firstDetectS) return null
   if (!Number.isFinite(tS)) {
@@ -118,18 +123,18 @@ export function trackQualityAt(
   const merged: Array<[number, number]> = []
   for (const interval of intervals) {
     const previous = merged[merged.length - 1]
-    if (!previous || interval[0] > previous[1] + 0.5 + 1e-9) merged.push([...interval])
+    if (!previous || interval[0] > previous[1] + stepS + 1e-9) merged.push([...interval])
     else previous[1] = Math.max(previous[1], interval[1])
   }
-  const totalSamples = Math.max(1, Math.floor((tS - start) / 0.5 + 1e-9) + 1)
+  const totalSamples = Math.max(1, Math.floor((tS - start) / stepS + 1e-9) + 1)
   const heldSamples = merged.reduce(
-    (sum, [from, to]) => sum + Math.floor((to - from) / 0.5 + 1e-9) + 1,
+    (sum, [from, to]) => sum + Math.floor((to - from) / stepS + 1e-9) + 1,
     0,
   )
   let longestGapS = 0
-  let previousEnd = start - 0.5
+  let previousEnd = start - stepS
   for (const [from, to] of merged) {
-    longestGapS = Math.max(longestGapS, Math.max(0, from - previousEnd - 0.5))
+    longestGapS = Math.max(longestGapS, Math.max(0, from - previousEnd - stepS))
     previousEnd = to
   }
   longestGapS = Math.max(longestGapS, Math.max(0, tS - previousEnd))
@@ -379,6 +384,9 @@ export function trialThreatPictureAt(view: TrialResultView, horizonS: number): T
       const { expectedKills: _rowKills, expectedResidual: _rowResidual, ...rest } = row
       const track = tracks.get(row.uasId)!
       const a = view.assessments.find((a) => a.uasId === row.uasId)!
+      // FX on a trial card is the threat's pre-arrival death, the time the chip,
+      // the Outcome FX column and First effect read; a late kill is no defeat.
+      const death = deadTimeOf(view.attrition, row.uasId, track.members.length || undefined)
       const firstShot = view.attrition.threats.find((a) => a.uasId === row.uasId)?.firstShotS
       const decision = firstShot ?? a.windowS?.[0] ?? a.arrivalS
       const trackedAtDecision =
@@ -409,7 +417,7 @@ export function trialThreatPictureAt(view: TrialResultView, horizonS: number): T
         firstDetectS: reached(row.firstDetectS),
         hostileAtS: reached(row.hostileAtS),
         firstShotS: reached(row.firstShotS),
-        firstEffectS: reached(row.firstEffectS),
+        firstEffectS: death && !death.late ? reached(death.tS) : null,
         firstJamEffectS: reached(row.firstJamEffectS),
         lateKillS: reached(row.lateKillS),
         arrivalS: reached(row.arrivalS),

@@ -779,11 +779,13 @@ Each fact below has exactly one definition. Read it there; never add a second co
   drop-mark suppression and the clip itself. A mission-killed airframe keeps its
   picture, so no picture bound applies to it. The classification rung needs no local
   bound, since the clip covers it. The trial export bounds `trackQuality` at the hard
-  cut with `trackQualityAt` (0.5 s samples), because the sweep computes it from samples
-  that playback does not keep. A dead threat's trial phase is `ghost`, hard or soft. Its pill
+  cut with `trackQualityAt` on the manifest's `sweepStepS`, because the sweep computes it
+  from samples that playback does not keep; its `lastTrackS` is the last kept hold end,
+  on the sweep grid like the clipped holds. A dead threat's trial phase is `ghost`, hard or soft. Its pill
   reads `HARD KILL`, `MISSION KILL` or `DEFEATED (MIXED)`, and `LEAKED` for a late
   death. A late kill is a leaker: Outcome, Now and the Debrief threat record print it as
-  `late kill T+m:ss` and never as a defeat. The FX column and `First effect` read the
+  `late kill T+m:ss` and never as a defeat. The FX column, `First effect`, the FX text on a
+  Debrief threat card and the FX mark on the threat detail survival chart read the
   threat's death and exclude a late one. A timeline effect mark from a `flightCapped`
   event carries `capped`, and its tooltip adds that word. `liveStats.ts` imports
   `deadTimeOf` through the `threatAggregation` re-export: a direct `deadTimes` edge

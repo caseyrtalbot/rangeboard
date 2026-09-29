@@ -103,5 +103,8 @@ export const TRIAL_KPI_LABELS: typeof KPI_LABELS = {
     label: 'Arrived undefeated',
     hint: 'Trial members that arrived undefeated. Late defeats never reduce this count.',
   },
-  firstEffect: { label: 'First effect', hint: 'The first effect that removed a trial member.' },
+  firstEffect: {
+    label: 'First effect',
+    hint: 'The first threat defeated before arrival: the effect that removed its last member.',
+  },
 }

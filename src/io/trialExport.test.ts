@@ -152,6 +152,31 @@ describe('independent trial export group', () => {
     expect(exported(ids.jammed).trackQuality).toEqual(swept(ids.jammed).trackQuality)
   })
 
+  it('ends exported track quality on the sweep grid at an off-grid hard kill', () => {
+    const base = beamAndFormationTrial()
+    // A 1.3 s engagement delay moves the DE effect off the 0.5 s sweep grid.
+    const scenario: Scenario = {
+      ...base.scenario,
+      library: base.scenario.library.map((m) =>
+        m.id === 'beam-de' ? { ...m, effector: { ...m.effector!, engageTimeS: 1.3 } } : m,
+      ),
+    }
+    const manifest = createTrialManifest(
+      scenario,
+      'off-grid-kill',
+      analysisBasisSignature(scenario),
+    )
+    const result = runTrial(scenario, manifest)
+    const cut = deadTimeOf(result.report, base.ids.de)!.tS
+    expect(Number.isInteger(cut / 0.5)).toBe(false)
+    const group = json(buildTrialResultGroup(trialResultOf(scenario, manifest, result)))
+    const a = group.assessments.find((x) => x.uasId === base.ids.de)!
+    const ends = a.sensorObservations!.flatMap((o) => o.intervals.map(([, end]) => end))
+    expect(a.trackQuality!.lastTrackS).toBe(Math.max(...ends))
+    expect(Number.isInteger(a.trackQuality!.lastTrackS! / 0.5)).toBe(true)
+    expect(a.trackQuality!.lastTrackS!).toBeLessThan(cut)
+  })
+
   it('preserves mixed member outcomes, no-path disclosure, scan identity and realized leakage after late effects', () => {
     const { view, result } = mixedTrial()
     const group = json(buildTrialResultGroup(view))

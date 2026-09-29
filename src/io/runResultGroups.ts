@@ -40,16 +40,28 @@ export interface TrialResultGroup {
  * A hard-killed threat holds no track after the hard cut. The kill clip
  * (killClip.ts) already nulls its milestones and cuts its holds; the swept
  * `trackQuality` still reads to closest approach, so the export bounds it at
- * the cut with `trackQualityAt` (the same 0.5 s sample grid). An assessment
- * with no hard cut, or whose quality horizon ends before it, is unchanged.
+ * the cut with `trackQualityAt` on the trial's sweep step. `lastTrackS` is the
+ * last kept hold end, on the sweep grid like the clipped holds beside it. An
+ * assessment with no hard cut, or whose quality horizon ends before it, is
+ * unchanged.
  */
-function qualityAtHardCut(a: ThreatAssessment, report: AttritionReport): ThreatAssessment {
+function qualityAtHardCut(
+  a: ThreatAssessment,
+  report: AttritionReport,
+  stepS: number,
+): ThreatAssessment {
   const cut = hardKillTimeOf(deadTimeOf(report, a.uasId))
   if (cut == null || a.trackQuality == null || a.firstDetectS == null) return a
   if (a.cpaS != null && cut >= a.cpaS) return a
-  const quality = trackQualityAt(a, cut)
+  const quality = trackQualityAt(a, cut, stepS)
   if (!quality) return { ...a, trackQuality: null }
-  const totalSamples = Math.floor((cut - a.firstDetectS) / 0.5 + 1e-9) + 1
+  const totalSamples = Math.max(1, Math.floor((cut - a.firstDetectS) / stepS + 1e-9) + 1)
+  let lastHeldS: number | null = null
+  for (const observation of a.sensorObservations ?? []) {
+    for (const [, end] of observation.intervals) {
+      if (end <= cut + 1e-9 && (lastHeldS == null || end > lastHeldS)) lastHeldS = end
+    }
+  }
   const lastTrackS = a.trackQuality.lastTrackS
   return {
     ...a,
@@ -58,7 +70,7 @@ function qualityAtHardCut(a: ThreatAssessment, report: AttritionReport): ThreatA
       totalSamples,
       continuity: quality.continuity,
       longestGapS: quality.longestGapS,
-      lastTrackS: lastTrackS == null ? null : Math.min(lastTrackS, cut),
+      lastTrackS: lastTrackS == null || lastHeldS == null ? null : Math.min(lastTrackS, lastHeldS),
     },
   }
 }
@@ -119,7 +131,9 @@ export function buildTrialResultGroup(trial: TrialResultView): TrialResultGroup 
     },
     scenario: view.scenario,
     manifest: view.manifest,
-    assessments: view.assessments.map((a) => qualityAtHardCut(a, view.attrition)),
+    assessments: view.assessments.map((a) =>
+      qualityAtHardCut(a, view.attrition, view.manifest.sweepStepS),
+    ),
     attrition: view.attrition,
     observations: view.observations,
     jamDecisions: view.jamDecisions,

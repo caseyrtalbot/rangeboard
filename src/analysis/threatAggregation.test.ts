@@ -348,4 +348,27 @@ describe('trackQualityAt', () => {
     expect(trackQualityAt(a, 12)).toEqual({ continuity: 1, longestGapS: 0 })
     expect(trackQualityAt(a, 20)).toEqual({ continuity: 1, longestGapS: 0 })
   })
+
+  it('counts samples on the stated sweep step', () => {
+    const a = assessment('1', {
+      sensorObservations: [
+        {
+          sensorId: 's1',
+          sensorType: 'radar',
+          firstDetectS: 5,
+          lastDetectS: 9,
+          firstClassifyS: null,
+          heldSamples: 5,
+          resolvedEver: true,
+          minSlantM: 2000,
+          intervals: [[5, 9]],
+          trackInitAtS: null,
+          coastIntervals: [],
+        },
+      ],
+    })
+    // A 1 s sweep holds 5 of 10 samples over [5, 14]; the 0.5 s default holds 9 of 19.
+    expect(trackQualityAt(a, 14, 1)).toEqual({ continuity: 0.5, longestGapS: 5 })
+    expect(trackQualityAt(a, 14)).toEqual({ continuity: 9 / 19, longestGapS: 5 })
+  })
 })

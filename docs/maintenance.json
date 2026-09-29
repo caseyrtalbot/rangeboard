@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "556c57eac7a0f044fe56e9b79e0db60c6c09efe746d8b8068285521e90e7a255",
+      "sha256": "97df67cf0e3969e65b7db1a303bf62a2960e19a1350054fb27bf1837379a2884",
       "reviewedAt": "2026-09-29",
-      "note": "Row G lane G2: readers on deadTimeOf and hardKillTimeOf, milestone clip, late-kill and pill words, capped tooltip, export trackQuality bound; liveStats keeps its threatAggregation edge (store chunk split)"
+      "note": "Row G review fixes: trial card FX and the threat detail FX mark read the pre-arrival death; the export bounds trackQuality on the manifest sweep step with lastTrackS on the grid; trackQualityAt takes the step"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "8d707848edaa35f9153f5ad5e30355f77600124b198aa9111d70a1aa61264b15",
+      "sha256": "07a0e7978aa998233ef2ded3681e7621576079614ccef2c78fc13c5b8fa25a6c",
       "reviewedAt": "2026-09-29",
-      "note": "Row G lane G2: readers on deadTimeOf and hardKillTimeOf, milestone clip, late-kill and pill words, capped tooltip, export trackQuality bound; liveStats keeps its threatAggregation edge (store chunk split)"
+      "note": "Row G review fixes: trial card FX and the threat detail FX mark read the pre-arrival death; the export bounds trackQuality on the manifest sweep step with lastTrackS on the grid; trackQualityAt takes the step"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "394b5236d178caee5b114edf34fa56267daf439c206eb065b6c4eb794f6009e7",
+      "sha256": "98ffe2497e32ba53822fdba838b9fceaaf80170b8f13e80ce1b4e1b5d097cd0b",
       "reviewedAt": "2026-09-29",
-      "note": "Row G lane G2: every reader derives from deadTimeOf (death for outcomes, hardKillTimeOf for the picture); clipAtKill nulls milestones after the hard cut; late kill reads LEAKED with its own word; FX and First effect read the death; capped tooltip word; export bounds trackQuality at the hard cut"
+      "note": "Row G review fixes: trial card FX and the threat detail FX mark read the pre-arrival death; the export bounds trackQuality on the manifest sweep step with lastTrackS on the grid; trackQualityAt takes the step"
     },
     {
       "document": "docs/WORKFLOW.md",
