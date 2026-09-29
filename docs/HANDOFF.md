@@ -15,18 +15,100 @@ four phases that replace the threat-only engagement strip with a multi-row run t
 All four phases are on `main` and `origin/main`; the plan is complete. [Plan.md](Plan.md)
 is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a3`; Row E,
 timeline polish and chrome cleanup, merged and pushed as `353caee`; Row F, two engine
-decisions the user made on 2026-09-28, merged and pushed as `6cb16f9`). The Tasking below
-selects Row G (the one dead rule, the kill types, and every milestone bounded at the
-kill), the user's decision of 2026-09-28. Execute one row per agent turn.
+decisions the user made on 2026-09-28, merged and pushed as `6cb16f9`). Row G (the one
+dead rule, the kill types, and every milestone bounded at the kill), the user's decision of
+2026-09-28, is complete on `engine/g` and waits for the user's authorization to merge and
+push. The Tasking selects nothing. Execute one row per agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `main`. `main` and `origin/main`
-  hold Row F: `engine/f` (from `40591b8`; item 1 `5fef8dd`, item 2 with the review fixes
-  and the authorized recapture `eb19eab`, the close `6cb16f9`) was fast-forwarded to
-  `main` and pushed with the user's authorization on 2026-09-28, then this handoff. The
-  branch `engine/f` is deleted; `git branch` shows `main` only, `git worktree list` shows
-  the main checkout only and the stash list is empty.
+- Repository `~/Projects/rangeboard`, checked out on `engine/g`. `engine/g` holds Row G
+  on top of `main` at `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes
+  `70512e0`, the evidence with the Now card fix `a570e23`, then this handoff. It is not
+  merged and not pushed. `main` and `origin/main` hold Row F (`6cb16f9`, `engine/f`
+  deleted) and the Row G selection `69db432`. `git branch` shows `engine/g` and `main`,
+  `git worktree list` shows the main checkout only and the stash list is empty.
+- Row G (2026-09-28) on `engine/g`: lane G1 (`fable-medium`) and lane G2 (`opus-medium`)
+  one after the other in the main checkout, the `fable-high` review (read-only), the
+  orchestrator's review fixes, the `opus-medium` browser evidence and its Now rerun, the
+  orchestrator's Now card fix and this handoff. The orchestrator ran every gate itself on
+  each commit.
+- What Row G built. One dead rule: `deadTimeOf(report, uasId, shipCount?)`
+  (`src/playback/deadTimes.ts`) returns `DeathRecord { tS, soft, late, mixed }` or null.
+  Per `shipIdx`, survival is 1 minus the summed `killDelta` in effect-time order; a ship
+  latches dead when survival falls strictly below `SHIP_DEAD_BELOW`; the threat dies at the
+  effect that kills its last ship. `soft` and `late` come from that last latching salvo;
+  `mixed` marks a hard and a soft latch. The ship count is the row's, else the caller's
+  formation count, else `max(shipIdx) + 1`. The latches are cached per report.
+  `deadRecords` and `expectedDeadTimes` project it; `hardKillTimeOf(death)` is the hard
+  cut (the death when `!soft && !mixed`). `trackState.ts` derives `eliminatedAtS` and
+  `eliminatedBySoft` from it. `clipAtKill` clips a hard defeat only, at the hard cut, and
+  nulls the classification rungs, `stableTrackAtS` and `declaredHostileAtS` after it;
+  planning times stay. `TRIAL_ENGINE_REVISION` is `rangeboard-trial-r4-v3`. The real-engine
+  fixture `beamAndFormationTrial()` (`trialFixture.ts`, fixed ids) yields DE, HPM,
+  interceptor formation and jammer mission kills.
+- Row G readers read two times. The death: targeting (`threatPictureAt`,
+  `trialTelemetryAt`, `systemTelemetry`, `liveStats`), the timeline window ends, the phase
+  series, `effectMet` (dead at or before t and not late), NowScreen, FX and First effect.
+  The hard cut: track quality (`threatPictureAt`, the readout, the export), the timeline
+  ghost span, the threat-row ramp end and the track row's drop suppression. Kill types: a
+  trial phase is `ghost` once every member is removed; the pill (`deathPill`) reads `HARD
+  KILL`, `MISSION KILL`, `DEFEATED (MIXED)` or `LEAKED` (a late death); a late kill prints
+  `late kill T+m:ss` on Outcome, Now and the Debrief threat record and never as a defeat;
+  the Outcome FX column, First effect, the Debrief card FX text and the threat detail FX
+  mark read the pre-arrival death; the Now Run monitor `Defeated` row counts pre-arrival
+  defeats over the modeled members; a `flightCapped` effect mark carries `capped` in its
+  tooltip. The export bounds `trackQuality` at the hard cut on `manifest.sweepStepS` with
+  `lastTrackS` on the grid; `trackQualityAt` takes the step (default 0.5 s).
+- Row G parity: no protected expect moved in any lane; both parity files pass 5 of 5 on
+  every commit. Layered events 11, kill mass 1, kills mean 1.115, firmTrackS 1.5, trial
+  `r.tracks` 12982; JIATF events 2, kill mass 0, tracks 3168, leakers 0.895, kills 0.105,
+  firmTrackS 505.0625; every sensitivity row. The layered killed threat is a hard
+  interceptor kill at 118.5 s. Unpinned outputs, measured by the reviewer: under the
+  parity settings (estimate path, 200 aleatory replicates, seed 4821) the layered fixture
+  has 223 hard deaths and no soft or late death, and `heldTracksOnGrid` and `raidFirmTrack`
+  equal Row F on every replicate; under the layered fixture's golden physics (ROE free,
+  doctrine off, 200 replicates) there are 1,162 hard, 251 soft and 83 late deaths, and the
+  `tracked` grid differs from Row F in 163 of 200 replicates (33,314 of 528,600 cells), all
+  from soft kills that now keep their holds. No test pins that grid.
+- Row G gate on `a570e23` (2026-09-28, run by the orchestrator): `npm run check` passes
+  (225 files, 2,508 tests, docs and evidence gates green, build green); `check:silent`
+  passes; `check:bundle` entry 368,027 against 380,000 and initial 386,932 against 400,000
+  (Row F: 367,372 and 386,277); `schema:generate` produced no diff; `test:e2e` 13 of 13 on
+  a dev server at 5483. The two parity files run inside `npm test`.
+- Row G evidence: [kill types browser check](field-te/evidence/engine-g-2026-09-28/README.md),
+  `layered-acoustic-merops.json` with its physics switches, ROE free and the default fire
+  doctrine (doctrine off gave no mission kill in 80 sampled trials), trial
+  `simrun-mum3ques-6` (seed 4821) with a pre-arrival hard kill, a mission kill and a late
+  kill. Outcome, Debrief, Now, the pills, the board and the strip for each kind, and the
+  survival chart FX marks pass; `observedThroughS` stays 1,321 through 7 scrubs; 0 page
+  errors. Every threat in that laydown is one ship and no event is `flightCapped`, so the
+  mixed pill, a formation kill and the `capped` word are covered by unit tests only.
+- Row G review (`fable-high`): the dead rule equals the engine's targeting cutoff (205
+  engine runs, no salvo assigned to a ship after its latch, no split at 0.05, including 49
+  fractional-mass events); parity held. No must-fix. Should-fix, all closed in `70512e0`:
+  S1, a Debrief card printed FX at the first member removal; S2, the exported `lastTrackS`
+  sat off the sweep grid at an off-grid kill; S3, the threat detail FX mark read the first
+  `killDelta === 1` event, late removals included; S4, the export counted samples on a
+  fixed 0.5 s grid. Nits closed: the First effect hint and the float-order note. The
+  evidence then found the Now Run monitor card reading `Defeated 9/10 members` (late kills
+  counted, a no-path threat in the denominator); fixed in `a570e23`, the rerun reads 8/9.
+- Row G decisions and departures, each with its reason: `DeathRecord.mixed` is added (the
+  `DEFEATED (MIXED)` pill needs it); a mixed defeat does not clip (the threat has one
+  picture and its mission-killed airframe still flies; the literal "last hard-kill latch"
+  would cut a flying airframe's track or draw a ghost before the death; the reviewer
+  accepted); a mission kill's threat row runs its ramp to the planned arrival with no
+  arrival mark; NowScreen reads `leaked` for any arrived leaker, which it never did; the
+  `ghost` phase for a soft death dims the board group while the member glyph keeps its
+  mission-kill style; `liveStats` imports `deadTimeOf` through the `threatAggregation`
+  re-export (a direct edge split the store chunk); `trialTrackState`'s member rule and the
+  `trialSnapshotAt` counts stay (equal to the latch under `trialResultOf`'s whole-ship
+  guard), and `aarOutcome` keeps its expected-mass label rule (a label, not a time), so
+  eight readers switched and one label rule stays; frames need no work (`FrameSnap` holds
+  the clock and restore recomputes from the clipped trial; Row G touched no file under
+  `src/state`); one engine revision bump covers both lanes on the unreleased branch; the
+  evidence ran with the fire doctrine on; the FX chart mark has no unit test because the
+  plot is absent from a static render.
 - Row F (2026-09-28) on `engine/f`: one `fable-medium` lane in the main checkout (item 1
   committed, item 2 left in the tree because a protected expect moved), the `fable-high`
   parity and censoring review (read-only), the `opus-medium` review fixes and evidence
@@ -441,30 +523,38 @@ kill), the user's decision of 2026-09-28. Execute one row per agent turn.
 
 ## Follow-ups (not fixed)
 
-Handling: candidates, not rows, except where the Tasking names one. Row G (selected)
-takes every Row F item below. Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expand all rule, the 240 px fold
+Handling: candidates, not rows. Row G took the Row F items except the two kept below.
+Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expand all rule, the 240 px fold
 and the Row D items it listed. What remains:
 
-From Row F:
+From Row G:
 
-- `trialOutcomeRows` in `threatReadout.ts` (the `identify` milestone) still reads
-  `classificationAtS.hostileAtS` with no bound at the kill, and `clipAtKill` does not
-  clip `classificationAtS`; the rung and the picture are bounded, the milestone table is
-  not.
-- The unclipped paths: `endOfRunResponses` (`mcRun.ts`; morris, sobol, optimize),
-  `engagementPicture` (`impact.ts`; the Prepare forecast, `StatusBar`, `trialResult.ts`)
-  and `raidSizeOf` (`optimize/loop.ts`). Their consumers read the report, `status`,
-  `firstDetectS` and `warningS`, so the numbers are identical today; the forecast
-  assessments carry unclipped holds for any future reader.
-- The timeline kill rule (`runTimeline.ts` about 486, the count-th `killDelta === 1`
-  event) and `expectedDeadTimes` coincide for whole-ship draws (every retained trial)
-  and differ for fractional mass. Pre-existing.
-- `trackState.ts` `eliminatedAtS` is a second copy of the dead rule that differs only for
-  a threat with no attrition row (formation count against one ship).
-- `trackQuality` on the assessment (continuity to closest approach) stays as swept; the
-  per-horizon `trackQualityAt` is bounded at the kill instead.
-- No fixture runs a multi-ship kill or a soft kill through the clip; the rule was read
-  from `attrition.ts` and `expectedDeadTimes`.
+- The unclipped paths stay: `endOfRunResponses` (`mcRun.ts`), `engagementPicture`
+  (`impact.ts`) and `raidSizeOf` (`optimize/loop.ts`) read unclipped assessments. The
+  reviewer confirmed that none reaches a removed bound; they read the report, `status`,
+  `firstDetectS` and `warningS`.
+- `trackQuality` on the assessment stays as swept (continuity to closest approach); the
+  readers and the export bound it at the hard cut.
+- `trackQualityAt` in `threatPictureAt` and the readout uses the default 0.5 s step; only
+  the export passes `manifest.sweepStepS`. No UI sets another step.
+- No screen mounts the Debrief trial threat record: `OutcomeScreen` passes
+  `showTrialRecords={false}` to `DebriefRecord`, so `ThreatPicture` in debrief mode renders
+  only in tests and in the evidence script.
+- On the threat detail survival chart the FX and ARR labels overlap when the death is near
+  the arrival (evidence `detail-survival-hard-dark.png`, 18 s apart on a 22 min axis).
+- The forecast `ThreatPicture` row keeps `Expected FX` at the first mass-removing effect.
+- `trialSeries` phase 6 (Neutralized) covers a late death; leaked has no phase value.
+- `soft` comes from the latching salvo, so a fractional deterministic death (0.7 soft then
+  0.3 hard) reads hard. Trials and replicates draw whole ships, so no clip or pill sees it.
+- `systemTelemetry` looks up the formation count with `scenario.entities.find` per
+  assessment per call.
+- No browser trial showed a mixed defeat, a formation kill or a capped effect; unit tests
+  on `beamAndFormationTrial()` and hand-built ledgers cover them.
+- With the fire doctrine off, the layered fixture gave no mission kill in 80 sampled
+  trials.
+- Readers that count `killDelta === 1` by design stay: the `trialSeries` removal series
+  and mark words, the timeline per-event mark kind, the `trialResultOf` guard and the
+  `trialSnapshotAt` counts, and the `SystemDetail` detect-to-first-effect latency.
 
 From Row E:
 
@@ -596,144 +686,10 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Row G: one dead rule, the kill types, and every milestone bounded at the kill.**
-Selected on the user's 2026-09-28 decision after Row F. Start Row G only when asked.
-Base: `main` at the commit that holds this handoff. The survey behind this tasking was an
-`opus-medium` read-only pass on `07ce379` (2026-09-28); its file:line pointers are below
-and outrank this prose only until the source moves. Lanes in order: lane G1
-(`fable-medium`, the rule and the clip), then lane G2 (`opus-medium`, the readers and the
-milestones) on top of G1, then a `fable-high` review of the dead-rule semantics and the
-parity. The estimate-path expects (`225e027`, `eb19eab`, listed in Landmines) and the
-Coyote parameters are protected: each lane measures which expects move, reports the
-numbers, and waits for the user's authorization before any recapture. Brief shape per
-`~/.claude/rules/delegation.md`.
-
-Two facts the survey established. `trialResultOf` (`src/analysis/trialResult.ts:143-177`)
-throws unless every trial `killDelta` is 0 or 1, each member is removed at most once, and
-every modeled threat has an attrition row with `shipCount` equal to its formation count;
-so every trial reader sees whole-ship draws, and fractional mass reaches only the
-deterministic readers (Prepare forecast, `threatPictureAt`, AAR). `trackState.ts`
-elimination (`eliminatedAtS`, `eliminatedBySoft`, about 471-486) has no production
-reader: production builds `buildTrackTimeline` only through `trialShotTimelineOf` with
-no assessments (`trackState.ts:393-398`; `LiveScene.tsx:167`, `trialSweepAt.ts:173`).
-
-1. **One dead rule (lane G1).** Today nine places decide that a threat is dead and they
-   disagree: `expectedDeadTimes` (`src/playback/deadTimes.ts`, threat-level residual
-   below `SHIP_DEAD_BELOW`, a missing row counts as one ship); `trackState.ts`
-   `eliminatedAtS` (same formula, ship count from the formation when no row); the
-   timeline count-th `killDelta === 1` rule (`src/analysis/runTimeline.ts:485-494`); the
-   member rule (`src/analysis/trialTrackState.ts:89-161`, a member is removed at its
-   first `killDelta > 0`); NowScreen (`NowScreen.tsx:84-93`, kills equal the formation
-   count); `threatPictureAt.effectMet` (`threatAggregation.ts:227`, inclusive at 0.05
-   where `expectedDeadTimes` is strict); the engine's own per-ship targeting
-   (`attrition.ts:606, 687, 739`: a ship with `effectiveAlive < SHIP_DEAD_BELOW` is never
-   targeted); `aarOutcome` (`aar.ts:31-37`); `trialSnapshotAt` counts
-   (`trialResult.ts:252-265`). Verified disagreements: a formation of 21 or more ships
-   (the Inspector allows 60, `Inspector.tsx:1169`) is dead under the residual rule after
-   N minus 1 removals while the engine keeps firing at the last ship and the timeline
-   draws no ghost; a deterministic two-ship threat with residuals 0.0 and 0.09 is dead
-   under the residual rule while the engine still targets ship 1; the residual rule and
-   `effectMet` split at exactly 0.05. Build one rule in `deadTimes.ts` that matches the
-   engine's targeting, a per-ship latch: per `shipIdx`, alive is 1 minus the summed
-   `killDelta` in effect-time order, a ship is dead when alive falls below
-   `SHIP_DEAD_BELOW`, the threat is dead at the effect that kills its last ship.
-   Signature: `deadTimeOf(report, uasId, shipCount?): DeathRecord | null` with
-   `DeathRecord { tS, soft, late }` (`soft` when the latching mass came from jammers,
-   `late` from the latching event's `lateEffect`), and `expectedDeadTimes(report)` kept
-   as the map of `tS` over it. `shipCount` defaults to the row's; with no row, the
-   caller's formation count, else `max(shipIdx) + 1`. For whole-ship trials of at most
-   20 ships and for a single deterministic ship this equals the old rule, so the parity
-   expects should stand; measure first. Switch every reader: `killClip.ts:154`,
-   `threatReadout.ts:159-166, 188, 200, 325`, `threatAggregation.ts:151, 227, 390`
-   (`effectMet` becomes dead at or before `tS`, which removes the inclusive split),
-   `systemTelemetry.ts:206`, `liveStats.ts:134`, `runTimeline.ts:485-494`
-   (`killTimes` from `deadTimeOf`), `NowScreen.tsx:86-93`, `trialSeries.ts:208`. Replace
-   `trackState.ts` `eliminatedAtS` and `eliminatedBySoft` with the rule (only
-   `trackState.test.ts` reads them). Correct the `killClip.ts` module note: the kill is
-   the engine's targeting cutoff only once the rules are one. Tests in
-   `deadTimes.test.ts`: single ship, formation of 2, formation of 21 with 20 removals
-   (dead only at the 21st), the exact-0.05 boundary, two 0.5 salvos on two ships (alive),
-   residuals 0.0 and 0.09 (alive), soft latch, late latch, no row with a formation count.
-
-2. **Kill and defeat types (lane G1, decisions recorded here).** The engine produces:
-   hard kill (kinetic, DE and HPM through `commitSalvo`, `attrition.ts:402-445`, `softShot`
-   from `isHardKill`); mission kill (a jammer with `jamBehavior` drift or return-home,
-   `channel 'kill'` with mass, `attrition.ts:355-362, 596, 629`); continue jam (`channel
-   'jam'`, `killDelta 0`); late effect (`lateEffect`, mass to `expectedLateKills`);
-   flight-capped effect (`flightCapped`); formation partial kill (`shipIdx`, per-ship
-   survival); leakage (`leakageCredit`, `trialTrackState.ts:159-160`); no path. Decisions,
-   chosen for realism and consistency; the user may override at kickoff:
-   - A mission-killed airframe (drift or return-home) still flies, so its sensor holds,
-     estimates and fused track continue to the path end; only a hard kill clips. `clipAtKill`
-     reads `DeathRecord.soft` and clips at the last hard-kill latch, or not at all for an
-     all-soft defeat. The timeline threat row keeps its mission-kill mark and the ghost
-     span style stays for hard kills only; the board keeps drawing a drifting airframe's
-     track. This reverses the Row F behavior for soft kills, which cut the holds of a
-     drifting airframe while the readout said its members "follow the planned path"
-     (`threatReadout.ts:443`, `trialTrackState.ts:155`).
-   - A late kill is a leaker with a post-arrival kill. `leaked` wins everywhere: Debrief
-     `ThreatPicture` (`threatAggregation.ts:390`, `ThreatPicture.tsx:108-117`) and NowScreen
-     (`:92-93`) stop reading `DEFEATED` for it; the pill reads `LEAKED`; the late kill
-     prints as a secondary word (`late kill T+m:ss`). The OutcomeScreen FX column title
-     "First defeat effect" (`OutcomeScreen.tsx:39`) and `TrialOutcomeSummary` "First
-     effect" (`DebriefRecord.tsx:284-287`) read the threat's `deadTimeOf` time, not the
-     first member removal, and exclude late kills; a late kill shows in its own word.
-   - A formation is a ghost once every member is removed, hard or soft (`trialTelemetryAt`
-     phase, `threatReadout.ts:205-207`); the pill reads `HARD KILL`, `MISSION KILL` or
-     `DEFEATED (MIXED)` (`:294-301`), and `states` keeps both `defeated (hard)` and
-     `defeated (mission)`.
-   - `flightCapped` gets a positive test and a timeline tooltip word (`capped`); no other
-     reader.
-   Tests through `clipAtKill`, `deadTimeOf`, `runTimelineOf` and `trialOutcomeRows` for
-   every type: hard kinetic, DE, mission (drift and return-home), continue jam, late hard,
-   late soft, flight-capped, a formation of 2 with one and with two removals, leakage, no
-   path. Fixtures with fixed ids exist: `mixedTrial()`
-   (`src/playback/__fixtures__/trialFixture.ts`, hard, soft, continue, miss, late hard,
-   late soft on `swarm` of 5 and `moving` of 3), `killedAtTen()` (`killClip.test.ts`),
-   `timelineTrial()` (`runTimeline.test.ts`), `layered-acoustic-merops.json` (nine
-   single-ship threats; with the physics switches kept it yields soft and late kills with
-   `killDelta 1`), `detection-outside-rings.json` (JIATF-401, interceptor only). No DE,
-   HPM or formation-kill fixture exists; build one with fixed ids.
-
-3. **Every milestone and record bounded at the kill (lane G2).** Extend `clipAtKill` to
-   null the per-threat times after the hard-kill latch: `classificationAtS` rungs
-   (`suspectedAtS`, `hostileAtS`, and any third rung), `stableTrackAtS`,
-   `declaredHostileAtS`; leave `firstDetectS`, `engageGateS`, `windowS`, `cpaS`,
-   `arrivalS` and `warningS` (planning values labelled planned; `warningS` is a
-   detection metric against the planned arrival and stays). With the clip in the engine
-   result, these readers become right without a bound of their own; check each and
-   remove a local bound only where the clip now covers it: `trialOutcomeRows.identify`
-   (`threatReadout.ts:73`), `threatPictureAt.hostileAtS` (`threatAggregation.ts:229, 358,
-   401`) and the Debrief `ThreatPicture` ID (`ThreatPicture.tsx:77-84`), NowScreen ID
-   (`NowScreen.tsx:84-103`), `liveStats.classifyTS` (`liveStats.ts:147, 242`), the
-   timeline C2 firm marks (`runTimeline.ts:441-450`) and the track row firm
-   (`runTimeline.ts:512`), `mcRun` `raidFirmTrack` (`mcRun.ts:776-800`, min
-   `stableTrackAtS`; this can move the JIATF and layered `firmTrackS` expects, measure
-   and report), the debrief export (`src/io/runResultGroups.ts:38-93`, which today
-   exports `hostileAtS`, `stableTrackAtS` and `trackQuality` unclipped beside clipped
-   observations). The survey found `stableTrackAtS` after the kill in 85 of 262 killed
-   threats on the layered fixture under free ROE with doctrine off, so the firm-mark rows
-   are live defects; it found no engine output with `hostileAtS` after the kill (a test
-   needs a hand-built assessment). Frames need no work: `FrameSnap` (`types.ts:711-717`)
-   holds `id`, `name`, `camera`, `simTimeS` and `basemap`; restore scrubs the clock and
-   the picture is recomputed from the clipped trial; Row F touched no file under
-   `src/state`. Record that in the handoff and move on.
-
-- Row G exclusions: no change to `lethalRadiusM`, `guidanceNoiseM`, `engageTimeS` or the
-  terminal-homing model; no change to `runTimeline.ts` censoring; no change to
-  `SHIP_DEAD_BELOW`; no expect changed without the user's authorization in the session;
-  no change to the attrition report's counts (`expectedKills`, `expectedLateKills`,
-  `expectedLeakers`).
-- Gates: `npm run check`, `npm run check:silent`, `npm run build && npm run
-  check:bundle`, `npm run test:e2e` with a dev server and `E2E_URL`, `npm run
-  schema:generate` then `schema:check`, every `*.parity.test.ts`, `docs:review` on every
-  touched reference, a browser check of the Outcome, Debrief and Now screens and the
-  board with a hard kill, a mission kill and a late kill under
-  `docs/field-te/evidence/engine-g-<date>/`, indexed in `docs/README.md`.
-- Stop condition: Row G on `engine/g` with the gates green, the parity numbers reported
-  (no expect changed without authorization), the evidence indexed, the review closed and
-  this file rewritten to record Row G and select nothing. Then stop and ask the user to
-  authorize the merge and the push.
+Nothing is selected. Row G (2026-09-28) is complete on `engine/g` (see Position) and waits
+for the user's authorization to merge it to `main` and push. After an authorized merge,
+the next agent records the merge here, deletes `engine/g` and waits for the user to select
+work. The Follow-ups are candidates, not rows.
 
 ## Landmines
 
@@ -746,22 +702,39 @@ no assessments (`trackState.ts:393-398`; `LiveScene.tsx:167`, `trialSweepAt.ts:1
 - `clipAtKill` (`killClip.ts`) is the only place the sweep products of a killed threat
   are cut. It is wired in `runTrial` and in `rangeLoopInto`; `endOfRunResponses`,
   `engagementPicture` and `raidSizeOf` read unclipped assessments and must keep reading
-  only the report, `status`, `firstDetectS` and `warningS`. The cut is the last sweep
-  sample at or before `expectedDeadTimes(report)`; interval ends snap to the sweep grid
-  from their start, so an off-grid kill never leaves an off-grid end. A killed threat
-  with nothing to clip and every unchanged list come back as the same object; a test may
-  rely on identity.
-- `expectedDeadTimes` lives in `src/playback/deadTimes.ts`; `threatAggregation.ts`
-  re-exports it. No module under `src/playback/` or `src/engine/` may import
-  `analysis/threatAggregation`, or the engine bundle loads the picture layer.
+  only the report, `status`, `firstDetectS` and `warningS`. Only a hard defeat clips, at
+  the hard cut `hardKillTimeOf(deadTimeOf(...))`: the last sweep sample at or before it.
+  An all-soft or mixed defeat keeps its picture to the path end. The clip also nulls the
+  classification rungs, `stableTrackAtS` and `declaredHostileAtS` after the cut. Interval
+  ends snap to the sweep grid from their start, so an off-grid kill never leaves an
+  off-grid end. A killed threat with nothing to clip and every unchanged list come back as
+  the same object (the `assessments` array is new once any threat has a hard cut); a test
+  may rely on per-object identity.
+- The one dead rule is `deadTimeOf` in `src/playback/deadTimes.ts`; `threatAggregation.ts`
+  re-exports `deadTimeOf` and `expectedDeadTimes`. No module under `src/playback/` or
+  `src/engine/` may import `analysis/threatAggregation`, or the engine bundle loads the
+  picture layer. `liveStats.ts` imports `deadTimeOf` through that re-export: a direct
+  `deadTimes` edge splits the store into a preloaded chunk and fails `check:bundle`. The
+  latches are cached in a `WeakMap` keyed on the report object; never mutate a report's
+  `events` or `threats` after a read.
+- Every reader reads the death (outcome: targeting, windows, defeated, FX, the phase) or
+  the hard cut `hardKillTimeOf` (picture: track quality, the ghost span, the drop
+  suppression, the clip). A new reader picks one; a mission-killed airframe keeps its
+  picture. A late death is a leaker: `effectMet` is false, the pill reads `LEAKED`, and FX
+  and First effect leave it out. The Now Run monitor `Defeated` row and the Outcome tile
+  count pre-arrival defeats over the modeled members (the attrition rows' `shipCount`).
 - `TrackLayer` hides an estimate older than `stepS` at the horizon. LiveScene passes
   `trial.manifest.sweepStepS`, the same step the clip used (the `runTrial` guard). A
   caller that omits `stepS` gets the old picture, the latest entry per track at any age.
-- `TRIAL_ENGINE_REVISION` is `rangeboard-trial-r4-v2`. A stored pre-clip trial fails the
-  manifest gate by design. Dated evidence files still carry `r4-v1`; leave them.
-- `threatPictureAt` and `trialTelemetryAt` bound the track quality and the classification
-  rung at the dead time (`tLive`). `Math.min(null, x)` is 0, so the bound guards a null
-  horizon; keep the guard.
+- `TRIAL_ENGINE_REVISION` is `rangeboard-trial-r4-v3`. A stored pre-Row G trial fails
+  the manifest gate by design. Dated evidence files still carry `r4-v1` and `r4-v2`; leave
+  them.
+- `threatPictureAt` and the threat readout bound track quality at the hard cut (`tLive`).
+  The classification rung has no local bound because the clip nulls a rung after the
+  cut, so every caller of `threatPictureAt` and `trialTelemetryAt` must pass clipped
+  assessments. `Math.min(null, x)` is 0, so the bound guards a null horizon; keep the
+  guard. `trackQualityAt` takes the sweep step (default 0.5 s); the export passes
+  `manifest.sweepStepS`.
 - Run timeline (see [timeline/SPEC.md](timeline/SPEC.md) section 5): keep
   `ENGSTRIP_OPEN_KEY` exported with the value `rangeboard.engstrip.open`; it holds the
   run timeline open flag, and `RUN_TIMELINE_HEIGHT_KEY` holds the height.
@@ -1025,6 +998,7 @@ no assessments (`trackState.ts:393-398`; `LiveScene.tsx:167`, `trialSweepAt.ts:1
 
 ## Evidence
 
+- [Row G kill types browser check, 2026-09-28](field-te/evidence/engine-g-2026-09-28/README.md)
 - [Row F engine lane browser check, 2026-09-28](field-te/evidence/engine-f-2026-09-28/README.md)
 - [Run timeline Row E lane E1 browser check, 2026-09-28](field-te/evidence/run-timeline-e1-2026-09-28/README.md)
 - [Chrome cleanup lane E2 browser check, 2026-09-28](field-te/evidence/chrome-e2-2026-09-28/README.md)
