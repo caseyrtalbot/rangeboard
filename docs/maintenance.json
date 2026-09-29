@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "50175b77bcf7f3c46433ff48bd4fa94cd5e2ef932dae80fc0bc79de4b37fe0be",
+      "sha256": "940beddfbee98c7c40a1c4895a556b707881b552eb73a9795b3018a363fa2520",
       "reviewedAt": "2026-09-29",
-      "note": "Workspace fact: Row G is complete on engine/g and waits for merge and push authorization; the handoff selects nothing"
+      "note": "Workspace fact: Row G is merged as 6733fc2 and the code-quality refactor as ccfdf44; the handoff selects nothing"
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "3bf83cf5a32875d1e729c8745fe74b2aa99b6ec22410e7e8d8a949295973a8a3",
+      "sha256": "c7cdb533774ff3653536708388fc1a8eb5d54225c81a284554e1bba607de6bdf",
       "reviewedAt": "2026-09-29",
-      "note": "AGENTS.md workspace fact changed for Row G complete; CLAUDE.md still points to AGENTS.md"
+      "note": "AGENTS.md workspace fact changed for the Row G and refactor merge; CLAUDE.md still points to AGENTS.md"
     },
     {
       "document": "CONTEXT.md",
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "68dadfa7c63cb45354cb944443fdd182cc31d50f6323a271f124446e94d81ee2",
+      "sha256": "fd88c2d058b378c7cfaa5754ea4cca0d783e40b3e1da7eb0e47e87840327b624",
       "reviewedAt": "2026-09-29",
-      "note": "Code-quality refactor review fix: the Row E Position record no longer says DebriefRecord re-exports EmptyRow and NoteInfo; the landmine for the deleted symbols stays removed."
+      "note": "Position and Tasking record Row G (6733fc2) and the code-quality refactor (ccfdf44) on main, engine/g and refactor/code-quality deleted, and the gate on ccfdf44; the Tasking selects nothing"
     },
     {
       "document": "docs/Plan.md",

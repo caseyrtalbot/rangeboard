@@ -17,17 +17,25 @@ is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a
 timeline polish and chrome cleanup, merged and pushed as `353caee`; Row F, two engine
 decisions the user made on 2026-09-28, merged and pushed as `6cb16f9`). Row G (the one
 dead rule, the kill types, and every milestone bounded at the kill), the user's decision of
-2026-09-28, is complete on `engine/g` and waits for the user's authorization to merge and
-push. The Tasking selects nothing. Execute one row per agent turn.
+2026-09-28, is merged to `main` as `6733fc2`. The code-quality refactor (no behavior
+change) follows it as `ccfdf44`. The Tasking selects nothing. Execute one row per agent
+turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `engine/g`. `engine/g` holds Row G
-  on top of `main` at `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes
-  `70512e0`, the evidence with the Now card fix `a570e23`, then this handoff. It is not
-  merged and not pushed. `main` and `origin/main` hold Row F (`6cb16f9`, `engine/f`
-  deleted) and the Row G selection `69db432`. `git branch` shows `engine/g` and `main`,
-  `git worktree list` shows the main checkout only and the stash list is empty.
+- Repository `~/Projects/rangeboard`, checked out on `main`. `main` holds Row G on top of
+  `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
+  evidence with the Now card fix `a570e23` and the Row G handoff `6733fc2`, fast-forwarded
+  from `engine/g`. The code-quality refactor `ccfdf44` follows, fast-forwarded from
+  `refactor/code-quality`, then this handoff update. Both branches are deleted. `git branch`
+  shows `main` only, `git worktree list` shows the main checkout only and the stash list
+  is empty.
+- Code-quality refactor (2026-09-29) `ccfdf44`, no behavior change: one store-free
+  scenario fill, `fillScenarioReport` (`src/io/scenarioFill.ts`), serves
+  `persist.fillScenario` and the engine `loadScenario`; dead code is deleted; duplicate
+  helpers are shared; pass-through re-exports are removed. Gate on `ccfdf44` (2026-09-29):
+  `npm run check` passes (225 files, 2,507 tests); `check:silent` passes; `check:bundle`
+  entry 367,733 against 380,000 and initial 386,505 against 400,000.
 - Row G (2026-09-28) on `engine/g`: lane G1 (`fable-medium`) and lane G2 (`opus-medium`)
   one after the other in the main checkout, the `fable-high` review (read-only), the
   orchestrator's review fixes, the `opus-medium` browser evidence and its Now rerun, the
@@ -685,10 +693,9 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-Nothing is selected. Row G (2026-09-28) is complete on `engine/g` (see Position) and waits
-for the user's authorization to merge it to `main` and push. After an authorized merge,
-the next agent records the merge here, deletes `engine/g` and waits for the user to select
-work. The Follow-ups are candidates, not rows.
+Nothing is selected. Row G (2026-09-28) and the code-quality refactor (2026-09-29) are on
+`main` (see Position). Wait for the user to select work. The Follow-ups are candidates,
+not rows.
 
 ## Landmines
 
