@@ -182,13 +182,6 @@ export interface McSummary {
   stopped: { rule: StopRule; at: number }
 }
 
-/** One run request to the worker: plain JSON, never a store reference. */
-interface McRunRequest {
-  type: 'run'
-  runId: string
-  scenario: Scenario
-}
-
 /** One sensitivity request to the worker, same shape, on its own worker instance. */
 export interface McSensitivityRequest {
   type: 'sensitivity'
@@ -238,12 +231,7 @@ export interface McSobolRequest {
 
 /** Every request the worker accepts; it dispatches on `type`. */
 export type McRequest =
-  | McRunRequest
-  | McSensitivityRequest
-  | McSweepRequest
-  | McMorrisRequest
-  | McSobolRequest
-  | McCancelRequest
+  McSensitivityRequest | McSweepRequest | McMorrisRequest | McSobolRequest | McCancelRequest
 
 /** Messages the worker posts back, tagged by the run they belong to. */
 export type McWorkerMessage =

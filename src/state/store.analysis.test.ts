@@ -12,7 +12,7 @@ import { emptyScenario } from '../model/seed'
 import { useStore } from './store'
 import { analysisBasisSignature } from './analysisBasis'
 import { currentSensitivity, currentSummary } from '../panels/analysis/mc'
-import type { McWorkerMessage, Stat } from '../playback/mcRun'
+import type { McRequest, McWorkerMessage, Stat } from '../playback/mcRun'
 import type { OptimizeEvaluation, OptimizeResult } from '../playback/optimizeTypes'
 import { runReplicates, runSensitivity } from '../playback/mcRun'
 import type { PoolProgress } from '../playback/mcTypes'
@@ -26,12 +26,16 @@ import probe from '../../docs/field-te/evidence/onboarding-2026-09-04/firing-sce
 /**
  * The replicate run goes through the pool, which merges range partials into
  * `done`. These tests drive the ownership rules with one controlled worker per
- * slot, so the pooled start is routed to the single-worker transport and the
- * pool callback is kept for the pool tests below.
+ * slot, so the pooled start is routed to a test-local single-worker slot and the
+ * pool callback is kept for the pool tests below. `workerPool.test.ts` covers
+ * the pool itself.
  */
 const pooled = vi.hoisted(() => ({ onPool: null as ((p: PoolProgress) => void) | null }))
 vi.mock('../playback/mcClient', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../playback/mcClient')>()
+  const { createWorkerSlot } = await import('../playback/workerSlot')
+  const slot = createWorkerSlot()
+  const types: readonly McWorkerMessage['type'][] = ['progress', 'done', 'error']
   return {
     ...actual,
     startPooledRun: vi.fn(
@@ -42,11 +46,28 @@ vi.mock('../playback/mcClient', async (importOriginal) => {
         onPool: (p: PoolProgress) => void,
       ) => {
         pooled.onPool = onPool
-        return actual.startMcRun(scenario, runId, deliver)
+        // `ControlledWorker` does not read the request; any run request serves.
+        const request: McRequest = { type: 'sensitivity', runId, scenario }
+        return slot.start<McWorkerMessage>({
+          spawn: () => new Worker('mc.worker.ts'),
+          request,
+          decode: (data) => {
+            if (data === null || typeof data !== 'object') return null
+            const m = data as { type?: unknown; runId?: unknown }
+            if (m.runId !== runId || !types.includes(m.type as McWorkerMessage['type'])) return null
+            return data as McWorkerMessage
+          },
+          errorOf: (message) => ({ type: 'error', runId, message }),
+          terminal: (m) => m.type !== 'progress',
+          onMessage: deliver,
+        })
       },
     ),
-    cancelPooledRun: vi.fn(() => actual.cancelMcRun()),
-    requestPooledCancel: vi.fn((runId: string) => actual.requestMcCancel(runId)),
+    cancelPooledRun: vi.fn(() => slot.dispose()),
+    requestPooledCancel: vi.fn((runId: string) => {
+      const cancel: McRequest = { type: 'cancel', runId }
+      return slot.cancel(cancel)
+    }),
   }
 })
 

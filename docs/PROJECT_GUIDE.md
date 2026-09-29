@@ -250,10 +250,10 @@ baseline as two lanes. The overrides autosave stays outside the override boundar
 2. Board actions create new scenario objects. Scenario identity also keys the deterministic
    [engagement picture](../src/analysis/impact.ts) cache. Detection/track assessment feeds
    engagement resolution; explicit forecasts consume those results.
-3. Monte Carlo and sensitivity use separate worker slots; a factor sweep runs on the
+3. Monte Carlo runs on the worker pool and sensitivity on its own worker slot; a factor sweep runs on the
    sensitivity slot, so it and a sensitivity run replace each other. Sampled Play
-   preparation has a third slot and retains one nominal/aleatory ledger, compact sampled
-   observations and the estimate fields the board reads, plus a frozen manifest. The placement optimizer has a fourth slot
+   preparation has a second slot and retains one nominal/aleatory ledger, compact sampled
+   observations and the estimate fields the board reads, plus a frozen manifest. The placement optimizer has a third slot
    ([optimize client](../src/playback/optimize/client.ts)); its result is view state that
    a scenario install cancels and clears. Results require the current slot, request, run and
    analysis basis. Trial selectors and adapters supply the canvas, telemetry, charts and

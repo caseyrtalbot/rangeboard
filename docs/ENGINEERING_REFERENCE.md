@@ -362,7 +362,8 @@ Breaking one of these breaks the app.
   the store (`overridesChanged`) that drops a ready trial when an override edit changes
   the values in force, and a re-recorded reason keeps it. Build provenance is
   explicitly null until a build revision is supplied; the version tag is not a commit hash.
-  `trialClient.ts` owns a third independent worker slot (over `workerSlot.ts`), released at
+  `trialClient.ts` owns its own worker slot (over `workerSlot.ts`), independent of the pool
+  and the sensitivity slot, released at
   completion, error, replacement or cancellation. Adapter and `acceptTrialMessage` require
   the current request token, run id, basis and matching manifest; terminal deliveries
   cannot revive a request. `acceptTrialMessage` validates the raw worker result through
@@ -423,15 +424,16 @@ Breaking one of these breaks the app.
   alone exceeds the budget is refused before its first replicate. A budget stop or a
   cancel keeps the replicates done and reports `stopped.rule` 'budget' or 'cancelled'; a
   sensitivity run drops the field in progress and carries `stopped` only when cut short.
-  The store actions `cancelMonteCarlo` and `cancelSensitivityRun` post the request through
-  `mcClient.ts` to the slot, which terminates a worker silent for `CANCEL_GRACE_MS`
-  (`workerSlot.ts`). Measurements:
+  The store action `cancelMonteCarlo` posts the request through `requestPooledCancel` to the
+  pool (`workerPool.ts`), and `cancelSensitivityRun` posts it through
+  `requestSensitivityCancel` to the sensitivity slot (`workerSlot.ts`); each terminates a
+  worker silent for `CANCEL_GRACE_MS`. Measurements:
   `docs/field-te/evidence/rf31-budget-2026-09-05/`.
 - **Real-mode statistics:** under `uncertainty: 'total'` and `sampling: 'lhs'`
   replicate i draws each uncertain field from stratum `perm(i)` of N strata, N the loop end
   (`stopCap` under a half-width target, else `replicates`; `sampling.ts`), so a replicate
-  is a pure function of (seed, i, N) and the pool, the Node runner and the single worker
-  agree. `sensitivityDepth: 'full'` runs Morris (`morris.ts`, ten trajectories over every
+  is a pure function of (seed, i, N) and the pool and the Node runner agree.
+  `sensitivityDepth: 'full'` runs Morris (`morris.ts`, ten trajectories over every
   uncertain field) then Saltelli Sobol (`sobol.ts`, base `sobolBase`, Jansen total index,
   bootstrap intervals at `confidence`) on the eight kept fields, each design row one
   aleatory replicate under common random numbers; 'quick' keeps the one-at-a-time loop.

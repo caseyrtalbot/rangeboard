@@ -17,12 +17,6 @@ import type { SlotProtocol } from './workerSlot'
 import { createWorkerSlot } from './workerSlot'
 
 /**
- * The replicate run. A replicate run is long, so a second start always
- * terminates the first: the store keeps at most one Monte Carlo run alive.
- */
-const run = createWorkerSlot()
-
-/**
  * The sensitivity run, on its own slot, so it runs beside a replicate run. A
  * sweep, a Morris screening and a Sobol run share this slot; any start on it
  * replaces what runs there.
@@ -30,8 +24,8 @@ const run = createWorkerSlot()
 const sens = createWorkerSlot()
 
 /**
- * The pooled replicate run. It posts the same `McWorkerMessage` protocol as
- * `startMcRun` and adds `PoolProgress`.
+ * The pooled replicate run, the only replicate transport. It posts the
+ * `McWorkerMessage` protocol and adds `PoolProgress`.
  */
 const pool = createWorkerPool()
 
@@ -58,40 +52,6 @@ function protocol<M extends McMessage>(
     terminal: (m) => !m.type.endsWith('progress'),
     onMessage,
   }
-}
-
-/**
- * Start a replicate run in the worker; a worker already running is terminated.
- * Returns false when the environment has no Worker (node and vitest), so the
- * caller can report the run as unavailable instead of hanging.
- */
-export function startMcRun(
-  scenario: Scenario,
-  runId: string,
-  onMessage: (m: McWorkerMessage) => void,
-): boolean {
-  return run.start(
-    protocol<McWorkerMessage>(
-      { type: 'run', runId, scenario },
-      ['progress', 'done', 'error'],
-      (message) => ({ type: 'error', runId, message }),
-      onMessage,
-    ),
-  )
-}
-
-/** Terminate the replicate worker if one is running. */
-export function cancelMcRun(): void {
-  run.dispose()
-}
-
-/**
- * Ask the replicate worker to stop at its next checkpoint; its `done` message
- * then carries the summary so far with `stopped.rule` 'cancelled'. A worker
- * silent past the grace period is terminated and the run reports an error.
- */
-export function requestMcCancel(runId: string): boolean {
-  return run.cancel({ type: 'cancel', runId })
 }
 
 /**
@@ -145,7 +105,10 @@ export function cancelSensitivity(): void {
   sens.dispose()
 }
 
-/** Ask the sensitivity worker to stop at its next checkpoint (see `requestMcCancel`). */
+/**
+ * Ask the sensitivity worker to stop at its next checkpoint, under the slot's
+ * cancel grace (`workerSlot.ts`).
+ */
 export function requestSensitivityCancel(runId: string): boolean {
   return sens.cancel({ type: 'cancel', runId })
 }
@@ -200,7 +163,7 @@ export function cancelSweep(): void {
   sens.dispose()
 }
 
-/** Ask the sweep worker to stop at its next cell (see `requestMcCancel`). */
+/** Ask the sweep worker to stop at its next cell (see `requestSensitivityCancel`). */
 export function requestSweepCancel(runId: string): boolean {
   return sens.cancel({ type: 'cancel', runId })
 }

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyScenario } from '../model/seed'
-import { cancelMcRun, cancelSensitivity, startMcRun, startSensitivity } from './mcClient'
+import { cancelSensitivity, startSensitivity } from './mcClient'
 import { cancelTrial, startTrial } from './trialClient'
 import type { TrialRequest } from './trialMessages'
 import { createTrialManifest } from './trialTypes'
@@ -47,7 +47,6 @@ describe('single-trial worker ownership', () => {
   })
   afterEach(() => {
     cancelTrial()
-    cancelMcRun()
     cancelSensitivity()
     vi.unstubAllGlobals()
   })
@@ -220,40 +219,33 @@ describe('single-trial worker ownership', () => {
     expect(next!.callback).toHaveBeenCalledOnce()
   })
 
-  it('keeps all three worker slots independent during replacement, completion and cancellation', () => {
+  it('keeps the trial and sensitivity slots independent during replacement, completion and cancellation', () => {
     const scenario = emptyScenario()
-    const mcCallback = vi.fn()
     const sensCallback = vi.fn()
-    startMcRun(scenario, 'run', mcCallback)
     startSensitivity(scenario, 'run', sensCallback)
-    const [mc, sens] = ControlledWorker.instances
+    const [sens] = ControlledWorker.instances
     const first = start()
     const second = start(request('attempt-2'))
     expect(first.worker.terminate).toHaveBeenCalledOnce()
-    expect(mc.terminate).not.toHaveBeenCalled()
     expect(sens.terminate).not.toHaveBeenCalled()
-    cancelMcRun()
-    startMcRun(scenario, 'run', mcCallback)
     cancelSensitivity()
+    expect(sens.terminate).toHaveBeenCalledOnce()
     startSensitivity(scenario, 'run', sensCallback)
     expect(second.worker.terminate).not.toHaveBeenCalled()
+    const freshSens = ControlledWorker.latest()
     second.worker.send(done(second.req))
-    const [freshMc, freshSens] = ControlledWorker.instances.slice(-2)
-    expect(freshMc.terminate).not.toHaveBeenCalled()
-    expect(freshSens.terminate).not.toHaveBeenCalled()
-    freshMc.send({ type: 'done', runId: 'run', summary: {} })
-    expect(mcCallback).toHaveBeenCalledOnce()
-    // A completed run releases its own worker; the other slots are untouched.
-    expect(freshMc.terminate).toHaveBeenCalledOnce()
+    expect(second.callback).toHaveBeenCalledOnce()
+    // A completed trial releases its own worker; the sensitivity slot is untouched.
+    expect(second.worker.terminate).toHaveBeenCalledOnce()
     expect(freshSens.terminate).not.toHaveBeenCalled()
     const third = start()
     cancelTrial()
     expect(third.worker.terminate).toHaveBeenCalledOnce()
-    expect(freshMc.terminate).toHaveBeenCalledOnce()
     expect(freshSens.terminate).not.toHaveBeenCalled()
     freshSens.send({ type: 'sens-done', runId: 'run', summary: {} })
     expect(sensCallback).toHaveBeenCalledOnce()
     expect(freshSens.terminate).toHaveBeenCalledOnce()
+    expect(third.worker.terminate).toHaveBeenCalledOnce()
   })
 
   it('does not accumulate live workers across 30 new preparations', () => {

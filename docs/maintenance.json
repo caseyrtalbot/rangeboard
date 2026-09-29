@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "14bf1b5e76eb75a645aea951bb8bbf62280c9ca331d314d19461e2d28563f1f9",
+      "sha256": "66bfdc3cf30297c3a73ba8ae0bb05fefb5a9ba454e0042c7f822482d8f1a621e",
       "reviewedAt": "2026-09-29",
-      "note": "Code-quality refactor review fixes: a type-only import in controls.tsx and two removed test assertions; no feature or source pointer changed."
+      "note": "Q1: Monte Carlo runs on the worker pool and sensitivity on its own slot; the trial and optimizer slot counts drop by one; no removed symbol is named"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "15d18be402a86aa41c541bbcfea6bf4a3e53eacea6cf9d41e7d52e951c9b8c3a",
+      "sha256": "6a54d2de18ffbe4440739df440307319d3b977eb08cfc160af652dbc4766bd26",
       "reviewedAt": "2026-09-29",
-      "note": "Code-quality refactor review fixes: controls.tsx imports useTrialResult as a type only; two vacuous class-name assertions removed from the DebriefRecord and Outcome tests; the reference text is unchanged and still accurate."
+      "note": "Q1: the single-worker Monte Carlo slot is removed; the cancel paragraph names requestPooledCancel to the pool and requestSensitivityCancel to the sensitivity slot; the parity sentence drops the single worker; trialClient owns its own slot beside the pool and the sensitivity slot"
     },
     {
       "document": "docs/VERIFICATION.md",

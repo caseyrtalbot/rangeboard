@@ -14,15 +14,12 @@ import type {
   McSensitivityMessage,
   McSobolMessage,
   McSweepMessage,
-  McWorkerMessage,
   StopRule,
 } from './mcRun'
 import {
-  assertSummaryFits,
   DEFAULT_BUDGET,
   finishSummary,
   overBudget,
-  replicateLoop,
   replicateRangeLoop,
   sensitivityLoop,
   sweepLoop,
@@ -46,7 +43,6 @@ let runId: string | null = null
 let cancelled = false
 
 type Posted =
-  | McWorkerMessage
   | McSensitivityMessage
   | McSweepMessage
   | McMorrisMessage
@@ -244,18 +240,5 @@ self.onmessage = async (e: MessageEvent<McRequest | PoolRequest | FinishSummaryR
       })
     }
     return
-  }
-  try {
-    assertSummaryFits(scenario, DEFAULT_BUDGET)
-    const summary = await drive(replicateLoop(scenario), 10, (cp) =>
-      post({ type: 'progress', runId: id, done: cp.done, total: cp.total }),
-    )
-    post({
-      type: 'done',
-      runId: id,
-      summary: { ...summary, elapsedMs: Math.round(performance.now() - t0) },
-    })
-  } catch (err) {
-    post({ type: 'error', runId: id, message: err instanceof Error ? err.message : String(err) })
   }
 }
