@@ -16,6 +16,7 @@ import { EmptyRow } from '../controls'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
+import { plural } from '../labels'
 import {
   bareSpans,
   DASH,
@@ -138,7 +139,6 @@ export function EffectorDetail({ entity }: { entity: Entity }) {
   const modelLine = model && spec ? `${model.name} · ${spec.effectorType}` : 'no model linked'
   const doctrineMeta = doctrine.enabled ? launchPolicyLabel(doctrine.launchPolicy) : 'doctrine off'
   const none = <EmptyRow>No salvo assigned.</EmptyRow>
-  const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
   const magazineSummary = rounds
     ? magazineSize != null
       ? `${attrition?.roundsRemaining ?? DASH} of ${magazineSize} rounds`

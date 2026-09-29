@@ -16,9 +16,18 @@ import {
   MOUNT_HEIGHT_M,
   physicsSwitches,
 } from '../model/types'
-import { Actions, EmptyState, ObjectHeader, PfTag, pfaText, Row, Section } from './inspector/kit'
+import {
+  Actions,
+  EmptyState,
+  ObjectHeader,
+  Options,
+  PfTag,
+  pfaText,
+  Row,
+  Section,
+} from './inspector/kit'
 import { SEED_FORMATIONS } from '../model/seed'
-import { ProvMark, Seg } from '../ui/kit'
+import { Field, ProvMark, Seg } from '../ui/kit'
 import type { ProvKind } from '../ui/kit'
 import { useStore } from '../state/store'
 import { modelFor } from '../model/scenario'
@@ -80,27 +89,6 @@ const BOUNDARY_NAME_SUGGESTIONS: Record<BoundaryType, string[]> = {
 
 /** Standard airspace band values from the seed library boundaries, feet. */
 const BOUNDARY_ALT_SUGGESTIONS_FT = [0, 100, 400, 1200, 3000, 5000]
-
-/** Editable property: label above its control, both on the panel padding line. */
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      {children}
-    </label>
-  )
-}
-
-/** Datalist options for a plain input. Suggestions only; typing stays free. */
-function Options({ id, values }: { id: string; values: Array<string | number> }) {
-  return (
-    <datalist id={id}>
-      {values.map((v) => (
-        <option key={v} value={v} />
-      ))}
-    </datalist>
-  )
-}
 
 /** Reference condition the placard detect range is quoted against, as a unit tag. */
 function referenceCondition(spec: SensorSpec): string | undefined {

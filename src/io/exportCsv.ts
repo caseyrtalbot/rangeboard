@@ -236,10 +236,3 @@ export function exportRunCsv(record: RunRecord, name: CsvTableName): boolean {
   downloadCsv(text, csvFileName(record, name))
   return true
 }
-
-/** Download every table the record can fill, one file each. */
-export function exportRunCsvTables(record: RunRecord): number {
-  const tables = runCsvTables(record)
-  for (const table of tables) downloadCsv(table.text, csvFileName(record, table.name))
-  return tables.length
-}

@@ -20,7 +20,7 @@
 export const JITTER = 1e-6
 
 /** A predictive sigma under this is treated as exact for the EI. */
-export const SIGMA_FLOOR = 1e-9
+const SIGMA_FLOOR = 1e-9
 
 /** One observation: the point, the objective mean and its standard error. */
 export interface Observation {

@@ -2,7 +2,7 @@ import type { Scenario } from '../model/types'
 import { effectiveDoctrine, entityActive } from '../model/types'
 import { defaultLinkLatencyS } from '../analysis/doctrineFactors'
 import { DT, stepCount } from './clock'
-import { predict, PROCESS_NOISE_Q, quality, ZERO_COVARIANCE } from './kalman'
+import { predict, PROCESS_NOISE_Q, quality, symmetrize, ZERO_COVARIANCE } from './kalman'
 import type { Covariance4, FusedTrack, TrackEstimate, TrackState } from './trackTypes'
 
 /**
@@ -108,18 +108,6 @@ function memberInformation(cov: Covariance4): number[] | null {
   const floored = [...cov]
   for (let i = 0; i < 4; i += 1) floored[4 * i + i] += COVARIANCE_FLOOR
   return invert4(floored)
-}
-
-/** Average each off-diagonal pair so rounding never breaks symmetry. */
-function symmetrize(p: number[]): number[] {
-  for (let i = 0; i < 4; i += 1) {
-    for (let j = i + 1; j < 4; j += 1) {
-      const mean = (p[4 * i + j] + p[4 * j + i]) / 2
-      p[4 * i + j] = mean
-      p[4 * j + i] = mean
-    }
-  }
-  return p
 }
 
 /** Fused track quality: the tracker's quality map on the fused covariance. */

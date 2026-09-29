@@ -44,13 +44,6 @@ export function selectExecutionHorizon(s: Store): ExecutionHorizon {
   return cachedHorizon
 }
 
-/**
- * The observed horizon floored to whole seconds, so text built from it changes
- * once per second rather than once per publication.
- */
-export const selectObservedThroughWholeS = (s: Store): number =>
-  Math.floor(s.playback.observedThroughS)
-
 const durationCache = new WeakMap<Scenario, number>()
 
 /** `scenarioDurationS`, cached by engine identity (`engineKeyOf`). */

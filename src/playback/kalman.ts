@@ -186,7 +186,7 @@ export function quality(cov: Covariance4): number {
 }
 
 /** Average each off-diagonal pair so rounding never breaks symmetry. */
-function symmetrize(p: number[]): Covariance4 {
+export function symmetrize(p: number[]): Covariance4 {
   for (let i = 0; i < 4; i += 1) {
     for (let j = i + 1; j < 4; j += 1) {
       const mean = (p[4 * i + j] + p[4 * j + i]) / 2

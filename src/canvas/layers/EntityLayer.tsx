@@ -5,6 +5,7 @@ import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Entity, SpecModel } from '../../model/types'
 import { entityActive } from '../../model/types'
+import { screenToWorld } from '../../state/camera'
 import { useStore } from '../../state/store'
 import { modelFor } from '../../model/scenario'
 import { bearingDeg } from '../../geometry/geo'
@@ -320,10 +321,7 @@ function HeadingHandle({
     if (!pointer) return null
     // Read, not subscribed: a pan or a zoom must not re-render every entity node.
     const camera = useStore.getState().camera
-    const world = {
-      x: (pointer.x - camera.x) / camera.scale,
-      y: (pointer.y - camera.y) / camera.scale,
-    }
+    const world = screenToWorld(camera, pointer)
     // Only a sensor or an effector carries a handle, and neither flies a path,
     // so the rest position is the glyph position.
     return Math.round(bearingDeg(entity.pos, world))
@@ -579,10 +577,7 @@ function handleContextMenu(e: KonvaEventObject<MouseEvent>, entity: Entity) {
   if (!pointer) return
   const store = useStore.getState()
   const camera = store.camera
-  const world = {
-    x: (pointer.x - camera.x) / camera.scale,
-    y: (pointer.y - camera.y) / camera.scale,
-  }
+  const world = screenToWorld(camera, pointer)
   store.select({ entityIds: [entity.id] })
   store.openContextMenu(pointer, world, entity.id)
 }

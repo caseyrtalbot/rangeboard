@@ -2183,8 +2183,7 @@ select.nu-unit {
 /* ---------- Segmented control ---------- */
 
 /* One ruled block: no inner padding, no fill, hairline dividers. The divider
-   is a drawn mark, not a border, because Tip wraps some segments in a
-   display:contents span and :first-child then stops being reliable. The
+   is a drawn mark, not a border, so it never depends on :first-child. The
    frame clips the first segment's mark, so no divider lands on the edge. */
 .seg {
   display: flex;
@@ -3425,20 +3424,7 @@ button.chip {
   margin-bottom: 0;
 }
 
-/* ---------- Tooltips & empty states ---------- */
-
-.tooltip {
-  position: fixed;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  font-size: var(--type-meta-size);
-  color: var(--text);
-  white-space: nowrap;
-  pointer-events: none;
-}
+/* ---------- Key caps & empty states ---------- */
 
 .kbd {
   display: inline-flex;
@@ -4549,68 +4535,6 @@ input[type='number'] {
   display: flex;
   flex-direction: column;
   gap: 7px;
-}
-
-.outcome-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
-}
-
-.outcome-metric {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 1px;
-  padding: var(--space-2) 0 var(--space-2);
-  border-top: 1px solid var(--border-subtle);
-}
-
-.outcome-metric > span,
-.outcome-metric small {
-  overflow: hidden;
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.outcome-metric > span {
-  font-weight: var(--type-label-weight);
-}
-
-/* The sub-line carries the rule behind the number ("not a defeat", "no
-   defended asset placed"). A third of a 268px panel cannot hold that on one
-   line, and a truncated caveat is worse than none, so it wraps. */
-.outcome-metric small {
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.25;
-}
-
-/* The expenditure tile lands alone on the last row of the three-column grid.
-   Spanning it keeps the three-channel breakdown on one readable line. */
-.outcome-metric.wide {
-  grid-column: 1 / -1;
-}
-
-.outcome-metric strong {
-  font-family: var(--font-mono);
-  font-size: var(--type-lead-size);
-  font-weight: var(--type-value-weight);
-  font-variant-numeric: tabular-nums;
-}
-
-.outcome-metric strong.good {
-  color: var(--good);
-}
-
-.outcome-metric strong.bad {
-  color: var(--danger);
-}
-
-.outcome-metric strong.warn {
-  color: var(--warn);
 }
 
 .capacity-list {
@@ -5870,8 +5794,6 @@ input[type='number'] {
   :is(
     .live-state,
     .ts,
-    .outcome-metric > span,
-    .outcome-metric small,
     .capacity-row > span,
     .gate-head strong,
     .gate-failures div,
@@ -5893,14 +5815,7 @@ input[type='number'] {
   text-overflow: clip;
 }
 
-.board-app .right-panel .outcome-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-
-.board-app
-  .right-panel
-  :is(.outcome-metric strong, .tv, .gate-count, .system-live-summary, .threat-data-count) {
+.board-app .right-panel :is(.tv, .gate-count, .system-live-summary, .threat-data-count) {
   min-width: 0;
   overflow-wrap: anywhere;
 }

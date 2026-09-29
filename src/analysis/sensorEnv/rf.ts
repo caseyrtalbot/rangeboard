@@ -55,7 +55,7 @@ export function rfOverlapBands(spec: SensorSpec, uas: UasSpec): JamBand[] {
 }
 
 /** True when the environment's urban override applies to this RF sensor. */
-export function urbanOverride(spec: SensorSpec, env: EnvironmentSpec): boolean {
+function urbanOverride(spec: SensorSpec, env: EnvironmentSpec): boolean {
   return (
     spec.sensorType === 'rf' &&
     spec.detectRangeM > 0 &&

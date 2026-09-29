@@ -1,7 +1,7 @@
 import type { TrialSelection } from '../../state/trialSelectors'
 import { trialResultOf } from '../../analysis/trialResult'
 import { formatTime } from '../../geometry/geo'
-import { useTrialResult } from '../../state/useTrialResult'
+import type { useTrialResult } from '../../state/useTrialResult'
 import { useMemo } from 'react'
 import type { Scenario } from '../../model/types'
 import type { EngagementPicture } from '../../analysis/impact'
@@ -49,8 +49,6 @@ export function useForecastEngagement(scenario: Scenario, runId: string): Engage
     return engagementPicture(scenario)
   }, [scenario, runId])
 }
-
-export { useTrialResult }
 
 /** Only a started, available trial can supply outcomes to a consumer. */
 export function trialViewOf(trial: ReturnType<typeof useTrialResult>) {

@@ -76,7 +76,7 @@ export function classOfModel(model: SpecModel): string | null {
   return null
 }
 
-export function isLogPrior(prior: FieldPrior): prior is LogPrior {
+function isLogPrior(prior: FieldPrior): prior is LogPrior {
   return 'logMedian' in prior
 }
 

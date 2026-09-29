@@ -108,3 +108,8 @@ export const TRIAL_KPI_LABELS: typeof KPI_LABELS = {
     hint: 'The first threat defeated before arrival: the effect that removed its last member.',
   },
 }
+
+/** "1 target", "2 targets": a count and its noun always agree. */
+export function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`
+}

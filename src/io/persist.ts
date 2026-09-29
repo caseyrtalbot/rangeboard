@@ -1,4 +1,4 @@
-import type { AarSummary, FireDoctrine, Scenario, SpecModel, UncertaintyMode } from '../model/types'
+import type { AarSummary, Scenario, SpecModel, UncertaintyMode } from '../model/types'
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attritionReport'
 import type { McSummary, SensitivitySummary } from '../playback/mcRun'
@@ -11,9 +11,7 @@ import { assessRunValidity } from '../analysis/runValidity'
 import type { UncertainField } from '../analysis/uncertainty'
 import { uncertainFields } from '../analysis/uncertainty'
 import { runSettings } from '../model/types'
-import { emptyScenario } from '../model/seed'
 import type { SeedAdoption } from '../model/libraryLifecycle'
-import { reconcileLibraryReport, reconcileSeeded } from '../model/libraryLifecycle'
 import type { Override } from '../model/libraryField'
 import { DATA_PACKAGE_VERSION } from '../model/libraryField'
 import { useStore } from '../state/store'
@@ -23,12 +21,8 @@ import type { RunResultGroups } from './runResultGroups'
 import type { TrialResultView } from '../analysis/trialResult'
 import type { AutosaveAdapter } from './autosave'
 import { SCENARIO_ERROR, createAutosave, pauseStatus, scenarioFailureStands } from './autosave'
-import { SCENARIO_LEGACY_FIELDS, fillContainers } from './compat'
-import {
-  parseLibraryData,
-  validateScenarioReferences,
-  validateScenarioShape,
-} from './validateScenario'
+import { fillScenarioReport } from './scenarioFill'
+import { parseLibraryData } from './validateScenario'
 import { MAX_IMAGE_CODE_UNITS, objectAt, validateImage } from './runtimeValidation'
 import {
   BASELINE_RECOVERY_PREFIX,
@@ -59,7 +53,7 @@ export interface LoadNotice {
 const SEED_ADOPTION = new WeakMap<SpecModel, SeedAdoption[]>()
 
 /** The seed adoptions of one model object from the load that built it, else []. */
-export function seedAdoptionOf(model: SpecModel): SeedAdoption[] {
+function seedAdoptionOf(model: SpecModel): SeedAdoption[] {
   return SEED_ADOPTION.get(model) ?? []
 }
 
@@ -76,60 +70,17 @@ export function loadNoticeFor(library: readonly SpecModel[]): LoadNotice | null 
 }
 
 /**
- * The one Board load boundary: validate the shape, then fill fields added after a
- * save was written. `SCENARIO_LEGACY_FIELDS` (`io/compat.ts`) names which fields a
- * legacy save may omit and what supplies each. Library and system presets are
- * reconciled against the seeds rather than taken whole, so a stale save never
- * shadows seed content added since. Exported for tests.
+ * The one Board load boundary: `fillScenarioReport` (`io/scenarioFill.ts`)
+ * validates and fills, then each installed model is stamped with the seed keys it
+ * adopted. Exported for tests.
  */
 export function fillScenario(parsed: unknown): Scenario {
-  validateScenarioShape(parsed)
-  const empty = emptyScenario()
-  const roe =
-    parsed.roe ??
-    (parsed.engageOn === 'detected'
-      ? 'free'
-      : parsed.engageOn === 'confirmed'
-        ? 'tight'
-        : empty.roe)
-  const deletedSeedIds = Array.isArray(parsed.deletedSeedIds) ? parsed.deletedSeedIds : []
-  const reconciled = reconcileLibraryReport(parsed.library, empty.library, deletedSeedIds)
-  for (const model of reconciled.library) {
-    const mine = reconciled.adopted.filter((a) => a.modelId === model.id)
+  const { scenario, adopted } = fillScenarioReport(parsed)
+  for (const model of scenario.library) {
+    const mine = adopted.filter((a) => a.modelId === model.id)
     if (mine.length > 0) SEED_ADOPTION.set(model, mine)
   }
-  const filled: Scenario = {
-    ...empty,
-    ...parsed,
-    ...fillContainers(parsed, empty, SCENARIO_LEGACY_FIELDS),
-    library: reconciled.library,
-    systemPresets: reconcileSeeded(parsed.systemPresets, empty.systemPresets, deletedSeedIds),
-    deletedSeedIds,
-    // emptyScenario() always sets doctrine; the Scenario type keeps it optional for old saves.
-    doctrine: fillDoctrine(empty.doctrine as FireDoctrine, parsed.doctrine),
-    roe,
-    // A save that predates a run field keeps the compatibility default.
-    runMode: parsed.runMode ?? 'deterministic',
-    uncertainty: parsed.uncertainty ?? 'aleatory',
-    targetHalfWidth: parsed.targetHalfWidth === undefined ? null : parsed.targetHalfWidth,
-  }
-  validateScenarioReferences(filled)
-  return filled
-}
-
-/**
- * Doctrine fill with one migration: a record with no launchPolicy predates
- * the doctrinal sequence and takes the default enabled flag; a record with a
- * launchPolicy keeps its enabled flag as written.
- */
-function fillDoctrine(empty: FireDoctrine, saved: Partial<FireDoctrine> | undefined): FireDoctrine {
-  if (!saved) return { ...empty }
-  const preLaunchPolicy = saved.launchPolicy == null
-  return {
-    ...empty,
-    ...saved,
-    enabled: preLaunchPolicy ? empty.enabled : (saved.enabled ?? empty.enabled),
-  }
+  return scenario
 }
 
 /**
@@ -143,6 +94,14 @@ export function parseAutosave(raw: string): Scenario {
 /** Pure scenario import boundary; no malformed payload reaches a store. */
 export function parseScenarioData(value: unknown): Scenario {
   return fillScenario(value)
+}
+
+/** A paused lane's save status, shared by every autosave adapter; another lane's error is kept. */
+export function reportPaused(message: string): void {
+  const store = useStore.getState()
+  const next = pauseStatus(store.save.error, message)
+  if (next === store.save.error) return
+  store.setSaveState(store.save.lastAutosaveAt, next)
 }
 
 /** The Board half of the autosave lifecycle in `io/autosave.ts`. Save status is epoch ms. */
@@ -164,12 +123,7 @@ export const scenarioAutosaveAdapter: AutosaveAdapter<Scenario> = {
     const error = store.save.error
     store.setSaveState(Date.now(), error?.startsWith(SCENARIO_ERROR) ? null : error)
   },
-  reportPaused: (message) => {
-    const store = useStore.getState()
-    const next = pauseStatus(store.save.error, message)
-    if (next === store.save.error) return
-    store.setSaveState(store.save.lastAutosaveAt, next)
-  },
+  reportPaused,
   reportWriteFailure: (error) => {
     const store = useStore.getState()
     const reason = error instanceof Error ? error.message || error.name : 'storage error'
@@ -270,12 +224,7 @@ export const baselineAutosaveAdapter: AutosaveAdapter<BaselineSave> = {
     if (store.save.error?.startsWith(BASELINE_ERROR))
       store.setSaveState(store.save.lastAutosaveAt, null)
   },
-  reportPaused: (message) => {
-    const store = useStore.getState()
-    const next = pauseStatus(store.save.error, message)
-    if (next === store.save.error) return
-    store.setSaveState(store.save.lastAutosaveAt, next)
-  },
+  reportPaused,
   reportWriteFailure: (error) => {
     baselineWriteFailed = true
     const store = useStore.getState()

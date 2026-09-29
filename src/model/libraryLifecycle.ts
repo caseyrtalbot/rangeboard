@@ -64,19 +64,8 @@ export interface LibraryReconcile {
  * Library reconcile: saved-id precedence, then provenance retention. A seed row
  * added after a save was written never reaches that save through the merge,
  * which keeps the saved copy whole, so the saved builtins adopt those rows here.
- */
-export function reconcileLibrary(
-  saved: SpecModel[] | undefined,
-  seeds: readonly SpecModel[],
-  deleted: readonly string[] = [],
-): SpecModel[] {
-  return reconcileLibraryReport(saved, seeds, deleted).library
-}
-
-/**
- * The reconcile with its adoption report: which builtin models took which
- * `ADOPTED_SEED_KEYS`, so a load can say what it filled. The library it returns
- * is the one `reconcileLibrary` gives for the same arguments.
+ * The report names which builtin models took which `ADOPTED_SEED_KEYS`, so a
+ * load can say what it filled.
  */
 export function reconcileLibraryReport(
   saved: SpecModel[] | undefined,
@@ -102,7 +91,7 @@ export function reconcileLibraryReport(
  * so an old save keeps its physics; this list is the one migration path a new
  * field takes into an existing board.
  */
-export const ADOPTED_SEED_KEYS: Partial<Record<SeedBlock, readonly string[] | '*'>> = {
+const ADOPTED_SEED_KEYS: Partial<Record<SeedBlock, readonly string[] | '*'>> = {
   // Tracker accuracy and the radar false-alarm rate.
   sensor: [
     'rangeAccuracyM',
@@ -166,7 +155,7 @@ export function adoptSeedFields(saved: SpecModel, seed: SpecModel): SpecModel {
  * it returns is the one `adoptSeedFields` gives for the same arguments; a model
  * that adopted nothing reports an empty list and the same object.
  */
-export function adoptSeedFieldsReport(
+function adoptSeedFieldsReport(
   saved: SpecModel,
   seed: SpecModel,
 ): { model: SpecModel; adopted: Array<{ block: SeedBlock; keys: string[] }> } {

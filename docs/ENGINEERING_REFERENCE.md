@@ -77,9 +77,11 @@ Breaking one of these breaks the app.
 - **Schema:** `Scenario.schemaVersion = 1`. `src/io/compat.ts` owns Board schema-1
   compatibility. `SCENARIO_LEGACY_FIELDS` declares every field a legacy save may omit
   together with the filler that supplies it. The validator's accepted omissions and
-  `fillScenario` both derive from that one declaration, so an accepted omission cannot
-  exist without a fill. `fillScenario`
-  (`src/io/persist.ts`) validates the shape, spreads a save over `emptyScenario()` and
+  the fill both derive from that one declaration, so an accepted omission cannot
+  exist without a fill. The fill has one copy, `fillScenarioReport`
+  (`src/io/scenarioFill.ts`, store-free); the Board's `fillScenario` (`src/io/persist.ts`)
+  and the headless `loadScenario` (`src/engine/loadScenario.ts`) both call it, and only
+  `fillScenario` stamps the seed adoptions. It validates the shape, spreads a save over `emptyScenario()` and
   deep-fills one level into every `container` entry
   (`environment`, `requirements`, `mcdaWeights`, `underlay`, `raid`).
   `library` and `systemPresets` reconcile against the current seeds; `doctrine` and `roe`
@@ -100,8 +102,8 @@ Breaking one of these breaks the app.
   (`src/io/runtimeValidation.ts`, `validateScenario.ts`) checks shapes, finite and ranged
   values, ids, references and engine representability before default filling. A flight
   path and a boundary each need at least two points. The shape check runs once, inside
-  `fillScenario`; `parseScenarioData` and `parseAutosave` both reach it through that one
-  call. Missing
+  `fillScenarioReport`; `parseScenarioData` and `parseAutosave` both reach it through
+  `fillScenario`. Missing
   legacy fields fill; a malformed present field fails with a path and reason. Unknown
   extension data survives. Reserved object-prototype ids are rejected. Triangular spread
   bounds are fractional offsets around zero. Base64 image syntax follows native decoder
@@ -493,7 +495,7 @@ src/state/     overrides.ts (useOverrides: the separate override store, activeOv
                OptimizeSpec), analysisBasis.ts
                (analysisBasisSignature), raidBuilder.ts (standoff search, buildRaid),
                labels.ts (run, connection, frame and card-version labels), camera.ts
-               (fitCameraTo), rings.ts (ring keys, pruneRingOverrides), selectors.ts,
+               (fitCameraTo, screenToWorld), rings.ts (ring keys, pruneRingOverrides), selectors.ts,
                trialSelectors.ts (retained run/basis selection and raw observation horizon),
                useTrialResult.ts (shared trial snapshot and series hook)
 src/playback/  clock.ts (DT = 0.5 s, stepIndex, stepCount, createSweepClock: the manifest
@@ -628,6 +630,8 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                save status), persist.ts (scenarioAutosaveAdapter and the Board autosave
                entry points, fillScenario, JSON and library
                import/export, runExportObject, downloadJson and pickJsonFile),
+               scenarioFill.ts (fillScenarioReport, the store-free scenario fill that
+               fillScenario and the engine's loadScenario share),
                runRecordPackage.ts (the saved-run package: runRecordExportObject,
                exportRunRecordPackage, parseRunRecordPackage, importRunRecordFile; a
                separate module so runStore and the parser stay out of the entry chunk),
@@ -635,7 +639,7 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                sensitivity CSV, RFC 4180, units in headers), exportSqlite.ts
                (exportRunsSqlite and downloadRunsSqlite over a dynamically imported
                sql.js), compat.ts (the Board schema-1
-               legacy-omission declaration the validator and fillScenario both read),
+               legacy-omission declaration the validator and fillScenarioReport both read),
                runResultGroups.ts (per-group basis/units
                and separately typed TrialResultGroup),
                runtimeSchema.ts + generateRuntimeSchema.mjs (domain shape descriptors),
@@ -643,7 +647,7 @@ src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns r
                viewState.ts (readSetting and writeSetting over every settings key),
                persistOverrides.ts (overridesAutosaveAdapter, restoreOverrides,
                startOverridesAutosave), runStore.ts (IndexedDB run history: saveRun,
-               listRuns, getRun, deleteRun, clearRuns, RUN_STORE_CAP_BYTES) with
+               listRuns, getRun, deleteRun, clearRuns; a RUN_STORE_CAP_BYTES cap) with
                fakeIndexedDb.ts for tests, storageKeys.ts, recovery.ts (rescue copy,
                lane block and resume once that copy verifies)
 src/main.tsx   restores the Board and overrides autosaves (restoreAutosave and
@@ -988,8 +992,8 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   (`panels/analysis/mc.ts`). Bands and tile subs read current `McSummary` through
   `currentSummary`, only when `mc.status` is `done` for the current run
   id; `currentSensitivity` and `currentSweep` apply the same rule to their slices. The compare
-  chart draws that summary's mean interval (`lo`/`hi`). `bandNote` still words the
-  replicate-quantile rule. Tile intervals describe means, not those quantiles. Values and intervals share
+  chart draws that summary's mean interval (`lo`/`hi`). Tile intervals describe means,
+  not the replicate quantiles. Values and intervals share
   quantity/denominator; Defeat converts ship count and interval to percent by the same raid
   size. Missing/zero-sample estimates remain unavailable and n=1 carries no claimed mean
   CI. Full-run conditional time means are labeled; quantities without a replicate
@@ -1023,7 +1027,7 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   triangular fraction bounds, beta counts); a `pf` row may carry a spread, and then it may
   also carry the url of the trial count behind that spread (the Stinger and Leonidas `pk`
   rows). `adoptSeedProvenance` (`src/model/libraryLifecycle.ts`), called from
-  `fillScenario`, copies seed rows onto a saved builtin only for fields the user has not
+  the scenario fill (`fillScenarioReport`), copies seed rows onto a saved builtin only for fields the user has not
   edited, and `updateModel` and `editModel` drop the row of a spec field they change; an
   edited field takes no row and stays PF. Both read one field comparison,
   `dropEditedProvenance` (`src/model/types.ts`), which treats a reordered object as
@@ -1190,8 +1194,7 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   Analyze too. DebriefRecord retains completion guards, current-result readers and exports
   behind Evidence products and exports `TrialEventLedger` and `TrialManifestRecord`, which
   the Outcome records rows open in place; the outcome tiles render once, on Outcome.
-  `EmptyRow` and `NoteInfo` live in `panels/analysis/controls.tsx` (DebriefRecord
-  re-exports them), so SystemStatus and the detail panes use them without importing
+  `EmptyRow` and `NoteInfo` live in `panels/analysis/controls.tsx`, so SystemStatus and the detail panes use them without importing
   DebriefRecord. `isTypingTarget` is one export in `ui/typingTarget.ts`, used by App's
   keyboard map and RunControl's run shortcut. `RightTab` is `'inspect' | 'analysis'`;
   `savedView` drops a saved `'library'` and App opens such a view on analysis.
@@ -1306,7 +1309,7 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   duplicate-and-edit) versus `Entity` (canvas instance referencing `specId`; survives model
   deletion with `specId` set to null). `src/model/libraryLifecycle.ts` is the one seed
   library lifecycle: `initialLibrary` and `initialSystemPresets` for a new scenario,
-  `reconcileLibrary` and `reconcileSeeded` for a save, `importModels` for a library import
+  `reconcileLibraryReport` and `reconcileSeeded` for a save, `importModels` for a library import
   and `resetBuiltin` for "Reset to seed". Saved-id precedence is one rule everywhere: the
   entry the user holds wins over the seed of the same id, and `Scenario.deletedSeedIds`
   keeps the reconcile from resurrecting a deleted builtin. A seed field change does not
@@ -1547,7 +1550,7 @@ Design system (`src/index.css`):
   `vertical={false}` only hides the lines, and the default generator still measures the
   label of every data row in the DOM, one forced layout per row.
 - **Inspector kit** `src/panels/inspector/kit.tsx`: `Section`, `Row`, `ObjectHeader`,
-  `EmptyState`, `Actions`, `PfTag`. A read-only property is a
+  `EmptyState`, `Actions`, `PfTag`, `Options` (datalist suggestions). A read-only property is a
   `Row`. The tab bar in `App.tsx` follows the ARIA tabs pattern; `.right-resizer` is a
   keyboard-operable separator.
 - Keyboard map (`App.tsx`): Cmd+Z / Shift+Cmd+Z, Delete, Esc (cancel draft, tool to

@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import type { AarSummary, Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attritionReport'
-import { deadTimeOf } from '../../playback/deadTimes'
 import type { McSummary, SensitivitySummary } from '../../playback/mcRun'
 import type { ThreatAssessment } from '../../playback/sim'
-import { trialResultOf, trialSnapshotAt, type TrialResultView } from '../../analysis/trialResult'
+import { trialResultOf, type TrialResultView } from '../../analysis/trialResult'
 import { selectTrialSelection } from '../../state/trialSelectors'
 import { selectRunComplete } from '../../state/selectors'
-import { useTrialResult, trialStateText, EmptyRow, NoteInfo } from './controls'
+import { trialStateText, EmptyRow, NoteInfo } from './controls'
+import { useTrialResult } from '../../state/useTrialResult'
 import { buildRequirementGateReport } from '../../analysis/requirements'
 import type { RunValidityAssessment } from '../../analysis/runValidity'
 import { assessRunValidity } from '../../analysis/runValidity'
@@ -25,8 +25,6 @@ import { ThreatPicture } from './ThreatPicture'
 import { currentSensitivity, currentSummary } from './mc'
 import { SEVERITY_PILL, VALIDITY_TEXT } from './runValidityText'
 import { State } from '../../ui/kit'
-
-export { EmptyRow, NoteInfo }
 
 function RunActions({
   scenario,
@@ -253,78 +251,6 @@ export function DebriefRecord({
         <RequirementGates report={requirements} />
       </details>
     </details>
-  )
-}
-
-/** Achieved observation for Analyze; the completed record supplies the final horizon. */
-export function TrialOutcomeSummary({
-  view,
-  horizonS,
-}: {
-  view: TrialResultView
-  horizonS: number
-}) {
-  const snapshot = trialSnapshotAt(view, horizonS)
-  const t = snapshot.observedThroughS
-  const counts = snapshot.counts
-  const first = (values: Array<number | null>) => {
-    const reached = values.filter((value): value is number => value != null && value <= t)
-    return reached.length ? formatTime(Math.min(...reached)) : '—'
-  }
-  const warnings = view.assessments.filter(
-    (a) => a.arrivalS != null && a.arrivalS <= t && a.warningS != null,
-  )
-  const metrics: Array<[string, string | number]> = [
-    ['Pre-arrival hard kills', counts.preArrivalHardKills],
-    ['Pre-arrival mission kills', counts.preArrivalSoftKills],
-    ['Late hard kills', counts.lateHardKills],
-    ['Late mission kills', counts.lateSoftKills],
-    ['Arrived undefeated', snapshot.reportedLeakers ?? '—'],
-    ['Active at horizon', counts.activeAtHorizon],
-    ['First detect', first(view.assessments.map((a) => a.firstDetectS))],
-    [
-      // The first threat death under the one dead rule; a late kill is no defeat.
-      'First effect',
-      first(
-        view.assessments.map((a) => {
-          const count = view.scenario.entities.find((e) => e.id === a.uasId)?.formation?.count
-          const death = deadTimeOf(view.attrition, a.uasId, count)
-          return death && !death.late ? death.tS : null
-        }),
-      ),
-    ],
-    [
-      'Min warning',
-      view.hasActiveAsset && warnings.length
-        ? formatTime(Math.min(...warnings.map((a) => a.warningS!)))
-        : '—',
-    ],
-  ]
-  return (
-    <div className="trial-summary">
-      <p className="analysis-scope">
-        Simulated trial · {snapshot.summary ? 'complete' : 'bounded observation'} · T+
-        {formatTime(t)} observed
-      </p>
-      <div className="outcome-grid">
-        {metrics.map(([label, value]) => (
-          <div className="outcome-metric" key={label}>
-            <span>{label}</span>
-            <strong>{value}</strong>
-            <small>
-              {value === '—'
-                ? 'unavailable or not reached'
-                : typeof value === 'number'
-                  ? 'trial count'
-                  : 'reached trial milestone'}
-            </small>
-          </div>
-        ))}
-      </div>
-      {!view.hasActiveAsset && (
-        <EmptyRow>No defended asset · arrival and warning measures unavailable.</EmptyRow>
-      )}
-    </div>
   )
 }
 

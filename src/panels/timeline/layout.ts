@@ -187,3 +187,10 @@ export function lineWindow(
   }
   return { first, last: a }
 }
+
+/** Classification ramp: one hue, stepped light to dark (unknown, suspected, hostile). */
+export const RAMP = {
+  unknown: 'color-mix(in srgb, var(--danger) 25%, var(--bg-panel))',
+  suspected: 'color-mix(in srgb, var(--danger) 55%, var(--bg-panel))',
+  hostile: 'var(--danger)',
+} as const

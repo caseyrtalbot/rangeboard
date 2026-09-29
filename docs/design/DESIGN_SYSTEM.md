@@ -227,8 +227,8 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   and lists them all. A chip that acts is a button with no frame; it keeps the chip look.
   A failed save stays visible as an alert at every width.
 - **Icons** (`src/ui/icons.tsx`). One inline SVG set for chrome glyphs: library,
-  commands, undo, redo, close, caret, settings, more, drawer, entities, layers, frames,
-  play, pause, reset, info, chevron down, chevron right, plus, search and pencil. Each is a 16 px viewBox with a 1.5 px round
+  commands, undo, redo, close, settings, more, drawer, entities, layers, frames,
+  play, pause, reset, info, chevron down, chevron right and pencil. Each is a 16 px viewBox with a 1.5 px round
   stroke in `currentColor` and `aria-hidden`; the button that holds it carries the label
   or title. A chrome control uses this set, not a text glyph.
 - **Inputs.** Sunken fill, rule strong border, text 2 border on hover, 2 px focus outline.

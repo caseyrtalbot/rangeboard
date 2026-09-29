@@ -53,10 +53,7 @@ export function familyFor(model: SpecModel, field: string): CalibrationFamily | 
 // ---------- proportion ----------
 
 /** Conjugate beta update: a + successes, b + failures. */
-export function proportionPosterior(
-  prior: BetaParams,
-  observed: ProportionObservation,
-): BetaParams {
+function proportionPosterior(prior: BetaParams, observed: ProportionObservation): BetaParams {
   return { a: prior.a + observed.successes, b: prior.b + observed.trials - observed.successes }
 }
 
@@ -142,7 +139,7 @@ export function spreadVariance(spread: Spread | null, nominal: number): number |
  * second at a zero value. Planning-factor grade; the observation dominates it
  * after a few times.
  */
-export const WEAK_TIME_CV = 0.5
+const WEAK_TIME_CV = 0.5
 
 /**
  * Default normal-gamma prior on a time field: mu0 the current value, kappa0 = 1

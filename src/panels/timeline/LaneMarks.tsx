@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from 'react'
 import type { RunTimelineMark, RunTimelineRow, RunTimelineSpan } from '../../analysis/runTimeline'
-import { assignLabelMinPx, durationText, LABEL_MIN_PX, spanBox } from './layout'
+import { assignLabelMinPx, durationText, LABEL_MIN_PX, RAMP, spanBox } from './layout'
 
 /**
  * Kind inks: the strip's tokens (the .runtl rules in index.css). In the dark
@@ -10,13 +10,6 @@ import { assignLabelMinPx, durationText, LABEL_MIN_PX, spanBox } from './layout'
 const SENSOR_INK = 'var(--runtl-sensor)'
 const C2_INK = 'var(--runtl-c2)'
 const EFFECTOR_INK = 'var(--runtl-effector)'
-
-/** Classification ramp: one hue, stepped light to dark (unknown, suspected, hostile). */
-const RAMP = {
-  unknown: 'color-mix(in srgb, var(--danger) 25%, var(--bg-panel))',
-  suspected: 'color-mix(in srgb, var(--danger) 55%, var(--bg-panel))',
-  hostile: 'var(--danger)',
-} as const
 
 /** Hold chunk opacity: track quality 0..1 maps to 0.3..1, as the mockup shades it. */
 function holdOpacity(level: RunTimelineSpan['level']): number | undefined {

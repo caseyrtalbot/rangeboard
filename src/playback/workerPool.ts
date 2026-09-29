@@ -36,10 +36,10 @@ import type { ExecutionBudget, McPartial, McSummary, McWorkerMessage, StopRule }
 import { assertSummaryFits, DEFAULT_BUDGET, halfWidthOnEnds } from './mcRun'
 import type { PoolProgress } from './mcTypes'
 import { prefixLeakerEnds, prefixLength } from './mergeSummaries'
-import { CANCEL_GRACE_MS } from './workerSlot'
+import { CANCEL_GRACE_MS, messageOf } from './workerSlot'
 
 /** Most workers the pool builds, whatever the machine reports. */
-export const MAX_POOL_WORKERS = 8
+const MAX_POOL_WORKERS = 8
 
 /** Longest chunk under a half-width target: the rule is checked at every merge. */
 const TARGET_CHUNK_MAX = 25
@@ -200,10 +200,6 @@ interface Run {
   grace: ReturnType<typeof setTimeout> | null
   /** True once the run posted its terminal message or was released. */
   over: boolean
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
 }
 
 /** Read one raw message of this run; anything else is dropped. */

@@ -3,7 +3,7 @@ import type { RunTimelineModel } from '../../analysis/runTimeline'
 import type { TimeViewport } from '../../charts/timeViewport'
 import { selectSimTimeS } from '../../state/selectors'
 import { useStore } from '../../state/store'
-import { playheadX } from './layout'
+import { playheadX, RAMP } from './layout'
 import { panGlide, shownViewport, useShownT0 } from './useShownT0'
 import { overviewGrab, overviewPlace, overviewTime } from './viewportActions'
 
@@ -12,12 +12,6 @@ const OVER_H = 22
 const BAND_H = 2
 const BAND_TOP = 3
 const BAND_SPAN = 17
-
-const RAMP = {
-  unknown: 'color-mix(in srgb, var(--danger) 25%, var(--bg-panel))',
-  suspected: 'color-mix(in srgb, var(--danger) 55%, var(--bg-panel))',
-  hostile: 'var(--danger)',
-} as const
 
 /**
  * The whole run at fixed scale: each threat's classification ramp, the hard-kill

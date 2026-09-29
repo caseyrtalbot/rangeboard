@@ -10,8 +10,7 @@ import type {
   Stat,
   SweepSummary,
 } from '../../playback/mcRun'
-import { BAND80_MIN_N, BAND95_MIN_N, STAT_CONF } from '../../playback/mcRun'
-import { DT } from '../../playback/clock'
+import { STAT_CONF } from '../../playback/mcRun'
 import type { RunRecord } from '../../model/runRecord'
 import { createRunManifest } from '../../model/runRecord'
 import type { Scenario } from '../../model/types'
@@ -125,18 +124,4 @@ export function timeStatSub(stat: Stat, quantity: StatQuantity): string {
       ? `mean CI unavailable under ${TIME_CI_MIN_N} defined`
       : `±${h < 10 ? h.toFixed(1) : Math.round(h)} s (${Math.round(stat.conf * 100)}% mean CI)`
   return `MC conditional mean · ${QUANTITY_BASIS[quantity]} · ${interval} · n=${stat.n} · ${defined}`
-}
-
-/** The replicate-quantile bands `replicates` supports, for a chart note. */
-export function bandNote(replicates: number): string {
-  if (replicates >= BAND95_MIN_N) return '80/95% replicate quantiles'
-  if (replicates >= BAND80_MIN_N) {
-    return `80% replicate quantiles · 95% band unavailable under ${BAND95_MIN_N} replicates`
-  }
-  return `bands unavailable under ${BAND80_MIN_N} replicates`
-}
-
-/** The band index of sim time t, clamped to the band length. */
-export function bandStep(t: number, length: number): number {
-  return Math.max(0, Math.min(length - 1, Math.round(t / DT)))
 }

@@ -2,7 +2,8 @@ import type { Override, OverrideSet } from '../model/libraryField'
 import { useOverrides } from '../state/overrides'
 import { useStore } from '../state/store'
 import type { AutosaveAdapter } from './autosave'
-import { createAutosave, pauseStatus, scenarioFailureStands } from './autosave'
+import { createAutosave, scenarioFailureStands } from './autosave'
+import { reportPaused } from './persist'
 import { invalid, objectAt } from './runtimeValidation'
 import { OVERRIDES_KEY, OVERRIDES_RECOVERY_PREFIX } from './storageKeys'
 
@@ -73,12 +74,7 @@ export const overridesAutosaveAdapter: AutosaveAdapter<OverrideSet> = {
     if (store.save.error?.startsWith(OVERRIDES_ERROR))
       store.setSaveState(store.save.lastAutosaveAt, null)
   },
-  reportPaused: (message) => {
-    const store = useStore.getState()
-    const next = pauseStatus(store.save.error, message)
-    if (next === store.save.error) return
-    store.setSaveState(store.save.lastAutosaveAt, next)
-  },
+  reportPaused,
   reportWriteFailure: (error) => {
     overridesWriteFailed = true
     const store = useStore.getState()

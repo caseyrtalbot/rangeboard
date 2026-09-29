@@ -12,7 +12,7 @@ const STORE_NAME = 'runs'
 const SAVED_AT = 'savedAt'
 
 /** 64 MiB of record JSON. A save evicts the oldest records until the new one fits. */
-export const RUN_STORE_CAP_BYTES = 64 * 1024 * 1024
+const RUN_STORE_CAP_BYTES = 64 * 1024 * 1024
 
 /** What the history list reads without loading a whole record. */
 export interface RunSummary {

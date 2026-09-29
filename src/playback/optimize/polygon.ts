@@ -20,7 +20,7 @@ export interface BoundingBox {
  * points give a shoelace sum of exactly 0 or of rounding noise (about 1e-8 m^2
  * at 10 km coordinates); no range region an entity can stand in is under 1 m^2.
  */
-export const MIN_AREA_M2 = 1
+const MIN_AREA_M2 = 1
 
 /**
  * Smallest polygon area as a fraction of its bounding box. The sampler draws

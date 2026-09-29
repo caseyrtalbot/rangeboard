@@ -7,11 +7,11 @@ import { gunzipSync, gzipSync } from 'node:zlib'
 export const LARGE_CAPTURE_BYTES = 524288
 
 /** Compact and deterministic. Keys keep insertion order, which callers already rely on. */
-export function serializeCapture(value) {
+function serializeCapture(value) {
   return JSON.stringify(value)
 }
 
-export function sha256(bytes) {
+function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex')
 }
 

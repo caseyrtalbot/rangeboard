@@ -25,9 +25,9 @@
         "src/model/types.ts",
         "src/playback/trackTypes.ts"
       ],
-      "sha256": "e84d86e87d2bea33886881b3fe60325684cdd0f8a2283a337aac38e9288f4901",
-      "reviewedAt": "2026-09-26",
-      "note": "Run timeline glossary created from the 2026-09-26 grilling session; terms checked against EntityKind, EffectorSpec.effectorType and FusedTrack."
+      "sha256": "731cf0f1a4ec70fb7c0ba329ca4e7ff4892bb839eb12f85f8940c9783bd19213",
+      "reviewedAt": "2026-09-29",
+      "note": "Code-quality refactor: model/types.ts only un-exports DEFAULT_SWEEP_STEP_S; glossary terms and EntityKind, EffectorSpec and FusedTrack unchanged."
     },
     {
       "document": "README.md",
@@ -37,9 +37,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "d547f26cd214d5f0bfe9863f87a97e99fb4dd4535af30bd423fa40b9ef78ebe2",
-      "reviewedAt": "2026-09-28",
-      "note": "Row E review fixes (2c6c4e8): App drops the dead library compare after savedView; the text still matches the source."
+      "sha256": "cbbe0c5d07af85f1f8f79c759d2af0142ec994b8b0e20720453abc064eb0a0d9",
+      "reviewedAt": "2026-09-29",
+      "note": "Code-quality refactor: App.tsx PanelTabs renders its one contextual tab directly and uses screenToWorld; setup and feature introduction unchanged."
     },
     {
       "document": "docs/README.md",
@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "612814ad8fc9e4dfd8555cd8cc4fb98ac9e9eeac87304546ac379a6222fcd554",
+      "sha256": "14bf1b5e76eb75a645aea951bb8bbf62280c9ca331d314d19461e2d28563f1f9",
       "reviewedAt": "2026-09-29",
-      "note": "Row G evidence fix: the Now Run monitor Defeated row counts pre-arrival defeats over the modeled members, as the Outcome tile does"
+      "note": "Code-quality refactor review fixes: a type-only import in controls.tsx and two removed test assertions; no feature or source pointer changed."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "9960157472c7e8d253d4101c9a4e23b39c211272b6ca485df60d905ceec3b632",
+      "sha256": "15d18be402a86aa41c541bbcfea6bf4a3e53eacea6cf9d41e7d52e951c9b8c3a",
       "reviewedAt": "2026-09-29",
-      "note": "Row G evidence fix: the Now Run monitor Defeated row counts pre-arrival defeats over the modeled members, as the Outcome tile does"
+      "note": "Code-quality refactor review fixes: controls.tsx imports useTrialResult as a type only; two vacuous class-name assertions removed from the DebriefRecord and Outcome tests; the reference text is unchanged and still accurate."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "98ffe2497e32ba53822fdba838b9fceaaf80170b8f13e80ce1b4e1b5d097cd0b",
+      "sha256": "5d89ea00b4b1302c260c62b87a2226138f2eb3544c2fce8e9e31279f5ec956ef",
       "reviewedAt": "2026-09-29",
-      "note": "Row G review fixes: trial card FX and the threat detail FX mark read the pre-arrival death; the export bounds trackQuality on the manifest sweep step with lastTrackS on the grid; trackQualityAt takes the step"
+      "note": "Code-quality refactor: io/scenarioFill.ts added behind fillScenario and loadScenario with unchanged behavior; capture.mjs keeps its exported API minus two internal helpers; commands, tests and parity procedures unchanged."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -98,16 +98,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "9bdb18fc88a4cab9e174b2b78fac83b797d7c18ac327063c4ddad7842db30cbd",
-      "reviewedAt": "2026-09-28",
-      "note": "Row F review fixes"
+      "sha256": "e775d304300df046e7f959eb89bf4203a9ec40ef28ed716f911e3a674af480ed",
+      "reviewedAt": "2026-09-29",
+      "note": "Code-quality refactor: scripts/evidence/capture.mjs un-exports serializeCapture and sha256 only; captures still go through capture.mjs; workflow steps unchanged."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "27f54261f0d0c55a0fd5eb14720058451edafe33e26e0ff72ebef0fc3325e021",
+      "sha256": "68dadfa7c63cb45354cb944443fdd182cc31d50f6323a271f124446e94d81ee2",
       "reviewedAt": "2026-09-29",
-      "note": "Row G complete on engine/g (003faed, d302ab9, 70512e0, a570e23): Position records the rule, the readers, parity, the gate, the evidence, the review and the departures; Follow-ups From Row G; the Tasking selects nothing and waits for merge and push authorization; landmines for the hard-only clip, the dead rule and its re-export edge, the two reader times, r4-v3 and the step-aware trackQualityAt"
+      "note": "Code-quality refactor review fix: the Row E Position record no longer says DebriefRecord re-exports EmptyRow and NoteInfo; the landmine for the deleted symbols stays removed."
     },
     {
       "document": "docs/Plan.md",
@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "bad591d99c220af582d3ca359505b949e15762f7e1946af29448571c64443cc3",
+      "sha256": "624b59d340b0f2907bdc49d354d31c96f4b18b72613ee9f5aed4ffecf2d6c4cc",
       "reviewedAt": "2026-09-29",
-      "note": "Row G lane G2: every reader derives from deadTimeOf (death for outcomes, hardKillTimeOf for the picture); clipAtKill nulls milestones after the hard cut; late kill reads LEAKED with its own word; FX and First effect read the death; capped tooltip word; export bounds trackQuality at the hard cut"
+      "note": "Code-quality refactor: RunTimeline.tsx imports useTrialResult directly; RAMP moved to timeline/layout.ts with identical values; the spec's behavior and ownership table still hold."
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "dd626177275d4b06e821e916eb7344a31785005cab2feca1ca22606fa633243a",
+      "sha256": "33380be458da5ba5bf64ebd5d38e2e2dade7615d6b8dbd8b09e41ff1b4d6ef6a",
       "reviewedAt": "2026-09-29",
-      "note": "Row G lane G2: every reader derives from deadTimeOf (death for outcomes, hardKillTimeOf for the picture); clipAtKill nulls milestones after the hard cut; late kill reads LEAKED with its own word; FX and First effect read the death; capped tooltip word; export bounds trackQuality at the hard cut"
+      "note": "Code-quality refactor: icon list drops the removed caret, plus and search glyphs; TimeSeries.tsx re-export block and svgMarkup export removed without visual change; Field and footprint style unchanged."
     }
   ],
   "historical": [

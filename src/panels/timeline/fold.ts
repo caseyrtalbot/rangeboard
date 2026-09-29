@@ -14,7 +14,7 @@ export type ThreatEntry =
   | { t: 'fold'; key: string; base: string; label: string; rows: RunTimelineRow[] }
 
 /** The fold key for a label base; the store's `openFolds` holds these. */
-export function foldKey(base: string): string {
+function foldKey(base: string): string {
   return `fold:${base}`
 }
 

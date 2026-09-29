@@ -6,7 +6,6 @@ import {
   adoptSeedProvenance,
   importModels,
   initialLibrary,
-  reconcileLibrary,
   reconcileLibraryReport,
   reconcileSeeded,
   resetBuiltin,
@@ -72,14 +71,14 @@ function otherSeed(): SpecModel {
 describe('reconcile', () => {
   it('keeps the saved copy of a seed id and appends a seed the save never held', () => {
     const saved: SpecModel = { ...seedModel(), name: 'Renamed by the user' }
-    const out = reconcileLibrary([saved], [seedModel(), otherSeed()])
+    const out = reconcileLibraryReport([saved], [seedModel(), otherSeed()]).library
     expect(out.map((m) => m.id)).toEqual(['lib-x', 'lib-y'])
     expect(out[0].name).toBe('Renamed by the user')
   })
 
   it('leaves a deleted seed id out and keeps a custom model', () => {
     const mine: SpecModel = { ...otherSeed(), id: 'lib-custom-1', builtin: false }
-    const out = reconcileLibrary([mine], [seedModel(), otherSeed()], ['lib-x'])
+    const out = reconcileLibraryReport([mine], [seedModel(), otherSeed()], ['lib-x']).library
     expect(out.map((m) => m.id)).toEqual(['lib-custom-1', 'lib-y'])
   })
 
@@ -90,7 +89,7 @@ describe('reconcile', () => {
 
   it('adopts a seed row the saved builtin predates', () => {
     const saved: SpecModel = { ...seedModel(), provenance: undefined }
-    const out = reconcileLibrary([saved], [seedModel()])
+    const out = reconcileLibraryReport([saved], [seedModel()]).library
     expect(out[0].provenance?.map((r) => r.field)).toEqual(['updateRateS', 'detectRangeM'])
   })
 })
@@ -149,10 +148,10 @@ describe('adoptSeedFields', () => {
     expect(adoptSeedFields(held, seed).effector?.flyoutSpeedMps).toBeNull()
   })
 
-  it('reaches the save through reconcileLibrary', () => {
+  it('reaches the save through reconcileLibraryReport', () => {
     const seed = seedModel()
     seed.sensor = { ...seed.sensor!, falseAlarmRatePerScan: 1 }
-    const out = reconcileLibrary([seedModel()], [seed])
+    const out = reconcileLibraryReport([seedModel()], [seed]).library
     expect(out[0].sensor?.falseAlarmRatePerScan).toBe(1)
   })
 })
@@ -177,8 +176,6 @@ describe('reconcileLibraryReport', () => {
       },
       { modelId: 'lib-y', block: 'sensor', keys: ['rangeAccuracyM'] },
     ])
-    // The library is the one reconcileLibrary gives for the same arguments.
-    expect(report.library).toEqual(reconcileLibrary([seedModel(), otherSeed()], [seed, other]))
   })
 
   it('reports nothing for a save that already holds the keys, and for a custom model', () => {

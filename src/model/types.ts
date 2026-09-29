@@ -1092,7 +1092,7 @@ export const DEFAULT_REPLICATES = 100
  * The sweep, the fusion ring and the false-track scan clock read it; a
  * per-effector fine step is requested on the SweepClock instead.
  */
-export const DEFAULT_SWEEP_STEP_S = DT
+const DEFAULT_SWEEP_STEP_S = DT
 
 /**
  * How the parameter draws of a replicate run are laid out across replicates:

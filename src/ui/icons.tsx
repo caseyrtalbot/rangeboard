@@ -44,11 +44,6 @@ export function IconClose() {
   return <Stroke d="M4 4l8 8M12 4l-8 8" />
 }
 
-/** A disclosure caret, pointing down. Rotate it for a closed state. */
-export function IconCaret() {
-  return <Stroke d="M4.5 6.25 8 9.75l3.5-3.5" />
-}
-
 /** Settings: a gear, a hub ring and eight teeth. */
 export function IconSettings() {
   return (
@@ -109,16 +104,6 @@ export function IconChevronDown() {
 /** A chevron pointing right: a closed section or a drill-in row. */
 export function IconChevronRight() {
   return <Stroke d="M6 4l4 4-4 4" />
-}
-
-/** Add: a plus sign. */
-export function IconPlus() {
-  return <Stroke d="M8 3v10M3 8h10" />
-}
-
-/** Search: a lens and a handle. */
-export function IconSearch() {
-  return <Stroke d="M7 2.75a4.25 4.25 0 1 1 0 8.5 4.25 4.25 0 0 1 0-8.5zM10.25 10.25 13.5 13.5" />
 }
 
 /** Edit: a pencil on a slant. */

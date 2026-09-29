@@ -150,7 +150,6 @@ describe('OutcomeScreen', () => {
     )
     expect(html.match(/class="tiles c3"/g)).toHaveLength(1)
     expect(html.match(/class="tile"/g)).toHaveLength(6)
-    expect(html).not.toContain('outcome-grid')
     expect(tile(html, 'Defeated before arrival')).toContain('>3<small>/9 members</small>')
     expect(tile(html, 'Arrived undefeated')).toContain('>3<small>/9 members</small>')
     expect(tile(html, 'Late kills')).toContain('>2<small>/9 members</small>')

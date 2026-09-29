@@ -26,7 +26,8 @@ import {
 } from '../model/signatureFactors'
 import { useStore } from '../state/store'
 import { formatDistance } from '../geometry/geo'
-import { EmptyState, ObjectHeader, PfTag, Section } from './inspector/kit'
+import { EmptyState, ObjectHeader, Options, PfTag, Section } from './inspector/kit'
+import { Field } from '../ui/kit'
 import { spreadText } from './inspector/spreadText'
 
 const SENSOR_ROLES: SensorRole[] = [
@@ -75,17 +76,6 @@ function autoDesignator(model: SpecModel, library: SpecModel[]): string {
   return candidate
 }
 
-/** Datalist options for a plain input. Suggestions only; typing stays free. */
-function Options({ id, values }: { id: string; values: Array<string | number> }) {
-  return (
-    <datalist id={id}>
-      {values.map((v) => (
-        <option key={v} value={v} />
-      ))}
-    </datalist>
-  )
-}
-
 /** Sector select over the standard widths, with the stored value kept and a custom escape. */
 function SectorField({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   const [custom, setCustom] = useState(false)
@@ -121,15 +111,6 @@ function SectorField({ value, onChange }: { value: number; onChange: (n: number)
         />
       )}
     </Field>
-  )
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      {children}
-    </label>
   )
 }
 

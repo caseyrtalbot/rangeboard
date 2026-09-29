@@ -47,39 +47,21 @@ export {
 export {
   NIGHT_VISIBLE_FACTOR,
   VISIBILITY_BY_PRECIP,
-  eoBandFor,
-  eoExtinctionPerM,
-  eoIfovRadFor,
-  eoIrDriRangesM,
   eoIrNeedsCue,
-  eoIrRangeM,
-  eoPixelsOnTarget,
   eoRangeFactor,
-  eoTransmissionAt,
-  JOHNSON_CYCLES,
-  KOSCHMIEDER_CONTRAST,
   refSpanMFor,
-  THERMAL_EXTINCTION_RATIO,
   visibilityMFor,
 } from './sensorEnv/eoir'
-export type { EoirDriRanges, EoirRangeOptions, EoirTask } from './sensorEnv/eoir'
 export { ALPHA_DB_PER_KM, acousticSolveM, refAcousticDbFor } from './sensorEnv/acoustic'
 export {
-  effectiveRfRangeM,
   jammable,
-  legacyRfRangeM,
   rfCanHear,
   rfDetectable,
-  rfDirectionFindingAccuracyDeg,
-  rfLinkBudgetModeled,
   rfLinkModelApplies,
   rfMeasurementAccuracy,
-  rfOverlapBands,
   rfSensorBands,
   rfSnrOverReference,
-  rfUrbanMarginDb,
 } from './sensorEnv/rf'
-export type { RfMeasurementAccuracy } from './sensorEnv/rf'
 
 export type SensorHoldGate = 'ok' | 'needs-cue' | 'rf-silent' | 'rf-band' | 'no-range'
 

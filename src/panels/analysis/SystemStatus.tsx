@@ -15,6 +15,7 @@ import type {
   TrialSystemTelemetry,
 } from '../../analysis/systemTelemetry'
 import { formatTime } from '../../geometry/geo'
+import { plural } from './labels'
 
 type Component = ComponentTelemetry | TrialComponentTelemetry
 type Group = SystemTelemetryGroup | TrialSystemTelemetry
@@ -37,11 +38,6 @@ export function stateTone(state: ComponentTelemetry['state']): StateTone {
   if (state === 'tracking' || state === 'routing' || state === 'target') return 'nominal'
   if (state === 'cooldown') return 'warning'
   return 'inactive'
-}
-
-/** "1 target", "2 targets": a count and its noun always agree. */
-function plural(count: number, noun: string): string {
-  return `${count} ${noun}${count === 1 ? '' : 's'}`
 }
 
 function componentDetail(component: Component): string {

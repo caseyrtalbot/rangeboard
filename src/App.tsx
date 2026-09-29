@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { screenToWorld } from './state/camera'
 import { RUN_TIMELINE_MAX_FRACTION, RUN_TIMELINE_MIN_H, useStore } from './state/store'
 import type { BoardPhase } from './state/runState'
 import { selectBoardPhase } from './state/selectors'
@@ -346,8 +347,6 @@ const PanelTabs = memo(function PanelTabs({
   onNavigate: (screen: AnalysisScreen) => void
   setRightTab: (t: RightTab) => void
 }) {
-  const contextual: { id: RightTab; label: string; dot: boolean }[] = []
-  if (objectLabel != null) contextual.push({ id: 'inspect', label: objectLabel, dot: true })
   return (
     <div className="insp-tabs" role="tablist" aria-label="Board panel views" onKeyDown={moveTab}>
       <AnalysisNavigation
@@ -356,23 +355,22 @@ const PanelTabs = memo(function PanelTabs({
         selected={activeTab === 'analysis'}
         onNavigate={onNavigate}
       />
-      {contextual.map((t) => (
+      {objectLabel != null && (
         <button
-          key={t.id}
-          id={`insp-tab-${t.id}`}
+          id="insp-tab-inspect"
           type="button"
           role="tab"
-          aria-selected={activeTab === t.id}
+          aria-selected={activeTab === 'inspect'}
           aria-controls="insp-tabpanel"
-          tabIndex={activeTab === t.id ? 0 : -1}
-          className={`insp-tab-context${activeTab === t.id ? ' active' : ''}`}
-          title={t.label}
-          onClick={() => setRightTab(t.id)}
+          tabIndex={activeTab === 'inspect' ? 0 : -1}
+          className={`insp-tab-context${activeTab === 'inspect' ? ' active' : ''}`}
+          title={objectLabel}
+          onClick={() => setRightTab('inspect')}
         >
-          {t.dot && <span className="insp-tab-dot" aria-hidden="true" />}
-          <span className="insp-tab-label">{t.label}</span>
+          <span className="insp-tab-dot" aria-hidden="true" />
+          <span className="insp-tab-label">{objectLabel}</span>
         </button>
-      ))}
+      )}
     </div>
   )
 })
@@ -775,10 +773,7 @@ export default function App() {
     if (!rect) return
     const camera = useStore.getState().camera
     const screen = { x: rect.width / 2, y: rect.height / 2 }
-    placeAt(
-      { x: (screen.x - camera.x) / camera.scale, y: (screen.y - camera.y) / camera.scale },
-      screen,
-    )
+    placeAt(screenToWorld(camera, screen), screen)
   }
 
   // The bubble-phase keyboard map has no deps, so it reads shell state through this ref.

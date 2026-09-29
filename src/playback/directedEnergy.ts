@@ -30,19 +30,19 @@ import { visibilityMFor } from '../analysis/sensorEnv/eoir'
  */
 
 /** Ytterbium-fibre wavelength used by the optical model, meters. */
-export const LASER_WAVELENGTH_M = 1_070e-9
+const LASER_WAVELENGTH_M = 1_070e-9
 
 /** Airy first-zero radius coefficient for a circular aperture. */
-export const AIRY_RADIUS_FACTOR = 1.22
+const AIRY_RADIUS_FACTOR = 1.22
 
 /** Koschmieder extinction constant for meteorological visibility. */
-export const KOSCHMIEDER_EXTINCTION = 3.912
+const KOSCHMIEDER_EXTINCTION = 3.912
 
 /** One conservative beam-director settle after assignment, seconds. */
-export const DE_SETTLE_S = 1
+const DE_SETTLE_S = 1
 
 /** Iron Beam public calibration point. */
-export const IRON_BEAM_CALIBRATION = Object.freeze({
+const IRON_BEAM_CALIBRATION = Object.freeze({
   outputPowerKw: 100,
   beamQualityM2: 2,
   apertureM: 0.3,
@@ -150,18 +150,6 @@ export function opticalTransmissionAt(env: EnvironmentSpec, rangeM: number): num
   return Math.exp(-(KOSCHMIEDER_EXTINCTION * rangeM) / visibilityMFor(env))
 }
 
-/** Irradiance at the target, watts per square meter, or null on incomplete inputs. */
-export function opticalIrradianceWm2(
-  spec: EffectorSpec,
-  rangeM: number,
-  env: EnvironmentSpec,
-): number | null {
-  if (!opticalDwellModelApplies(spec)) return null
-  const spot = opticalSpotAt(rangeM, spec.apertureM!, spec.beamQualityM2!, spec.jitterUrad!)
-  if (!spot || !(spot.areaM2 > 0)) return null
-  return (spec.outputPowerKw! * 1_000 * opticalTransmissionAt(env, rangeM)) / spot.areaM2
-}
-
 /** Group 1 quadcopter fluence derived once from the Iron Beam calibration point. */
 export const GROUP1_QUAD_FLUENCE_J_M2 = (() => {
   const c = IRON_BEAM_CALIBRATION
@@ -203,9 +191,10 @@ export function opticalDwellAt(
 ): OpticalDwell | null {
   if (!opticalDwellModelApplies(spec)) return null
   const spot = opticalSpotAt(rangeM, spec.apertureM!, spec.beamQualityM2!, spec.jitterUrad!)
-  const irradianceWm2 = opticalIrradianceWm2(spec, rangeM, env)
-  if (!spot || irradianceWm2 == null || !(irradianceWm2 > 0)) return null
+  if (!spot || !(spot.areaM2 > 0)) return null
   const transmission = opticalTransmissionAt(env, rangeM)
+  const irradianceWm2 = (spec.outputPowerKw! * 1_000 * transmission) / spot.areaM2
+  if (!(irradianceWm2 > 0)) return null
   const fluenceThreshold = sampledFluenceThresholdJm2(fluenceThresholdJm2(uas), spread, uRaw)
   const dwellS = fluenceThreshold / irradianceWm2
   return {

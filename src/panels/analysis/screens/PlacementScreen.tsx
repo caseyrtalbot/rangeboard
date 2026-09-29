@@ -20,7 +20,7 @@ import { KIND_NAMES } from '../../../state/labels'
 import { useStore } from '../../../state/store'
 import { Field, State } from '../../../ui/kit'
 import { IconInfo } from '../../../ui/icons'
-import { EmptyRow } from '../DebriefRecord'
+import { EmptyRow } from '../controls'
 import { formatCount } from '../mc'
 
 const wrap = {

@@ -44,7 +44,7 @@ function bakePaint(source: Element, clone: Element): void {
 }
 
 /** A rendered SVG as standalone markup at an explicit pixel size. */
-export function svgMarkup(svg: SVGSVGElement, width: number, height: number): string {
+function svgMarkup(svg: SVGSVGElement, width: number, height: number): string {
   const clone = svg.cloneNode(true) as SVGSVGElement
   bakePaint(svg, clone)
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')

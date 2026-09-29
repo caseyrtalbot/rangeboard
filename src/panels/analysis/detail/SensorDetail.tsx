@@ -25,6 +25,7 @@ import { EmptyRow } from '../controls'
 import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow, LegendEntry } from './detailRows'
+import { plural } from '../labels'
 import {
   bareSpans,
   DASH,
@@ -181,7 +182,6 @@ export function SensorDetail({ entity }: { entity: Entity }) {
       : { label: 'Elevation', value: 'not recorded' },
   ]
 
-  const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
   const loadSummary = `${loadNow != null ? loadNow : DASH} held · hold ${
     component && !untouched ? formatTime(component.holdSeconds) : DASH
   }`

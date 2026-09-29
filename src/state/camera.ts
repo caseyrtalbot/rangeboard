@@ -5,6 +5,11 @@ import type { Camera } from './store'
 const FIT_MIN_SCALE = 0.0005
 const FIT_MAX_SCALE = 20
 
+/** The world point under a screen point, given the camera transform. */
+export function screenToWorld(camera: Camera, point: Vec2): Vec2 {
+  return { x: (point.x - camera.x) / camera.scale, y: (point.y - camera.y) / camera.scale }
+}
+
 /**
  * Camera that fits the given world points in the canvas viewport. Reads the
  * mounted canvas host for its pixel size and falls back to a representative

@@ -7,7 +7,7 @@ import {
   seriesRange,
   seriesRows,
   snapScrubS,
-} from './TimeSeries'
+} from './seriesData'
 // The drawn chart, not the lazy shell: renderToStaticMarkup resolves no Suspense boundary.
 import { SeriesTip, TimeSeries } from './TimeSeriesChart'
 import type { Series } from './types'

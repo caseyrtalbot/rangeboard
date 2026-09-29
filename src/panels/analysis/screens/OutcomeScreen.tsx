@@ -15,8 +15,6 @@ import { selectTrialHorizon } from '../../../state/trialSelectors'
 import { State } from '../../../ui/kit'
 import {
   DebriefRecord,
-  EmptyRow,
-  NoteInfo,
   RunValidityBanner,
   TrialEventLedger,
   TrialManifestRecord,
@@ -27,7 +25,8 @@ import { runRecordOf } from '../mc'
 import { SystemStatus } from '../SystemStatus'
 import { lateKillText, trialOutcomeRows } from '../threatReadout'
 import type { TrialOutcomeRow } from '../threatReadout'
-import { trialStateText, useTrialResult } from '../controls'
+import { EmptyRow, NoteInfo, trialStateText } from '../controls'
+import { useTrialResult } from '../../../state/useTrialResult'
 import { VALIDITY_TEXT } from '../runValidityText'
 
 type SortColumn = 'track' | 'detect' | 'identify' | 'engage' | 'effect' | 'salvos' | 'result'

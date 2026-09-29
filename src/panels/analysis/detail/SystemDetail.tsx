@@ -13,6 +13,7 @@ import { DetailHeader } from './DetailHeader'
 import { DetailSection } from './DetailSection'
 import type { DetailRow } from './detailRows'
 import { DASH, DetailTable, Rows, useComponentAt, useDetailRun } from './detailRows'
+import { plural } from '../labels'
 
 /** Entity display name, else its id. */
 function entityName(scenario: Scenario, id: string): string {
@@ -107,7 +108,6 @@ export function SystemDetail({ entity }: { entity: Entity }) {
     : { word: 'OFFLINE', tone: 'critical' as const }
   const modelLine = model ? `${model.name} · command and control` : 'no model linked'
 
-  const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
   const coverageSummary = untouched
     ? DASH
     : uncovered.length > 0

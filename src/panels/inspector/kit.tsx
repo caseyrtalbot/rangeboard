@@ -162,3 +162,14 @@ export function EmptyState({ title, body }: { title: string; body: string }) {
 export function Actions({ children }: { children: ReactNode }) {
   return <div className="inspector-actions">{children}</div>
 }
+
+/** Datalist options for a plain input. Suggestions only; typing stays free. */
+export function Options({ id, values }: { id: string; values: Array<string | number> }) {
+  return (
+    <datalist id={id}>
+      {values.map((v) => (
+        <option key={v} value={v} />
+      ))}
+    </datalist>
+  )
+}

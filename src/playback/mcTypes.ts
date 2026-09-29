@@ -6,8 +6,6 @@
 import type { UncertainField } from '../analysis/parameterBasis'
 import type { SensitivityResponse, StopRule } from './mcRun'
 
-export type { McSettings, SamplingMode, SensitivityDepth } from '../model/types'
-
 /**
  * Progress of a pooled replicate run. `done` is the contiguous prefix of
  * landed replicates, the rows the summary keeps. `perWorkerDone` counts

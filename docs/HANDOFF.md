@@ -206,7 +206,7 @@ push. The Tasking selects nothing. Execute one row per agent turn.
   lines on the four detail panes, the three SystemStatus placeholders, the LiveStrip and
   NowScreen placeholders are `EmptyRow`s and the end-of-run telemetry sentence is a
   `NoteInfo` (i); `EmptyRow` and `NoteInfo` live in `panels/analysis/controls.tsx` (a new
-  module failed the entry-graph freeze) and DebriefRecord re-exports them.
+  module failed the entry-graph freeze).
 - Row E gate on `polish/e` before the review fixes (2026-09-28, run by the orchestrator):
   `npm run check` passes (223 files, 2,441 tests, docs and evidence gates green, entry
   graph 105 of 207, build green); `check:silent` passes; `check:bundle` entry 367,219
@@ -621,7 +621,6 @@ From the Row D review:
   findings; decide whether the verdict needs a home on the Fragility screen.
 - The objective direction (`Maximize leakers.`) lives only in the Placement response (i).
 - `.chip.det` has one user (`SystemsTab`).
-- `TrialOutcomeSummary` (`DebriefRecord.tsx`) has no production caller.
 - The Palette editor view follows `selection.libraryId`: selecting a board entity returns
   the list without dismissing the request. Escape closes the whole drawer from the editor.
 - Opening the editor still clears the entity selection, as the old callers did; the right
@@ -848,8 +847,8 @@ work. The Follow-ups are candidates, not rows.
   keydown returns early on Meta or Ctrl plus Enter so the boundary and path tools do not
   finish on the run shortcut. Do not add a second listener in App.
 - `EmptyRow` and `NoteInfo` live in `panels/analysis/controls.tsx` (already in the
-  entry-graph freeze; a new module under `panels/analysis/` fails `check:entry-graph`)
-  and `DebriefRecord.tsx` re-exports them. `.empty-row` and `.line-error` sit beside the
+  entry-graph freeze; a new module under `panels/analysis/` fails `check:entry-graph`);
+  import them from there. `.empty-row` and `.line-error` sit beside the
   Field rules; a first-run instruction or a status sentence is an `EmptyRow`, an error
   line is for invalid input only, a method note goes behind the (i). Tests match
   `<p class="empty-row">` and the sentence, never the `State` internals.
@@ -992,9 +991,6 @@ work. The Follow-ups are candidates, not rows.
   `language`.
 - `storageManagement.ts` derives live keys from every non-prefix export of
   `storageKeys.ts`. Un-exporting `ANALYSIS_KEY` changes that readout.
-- `selectObservedThroughWholeS`, `bandNote`, `bandStep`, and `TrialOutcomeSummary`
-  have no importer. Un-exporting one of them fails `noUnusedLocals`. Do not delete
-  them and do not add a suppression to keep them private.
 
 ## Evidence
 

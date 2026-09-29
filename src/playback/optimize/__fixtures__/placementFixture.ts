@@ -94,7 +94,7 @@ function ent(
 }
 
 /** The fixture scenario with the effector at `effectorPos`. */
-export function placementScenario(effectorPos: Vec2 = START_POS): Scenario {
+function placementScenario(effectorPos: Vec2 = START_POS): Scenario {
   const s = emptyScenario()
   s.runMode = 'deterministic'
   s.uncertainty = 'aleatory'

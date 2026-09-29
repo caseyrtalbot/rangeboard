@@ -9,7 +9,7 @@ import type { Covariance4, TrackEstimate } from '../trackTypes'
  */
 
 /** Step interval of the fixture history, seconds. */
-export const FIXTURE_STEP_S = 0.5
+const FIXTURE_STEP_S = 0.5
 
 /** Position 1 sigma along x per step, meters: fall, grow on coast, fall again. */
 const SIGMA_X_M = [60, 45, 33, 24, 30, 38, 47, 58, 40, 28]
@@ -55,7 +55,7 @@ export function estimateTrackHistory(): TrackEstimate[] {
 }
 
 /** A truth path track: no error, so the layer draws its marker and no ellipse. */
-export function truthTrackHistory(): TrackEstimate[] {
+function truthTrackHistory(): TrackEstimate[] {
   return [0, 9].map((step) => ({
     id: 'trk-truth',
     uasId: 'threat-1',
@@ -71,7 +71,7 @@ export function truthTrackHistory(): TrackEstimate[] {
 }
 
 /** A false alarm track: no target, drawn in the muted ink. */
-export function falseTrackHistory(): TrackEstimate[] {
+function falseTrackHistory(): TrackEstimate[] {
   return [
     {
       id: 'trk-false',

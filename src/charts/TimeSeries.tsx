@@ -1,15 +1,6 @@
 import { Suspense, lazy } from 'react'
 import type { ChartMark, Series } from './types'
 
-export {
-  formatYTick,
-  lastFiniteIndex,
-  seriesDurationS,
-  seriesRange,
-  seriesRows,
-  snapScrubS,
-} from './seriesData'
-
 export interface TimeSeriesProps {
   /** Latest visible outcome time; undefined or Infinity shows the full run. */
   horizonS?: number

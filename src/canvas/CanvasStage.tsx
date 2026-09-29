@@ -4,6 +4,7 @@ import { registerStage } from './frameCapture'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vec2 } from '../model/types'
+import { screenToWorld } from '../state/camera'
 import { useStore } from '../state/store'
 import { selectDurationS } from '../state/selectors'
 import { displayTimeNow } from './frameClock'
@@ -144,7 +145,7 @@ export const CanvasStage = memo(function CanvasStage({
   const horizonS = trial && started ? horizon : null
 
   function toWorld(pointer: Vec2): Vec2 {
-    return { x: (pointer.x - camera.x) / camera.scale, y: (pointer.y - camera.y) / camera.scale }
+    return screenToWorld(camera, pointer)
   }
 
   function pointerWorld(): Vec2 | null {

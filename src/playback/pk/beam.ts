@@ -1,6 +1,6 @@
 import type { EffectorSpec, EnvironmentSpec, Spread, UasSpec } from '../../model/types'
-import { opticalDwellAt, opticalDwellModelApplies } from '../directedEnergy'
-import { assessHpmField, hpmFieldModelApplies, hpmRechargeS } from '../hpm'
+import { opticalDwellAt } from '../directedEnergy'
+import { assessHpmField, hpmRechargeS } from '../hpm'
 import { kineticPk } from './kinetic'
 
 /**
@@ -105,5 +105,3 @@ export function beamEffect(
   }
   return legacy()
 }
-
-export { opticalDwellModelApplies, hpmFieldModelApplies }

@@ -5,7 +5,8 @@ import { readTokens, resolveColor } from '../../../charts/tokens'
 import { scenarioDurationS } from '../../../model/scenario'
 import { trialSweepAt } from '../../../playback/trialSweepAt'
 import { useStore } from '../../../state/store'
-import { useTrialResult, trialViewOf, trialStateText } from '../controls'
+import { trialViewOf, trialStateText } from '../controls'
+import { useTrialResult } from '../../../state/useTrialResult'
 
 /** The value glyph for a missing or undefined figure. */
 export const DASH = '—'

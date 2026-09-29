@@ -55,10 +55,10 @@ import type { BoundingBox } from './polygon'
 export const SEED_EVALUATIONS = 8
 
 /** Keyed uniform candidates scored per EI proposal. */
-export const CANDIDATE_CLOUD = 512
+const CANDIDATE_CLOUD = 512
 
 /** Length scale as a fraction of the bounding-box diagonal. */
-export const LENGTH_SCALE_FRACTION = 0.25
+const LENGTH_SCALE_FRACTION = 0.25
 
 /** Candidates reported, best first. */
 export const CANDIDATE_CAP = 5
@@ -104,7 +104,7 @@ export function responseKind(response: SensitivityResponse, raidSize: number): S
  * The raid's ships, as `finishSummary` counts them: the attrition report's ship
  * count per threat with a path, 1 for a threat the report omits.
  */
-export function raidSizeOf(scenario: Scenario): number {
+function raidSizeOf(scenario: Scenario): number {
   const assessments = assessAllThreats(scenario)
   const report = resolveEngagements(scenario, assessments)
   let ships = 0
@@ -116,7 +116,7 @@ export function raidSizeOf(scenario: Scenario): number {
 }
 
 /** The scenario with the movable entities at `laydown`; every other entity stays put. */
-export function placeLaydown(scenario: Scenario, laydown: Laydown): Scenario {
+function placeLaydown(scenario: Scenario, laydown: Laydown): Scenario {
   return {
     ...scenario,
     entities: scenario.entities.map((e) => {
@@ -232,7 +232,7 @@ function uniformInside(
  * coordinate and a keyed jitter inside each stratum. A row outside the
  * polygon is replaced by a keyed uniform laydown inside it.
  */
-export function seedDesign(
+function seedDesign(
   seed: number,
   firstIndex: number,
   n: number,
@@ -270,7 +270,7 @@ export function seedDesign(
  * expected improvement under a process fitted to `observations`; the
  * cloud's first point with nothing finite to fit.
  */
-export function proposeByEi(
+function proposeByEi(
   observations: Observation[],
   seed: number,
   index: number,

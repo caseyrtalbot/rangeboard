@@ -12,6 +12,7 @@
 import type { RunRecord } from '../model/runRecord'
 import type { SensitivitySummary, Stat } from '../playback/mcRun'
 import type { SobolResult } from '../playback/mcTypes'
+import { safeName } from './persist'
 
 /** What a bound column may hold; a non-finite number becomes NULL. */
 type SqlValue = number | string | null
@@ -412,11 +413,6 @@ export async function exportRunsSqlite(
   } finally {
     db.close()
   }
-}
-
-/** The filename rule `persist.ts` applies to an exported scenario. */
-function safeName(name: string): string {
-  return name.replace(/[^a-z0-9-_]+/gi, '_').toLowerCase() || 'scenario'
 }
 
 /** Save the export as `<scenario>.runs.sqlite`, in the style of `downloadJson`. */

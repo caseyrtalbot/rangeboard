@@ -51,8 +51,6 @@ export type ScenarioInstall =
   | { op: 'undo' }
   | { op: 'redo' }
 
-export type InstallOp = ScenarioInstall['op']
-
 /**
  * The scenarios a redo made current. Session-only and outside the store, so it
  * never persists or enters history. Lets `actionBeforeMount` skip a redo.

@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { Circle, Group, Line } from 'react-konva'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
+import { screenToWorld } from '../../state/camera'
 import { useStore } from '../../state/store'
 import { bearingDeg } from '../../geometry/geo'
 import { useBoardInk } from '../useBoardInk'
@@ -45,10 +46,7 @@ export function SystemHandleLayer() {
     if (!pointer) return null
     // Read, not subscribed: this layer redraws on a pan through the stage transform.
     const camera = useStore.getState().camera
-    const world = {
-      x: (pointer.x - camera.x) / camera.scale,
-      y: (pointer.y - camera.y) / camera.scale,
-    }
+    const world = screenToWorld(camera, pointer)
     return bearingDeg({ x: cx, y: cy }, world)
   }
 
