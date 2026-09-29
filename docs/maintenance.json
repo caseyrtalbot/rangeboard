@@ -6,17 +6,17 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "d4f2d933504ca5ac31d3867daf5ea47e356eae2077309012b722917378e1f7e6",
-      "reviewedAt": "2026-09-28",
-      "note": "Row F merged"
+      "sha256": "b396352f17eda8cfc9334b7ae91d1502edacf6e60715a8ca00a336fa52157521",
+      "reviewedAt": "2026-09-29",
+      "note": "Row G selected"
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "094ed1bf0580c93b940ccea4e499a95767ad095e73b1339f94ffd4107bb2ffe2",
-      "reviewedAt": "2026-09-28",
+      "sha256": "934dc0a4fc8712a078516586ac598ef9db79e2839945195541d0128d86608284",
+      "reviewedAt": "2026-09-29",
       "note": "AGENTS.md workspace fact changed"
     },
     {
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "1d8ed6eca8c053cff4bbc456933147e2aeec6eaebcf1dd7483cfa979aa13d67e",
-      "reviewedAt": "2026-09-28",
-      "note": "Row F merged and pushed as 6cb16f9"
+      "sha256": "4db4b2f4f4f670282099dac5891b8be4d63866fa0c35a2ea9983586ade680708",
+      "reviewedAt": "2026-09-29",
+      "note": "Row G selected: one dead rule, kill types, milestones bounded at the kill"
     },
     {
       "document": "docs/Plan.md",
