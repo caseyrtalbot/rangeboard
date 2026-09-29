@@ -25,7 +25,7 @@ import type { RunHistorySave } from '../RunHistory'
 import { RunHistory } from '../RunHistory'
 import { runRecordOf } from '../mc'
 import { SystemStatus } from '../SystemStatus'
-import { trialOutcomeRows } from '../threatReadout'
+import { lateKillText, trialOutcomeRows } from '../threatReadout'
 import type { TrialOutcomeRow } from '../threatReadout'
 import { trialStateText, useTrialResult } from '../controls'
 import { VALIDITY_TEXT } from '../runValidityText'
@@ -125,7 +125,7 @@ function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS:
               <td key={index}>{timeText(value)}</td>
             ))}
             <td>{row.salvos}</td>
-            <td title={row.states.join(', ')}>
+            <td title={row.result}>
               {row.states.map((word) => (
                 <State
                   key={word}
@@ -135,6 +135,12 @@ function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS:
                   {word}
                 </State>
               ))}
+              {row.lateKillS != null && (
+                <span className="muted" style={machineStyle}>
+                  {' '}
+                  {lateKillText(row.lateKillS)}
+                </span>
+              )}
             </td>
           </tr>
         ))}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { AarSummary, Scenario } from '../../model/types'
 import type { AttritionReport } from '../../playback/attritionReport'
+import { deadTimeOf } from '../../playback/deadTimes'
 import type { McSummary, SensitivitySummary } from '../../playback/mcRun'
 import type { ThreatAssessment } from '../../playback/sim'
 import { trialResultOf, trialSnapshotAt, type TrialResultView } from '../../analysis/trialResult'
@@ -282,8 +283,15 @@ export function TrialOutcomeSummary({
     ['Active at horizon', counts.activeAtHorizon],
     ['First detect', first(view.assessments.map((a) => a.firstDetectS))],
     [
+      // The first threat death under the one dead rule; a late kill is no defeat.
       'First effect',
-      first(view.attrition.events.filter((e) => e.killDelta === 1).map((e) => e.tEffectS)),
+      first(
+        view.assessments.map((a) => {
+          const count = view.scenario.entities.find((e) => e.id === a.uasId)?.formation?.count
+          const death = deadTimeOf(view.attrition, a.uasId, count)
+          return death && !death.late ? death.tS : null
+        }),
+      ),
     ],
     [
       'Min warning',

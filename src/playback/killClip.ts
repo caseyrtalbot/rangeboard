@@ -1,5 +1,5 @@
 import type { AttritionReport } from './attritionReport'
-import { deadRecords } from './deadTimes'
+import { deadRecords, hardKillTimeOf } from './deadTimes'
 import type { SensorScanObservation } from './detection'
 import { EPS } from './intercept'
 import type { SensorObservation, ThreatAssessment } from './sim'
@@ -25,7 +25,7 @@ import type { TrackEstimate } from './trackTypes'
  * mixed defeat (one ship hard-killed, another mission-killed) does not clip
  * either: a mission-killed airframe of that threat still flies and the threat
  * has one picture. The clip applies when every ship of the threat latched
- * hard (`!soft && !mixed`), at the last hard-kill latch.
+ * hard, at the last hard-kill latch: the hard cut (`hardKillTimeOf`).
  *
  * A sample at or before the kill measured a live target and is kept; a hold
  * or coast interval ends at the last sweep sample at or before the kill (the
@@ -36,7 +36,10 @@ import type { TrackEstimate } from './trackTypes'
  * The report is never touched: every count the engagement pass produced
  * stands, and the timeline's ghost span (kill to planned arrival) reads the
  * report. `trackQuality` stays as swept: the continuity the sensors would
- * have held to closest approach. An assessment with no kill or nothing to
+ * have held to closest approach. The per-threat milestones after the cut are
+ * nulled: the classification rungs, `stableTrackAtS` and
+ * `declaredHostileAtS`; `firstDetectS`, `engageGateS`, `windowS`, `cpaS`,
+ * `arrivalS` and `warningS` are planning values and stay. An assessment with no kill or nothing to
  * clip, and every list and observation with nothing to drop, comes back as
  * the same object.
  */
@@ -155,6 +158,27 @@ function clipAssessment(a: ThreatAssessment, cut: number, stepS: number): Threat
     out.firstConfirmS = null
     changed = true
   }
+  // A classification rung, a firm track or a declaration after the kill never
+  // happened for the living target. Planning times (first detection, the
+  // engagement gate, the window, CPA, arrival, warning) stay.
+  const after = (tS: number | null | undefined): boolean => tS != null && tS > cut + EPS
+  const cls = a.classificationAtS
+  if (after(cls.unknownAtS) || after(cls.suspectedAtS) || after(cls.hostileAtS)) {
+    out.classificationAtS = {
+      unknownAtS: after(cls.unknownAtS) ? null : cls.unknownAtS,
+      suspectedAtS: after(cls.suspectedAtS) ? null : cls.suspectedAtS,
+      hostileAtS: after(cls.hostileAtS) ? null : cls.hostileAtS,
+    }
+    changed = true
+  }
+  if (after(a.stableTrackAtS)) {
+    out.stableTrackAtS = null
+    changed = true
+  }
+  if (after(a.declaredHostileAtS)) {
+    out.declaredHostileAtS = null
+    changed = true
+  }
   return changed ? out : a
 }
 
@@ -165,7 +189,8 @@ export function clipAtKill(input: KillClipInput): KillClipResult {
   // itself. A soft or mixed defeat leaves an airframe flying and never clips.
   const dead = new Map<string, number>()
   for (const [uasId, death] of deadRecords(report)) {
-    if (!death.soft && !death.mixed) dead.set(uasId, death.tS)
+    const cut = hardKillTimeOf(death)
+    if (cut != null) dead.set(uasId, cut)
   }
   if (dead.size === 0) return { assessments, tracks, observations }
   const keep = (uasId: string | null, tS: number): boolean => {

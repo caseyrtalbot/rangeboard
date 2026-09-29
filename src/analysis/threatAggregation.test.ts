@@ -3,6 +3,7 @@ import { emptyScenario } from '../model/seed'
 import type { Entity, FlightPath } from '../model/types'
 import type { AttritionReport, EngagementEvent, ThreatAttrition } from '../playback/attritionReport'
 import type { ThreatAssessment } from '../playback/sim'
+import { clipAtKill } from '../playback/killClip'
 import { expectedDeadTimes, threatPictureAt, trackQualityAt } from './threatAggregation'
 
 function addThreat(
@@ -245,11 +246,12 @@ describe('an expected-dead track is not a target', () => {
     expect(row.targetableNow).toBe(false)
   })
 
-  it('holds track quality and the classification rung at the kill', () => {
-    // The kill clip ends the hold at the kill (T+20); a hostile declaration
-    // swept for T+30 never happened for the living target.
+  it('holds track quality at the hard cut; the clip nulls the rung after it', () => {
+    // The kill clip ends the hold at the kill (T+20) and nulls the hostile
+    // rung swept for T+30: it never happened for the living target. The
+    // picture reads the clipped assessment, as every trial reader does.
     const scenario = oneThreatScenario()
-    const a = assessment('1', {
+    const swept = assessment('1', {
       windowS: [8, 60],
       effectorWindows: [{ effectorId: 'e1', intervals: [[8, 60]] }],
       classificationAtS: { unknownAtS: 5, suspectedAtS: 5, hostileAtS: 30 },
@@ -269,8 +271,10 @@ describe('an expected-dead track is not a target', () => {
         },
       ],
     })
-    const at = (tS: number) =>
-      threatPictureAt(scenario, [a], deadReport(), tS, new Map())[0].members[0]
+    const report = deadReport()
+    const [a] = clipAtKill({ assessments: [swept], report, stepS: 0.5 }).assessments
+    expect(a.classificationAtS.hostileAtS).toBeNull()
+    const at = (tS: number) => threatPictureAt(scenario, [a], report, tS, new Map())[0].members[0]
     const kill = at(20)
     const later = at(20 + 120)
     expect(kill.trackContinuity).toBe(1)

@@ -91,6 +91,8 @@ export function tooltipText(hit: RunTimelineHit, horizonS: number): TooltipText 
     const { mark } = hit
     title = MARK_TITLE[mark.kind]
     if (mark.text && mark.text !== subject) notes.push(mark.text)
+    // The engine capped this effect's flight time.
+    if (mark.capped) notes.push('capped')
     data.push(runTimeText(mark.tS))
     if (mark.after) data.push(mark.after)
   } else {

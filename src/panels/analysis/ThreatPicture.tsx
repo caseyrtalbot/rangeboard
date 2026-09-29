@@ -8,6 +8,7 @@ import type {
 } from '../../analysis/threatAggregation'
 import { formatTime } from '../../geometry/geo'
 import { SURVIVAL_LABELS } from './labels'
+import { lateKillText } from './threatReadout'
 
 type Group = ThreatOperationalGroup | TrialThreatGroup
 type Row = ThreatOperationalRow | TrialThreatRow
@@ -85,7 +86,13 @@ function memberTimeline(row: Row, mode: Mode): string {
   ].join(' · ')
 }
 
+/** A trial member that reached arrival undefeated; leaked wins over a late kill. */
+function leaked(row: Row): boolean {
+  return 'basis' in row && row.leaked
+}
+
 function liveState(row: Row): string {
+  if (leaked(row)) return 'LEAKED'
   if (row.effectMet) return 'basis' in row ? 'DEFEATED' : 'EXPECTED DEFEAT'
   if (row.effectObserved) return 'basis' in row ? 'EFFECT REACHED' : 'EXPECTED EFFECT'
   if (row.engaged) return 'ENGAGED'
@@ -106,17 +113,30 @@ function ThreatMember({ row, mode }: { row: Row; mode: Mode }) {
     <div className="threat-data-row">
       <div className="threat-data-head">
         <strong title={row.name}>{row.name}</strong>
-        <State tone={row.effectMet ? 'nominal' : row.engaged ? 'warning' : 'inactive'}>
+        <State
+          tone={
+            leaked(row)
+              ? 'critical'
+              : row.effectMet
+                ? 'nominal'
+                : row.engaged
+                  ? 'warning'
+                  : 'inactive'
+          }
+        >
           {mode === 'live'
             ? liveState(row)
-            : row.effectMet
-              ? 'basis' in row
-                ? 'DEFEATED'
-                : 'EXPECTED DEFEAT'
-              : row.engaged
-                ? 'ENGAGED'
-                : (row.status ?? 'unseen').replaceAll('-', ' ').toUpperCase()}
+            : leaked(row)
+              ? 'LEAKED'
+              : row.effectMet
+                ? 'basis' in row
+                  ? 'DEFEATED'
+                  : 'EXPECTED DEFEAT'
+                : row.engaged
+                  ? 'ENGAGED'
+                  : (row.status ?? 'unseen').replaceAll('-', ' ').toUpperCase()}
         </State>
+        {row.lateKillS != null && <span className="muted">{lateKillText(row.lateKillS)}</span>}
       </div>
       <Ladder
         c={{

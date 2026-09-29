@@ -118,6 +118,23 @@ describe('NowScreen cursor telemetry', () => {
     expect(html).toContain('>defeated</span>')
   })
 
+  it('reads a late kill as leaked with its own word, never defeated', () => {
+    const { result } = installTrial(60)
+    const swarmLate = result.report.events.find((e) => e.uasId === 'swarm' && e.tEffectS === 8)!
+    // swarm's last ship falls at 10 s, after its 5 s arrival.
+    const events = [...result.report.events, { ...swarmLate, tS: 9, tEffectS: 10, shipIdx: 0 }]
+    useStore.setState(({ trial }) => ({
+      trial: { ...trial, result: { ...result, report: { ...result.report, events } } },
+    }))
+    const html = render()
+    const start = html.indexOf('>swarm</td>')
+    const swarm = html.slice(start, html.indexOf('</tr>', start))
+    expect(swarm).toContain('>leaked</span>')
+    expect(swarm).toContain('late kill T+0:10')
+    expect(swarm).toContain('class="state critical"')
+    expect(swarm).not.toContain('defeated')
+  })
+
   it('scrubbing a completed run back hides future effects and identification', () => {
     installTrial(60)
     observeTrial(60, 1)

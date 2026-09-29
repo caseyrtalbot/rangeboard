@@ -54,6 +54,14 @@ describe('tooltipText marks', () => {
     // A detect mark's text repeats the row label; it is not printed twice.
     expect(mark({ kind: 'detect', tS: 5, text: 'Gun' }).notes).toEqual([])
   })
+
+  it('adds the word capped for a flight-capped effect, and only for one', () => {
+    expect(mark({ kind: 'hard-kill', tS: 90, text: 'UAS-3', capped: true }).notes).toEqual([
+      'UAS-3',
+      'capped',
+    ])
+    expect(mark({ kind: 'hard-kill', tS: 90, text: 'UAS-3' }).notes).toEqual(['UAS-3'])
+  })
 })
 
 describe('tooltipText spans', () => {

@@ -7,8 +7,7 @@ import type { ThreatAssessment } from '../playback/sim'
 import type { DetectionHit } from '../playback/detection'
 import { waveIndexFor } from '../playback/raid'
 import { THREAT_TACTICS } from '../playback/tactics'
-import { SHIP_DEAD_BELOW } from '../playback/pk'
-import { expectedDeadTimes } from '../playback/deadTimes'
+import { deadTimeOf, expectedDeadTimes, hardKillTimeOf } from '../playback/deadTimes'
 
 export interface ThreatOperationalRow {
   uasId: string
@@ -35,6 +34,8 @@ export interface ThreatOperationalRow {
   firstEffectS: number | null
   /** First 'continue' jam effect (track degrade, no mass removed); null when never jammed. */
   firstJamEffectS: number | null
+  /** The threat's death when it landed after arrival (a leaker's late kill), once reached. */
+  lateKillS: number | null
   arrivalS: number | null
   trackContinuity: number | null
   longestTrackGapS: number | null
@@ -92,7 +93,7 @@ function minTime(values: Array<number | null>): number | null {
 }
 
 // The dead rule lives beside the engine so the playback bundle need not load this module.
-export { expectedDeadTimes }
+export { deadTimeOf, expectedDeadTimes }
 
 /** Track quality up to t, not the whole run. Null before the first detection. */
 export function trackQualityAt(
@@ -148,7 +149,6 @@ export function threatPictureAt(
   currentHits: Map<string, DetectionHit[]>,
 ): ThreatOperationalGroup[] {
   const attrition = new Map(report.threats.map((row) => [row.uasId, row]))
-  const deadAtS = expectedDeadTimes(report)
   const eventsByThreat = new Map<string, AttritionReport['events']>()
   for (const event of report.events) {
     const events = eventsByThreat.get(event.uasId) ?? []
@@ -180,10 +180,15 @@ export function threatPictureAt(
     const firstJamEffectS = minTime(
       events.filter((event) => event.channel === 'jam').map((event) => event.tEffectS),
     )
-    // A dead threat holds no track: quality and the classification rung read
-    // no later than the kill, so neither changes after it.
-    const deadS = deadAtS.get(assessment.uasId) ?? null
-    const tLive = tS != null && deadS != null ? Math.min(tS, deadS) : tS
+    // The one dead rule: the death ends targeting and counts the defeat; the
+    // hard cut bounds the picture. A hard-killed threat holds no track, so its
+    // quality reads no later than the cut. A mission-killed airframe still
+    // flies and keeps its picture. The classification rung needs no bound:
+    // the kill clip nulls a rung after the cut.
+    const death = deadTimeOf(report, assessment.uasId, entity?.formation?.count)
+    const deadS = death?.tS ?? null
+    const hardS = hardKillTimeOf(death)
+    const tLive = tS != null && hardS != null ? Math.min(tS, hardS) : tS
     const trackQuality = trackQualityAt(assessment, tLive)
     const decisionS = att?.firstShotS ?? assessment.windowS?.[0] ?? assessment.arrivalS
     const trackedAtDecision =
@@ -191,8 +196,8 @@ export function threatPictureAt(
       (assessment.sensorObservations ?? []).some((observation) =>
         heldAt(observation.intervals, decisionS),
       )
-    // An expected-dead track is not a target. targetableNow is a gauge and
-    // drops the instant the residual crosses the cutoff; targetAcquired is a
+    // A dead track is not a target. targetableNow is a gauge and drops the
+    // instant the last ship latches dead; targetAcquired is a
     // latch and asks the same question at the moment the window opened.
     const targetAcquired =
       tS != null &&
@@ -219,17 +224,19 @@ export function threatPictureAt(
       detected: timeReached(assessment.firstDetectS, tS),
       trackNow: currentHits.has(assessment.uasId),
       trackedAtDecision,
-      identified: timeReached(assessment.classificationAtS.hostileAtS, tLive),
+      identified: timeReached(assessment.classificationAtS.hostileAtS, tS),
       targetAcquired,
       targetableNow,
       engaged: visibleEvents.length > 0,
       effectObserved: landed.length > 0,
-      effectMet: shipCount > 0 && expectedResidual / shipCount <= SHIP_DEAD_BELOW + 1e-9,
+      // Defeated: dead at or before tS, before arrival. A late kill is a leaker.
+      effectMet: death != null && !death.late && timeReached(death.tS, tS),
       firstDetectS: assessment.firstDetectS,
       hostileAtS: assessment.classificationAtS.hostileAtS,
       firstShotS: att?.firstShotS ?? null,
       firstEffectS,
       firstJamEffectS,
+      lateKillS: death?.late && timeReached(death.tS, tS) ? death.tS : null,
       arrivalS: assessment.arrivalS,
       trackContinuity: trackQuality?.continuity ?? null,
       longestTrackGapS: trackQuality?.longestGapS ?? null,
@@ -330,6 +337,8 @@ export interface TrialThreatRow extends Omit<
   hardKillCount: number
   missionKillCount: number
   arrivedCount: number
+  /** A member reached arrival undefeated (member leakage credit); leaked wins over a late kill. */
+  leaked: boolean
 }
 
 export interface TrialThreatGroup extends Omit<
@@ -387,7 +396,7 @@ export function trialThreatPictureAt(view: TrialResultView, horizonS: number): T
         hardKillCount: track.hardKillCount,
         missionKillCount: track.missionKillCount,
         arrivedCount: track.arrivedCount,
-        effectMet: track.activeCount === 0,
+        leaked: track.members.some((member) => member.leakageCredit),
         trackedAtDecision,
         effectObserved: view.attrition.events.some((e) => e.uasId === row.uasId && e.tEffectS <= t),
         salvos: view.attrition.events.filter((e) => e.uasId === row.uasId && e.tS <= t).length,
@@ -402,6 +411,7 @@ export function trialThreatPictureAt(view: TrialResultView, horizonS: number): T
         firstShotS: reached(row.firstShotS),
         firstEffectS: reached(row.firstEffectS),
         firstJamEffectS: reached(row.firstJamEffectS),
+        lateKillS: reached(row.lateKillS),
         arrivalS: reached(row.arrivalS),
         residualPct: track.members.length ? (track.activeCount / track.members.length) * 100 : 0,
       }

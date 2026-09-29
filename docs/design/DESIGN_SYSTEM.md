@@ -383,7 +383,8 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   `title`. Each header is a sort button with `aria-sort`; an abbreviated header (D, ID,
   ENG, FX, Slv, Arr) spells its meaning and unit in the button title. A result or state
   word is a `State` in its ink: leaked or engaged critical, active or targeted warning,
-  identified hollow, defeated in `--ghost`.
+  identified hollow, defeated in `--ghost`. A leaker's late kill follows the word as
+  muted text, `late kill T+m:ss`.
 - **Inventory bar** (`.rr-bar`, `.rr-bar-fill`; the effector row on Now). An
   `.insp-row` with the effector name and `remaining/capacity` in mono, then a 3 px bar
   in `--border-subtle` with the remaining fraction filled in `--accent`. The bar is a

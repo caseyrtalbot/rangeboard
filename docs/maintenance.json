@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "0589ee27f994991386562cafa46e126fc0129828c5124e4127071fc92a7d85b7",
+      "sha256": "556c57eac7a0f044fe56e9b79e0db60c6c09efe746d8b8068285521e90e7a255",
       "reviewedAt": "2026-09-29",
-      "note": "Row G lane G1: the trialSeries test now asserts the 21st member stays targetable under the one dead rule; no guide text changes"
+      "note": "Row G lane G2: readers on deadTimeOf and hardKillTimeOf, milestone clip, late-kill and pill words, capped tooltip, export trackQuality bound; liveStats keeps its threatAggregation edge (store chunk split)"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "0051a41edc06841eeb78e9b1e051edd33e7fbf45ed8894eb97ff1ac92ed6ca90",
+      "sha256": "8d707848edaa35f9153f5ad5e30355f77600124b198aa9111d70a1aa61264b15",
       "reviewedAt": "2026-09-29",
-      "note": "Row G lane G1: the trialSeries test now asserts the 21st member stays targetable under the one dead rule; the dead-rule paragraph stands"
+      "note": "Row G lane G2: readers on deadTimeOf and hardKillTimeOf, milestone clip, late-kill and pill words, capped tooltip, export trackQuality bound; liveStats keeps its threatAggregation edge (store chunk split)"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "75e80edaf9d4b88bf6981b397d105b1e8c55154944e522e3fd636593c7c235e3",
+      "sha256": "394b5236d178caee5b114edf34fa56267daf439c206eb065b6c4eb794f6009e7",
       "reviewedAt": "2026-09-29",
-      "note": "Row G lane G1: beamAndFormationTrial engine fixture (DE, HPM, formation, jammer) added to trialFixture.ts"
+      "note": "Row G lane G2: every reader derives from deadTimeOf (death for outcomes, hardKillTimeOf for the picture); clipAtKill nulls milestones after the hard cut; late kill reads LEAKED with its own word; FX and First effect read the death; capped tooltip word; export bounds trackQuality at the hard cut"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "5ab2b4968b9b07cae8cddddc1e634a9adf79b90bbacd944074d523aa1bee724f",
-      "reviewedAt": "2026-09-28",
-      "note": "Row E review fixes (2c6c4e8): RunTimeline.tsx unchanged since e29a2c6; the plan stays complete."
+      "sha256": "bad591d99c220af582d3ca359505b949e15762f7e1946af29448571c64443cc3",
+      "reviewedAt": "2026-09-29",
+      "note": "Row G lane G2: every reader derives from deadTimeOf (death for outcomes, hardKillTimeOf for the picture); clipAtKill nulls milestones after the hard cut; late kill reads LEAKED with its own word; FX and First effect read the death; capped tooltip word; export bounds trackQuality at the hard cut"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
@@ -136,9 +136,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "b8d1f4911be666493a8e8651beaeb86d979095cb48e035ea2dd8f52ed45c37ae",
-      "reviewedAt": "2026-09-28",
-      "note": "Row E review fixes (2c6c4e8): .telemetry-note and --type-value-size deleted; the legend words are text 3 at the 12 px header size and a narrow header cuts the first item."
+      "sha256": "dd626177275d4b06e821e916eb7344a31785005cab2feca1ca22606fa633243a",
+      "reviewedAt": "2026-09-29",
+      "note": "Row G lane G2: every reader derives from deadTimeOf (death for outcomes, hardKillTimeOf for the picture); clipAtKill nulls milestones after the hard cut; late kill reads LEAKED with its own word; FX and First effect read the death; capped tooltip word; export bounds trackQuality at the hard cut"
     }
   ],
   "historical": [

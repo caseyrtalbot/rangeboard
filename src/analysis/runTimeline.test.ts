@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { Entity, Scenario } from '../model/types'
-import { mixedTrial, trialEvent } from '../playback/__fixtures__/trialFixture'
+import {
+  beamAndFormationTrial,
+  mixedTrial,
+  trialEvent,
+} from '../playback/__fixtures__/trialFixture'
+import type { EngagementEvent } from '../playback/attritionReport'
+import { trialOutcomeRows } from '../panels/analysis/threatReadout'
 import type { TrackEstimate } from '../playback/trackTypes'
 import { trackId } from '../playback/tracker'
 import { createTrialManifest, type TrialResult } from '../playback/trialTypes'
@@ -597,5 +603,166 @@ describe('runTimelineOf review cases', () => {
     expect(row(early, 'track:eo:false:0:0')!.label).toBe('False track 1')
     expect(row(early, 'track:radar:false:0:0')).toBeUndefined()
     expect(row(runTimelineOf(view, 60), 'track:radar:false:0:0')!.label).toBe('False track 2')
+  })
+})
+
+describe('kill and defeat types through runTimelineOf and trialOutcomeRows (Row G)', () => {
+  // `moving` is one ship with a planned arrival at 30 s, a fused track that
+  // drops at 2 s, and one gun salvo at 2 s; the run is 60 s with an asset.
+  const jammerShot = { effectorId: 'jammer', effectorType: 'jammer', channelClass: 'ew' } as const
+  const movingWith = (events: Array<Partial<EngagementEvent>>, count = 1) =>
+    timelineTrial(
+      (result) => {
+        result.report.events = [
+          ...result.report.events.filter((e) => e.uasId !== 'moving'),
+          ...events.map((over) => trialEvent({ uasId: 'moving', shipIdx: 0, ...over })),
+        ].sort((a, b) => a.tS - b.tS)
+        result.report.threats.find((t) => t.uasId === 'moving')!.shipCount = count
+        for (const e of result.report.events)
+          if (e.uasId === 'moving' && e.channel === 'jam')
+            result.jamDecisions.push({
+              effectorId: e.effectorId,
+              uasId: 'moving',
+              tEffectS: e.tEffectS,
+              probability: 0.5,
+              outcome: 1,
+            })
+      },
+      (scenario) => {
+        scenario.entities.find((e) => e.id === 'moving')!.formation!.count = count
+      },
+    ).view
+  const threat = (view: ReturnType<typeof movingWith>) =>
+    row(runTimelineOf(view, Infinity), 'threat:moving')!
+  const track = (view: ReturnType<typeof movingWith>) =>
+    row(runTimelineOf(view, Infinity), 'track:moving')!
+  const outcome = (view: ReturnType<typeof movingWith>, id = 'moving') =>
+    trialOutcomeRows(view).find((r) => r.id === id)!
+  const kinds = (r: RunTimelineRow) => r.spans.map((s) => s.kind)
+
+  it('hard kinetic: a ghost from the kill, the track drop hidden, FX at the kill', () => {
+    const view = movingWith([{}])
+    expect(spans(threat(view))).toEqual([
+      ['undetected', 0, 0.5],
+      ['ghost', 2, 30],
+    ])
+    expect(marks(track(view)).map((m) => m[0])).not.toContain('drop')
+    expect(outcome(view)).toMatchObject({
+      effect: 2,
+      states: ['defeated (hard)'],
+      lateKillS: null,
+      result: 'defeated (hard)',
+    })
+  })
+
+  it('mission kill (drift and return-home, one soft ledger): no ghost, the drop still marks', () => {
+    const view = movingWith([{ softShot: true, ...jammerShot }])
+    const r = threat(view)
+    expect(kinds(r)).not.toContain('ghost')
+    // The drifting airframe keeps its picture to the planned arrival; no arrival mark.
+    expect(spans(r)).toEqual([['undetected', 0, 0.5]])
+    expect(marks(r).map((m) => m[0])).toEqual(['shot', 'mission-kill'])
+    expect(marks(track(view))).toContainEqual(['drop', 2])
+    expect(outcome(view)).toMatchObject({ effect: 2, states: ['defeated (mission)'] })
+  })
+
+  it('continue jam: alive, no ghost, a leaker at its arrival', () => {
+    const view = movingWith([{ channel: 'jam', softShot: true, killDelta: 0, ...jammerShot }])
+    const r = threat(view)
+    expect(kinds(r)).not.toContain('ghost')
+    expect(marks(r).map((m) => m[0])).toEqual(['shot', 'jam-decision', 'arrival'])
+    expect(outcome(view)).toMatchObject({ effect: null, states: ['leaked'], lateKillS: null })
+  })
+
+  it.each([
+    ['hard', false, 'hard-kill'],
+    ['soft', true, 'mission-kill'],
+  ] as const)('late %s: a leaker; the late kill is its own word, never FX', (_, soft, mark) => {
+    const view = movingWith([
+      {
+        tS: 33,
+        tReleaseS: 33.5,
+        tEffectS: 35,
+        lateEffect: true,
+        softShot: soft,
+        ...(soft ? jammerShot : {}),
+      },
+    ])
+    const r = threat(view)
+    expect(kinds(r)).not.toContain('ghost')
+    expect(marks(r).map((m) => [m[0], m[1]])).toEqual([
+      ['arrival', 30],
+      ['shot', 33.5],
+      [mark, 35],
+    ])
+    expect(outcome(view)).toMatchObject({
+      effect: null,
+      states: ['leaked'],
+      lateKillS: 35,
+      result: 'leaked · late kill T+0:35',
+    })
+  })
+
+  it('flight-capped: the effect mark carries capped and still kills', () => {
+    const view = movingWith([{ flightCapped: true }])
+    const effect = threat(view).marks.find((m) => m.kind === 'hard-kill')!
+    expect(effect).toMatchObject({ tS: 2, capped: true })
+    expect(threat(movingWith([{}])).marks.find((m) => m.kind === 'hard-kill')!.capped).toBe(
+      undefined,
+    )
+    expect(outcome(view)).toMatchObject({ effect: 2, states: ['defeated (hard)'] })
+  })
+
+  it('formation of 2, one removal: alive, no ghost, the second member leaks', () => {
+    const view = movingWith([{}], 2)
+    expect(threat(view).meta).toBe('×2')
+    expect(kinds(threat(view))).not.toContain('ghost')
+    expect(outcome(view)).toMatchObject({ effect: null, states: ['leaked'] })
+  })
+
+  it('formation of 2, two removals: dead at the second, hard or mixed', () => {
+    const second = { tS: 2.5, tReleaseS: 2.8, tEffectS: 3, shipIdx: 1 }
+    const hard = movingWith([{}, second], 2)
+    expect(spans(threat(hard))).toContainEqual(['ghost', 3, 30])
+    expect(outcome(hard)).toMatchObject({ effect: 3, states: ['defeated (hard)'] })
+    // One ship mission-killed: the airframe still flies, no ghost; both words stay.
+    const mixed = movingWith([{}, { ...second, softShot: true, ...jammerShot }], 2)
+    expect(kinds(threat(mixed))).not.toContain('ghost')
+    expect(outcome(mixed)).toMatchObject({
+      effect: 3,
+      states: ['defeated (hard)', 'defeated (mission)'],
+    })
+  })
+
+  it('leakage: no events, the arrival marks and the threat leaks', () => {
+    const view = movingWith([])
+    expect(marks(threat(view))).toEqual([['arrival', 30]])
+    expect(outcome(view)).toMatchObject({ effect: null, engage: null, states: ['leaked'] })
+  })
+
+  it('no path: no threat row and no outcome row', () => {
+    const view = movingWith([{}])
+    expect(row(runTimelineOf(view, Infinity), 'threat:parked')).toBeUndefined()
+    expect(trialOutcomeRows(view).map((r) => r.id)).not.toContain('parked')
+  })
+
+  it('DE, HPM and formation hard kills and a jammer mission kill on the engine fixture', () => {
+    const { scenario, manifest, result, ids } = beamAndFormationTrial()
+    const view = trialResultOf(scenario, manifest, result)
+    const model = runTimelineOf(view, Infinity)
+    const ghostOf = (id: string) =>
+      row(model, `threat:${id}`)!.spans.find((s) => s.kind === 'ghost')?.startS
+    const rows = trialOutcomeRows(view)
+    const rowOf = (id: string) => rows.find((r) => r.id === id)!
+    for (const [id, tS] of [
+      [ids.de, 105.5],
+      [ids.hpm, 128.5],
+      [ids.formation, 113.5],
+    ] as const) {
+      expect(ghostOf(id)).toBe(tS)
+      expect(rowOf(id)).toMatchObject({ effect: tS, states: ['defeated (hard)'] })
+    }
+    expect(ghostOf(ids.jammed)).toBeUndefined()
+    expect(rowOf(ids.jammed)).toMatchObject({ effect: 99.5, states: ['defeated (mission)'] })
   })
 })

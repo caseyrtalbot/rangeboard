@@ -10,7 +10,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_HORIZON } from '../../analysis/horizon'
 import { mixedTrial, trialEvent } from '../../playback/__fixtures__/trialFixture'
 import { trialSweepAt } from '../../playback/trialSweepAt'
-import { threatReadoutAt, trialTelemetryAt, trialOutcomeRows } from './threatReadout'
+import {
+  deathPill,
+  lateKillText,
+  threatReadoutAt,
+  trialTelemetryAt,
+  trialOutcomeRows,
+} from './threatReadout'
+import { trialThreatPictureAt } from '../../analysis/threatAggregation'
 
 vi.mock('../../playback/detection', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../playback/detection')>()),
@@ -101,6 +108,95 @@ describe('trial threat readout', () => {
   })
 })
 
+describe('dead-threat pill words', () => {
+  /** `moving` (three ships) with every ship removed at 2 s; `soft` per ship, arrival optional. */
+  function movingDead(soft: boolean[], arrivalS: number | null = null) {
+    const { scenario, view } = mixedTrial()
+    const late = arrivalS != null && arrivalS < 2
+    const events = soft.map((softShot, shipIdx) =>
+      trialEvent({
+        uasId: 'moving',
+        shipIdx,
+        softShot,
+        lateEffect: late,
+        ...(softShot
+          ? { effectorId: 'jammer', effectorType: 'jammer', channelClass: 'ew' as const }
+          : {}),
+      }),
+    )
+    const trial = {
+      ...view,
+      assessments: view.assessments.map((a) => (a.uasId === 'moving' ? { ...a, arrivalS } : a)),
+      attrition: { ...view.attrition, events },
+    }
+    const entity = scenario.entities.find((e) => e.id === 'moving')!
+    return { trial, entity, scenario }
+  }
+
+  it.each([
+    ['HARD KILL', [false, false, false], null],
+    ['MISSION KILL', [true, true, true], null],
+    ['DEFEATED (MIXED)', [false, true, false], null],
+    ['LEAKED', [false, false, false], 1],
+  ] as const)('reads %s once every member is removed', (pill, soft, arrivalS) => {
+    const { trial, entity, scenario } = movingDead([...soft], arrivalS)
+    expect(trialTelemetryAt(trial, 'moving', 1.9).phase).not.toBe('ghost')
+    // A ghost once every member is removed, hard or soft.
+    expect(trialTelemetryAt(trial, 'moving', 2).phase).toBe('ghost')
+    const readout = threatReadoutAt({ scenario, trial, entity, units: 'metric', tS: 3 })
+    expect(readout.pillLabel).toBe(pill)
+    expect(readout.state?.death?.tS).toBe(2)
+  })
+
+  it('names the pill from the death record', () => {
+    const death = { tS: 2, soft: false, late: false, mixed: false }
+    expect(deathPill(death)).toBe('HARD KILL')
+    expect(deathPill({ ...death, soft: true })).toBe('MISSION KILL')
+    expect(deathPill({ ...death, soft: true, mixed: true })).toBe('DEFEATED (MIXED)')
+    expect(deathPill({ ...death, late: true })).toBe('LEAKED')
+    expect(lateKillText(95)).toBe('late kill T+1:35')
+  })
+
+  it('bounds track quality at a hard cut and keeps a mission-killed picture running', () => {
+    const held = (input: ReturnType<typeof movingDead>) => {
+      const [swarm] = input.trial.assessments
+      const hold = {
+        ...swarm.sensorObservations![0],
+        intervals: [[0.5, 20]] as Array<[number, number]>,
+      }
+      const trial = {
+        ...input.trial,
+        assessments: input.trial.assessments.map((a) =>
+          a.uasId === 'moving' ? { ...a, firstDetectS: 0.5, sensorObservations: [hold] } : a,
+        ),
+      }
+      return threatReadoutAt({ ...input, trial, units: 'metric', tS: 30 }).rows.find(
+        (row) => row.id === 'classification',
+      )?.value
+    }
+    // Hard: quality reads to the 2 s cut, fully held. Soft: the airframe flies on.
+    expect(held(movingDead([false, false, false]))).toContain('continuity 100%')
+    expect(held(movingDead([true, true, true]))).toContain('continuity 67%')
+  })
+
+  it('debrief threat record reads LEAKED with a late kill word, never DEFEATED', () => {
+    const { trial } = movingDead([false, false, false], 1)
+    const groups = trialThreatPictureAt(trial, trial.durationS)
+    const moving = groups.flatMap((g) => g.members).find((r) => r.uasId === 'moving')!
+    expect(moving).toMatchObject({ leaked: true, effectMet: false, lateKillS: 2 })
+    const html = renderToStaticMarkup(
+      createElement(ThreatPicture, { groups, mode: 'debrief', membersOpen: true }),
+    )
+    expect(html).toContain('LEAKED')
+    expect(html).toContain('late kill T+0:02')
+    const defeated = movingDead([false, false, false])
+    const row = trialThreatPictureAt(defeated.trial, defeated.trial.durationS)
+      .flatMap((g) => g.members)
+      .find((r) => r.uasId === 'moving')!
+    expect(row).toMatchObject({ leaked: false, effectMet: true, lateKillS: null })
+  })
+})
+
 function forecastFixture(softShot = false, killDelta = 0.999) {
   const scenario = useStore.getState().scenario
   const entity = scenario.entities.find((candidate) => candidate.kind === 'uas')!
@@ -181,19 +277,22 @@ describe('trial outcome rows', () => {
     const { view } = mixedTrial()
     const rows = trialOutcomeRows(view)
     expect(rows.map((row) => row.id)).toEqual(['swarm', 'moving', 'flyby'])
+    // FX is the threat's death under the one dead rule, never the first member
+    // removal: neither formation lost every member.
     expect(rows[0]).toMatchObject({
       detect: 1.1,
       identify: 6.1,
       engage: 1.2,
-      effect: 2,
+      effect: null,
       salvos: 7,
       states: ['leaked'],
+      lateKillS: null,
     })
     expect(rows[1]).toMatchObject({
       detect: null,
       identify: null,
       engage: 0,
-      effect: 2,
+      effect: null,
       salvos: 1,
       states: ['active'],
     })

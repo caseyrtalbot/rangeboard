@@ -9,6 +9,8 @@ import type { Entity } from '../model/types'
 import { entityActive } from '../model/types'
 import { modelFor, pathDurationS } from '../model/scenario'
 import type { EngagementEvent } from '../playback/attritionReport'
+import { deadTimeOf, hardKillTimeOf } from '../playback/deadTimes'
+import type { DeathRecord } from '../playback/deadTimes'
 import { engagementIsKinetic, engagementReleaseS } from '../playback/engagementTiming'
 import type { KillChainRoute } from '../playback/killChain'
 import { killChainRoutes } from '../playback/killChain'
@@ -60,6 +62,8 @@ export interface RunTimelineMark {
   text?: string
   /** Rounds left after a release, or pk at an effect, as display text. */
   after?: string
+  /** An effect whose flight the engine capped (`flightCapped`). */
+  capped?: true
 }
 
 export interface RunTimelineRow {
@@ -272,7 +276,13 @@ function effectMark(event: EngagementEvent, text: string): RunTimelineMark {
           ? 'mission-kill'
           : 'hard-kill'
         : 'miss'
-  return { kind, tS: event.tEffectS, text, after: `pk ${event.pk.toFixed(2)}` }
+  return {
+    kind,
+    tS: event.tEffectS,
+    text,
+    after: `pk ${event.pk.toFixed(2)}`,
+    ...(event.flightCapped ? { capped: true as const } : {}),
+  }
 }
 
 /** Sorts the row's items and records the item extent the censor pass reads. */
@@ -479,19 +489,13 @@ function derive(view: TrialResultView): Derived {
     add(eventsOn, event.uasId, event)
     add(eventsBy, event.effectorId, event)
   }
-  // The effect that removes the last member, shared by the track and threat rows.
-  // trialResultOf holds the attrition ship count equal to this formation count.
+  // The one dead rule (deadTimeOf), shared by the track and threat rows: the
+  // death is the effect that killed the last ship; the hard cut is the death
+  // when every ship latched hard. trialResultOf holds the attrition ship count
+  // equal to this formation count.
   const countOf = (uasId: string) => Math.max(1, byId.get(uasId)?.formation?.count ?? 1)
-  const killTimes = new Map<string, number | null>()
-  for (const a of view.assessments) {
-    const count = countOf(a.uasId)
-    const kills = (eventsOn.get(a.uasId) ?? [])
-      .filter((e) => e.killDelta === 1)
-      .map((e) => e.tEffectS)
-      .sort((x, y) => x - y)
-    killTimes.set(a.uasId, kills.length >= count ? kills[count - 1] : null)
-  }
-  const killAtS = (a: ThreatAssessment) => killTimes.get(a.uasId) ?? null
+  const deathOf = (a: ThreatAssessment): DeathRecord | null =>
+    deadTimeOf(view.attrition, a.uasId, countOf(a.uasId))
   const lastSweepS = (a: ThreatAssessment): number => {
     const path = paths.get(a.uasId)
     if (!path) return durationS
@@ -513,10 +517,11 @@ function derive(view: TrialResultView): Derived {
     for (const event of eventsOn.get(a.uasId) ?? [])
       marks.push({ kind: 'assign', tS: event.tS, text: nameOf(event.effectorId) })
     // The first step with no fused track, before the threat's last sweep sample,
-    // with no kill or arrival by then. A later outcome must not hide the drop.
+    // with no hard kill or arrival by then. A later outcome must not hide the
+    // drop, and a mission-killed airframe still flies, so its drop marks.
     const dropS = fused.lastAtS + stepS
-    const killS = killAtS(a)
-    const ended = (killS != null && killS <= dropS) || (a.arrivalS != null && a.arrivalS <= dropS)
+    const hardS = hardKillTimeOf(deathOf(a))
+    const ended = (hardS != null && hardS <= dropS) || (a.arrivalS != null && a.arrivalS <= dropS)
     if (dropS <= lastSweepS(a) + 1e-9 && !ended) marks.push({ kind: 'drop', tS: dropS })
     const members = fused.members.map((m) => ({ name: nameOf(m.sensorId), fromS: m.fromS }))
     const row: RunTimelineRow = {
@@ -597,22 +602,26 @@ function derive(view: TrialResultView): Derived {
     const entity = byId.get(a.uasId)
     const path = paths.get(a.uasId)
     const startS = path ? effectivePathDelayS(scenario, path) : 0
-    const killS = killAtS(a)
-    const killedFirst = killS != null && (a.arrivalS == null || killS <= a.arrivalS)
-    const endS = killedFirst ? killS : (a.arrivalS ?? lastSweepS(a))
+    const death = deathOf(a)
+    // A late kill is a leaker: the threat arrived first.
+    const killedFirst = death != null && !death.late
+    const hardS = hardKillTimeOf(death)
+    const plannedS = a.arrivalS ?? lastSweepS(a)
+    // The picture ends at a hard cut before arrival; a mission-killed airframe
+    // still flies, so its picture runs to the planned arrival or path end.
+    const endS = killedFirst && hardS != null ? hardS : plannedS
     const spans: RunTimelineSpan[] = []
     pushSpan(spans, 'undetected', startS, a.firstDetectS ?? endS)
     pushRamp(spans, a, -Infinity, endS)
-    // No in-range window after the last member is removed.
-    const deadS = killS ?? Infinity
+    // No in-range window after the last member is removed, hard or soft.
+    const deadS = death?.tS ?? Infinity
     for (const window of a.effectorWindows) {
       const label = nameOf(window.effectorId)
       for (const [from, to] of window.intervals)
         pushSpan(spans, 'window', from, Math.min(cover(to), deadS), { label })
     }
-    // After a kill, a ghost runs to the planned arrival, else to the path end.
-    const plannedS = a.arrivalS ?? lastSweepS(a)
-    if (killS != null && killS < plannedS) pushSpan(spans, 'ghost', killS, plannedS)
+    // After a hard kill, a ghost runs to the planned arrival, else to the path end.
+    if (hardS != null && hardS < plannedS) pushSpan(spans, 'ghost', hardS, plannedS)
     const marks: RunTimelineMark[] = []
     for (const event of eventsOn.get(a.uasId) ?? []) {
       const text = nameOf(event.effectorId)
@@ -621,7 +630,7 @@ function derive(view: TrialResultView): Derived {
       marks.push(effectMark(event, text))
     }
     if (a.arrivalS != null && !killedFirst) marks.push({ kind: 'arrival', tS: a.arrivalS })
-    if (a.arrivalS == null && a.cpaS != null && (killS == null || killS > a.cpaS))
+    if (a.arrivalS == null && a.cpaS != null && (death == null || death.tS > a.cpaS))
       marks.push({ kind: 'cpa', tS: a.cpaS })
     const count = countOf(a.uasId)
     const name = entity ? modelName(entity) : ''

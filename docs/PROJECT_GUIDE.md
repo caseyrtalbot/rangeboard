@@ -65,8 +65,11 @@ grows while the track coasts. A coasting track dashes, a truth track carries no 
 draws its marker alone, a false track draws in a muted ink, and nothing draws past the
 observation horizon. A hard-killed threat's sensor holds, track estimates and fused track
 end at the kill, so a destroyed threat holds no track; a mission-killed airframe still
-flies, so its track runs to the path end. The run timeline keeps its ghost span from
-the kill to the planned arrival. A C2 node fuses the sensor tracks that reach it after link latency;
+flies, so its track runs to the path end. The run timeline draws its ghost span from
+a hard kill to the planned arrival. A threat pill reads `HARD KILL`, `MISSION KILL` or
+`DEFEATED (MIXED)` once every member is removed. A threat killed after its arrival
+leaked: it reads `LEAKED` with a `late kill T+m:ss` word, and FX reads only a
+pre-arrival death. A C2 node fuses the sensor tracks that reach it after link latency;
 the fused track sets the firm-track time and, on the estimate path, predicts the intercept
 point. A sensor whose model states no accuracy reports the truth position instead.
 

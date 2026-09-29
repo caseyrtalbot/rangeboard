@@ -4,12 +4,15 @@ import { selectTrialSelection, selectTrialHorizon } from '../../../state/trialSe
 import { trialResultOf } from '../../../analysis/trialResult'
 import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { trialSweepAt } from '../../../playback/trialSweepAt'
+import { deadTimeOf } from '../../../playback/deadTimes'
+import { trialMemberStatesAt } from '../../../playback/trialTrackState'
 import { resetAnalysisRun } from '../../../playback/runSession'
 import { formatTime } from '../../../geometry/geo'
 import { State } from '../../../ui/kit'
 import { LiveStrip, PlayPrompt } from '../LiveStrip'
 import { stateTone } from '../SystemStatus'
 import { EmptyRow } from '../controls'
+import { lateKillText } from '../threatReadout'
 
 const SettingsPanel = lazy(() =>
   import('../../SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
@@ -83,13 +86,16 @@ export function NowScreen() {
           (first, event) => (first == null ? event.tS : Math.min(first, event.tS)),
           null,
         )
-        const kills = events.filter(
-          (event) => event.killDelta === 1 && event.tEffectS <= horizon,
-        ).length
+        // The one dead rule; a member that reached arrival undefeated leaks, and
+        // leaked wins over a late kill.
         const count = Math.max(1, index.entities.get(a.uasId)?.formation?.count ?? 1)
+        const death = deadTimeOf(view.attrition, a.uasId, count)
+        const dead = death != null && reached(death.tS)
+        const leaked = trialMemberStatesAt(view, a.uasId, horizon).some((m) => m.leakageCredit)
         const id = a.classificationAtS.hostileAtS
-        const state =
-          kills === count
+        const state = leaked
+          ? 'leaked'
+          : dead
             ? 'defeated'
             : reached(firstShot)
               ? 'engaged'
@@ -106,6 +112,7 @@ export function NowScreen() {
           key: a.uasId,
           Track: index.entities.get(a.uasId)?.name ?? a.uasId,
           State: state,
+          Late: dead && death.late ? lateKillText(death.tS) : null,
           Held: held.get(a.uasId)?.join(', ') ?? '—',
           ID: reached(id) ? id : null,
           Eng: reached(firstShot) ? firstShot : null,
@@ -196,10 +203,10 @@ export function NowScreen() {
           {rows.map((row) => (
             <tr key={row.key}>
               <td title={row.Track}>{row.Track}</td>
-              <td title={row.State}>
+              <td title={row.Late ? `${row.State} · ${row.Late}` : row.State}>
                 <State
                   tone={
-                    row.State === 'engaged'
+                    row.State === 'engaged' || row.State === 'leaked'
                       ? 'critical'
                       : row.State === 'targeted'
                         ? 'warning'
@@ -210,6 +217,7 @@ export function NowScreen() {
                 >
                   {row.State}
                 </State>
+                {row.Late && <span className="muted"> {row.Late}</span>}
               </td>
               <td title={row.Held}>{row.Held}</td>
               <td>{row.ID == null ? '—' : formatTime(row.ID)}</td>

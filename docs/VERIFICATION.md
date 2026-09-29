@@ -216,7 +216,10 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   `beamAndFormationTrial()`, which runs the real engine on fixed ids: four lanes, one
   effector each, yielding a DE hard kill, an HPM hard kill, an interceptor formation kill
   (two ships, two salvos) and a jammer mission kill. `playback/deadTimes.test.ts` and
-  `playback/killClip.test.ts` read them for the dead rule and the hard-only kill clip.
+  `playback/killClip.test.ts` read them for the dead rule, the hard-only kill clip and
+  the milestone clip. `analysis/runTimeline.test.ts` runs every kill and defeat type
+  through `runTimelineOf` and `trialOutcomeRows`. `io/trialExport.test.ts` checks that
+  the export carries no milestone or track quality past a hard kill.
 - `npm test` scopes discovery to `src/`, excluding ignored historical checkouts such as
   `.claude/plans/`. Bare `npx vitest run` can still discover those copies; use the npm command
   or pass `--dir src` when selecting files. Record the scope with a test count.

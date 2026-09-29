@@ -4,6 +4,7 @@ import { entityActive } from '../model/types'
 import { modelFor } from '../model/scenario'
 import type { EngagementEvent } from '../playback/attritionReport'
 import { DT } from '../playback/clock'
+import { deadTimeOf } from '../playback/deadTimes'
 import { engagementIsKinetic, engagementReleaseS } from '../playback/engagementTiming'
 import { trialSweepAt } from '../playback/trialSweepAt'
 import { trialTrackStatesAt } from '../playback/trialTrackState'
@@ -204,8 +205,10 @@ function indexOf(view: TrialResultView): Index {
       color,
       () => state().activeCount,
     )
+    // The one dead rule: neutralized from the effect that killed the last ship.
+    const death = deadTimeOf(view.attrition, entity.id, Math.max(1, entity.formation?.count ?? 1))
     add(list, 'phase', 'Track-file phase', null, 'accent', (t) => {
-      if (state().activeCount === 0) return 6
+      if (death != null && death.tS <= t) return 6
       if (assigned[0]?.tS <= t) return 5
       if (a.status === 'engageable' && a.windowS && a.windowS[0] <= t && t <= a.windowS[1]) return 4
       if (a.classificationAtS.hostileAtS != null && a.classificationAtS.hostileAtS <= t) return 3

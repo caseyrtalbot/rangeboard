@@ -8,7 +8,7 @@ import type { AttritionReport } from '../playback/attritionReport'
 import type { ThreatAssessment } from '../playback/sim'
 import type { DetectionHit } from '../playback/detection'
 import { killChainRoutes } from '../playback/killChain'
-import { expectedDeadTimes } from './threatAggregation'
+import { deadTimeOf } from '../playback/deadTimes'
 
 type ComponentTelemetryState =
   'disabled' | 'searching' | 'tracking' | 'ready' | 'routing' | 'target' | 'cooldown' | 'depleted'
@@ -39,7 +39,7 @@ export interface ComponentTelemetry {
   /**
    * Threats this effector can service right now: gate open, in an engagement
    * window, route available, and not expected dead. A ghost track never holds
-   * a target slot open (see expectedDeadTimes).
+   * a target slot open (see deadTimeOf).
    */
   targetsNow: number
   salvosAssigned: number
@@ -201,9 +201,14 @@ export function systemTelemetryAt(
     (entity): entity is Entity & { kind: 'sensor' | 'c2' | 'effector' } =>
       entity.kind === 'sensor' || entity.kind === 'c2' || entity.kind === 'effector',
   )
-  // One ledger pass: the time each threat's expected residual drops below the
-  // engine's expected-dead cutoff, so no surface reports a ghost as a target.
-  const deadAtS = expectedDeadTimes(report)
+  // The one dead rule (deadTimeOf, cached per report): the effect that killed
+  // the threat's last ship, so no surface reports a ghost as a target.
+  const deadAtS = (uasId: string): number | undefined =>
+    deadTimeOf(
+      report,
+      uasId,
+      scenario.entities.find((entity) => entity.id === uasId)?.formation?.count,
+    )?.tS
   const sensorNow = new Map<string, Set<string>>()
   for (const [uasId, hits] of currentHits) {
     for (const hit of hits) {
@@ -335,9 +340,9 @@ export function systemTelemetryAt(
     let targetsNow = 0
     for (const assessment of assessments) {
       if (assessment.engageGateS == null || assessment.engageGateS > tS) continue
-      // An expected-dead track is not a target: the engine stops assigning below
+      // A dead track is not a target: the engine never assigns a ship below
       // SHIP_DEAD_BELOW (attrition.ts) and the track picture latches it to GHOST.
-      const deadS = deadAtS.get(assessment.uasId)
+      const deadS = deadAtS(assessment.uasId)
       if (deadS != null && tS >= deadS) continue
       const windows = assessment.effectorWindows.find((window) => window.effectorId === entity.id)
       if (!windows || !intervalContains(windows.intervals, tS)) continue

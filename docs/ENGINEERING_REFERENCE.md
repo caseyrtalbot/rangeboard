@@ -767,10 +767,27 @@ Each fact below has exactly one definition. Read it there; never add a second co
   airframe (a jammer kill under drift or return-home) still flies, so an all-soft or a
   mixed defeat leaves the sweep products to the path end. A sample at or before the kill
   measured a live target and is kept with its one drawn step; the first sample after it
-  is dropped. The report is not touched, `trackQuality` stays as swept, and the
-  timeline's ghost span reads the report. `threatPictureAt` and the threat readout read
-  track quality and the classification rung no later than the kill, so neither changes
-  for a dead threat. `TRIAL_ENGINE_REVISION` moved to `rangeboard-trial-r4-v3` with the
+  is dropped. The clip also nulls the per-threat milestones after the cut: the
+  classification rungs, `stableTrackAtS` and `declaredHostileAtS`; `firstDetectS`,
+  `engageGateS`, `windowS`, `cpaS`, `arrivalS` and `warningS` are planning values and
+  stay. The report is not touched and `trackQuality` stays as swept. Every reader
+  derives from `deadTimeOf` and reads one of two times. The death (`tS`) is for outcome
+  readers: the threat stops being a target, its effect windows end, and it counts as
+  defeated unless the death is late. The hard cut (`hardKillTimeOf`, the death when
+  `!soft && !mixed`, else null) is for picture readers: track quality in
+  `threatPictureAt` and the threat readout, the timeline ghost span, the track row's
+  drop-mark suppression and the clip itself. A mission-killed airframe keeps its
+  picture, so no picture bound applies to it. The classification rung needs no local
+  bound, since the clip covers it. The trial export bounds `trackQuality` at the hard
+  cut with `trackQualityAt` (0.5 s samples), because the sweep computes it from samples
+  that playback does not keep. A dead threat's trial phase is `ghost`, hard or soft. Its pill
+  reads `HARD KILL`, `MISSION KILL` or `DEFEATED (MIXED)`, and `LEAKED` for a late
+  death. A late kill is a leaker: Outcome, Now and the Debrief threat record print it as
+  `late kill T+m:ss` and never as a defeat. The FX column and `First effect` read the
+  threat's death and exclude a late one. A timeline effect mark from a `flightCapped`
+  event carries `capped`, and its tooltip adds that word. `liveStats.ts` imports
+  `deadTimeOf` through the `threatAggregation` re-export: a direct `deadTimes` edge
+  splits the store into a preloaded chunk and fails `check:bundle`. `TRIAL_ENGINE_REVISION` moved to `rangeboard-trial-r4-v3` with the
   hard-only clip (`r4-v2` clipped every kill under the threat-level residual rule), so
   a stored trial swept without it fails the manifest gate. The
   page does not keep that return. `acceptTrialMessage`

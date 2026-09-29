@@ -155,7 +155,8 @@ describe('OutcomeScreen', () => {
     expect(tile(html, 'Arrived undefeated')).toContain('>3<small>/9 members</small>')
     expect(tile(html, 'Late kills')).toContain('>2<small>/9 members</small>')
     expect(tile(html, 'First detect')).toContain('T+0:01')
-    expect(tile(html, 'First effect')).toContain('T+0:02')
+    // No threat lost every member: the first death is unreached.
+    expect(tile(html, 'First effect')).toContain('>—<small')
     expect(tile(html, 'Salvos')).toContain('>8<small')
     expect(tile(html, 'Salvos')).toContain('4 kinetic · 4 EW')
     expect(html.match(new RegExp(`by T\\+${formatTime(view.durationS)}`, 'g'))).toHaveLength(6)
@@ -169,7 +170,7 @@ describe('OutcomeScreen', () => {
     ['D', ['swarm', 'moving', 'flyby'], ['flyby', 'moving', 'swarm']],
     ['ID', ['flyby', 'swarm', 'moving'], ['moving', 'swarm', 'flyby']],
     ['ENG', ['moving', 'swarm', 'flyby'], ['swarm', 'moving', 'flyby']],
-    ['FX', ['moving', 'swarm', 'flyby'], ['moving', 'swarm', 'flyby']],
+    ['FX', ['swarm', 'moving', 'flyby'], ['swarm', 'moving', 'flyby']],
     ['Slv', ['flyby', 'moving', 'swarm'], ['swarm', 'moving', 'flyby']],
     ['Result', ['flyby', 'moving', 'swarm'], ['swarm', 'flyby', 'moving']],
   ])(
@@ -221,6 +222,34 @@ describe('OutcomeScreen', () => {
     expect(html).toContain('Capture final PNG')
     expect(html).toContain('Forecast · requirement record')
     expect(html).not.toContain('class="analysis-disclosure" open')
+  })
+
+  it('reads FX and First effect at the death, and a late kill as its own word', () => {
+    const state = useStore.getState()
+    const report = state.trial.result!.report
+    const [moving] = report.events.filter((e) => e.uasId === 'moving')
+    const swarmLate = report.events.find((e) => e.uasId === 'swarm' && e.tEffectS === 8)!
+    // moving loses all three ships at 2 s; swarm's last ship falls after arrival.
+    const events = [
+      ...report.events,
+      { ...moving, shipIdx: 0 },
+      { ...moving, shipIdx: 1 },
+      { ...swarmLate, tS: 9, tEffectS: 10, shipIdx: 0 },
+    ].sort((a, b) => a.tS - b.tS)
+    const result = { ...state.trial.result!, report: { ...report, events } }
+    useStore.setState({ trial: { ...state.trial, result } })
+    const html = render()
+    const cells = (id: string) => {
+      const start = html.indexOf(`<td title="${id}">`)
+      return html.slice(start, html.indexOf('</tr>', start))
+    }
+    expect(cells('moving')).toContain('<td>0:02</td><td>3</td>')
+    expect(cells('moving')).toContain('defeated (hard)')
+    expect(cells('swarm')).toContain('<td>—</td><td>8</td>')
+    expect(cells('swarm')).toContain('>leaked</span>')
+    expect(cells('swarm')).toContain('late kill T+0:10')
+    expect(cells('swarm')).not.toContain('defeated')
+    expect(tile(html, 'First effect')).toContain('0:02')
   })
 
   it('keeps missing detection/effect and no-asset leakage undefined', () => {

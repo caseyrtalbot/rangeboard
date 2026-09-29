@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Scenario } from '../model/types'
-import { mixedTrial } from '../playback/__fixtures__/trialFixture'
+import { beamAndFormationTrial, mixedTrial } from '../playback/__fixtures__/trialFixture'
+import { deadTimeOf } from '../playback/deadTimes'
 import { runTrial } from '../playback/trial'
 import { createTrialManifest } from '../playback/trialTypes'
 import { trialResultOf, trialSnapshotAt } from '../analysis/trialResult'
@@ -127,6 +128,28 @@ describe('independent trial export group', () => {
     const imported = parseScenarioData(group.scenario)
     expect(analysisBasisSignature(imported)).toBe(f.manifest.basisSignature)
     expect(runTrial(imported, group.manifest).report.events).toEqual(group.attrition.events)
+  })
+
+  it('carries no milestone or track quality past a hard kill beside clipped holds', () => {
+    const { scenario, manifest, result, ids } = beamAndFormationTrial()
+    const view = trialResultOf(scenario, manifest, result)
+    const group = json(buildTrialResultGroup(view))
+    const exported = (id: string) => group.assessments.find((a) => a.uasId === id)!
+    const swept = (id: string) => result.assessments.find((a) => a.uasId === id)!
+    for (const id of [ids.de, ids.hpm, ids.formation]) {
+      const cut = deadTimeOf(result.report, id)!.tS
+      const a = exported(id)
+      for (const t of [a.classificationAtS.hostileAtS, a.stableTrackAtS, a.declaredHostileAtS])
+        if (t != null) expect(t).toBeLessThanOrEqual(cut)
+      expect(swept(id).trackQuality!.totalSamples).toBeGreaterThan(a.trackQuality!.totalSamples)
+      expect(a.trackQuality!.lastTrackS!).toBeLessThanOrEqual(cut)
+      expect(a.trackQuality!.totalSamples).toBe(Math.floor((cut - a.firstDetectS!) / 0.5) + 1)
+      expect(a.trackQuality!.continuity).toBe(
+        a.trackQuality!.heldSamples / a.trackQuality!.totalSamples,
+      )
+    }
+    // A mission-killed airframe still flies: its swept quality stands.
+    expect(exported(ids.jammed).trackQuality).toEqual(swept(ids.jammed).trackQuality)
   })
 
   it('preserves mixed member outcomes, no-path disclosure, scan identity and realized leakage after late effects', () => {

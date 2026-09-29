@@ -30,7 +30,7 @@ Order is side then kind. Each kind is a group with a header row that shows the c
 | C2 | blue | one per C2 node | a fused-init tick and a firm mark per fused track; an assignment mark per engagement event, labeled with the effector name |
 | Tracks | blue | one per fused track | init ring, firm dot, the classification ramp (unknown, suspected, hostile), an assignment mark per event, a drop mark when the track ends without an outcome |
 | Effectors | blue | one per effector | per event: a preparation span (hatched), then a flight, burst or dwell span; a release mark; an effect mark (hard kill, mission kill, miss, or jam decision); rounds left after each release; pk at each effect |
-| Threats | red | one per threat with a flight path | undetected line, the classification ramp from first detection, the in-range window per effector, a release tick per shot, the effect mark, then a ghost line to the planned arrival after a kill, or an arrival mark for a leaker or a CPA mark |
+| Threats | red | one per threat with a flight path | undetected line, the classification ramp from first detection, the in-range window per effector, a release tick per shot, the effect mark, then a ghost line to the planned arrival after a hard kill (a mission-killed airframe still flies, so it draws none), or an arrival mark for a leaker or a CPA mark |
 
 Rules:
 
@@ -116,6 +116,8 @@ export interface RunTimelineMark {
   text?: string
   /** Rounds left after a release, or pk at an effect, as display text. */
   after?: string
+  /** An effect whose flight the engine capped (`flightCapped`); the tooltip adds `capped`. */
+  capped?: true
 }
 export interface RunTimelineRow {
   key: string

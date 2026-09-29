@@ -1,5 +1,5 @@
 import { FULL_RUN, reached, type ExecutionHorizon } from '../../analysis/horizon'
-import { trackQualityAt, expectedDeadTimes } from '../../analysis/threatAggregation'
+import { trackQualityAt } from '../../analysis/threatAggregation'
 import type { DisplayUnits } from '../../geometry/geo'
 import { formatAxis, formatDistance, formatSpeed, formatTime } from '../../geometry/geo'
 import { modelFor, pathSpeed } from '../../model/scenario'
@@ -15,10 +15,17 @@ import type { TrialMemberState } from '../../playback/trialTrackState'
 import { trialSweepAt } from '../../playback/trialSweepAt'
 import type { TrialSweep, TrialSensorState } from '../../playback/trialSweepAt'
 import { engagementReleaseS } from '../../playback/engagementTiming'
+import { deadTimeOf, hardKillTimeOf } from '../../playback/deadTimes'
+import type { DeathRecord } from '../../playback/deadTimes'
 
 const DASH = '—'
 const NA = 'not available'
 const NO_ASSET = 'no defended asset placed'
+
+/** The secondary word for a leaker's late kill: the threat died after arrival. */
+export function lateKillText(tS: number): string {
+  return `late kill T+${formatTime(tS)}`
+}
 
 export type TrialOutcomeWord =
   'defeated (hard)' | 'defeated (mission)' | 'leaked' | 'active' | 'no path'
@@ -33,6 +40,8 @@ export interface TrialOutcomeRow {
   salvos: number
   result: string
   states: TrialOutcomeWord[]
+  /** The threat's death when it landed after arrival: a leaker's late kill. */
+  lateKillS: number | null
 }
 
 /** Track-file milestones from the retained trial, with no forecast substitutions. */
@@ -65,6 +74,12 @@ export function trialOutcomeRows(view: TrialResultView): TrialOutcomeRow[] {
                   ? ['defeated (mission)' as const]
                   : []),
               ]
+    // The one dead rule: FX is the threat's death, never the first member
+    // removal; a death after arrival is a late kill and never a defeat.
+    const count = Math.max(1, entity.formation?.count ?? 1)
+    const death = deadTimeOf(view.attrition, entity.id, count)
+    const dead = death != null && death.tS <= t
+    const lateKillS = dead && death.late ? death.tS : null
     return [
       {
         id: entity.id,
@@ -72,12 +87,11 @@ export function trialOutcomeRows(view: TrialResultView): TrialOutcomeRow[] {
         detect: first([assessment.firstDetectS]),
         identify: first([assessment.classificationAtS.hostileAtS]),
         engage: first(events.map((event) => event.tS)),
-        effect: first(
-          events.filter((event) => event.killDelta === 1).map((event) => event.tEffectS),
-        ),
+        effect: dead && !death.late ? death.tS : null,
         salvos: events.length,
-        result: states.join(' · '),
+        result: [...states, ...(lateKillS != null ? [lateKillText(lateKillS)] : [])].join(' · '),
         states,
+        lateKillS,
       },
     ]
   })
@@ -150,19 +164,19 @@ export interface TrialTelemetryState {
   shipCount: number
   jammedNow: boolean
   members: TrialMemberState[]
+  /** The threat's death under the one dead rule, once reached; null while it lives. */
+  death: DeathRecord | null
 }
 
 const telemetryCache = new WeakMap<TrialSweep, Map<string, TrialTelemetryState>>()
-const eligibilityCache = new WeakMap<TrialResultView, Map<string, number>>()
 
-/** Expected-dead times of a retained trial, cached per view. */
-function deadTimesOf(view: TrialResultView): Map<string, number> {
-  let cutoffs = eligibilityCache.get(view)
-  if (!cutoffs) {
-    cutoffs = expectedDeadTimes(view.attrition)
-    eligibilityCache.set(view, cutoffs)
-  }
-  return cutoffs
+/**
+ * The threat's death under the one dead rule (deadTimes.ts, cached per
+ * report). `trialResultOf` holds the attrition ship count equal to the
+ * formation count, so the count only matters for a threat with no row.
+ */
+function deathOf(view: TrialResultView, uasId: string, shipCount?: number): DeathRecord | null {
+  return deadTimeOf(view.attrition, uasId, shipCount)
 }
 
 /** Only retained facts reached at this horizon; never runs a forecast sweep. */
@@ -176,17 +190,17 @@ export function trialTelemetryAt(
   const sweep = supplied?.timeS === t ? supplied : trialSweepAt(view, t)
   const cached = telemetryCache.get(sweep)?.get(uasId)
   if (cached) return cached
-  const cutoffs = deadTimesOf(view)
   const members = trialMemberStatesAt(view, uasId, t)
+  const fullDeath = deathOf(view, uasId, members.length || undefined)
+  const death = fullDeath && fullDeath.tS <= t ? fullDeath : null
   const assessment = view.assessments.find((a) => a.uasId === uasId)
   const sensors = sweep.sensors.filter((s) => s.threatId === uasId && s.stateAtTime !== 'not-held')
   const holdingSensorIds = sensors.map((s) => s.sensorId)
   const coasting = sensors.length > 0 && sensors.every((s) => s.stateAtTime === 'coasting')
   const cls = assessment?.classificationAtS
   const hasReached = (time: number | null | undefined) => time != null && time <= t
-  // A dead threat's classification rung reads no later than the kill.
-  const tLive = Math.min(t, cutoffs.get(uasId) ?? t)
-  const classifiedBy = (time: number | null | undefined) => time != null && time <= tLive
+  // The kill clip nulls a rung after the hard cut, so the rung needs no bound here.
+  const classifiedBy = hasReached
   const classification = classifiedBy(cls?.hostileAtS)
     ? 'hostile'
     : classifiedBy(cls?.suspectedAtS)
@@ -197,13 +211,14 @@ export function trialTelemetryAt(
   const hardKillCount = members.filter((m) => m.outcome === 'hard-kill').length
   const missionKillCount = members.filter((m) => m.outcome === 'mission-kill').length
   const targetedNow =
-    t < (cutoffs.get(uasId) ?? Infinity) &&
+    t < (fullDeath?.tS ?? Infinity) &&
     activeCount > 0 &&
     assessment?.windowS != null &&
     t >= assessment.windowS[0] &&
     t <= assessment.windowS[1]
+  // A ghost once every member is removed, hard or soft.
   const phase: TrackPhase =
-    members.length > 0 && hardKillCount === members.length
+    death != null
       ? 'ghost'
       : events.length > 0
         ? 'engaged'
@@ -238,11 +253,19 @@ export function trialTelemetryAt(
     shipCount: members.length,
     jammedNow: members.some((m) => m.jamState?.jammed),
     members,
+    death,
   }
   const byId = telemetryCache.get(sweep) ?? new Map<string, TrialTelemetryState>()
   byId.set(uasId, state)
   telemetryCache.set(sweep, byId)
   return state
+}
+
+/** The pill of a dead threat: a late kill is a leaker, else the defeat type. */
+export function deathPill(death: DeathRecord): string {
+  if (death.late) return 'LEAKED'
+  if (death.mixed) return 'DEFEATED (MIXED)'
+  return death.soft ? 'MISSION KILL' : 'HARD KILL'
 }
 
 interface ThreatReadoutInput {
@@ -294,11 +317,9 @@ export function threatReadoutAt({
   const pillLabel =
     state?.coasting && (phase === 'tracked' || phase === 'identified')
       ? 'COAST'
-      : phase === 'ghost'
-        ? 'HARD KILL'
-        : state && state.shipCount > 0 && state.missionKillCount === state.shipCount
-          ? 'MISSION KILL'
-          : PHASE_STYLE[phase].label
+      : state?.death
+        ? deathPill(state.death)
+        : PHASE_STYLE[phase].label
 
   const path = scenario.paths.find((candidate) => candidate.entityId === entity.id)
   const speedMps =
@@ -319,11 +340,13 @@ export function threatReadoutAt({
           : 'held'
     return `${name} (${mode}${sensor?.lastMeasurementTimeS != null ? ` · last T+${formatTime(sensor.lastMeasurementTimeS)}` : ''})`
   })
+  // A hard-killed threat holds no track: quality reads no later than the hard
+  // cut. A mission-killed airframe still flies and keeps its picture.
+  const hardS =
+    trial && !untouched ? hardKillTimeOf(deathOf(trial, entity.id, entity.formation?.count)) : null
   const continuity =
     assessment && trial && !untouched
-      ? // A dead threat holds no track: quality reads no later than the kill.
-        trackQualityAt(assessment, Math.min(tObs, deadTimesOf(trial).get(entity.id) ?? tObs))
-          ?.continuity
+      ? trackQualityAt(assessment, Math.min(tObs, hardS ?? tObs))?.continuity
       : undefined
   const altitudeText = `${threatAltitudeFt(scenario, entity).toLocaleString()} ft AGL`
 

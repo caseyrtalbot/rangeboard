@@ -7,7 +7,8 @@ import { useStore } from '../../state/store'
 import { IDLE_TRIAL } from '../../state/runState'
 import { runReplicates } from '../../playback/mcRun'
 import { scenarioDurationS } from '../../model/scenario'
-import { DebriefRecord } from './DebriefRecord'
+import { DebriefRecord, TrialOutcomeSummary } from './DebriefRecord'
+import { mixedTrial, trialEvent } from '../../playback/__fixtures__/trialFixture'
 import { installTrial } from './trialTestState'
 
 const actions = vi.hoisted(() => ({ export: undefined as (() => void) | undefined }))
@@ -181,5 +182,39 @@ describe('DebriefRecord', () => {
     installTrial(3)
     expect(render()).toBe('')
     expect(actions.export).toBeUndefined()
+  })
+})
+
+describe('TrialOutcomeSummary first effect', () => {
+  const firstEffect = (html: string) => {
+    const start = html.indexOf('<span>First effect</span>')
+    return html.slice(start, html.indexOf('</strong>', start))
+  }
+
+  it('reads the first threat death, never a member removal or a late kill', () => {
+    const { view } = mixedTrial()
+    // swarm and moving lose members but never every one: no death.
+    const none = renderToStaticMarkup(<TrialOutcomeSummary view={view} horizonS={60} />)
+    expect(firstEffect(none)).toContain('—')
+    const events = [
+      ...view.attrition.events,
+      // moving's three ships all fall at 2 s: its death.
+      trialEvent({ uasId: 'moving', shipIdx: 0 }),
+      trialEvent({ uasId: 'moving', shipIdx: 1 }),
+    ]
+    const dead = { ...view, attrition: { ...view.attrition, events } }
+    expect(
+      firstEffect(renderToStaticMarkup(<TrialOutcomeSummary view={dead} horizonS={60} />)),
+    ).toContain('0:02')
+    const late = {
+      ...view,
+      attrition: {
+        ...view.attrition,
+        events: events.map((e) => (e.uasId === 'moving' ? { ...e, lateEffect: true } : e)),
+      },
+    }
+    expect(
+      firstEffect(renderToStaticMarkup(<TrialOutcomeSummary view={late} horizonS={60} />)),
+    ).toContain('—')
   })
 })

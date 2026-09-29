@@ -335,6 +335,74 @@ describe('clipAtKill by kill type', () => {
   })
 })
 
+describe('clipAtKill milestones', () => {
+  /** Milestones swept past the 10 s kill, beside planning times that stay. */
+  const withMilestones = (a: ReturnType<typeof killedAtTen>['a']) => ({
+    ...a,
+    classificationAtS: { unknownAtS: 1, suspectedAtS: 6, hostileAtS: 12 },
+    stableTrackAtS: 11,
+    declaredHostileAtS: 13,
+    engageGateS: 13,
+    windowS: [13, 18] as [number, number],
+    cpaS: 15,
+    arrivalS: 16,
+    warningS: 15,
+  })
+
+  it('nulls the rungs, the firm track and the declaration after a hard kill; planning times stay', () => {
+    const { a, other, report } = killedAtTen()
+    const swept = withMilestones(a)
+    const [clipped] = clipAtKill({ assessments: [swept, other], report, stepS: STEP }).assessments
+    expect(clipped.classificationAtS).toEqual({ unknownAtS: 1, suspectedAtS: 6, hostileAtS: null })
+    expect(clipped.stableTrackAtS).toBeNull()
+    expect(clipped.declaredHostileAtS).toBeNull()
+    expect(clipped).toMatchObject({
+      firstDetectS: 1,
+      engageGateS: 13,
+      windowS: [13, 18],
+      cpaS: 15,
+      arrivalS: 16,
+      warningS: 15,
+    })
+    // The swept assessment is never touched.
+    expect(swept.classificationAtS.hostileAtS).toBe(12)
+  })
+
+  it('keeps every milestone after a mission kill: the airframe still flies', () => {
+    const { a, other, report } = withEvents([softEvent({ tS: 8, tEffectS: 10, killDelta: 1 })])
+    const swept = withMilestones(a)
+    expect(clipAtKill({ assessments: [swept, other], report, stepS: STEP }).assessments[0]).toBe(
+      swept,
+    )
+  })
+
+  it('keeps every milestone after a mixed defeat', () => {
+    const { a, other, report } = withEvents(
+      [
+        trialEvent({ tS: 5, tEffectS: 7, shipIdx: 0, killDelta: 1 }),
+        softEvent({ tS: 8, tEffectS: 10, shipIdx: 1, killDelta: 1 }),
+      ],
+      2,
+    )
+    const swept = withMilestones(a)
+    expect(clipAtKill({ assessments: [swept, other], report, stepS: STEP }).assessments[0]).toBe(
+      swept,
+    )
+  })
+
+  it('returns the same assessment when every milestone precedes the hard kill', () => {
+    const { a, other, report } = killedAtTen()
+    const late = {
+      ...report,
+      events: [report.events[0], { ...report.events[1], tS: 23, tEffectS: 25 }],
+    }
+    const swept = withMilestones(a)
+    expect(
+      clipAtKill({ assessments: [swept, other], report: late, stepS: STEP }).assessments[0],
+    ).toBe(swept)
+  })
+})
+
 describe('clipAtKill on the engine fixture (DE, HPM, formation, jammer)', () => {
   const { result, ids } = beamAndFormationTrial()
   const hold = (uasId: string) =>

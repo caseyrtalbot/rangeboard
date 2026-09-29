@@ -1,7 +1,9 @@
 import type { TrialResultView } from './trialResult'
 import type { ThreatAssessment } from '../playback/sim'
 import type { AttritionReport } from '../playback/attritionReport'
-import { expectedDeadTimes } from './threatAggregation'
+// Through the re-export: a direct deadTimes edge here splits the store into its
+// own preloaded chunk (check:bundle).
+import { deadTimeOf } from './threatAggregation'
 
 /**
  * Live prefix-aggregation over the engagement ledger. buildLiveTimeline sorts
@@ -131,7 +133,6 @@ export function buildLiveTimeline(
     if (e.late) continue
     preArrivalKill.set(e.uasId, (preArrivalKill.get(e.uasId) ?? 0) + e.kill)
   }
-  const deadAtS = expectedDeadTimes(report)
 
   const detectTS: number[] = []
   const classifyTS: number[] = []
@@ -149,7 +150,8 @@ export function buildLiveTimeline(
       targetWindows.push({
         startS: a.windowS[0],
         endS: a.windowS[1],
-        deadAtS: deadAtS.get(a.uasId) ?? null,
+        // The one dead rule: no target slot after the threat's last ship latched.
+        deadAtS: deadTimeOf(report, a.uasId)?.tS ?? null,
       })
     }
     if (a.arrivalS != null) {

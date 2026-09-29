@@ -138,3 +138,14 @@ export function expectedDeadTimes(report: AttritionReport): Map<string, number> 
   for (const [uasId, dead] of deadRecords(report)) out.set(uasId, dead.tS)
   return out
 }
+
+/**
+ * The hard cut: the death when every ship latched hard (`!soft && !mixed`),
+ * else null. A mission-killed airframe still flies, so an all-soft or a mixed
+ * defeat has no cut. Picture readers (holds, track quality, the
+ * classification rung, the ghost span, the kill clip) bound at this time;
+ * outcome readers read the death itself.
+ */
+export function hardKillTimeOf(death: DeathRecord | null): number | null {
+  return death && !death.soft && !death.mixed ? death.tS : null
+}
