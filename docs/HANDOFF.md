@@ -17,9 +17,11 @@ is the completed chrome refactor queue (Rows A to D merged and pushed as `f4363a
 timeline polish and chrome cleanup, merged and pushed as `353caee`; Row F, two engine
 decisions the user made on 2026-09-28, merged and pushed as `6cb16f9`). Row G (the one
 dead rule, the kill types, and every milestone bounded at the kill), the user's decision of
-2026-09-28, is merged to `main` as `6733fc2`. The code-quality refactor (no behavior
-change) follows it as `ccfdf44`. The Tasking selects nothing. Execute one row per agent
-turn.
+2026-09-28, is merged and pushed as `6733fc2`. The code-quality refactor (no behavior
+change) follows it as `ccfdf44`, pushed with the handoff update `418a893`.
+[code-quality/Plan.md](code-quality/Plan.md) is the frozen queue for the refactor's three
+follow-ups (rows Q1 to Q3, authored 2026-09-29). The Tasking selects Q1. Execute one row
+per agent turn.
 
 ## Position
 
@@ -27,9 +29,10 @@ turn.
   `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
   evidence with the Now card fix `a570e23` and the Row G handoff `6733fc2`, fast-forwarded
   from `engine/g`. The code-quality refactor `ccfdf44` follows, fast-forwarded from
-  `refactor/code-quality`, then this handoff update. Both branches are deleted. `git branch`
-  shows `main` only, `git worktree list` shows the main checkout only and the stash list
-  is empty.
+  `refactor/code-quality`, then the handoff update `418a893`; `origin/main` is at
+  `418a893`. The code-quality plan and this handoff rewrite follow on `main`. Both
+  branches are deleted. `git branch` shows `main` only, `git worktree list` shows the main
+  checkout only and the stash list is empty.
 - Code-quality refactor (2026-09-29) `ccfdf44`, no behavior change: one store-free
   scenario fill, `fillScenarioReport` (`src/io/scenarioFill.ts`), serves
   `persist.fillScenario` and the engine `loadScenario`; dead code is deleted; duplicate
@@ -533,7 +536,14 @@ turn.
 
 Handling: candidates, not rows. Row G took the Row F items except the two kept below.
 Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expand all rule, the 240 px fold
-and the Row D items it listed. What remains:
+and the Row D items it listed. The three code-quality refactor follow-ups are rows Q1 to Q3
+in [code-quality/Plan.md](code-quality/Plan.md). What remains:
+
+From the code-quality follow-up surveys (2026-09-29):
+
+- No production code sets `Selection.cardId`, so the `EntityLayer.tsx` card ring (95,
+  605-610, 669-676) never draws. Q2 keeps it with the card data model. Decide it with the
+  T&E Ops redesign.
 
 From Row G:
 
@@ -693,9 +703,29 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-Nothing is selected. Row G (2026-09-28) and the code-quality refactor (2026-09-29) are on
-`main` (see Position). Wait for the user to select work. The Follow-ups are candidates,
-not rows.
+**Row Q1: remove the single-worker Monte Carlo slot.** The row, its owned files, facts,
+work steps, checks and stop condition are in [code-quality/Plan.md](code-quality/Plan.md#q1-remove-the-single-worker-monte-carlo-slot-opus-medium).
+Start Q1 only when asked.
+
+- Base: `main` at the commit that holds the plan and this handoff. Branch `quality/q1`.
+  No dirty path belongs to Q1.
+- Outcome: no module, worker branch or test reaches the single-worker slot; production
+  behavior is unchanged. Decision D1 in the plan applies unless the user overrides it at
+  kickoff. The user confirmed D2 for Q2 on 2026-09-29: delete the card actions, keep the
+  card data.
+- Exclusions: the pool (`workerPool.ts`), the sensitivity slot, `replicateLoop`,
+  `workerSlot.ts` and every file the row does not own. Report other findings as
+  follow-ups.
+- Verified facts: the pointers come from a read-only `opus-medium` survey on `418a893`
+  (2026-09-29); the orchestrator checked the callers, the store test mock and the worker
+  fall-through against the source. The base gate is the `ccfdf44` gate in Position.
+- Next action: brief one `opus-medium` worker with the Q1 row, the gate and a 900 s
+  budget, per `~/.claude/rules/delegation.md`. Run the gate and read the diff yourself
+  before you count the row done.
+- Stop: the gate passes, the commit is on `quality/q1`, and this Tasking selects Q2. Do
+  not merge or push without the user's word.
+
+The Follow-ups are candidates, not rows.
 
 ## Landmines
 
@@ -998,6 +1028,11 @@ not rows.
   `language`.
 - `storageManagement.ts` derives live keys from every non-prefix export of
   `storageKeys.ts`. Un-exporting `ANALYSIS_KEY` changes that readout.
+- Keep the card data model (`Scenario.testCards`, `TestCard`, `RunLogEntry`, the schema,
+  `validateScenario.ts` and the `deleteSelection` cascade) while saved boards carry it.
+  `fillScenarioReport` passes an old save's `testCards` through, and `analysisBasis.ts`
+  excludes the key only while it is a key of `Scenario`; removing it changes the basis
+  signature of old saves.
 
 ## Evidence
 

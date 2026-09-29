@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "940beddfbee98c7c40a1c4895a556b707881b552eb73a9795b3018a363fa2520",
+      "sha256": "08299b145106129c7d9b634ba8f965d25b72cba88e36f06cb4ce786740660681",
       "reviewedAt": "2026-09-29",
-      "note": "Workspace fact: Row G is merged as 6733fc2 and the code-quality refactor as ccfdf44; the handoff selects nothing"
+      "note": "Workspace fact names docs/code-quality/Plan.md (Q1 to Q3) and the handoff selecting Q1"
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "c7cdb533774ff3653536708388fc1a8eb5d54225c81a284554e1bba607de6bdf",
+      "sha256": "9dc1acb6c40d50bd161383438a57722b0c5563da5f3d26e476033c603c79eef7",
       "reviewedAt": "2026-09-29",
-      "note": "AGENTS.md workspace fact changed for the Row G and refactor merge; CLAUDE.md still points to AGENTS.md"
+      "note": "AGENTS.md workspace fact changed for the code-quality plan; CLAUDE.md still points to AGENTS.md"
     },
     {
       "document": "CONTEXT.md",
@@ -44,9 +44,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "b81752412047260a6a97292a4594cc0cfaec7a12e57349fb1440e5098f07ae14",
+      "sha256": "7eba910dcee1814daaa9ceaf4e8bf67c15d1da284044a025f66cd7dac1758774",
       "reviewedAt": "2026-09-29",
-      "note": "Added the Row G kill types browser check (engine-g-2026-09-28) beside the Row F record; the other entries are unchanged."
+      "note": "Index links docs/code-quality/Plan.md as the frozen queue for the three code-quality refactor follow-ups"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "fd88c2d058b378c7cfaa5754ea4cca0d783e40b3e1da7eb0e47e87840327b624",
+      "sha256": "1e0312cd3a66094e5877793990c25e8bdee72e6fb477e9733b984a48728a6657",
       "reviewedAt": "2026-09-29",
-      "note": "Position and Tasking record Row G (6733fc2) and the code-quality refactor (ccfdf44) on main, engine/g and refactor/code-quality deleted, and the gate on ccfdf44; the Tasking selects nothing"
+      "note": "Tasking selects Q1 of docs/code-quality/Plan.md and records the user's D2 confirmation; Position records the push of 418a893 and the plan; Follow-ups add the undrawn card ring; Landmines add the card data model"
     },
     {
       "document": "docs/Plan.md",
@@ -127,6 +127,13 @@
       "sha256": "624b59d340b0f2907bdc49d354d31c96f4b18b72613ee9f5aed4ffecf2d6c4cc",
       "reviewedAt": "2026-09-29",
       "note": "Code-quality refactor: RunTimeline.tsx imports useTrialResult directly; RAMP moved to timeline/layout.ts with identical values; the spec's behavior and ownership table still hold."
+    },
+    {
+      "document": "docs/code-quality/Plan.md",
+      "inputs": [],
+      "sha256": "0d9938d855d6f42cda86cf2fc760c97ec181ea1c371384ddddc609b0db817807",
+      "reviewedAt": "2026-09-29",
+      "note": "New frozen queue for the three code-quality refactor follow-ups (Q1 slot removal, Q2 card actions, Q3 sorted-index helper), authored against 418a893 from three read-only surveys; the user confirmed D2 on 2026-09-29"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",
