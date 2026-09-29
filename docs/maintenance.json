@@ -44,27 +44,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "46528e13cdd77cde0fef5a44c4b39921a2eb53e43e7cbafcd56d991372971026",
-      "reviewedAt": "2026-09-28",
-      "note": "Row F: the engine lane evidence indexed"
+      "sha256": "b81752412047260a6a97292a4594cc0cfaec7a12e57349fb1440e5098f07ae14",
+      "reviewedAt": "2026-09-29",
+      "note": "Added the Row G kill types browser check (engine-g-2026-09-28) beside the Row F record; the other entries are unchanged."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "97df67cf0e3969e65b7db1a303bf62a2960e19a1350054fb27bf1837379a2884",
+      "sha256": "612814ad8fc9e4dfd8555cd8cc4fb98ac9e9eeac87304546ac379a6222fcd554",
       "reviewedAt": "2026-09-29",
-      "note": "Row G review fixes: trial card FX and the threat detail FX mark read the pre-arrival death; the export bounds trackQuality on the manifest sweep step with lastTrackS on the grid; trackQualityAt takes the step"
+      "note": "Row G evidence fix: the Now Run monitor Defeated row counts pre-arrival defeats over the modeled members, as the Outcome tile does"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "07a0e7978aa998233ef2ded3681e7621576079614ccef2c78fc13c5b8fa25a6c",
+      "sha256": "9960157472c7e8d253d4101c9a4e23b39c211272b6ca485df60d905ceec3b632",
       "reviewedAt": "2026-09-29",
-      "note": "Row G review fixes: trial card FX and the threat detail FX mark read the pre-arrival death; the export bounds trackQuality on the manifest sweep step with lastTrackS on the grid; trackQualityAt takes the step"
+      "note": "Row G evidence fix: the Now Run monitor Defeated row counts pre-arrival defeats over the modeled members, as the Outcome tile does"
     },
     {
       "document": "docs/VERIFICATION.md",

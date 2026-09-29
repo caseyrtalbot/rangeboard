@@ -1,0 +1,2095 @@
+{
+  "capturedAt": "2026-09-29T03:13:45.426Z",
+  "viewport": "1265x900",
+  "fixture": "src/playback/__fixtures__/layered-acoustic-merops.json",
+  "shots": [
+    {
+      "file": "now-dark.png",
+      "state": "Rerun after the LiveStrip fix, same trial: Execute, complete run at the run end, the Run monitor card (Defeated 8/9 members) and the kill chain table",
+      "simTimeS": 1321,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "board-hard-before-dark.png",
+      "state": "Execute, complete run, THR-G1-Q-01 4 selected, cursor 5 s before its hard kill",
+      "simTimeS": 222,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "board-hard-kill-dark.png",
+      "state": "Execute, complete run, THR-G1-Q-01 4 selected, cursor 30 s after its hard kill: HARD KILL pill, no track, ghost span in the strip",
+      "simTimeS": 257,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "board-mission-kill-dark.png",
+      "state": "Execute, complete run, THR-G1-FPV-01 2 selected, cursor 30 s after its mission kill: MISSION KILL pill, the track still draws, no ghost span",
+      "simTimeS": 1300.5,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "board-mission-kill-glyph-dark.png",
+      "state": "Execute, complete run, nothing selected, cursor 30 s after the mission kill of THR-G1-FPV-01 2: the dimmed (ghost) group and the MISSION KILL member glyph",
+      "simTimeS": 1300.5,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "board-late-kill-dark.png",
+      "state": "Execute, complete run, THR-G1-Q-01 2 selected, cursor 5 s after its late kill: LEAKED pill",
+      "simTimeS": 281.5,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "board-hard-kill-daylight.png",
+      "state": "The hard kill state in the daylight theme",
+      "simTimeS": 257,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "outcome-tiles-dark.png",
+      "state": "Analyze, Outcome: the tiles, First effect at the earliest pre-arrival death",
+      "simTimeS": 1321,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "outcome-table-dark.png",
+      "state": "Analyze, Outcome: the per-threat table, the FX column and the result words",
+      "simTimeS": 1321,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "debrief-threat-record-dark.png",
+      "state": "Analyze, the Debrief trial threat record (ThreatPicture, debrief mode) mounted by the script at the right edge, centred on the late kill card",
+      "simTimeS": 1321,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "detail-survival-hard-dark.png",
+      "state": "Analyze, THR-G1-Q-01 4 selected, threat detail survival chart",
+      "simTimeS": 1321,
+      "observedThroughS": 1321
+    },
+    {
+      "file": "detail-survival-late-dark.png",
+      "state": "Analyze, THR-G1-Q-01 2 selected, threat detail survival chart",
+      "simTimeS": 1321,
+      "observedThroughS": 1321
+    }
+  ],
+  "scrubs": [
+    {
+      "why": "Now screen at the run end",
+      "toS": 1321,
+      "before": 1321,
+      "after": 1321,
+      "simTimeS": 1321,
+      "held": true
+    },
+    {
+      "why": "hard kill, 5 s before",
+      "toS": 222,
+      "before": 1321,
+      "after": 1321,
+      "simTimeS": 222,
+      "held": true
+    },
+    {
+      "why": "hard kill, 30 s after",
+      "toS": 257,
+      "before": 1321,
+      "after": 1321,
+      "simTimeS": 257,
+      "held": true
+    },
+    {
+      "why": "mission kill, 30 s after",
+      "toS": 1300.5,
+      "before": 1321,
+      "after": 1321,
+      "simTimeS": 1300.5,
+      "held": true
+    },
+    {
+      "why": "late kill, 5 s after",
+      "toS": 281.5,
+      "before": 1321,
+      "after": 1321,
+      "simTimeS": 281.5,
+      "held": true
+    },
+    {
+      "why": "hard kill, daylight",
+      "toS": 257,
+      "before": 1321,
+      "after": 1321,
+      "simTimeS": 257,
+      "held": true
+    },
+    {
+      "why": "Analyze at the run end",
+      "toS": 1321,
+      "before": 1321,
+      "after": 1321,
+      "simTimeS": 1321,
+      "held": true
+    }
+  ],
+  "errors": [],
+  "scenario": {
+    "roe": "free",
+    "physics": [
+      "truthTracks",
+      "noFalseTracks",
+      "noOperatorQueue",
+      "noFlightLimits",
+      "rfBandGate",
+      "eoirSpanRatio",
+      "legacyKineticPk",
+      "legacyBeamPk"
+    ],
+    "doctrineEnabled": true
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "runId": "simrun-mum3qt2a-2",
+      "replicateIndex": 266845237,
+      "kinds": [
+        "hard",
+        "alive"
+      ],
+      "ledger": {
+        "softShotKills": 0,
+        "lateEffectKills": 0,
+        "killDelta1": 6,
+        "flightCapped": 0
+      }
+    },
+    {
+      "attempt": 2,
+      "runId": "simrun-mum3qty5-4",
+      "replicateIndex": 1185651980,
+      "kinds": [
+        "hard"
+      ],
+      "ledger": {
+        "softShotKills": 2,
+        "lateEffectKills": 0,
+        "killDelta1": 9,
+        "flightCapped": 0
+      }
+    },
+    {
+      "attempt": 3,
+      "runId": "simrun-mum3ques-6",
+      "replicateIndex": 952296419,
+      "kinds": [
+        "mission",
+        "hard",
+        "late"
+      ],
+      "ledger": {
+        "softShotKills": 2,
+        "lateEffectKills": 1,
+        "killDelta1": 9,
+        "flightCapped": 0
+      }
+    }
+  ],
+  "trial": {
+    "status": "ready",
+    "runId": "simrun-mum3ques-6",
+    "seed": 4821,
+    "replicateIndex": 952296419,
+    "engineRevision": "rangeboard-trial-r4-v3",
+    "sweepStepS": 0.5,
+    "events": 33,
+    "ledger": {
+      "softShotKills": 2,
+      "lateEffectKills": 1,
+      "killDelta1": 9,
+      "flightCapped": 0
+    },
+    "threats": [
+      {
+        "uasId": "ent-mt5bofdd-2q",
+        "name": "THR-G1-FPV-01 1",
+        "shipCount": 1,
+        "arrivalS": 1180.5,
+        "death": {
+          "tS": 995.1448450950071,
+          "soft": false,
+          "late": false,
+          "mixed": false
+        },
+        "kind": "hard"
+      },
+      {
+        "uasId": "ent-mt5bofdd-2s",
+        "name": "THR-G1-FPV-01 2",
+        "shipCount": 1,
+        "arrivalS": 1300.5,
+        "death": {
+          "tS": 1270.5,
+          "soft": true,
+          "late": false,
+          "mixed": false
+        },
+        "kind": "mission"
+      },
+      {
+        "uasId": "ent-mt5bqja3-2v",
+        "name": "THR-G1-FPV-01 1",
+        "shipCount": 1,
+        "arrivalS": 780.5,
+        "death": {
+          "tS": 702.5,
+          "soft": true,
+          "late": false,
+          "mixed": false
+        },
+        "kind": "mission"
+      },
+      {
+        "uasId": "ent-mt5bqnfg-2x",
+        "name": "THR-G1-Q-01 1",
+        "shipCount": 1,
+        "arrivalS": 241,
+        "death": {
+          "tS": 99.39058829801019,
+          "soft": false,
+          "late": false,
+          "mixed": false
+        },
+        "kind": "hard"
+      },
+      {
+        "uasId": "ent-mt5bqnfg-2z",
+        "name": "THR-G1-Q-01 2",
+        "shipCount": 1,
+        "arrivalS": 242.5,
+        "death": {
+          "tS": 276.5,
+          "soft": false,
+          "late": true,
+          "mixed": false
+        },
+        "kind": "late"
+      },
+      {
+        "uasId": "ent-mt5bqnfg-31",
+        "name": "THR-G1-Q-01 3",
+        "shipCount": 1,
+        "arrivalS": 242.5,
+        "death": {
+          "tS": 118,
+          "soft": false,
+          "late": false,
+          "mixed": false
+        },
+        "kind": "hard"
+      },
+      {
+        "uasId": "ent-mt5bqnfg-33",
+        "name": "THR-G1-Q-01 4",
+        "shipCount": 1,
+        "arrivalS": 245.5,
+        "death": {
+          "tS": 227,
+          "soft": false,
+          "late": false,
+          "mixed": false
+        },
+        "kind": "hard"
+      },
+      {
+        "uasId": "ent-mt5bqnfg-35",
+        "name": "THR-G1-Q-01 5",
+        "shipCount": 1,
+        "arrivalS": 245.5,
+        "death": {
+          "tS": 127.10422465711439,
+          "soft": false,
+          "late": false,
+          "mixed": false
+        },
+        "kind": "hard"
+      },
+      {
+        "uasId": "ent-mt5bqnfg-37",
+        "name": "THR-G1-Q-01 6",
+        "shipCount": 1,
+        "arrivalS": 251,
+        "death": {
+          "tS": 148,
+          "soft": false,
+          "late": false,
+          "mixed": false
+        },
+        "kind": "hard"
+      }
+    ]
+  },
+  "subjects": {
+    "hard": "ent-mt5bqnfg-33",
+    "mission": "ent-mt5bofdd-2s",
+    "late": "ent-mt5bqnfg-2z"
+  },
+  "durationS": 1321,
+  "afterComplete": {
+    "simTimeS": 1321,
+    "observedThroughS": 1321
+  },
+  "timeline": {
+    "hard": {
+      "before": {
+        "horizonS": 222,
+        "observedThroughS": 1321,
+        "phase": "engaged",
+        "members": [
+          "active"
+        ],
+        "latestOfThreat": [
+          {
+            "id": "ent-mt5bn8cr-29:ent-mt5bqnfg-33",
+            "tS": 110
+          },
+          {
+            "id": "ent-mt5brxu5-3w:ent-mt5bqnfg-33",
+            "tS": 222
+          },
+          {
+            "id": "ent-mt5brxu5-3u:ent-mt5bqnfg-33",
+            "tS": 222
+          },
+          {
+            "id": "ent-mt5bs2vv-4i:ent-mt5bqnfg-33",
+            "tS": 74.5
+          },
+          {
+            "id": "ent-mt5briiz-3a:ent-mt5bqnfg-33",
+            "tS": 222
+          },
+          {
+            "id": "ent-mt5brxu5-3x:ent-mt5bqnfg-33",
+            "tS": 222
+          }
+        ],
+        "drawnOfThreat": 4,
+        "rows": [
+          {
+            "key": "sensor:ent-mt5bn8cr-29:ent-mt5bqnfg-33",
+            "lastSpanEndS": 110.5,
+            "holdEndS": 110.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3a:ent-mt5bqnfg-33",
+            "lastSpanEndS": 222,
+            "holdEndS": 222,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3u:ent-mt5bqnfg-33",
+            "lastSpanEndS": 222,
+            "holdEndS": 222,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3w:ent-mt5bqnfg-33",
+            "lastSpanEndS": 222,
+            "holdEndS": 222,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3x:ent-mt5bqnfg-33",
+            "lastSpanEndS": 222,
+            "holdEndS": 222,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4i:ent-mt5bqnfg-33",
+            "lastSpanEndS": 75,
+            "holdEndS": 75,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "track:ent-mt5bqnfg-33",
+            "lastSpanEndS": 222,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "threat:ent-mt5bqnfg-33",
+            "lastSpanEndS": 222,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          }
+        ]
+      },
+      "atKill": {
+        "horizonS": 227,
+        "observedThroughS": 1321,
+        "phase": "ghost",
+        "members": [
+          "hard-kill"
+        ],
+        "latestOfThreat": [
+          {
+            "id": "ent-mt5bn8cr-29:ent-mt5bqnfg-33",
+            "tS": 110
+          },
+          {
+            "id": "ent-mt5brxu5-3w:ent-mt5bqnfg-33",
+            "tS": 227
+          },
+          {
+            "id": "ent-mt5brxu5-3u:ent-mt5bqnfg-33",
+            "tS": 227
+          },
+          {
+            "id": "ent-mt5bs2vv-4i:ent-mt5bqnfg-33",
+            "tS": 74.5
+          },
+          {
+            "id": "ent-mt5briiz-3a:ent-mt5bqnfg-33",
+            "tS": 227
+          },
+          {
+            "id": "ent-mt5brxu5-3x:ent-mt5bqnfg-33",
+            "tS": 227
+          }
+        ],
+        "drawnOfThreat": 4,
+        "rows": [
+          {
+            "key": "sensor:ent-mt5bn8cr-29:ent-mt5bqnfg-33",
+            "lastSpanEndS": 110.5,
+            "holdEndS": 110.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3a:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227,
+            "holdEndS": 227,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3u:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227,
+            "holdEndS": 227,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3w:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227,
+            "holdEndS": 227,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3x:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227,
+            "holdEndS": 227,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4i:ent-mt5bqnfg-33",
+            "lastSpanEndS": 75,
+            "holdEndS": 75,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "track:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "threat:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": [
+              [
+                "hard-kill",
+                227
+              ]
+            ]
+          }
+        ]
+      },
+      "after": {
+        "horizonS": 257,
+        "observedThroughS": 1321,
+        "phase": "ghost",
+        "members": [
+          "hard-kill"
+        ],
+        "latestOfThreat": [
+          {
+            "id": "ent-mt5bn8cr-29:ent-mt5bqnfg-33",
+            "tS": 110
+          },
+          {
+            "id": "ent-mt5brxu5-3w:ent-mt5bqnfg-33",
+            "tS": 227
+          },
+          {
+            "id": "ent-mt5brxu5-3u:ent-mt5bqnfg-33",
+            "tS": 227
+          },
+          {
+            "id": "ent-mt5bs2vv-4i:ent-mt5bqnfg-33",
+            "tS": 74.5
+          },
+          {
+            "id": "ent-mt5briiz-3a:ent-mt5bqnfg-33",
+            "tS": 227
+          },
+          {
+            "id": "ent-mt5brxu5-3x:ent-mt5bqnfg-33",
+            "tS": 227
+          }
+        ],
+        "drawnOfThreat": 0,
+        "rows": [
+          {
+            "key": "sensor:ent-mt5bn8cr-29:ent-mt5bqnfg-33",
+            "lastSpanEndS": 110.5,
+            "holdEndS": 110.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3a:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": 227.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3u:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": 227.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3w:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": 227.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3x:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": 227.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4i:ent-mt5bqnfg-33",
+            "lastSpanEndS": 75,
+            "holdEndS": 75,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "track:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "threat:ent-mt5bqnfg-33",
+            "lastSpanEndS": 245.5,
+            "holdEndS": null,
+            "ghost": [
+              [
+                227,
+                245.5
+              ]
+            ],
+            "killMarks": [
+              [
+                "hard-kill",
+                227
+              ]
+            ]
+          }
+        ]
+      },
+      "end": {
+        "horizonS": 1321,
+        "observedThroughS": 1321,
+        "phase": "ghost",
+        "members": [
+          "hard-kill"
+        ],
+        "latestOfThreat": [
+          {
+            "id": "ent-mt5bn8cr-29:ent-mt5bqnfg-33",
+            "tS": 110
+          },
+          {
+            "id": "ent-mt5brxu5-3w:ent-mt5bqnfg-33",
+            "tS": 227
+          },
+          {
+            "id": "ent-mt5brxu5-3u:ent-mt5bqnfg-33",
+            "tS": 227
+          },
+          {
+            "id": "ent-mt5bs2vv-4i:ent-mt5bqnfg-33",
+            "tS": 74.5
+          },
+          {
+            "id": "ent-mt5briiz-3a:ent-mt5bqnfg-33",
+            "tS": 227
+          },
+          {
+            "id": "ent-mt5brxu5-3x:ent-mt5bqnfg-33",
+            "tS": 227
+          }
+        ],
+        "drawnOfThreat": 0,
+        "rows": [
+          {
+            "key": "sensor:ent-mt5bn8cr-29:ent-mt5bqnfg-33",
+            "lastSpanEndS": 110.5,
+            "holdEndS": 110.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3a:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": 227.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3u:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": 227.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3w:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": 227.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3x:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": 227.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4i:ent-mt5bqnfg-33",
+            "lastSpanEndS": 75,
+            "holdEndS": 75,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "track:ent-mt5bqnfg-33",
+            "lastSpanEndS": 227.5,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "threat:ent-mt5bqnfg-33",
+            "lastSpanEndS": 245.5,
+            "holdEndS": null,
+            "ghost": [
+              [
+                227,
+                245.5
+              ]
+            ],
+            "killMarks": [
+              [
+                "hard-kill",
+                227
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "mission": {
+      "before": {
+        "horizonS": 1265.5,
+        "observedThroughS": 1321,
+        "phase": "engaged",
+        "members": [
+          "active"
+        ],
+        "latestOfThreat": [
+          {
+            "id": "ent-mt5brxu5-3w:ent-mt5bofdd-2s",
+            "tS": 1265.5
+          },
+          {
+            "id": "ent-mt5briiz-3a:ent-mt5bofdd-2s",
+            "tS": 1265.5
+          },
+          {
+            "id": "ent-mt5brxu5-3t:ent-mt5bofdd-2s",
+            "tS": 1265.5
+          },
+          {
+            "id": "ent-mt5bn8cr-25:ent-mt5bofdd-2s",
+            "tS": 1189.5
+          },
+          {
+            "id": "ent-mt5bs2vv-4e:ent-mt5bofdd-2s",
+            "tS": 1215
+          },
+          {
+            "id": "ent-mt5bs2vv-4f:ent-mt5bofdd-2s",
+            "tS": 1128
+          },
+          {
+            "id": "ent-mt5bn8cr-26:ent-mt5bofdd-2s",
+            "tS": 1174.5
+          },
+          {
+            "id": "ent-mt5briiz-3e:ent-mt5bofdd-2s",
+            "tS": 1170.5
+          },
+          {
+            "id": "ent-mt5briiz-3d:ent-mt5bofdd-2s",
+            "tS": 1248
+          },
+          {
+            "id": "ent-mt5brxu5-3x:ent-mt5bofdd-2s",
+            "tS": 1265.5
+          }
+        ],
+        "drawnOfThreat": 4,
+        "rows": [
+          {
+            "key": "sensor:ent-mt5bn8cr-25:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1190,
+            "holdEndS": 1190,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bn8cr-26:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1175,
+            "holdEndS": 1175,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3a:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1265.5,
+            "holdEndS": 1265.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3d:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1248.5,
+            "holdEndS": 1248.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3e:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1171,
+            "holdEndS": 1171,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3t:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1265.5,
+            "holdEndS": 1265.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3w:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1265.5,
+            "holdEndS": 1265.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3x:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1265.5,
+            "holdEndS": 1265.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4e:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1215.5,
+            "holdEndS": 1215.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4f:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1128.5,
+            "holdEndS": 1128.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "track:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1265.5,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "threat:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1265.5,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          }
+        ]
+      },
+      "after": {
+        "horizonS": 1300.5,
+        "observedThroughS": 1321,
+        "phase": "ghost",
+        "members": [
+          "mission-kill"
+        ],
+        "latestOfThreat": [
+          {
+            "id": "ent-mt5brxu5-3w:ent-mt5bofdd-2s",
+            "tS": 1300.5
+          },
+          {
+            "id": "ent-mt5briiz-3a:ent-mt5bofdd-2s",
+            "tS": 1300.5
+          },
+          {
+            "id": "ent-mt5brxu5-3t:ent-mt5bofdd-2s",
+            "tS": 1279.5
+          },
+          {
+            "id": "ent-mt5bn8cr-25:ent-mt5bofdd-2s",
+            "tS": 1189.5
+          },
+          {
+            "id": "ent-mt5bs2vv-4e:ent-mt5bofdd-2s",
+            "tS": 1215
+          },
+          {
+            "id": "ent-mt5bs2vv-4f:ent-mt5bofdd-2s",
+            "tS": 1128
+          },
+          {
+            "id": "ent-mt5bn8cr-26:ent-mt5bofdd-2s",
+            "tS": 1174.5
+          },
+          {
+            "id": "ent-mt5briiz-3e:ent-mt5bofdd-2s",
+            "tS": 1170.5
+          },
+          {
+            "id": "ent-mt5briiz-3d:ent-mt5bofdd-2s",
+            "tS": 1248
+          },
+          {
+            "id": "ent-mt5brxu5-3x:ent-mt5bofdd-2s",
+            "tS": 1300.5
+          },
+          {
+            "id": "ent-mt5brxu5-3s:ent-mt5bofdd-2s",
+            "tS": 1300.5
+          }
+        ],
+        "drawnOfThreat": 4,
+        "rows": [
+          {
+            "key": "sensor:ent-mt5bn8cr-25:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1190,
+            "holdEndS": 1190,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bn8cr-26:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1175,
+            "holdEndS": 1175,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3a:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1300.5,
+            "holdEndS": 1300.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3d:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1248.5,
+            "holdEndS": 1248.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3e:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1171,
+            "holdEndS": 1171,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3s:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1300.5,
+            "holdEndS": 1300.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3t:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1280,
+            "holdEndS": 1280,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3w:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1300.5,
+            "holdEndS": 1300.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3x:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1300.5,
+            "holdEndS": 1300.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4e:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1215.5,
+            "holdEndS": 1215.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4f:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1128.5,
+            "holdEndS": 1128.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "track:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1300.5,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "threat:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1300.5,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": [
+              [
+                "mission-kill",
+                1270.5
+              ]
+            ]
+          }
+        ]
+      },
+      "end": {
+        "horizonS": 1321,
+        "observedThroughS": 1321,
+        "phase": "ghost",
+        "members": [
+          "mission-kill"
+        ],
+        "latestOfThreat": [
+          {
+            "id": "ent-mt5brxu5-3w:ent-mt5bofdd-2s",
+            "tS": 1320.5
+          },
+          {
+            "id": "ent-mt5briiz-3a:ent-mt5bofdd-2s",
+            "tS": 1320.5
+          },
+          {
+            "id": "ent-mt5brxu5-3t:ent-mt5bofdd-2s",
+            "tS": 1279.5
+          },
+          {
+            "id": "ent-mt5bn8cr-25:ent-mt5bofdd-2s",
+            "tS": 1189.5
+          },
+          {
+            "id": "ent-mt5bs2vv-4e:ent-mt5bofdd-2s",
+            "tS": 1215
+          },
+          {
+            "id": "ent-mt5bs2vv-4f:ent-mt5bofdd-2s",
+            "tS": 1128
+          },
+          {
+            "id": "ent-mt5bn8cr-26:ent-mt5bofdd-2s",
+            "tS": 1174.5
+          },
+          {
+            "id": "ent-mt5briiz-3e:ent-mt5bofdd-2s",
+            "tS": 1170.5
+          },
+          {
+            "id": "ent-mt5briiz-3d:ent-mt5bofdd-2s",
+            "tS": 1248
+          },
+          {
+            "id": "ent-mt5brxu5-3x:ent-mt5bofdd-2s",
+            "tS": 1320.5
+          },
+          {
+            "id": "ent-mt5brxu5-3s:ent-mt5bofdd-2s",
+            "tS": 1320.5
+          }
+        ],
+        "drawnOfThreat": 4,
+        "rows": [
+          {
+            "key": "sensor:ent-mt5bn8cr-25:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1190,
+            "holdEndS": 1190,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bn8cr-26:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1175,
+            "holdEndS": 1175,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3a:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1321,
+            "holdEndS": 1321,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3d:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1248.5,
+            "holdEndS": 1248.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3e:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1171,
+            "holdEndS": 1171,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3s:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1321,
+            "holdEndS": 1321,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3t:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1280,
+            "holdEndS": 1280,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3w:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1321,
+            "holdEndS": 1321,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3x:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1321,
+            "holdEndS": 1321,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4e:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1215.5,
+            "holdEndS": 1215.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4f:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1128.5,
+            "holdEndS": 1128.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "track:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1321,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "threat:ent-mt5bofdd-2s",
+            "lastSpanEndS": 1300.5,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": [
+              [
+                "mission-kill",
+                1270.5
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    "late": {
+      "after": {
+        "horizonS": 281.5,
+        "observedThroughS": 1321,
+        "phase": "ghost",
+        "members": [
+          "hard-kill"
+        ],
+        "latestOfThreat": [
+          {
+            "id": "ent-mt5brxu5-3w:ent-mt5bqnfg-2z",
+            "tS": 276.5
+          },
+          {
+            "id": "ent-mt5brxu5-3u:ent-mt5bqnfg-2z",
+            "tS": 232.5
+          },
+          {
+            "id": "ent-mt5bs2vv-4i:ent-mt5bqnfg-2z",
+            "tS": 84.5
+          },
+          {
+            "id": "ent-mt5briiz-3a:ent-mt5bqnfg-2z",
+            "tS": 276.5
+          },
+          {
+            "id": "ent-mt5bn8cr-29:ent-mt5bqnfg-2z",
+            "tS": 118
+          },
+          {
+            "id": "ent-mt5brxu5-3x:ent-mt5bqnfg-2z",
+            "tS": 276.5
+          },
+          {
+            "id": "ent-mt5brxu5-3t:ent-mt5bqnfg-2z",
+            "tS": 249.5
+          },
+          {
+            "id": "ent-mt5brxu5-3s:ent-mt5bqnfg-2z",
+            "tS": 276.5
+          }
+        ],
+        "drawnOfThreat": 0,
+        "rows": [
+          {
+            "key": "sensor:ent-mt5bn8cr-29:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 118.5,
+            "holdEndS": 118.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3a:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": 277,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3s:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": 277,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3t:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 250,
+            "holdEndS": 250,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3u:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 233,
+            "holdEndS": 233,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3w:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": 277,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3x:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": 277,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4i:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 85,
+            "holdEndS": 85,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "track:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "threat:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 276.5,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": [
+              [
+                "arrival",
+                242.5
+              ],
+              [
+                "hard-kill",
+                276.5
+              ]
+            ]
+          }
+        ]
+      },
+      "end": {
+        "horizonS": 1321,
+        "observedThroughS": 1321,
+        "phase": "ghost",
+        "members": [
+          "hard-kill"
+        ],
+        "latestOfThreat": [
+          {
+            "id": "ent-mt5brxu5-3w:ent-mt5bqnfg-2z",
+            "tS": 276.5
+          },
+          {
+            "id": "ent-mt5brxu5-3u:ent-mt5bqnfg-2z",
+            "tS": 232.5
+          },
+          {
+            "id": "ent-mt5bs2vv-4i:ent-mt5bqnfg-2z",
+            "tS": 84.5
+          },
+          {
+            "id": "ent-mt5briiz-3a:ent-mt5bqnfg-2z",
+            "tS": 276.5
+          },
+          {
+            "id": "ent-mt5bn8cr-29:ent-mt5bqnfg-2z",
+            "tS": 118
+          },
+          {
+            "id": "ent-mt5brxu5-3x:ent-mt5bqnfg-2z",
+            "tS": 276.5
+          },
+          {
+            "id": "ent-mt5brxu5-3t:ent-mt5bqnfg-2z",
+            "tS": 249.5
+          },
+          {
+            "id": "ent-mt5brxu5-3s:ent-mt5bqnfg-2z",
+            "tS": 276.5
+          }
+        ],
+        "drawnOfThreat": 0,
+        "rows": [
+          {
+            "key": "sensor:ent-mt5bn8cr-29:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 118.5,
+            "holdEndS": 118.5,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5briiz-3a:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": 277,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3s:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": 277,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3t:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 250,
+            "holdEndS": 250,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3u:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 233,
+            "holdEndS": 233,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3w:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": 277,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5brxu5-3x:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": 277,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "sensor:ent-mt5bs2vv-4i:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 85,
+            "holdEndS": 85,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "track:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 277,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": []
+          },
+          {
+            "key": "threat:ent-mt5bqnfg-2z",
+            "lastSpanEndS": 276.5,
+            "holdEndS": null,
+            "ghost": [],
+            "killMarks": [
+              [
+                "arrival",
+                242.5
+              ],
+              [
+                "hard-kill",
+                276.5
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "cappedMarks": [],
+  "now": {
+    "head": [
+      "Track",
+      "State",
+      "Held",
+      "ID",
+      "Eng",
+      "Arr"
+    ],
+    "hard": [
+      [
+        "THR-G1-Q-01 4",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:54",
+        "4:05"
+      ]
+    ],
+    "mission": [
+      [
+        "THR-G1-FPV-01 2",
+        "defeated",
+        "\u2014",
+        "8:54",
+        "16:45",
+        "21:40"
+      ]
+    ],
+    "late": [
+      [
+        "THR-G1-Q-01 2",
+        "leaked late kill T+4:36",
+        "\u2014",
+        "0:00",
+        "0:24",
+        "4:02"
+      ]
+    ],
+    "all": [
+      [
+        "THR-G1-FPV-01 1",
+        "defeated",
+        "\u2014",
+        "6:40",
+        "14:45",
+        "19:40"
+      ],
+      [
+        "THR-G1-FPV-01 1",
+        "defeated",
+        "\u2014",
+        "0:02",
+        "7:32",
+        "13:00"
+      ],
+      [
+        "THR-G1-FPV-01 2",
+        "defeated",
+        "\u2014",
+        "8:54",
+        "16:45",
+        "21:40"
+      ],
+      [
+        "THR-G1-Q-01 1",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:24",
+        "4:01"
+      ],
+      [
+        "THR-G1-Q-01 2",
+        "leaked late kill T+4:36",
+        "\u2014",
+        "0:00",
+        "0:24",
+        "4:02"
+      ],
+      [
+        "THR-G1-Q-01 3",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:28",
+        "4:02"
+      ],
+      [
+        "THR-G1-Q-01 4",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:54",
+        "4:05"
+      ],
+      [
+        "THR-G1-Q-01 5",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:54",
+        "4:05"
+      ],
+      [
+        "THR-G1-Q-01 6",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:58",
+        "4:11"
+      ]
+    ]
+  },
+  "nowStrip": {
+    "text": "T+22:01 / 22:01ReplayReplicate952296419Seed4821Speed1xTracks9/9Engaged9/9 tracksDefeated9/10 members",
+    "rows": {
+      "Replicate": "952296419",
+      "Seed": "4821",
+      "Speed": "1x",
+      "Tracks": "9/9",
+      "Engaged": "9/9 tracks",
+      "Defeated": "9/10 members"
+    },
+    "counts": {
+      "preArrivalHardKills": 6,
+      "preArrivalSoftKills": 2,
+      "lateHardKills": 1,
+      "lateSoftKills": 0,
+      "arrivedUndefeated": 1,
+      "noModelsArrival": 1,
+      "activeAtHorizon": 1,
+      "detectedTracks": 9,
+      "engagedTracks": 9,
+      "totalTracks": 9
+    },
+    "assessments": 10,
+    "noPath": [
+      "ent-mt5bq0rc-2u"
+    ],
+    "attritionShips": 9,
+    "firstCapture": true
+  },
+  "pills": {
+    "hardBefore": {
+      "pill": "ENGAGED",
+      "name": "THR-G1-Q-01 4",
+      "layerOn": true
+    },
+    "hardAfter": {
+      "pill": "HARD KILL",
+      "name": "THR-G1-Q-01 4",
+      "layerOn": true
+    },
+    "missionAfter": {
+      "pill": "MISSION KILL",
+      "name": "THR-G1-FPV-01 2",
+      "layerOn": true
+    },
+    "lateAfter": {
+      "pill": "LEAKED",
+      "name": "THR-G1-Q-01 2",
+      "layerOn": true
+    },
+    "mixed": "no mixed defeat in this trial",
+    "hardAfterDaylight": {
+      "pill": "HARD KILL",
+      "name": "THR-G1-Q-01 4",
+      "layerOn": true
+    }
+  },
+  "stripRows": {
+    "ent-mt5bqnfg-33": {
+      "kept": [
+        "sensor:ent-mt5bn8cr-29",
+        "sensor:ent-mt5briiz-3a",
+        "sensor:ent-mt5brxu5-3u",
+        "sensor:ent-mt5brxu5-3w",
+        "sensor:ent-mt5brxu5-3x",
+        "sensor:ent-mt5bs2vv-4i",
+        "track:ent-mt5bqnfg-33",
+        "threat:ent-mt5bqnfg-33"
+      ],
+      "openSensor": "sensor:ent-mt5briiz-3a"
+    },
+    "ent-mt5bofdd-2s": {
+      "kept": [
+        "sensor:ent-mt5bn8cr-25",
+        "sensor:ent-mt5bn8cr-26",
+        "sensor:ent-mt5briiz-3a",
+        "sensor:ent-mt5briiz-3d",
+        "sensor:ent-mt5briiz-3e",
+        "sensor:ent-mt5brxu5-3s",
+        "sensor:ent-mt5brxu5-3t",
+        "sensor:ent-mt5brxu5-3w",
+        "sensor:ent-mt5brxu5-3x",
+        "sensor:ent-mt5bs2vv-4e",
+        "sensor:ent-mt5bs2vv-4f",
+        "track:ent-mt5bofdd-2s",
+        "threat:ent-mt5bofdd-2s"
+      ],
+      "openSensor": "sensor:ent-mt5briiz-3a"
+    },
+    "ent-mt5bqnfg-2z": {
+      "kept": [
+        "sensor:ent-mt5bn8cr-29",
+        "sensor:ent-mt5briiz-3a",
+        "sensor:ent-mt5brxu5-3s",
+        "sensor:ent-mt5brxu5-3t",
+        "sensor:ent-mt5brxu5-3u",
+        "sensor:ent-mt5brxu5-3w",
+        "sensor:ent-mt5brxu5-3x",
+        "sensor:ent-mt5bs2vv-4i",
+        "track:ent-mt5bqnfg-2z",
+        "threat:ent-mt5bqnfg-2z"
+      ],
+      "openSensor": "sensor:ent-mt5briiz-3a"
+    }
+  },
+  "cappedTooltip": "no capped effect mark in this trial",
+  "afterAnalyze": {
+    "simTimeS": 1321,
+    "observedThroughS": 1321
+  },
+  "outcome": {
+    "head": [
+      "Track",
+      "D",
+      "ID",
+      "ENG",
+      "FX",
+      "Slv",
+      "Result"
+    ],
+    "hard": [
+      [
+        "THR-G1-Q-01 4",
+        "0:00",
+        "0:00",
+        "0:54",
+        "3:47",
+        "8",
+        "defeated (hard)"
+      ]
+    ],
+    "mission": [
+      [
+        "THR-G1-FPV-01 2",
+        "7:56",
+        "8:54",
+        "16:45",
+        "21:10",
+        "6",
+        "defeated (mission)"
+      ]
+    ],
+    "late": [
+      [
+        "THR-G1-Q-01 2",
+        "0:00",
+        "0:00",
+        "0:24",
+        "\u2014",
+        "4",
+        "leaked late kill T+4:36"
+      ]
+    ],
+    "all": [
+      [
+        "THR-G1-FPV-01 1",
+        "5:07",
+        "6:40",
+        "14:45",
+        "16:35",
+        "1",
+        "defeated (hard)"
+      ],
+      [
+        "THR-G1-FPV-01 1",
+        "0:02",
+        "0:02",
+        "7:32",
+        "11:42",
+        "4",
+        "defeated (mission)"
+      ],
+      [
+        "THR-G1-FPV-01 2",
+        "7:56",
+        "8:54",
+        "16:45",
+        "21:10",
+        "6",
+        "defeated (mission)"
+      ],
+      [
+        "THR-G1-Q-01 1",
+        "0:00",
+        "0:00",
+        "0:24",
+        "1:39",
+        "2",
+        "defeated (hard)"
+      ],
+      [
+        "THR-G1-Q-01 2",
+        "0:00",
+        "0:00",
+        "0:24",
+        "\u2014",
+        "4",
+        "leaked late kill T+4:36"
+      ],
+      [
+        "THR-G1-Q-01 3",
+        "0:00",
+        "0:00",
+        "0:28",
+        "1:58",
+        "2",
+        "defeated (hard)"
+      ],
+      [
+        "THR-G1-Q-01 4",
+        "0:00",
+        "0:00",
+        "0:54",
+        "3:47",
+        "8",
+        "defeated (hard)"
+      ],
+      [
+        "THR-G1-Q-01 5",
+        "0:00",
+        "0:00",
+        "0:54",
+        "2:07",
+        "3",
+        "defeated (hard)"
+      ],
+      [
+        "THR-G1-Q-01 6",
+        "0:00",
+        "0:00",
+        "0:58",
+        "2:28",
+        "3",
+        "defeated (hard)"
+      ]
+    ],
+    "tiles": {
+      "Defeated before arrival": "8/9 membersby T+22:01",
+      "Arrived undefeated": "1/9 membersby T+22:01",
+      "Late kills": "1/9 membersby T+22:01",
+      "First detect": "T+0:00by T+22:01",
+      "First effect": "T+1:39by T+22:01",
+      "Salvos": "3316 kinetic \u00b7 17 EWby T+22:01"
+    }
+  },
+  "debrief": {
+    "hard": {
+      "name": "THR-G1-Q-01 4",
+      "leaked": false,
+      "effectMet": true,
+      "firstEffectS": 227,
+      "lateKillS": null,
+      "hardKillCount": 1,
+      "missionKillCount": 0
+    },
+    "mission": {
+      "name": "THR-G1-FPV-01 2",
+      "leaked": false,
+      "effectMet": true,
+      "firstEffectS": 1270.5,
+      "lateKillS": null,
+      "hardKillCount": 0,
+      "missionKillCount": 1
+    },
+    "late": {
+      "name": "THR-G1-Q-01 2",
+      "leaked": true,
+      "effectMet": false,
+      "firstEffectS": null,
+      "lateKillS": 276.5,
+      "hardKillCount": 1,
+      "missionKillCount": 0
+    },
+    "mounted": false,
+    "harness": {
+      "cards": [
+        "THR-G1-FPV-01 1DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 5:07 \u00b7 ID 6:40 \u00b7 ENG 14:45 \u00b7 FX 16:35 \u00b7 1 salvos \u00b7 Survives 0/1 members",
+        "THR-G1-FPV-01 2DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 7:56 \u00b7 ID 8:54 \u00b7 ENG 16:45 \u00b7 FX 21:10 \u00b7 6 salvos \u00b7 Survives 0/1 members",
+        "THR-G1-FPV-01 1DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 0:02 \u00b7 ID 0:02 \u00b7 ENG 7:32 \u00b7 FX 11:42 \u00b7 4 salvos \u00b7 Survives 0/1 members",
+        "THR-G1-Q-01 1DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 0:00 \u00b7 ID 0:00 \u00b7 ENG 0:24 \u00b7 FX 1:39 \u00b7 2 salvos \u00b7 Survives 0/1 members",
+        "THR-G1-Q-01 2LEAKEDlate kill T+4:36D1/1TRK1/1ID1/1TGT1/1ENG1/1FX0/1D 0:00 \u00b7 ID 0:00 \u00b7 ENG 0:24 \u00b7 FX \u2014 \u00b7 4 salvos \u00b7 Survives 0/1 members",
+        "THR-G1-Q-01 3DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 0:00 \u00b7 ID 0:00 \u00b7 ENG 0:28 \u00b7 FX 1:58 \u00b7 2 salvos \u00b7 Survives 0/1 members",
+        "THR-G1-Q-01 4DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 0:00 \u00b7 ID 0:00 \u00b7 ENG 0:54 \u00b7 FX 3:47 \u00b7 8 salvos \u00b7 Survives 0/1 members",
+        "THR-G1-Q-01 5DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 0:00 \u00b7 ID 0:00 \u00b7 ENG 0:54 \u00b7 FX 2:07 \u00b7 3 salvos \u00b7 Survives 0/1 members",
+        "THR-G1-Q-01 6DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 0:00 \u00b7 ID 0:00 \u00b7 ENG 0:58 \u00b7 FX 2:28 \u00b7 3 salvos \u00b7 Survives 0/1 members"
+      ]
+    },
+    "cards": {
+      "hard": [
+        "THR-G1-Q-01 4DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 0:00 \u00b7 ID 0:00 \u00b7 ENG 0:54 \u00b7 FX 3:47 \u00b7 8 salvos \u00b7 Survives 0/1 members"
+      ],
+      "mission": [
+        "THR-G1-FPV-01 2DEFEATEDD1/1TRK1/1ID1/1TGT1/1ENG1/1FX1/1D 7:56 \u00b7 ID 8:54 \u00b7 ENG 16:45 \u00b7 FX 21:10 \u00b7 6 salvos \u00b7 Survives 0/1 members"
+      ],
+      "late": [
+        "THR-G1-Q-01 2LEAKEDlate kill T+4:36D1/1TRK1/1ID1/1TGT1/1ENG1/1FX0/1D 0:00 \u00b7 ID 0:00 \u00b7 ENG 0:24 \u00b7 FX \u2014 \u00b7 4 salvos \u00b7 Survives 0/1 members"
+      ]
+    }
+  },
+  "detail": {
+    "hard": {
+      "labels": [
+        "ARR",
+        "FX"
+      ],
+      "text": "SurvivalSimulated trial countsmembers0:0010:0020:000.00.51.0ARRFXT+22:01Shown through T+22:01"
+    },
+    "late": {
+      "labels": [
+        "ARR"
+      ],
+      "text": "SurvivalSimulated trial countsmembers0:0010:0020:000.00.51.0T+22:01ARRShown through T+22:01"
+    },
+    "mission": {
+      "labels": [
+        "ARR",
+        "FX"
+      ],
+      "text": "SurvivalSimulated trial countsmembers0:0010:0020:000.00.51.0T+22:01ARRFXShown through T+22:01"
+    }
+  },
+  "end": {
+    "simTimeS": 1321,
+    "observedThroughS": 1321
+  },
+  "nowRerun": {
+    "capturedAt": "2026-09-29T03:20:48.261Z",
+    "requestedRunId": "simrun-mum3ques-6",
+    "errors": [],
+    "trial": {
+      "status": "ready",
+      "runId": "simrun-mum3ques-6",
+      "seed": 4821,
+      "replicateIndex": 952296419,
+      "doctrineEnabled": true,
+      "events": 33,
+      "deaths": [
+        [
+          "ent-mt5bofdd-2q",
+          {
+            "tS": 995.1448450950071,
+            "soft": false,
+            "late": false,
+            "mixed": false
+          }
+        ],
+        [
+          "ent-mt5bofdd-2s",
+          {
+            "tS": 1270.5,
+            "soft": true,
+            "late": false,
+            "mixed": false
+          }
+        ],
+        [
+          "ent-mt5bqja3-2v",
+          {
+            "tS": 702.5,
+            "soft": true,
+            "late": false,
+            "mixed": false
+          }
+        ],
+        [
+          "ent-mt5bqnfg-2x",
+          {
+            "tS": 99.39058829801019,
+            "soft": false,
+            "late": false,
+            "mixed": false
+          }
+        ],
+        [
+          "ent-mt5bqnfg-2z",
+          {
+            "tS": 276.5,
+            "soft": false,
+            "late": true,
+            "mixed": false
+          }
+        ],
+        [
+          "ent-mt5bqnfg-31",
+          {
+            "tS": 118,
+            "soft": false,
+            "late": false,
+            "mixed": false
+          }
+        ],
+        [
+          "ent-mt5bqnfg-33",
+          {
+            "tS": 227,
+            "soft": false,
+            "late": false,
+            "mixed": false
+          }
+        ],
+        [
+          "ent-mt5bqnfg-35",
+          {
+            "tS": 127.10422465711439,
+            "soft": false,
+            "late": false,
+            "mixed": false
+          }
+        ],
+        [
+          "ent-mt5bqnfg-37",
+          {
+            "tS": 148,
+            "soft": false,
+            "late": false,
+            "mixed": false
+          }
+        ]
+      ]
+    },
+    "clock": {
+      "simTimeS": 1321,
+      "observedThroughS": 1321
+    },
+    "runMonitor": [
+      {
+        "label": "Replicate",
+        "value": "952296419",
+        "title": "Replicate index of this trial's draw"
+      },
+      {
+        "label": "Seed",
+        "value": "4821",
+        "title": null
+      },
+      {
+        "label": "Speed",
+        "value": "1x",
+        "title": null
+      },
+      {
+        "label": "Tracks",
+        "value": "9/9",
+        "title": null
+      },
+      {
+        "label": "Engaged",
+        "value": "9/9 tracks",
+        "title": null
+      },
+      {
+        "label": "Defeated",
+        "value": "8/9 members",
+        "title": "Members defeated before arrival; a late kill is a leaker"
+      }
+    ],
+    "killChain": [
+      [
+        "THR-G1-FPV-01 1",
+        "defeated",
+        "\u2014",
+        "6:40",
+        "14:45",
+        "19:40"
+      ],
+      [
+        "THR-G1-FPV-01 1",
+        "defeated",
+        "\u2014",
+        "0:02",
+        "7:32",
+        "13:00"
+      ],
+      [
+        "THR-G1-FPV-01 2",
+        "defeated",
+        "\u2014",
+        "8:54",
+        "16:45",
+        "21:40"
+      ],
+      [
+        "THR-G1-Q-01 1",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:24",
+        "4:01"
+      ],
+      [
+        "THR-G1-Q-01 2",
+        "leaked late kill T+4:36",
+        "\u2014",
+        "0:00",
+        "0:24",
+        "4:02"
+      ],
+      [
+        "THR-G1-Q-01 3",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:28",
+        "4:02"
+      ],
+      [
+        "THR-G1-Q-01 4",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:54",
+        "4:05"
+      ],
+      [
+        "THR-G1-Q-01 5",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:54",
+        "4:05"
+      ],
+      [
+        "THR-G1-Q-01 6",
+        "defeated",
+        "\u2014",
+        "0:00",
+        "0:58",
+        "4:11"
+      ]
+    ],
+    "outcomeTiles": {
+      "Defeated before arrival": "8/9 membersby T+22:01",
+      "Arrived undefeated": "1/9 membersby T+22:01",
+      "Late kills": "1/9 membersby T+22:01",
+      "First detect": "T+0:00by T+22:01",
+      "First effect": "T+1:39by T+22:01",
+      "Salvos": "3316 kinetic \u00b7 17 EWby T+22:01"
+    },
+    "sameTrial": true,
+    "note": "Rerun after the LiveStrip fix (uncommitted, on top of 70512e0): Defeated counts pre-arrival hard and soft kills over the modeled members (sum of attrition shipCount). The first capture read Defeated 9/10 members (nowStrip)."
+  }
+}

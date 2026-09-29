@@ -85,11 +85,10 @@ export function LiveStrip({
       </div>
     )
   }
-  const defeated =
-    counts.preArrivalHardKills +
-    counts.preArrivalSoftKills +
-    counts.lateHardKills +
-    counts.lateSoftKills
+  // Defeated before arrival, as the Outcome tile counts it: a late kill is a
+  // leaker. The denominator is the modeled member population.
+  const defeated = counts.preArrivalHardKills + counts.preArrivalSoftKills
+  const members = view.attrition.threats.reduce((sum, row) => sum + row.shipCount, 0)
   const word =
     phase === 'complete'
       ? 'Complete'
@@ -134,7 +133,8 @@ export function LiveStrip({
       <LiveRow label="Engaged" value={`${counts.engagedTracks}/${counts.totalTracks} tracks`} />
       <LiveRow
         label="Defeated"
-        value={`${defeated}/${counts.activeAtHorizon + defeated} members`}
+        value={`${defeated}/${members} members`}
+        title="Members defeated before arrival; a late kill is a leaker"
       />
     </section>
   )

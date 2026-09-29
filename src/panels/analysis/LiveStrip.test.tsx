@@ -33,7 +33,7 @@ describe('LiveStrip run line', () => {
     expect(html).toContain('aria-valuetext="Simulated trial · observed through T+0:03 of 1:00"')
     expect(html).toContain('<span>Tracks</span><span class="live-value">1/3</span>')
     expect(html).toContain('<span>Engaged</span><span class="live-value">2/3 tracks</span>')
-    expect(html).toContain('<span>Defeated</span><span class="live-value">3/11 members</span>')
+    expect(html).toContain('<span>Defeated</span><span class="live-value">3/9 members</span>')
     expect(html).not.toContain('<button')
     expect(html).not.toContain('live-strip')
   })
@@ -67,11 +67,11 @@ describe('LiveStrip run line', () => {
     expect(prepare).toMatch(emptyRow('No trial yet. Press Play in Execute to run one.'))
   })
 
-  it('shows completion and includes late defeats only after their effects', () => {
+  it('counts only pre-arrival defeats over the modeled members: a late kill is a leaker', () => {
     expect(render(60, true)).toContain('Complete')
     expect(render(60, true)).toContain(
-      '<span>Defeated</span><span class="live-value">5/11 members</span>',
+      '<span>Defeated</span><span class="live-value">3/9 members</span>',
     )
-    expect(render(1)).toContain('<span>Defeated</span><span class="live-value">0/11 members</span>')
+    expect(render(1)).toContain('<span>Defeated</span><span class="live-value">0/9 members</span>')
   })
 })

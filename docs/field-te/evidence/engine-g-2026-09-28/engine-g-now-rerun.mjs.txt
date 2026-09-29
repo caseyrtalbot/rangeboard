@@ -1,0 +1,104 @@
+// Row G Now screen rerun after the LiveStrip fix: 1265 x 900, the layered acoustic MEROPS
+// laydown with the default (enabled) doctrine. It replays the first capture's trial by run
+// id (the replicate index is idHash(runId)), completes the run, reads the Run monitor card
+// and the kill chain, reads the Outcome tile, and retakes now-dark.png.
+// Usage: node engine-g-now-rerun.mjs <base-url> <out-dir> <repo-root> <run-id>
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT, RUN_ID] = process.argv.slice(2)
+const FIXTURE = 'src/playback/__fixtures__/layered-acoustic-merops.json'
+const RAW = readFileSync(join(ROOT, FIXTURE), 'utf8')
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const waitFor = (page, fn) => page.waitForFunction(fn, null, { timeout: 60000 })
+
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => {
+  if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+})
+page.on('dialog', (d) => d.accept())
+const out = { capturedAt: new Date().toISOString(), requestedRunId: RUN_ID, errors }
+
+await page.goto(BASE, { waitUntil: 'load' })
+await waitFor(page, () => document.querySelector('.konvajs-content canvas') && window.__store)
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw))
+  s.setTheme('dark')
+  s.setShowFieldHelp(false)
+  s.setRunTimelineOpen(false)
+}, RAW)
+await sleep(400)
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+// Replay the first capture's draw: the trial takes the playback run id.
+await page.evaluate((runId) => {
+  window.__store.setState((st) => ({ playback: { ...st.playback, runId } }))
+  window.__store.getState().startRun()
+}, RUN_ID)
+await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status))
+out.trial = await page.evaluate(async () => {
+  const { deadTimeOf } = await import('/src/playback/deadTimes.ts')
+  const s = window.__store.getState()
+  const t = s.trial
+  const rep = t.result.report
+  return {
+    status: t.status,
+    runId: t.manifest.runId,
+    seed: t.manifest.seed,
+    replicateIndex: t.manifest.replicateIndex,
+    doctrineEnabled: s.scenario.doctrine?.enabled ?? null,
+    events: rep.events.length,
+    deaths: rep.threats.map((row) => [row.uasId, deadTimeOf(rep, row.uasId)]),
+  }
+})
+await page.evaluate(async () => {
+  const s = window.__store.getState()
+  s.setPlaying(false)
+  const { durationOf } = await import('/src/state/selectors.ts')
+  s.completeRun(durationOf(s.scenario))
+})
+await sleep(300)
+await page.evaluate(() => {
+  const s = window.__store.getState()
+  s.clearSelection()
+  s.setRightTab('analysis')
+})
+await waitFor(page, () => document.querySelector('section[aria-label="Simulated trial"] .live-row'))
+await sleep(300)
+out.clock = await page.evaluate(() => {
+  const p = window.__store.getState().playback
+  return { simTimeS: p.simTimeS, observedThroughS: p.observedThroughS }
+})
+out.runMonitor = await page.evaluate(() =>
+  [...document.querySelectorAll('section[aria-label="Simulated trial"] .live-row')].map((el) => ({
+    label: el.firstElementChild.textContent.trim(),
+    value: el.querySelector('.live-value').textContent.trim(),
+    title: el.getAttribute('title'),
+  })),
+)
+out.killChain = await page.evaluate(() =>
+  [...document.querySelectorAll('table[aria-label="Kill chain"] tbody tr')].map((tr) =>
+    [...tr.querySelectorAll('td')].map((td) => td.textContent.trim()),
+  ),
+)
+await page.screenshot({ path: join(OUT, 'now-dark.png') })
+await page.click('#board-phase-analyze')
+await waitFor(page, () => document.querySelector('[aria-label="Completed trial outcomes"] .tile'))
+out.outcomeTiles = await page.evaluate(() =>
+  Object.fromEntries(
+    [...document.querySelectorAll('[aria-label="Completed trial outcomes"] .tile')].map((t) => [
+      t.querySelector('.tl').textContent,
+      t.querySelector('.tv').textContent,
+    ]),
+  ),
+)
+writeFileSync(join(OUT, 'now-rerun.json'), JSON.stringify(out, null, 2))
+console.log(JSON.stringify({ runId: out.trial.runId, replicateIndex: out.trial.replicateIndex, defeated: out.runMonitor.find((r) => r.label === 'Defeated'), tile: out.outcomeTiles['Defeated before arrival'], errors: errors.length }))
+await browser.close()

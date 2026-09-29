@@ -44,6 +44,7 @@ Proposals preserve design decisions as issued; the records below them show what 
 Earlier plans, earlier handoffs and the wave completion write-ups were removed on
 2026-09-16 and remain in Git history.
 
+- [Row G kill types browser check, 2026-09-28](field-te/evidence/engine-g-2026-09-28/README.md)
 - [Row F engine lane browser check, 2026-09-28](field-te/evidence/engine-f-2026-09-28/README.md)
 - [Run timeline Row E lane E1 browser check, 2026-09-28](field-te/evidence/run-timeline-e1-2026-09-28/README.md)
 - [Chrome cleanup lane E2 browser check, 2026-09-28](field-te/evidence/chrome-e2-2026-09-28/README.md)

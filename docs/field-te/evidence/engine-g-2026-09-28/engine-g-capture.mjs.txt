@@ -1,0 +1,507 @@
+// Row G kill-types capture: 1265 x 900, the layered acoustic MEROPS laydown
+// (src/playback/__fixtures__/layered-acoustic-merops.json, physics switches kept, ROE
+// free, no doctrine) on the dev server. It starts sampled trials in Execute until one
+// trial holds a pre-arrival hard kill, a pre-arrival mission kill and a late kill,
+// completes the run, then reads and shoots the Now screen, the board readout pills, the
+// run timeline, the Outcome screen, the Debrief threat record and the threat detail.
+// Usage: node engine-g-capture.mjs <base-url> <out-dir> <repo-root> [doctrine-off]
+// The fixture has no doctrine record, so parseAutosave fills the default (enabled). The
+// optional fourth argument turns the fire doctrine off before the first trial.
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT, DOCTRINE] = process.argv.slice(2)
+const FIXTURE = 'src/playback/__fixtures__/layered-acoustic-merops.json'
+const RAW = readFileSync(join(ROOT, FIXTURE), 'utf8')
+mkdirSync(OUT, { recursive: true })
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const waitFor = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 60000 })
+const r2 = (x) => (x == null ? x : Math.round(x * 100) / 100)
+
+const browser = await chromium.launch({ headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => {
+  if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+})
+page.on('dialog', (d) => d.accept())
+
+const findings = { capturedAt: new Date().toISOString(), viewport: '1265x900', fixture: FIXTURE, shots: [], scrubs: [], errors }
+
+await page.goto(BASE, { waitUntil: 'load' })
+await waitFor(page, () => document.querySelector('.konvajs-content canvas') && window.__store)
+await page.evaluate(async ({ raw, doctrineOff }) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = window.__store.getState()
+  const { effectiveDoctrine } = await import('/src/model/types.ts')
+  s.loadScenario(parseAutosave(raw))
+  if (doctrineOff)
+    s.patchScenario({ doctrine: { ...effectiveDoctrine(window.__store.getState().scenario), enabled: false } })
+  s.setTheme('dark')
+  s.setShowFieldHelp(false)
+  s.setRunTimelineOpen(false)
+}, { raw: RAW, doctrineOff: DOCTRINE === 'doctrine-off' })
+await sleep(400)
+findings.scenario = await page.evaluate(() => {
+  const sc = window.__store.getState().scenario
+  return { roe: sc.roe, physics: sc.physics, doctrineEnabled: sc.doctrine?.enabled ?? null }
+})
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+
+// Per threat, the death under the one dead rule (deadTimeOf) and the planned arrival.
+const trialInfo = () =>
+  page.evaluate(async () => {
+    const { deadTimeOf } = await import('/src/playback/deadTimes.ts')
+    const s = window.__store.getState()
+    const t = s.trial
+    if (t.status !== 'ready') return { status: t.status }
+    const rep = t.result.report
+    const name = (id) => s.scenario.entities.find((e) => e.id === id)?.name ?? id
+    const threats = rep.threats.map((row) => {
+      const a = t.result.assessments.find((x) => x.uasId === row.uasId)
+      const d = deadTimeOf(rep, row.uasId)
+      return {
+        uasId: row.uasId,
+        name: name(row.uasId),
+        shipCount: row.shipCount,
+        arrivalS: a?.arrivalS ?? null,
+        death: d,
+        kind: !d ? 'alive' : d.late ? 'late' : d.mixed ? 'mixed' : d.soft ? 'mission' : 'hard',
+      }
+    })
+    return {
+      status: t.status,
+      runId: t.manifest.runId,
+      seed: t.manifest.seed,
+      replicateIndex: t.manifest.replicateIndex,
+      engineRevision: t.manifest.engineRevision,
+      sweepStepS: t.manifest.sweepStepS,
+      events: rep.events.length,
+      ledger: {
+        softShotKills: rep.events.filter((e) => e.softShot && e.killDelta === 1).length,
+        lateEffectKills: rep.events.filter((e) => e.lateEffect && e.killDelta === 1).length,
+        killDelta1: rep.events.filter((e) => e.killDelta === 1).length,
+        flightCapped: rep.events.filter((e) => e.flightCapped).length,
+      },
+      threats,
+    }
+  })
+
+let info = null
+const attempts = []
+for (let attempt = 1; attempt <= 80; attempt += 1) {
+  await page.evaluate(() => window.__store.getState().startRun())
+  await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status))
+  info = await trialInfo()
+  // Two threats share a name in this laydown; the tables read rows by name, so each
+  // kind needs a threat with a unique name.
+  const list = info.threats ?? []
+  const kinds = new Set(list.filter((x) => list.filter((y) => y.name === x.name).length === 1).map((x) => x.kind))
+  attempts.push({ attempt, runId: info.runId, replicateIndex: info.replicateIndex, kinds: [...kinds], ledger: info.ledger })
+  if (kinds.has('hard') && kinds.has('mission') && kinds.has('late')) break
+  info = null
+  await page.evaluate(() => window.__store.getState().resetRun('manual'))
+  await sleep(150)
+}
+findings.attempts = attempts
+findings.trial = info
+if (!info) {
+  console.log('no trial with all three kill kinds in 80 sampled trials')
+  writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2))
+  await browser.close()
+  process.exit(1)
+}
+// Prefer a threat whose name no other threat shares, so the table rows read by name.
+const unique = (x) => info.threats.filter((y) => y.name === x.name).length === 1
+const byKind = (k) =>
+  info.threats.filter((x) => x.kind === k).sort((a, b) => Number(unique(b)) - Number(unique(a)) || b.death.tS - a.death.tS)
+// Per kind, the latest death of a uniquely named threat.
+const hard = byKind('hard')[0]
+const mission = byKind('mission')[0]
+const late = byKind('late')[0]
+findings.subjects = { hard: hard.uasId, mission: mission.uasId, late: late.uasId }
+
+await page.evaluate(async () => {
+  const s = window.__store.getState()
+  s.setPlaying(false)
+  const { durationOf } = await import('/src/state/selectors.ts')
+  s.completeRun(durationOf(s.scenario))
+})
+await sleep(300)
+const clock = () =>
+  page.evaluate(() => {
+    const p = window.__store.getState().playback
+    return { simTimeS: p.simTimeS, observedThroughS: p.observedThroughS }
+  })
+const durationS = await page.evaluate(async () => {
+  const { durationOf } = await import('/src/state/selectors.ts')
+  return durationOf(window.__store.getState().scenario)
+})
+findings.durationS = durationS
+findings.afterComplete = await clock()
+
+async function scrub(t, why) {
+  const before = await clock()
+  await page.evaluate((t) => window.__store.getState().scrubTo(t), t)
+  await sleep(500)
+  const after = await clock()
+  findings.scrubs.push({ why, toS: r2(t), before: r2(before.observedThroughS), after: r2(after.observedThroughS), simTimeS: r2(after.simTimeS), held: before.observedThroughS === after.observedThroughS && after.observedThroughS === durationS })
+}
+
+/** Board track picture, threat phase and run timeline rows of one threat at a horizon. */
+const readAt = (h, uasId) =>
+  page.evaluate(
+    async ({ h, uasId }) => {
+      const { latestEstimatesAt } = await import('/src/playback/trackEstimateView.ts')
+      const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+      const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+      const { trialTelemetryAt } = await import('/src/panels/analysis/threatReadout.ts')
+      const s = window.__store.getState()
+      const t = s.trial
+      const stepS = t.manifest.sweepStepS
+      const latest = latestEstimatesAt(t.result.tracks, h).filter((e) => e.uasId === uasId)
+      const drawn = latest.filter((e) => h - e.state.tS <= stepS + 1e-9)
+      const view = trialResultOf(t.scenario, t.manifest, t.result)
+      const tel = trialTelemetryAt(view, uasId, h)
+      const model = runTimelineOf(view, h)
+      const rows = []
+      for (const g of model.groups)
+        for (const r of g.rows) {
+          if (r.entityId === uasId) rows.push(r)
+          for (const sub of r.subLanes ?? []) if (sub.entityId === uasId) rows.push(sub)
+        }
+      const end = (list) => (list.length ? Math.max(...list.map((x) => x.endS)) : null)
+      return {
+        horizonS: h,
+        observedThroughS: s.playback.observedThroughS,
+        phase: tel.phase,
+        members: tel.members.map((m) => m.outcome),
+        latestOfThreat: latest.map((e) => ({ id: e.id, tS: e.state.tS })),
+        drawnOfThreat: drawn.length,
+        rows: rows.map((r) => ({
+          key: r.key,
+          lastSpanEndS: end(r.spans),
+          holdEndS: end(r.spans.filter((x) => x.kind === 'hold' || x.kind === 'coast')),
+          ghost: r.spans.filter((x) => x.kind === 'ghost').map((x) => [x.startS, x.endS]),
+          killMarks: r.marks.filter((m) => ['hard-kill', 'mission-kill', 'drop', 'arrival'].includes(m.kind)).map((m) => [m.kind, m.tS, m.capped ? 'capped' : undefined].filter((x) => x != null)),
+        })),
+      }
+    },
+    { h, uasId },
+  )
+
+findings.timeline = {
+  hard: {
+    before: await readAt(hard.death.tS - 5, hard.uasId),
+    atKill: await readAt(hard.death.tS, hard.uasId),
+    after: await readAt(Math.min(durationS, hard.death.tS + 30), hard.uasId),
+    end: await readAt(durationS, hard.uasId),
+  },
+  mission: {
+    before: await readAt(mission.death.tS - 5, mission.uasId),
+    after: await readAt(Math.min(durationS, mission.death.tS + 30), mission.uasId),
+    end: await readAt(durationS, mission.uasId),
+  },
+  late: {
+    after: await readAt(Math.min(durationS, late.death.tS + 5), late.uasId),
+    end: await readAt(durationS, late.uasId),
+  },
+}
+
+// Every capped effect mark in the model at the run end.
+findings.cappedMarks = await page.evaluate(async () => {
+  const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+  const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+  const t = window.__store.getState().trial
+  const model = runTimelineOf(trialResultOf(t.scenario, t.manifest, t.result), Infinity)
+  const out = []
+  for (const g of model.groups)
+    for (const r of g.rows) for (const m of r.marks) if (m.capped) out.push({ row: r.key, kind: m.kind, tS: m.tS })
+  return out
+})
+
+/** Scroll the nearest scrolling ancestor so the element sits at its top; the page never moves. */
+const panelScrollTo = (selector) =>
+  page.evaluate((sel) => {
+    const target = document.querySelector(sel)
+    if (!target) return false
+    let el = target.parentElement
+    while (el && !(['auto', 'scroll'].includes(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight)) el = el.parentElement
+    if (el) el.scrollTop += target.getBoundingClientRect().top - el.getBoundingClientRect().top
+    return !!el
+  }, selector)
+
+async function shot(name, state) {
+  await page.screenshot({ path: join(OUT, `${name}.png`) })
+  const at = await clock()
+  findings.shots.push({ file: `${name}.png`, state, simTimeS: r2(at.simTimeS), observedThroughS: r2(at.observedThroughS) })
+  console.log('shot', name)
+}
+
+// Now screen at the run end: the kill chain rows.
+await page.evaluate(() => {
+  const s = window.__store.getState()
+  s.clearSelection()
+  s.setRightTab('analysis')
+})
+await scrub(durationS, 'Now screen at the run end')
+await waitFor(page, () => document.querySelector('table[aria-label="Kill chain"]'))
+const tableRows = (selector) =>
+  page.evaluate((sel) => {
+    const table = document.querySelector(sel)
+    if (!table) return null
+    const head = [...table.querySelectorAll('thead th')].map((th) => th.textContent.trim())
+    const rows = [...table.querySelectorAll('tbody tr')].map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent.trim()))
+    return { head, rows }
+  }, selector)
+const nameRow = (table, name) => table?.rows.filter((r) => r[0] === name) ?? []
+const now = await tableRows('table[aria-label="Kill chain"]')
+findings.now = { head: now?.head, hard: nameRow(now, hard.name), mission: nameRow(now, mission.name), late: nameRow(now, late.name), all: now?.rows }
+findings.nowStrip = await page.evaluate(async () => {
+  const { trialSnapshotAt, trialResultOf } = await import('/src/analysis/trialResult.ts')
+  const t = window.__store.getState().trial
+  const view = trialResultOf(t.scenario, t.manifest, t.result)
+  const rows = Object.fromEntries([...document.querySelectorAll('section[aria-label="Simulated trial"] .live-row')].map((el) => [el.firstElementChild.textContent.trim(), el.querySelector('.live-value').textContent.trim()]))
+  return {
+    text: document.querySelector('section[aria-label="Simulated trial"]')?.textContent.replace(/\s+/g, ' ').trim(),
+    rows,
+    counts: trialSnapshotAt(view, view.durationS).counts,
+    assessments: view.assessments.length,
+    noPath: view.assessments.filter((a) => a.status === 'no-path').map((a) => a.uasId),
+    attritionShips: view.attrition.threats.reduce((n, r) => n + r.shipCount, 0),
+  }
+})
+await sleep(200)
+await shot('now-dark', 'Execute, complete run at the run end, the Run monitor card and the kill chain table')
+
+// Board: frame a threat, open the strip, select the threat, read the readout pill.
+await page.evaluate(() => {
+  const s = window.__store.getState()
+  s.setRunTimelineOpen(true)
+  s.setRunTimelineHeight(400, false)
+  s.expandAllRunTimeline(['sensor', 'c2', 'track', 'effector', 'threat'], [])
+})
+await sleep(400)
+async function frame(uasId, atS, half = 1500) {
+  await page.evaluate(
+    async ({ uasId, atS, half }) => {
+      const { trialTelemetryAt } = await import('/src/panels/analysis/threatReadout.ts')
+      const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+      const { fitCameraTo } = await import('/src/state/camera.ts')
+      const s = window.__store.getState()
+      const t = s.trial
+      const tel = trialTelemetryAt(trialResultOf(t.scenario, t.manifest, t.result), uasId, atS)
+      const p = tel.members[0]?.position ?? s.scenario.entities.find((e) => e.id === uasId).pos
+      const cam = fitCameraTo([
+        { x: p.x - half, y: p.y - half },
+        { x: p.x + half, y: p.y + half },
+      ])
+      if (cam) s.setCamera(cam)
+    },
+    { uasId, atS, half },
+  )
+}
+/**
+ * Show only the subject's rows in the strip: the sensors that held it (one opened on its
+ * sub-lanes, the sensor whose hold of the subject ends last), its track row and its
+ * threat row. View state only; the strip model is unchanged.
+ */
+async function focusStrip(uasId) {
+  const kept = await page.evaluate(async (uasId) => {
+    const { runTimelineOf } = await import('/src/analysis/runTimeline.ts')
+    const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+    const s = window.__store.getState()
+    const t = s.trial
+    const model = runTimelineOf(trialResultOf(t.scenario, t.manifest, t.result), Infinity)
+    s.showAllRunTimelineRows()
+    const kept = []
+    let open = null
+    let openEnd = -1
+    for (const g of model.groups)
+      for (const r of g.rows) {
+        const sub = (r.subLanes ?? []).find((x) => x.entityId === uasId)
+        if (r.entityId === uasId || sub) {
+          kept.push(r.key)
+          const end = sub ? Math.max(-1, ...sub.spans.map((x) => x.endS)) : -1
+          if (sub && end > openEnd) {
+            open = r.key
+            openEnd = end
+          }
+        } else s.hideRunTimelineRow(r.key)
+      }
+    s.expandAllRunTimeline(['sensor', 'track', 'threat'], [])
+    window.__store.setState((st) => ({
+      ui: { ...st.ui, runTimeline: { ...st.ui.runTimeline, openSensorsAll: false, openSensors: open ? [open] : [] } },
+    }))
+    return { kept, openSensor: open }
+  }, uasId)
+  await sleep(300)
+  return kept
+}
+async function boardRead(subject, t, why) {
+  await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), subject.uasId)
+  findings.stripRows = findings.stripRows ?? {}
+  findings.stripRows[subject.uasId] = await focusStrip(subject.uasId)
+  await scrub(t, why)
+  await frame(subject.uasId, t)
+  // Scroll the strip to its end, where the track and threat rows sit.
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll('#run-timeline *')) {
+      const y = getComputedStyle(el).overflowY
+      if ((y === 'auto' || y === 'scroll') && el.scrollHeight > el.clientHeight + 4) el.scrollTop = el.scrollHeight
+    }
+  })
+  await sleep(300)
+  return page.evaluate(() => ({
+    pill: document.querySelector('.readout .ro-phase')?.textContent ?? null,
+    name: document.querySelector('.readout .ro-name')?.textContent ?? null,
+    layerOn: !!document.querySelector('.readout'),
+  }))
+}
+findings.pills = {}
+findings.pills.hardBefore = await boardRead(hard, hard.death.tS - 5, 'hard kill, 5 s before')
+await shot('board-hard-before-dark', `Execute, complete run, ${hard.name} selected, cursor 5 s before its hard kill`)
+findings.pills.hardAfter = await boardRead(hard, Math.min(durationS, hard.death.tS + 30), 'hard kill, 30 s after')
+await shot('board-hard-kill-dark', `Execute, complete run, ${hard.name} selected, cursor 30 s after its hard kill: HARD KILL pill, no track, ghost span in the strip`)
+findings.pills.missionAfter = await boardRead(mission, Math.min(durationS, mission.death.tS + 30), 'mission kill, 30 s after')
+await shot('board-mission-kill-dark', `Execute, complete run, ${mission.name} selected, cursor 30 s after its mission kill: MISSION KILL pill, the track still draws, no ghost span`)
+// The group glyph without the readout card, so the dimmed group and the member glyph read.
+await page.evaluate(() => window.__store.getState().clearSelection())
+await frame(mission.uasId, Math.min(durationS, mission.death.tS + 30), 400)
+await sleep(400)
+await shot('board-mission-kill-glyph-dark', `Execute, complete run, nothing selected, cursor 30 s after the mission kill of ${mission.name}: the dimmed (ghost) group and the MISSION KILL member glyph`)
+findings.pills.lateAfter = await boardRead(late, Math.min(durationS, late.death.tS + 5), 'late kill, 5 s after')
+await shot('board-late-kill-dark', `Execute, complete run, ${late.name} selected, cursor 5 s after its late kill: LEAKED pill`)
+findings.pills.mixed = info.threats.some((x) => x.kind === 'mixed') ? 'present' : 'no mixed defeat in this trial'
+await page.evaluate(() => window.__store.getState().setTheme('light'))
+findings.pills.hardAfterDaylight = await boardRead(hard, Math.min(durationS, hard.death.tS + 30), 'hard kill, daylight')
+await shot('board-hard-kill-daylight', 'The hard kill state in the daylight theme')
+await page.evaluate(() => window.__store.getState().setTheme('dark'))
+await sleep(300)
+
+// Capped effect mark tooltip: hover each mark in the strip until a tip names capped.
+findings.cappedTooltip = findings.cappedMarks.length === 0 ? 'no capped effect mark in this trial' : null
+if (findings.cappedMarks.length > 0) {
+  const boxes = await page.evaluate(() =>
+    [...document.querySelectorAll('#run-timeline .runtl-svg .runtl-m')].map((el) => {
+      const b = el.getBoundingClientRect()
+      return { x: b.left + b.width / 2, y: b.top + b.height / 2, w: b.width }
+    }).filter((b) => b.w > 0),
+  )
+  for (const b of boxes) {
+    await page.mouse.move(b.x, b.y)
+    await sleep(120)
+    const tip = await page.evaluate(() => document.querySelector('#run-timeline .runtl-tip')?.textContent ?? null)
+    if (tip && tip.includes('capped')) {
+      findings.cappedTooltip = tip
+      await shot('timeline-capped-tooltip-dark', 'Execute, complete run, the pointer over a capped effect mark')
+      break
+    }
+  }
+  if (!findings.cappedTooltip) findings.cappedTooltip = 'capped marks exist in the model; none in view in the strip'
+  await page.mouse.move(5, 5)
+}
+
+// Analyze: the Outcome screen.
+await page.evaluate(() => window.__store.getState().clearSelection())
+await page.evaluate(() => window.__store.getState().setRunTimelineOpen(false))
+await scrub(durationS, 'Analyze at the run end')
+await page.click('#board-phase-analyze')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="analyze"]'))
+await page.evaluate(() => window.__store.getState().setRightTab('analysis'))
+await waitFor(page, () => document.querySelector('table[aria-label^="Per-threat outcomes"]'))
+findings.afterAnalyze = await clock()
+const outcome = await tableRows('table[aria-label^="Per-threat outcomes"]')
+const tiles = await page.evaluate(() =>
+  Object.fromEntries([...document.querySelectorAll('[aria-label="Completed trial outcomes"] .tile')].map((t) => [t.querySelector('.tl').textContent, t.querySelector('.tv').textContent])),
+)
+findings.outcome = { head: outcome?.head, hard: nameRow(outcome, hard.name), mission: nameRow(outcome, mission.name), late: nameRow(outcome, late.name), all: outcome?.rows, tiles }
+await panelScrollTo('[aria-label="Completed trial outcomes"]')
+await sleep(200)
+await shot('outcome-tiles-dark', 'Analyze, Outcome: the tiles, First effect at the earliest pre-arrival death')
+await panelScrollTo('table[aria-label^="Per-threat outcomes"]')
+await sleep(200)
+await shot('outcome-table-dark', 'Analyze, Outcome: the per-threat table, the FX column and the result words')
+
+// Debrief threat record: the model rows the card reads, then the card itself.
+findings.debrief = await page.evaluate(async (ids) => {
+  const { trialThreatPictureAt } = await import('/src/analysis/threatAggregation.ts')
+  const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+  const t = window.__store.getState().trial
+  const view = trialResultOf(t.scenario, t.manifest, t.result)
+  const rows = trialThreatPictureAt(view, view.durationS).flatMap((g) => g.members)
+  const pick = (id) => {
+    const r = rows.find((x) => x.uasId === id)
+    return r && { name: r.name, leaked: r.leaked, effectMet: r.effectMet, firstEffectS: r.firstEffectS, lateKillS: r.lateKillS, hardKillCount: r.hardKillCount, missionKillCount: r.missionKillCount }
+  }
+  return { hard: pick(ids.hard), mission: pick(ids.mission), late: pick(ids.late) }
+}, findings.subjects)
+findings.debrief.mounted = await page.evaluate(() => !!document.querySelector('[aria-label="Completed simulated trial record"]'))
+// No screen mounts the trial threat record (Outcome passes showTrialRecords={false}), so
+// the script mounts ThreatPicture in a harness root with the app's own React module.
+findings.debrief.harness = await page.evaluate(async () => {
+  const urls = performance.getEntriesByType('resource').map((e) => e.name)
+  const reactUrl = urls.find((u) => /\/deps\/react\.js/.test(u))
+  const domUrl = urls.find((u) => /\/deps\/react-dom_client\.js/.test(u))
+  if (!reactUrl || !domUrl) return { error: 'react deps not found', reactUrl, domUrl }
+  // Vite pre-bundles both as CommonJS wrappers: the API sits on the default export.
+  const reactMod = await import(reactUrl)
+  const domMod = await import(domUrl)
+  const createElement = reactMod.createElement ?? reactMod.default.createElement
+  const createRoot = domMod.createRoot ?? domMod.default.createRoot
+  const { ThreatPicture } = await import('/src/panels/analysis/ThreatPicture.tsx')
+  const { trialThreatPictureAt } = await import('/src/analysis/threatAggregation.ts')
+  const { trialResultOf } = await import('/src/analysis/trialResult.ts')
+  const t = window.__store.getState().trial
+  const view = trialResultOf(t.scenario, t.manifest, t.result)
+  const host = document.createElement('div')
+  host.id = 'g-harness'
+  host.style.cssText = 'position:fixed;inset:0 0 0 auto;width:420px;overflow:auto;z-index:9999;background:var(--bg, #111);padding:12px'
+  document.body.appendChild(host)
+  createRoot(host).render(createElement(ThreatPicture, { groups: trialThreatPictureAt(view, view.durationS), mode: 'debrief', membersOpen: true }))
+  await new Promise((r) => setTimeout(r, 500))
+  const cards = [...host.querySelectorAll('.threat-data-row')].map((row) => row.textContent.replace(/\s+/g, ' ').trim())
+  return { cards }
+})
+const cardOf = (name) => findings.debrief.harness.cards?.filter((c) => c.startsWith(name)) ?? []
+findings.debrief.cards = { hard: cardOf(hard.name), mission: cardOf(mission.name), late: cardOf(late.name) }
+await page.evaluate((name) => {
+  const row = [...document.querySelectorAll('#g-harness .threat-data-row')].find((r) => r.textContent.startsWith(name))
+  if (row) document.querySelector('#g-harness').scrollTop += row.getBoundingClientRect().top - 300
+}, late.name)
+await sleep(200)
+await shot('debrief-threat-record-dark', 'Analyze, the Debrief trial threat record (ThreatPicture, debrief mode) mounted by the script at the right edge, centred on the late kill card')
+await page.evaluate(() => document.querySelector('#g-harness')?.remove())
+await sleep(200)
+
+// Threat detail (Analyze): the survival chart and its marks.
+async function detail(subject, name) {
+  await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), subject.uasId)
+  await waitFor(page, () => document.querySelector('#entity-section-telemetry'))
+  if ((await page.getAttribute('#entity-section-telemetry', 'aria-selected')) !== 'true') await page.click('#entity-section-telemetry')
+  await waitFor(page, () => document.querySelector('section[data-section="survival"]'))
+  await panelScrollTo('section[data-section="survival"]')
+  await sleep(400)
+  const read = await page.evaluate(() => {
+    const sec = document.querySelector('section[data-section="survival"]')
+    const texts = [...sec.querySelectorAll('svg text')].map((t) => t.textContent.trim()).filter(Boolean)
+    return { labels: texts.filter((x) => /^(FX|ARR|CPA)$/.test(x)), text: sec.textContent.replace(/\s+/g, ' ').trim().slice(0, 300) }
+  })
+  if (name) await shot(name, `Analyze, ${subject.name} selected, threat detail survival chart`)
+  return read
+}
+findings.detail = {
+  hard: await detail(hard, 'detail-survival-hard-dark'),
+  late: await detail(late, 'detail-survival-late-dark'),
+  mission: await detail(mission, null),
+}
+findings.end = await clock()
+
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2))
+console.log(JSON.stringify({ runId: info.runId, hard: [hard.name, hard.death.tS], mission: [mission.name, mission.death.tS], late: [late.name, late.death.tS], errors: errors.length }))
+await browser.close()

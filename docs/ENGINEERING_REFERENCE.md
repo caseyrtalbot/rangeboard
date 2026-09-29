@@ -786,7 +786,9 @@ Each fact below has exactly one definition. Read it there; never add a second co
   death. A late kill is a leaker: Outcome, Now and the Debrief threat record print it as
   `late kill T+m:ss` and never as a defeat. The FX column, `First effect`, the FX text on a
   Debrief threat card and the FX mark on the threat detail survival chart read the
-  threat's death and exclude a late one. A timeline effect mark from a `flightCapped`
+  threat's death and exclude a late one. The Now Run monitor `Defeated` row counts
+  pre-arrival defeats over the modeled members (the attrition rows' `shipCount`), as the
+  Outcome `Defeated before arrival` tile does. A timeline effect mark from a `flightCapped`
   event carries `capped`, and its tooltip adds that word. `liveStats.ts` imports
   `deadTimeOf` through the `threatAggregation` re-export: a direct `deadTimes` edge
   splits the store into a preloaded chunk and fails `check:bundle`. `TRIAL_ENGINE_REVISION` moved to `rangeboard-trial-r4-v3` with the
