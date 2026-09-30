@@ -658,7 +658,6 @@ describe('layer visibility', () => {
     ...FULL,
     sensorPdContours: false,
     classifyRings: false,
-    effectorDoctrinal: false,
     engagements: false,
   }
   const ENGAGEMENT: LayerVisibility = {
@@ -696,7 +695,7 @@ describe('layer visibility', () => {
     vi.unstubAllGlobals()
   })
 
-  it('defaults to DEFAULT_LAYERS: the placard and the effector max range, no other ring', () => {
+  it('defaults to DEFAULT_LAYERS: the placard, MIR and MRIR, no other ring', () => {
     expect(savedLayers()).toEqual(DEFAULT_LAYERS)
     expect(DEFAULT_LAYERS).toEqual({
       ...FULL,
@@ -704,7 +703,6 @@ describe('layer visibility', () => {
       sensorPdContours: false,
       classifyRings: false,
       effectorMinRange: false,
-      effectorDoctrinal: false,
     })
   })
 

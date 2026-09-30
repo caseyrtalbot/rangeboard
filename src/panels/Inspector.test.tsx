@@ -94,6 +94,29 @@ describe('Inspector effector and threat marks', () => {
   })
 })
 
+describe('Inspector MRIR field', () => {
+  it('shows the 2/3 planning factor for an effector with no recorded MRIR', () => {
+    selectFromModel('lib-skyranger30')
+    const html = render()
+    const mrir = html.slice(html.indexOf('MRIR in use'), html.indexOf('Edits the library model'))
+    // 3000 m MIR x 2/3 = 2000 m = 1.08 nm.
+    expect(mrir).toContain('1.08 nm · 2/3 MIR · PF')
+    expect(mrir).toContain('<span class="prov-mark pf" title="planning factor"')
+    expect(mrir).toMatch(/<button[^>]*disabled[^>]*>Reset to 2\/3<\/button>/)
+  })
+
+  it('shows a recorded MRIR and clears it back to the planning factor', () => {
+    selectFromModel('lib-skyranger30')
+    useStore.getState().editModel('lib-skyranger30', 'effector.mrirM', 2400)
+    expect(render()).toContain('1.30 nm · 0.80 MIR · Edited')
+    // Reset writes the empty value, which the edit rule maps to absent.
+    useStore.getState().editModel('lib-skyranger30', 'effector.mrirM', '')
+    const model = useStore.getState().scenario.library.find((m) => m.id === 'lib-skyranger30')
+    expect(model?.effector?.mrirM).toBeNull()
+    expect(render()).toContain('0.67 × MIR')
+  })
+})
+
 describe('Inspector flyout speed rows', () => {
   it('quotes the stated speed and 0.7 of it as the average, marked planning factor', () => {
     selectFromModel('lib-coyote')

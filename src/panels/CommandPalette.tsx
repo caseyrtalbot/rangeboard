@@ -78,8 +78,8 @@ const ACTIONS: Command[] = [
   ...RING_KEYS.map((key): Command => ({
     id: `toggle-ring-${key}`,
     category: 'View',
-    // Lower the first letter as the other entries do, but keep the Pd abbreviation.
-    label: `Toggle ${RING_LABELS[key].replace(/^(?!Pd)\w/, (c) => c.toLowerCase())}`,
+    // Lower the first letter as the other entries do, but keep Pd and acronyms (MIR, MRIR).
+    label: `Toggle ${RING_LABELS[key].replace(/^(?!Pd|[A-Z]{2,}\b)\w/, (c) => c.toLowerCase())}`,
     run: () => useStore.getState().toggleLayer(key),
   })),
   {

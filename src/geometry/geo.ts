@@ -222,6 +222,11 @@ export function formatDistance(m: number, units: DisplayUnits = 'metric'): strin
   return `${Math.round(m)} m`
 }
 
+/** A distance in nautical miles at two decimals, whatever the units setting. The ring readout. */
+export function formatNm(m: number): string {
+  return `${(m / NM_M).toFixed(2)} nm`
+}
+
 /**
  * One position axis as a hemisphere letter and an unsigned magnitude, the way a
  * position is read aloud: two decimals of a nautical mile or a kilometer.

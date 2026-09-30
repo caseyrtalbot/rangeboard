@@ -58,6 +58,8 @@ export interface BoardInk {
   linkDim: string
   /** The rim of a drag knob: the heading handle and the system rotation handle. */
   knobRim: string
+  /** An at-rest range ring: white on the night board, text 1 on paper. */
+  ringIdle: string
 }
 
 /** Night board ink: the values the layers drew before the paper table existed. */
@@ -75,6 +77,7 @@ export const BOARD_INK_DARK: BoardInk = {
   control: '#1d2023',
   linkDim: '#6a7178',
   knobRim: '#121415',
+  ringIdle: '#f4f3ee',
 }
 
 /**
@@ -97,4 +100,5 @@ export const BOARD_INK_PAPER: BoardInk = {
   control: '#f7f5f0',
   linkDim: '#767d84',
   knobRim: '#212220',
+  ringIdle: '#212220',
 }

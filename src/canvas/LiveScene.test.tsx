@@ -5,7 +5,7 @@ import { mixedTrial } from '../playback/__fixtures__/trialFixture'
 import { trialSweepAt } from '../playback/trialSweepAt'
 import { useStore } from '../state/store'
 import { LiveScene, renderedTrialGeometry } from './LiveScene'
-import { StaticScene, trialActiveSensorIds } from './StaticScene'
+import { StaticScene, trialActiveIds } from './StaticScene'
 
 vi.mock('./frameClock', () => ({ useFrameClock: () => ({ simTimeS: 50, displayTimeS: 50 }) }))
 vi.mock('react-konva', () => ({
@@ -38,8 +38,8 @@ vi.mock('./layers/BoundaryLayer', () => ({ BoundaryLayer: () => null }))
 vi.mock('./layers/RangeLayer', () => ({ RangeLayer: () => null }))
 vi.mock('./layers/ConnectionLayer', () => ({ ConnectionLayer: () => null }))
 vi.mock('./layers/FootprintLayer', () => ({
-  FootprintLayer: ({ activeSensorIds }: { activeSensorIds: Set<string> }) => (
-    <span>active-sensors:{[...activeSensorIds].join(',')}</span>
+  FootprintLayer: ({ runActiveIds }: { runActiveIds: Set<string> }) => (
+    <span>active-systems:{[...runActiveIds].join(',')}</span>
   ),
 }))
 
@@ -92,7 +92,7 @@ describe('sampled canvas scene', () => {
         'EMPTY',
         'round',
         'I&amp;W',
-        'active-sensors:radar',
+        'active-systems:radar',
       ])
         expect(html).not.toContain(outcome)
     },
@@ -124,12 +124,28 @@ describe('sampled canvas scene', () => {
 
   it('keeps measured and held sensors active, with coast and pre-scan states distinct', () => {
     const { view } = mixedTrial()
-    expect([...trialActiveSensorIds(trialSweepAt(view, 1))]).toEqual([])
-    expect([...trialActiveSensorIds(trialSweepAt(view, 1.1))]).toEqual(['radar'])
-    expect([...trialActiveSensorIds(trialSweepAt(view, 2))]).toEqual(['radar'])
-    expect(trialActiveSensorIds(trialSweepAt(view, 2))).toBe(
-      trialActiveSensorIds(trialSweepAt(view, 1.1)),
-    )
-    expect([...trialActiveSensorIds(trialSweepAt(view, 3.1))]).toEqual([])
+    const ids = (t: number) => [...trialActiveIds(trialSweepAt(view, t))]
+    // The gun engages throughout; the radar lights only while measured or held.
+    expect(ids(1)).toEqual(['gun'])
+    expect(ids(1.1)).toEqual(['radar', 'gun'])
+    expect(ids(3.1)).toEqual(['gun'])
+    expect(trialActiveIds(trialSweepAt(view, 3))).toBe(trialActiveIds(trialSweepAt(view, 1.5)))
+  })
+
+  it('keeps an engaging effector active from preparation through the beam, and rests it after', () => {
+    const { view } = mixedTrial()
+    const ids = (t: number) => [...trialActiveIds(trialSweepAt(view, t))]
+    expect(ids(0.5)).toContain('gun')
+    expect(ids(1.2)).toContain('jammer')
+    expect(ids(1.4)).toContain('jammer')
+    expect(ids(2)).toEqual(['radar', 'jammer'])
+    expect(ids(4)).toEqual([])
+    const sweep = trialSweepAt(view, 4)
+    const states = new Map([
+      ['idle-gun', 'idle'],
+      ['spent-gun', 'depleted'],
+      ['beam-jammer', 'beam'],
+    ] as const)
+    expect([...trialActiveIds({ ...sweep, effectorStates: states })]).toEqual(['beam-jammer'])
   })
 })

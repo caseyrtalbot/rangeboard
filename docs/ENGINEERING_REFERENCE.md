@@ -597,9 +597,11 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                connections on the static Layer), LiveScene.tsx (the frame clock and every
                moving layer on the live Layer), TrackFileReadout.tsx, frameClock.ts,
                ringModel.ts (store-free, Konva-free: prepareRingModel resolves every ring
-               record from Scenario, RingView and the selected threat, and hitAt finds the
-               ring edge under a world point over the same records), useRingModel.ts (the
-               store-bound hook FootprintLayer and HudLayer share), useBoardInk.ts
+               record from Scenario, RingView and the selected threat, hitAt finds the
+               ring edge under a world point over the same records, and ringHitFor re-reads
+               a pinned edge), useRingModel.ts (the store-bound hook FootprintLayer and
+               HudLayer share; ringModelOf gives the stage click the same model outside
+               React), useBoardInk.ts
                (the board ink table for ui.theme and prefers-color-scheme), hoverCursor.ts
                (the hovered entity's pointer cursor, released when that entity unmounts),
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
@@ -917,8 +919,7 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   spec (`context.uas`, the threat's library `uas` block, set in `attrition.ts`). The tag
   reports `gun-burst` only when an active UAS entity carries one; otherwise the gun stays
   under `kinetic-pk`.
-  `legacyKineticPk` restores `kineticPk(basePk, maxRangeM, uas, slantM)`, which
-  `footprintStyle.ts` also imports to invert the commit ring. Optical shots compute diffraction,
+  `legacyKineticPk` restores `kineticPk(basePk, maxRangeM, uas, slantM)`. Optical shots compute diffraction,
   jitter, atmospheric transmission and a sampled fluence threshold; their effect time includes
   settle and dwell. `solveBeamTiming` (`shot.ts`) iterates the effect delay to a fixed point,
   brackets and bisects the residual when the iterates oscillate, and declines the shot
@@ -1148,9 +1149,31 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   WEZ impact badges require an arrival reached within the execution horizon; planning
   summary badges at time zero remain outside Execute.
   `ringVisible(ui, entityId, key)` is the one resolver, `RING_STYLE` the one style source,
-  `RING_LABELS` and `RING_HINTS` the one name table. Effector rings draw in the danger
-  red from `src/ui/ink.ts`, the one Konva ink table; a jammer keeps its entity-color
-  cone. Only a selected-threat ring carries a label. `footprintStyle.ts` also holds the
+  `RING_LABELS` the one name table. The effector keys keep their storage names:
+  `effectorMaxRange` is MIR (max intercept range), `effectorDoctrinal` is MRIR (max
+  recommended intercept range, the doctrinal range) and `effectorMinRange` is Min range.
+  MRIR is the library `mrirM` where recorded, else `MRIR_DEFAULT_FRACTION` (2/3, a planning
+  factor) of MIR, through `mrirFractionOf`. It is a board ring only; the engine does not
+  read it. MIR and MRIR are on in `DEFAULT_LAYERS` and the Planning preset. Effector rings
+  draw in the danger red from `src/ui/ink.ts`, the one Konva ink table. A jammer keeps its
+  entity-color cone: its MIR is the effective jam range against the selected threat,
+  ground projected like every effector ring, and a sector below 360 draws a beam with
+  MRIR as an arc inside it. `ringState` sets each system's look. At rest a ring is a
+  dashed edge in `BoardInk.ringIdle` (`MIR_REST`, `MRIR_REST`, `MIN_REST`, `SENSOR_REST`)
+  with no fill and no ring text. Active rings take the solid, filled `RING_STYLE` look.
+  A system is active while it is selected, or at the run time cursor while an effector
+  engages or a sensor holds a track: `StaticScene` passes `trialActiveIds` as
+  `runActiveIds`, and `FootprintLayer` adds the selection. A disabled system stays grey.
+  Only the active Pd contours of a selected threat carry a label. `RING_HINTS` feeds only
+  the View menu and Inspector control hints; the board shows no hint sentence. `HudLayer`
+  shows the ring readout: system, ring chip, distance in nm at two decimals (`formatNm`),
+  height (the selected threat altitude in ft AGL, or 'No threat'; no line for placard,
+  envelope and defended-area edges) and an MRIR basis line (`mrirBasisText` in
+  `src/model/types.ts`, which the Inspector MRIR row also shows). A click on a ring pins the
+  readout and keeps the selection (`onRing` on the click-stage intent, within
+  `RING_HIT_TOLERANCE_PX`). Esc or a click on empty board clears it. The Inspector
+  effector Rings section edits MRIR as a fraction of MIR; the slider writes on release as
+  one undo step, and Reset to 2/3 clears `mrirM`. `footprintStyle.ts` also holds the
   track style: `TRACK_ESTIMATE_INK`, `TRACK_FALSE_INK`, `TRACK_ELLIPSE_DASH` and
   `TRACK_MARKER_PX`, which `TrackLayer` reads.
 - **Track picture** (`src/playback/trackEstimateView.ts`,
@@ -1486,8 +1509,8 @@ Konva conventions:
   system handles, callouts, the marquee). A Konva Layer is one canvas, so a moving glyph repaints the
   live canvas alone and the dashed rings stay untouched between publications. The frame
   clock is mounted once, in `LiveScene`; the static scene reads the published `simTimeS`
-  and re-renders only when the held-sensor set changes.
-- Sampled sensor/effector state and held-sensor rings use `trialSweepAt`; member outcomes
+  and re-renders only when the run-active set (`trialActiveIds`) changes.
+- Sampled sensor/effector state and run-active rings use `trialSweepAt`; member outcomes
   and geometry use `trialTrackState`. `CanvasStage` passes the retained trial and horizon
   to `LiveScene`; `StaticScene`, the track card and detail panes read the same observations.
   A forward preview never exposes later outcomes. Forecast `sweepAt` and `trackTimelineOf`

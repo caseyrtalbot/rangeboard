@@ -14,6 +14,9 @@ import {
   effectiveDoctrine,
   entityActive,
   MOUNT_HEIGHT_M,
+  mrirBasisOf,
+  mrirBasisText,
+  mrirFractionOf,
   physicsSwitches,
 } from '../model/types'
 import {
@@ -35,7 +38,7 @@ import { EFFECTOR_RING_KEYS, SENSOR_RING_KEYS } from '../state/rings'
 import type { RaidDraft } from '../state/store'
 import type { RingKey } from '../state/rings'
 import { RING_HINTS, RING_LABELS } from './ringLabels'
-import { formatDistance, formatSpeed, pathLength } from '../geometry/geo'
+import { formatDistance, formatNm, formatSpeed, pathLength } from '../geometry/geo'
 import { evaluateIntegration, integrationSummary } from '../model/integration'
 import type { IntegrationConfidence } from '../model/integration'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
@@ -59,7 +62,7 @@ import {
 import { GATE_WORD } from '../canvas/layers/footprintStyle'
 import { DEFAULT_PK, EVASION_PENALTY, SIZE_PENALTY } from '../playback/pk'
 import { FLYOUT_SPEED_FACTOR } from '../playback/intercept'
-import type { SensorSpec, SpecModel } from '../model/types'
+import type { EffectorSpec, SensorSpec, SpecModel } from '../model/types'
 import { rcsM2For, swerlingFor } from '../model/rcsFactors'
 import { acousticDbFor, irSignatureFor, spanMFor } from '../model/signatureFactors'
 import { effectivePathDelayS, waveIndexFor } from '../playback/raid'
@@ -339,6 +342,70 @@ function MountHeight({
         tag={<PfTag model={model} field="mountHeightM" absent={heightM == null} />}
       />
       <p className="muted small">{note}</p>
+    </>
+  )
+}
+
+/**
+ * MRIR (max recommended intercept range) as a fraction of MIR. The slider holds a
+ * local draft while it moves and writes the library model once on release, so a
+ * drag is one undo step. Reset clears the value back to the 2/3 planning factor.
+ */
+function MrirField({
+  model,
+  spec,
+  onChange,
+}: {
+  model: SpecModel
+  spec: EffectorSpec
+  onChange: (raw: string | number) => void
+}) {
+  const [draft, setDraft] = useState<number | null>(null)
+  const fraction = draft ?? mrirFractionOf(spec)
+  // The readout basis words, so the Inspector and the board readout agree.
+  const basis = draft != null ? 'edited' : mrirBasisOf(model, spec.mrirM)
+  const commit = () => {
+    if (draft == null) return
+    setDraft(null)
+    const mrirM = Math.round(draft * spec.maxRangeM)
+    if (mrirM !== spec.mrirM) onChange(mrirM)
+  }
+  return (
+    <>
+      <Field label="MRIR" unit={`${fraction.toFixed(2)} × MIR`}>
+        <input
+          type="range"
+          min={0.4}
+          max={1}
+          step={0.01}
+          aria-label="MRIR, fraction of MIR"
+          disabled={!(spec.maxRangeM > 0)}
+          value={fraction}
+          onChange={(e) => setDraft(Number(e.target.value))}
+          onPointerUp={commit}
+          onKeyUp={commit}
+          onBlur={commit}
+        />
+      </Field>
+      <Row
+        label="MRIR in use"
+        value={`${formatNm(spec.maxRangeM * fraction)} · ${mrirBasisText(basis, fraction)}`}
+        title="Max recommended intercept range, the doctrinal range. A board ring only; the engine does not read it."
+        tag={<PfTag model={model} field="mrirM" absent={spec.mrirM == null} />}
+      />
+      <div className="insp-inline">
+        <button
+          className="mini"
+          disabled={spec.mrirM == null}
+          title="Clear the recorded MRIR. The ring returns to 2/3 of MIR, a planning factor."
+          onClick={() => onChange('')}
+        >
+          Reset to 2/3
+        </button>
+      </div>
+      <p className="muted small">
+        Edits the library model. Applies to every system placed from this model.
+      </p>
     </>
   )
 }
@@ -989,6 +1056,13 @@ function EntityInspector({ entity }: { entity: Entity }) {
       {entity.kind === 'effector' && (
         <Section label="Rings">
           <RingOverrideRows entityId={entity.id} keys={EFFECTOR_RING_KEYS} />
+          {model?.effector && (
+            <MrirField
+              model={model}
+              spec={model.effector}
+              onChange={(raw) => editModel(model.id, 'effector.mrirM', raw)}
+            />
+          )}
         </Section>
       )}
       {model?.uas && (

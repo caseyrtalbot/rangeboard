@@ -48,7 +48,8 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    selection ring, a selected link, the path draft, the calibrate marks, the connect ring,
    the range button and the marquee read the theme. It also holds the dim link ink
    (`#6a7178` night, `#767d84` paper) for a probable or inferred link, and the knob rim
-   (`#121415` night, text 1 on paper) for the heading and system rotation handles. The
+   (`#121415` night, text 1 on paper) for the heading and system rotation handles, and the
+   at-rest ring ink `ringIdle` (`#f4f3ee` night, text 1 on paper). The
    system rotation handle and the move-underlay outline take the tool ink (8.8:1 night,
    5.3:1 paper). An anchored name and a spoke callout draw over a board-tone glyph halo
    (`LABEL_HALO_PX`, a 2.5 px stroke under the fill, 1.25 px outside each letter), so a
@@ -283,6 +284,16 @@ editor opens in the Library drawer, not in the right panel. Labels do not wrap, 
   dashed for probable, a circle for inferred; `absent` keeps the column and drops the
   mark. The hover title carries the word and source line. `PfTag` in
   `src/panels/inspector/kit.tsx` maps a spec field's provenance row onto it.
+- **Range rings** (`FootprintLayer.tsx`, constants in `footprintStyle.ts`). A ring at rest
+  is a dashed edge in `ringIdle` with no fill and no text: MIR a long dash (`MIR_REST`),
+  MRIR a shorter, lighter dash (`MRIR_REST`), Min range round dots (`MIN_REST`) and every
+  sensor ring one even dash (`SENSOR_REST`). An active ring takes the solid, filled
+  `RING_STYLE` look. A system is active while it is selected, or at the run time cursor
+  while an effector engages or a sensor holds a track. A disabled system stays grey.
+- **Ring readout** (`HudLayer.tsx`, `.ring-readout` in `.surface-float`). Hovering a ring
+  edge shows the system name, a mono ring chip, the distance in nm at two decimals, the
+  threat height and an MRIR basis line. A click pins it; Esc or a click on empty board
+  clears it. The board shows no ring hint sentence.
 - **Track picture** (`TrackLayer.tsx`, constants in `footprintStyle.ts`). During a sampled
   trial each sensor track draws its estimated position as a 3 px screen cross
   (`TRACK_MARKER_PX`) and, when the track carries error, its 1 sigma covariance ellipse

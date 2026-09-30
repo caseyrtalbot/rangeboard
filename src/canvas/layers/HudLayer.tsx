@@ -1,23 +1,42 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type Konva from 'konva'
+import type { KonvaEventObject } from 'konva/lib/Node'
 import type { Vec2 } from '../../model/types'
 import { useStore } from '../../state/store'
 import { formatAxis, formatDistance, gridStepM } from '../../geometry/geo'
 import { useRingModel } from '../useRingModel'
+import type { RingEdgeKey, RingHit } from '../ringModel'
+import { RING_HIT_TOLERANCE_PX, ringHitFor } from '../ringModel'
 
 interface Props {
   /** The Konva stage this overlay reads its cursor from. */
   stageRef: React.RefObject<Konva.Stage | null>
 }
 
-/** DOM overlay: scale bar, cursor readout, ring hints and active-tool hint. */
+/** A press that travels farther than this, screen px, is a drag and pins nothing. */
+const CLICK_SLOP_PX = 4
+
+/** A pinned readout: the ring it names and the board point it was clicked at. */
+interface RingPin {
+  entityId: string
+  key: RingEdgeKey
+  world: Vec2
+}
+
+/** DOM overlay: scale bar, cursor readout, ring readout and active-tool hint. */
 export function HudLayer({ stageRef }: Props) {
   const [mouseWorld, setMouseWorld] = useState<Vec2 | null>(null)
   const ringModel = useRingModel()
   const camera = useStore((s) => s.camera)
   const scale = camera.scale
   const [dismissed, setDismissed] = useState(false)
+  const [pin, setPin] = useState<RingPin | null>(null)
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 })
+  // The stage handlers bind once; they read the current model and scale here.
+  const latest = useRef({ ringModel, scale })
+  useEffect(() => {
+    latest.current = { ringModel, scale }
+  }, [ringModel, scale])
 
   useEffect(() => {
     const stage = stageRef.current
@@ -39,13 +58,38 @@ export function HudLayer({ stageRef }: Props) {
         setCanvasOffset({ x: rect.left, y: rect.top })
       }
     }
+    let pressAt: { x: number; y: number } | null = null
+    const onDown = () => {
+      pressAt = stage.getPointerPosition()
+    }
+    // A click on empty board pins the ring under it, or clears the pin with no ring
+    // there. A click on an entity keeps the pin, so selecting a threat updates it.
+    // A marquee drag and a draw tool click pin nothing.
+    const onClick = (event: KonvaEventObject<MouseEvent | TouchEvent>) => {
+      onMove()
+      if (event.target !== stage) return
+      const up = stage.getPointerPosition()
+      const dragged =
+        pressAt != null &&
+        up != null &&
+        Math.hypot(up.x - pressAt.x, up.y - pressAt.y) > CLICK_SLOP_PX
+      if (dragged || useStore.getState().ui.tool !== 'select') return
+      const world = stage.getRelativePointerPosition()
+      const { ringModel: model, scale: s } = latest.current
+      const hit = world && s > 0 ? model.hitAt(world, RING_HIT_TOLERANCE_PX / s) : null
+      setPin(hit && world ? { entityId: hit.entity.id, key: hit.key, world } : null)
+    }
     const onLeave = () => {
       setMouseWorld(null)
     }
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setDismissed(true)
+      if (event.key !== 'Escape') return
+      setDismissed(true)
+      setPin(null)
     }
-    stage.on('mousemove.hud click.hud tap.hud', onMove)
+    stage.on('mousedown.hud touchstart.hud', onDown)
+    stage.on('mousemove.hud', onMove)
+    stage.on('click.hud tap.hud', onClick)
     stage.on('mouseleave.hud', onLeave)
     window.addEventListener('keydown', onKey)
     return () => {
@@ -54,17 +98,29 @@ export function HudLayer({ stageRef }: Props) {
     }
   }, [stageRef])
 
-  const hintScreenPos =
-    mouseWorld && scale > 0
-      ? {
-          x: mouseWorld.x * scale + camera.x + canvasOffset.x,
-          y: mouseWorld.y * scale + camera.y + canvasOffset.y,
-        }
-      : null
+  const toScreen = (world: Vec2) => ({
+    x: world.x * scale + camera.x + canvasOffset.x,
+    y: world.y * scale + camera.y + canvasOffset.y,
+  })
+
+  // A pinned readout re-reads its ring, so a threat or ring change updates the values.
+  const pinnedHit = pin ? ringHitFor(ringModel.rings, pin.entityId, pin.key, pin.world) : null
+  // The pinned ring is gone: drop the pin, so the ring coming back does not restore it.
+  if (pin && !pinnedHit) setPin(null)
 
   // Recheck stationary pointers when visibility, selection or the camera changes.
-  const ringHit =
-    mouseWorld && !dismissed && scale > 0 ? ringModel.hitAt(mouseWorld, 6 / scale) : null
+  const hoverHit =
+    !pin && mouseWorld && !dismissed && scale > 0
+      ? ringModel.hitAt(mouseWorld, RING_HIT_TOLERANCE_PX / scale)
+      : null
+  const readout: { hit: RingHit; at: Vec2; pinned: boolean } | null =
+    scale <= 0
+      ? null
+      : pin && pinnedHit
+        ? { hit: pinnedHit, at: toScreen(pin.world), pinned: true }
+        : hoverHit && mouseWorld
+          ? { hit: hoverHit, at: toScreen(mouseWorld), pinned: false }
+          : null
 
   const units = useStore((s) => s.ui.units)
   const tool = useStore((s) => s.ui.tool)
@@ -98,35 +154,30 @@ export function HudLayer({ stageRef }: Props) {
 
   return (
     <div className="hud">
-      {ringHit && hintScreenPos && (
+      {readout && (
+        // The outer box places and flips; the surface's entry animation owns its own transform.
         <div
-          role="tooltip"
-          data-testid="ring-hint"
+          className="ring-readout-anchor"
           style={{
-            position: 'fixed',
-            left: hintScreenPos.x,
-            top: hintScreenPos.y,
-            transform: `translate(${hintScreenPos.x > window.innerWidth / 2 ? 'calc(-100% - 12px)' : '12px'}, ${hintScreenPos.y > window.innerHeight / 2 ? 'calc(-100% - 12px)' : '12px'})`,
-            maxWidth: 280,
-            padding: 'var(--space-2)',
-            pointerEvents: 'none',
-            background: 'var(--surface-panel)',
-            color: 'var(--text-primary)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: 'var(--radius-control)',
-            fontFamily: 'var(--font-ui)',
-            fontSize: 12,
-            lineHeight: 1.4,
-            zIndex: 1000,
+            left: readout.at.x,
+            top: readout.at.y,
+            transform: `translate(${readout.at.x > window.innerWidth / 2 ? 'calc(-100% - 12px)' : '12px'}, ${readout.at.y > window.innerHeight / 2 ? 'calc(-100% - 12px)' : '12px'})`,
           }}
         >
-          <div>
-            <strong>{ringHit.entity.name}</strong> · {ringHit.name}
+          <div role="tooltip" data-testid="ring-hint" className="ring-readout surface-float">
+            <div className="ring-readout-title">
+              <span className="ring-readout-system">{readout.hit.entity.name}</span>
+              <span className="ring-readout-chip">{readout.hit.name}</span>
+            </div>
+            <div className="ring-readout-distance">{readout.hit.distance}</div>
+            {readout.hit.height != null && (
+              <div className="ring-readout-height">{readout.hit.height}</div>
+            )}
+            {readout.hit.basis != null && (
+              <div className="ring-readout-basis">{readout.hit.basis}</div>
+            )}
+            {readout.pinned && <div className="ring-readout-basis">Pinned · Esc clears</div>}
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)' }}>
-            {formatDistance(ringHit.radiusM, units)}
-          </div>
-          <div style={{ color: 'var(--text-secondary)' }}>{ringHit.hint}</div>
         </div>
       )}
       {raidDraft ? (

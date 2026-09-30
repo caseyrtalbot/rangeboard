@@ -85,6 +85,16 @@ _Avoid_: Jam window, emission time
 The span in which a threat is inside an effector's engagement range.
 _Avoid_: WEZ time, opportunity
 
+**MIR**:
+Max intercept range. The farthest range at which an effector can engage a threat. On the
+board it is the effector's outer ring, ground projected at the selected threat altitude.
+_Avoid_: Max range ring, weapon range
+
+**MRIR**:
+Max recommended intercept range, the doctrinal range. The recorded library value, else 2/3
+of MIR as a planning factor. A board ring only; the engine does not read it.
+_Avoid_: Doctrinal rings, release range, commit range
+
 **Arrival**:
 The instant a threat reaches its planned end point or its defended asset.
 _Avoid_: Impact, leak, hit

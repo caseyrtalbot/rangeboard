@@ -117,6 +117,16 @@ describe('stage click precedence', () => {
       tool === 'select' ? { type: 'consume' } : expected,
     )
   })
+
+  it('a click on a ring edge keeps the selection so the readout keeps its threat', () => {
+    const onRing = (tool: Tool) =>
+      routeInteraction(
+        { kind: 'click-stage', onEmpty: true, inPlacePair: false, onRing: true },
+        state({ tool }),
+      )
+    expect(onRing('select')).toEqual({ type: 'consume' })
+    expect(onRing('path')).toEqual({ type: 'add-draft-point' })
+  })
 })
 
 describe('entity click precedence', () => {

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { editSpecField } from './specEdit'
 import type { SpecModel } from './types'
-import { MOUNT_HEIGHT_M, TRACK_INIT_M, TRACK_INIT_N } from './types'
+import {
+  MOUNT_HEIGHT_M,
+  MRIR_DEFAULT_FRACTION,
+  mrirFractionOf,
+  TRACK_INIT_M,
+  TRACK_INIT_N,
+} from './types'
 
 /** A radar model with the fields these rules read, and one source row. */
 function sensorModel(): SpecModel {
@@ -149,6 +155,26 @@ describe('mount height', () => {
     expect(
       editSpecField(effectorModel(), 'effector.mountHeightM', '').effector?.mountHeightM,
     ).toBeNull()
+  })
+})
+
+describe('MRIR', () => {
+  it('records a positive MRIR and clears an empty or non-positive one to null', () => {
+    expect(editSpecField(effectorModel(), 'effector.mrirM', 2400).effector?.mrirM).toBe(2400)
+    const set = editSpecField(effectorModel(), 'effector.mrirM', '2400')
+    expect(editSpecField(set, 'effector.mrirM', '').effector?.mrirM).toBeNull()
+    expect(editSpecField(set, 'effector.mrirM', '0').effector?.mrirM).toBeNull()
+    expect(editSpecField(set, 'effector.mrirM', '-5').effector?.mrirM).toBeNull()
+  })
+
+  it('reads the fraction of MIR: recorded, else 2/3, at most 1', () => {
+    expect(mrirFractionOf({ maxRangeM: 3000 })).toBe(MRIR_DEFAULT_FRACTION)
+    expect(mrirFractionOf({ maxRangeM: 3000, mrirM: null })).toBe(MRIR_DEFAULT_FRACTION)
+    expect(mrirFractionOf({ maxRangeM: 3000, mrirM: 2400 })).toBeCloseTo(0.8)
+    expect(mrirFractionOf({ maxRangeM: 3000, mrirM: 4000 })).toBe(1)
+    expect(mrirFractionOf({ maxRangeM: 3000, mrirM: 0 })).toBe(MRIR_DEFAULT_FRACTION)
+    expect(mrirFractionOf({ maxRangeM: 3000, mrirM: -10 })).toBe(MRIR_DEFAULT_FRACTION)
+    expect(mrirFractionOf({ maxRangeM: 0, mrirM: 100 })).toBe(MRIR_DEFAULT_FRACTION)
   })
 })
 

@@ -6,8 +6,11 @@ export type RingKey =
   | 'sensorEnvelope'
   | 'sensorPdContours'
   | 'classifyRings'
+  // MIR: max intercept range.
   | 'effectorMaxRange'
+  // Min range.
   | 'effectorMinRange'
+  // MRIR: max recommended intercept range. The storage key predates MRIR.
   | 'effectorDoctrinal'
 
 /** Ring keys that apply to a sensor entity, in display order. */
@@ -18,11 +21,11 @@ export const SENSOR_RING_KEYS: readonly RingKey[] = [
   'classifyRings',
 ]
 
-/** Ring keys that apply to an effector entity, in display order. */
+/** Ring keys that apply to an effector entity, in display order: MIR, Min range, MRIR. */
 export const EFFECTOR_RING_KEYS: readonly RingKey[] = [
   'effectorMaxRange',
-  'effectorMinRange',
   'effectorDoctrinal',
+  'effectorMinRange',
 ]
 
 /** The seven ring keys in display order. */

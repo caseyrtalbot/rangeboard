@@ -387,6 +387,12 @@ export interface EffectorSpec {
   effectorType: 'interceptor' | 'jammer' | 'gun' | 'de' | 'hpm' | 'net'
   minRangeM: number
   maxRangeM: number
+  /**
+   * Max recommended intercept range (MRIR, the doctrinal range), meters. A board
+   * ring only; the engine does not read it. Absent or null: MRIR_DEFAULT_FRACTION
+   * of maxRangeM, a planning factor.
+   */
+  mrirM?: number | null
   /** Engagement altitude ceiling, feet. Null when unknown. */
   maxAltitudeFt?: number | null
   /** Launcher or emitter height above ground, meters. Absent: MOUNT_HEIGHT_M (PF). */
@@ -484,6 +490,34 @@ export const MOUNT_HEIGHT_M = 4
 export function mountHeightOf(spec: { mountHeightM?: number | null }): number {
   const h = spec.mountHeightM
   return h != null && Number.isFinite(h) && h >= 0 ? h : MOUNT_HEIGHT_M
+}
+
+/** MRIR where no source gives one: 2/3 of MIR. A planning factor. */
+export const MRIR_DEFAULT_FRACTION = 2 / 3
+
+/** MRIR as a fraction of MIR: the recorded MRIR over max range, else the default. At most 1. */
+export function mrirFractionOf(spec: { mrirM?: number | null; maxRangeM: number }): number {
+  const { mrirM, maxRangeM } = spec
+  if (mrirM == null || !(mrirM > 0) || !(maxRangeM > 0)) return MRIR_DEFAULT_FRACTION
+  return Math.min(1, mrirM / maxRangeM)
+}
+
+/**
+ * Where an MRIR comes from. 'default' is the MRIR_DEFAULT_FRACTION planning factor,
+ * 'edited' a recorded value with no provenance row, 'sourced' a recorded value with one.
+ */
+export type MrirBasis = 'default' | 'edited' | 'sourced'
+
+export function mrirBasisOf(model: SpecModel, mrirM: number | null | undefined): MrirBasis {
+  if (mrirM == null || !(mrirM > 0)) return 'default'
+  return basisFor(model, 'mrirM') === 'pf' ? 'edited' : 'sourced'
+}
+
+/** The readout basis line of an MRIR ring. */
+export function mrirBasisText(basis: MrirBasis, fraction: number): string {
+  if (basis === 'sourced') return 'Sourced'
+  if (basis === 'edited') return `${fraction.toFixed(2)} MIR · Edited`
+  return '2/3 MIR · PF'
 }
 
 /** Threat employment intent, carried by threat/UAS models for cards and playback. */

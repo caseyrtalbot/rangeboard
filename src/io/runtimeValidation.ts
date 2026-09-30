@@ -222,6 +222,7 @@ function semantics(o: Record<string, unknown>, owner: string, path: string): voi
       'classifyRangeM',
       'minRangeM',
       'maxRangeM',
+      'mrirM',
       'mountHeightM',
       'resolutionM',
       'instrumentedRangeM',

@@ -37,7 +37,13 @@ export interface InteractionState {
 export type Intent =
   | { kind: 'escape' }
   | { kind: 'click-entity'; entityKind: Entity['kind']; shiftKey: boolean }
-  | { kind: 'click-stage'; onEmpty: boolean; inPlacePair: boolean }
+  | {
+      kind: 'click-stage'
+      onEmpty: boolean
+      inPlacePair: boolean
+      /** A ring edge lies under the click: the click pins its readout and keeps the selection. */
+      onRing?: boolean
+    }
   | { kind: 'drop'; modelId: string; systemId: string }
   | { kind: 'tool-change' }
   | { kind: 'arm-placement' }
@@ -140,7 +146,8 @@ function routeStageClick(
   if (state.tool === 'boundary' || state.tool === 'path')
     return intent.inPlacePair ? CONSUME : { type: 'add-draft-point' }
   if (state.tool === 'calibrate') return { type: 'set-calibrate-point' }
-  if (intent.onEmpty && state.tool === 'select') return { type: 'clear-selection' }
+  if (intent.onEmpty && state.tool === 'select')
+    return intent.onRing ? CONSUME : { type: 'clear-selection' }
   return CONSUME
 }
 

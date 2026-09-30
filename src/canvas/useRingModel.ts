@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import type { Store } from '../state/store'
 import { useStore } from '../state/store'
 import { selectEffectiveLayers } from '../state/selectors'
 import type { EntityRings, RingModel } from './ringModel'
@@ -15,12 +16,7 @@ export function useRingModel(): RingModel {
   const units = useStore((s) => s.ui.units)
   const layers = useStore(useShallow(selectEffectiveLayers))
   const ringOverrides = useStore(useShallow((s) => s.ui.ringOverrides))
-  const selectedUasId = useStore((s) => {
-    const hit = s.scenario.entities.find(
-      (e) => e.kind === 'uas' && s.selection.entityIds.includes(e.id),
-    )
-    return hit?.id ?? null
-  })
+  const selectedUasId = useStore(selectedUasIdOf)
   const view = useMemo(() => ({ units, layers, ringOverrides }), [units, layers, ringOverrides])
   // Ring geometry is scenario work, so the 10 Hz sweep is not a key here. A scenario
   // swap rebuilds the records, and a record whose fields did not change keeps its
@@ -36,4 +32,25 @@ export function useRingModel(): RingModel {
   }, [model])
 
   return model
+}
+
+/** The first selected UAS: the threat every ring is computed against. */
+function selectedUasIdOf(s: Store): string | null {
+  const hit = s.scenario.entities.find(
+    (e) => e.kind === 'uas' && s.selection.entityIds.includes(e.id),
+  )
+  return hit?.id ?? null
+}
+
+/**
+ * The ring model for one store snapshot, outside React. The stage click asks it
+ * whether a ring lies under the pointer; the records come from the shared cache.
+ */
+export function ringModelOf(s: Store): RingModel {
+  const view = {
+    units: s.ui.units,
+    layers: selectEffectiveLayers(s),
+    ringOverrides: s.ui.ringOverrides,
+  }
+  return prepareRingModel(s.scenario, view, selectedUasIdOf(s))
 }

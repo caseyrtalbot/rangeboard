@@ -1,9 +1,12 @@
 import type { Entity, Scenario, SensorSpec, Vec2 } from '../model/types'
+import type { MrirBasis } from '../model/types'
 import {
   DEFAULT_REQUIREMENT_THRESHOLDS,
-  effectiveDoctrine,
   entityActive,
   mountHeightOf,
+  mrirBasisOf,
+  mrirBasisText,
+  mrirFractionOf,
   physicsSwitches,
 } from '../model/types'
 import { modelFor } from '../model/scenario'
@@ -11,7 +14,7 @@ import type { LayerVisibility } from '../state/layers'
 import { ringVisible } from '../state/layers'
 import type { RingKey, RingOverrides } from '../state/rings'
 import type { DisplayUnits } from '../geometry/geo'
-import { angleDiffDeg, bearingDeg, dist, formatDistance } from '../geometry/geo'
+import { angleDiffDeg, bearingDeg, dist, formatDistance, formatNm } from '../geometry/geo'
 import { entityInk } from '../ui/ink'
 import { groundRangeM } from '../geometry/slant'
 import {
@@ -22,21 +25,18 @@ import {
   radarPdModeled,
   sensorHoldGate,
 } from '../analysis/sensorEnv'
-import { commitPkFor } from '../analysis/doctrineFactors'
 import { effectiveJamRangeM } from '../analysis/ewPhysics'
-import { DEFAULT_PK } from '../playback/pk'
 import { defendedRadiusOf } from '../playback/sim'
 import { threatAltitudeFt } from '../playback/tracks'
-import { EXTRA_RING_HINTS, EXTRA_RING_LABELS, RING_HINTS, RING_LABELS } from '../panels/ringLabels'
+import type { ExtraRingKey } from '../panels/ringLabels'
+import { EXTRA_RING_LABELS, RING_LABELS } from '../panels/ringLabels'
 import type { EnvelopeBand } from './layers/footprintStyle'
 import {
-  commitRangeM,
   DISABLED_RING_COLOR,
   EFFECTOR_RING_COLOR,
   effectorRingStyle,
   envelopeBandM,
   PD_CONTOUR_HIGH,
-  releaseRangeM,
   sensorRingStyle,
 } from './layers/footprintStyle'
 
@@ -54,9 +54,11 @@ export interface RingView {
   ringOverrides: RingOverrides
 }
 
-/** Commit Pk in a label: up to two decimals, no trailing zero. */
-function formatPk(pk: number): string {
-  return String(Math.round(pk * 100) / 100)
+/** The readout height line: the selected threat altitude, feet AGL. */
+function heightText(altitudeFt: number | null): string {
+  return altitudeFt == null
+    ? 'No threat'
+    : `${Math.round(altitudeFt).toLocaleString('en-US')} ft AGL`
 }
 
 export interface SensorRings {
@@ -80,6 +82,8 @@ export interface SensorRings {
   lowLabel: string | null
   highLabel: string | null
   classifyM: number | null
+  /** Selected threat altitude, feet AGL, or null with no threat selected. */
+  altitudeFt: number | null
 }
 
 export interface EffectorRings {
@@ -88,12 +92,16 @@ export interface EffectorRings {
   sectorDeg: number
   color: string
   off: boolean
+  /** MIR ring radius, ground projected for the selected threat, or null when the key is off. */
   maxM: number | null
+  /** MRIR ring radius, ground projected likewise, or null when off or coincident with MIR. */
+  mrirM: number | null
   minM: number | null
-  releaseM: number | null
-  commitM: number | null
-  releaseLabel: string | null
-  commitLabel: string | null
+  mrirBasis: MrirBasis
+  /** MRIR over MIR on the slant. */
+  mrirFraction: number
+  /** Selected threat altitude, feet AGL, or null with no threat selected. */
+  altitudeFt: number | null
 }
 
 export interface JammerRings {
@@ -102,8 +110,14 @@ export interface JammerRings {
   sectorDeg: number
   color: string
   off: boolean
+  /** MIR: the effective jam range against the selected threat, ground projected, or null when the key is off. */
   rangeM: number | null
+  /** MRIR: mrirFraction of the effective jam range, ground projected, or null when the key is off. */
+  mrirM: number | null
   minM: number | null
+  mrirBasis: MrirBasis
+  mrirFraction: number
+  altitudeFt: number | null
 }
 
 export interface AssetRings {
@@ -121,7 +135,6 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
   const physics = physicsSwitches(scenario)
   const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
   const pdLow = thresholds.pdDetect
-  const doctrine = effectiveDoctrine(scenario)
   const units = ui.units
   const selectedUas = selectedUasId
     ? scenario.entities.find((e) => e.id === selectedUasId)
@@ -129,7 +142,8 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
   const target = selectedUas ? modelFor(scenario, selectedUas)?.uas : undefined
   // The engine range is a slant range to the threat altitude, so a ring on a
   // plan-view board is its ground projection.
-  const targetAltM = selectedUas ? threatAltitudeFt(scenario, selectedUas) * FT_TO_M : null
+  const altitudeFt = selectedUas ? threatAltitudeFt(scenario, selectedUas) : null
+  const targetAltM = altitudeFt == null ? null : altitudeFt * FT_TO_M
 
   // Every threat on the board feeds the envelope band, each at its own altitude.
   const threats = scenario.entities.flatMap((u) => {
@@ -209,79 +223,68 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
             ? null
             : `Pd ${PD_CONTOUR_HIGH} · ${formatDistance(style.contourHighM, units)}`,
         classifyM: classifyOn ? style.classifyM : null,
+        altitudeFt,
       })
       continue
     }
 
     if (e.kind === 'effector') {
       const spec = model?.effector
-      if (!spec) continue
+      if (!model || !spec) continue
       const maxOn = ringVisible(ui, e.id, 'effectorMaxRange')
+      const mrirOn = ringVisible(ui, e.id, 'effectorDoctrinal')
       const minOn = ringVisible(ui, e.id, 'effectorMinRange')
-      const doctrinalOn = ringVisible(ui, e.id, 'effectorDoctrinal')
+      if (!maxOn && !mrirOn && !minOn) continue
       const off = !entityActive(e)
       const sectorDeg = spec.sectorDeg ?? 360
+      // Every effector ring is the ground range at the selected threat altitude.
+      const dAltM = targetAltM == null ? null : targetAltM - mountHeightOf(spec)
+      const project = (m: number) => (dAltM == null ? m : groundRangeM(m, dAltM))
+      const mrirFraction = mrirFractionOf(spec)
+      const mrirBasis = mrirBasisOf(model, spec.mrirM)
 
-      // A jammer draws an illumination cone: no danger ink, no ground projection,
-      // no doctrinal ring, and the min circle stays under the cone key.
+      // A jammer draws an illumination cone in its entity ink. Its MIR is the
+      // effective jam range against the selected threat.
       if (spec.effectorType === 'jammer') {
-        if (!maxOn) continue
+        const jamM = effectiveJamRangeM(spec, target)
         out.push({
           kind: 'jammer',
           entity: e,
           sectorDeg,
           color: off ? DISABLED_RING_COLOR : entityInk(e, model),
           off,
-          rangeM: maxOn ? effectiveJamRangeM(spec, target) : null,
-          minM: spec.minRangeM > 0 ? spec.minRangeM : null,
+          rangeM: maxOn ? project(jamM) : null,
+          // An MRIR equal to MIR draws once, as MIR; with MIR hidden it draws as MRIR.
+          mrirM: mrirOn && !(maxOn && mrirFraction >= 1) ? project(jamM * mrirFraction) : null,
+          minM: minOn && spec.minRangeM > 0 ? project(spec.minRangeM) : null,
+          mrirBasis,
+          mrirFraction,
+          altitudeFt,
         })
         continue
       }
 
-      if (!maxOn && !minOn && !doctrinalOn) continue
-      const dAltM = targetAltM == null ? null : targetAltM - mountHeightOf(spec)
-      const project = (m: number) => (dAltM == null ? m : groundRangeM(m, dAltM))
-      let releaseM: number | null = null
-      let commitM: number | null = null
-      let commitPk = 0
-      // Legacy release has no launch point, so doctrine off means no doctrinal ring.
-      if (target && doctrinalOn && doctrine.enabled) {
-        const basePk = spec.pk ?? DEFAULT_PK[spec.effectorType]
-        commitPk = commitPkFor(spec, doctrine)
-        const commitSlantM = commitRangeM({
-          basePk,
-          uas: target,
-          commitPk,
-          maxRangeM: spec.maxRangeM,
-        })
-        const releaseSlantM = releaseRangeM(doctrine, spec.maxRangeM, commitSlantM)
-        commitM = commitSlantM == null ? null : project(commitSlantM)
-        releaseM = releaseSlantM == null ? null : project(releaseSlantM)
-      }
+      const mrirGroundM = project(spec.maxRangeM * mrirFraction)
       const style = effectorRingStyle({
-        on: entityActive(e),
+        on: !off,
         maxM: project(spec.maxRangeM),
+        mrirM: mrirGroundM,
         minM: project(spec.minRangeM),
-        releaseM,
-        commitM,
       })
-      const color = style.grey ? DISABLED_RING_COLOR : EFFECTOR_RING_COLOR
+      // The style drops an MRIR that coincides with MIR; with MIR hidden it is the ring left.
+      const mrirM = maxOn ? style.mrirM : mrirGroundM > 0 ? mrirGroundM : null
       out.push({
         kind: 'effector',
         entity: e,
         sectorDeg,
-        color,
+        color: style.grey ? DISABLED_RING_COLOR : EFFECTOR_RING_COLOR,
         off,
         maxM: maxOn ? style.maxM : null,
+        mrirM: mrirOn ? mrirM : null,
         minM: minOn ? style.minM : null,
-        releaseM: style.releaseM,
-        commitM: style.commitM,
-        releaseLabel:
-          style.releaseM == null ? null : `REL ${formatDistance(style.releaseM, units)}`,
-        commitLabel:
-          style.commitM == null
-            ? null
-            : `Pk ${formatPk(commitPk)} · ${formatDistance(style.commitM, units)}`,
+        mrirBasis,
+        mrirFraction,
+        altitudeFt,
       })
       continue
     }
@@ -358,51 +361,73 @@ function sharedRings(scenario: Scenario, view: RingView, selected: string | null
   return rings
 }
 
-type HintKey = RingKey | keyof typeof EXTRA_RING_HINTS
+/** A ring control key, or an edge whose name is more specific than its control. */
+export type RingEdgeKey = RingKey | ExtraRingKey
 
 /** One ring edge a pointer can rest on. Derived once per prepared model. */
 interface RingEdge {
   radiusM: number
-  key: HintKey
+  key: RingEdgeKey
   /** Arc the edge spans; 360 for a full ring. */
   sectorDeg: number
+  /** The readout height line, or null when the edge is not computed at the threat altitude. */
+  height: string | null
+  /** The readout basis line (MRIR only), or null. */
+  basis: string | null
 }
 
 export interface RingHit {
   entity: Entity
-  key: HintKey
+  key: RingEdgeKey
+  /** Short ring name: MIR, MRIR, Min range or a sensor ring name. */
   name: string
-  hint: string
   radiusM: number
   distanceM: number
+  /** Distance in nm at two decimals. */
+  distance: string
+  /** Selected threat altitude ('400 ft AGL'), 'No threat', or null when the ring has no threat altitude. */
+  height: string | null
+  /** MRIR basis ('2/3 MIR · PF', '0.75 MIR · Edited', 'Sourced'), else null. */
+  basis: string | null
 }
 
 /** The edges one record draws, in draw order. A minimum range stays circular under a sector. */
 function ringEdges(r: EntityRings): RingEdge[] {
   const out: RingEdge[] = []
   const sector = r.kind === 'asset' ? 360 : r.sectorDeg
-  const edge = (radiusM: number | null | undefined, key: HintKey, sectorDeg = sector) => {
-    if (radiusM != null && radiusM > 0) out.push({ radiusM, key, sectorDeg })
+  const edge = (
+    radiusM: number | null | undefined,
+    key: RingEdgeKey,
+    height: string | null,
+    sectorDeg = sector,
+    basis: string | null = null,
+  ) => {
+    if (radiusM != null && radiusM > 0) out.push({ radiusM, key, sectorDeg, height, basis })
   }
   if (r.kind === 'sensor') {
-    edge(r.placardM, 'sensorPlacard')
-    edge(r.contourLowM, 'pdLow')
-    edge(r.contourHighM, 'pdHigh')
-    edge(r.classifyM, 'classifyRings')
-    edge(r.band?.innerM, 'envelopeInner')
-    edge(r.band?.outerM, 'envelopeOuter')
-  } else if (r.kind === 'effector') {
-    edge(r.maxM, 'effectorMaxRange')
-    edge(r.minM, 'effectorMinRange', 360)
-    edge(r.releaseM, 'release')
-    edge(r.commitM, 'commitPk')
-  } else if (r.kind === 'jammer') {
-    edge(r.rangeM, 'jammerEffective')
-    edge(r.minM, 'jammerMin', 360)
+    const h = heightText(r.altitudeFt)
+    // The placard is a reference condition and each band edge has its own threat altitude.
+    edge(r.placardM, 'sensorPlacard', null)
+    edge(r.contourLowM, 'pdLow', h)
+    edge(r.contourHighM, 'pdHigh', h)
+    edge(r.classifyM, 'classifyRings', h)
+    edge(r.band?.innerM, 'envelopeInner', null)
+    edge(r.band?.outerM, 'envelopeOuter', null)
+  } else if (r.kind === 'effector' || r.kind === 'jammer') {
+    const h = heightText(r.altitudeFt)
+    edge(r.kind === 'effector' ? r.maxM : r.rangeM, 'effectorMaxRange', h)
+    edge(r.mrirM, 'effectorDoctrinal', h, sector, mrirBasisText(r.mrirBasis, r.mrirFraction))
+    edge(r.minM, 'effectorMinRange', h, 360)
   } else {
-    edge(r.radiusM, 'defendedArea')
+    edge(r.radiusM, 'defendedArea', null)
   }
   return out
+}
+
+function ringName(key: RingEdgeKey): string {
+  return key in EXTRA_RING_LABELS
+    ? EXTRA_RING_LABELS[key as ExtraRingKey]
+    : RING_LABELS[key as RingKey]
 }
 
 type EntityEdges = Array<[Entity, RingEdge[]]>
@@ -426,19 +451,43 @@ function hitEdges(edges: EntityEdges, worldPt: Vec2, toleranceM: number): RingHi
       if (e.sectorDeg < 360 && angleDiffDeg(bearing, entity.headingDeg) > e.sectorDeg / 2) continue
       const distanceM = Math.abs(distance - e.radiusM)
       if (!(distanceM <= toleranceM) || (closest && distanceM >= closest.distanceM)) continue
-      const extra = e.key as keyof typeof EXTRA_RING_HINTS
-      closest = {
-        entity,
-        key: e.key,
-        radiusM: e.radiusM,
-        distanceM,
-        name: EXTRA_RING_LABELS[extra] ?? RING_LABELS[e.key as RingKey],
-        hint: EXTRA_RING_HINTS[extra] ?? RING_HINTS[e.key as RingKey],
-      }
+      closest = toHit(entity, e, distanceM)
     }
   }
   return closest
 }
+
+function toHit(entity: Entity, e: RingEdge, distanceM: number): RingHit {
+  return {
+    entity,
+    key: e.key,
+    name: ringName(e.key),
+    radiusM: e.radiusM,
+    distanceM,
+    distance: formatNm(e.radiusM),
+    height: e.height,
+    basis: e.basis,
+  }
+}
+
+/**
+ * One entity's ring edge by key, read at a world point, or null when that ring is no
+ * longer drawn. A pinned readout re-reads its ring here as the threat or rings change.
+ */
+export function ringHitFor(
+  rings: EntityRings[],
+  entityId: string,
+  key: RingEdgeKey,
+  worldPt: Vec2,
+): RingHit | null {
+  const r = rings.find((x) => x.entity.id === entityId)
+  const e = r ? ringEdges(r).find((x) => x.key === key) : undefined
+  if (!r || !e) return null
+  return toHit(r.entity, e, Math.abs(dist(r.entity.pos, worldPt) - e.radiusM))
+}
+
+/** Screen pixels between the pointer and a ring edge that still count as on the edge. */
+export const RING_HIT_TOLERANCE_PX = 6
 
 /** The prepared rings and the hit test over the same records. */
 export interface RingModel {

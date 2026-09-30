@@ -43,6 +43,15 @@ own undo step. Pending placement is cancelled by a competing tool or a change to
 or system-preset count. Escape closes an open dialog before it
 cancels a placement. The calibrate tool shows a strip until Escape or Cancel ends it.
 
+Effector rings show MIR (max intercept range), MRIR (max recommended intercept range, the
+doctrinal range) and Min range, ground projected at the selected threat altitude. MRIR is
+the recorded library value, else 2/3 of MIR as a planning factor; the Inspector Rings
+section edits it as a fraction of MIR. MRIR is a board ring only; the engine does not read
+it. A ring rests as a dashed outline and turns solid and filled while its system is
+selected, or at the run time cursor while the effector engages or the sensor holds a track.
+Hovering a ring shows its readout: system, ring, distance in nm, threat height and the
+MRIR basis. A click on the ring pins the readout; Escape or a click on empty board clears it.
+
 A single selected entity opens [EntityWorkspace](../src/panels/EntityWorkspace.tsx):
 Telemetry, Configure and Model basis share one content scroller. Overview preserves the
 selection. Model basis names all linked instances and reuses the model editor; duplication
@@ -204,7 +213,7 @@ screen changes preserve the result basis.
 | Activity | Implemented features | Source entry points |
 | --- | --- | --- |
 | Build a laydown | Model palette, system presets, placement, duplication, rotation, inspection, selection and undo/redo | [store](../src/state/store.ts), [Palette](../src/panels/Palette.tsx), [Inspector](../src/panels/Inspector.tsx) |
-| Describe the range | Meter-scaled pan/zoom, boundaries, calibrated image underlay, geo reference, satellite basemap, layers, per-entity rings, layer presets in the View menu, ring hover hints and one Settings dialog for scenario, run, systems and view inputs | [CanvasStage](../src/canvas/CanvasStage.tsx), [layers](../src/canvas/layers/), [SettingsPanel](../src/panels/SettingsPanel.tsx), [view state](../src/io/viewState.ts) |
+| Describe the range | Meter-scaled pan/zoom, boundaries, calibrated image underlay, geo reference, satellite basemap, layers, per-entity rings (MIR, MRIR and Min range on effectors), layer presets in the View menu, a ring readout on hover or click and one Settings dialog for scenario, run, systems and view inputs | [CanvasStage](../src/canvas/CanvasStage.tsx), [layers](../src/canvas/layers/), [SettingsPanel](../src/panels/SettingsPanel.tsx), [view state](../src/io/viewState.ts) |
 | Represent an architecture | Sensor/C2/effector links, integration profiles, suggested pairings, typed routes and fire-control eligibility | [integration](../src/model/integration.ts), [killChain](../src/playback/killChain.ts) |
 | Represent a threat | Paths, speed/delay/altitude, formations, raid waves and tactic-driven raid construction | [tracks](../src/playback/tracks.ts), [tactics](../src/playback/tactics.ts), [raidBuilder](../src/state/raidBuilder.ts) |
 | Inspect assumptions | Editable library, field provenance, sourced/PF labels, parameter spreads, seed reset and library JSON; the Systems tab lists every field of every system in use with grade, layer, source and spread, and an edit there is an override with a reason, reset per field, per system or all | [LibraryEditor](../src/panels/LibraryEditor.tsx), [SystemsTab](../src/panels/settings/SystemsTab.tsx), [overrides](../src/state/overrides.ts), [types](../src/model/types.ts), [parameterBasis](../src/analysis/parameterBasis.ts) |

@@ -11,11 +11,11 @@ export interface LayerVisibility {
   /** Pd contours for the selected threat. */
   sensorPdContours: boolean
   classifyRings: boolean
-  /** Effector max-range ring. */
+  /** MIR: the effector max intercept range ring (a jammer's cone). */
   effectorMaxRange: boolean
-  /** Effector min-range ring. */
+  /** Min range: the effector min-range ring. */
   effectorMinRange: boolean
-  /** Release and commit-Pk rings for the selected threat. */
+  /** MRIR: the effector max recommended intercept range ring. The key name predates MRIR. */
   effectorDoctrinal: boolean
   /** Defended-area ring around every asset (Entity.defendedRadiusM, else the 500 m default). */
   defendedAreas: boolean
@@ -41,8 +41,8 @@ interface RingView {
 }
 
 /**
- * Layer state a first run starts from and the fallback for a save that lacks the
- * key. Two rings only, so the board opens uncluttered.
+ * Layer state a first run starts from, and the value a save that lacks the key
+ * reads. The placard, MIR and MRIR rings only, so the board opens uncluttered.
  */
 export const DEFAULT_LAYERS: LayerVisibility = {
   grid: true,
@@ -53,7 +53,7 @@ export const DEFAULT_LAYERS: LayerVisibility = {
   classifyRings: false,
   effectorMaxRange: true,
   effectorMinRange: false,
-  effectorDoctrinal: false,
+  effectorDoctrinal: true,
   defendedAreas: true,
   threatWez: false,
   flightPaths: true,
@@ -94,7 +94,7 @@ export const LAYER_PRESETS: Record<LayerPreset, LayerVisibility> = {
     classifyRings: false,
     effectorMaxRange: true,
     effectorMinRange: true,
-    effectorDoctrinal: false,
+    effectorDoctrinal: true,
     defendedAreas: true,
     threatWez: false,
     flightPaths: true,

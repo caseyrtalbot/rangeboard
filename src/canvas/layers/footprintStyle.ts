@@ -1,7 +1,5 @@
 import type { SensorHoldGate } from '../../analysis/sensorEnv'
-import type { FireDoctrine, UasSpec } from '../../model/types'
 import type { RingKey } from '../../state/rings'
-import { falloffRangeM, kineticPk } from '../../playback/pk'
 import { DANGER_INK, KIND_INK } from '../../ui/ink'
 
 /**
@@ -32,10 +30,6 @@ export const DETECT_DASH: Record<Exclude<SensorRingKind, 'held'>, number[]> = {
 export const PD_HIGH_DASH = [4, 6]
 /** Effector minimum range ring: dotted. */
 export const EFFECTOR_MIN_DASH = [2, 5]
-/** Release range ring: dashed. */
-export const RELEASE_DASH = [7, 4]
-/** Commit-Pk range ring: dash-dot. */
-export const COMMIT_DASH = [6, 3, 1, 3]
 /** Track covariance ellipse on a coasting track: even dash. */
 export const TRACK_ELLIPSE_DASH = [4, 4]
 /** Ink for an estimated or truth track. */
@@ -44,6 +38,34 @@ export const TRACK_ESTIMATE_INK = KIND_INK.asset
 export const TRACK_FALSE_INK = DISABLED_RING_COLOR
 /** Track position marker arm, screen px, held constant under the camera. */
 export const TRACK_MARKER_PX = 3
+
+/** An at-rest ring edge: BoardInk.ringIdle, no fill. Dash and width are screen px. */
+export interface RestStroke {
+  dash: number[]
+  width: number
+  opacity: number
+  lineCap?: 'round'
+}
+
+/** At-rest MIR ring: long dash, the heaviest idle edge. */
+export const MIR_REST: RestStroke = { dash: [8, 5], width: 1.4, opacity: 0.9 }
+/** At-rest MRIR ring: short dash, lighter than MIR. */
+export const MRIR_REST: RestStroke = { dash: [3, 4], width: 1.1, opacity: 0.75 }
+/** At-rest min range ring: round dots. */
+export const MIN_REST: RestStroke = { dash: [1, 4], width: 1.2, opacity: 0.75, lineCap: 'round' }
+/** At-rest sensor rings: one even dash for every sensor ring key. */
+export const SENSOR_REST: RestStroke = { dash: [6, 4], width: 1.1, opacity: 0.8 }
+
+/**
+ * How a system's rings draw. 'disabled' keeps the grey treatment whatever the
+ * activity; 'active' is the solid, filled style; 'rest' the dashed idle outline.
+ */
+export type RingState = 'rest' | 'active' | 'disabled'
+
+export function ringState(active: boolean, disabled: boolean): RingState {
+  if (disabled) return 'disabled'
+  return active ? 'active' : 'rest'
+}
 
 /** Two rings closer than this draw as one ring. */
 const PLACARD_TOLERANCE_M = 1
@@ -70,7 +92,7 @@ export const RING_STYLE: Record<RingKey, RingStyle> = {
   classifyRings: { dash: CLASSIFY_DASH, width: 1, fillAlpha: null, ink: 'entity' },
   effectorMaxRange: { dash: null, width: 1.5, fillAlpha: 0.03, ink: 'danger' },
   effectorMinRange: { dash: EFFECTOR_MIN_DASH, width: 1, fillAlpha: null, ink: 'danger' },
-  effectorDoctrinal: { dash: RELEASE_DASH, width: 1, fillAlpha: null, ink: 'danger' },
+  effectorDoctrinal: { dash: null, width: 1, fillAlpha: 0.05, ink: 'danger' },
 }
 
 /** Inspector word for each gate that is not 'ok'. */
@@ -179,26 +201,22 @@ export function envelopeBandM(groundRangesM: number[]): EnvelopeBand | null {
 interface EffectorRingInput {
   /** entityActive(entity). */
   on: boolean
-  /** Max range, ground projected for the selected threat, else the placard, meters. */
+  /** MIR: max range, ground projected for the selected threat, else the placard, meters. */
   maxM: number
+  /** MRIR, ground projected likewise, meters. */
+  mrirM: number
   /** Min range, ground projected likewise, meters (0 when the spec has none). */
   minM: number
-  /** Release range per doctrine.launchPolicy, ground projected, or null. */
-  releaseM: number | null
-  /** Commit-Pk range, ground projected, or null. */
-  commitM: number | null
 }
 
 interface EffectorRingStyle {
-  /** Max range ring radius, meters. */
+  /** MIR ring radius, meters. */
   maxM: number
+  /** MRIR ring radius, meters, or null when not > 0 or coincident with the MIR ring. */
+  mrirM: number | null
   /** Min range ring radius, meters, or null when not > 0. */
   minM: number | null
-  /** RELEASE_DASH ring radius, or null when off or coincident with the max or commit ring. */
-  releaseM: number | null
-  /** COMMIT_DASH ring radius, or null when off, not > 0, or coincident with the max ring. */
-  commitM: number | null
-  /** !on: draw max and min in DISABLED_RING_COLOR, no doctrinal rings. */
+  /** !on: draw every ring in DISABLED_RING_COLOR. */
   grey: boolean
 }
 
@@ -207,55 +225,8 @@ function coincides(a: number, b: number | null): boolean {
 }
 
 export function effectorRingStyle(input: EffectorRingInput): EffectorRingStyle {
-  const { on, maxM, minM, releaseM, commitM } = input
-  const min = positiveOrNull(minM)
-  if (!on) return { maxM, minM: min, releaseM: null, commitM: null, grey: true }
-  // A coincident ring draws once: 'pk-commit' puts release on the commit ring,
-  // 'max-range' puts it on the max ring.
-  const commit = commitM != null && commitM > 0 && !coincides(commitM, maxM) ? commitM : null
-  const release =
-    releaseM != null && releaseM > 0 && !coincides(releaseM, maxM) && !coincides(releaseM, commitM)
-      ? releaseM
-      : null
-  return { maxM, minM: min, releaseM: release, commitM: commit, grey: false }
-}
-
-/**
- * Slant range in meters where the kineticPk shot Pk falls to commitPk, or null
- * when the effector never commits against this target.
- */
-export function commitRangeM(input: {
-  basePk: number
-  uas: UasSpec | undefined
-  commitPk: number
-  maxRangeM: number
-}): number | null {
-  const { basePk, uas, commitPk, maxRangeM } = input
-  if (maxRangeM <= 0) return null
-  const peak = kineticPk(basePk, maxRangeM, uas, 0)
-  if (peak <= 0 || peak < commitPk) return null
-  return falloffRangeM(commitPk / peak, maxRangeM)
-}
-
-/**
- * Slant range where the launch policy volunteers a shot, or null when it
- * never does ('latest'). Same switch as launchPolicyReleases in attrition.
- */
-export function releaseRangeM(
-  doctrine: FireDoctrine,
-  maxRangeM: number,
-  commitM: number | null,
-): number | null {
-  switch (doctrine.launchPolicy) {
-    case 'max-range':
-      return maxRangeM
-    case 'range-fraction':
-      return doctrine.launchRangeFraction * maxRangeM
-    case 'pk-commit':
-      return commitM
-    case 'latest':
-      return null
-    default:
-      return maxRangeM
-  }
+  const { on, maxM, mrirM, minM } = input
+  // An MRIR equal to MIR draws once, as MIR.
+  const mrir = mrirM > 0 && !coincides(mrirM, maxM) ? mrirM : null
+  return { maxM, mrirM: mrir, minM: positiveOrNull(minM), grey: !on }
 }

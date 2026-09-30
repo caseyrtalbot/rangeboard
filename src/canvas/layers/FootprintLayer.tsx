@@ -6,22 +6,36 @@ import { destination, wedgePoints } from '../../geometry/geo'
 import { withAlpha } from '../../ui/ink'
 import { LABEL_FONT_PX } from '../labelLayout'
 import type { AssetRings, EffectorRings, JammerRings, SensorRings } from '../ringModel'
+import { useBoardInk } from '../useBoardInk'
 import { useRingModel } from '../useRingModel'
-import { COMMIT_DASH, PD_HIGH_DASH, RING_STYLE } from './footprintStyle'
+import type { RestStroke } from './footprintStyle'
+import {
+  MIN_REST,
+  MIR_REST,
+  MRIR_REST,
+  PD_HIGH_DASH,
+  RING_STYLE,
+  ringState,
+  SENSOR_REST,
+} from './footprintStyle'
 
 interface Props {
-  /** Measured or held sensors at the trial horizon; coast alone does not light a ring. */
-  activeSensorIds: Set<string>
+  /** Systems active at the trial horizon: sensors measured or held (coast alone
+   *  does not light a ring) and effectors that engage. See trialActiveIds. */
+  runActiveIds: Set<string>
 }
 
 const PLACARD_FILL = RING_STYLE.sensorPlacard.fillAlpha ?? 0
 const ENVELOPE_FILL = RING_STYLE.sensorEnvelope.fillAlpha ?? 0
 const CONTOUR_FILL = RING_STYLE.sensorPdContours.fillAlpha ?? 0
 const MAX_RANGE_FILL = RING_STYLE.effectorMaxRange.fillAlpha ?? 0
+const MRIR_FILL = RING_STYLE.effectorDoctrinal.fillAlpha ?? 0
 
 /** Fill damping on the airspace basemap, and the lift while a sensor holds a
  *  detection. Multipliers on the style alpha, not alphas of their own. */
 const DIM_FILL = 0.4
+/** Opacity of an at-rest ring group on the airspace basemap. */
+const DIM_REST = 0.45
 const ACTIVE_FILL = 2
 /** Stroke width of the ring that marks a live detection, screen px. */
 const ACTIVE_STROKE_PX = 2
@@ -29,7 +43,6 @@ const ACTIVE_STROKE_PX = 2
 const BEHIND_OPACITY = 0.5
 /** Label anchor bearings: sensor rings north-east, effector rings north-west. */
 const SENSOR_LABEL_BRG = 45
-const EFFECTOR_LABEL_BRG = 315
 /** Label text box and its gap from the ring, screen px. */
 const LABEL_BOX_PX = 150
 const LABEL_GAP_PX = 4
@@ -51,6 +64,9 @@ interface RingProps {
   strokeWidth?: number
   dash?: number[] | null
   strokeOpacity?: number
+  lineCap?: 'round'
+  /** Stroke only the arc of a sector, without the spokes. The fill keeps the wedge. */
+  arc?: boolean
 }
 
 /** A full circle or a sector wedge, whichever the sector angle asks for. */
@@ -64,6 +80,8 @@ function Ring({
   strokeWidth,
   dash,
   strokeOpacity,
+  lineCap,
+  arc,
 }: RingProps) {
   const { x, y } = entity.pos
   const headingDeg = entity.headingDeg
@@ -76,6 +94,8 @@ function Ring({
         : wedgePoints({ x, y }, headingDeg, sectorDeg, radiusM),
     [x, y, headingDeg, sectorDeg, radiusM],
   )
+  // The wedge less its center point is the bare arc.
+  const arcPoints = useMemo(() => (wedge && arc ? wedge.slice(2) : null), [wedge, arc])
   if (!(radiusM > 0)) return null
   const full = sectorDeg >= 360
   const fillNode =
@@ -102,16 +122,18 @@ function Ring({
           stroke={stroke}
           strokeWidth={strokeWidth ?? 1}
           dash={dash ?? undefined}
+          lineCap={lineCap}
           strokeScaleEnabled={false}
           opacity={strokeOpacity}
         />
       ) : (
         <Line
-          points={wedge!}
-          closed
+          points={arcPoints ?? wedge!}
+          closed={arcPoints == null}
           stroke={stroke}
           strokeWidth={strokeWidth ?? 1}
           dash={dash ?? undefined}
+          lineCap={lineCap}
           strokeScaleEnabled={false}
           opacity={strokeOpacity}
         />
@@ -122,6 +144,32 @@ function Ring({
       {fillNode}
       {strokeNode}
     </>
+  )
+}
+
+interface RestRingProps {
+  entity: Entity
+  sectorDeg: number
+  radiusM: number
+  style: RestStroke
+  ink: string
+  arc?: boolean
+}
+
+/** An at-rest ring: a dashed edge in the idle ink, no fill. */
+function RestRing({ entity, sectorDeg, radiusM, style, ink, arc }: RestRingProps) {
+  return (
+    <Ring
+      entity={entity}
+      sectorDeg={sectorDeg}
+      radiusM={radiusM}
+      stroke={ink}
+      strokeWidth={style.width}
+      dash={style.dash}
+      strokeOpacity={style.opacity}
+      lineCap={style.lineCap}
+      arc={arc}
+    />
   )
 }
 
@@ -161,21 +209,49 @@ function RingLabel({ pos, radiusM, bearing, text, color }: RingLabelProps) {
   )
 }
 
+interface NodeProps<R> {
+  r: R
+  dim: boolean
+  /** Selected, or active in the run: the solid, filled style. */
+  active: boolean
+  /** BoardInk.ringIdle. */
+  idleInk: string
+}
+
 const SensorNode = memo(function SensorNode({
   r,
   dim,
   active,
-}: {
-  r: SensorRings
-  dim: boolean
-  active: boolean
+  hot,
+  idleInk,
+}: NodeProps<SensorRings> & {
+  /** The sensor holds a track at the run time cursor. */
+  hot: boolean
 }) {
   const e = r.entity
+  if (ringState(active, r.grey) === 'rest') {
+    // Every sensor ring rests in one idle dash. The band has no edge, so it rests unseen.
+    return (
+      <Group listening={false} opacity={dim ? DIM_REST : 1}>
+        {[r.placardM, r.contourLowM, r.contourHighM, r.classifyM].map((radiusM, i) =>
+          radiusM != null ? (
+            <RestRing
+              key={i}
+              entity={e}
+              sectorDeg={r.sectorDeg}
+              radiusM={radiusM}
+              style={SENSOR_REST}
+              ink={idleInk}
+            />
+          ) : null,
+        )}
+      </Group>
+    )
+  }
   const strokeOpacity = r.grey ? 0.35 : dim ? 0.3 : 0.7
-  const hot = active
   // The highlight rides the lower Pd contour when it draws, else the placard ring.
   const hotContour = hot && r.contourLowM != null
-  const bandOpacity = fillFor(ENVELOPE_FILL, dim, active)
+  const bandOpacity = fillFor(ENVELOPE_FILL, dim, hot)
   return (
     <Group listening={false}>
       {r.band != null &&
@@ -206,7 +282,7 @@ const SensorNode = memo(function SensorNode({
           sectorDeg={r.sectorDeg}
           radiusM={r.placardM}
           fill={r.placardFill ? r.color : undefined}
-          fillOpacity={fillFor(PLACARD_FILL, dim, active)}
+          fillOpacity={fillFor(PLACARD_FILL, dim, hot)}
           stroke={r.color}
           strokeWidth={hot && !hotContour ? ACTIVE_STROKE_PX : RING_STYLE.sensorPlacard.width}
           dash={r.placardDash}
@@ -219,7 +295,7 @@ const SensorNode = memo(function SensorNode({
           sectorDeg={r.sectorDeg}
           radiusM={r.contourLowM}
           fill={r.contourFill ? r.color : undefined}
-          fillOpacity={fillFor(CONTOUR_FILL, dim, active)}
+          fillOpacity={fillFor(CONTOUR_FILL, dim, hot)}
           stroke={r.color}
           strokeWidth={hotContour ? ACTIVE_STROKE_PX : RING_STYLE.sensorPdContours.width}
           dash={RING_STYLE.sensorPdContours.dash}
@@ -270,8 +346,41 @@ const SensorNode = memo(function SensorNode({
   )
 })
 
-const EffectorNode = memo(function EffectorNode({ r, dim }: { r: EffectorRings; dim: boolean }) {
+const EffectorNode = memo(function EffectorNode({
+  r,
+  dim,
+  active,
+  idleInk,
+}: NodeProps<EffectorRings>) {
   const e = r.entity
+  if (ringState(active, r.off) === 'rest') {
+    return (
+      <Group listening={false} opacity={dim ? DIM_REST : 1}>
+        {r.maxM != null && (
+          <RestRing
+            entity={e}
+            sectorDeg={r.sectorDeg}
+            radiusM={r.maxM}
+            style={MIR_REST}
+            ink={idleInk}
+          />
+        )}
+        {r.mrirM != null && (
+          <RestRing
+            entity={e}
+            sectorDeg={r.sectorDeg}
+            radiusM={r.mrirM}
+            style={MRIR_REST}
+            ink={idleInk}
+            arc
+          />
+        )}
+        {r.minM != null && (
+          <RestRing entity={e} sectorDeg={360} radiusM={r.minM} style={MIN_REST} ink={idleInk} />
+        )}
+      </Group>
+    )
+  }
   return (
     <Group listening={false} opacity={r.off ? 0.2 : dim ? 0.35 : 0.8}>
       {r.maxM != null && (
@@ -286,6 +395,20 @@ const EffectorNode = memo(function EffectorNode({ r, dim }: { r: EffectorRings; 
           dash={RING_STYLE.effectorMaxRange.dash}
         />
       )}
+      {/* The inner fill makes the zone inside MRIR read darker than the MIR band. */}
+      {r.mrirM != null && (
+        <Ring
+          entity={e}
+          sectorDeg={r.sectorDeg}
+          radiusM={r.mrirM}
+          fill={r.off ? undefined : r.color}
+          fillOpacity={MRIR_FILL}
+          stroke={r.color}
+          strokeWidth={RING_STYLE.effectorDoctrinal.width}
+          dash={RING_STYLE.effectorDoctrinal.dash}
+          arc
+        />
+      )}
       {r.minM != null && (
         <Ring
           entity={e}
@@ -297,44 +420,6 @@ const EffectorNode = memo(function EffectorNode({ r, dim }: { r: EffectorRings; 
           strokeOpacity={0.6}
         />
       )}
-      {r.releaseM != null && (
-        <Ring
-          entity={e}
-          sectorDeg={r.sectorDeg}
-          radiusM={r.releaseM}
-          stroke={r.color}
-          strokeWidth={RING_STYLE.effectorDoctrinal.width}
-          dash={RING_STYLE.effectorDoctrinal.dash}
-        />
-      )}
-      {r.commitM != null && (
-        <Ring
-          entity={e}
-          sectorDeg={r.sectorDeg}
-          radiusM={r.commitM}
-          stroke={r.color}
-          strokeWidth={RING_STYLE.effectorDoctrinal.width}
-          dash={COMMIT_DASH}
-        />
-      )}
-      {r.releaseLabel != null && r.releaseM != null && (
-        <RingLabel
-          pos={e.pos}
-          radiusM={r.releaseM}
-          bearing={EFFECTOR_LABEL_BRG}
-          text={r.releaseLabel}
-          color={r.color}
-        />
-      )}
-      {r.commitLabel != null && r.commitM != null && (
-        <RingLabel
-          pos={e.pos}
-          radiusM={r.commitM}
-          bearing={EFFECTOR_LABEL_BRG}
-          text={r.commitLabel}
-          color={r.color}
-        />
-      )}
     </Group>
   )
 })
@@ -342,9 +427,10 @@ const EffectorNode = memo(function EffectorNode({ r, dim }: { r: EffectorRings; 
 /**
  * A jammer footprint: a solid-edged cone whose fill fades with range the way the
  * jam power density does. The cone length is the effective jam range against the
- * selected threat, the same figure assessJam and the sim window use.
+ * selected threat, the same figure assessJam and the sim window use. The MRIR
+ * draws as an arc inside the beam. At rest the cone is a dashed outline.
  */
-const JammerNode = memo(function JammerNode({ r, dim }: { r: JammerRings; dim: boolean }) {
+const JammerNode = memo(function JammerNode({ r, dim, active, idleInk }: NodeProps<JammerRings>) {
   const e = r.entity
   const rangeM = r.rangeM ?? 0
   const full = r.sectorDeg >= 360
@@ -369,6 +455,34 @@ const JammerNode = memo(function JammerNode({ r, dim }: { r: JammerRings; dim: b
       1,
       withAlpha(r.color, 0.02),
     ],
+  }
+  if (ringState(active, r.off) === 'rest') {
+    return (
+      <Group listening={false} opacity={dim ? DIM_REST : 1}>
+        {r.rangeM != null && (
+          <RestRing
+            entity={e}
+            sectorDeg={sectorDeg}
+            radiusM={rangeM}
+            style={MIR_REST}
+            ink={idleInk}
+          />
+        )}
+        {r.mrirM != null && (
+          <RestRing
+            entity={e}
+            sectorDeg={sectorDeg}
+            radiusM={r.mrirM}
+            style={MRIR_REST}
+            ink={idleInk}
+            arc
+          />
+        )}
+        {r.minM != null && (
+          <RestRing entity={e} sectorDeg={360} radiusM={r.minM} style={MIN_REST} ink={idleInk} />
+        )}
+      </Group>
+    )
   }
   return (
     <Group listening={false} opacity={r.off ? 0.2 : dim ? 0.35 : 0.85}>
@@ -399,6 +513,17 @@ const JammerNode = memo(function JammerNode({ r, dim }: { r: JammerRings; dim: b
             />
           </>
         ))}
+      {r.mrirM != null && (
+        <Ring
+          entity={e}
+          sectorDeg={sectorDeg}
+          radiusM={r.mrirM}
+          stroke={r.color}
+          strokeWidth={RING_STYLE.effectorDoctrinal.width}
+          strokeOpacity={0.8}
+          arc
+        />
+      )}
       {r.minM != null && (
         <Circle
           x={e.pos.x}
@@ -445,26 +570,38 @@ const AssetNode = memo(function AssetNode({ r, dim }: { r: AssetRings; dim: bool
  * hit-tests over the same result. A ring against a selected threat is the engine's
  * effective range, ground projected to the plan view.
  */
-export const FootprintLayer = memo(function FootprintLayer({ activeSensorIds }: Props) {
+export const FootprintLayer = memo(function FootprintLayer({ runActiveIds }: Props) {
   const { rings } = useRingModel()
   const dim = useStore((s) => s.ui.basemap === 'airspace')
+  const selectedIds = useStore((s) => s.selection.entityIds)
+  const idleInk = useBoardInk().ringIdle
+  // A system's rings are active while it is selected or active in the run; every
+  // other ring rests. Each node takes a boolean, so an unchanged node keeps its draw.
+  const isActive = (id: string) => runActiveIds.has(id) || selectedIds.includes(id)
 
   return (
     <>
       {rings.map((r) => {
+        const id = r.entity.id
         if (r.kind === 'sensor') {
           return (
             <SensorNode
-              key={r.entity.id}
+              key={id}
               r={r}
               dim={dim}
-              active={activeSensorIds.has(r.entity.id)}
+              active={isActive(id)}
+              hot={runActiveIds.has(id)}
+              idleInk={idleInk}
             />
           )
         }
-        if (r.kind === 'effector') return <EffectorNode key={r.entity.id} r={r} dim={dim} />
-        if (r.kind === 'jammer') return <JammerNode key={r.entity.id} r={r} dim={dim} />
-        return <AssetNode key={r.entity.id} r={r} dim={dim} />
+        if (r.kind === 'effector') {
+          return <EffectorNode key={id} r={r} dim={dim} active={isActive(id)} idleInk={idleInk} />
+        }
+        if (r.kind === 'jammer') {
+          return <JammerNode key={id} r={r} dim={dim} active={isActive(id)} idleInk={idleInk} />
+        }
+        return <AssetNode key={id} r={r} dim={dim} />
       })}
     </>
   )

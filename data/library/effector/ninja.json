@@ -45,13 +45,13 @@
     "sectorDeg": {
       "value": 360,
       "unit": "deg",
-      "condition": "azimuth coverage — No azimuth sector is published for the fixed-site defeat function. Basis for 360: the fixed-site build is a distributed array of software-defined radios with optional range-extension nodes (Ninja TRx, Ninja 4925 RFFE, Ninja Sentinel), which is a site-perimeter architecture rather than a pointed beam. INFERRED.",
-      "grade": "INFERRED",
-      "layer": "L2",
-      "source": "Black River Systems, Fixed-Site C-UAS",
-      "url": "https://www.blackriversystems.com/c-uas-systems-fixed-site/",
-      "date": "2026-08-24",
-      "estimator": "planning-factor"
+      "condition": "azimuth coverage: 360 deg. Manufacturer states \"OMNIDIRECTIONAL ANTENNA SETS\" and \"All Ninja systems provide full 360 deg protection\".",
+      "grade": "MANUFACTURER_CLAIM",
+      "layer": "L1",
+      "basis": "datasheet",
+      "source": "Black River Systems, Ninja Gen2 product page",
+      "url": "https://www.blackriversystems.com/product-ninja-gen2/",
+      "date": "2026-09-29"
     },
     "engageTimeS": {
       "value": 20,

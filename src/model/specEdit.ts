@@ -145,6 +145,9 @@ function editEffector(spec: EffectorSpec, key: string, value: SpecEditValue): Ef
       return { ...spec, sectorDeg: sector(value) }
     case 'maxAltitudeFt':
       return { ...spec, maxAltitudeFt: positiveOrNull(value) }
+    // An empty value clears MRIR back to the 2/3-of-MIR planning factor.
+    case 'mrirM':
+      return { ...spec, mrirM: positiveOrNull(value) }
     case 'mountHeightM':
       return { ...spec, mountHeightM: mountHeight(value) }
     case 'flyoutSpeedMps':

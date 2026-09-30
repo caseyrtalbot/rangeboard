@@ -25,9 +25,9 @@
         "src/model/types.ts",
         "src/playback/trackTypes.ts"
       ],
-      "sha256": "731cf0f1a4ec70fb7c0ba329ca4e7ff4892bb839eb12f85f8940c9783bd19213",
-      "reviewedAt": "2026-09-29",
-      "note": "Code-quality refactor: model/types.ts only un-exports DEFAULT_SWEEP_STEP_S; glossary terms and EntityKind, EffectorSpec and FusedTrack unchanged."
+      "sha256": "2eda9e33bc78cb8e975e4159f0de6a7b2976862d1fb2713a4118659ece71cb47",
+      "reviewedAt": "2026-09-30",
+      "note": "MIR/MRIR rings follow-up: types.ts gains mrirBasisOf and mrirBasisText. The MIR and MRIR glossary entries stay accurate."
     },
     {
       "document": "README.md",
@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "66bfdc3cf30297c3a73ba8ae0bb05fefb5a9ba454e0042c7f822482d8f1a621e",
-      "reviewedAt": "2026-09-29",
-      "note": "Q1: Monte Carlo runs on the worker pool and sensitivity on its own slot; the trial and optimizer slot counts drop by one; no removed symbol is named"
+      "sha256": "bf1a580326d68d2b55a926e0ecf731a07c73549feff574f1d38348a28583b937",
+      "reviewedAt": "2026-09-30",
+      "note": "MIR/MRIR rings follow-up: types.ts gains the MRIR basis helpers and the effector ring order is MIR, MRIR, Min range. The ring paragraph already lists that order and stays accurate."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "6a54d2de18ffbe4440739df440307319d3b977eb08cfc160af652dbc4766bd26",
-      "reviewedAt": "2026-09-29",
-      "note": "Q1: the single-worker Monte Carlo slot is removed; the cancel paragraph names requestPooledCancel to the pool and requestSensitivityCancel to the sensitivity slot; the parity sentence drops the single worker; trialClient owns its own slot beside the pool and the sensitivity slot"
+      "sha256": "fd2f3328f2d3fb481a33f92645fd52aa1ef45956f8b9a7bd73786e3c1ace2ad3",
+      "reviewedAt": "2026-09-30",
+      "note": "MIR/MRIR rings follow-up: mrirBasisOf and mrirBasisText moved from ringModel.ts to types.ts; the Inspector MRIR row shows the same basis words; EFFECTOR_RING_KEYS order is MIR, MRIR, Min range. Rings bullet updated."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "5d89ea00b4b1302c260c62b87a2226138f2eb3544c2fce8e9e31279f5ec956ef",
-      "reviewedAt": "2026-09-29",
-      "note": "Code-quality refactor: io/scenarioFill.ts added behind fillScenario and loadScenario with unchanged behavior; capture.mjs keeps its exported API minus two internal helpers; commands, tests and parity procedures unchanged."
+      "sha256": "4319a7523d614fa90d531485a3543ca7bccdc0a3f538f97b5de4b844283c226f",
+      "reviewedAt": "2026-09-30",
+      "note": "MIR/MRIR rings: src/io runtime schema and validation add the optional mrirM field and scripts/build-library.mjs adds its unit; no gate, fixture or command changes, text stays accurate"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -98,9 +98,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "e775d304300df046e7f959eb89bf4203a9ec40ef28ed716f911e3a674af480ed",
-      "reviewedAt": "2026-09-29",
-      "note": "Code-quality refactor: scripts/evidence/capture.mjs un-exports serializeCapture and sha256 only; captures still go through capture.mjs; workflow steps unchanged."
+      "sha256": "23344ca2604e53da976bbe706f324adec3e146dcbc38d9d2db3430974353ec53",
+      "reviewedAt": "2026-09-30",
+      "note": "MIR/MRIR rings: scripts/build-library.mjs only adds the mrirM unit to UNIT_BY_FIELD; no workflow, script command or lint config change, text stays accurate"
     },
     {
       "document": "docs/HANDOFF.md",
@@ -124,9 +124,9 @@
         "src/playback/retainTrial.ts",
         "src/analysis/trialSeries.ts"
       ],
-      "sha256": "624b59d340b0f2907bdc49d354d31c96f4b18b72613ee9f5aed4ffecf2d6c4cc",
-      "reviewedAt": "2026-09-29",
-      "note": "Code-quality refactor: RunTimeline.tsx imports useTrialResult directly; RAMP moved to timeline/layout.ts with identical values; the spec's behavior and ownership table still hold."
+      "sha256": "208d37029b334e7086739b89cac665d8dadf0158eab5c42a5276e4b051fbdc28",
+      "reviewedAt": "2026-09-30",
+      "note": "CONTEXT.md gained the MIR and MRIR board-ring terms only; the run timeline spec uses neither and its terms, behavior and ownership table still hold"
     },
     {
       "document": "docs/code-quality/Plan.md",
@@ -143,9 +143,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "33380be458da5ba5bf64ebd5d38e2e2dade7615d6b8dbd8b09e41ff1b4d6ef6a",
-      "reviewedAt": "2026-09-29",
-      "note": "Code-quality refactor: icon list drops the removed caret, plus and search glyphs; TimeSeries.tsx re-export block and svgMarkup export removed without visual change; Field and footprint style unchanged."
+      "sha256": "6566077614443929c6fda9dcd2487b91ea27a9e8d367220f5c912a350c4aaa6b",
+      "reviewedAt": "2026-09-30",
+      "note": "MIR/MRIR rings: rule 9 adds BoardInk.ringIdle; new Range rings entry states the at-rest dashes (MIR_REST, MRIR_REST, MIN_REST, SENSOR_REST) and the active rule; new Ring readout entry covers the .ring-readout surface-float and the pin"
     }
   ],
   "historical": [

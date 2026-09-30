@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Entity } from '../../model/types'
-import { destination } from '../../geometry/geo'
+import { destination, formatNm } from '../../geometry/geo'
 import type { EntityRings } from '../ringModel'
 import { hitRing } from '../ringModel'
 
@@ -32,6 +32,7 @@ const sensor: EntityRings = {
   lowLabel: null,
   highLabel: null,
   classifyM: null,
+  altitudeFt: null,
 }
 
 describe('hitRing', () => {
@@ -73,17 +74,66 @@ describe('hitRing', () => {
         color: '#fff',
         off: false,
         maxM: 100,
+        mrirM: null,
         minM: 20,
-        releaseM: null,
-        commitM: null,
-        releaseLabel: null,
-        commitLabel: null,
+        mrirBasis: 'default',
+        mrirFraction: 2 / 3,
+        altitudeFt: null,
       },
-      { kind: 'jammer', entity, sectorDeg: 30, color: '#fff', off: false, rangeM: 100, minM: 30 },
+      {
+        kind: 'jammer',
+        entity,
+        sectorDeg: 30,
+        color: '#fff',
+        off: false,
+        rangeM: 100,
+        mrirM: null,
+        minM: 30,
+        mrirBasis: 'default',
+        mrirFraction: 2 / 3,
+        altitudeFt: null,
+      },
     ]
-    expect(hitRing(rings, destination(entity.pos, 180, 20), 1)?.key).toBe('effectorMinRange')
-    expect(hitRing(rings, destination(entity.pos, 180, 30), 1)?.key).toBe('jammerMin')
+    expect(hitRing(rings, destination(entity.pos, 180, 20), 1)).toMatchObject({
+      key: 'effectorMinRange',
+      radiusM: 20,
+    })
+    expect(hitRing(rings, destination(entity.pos, 180, 30), 1)).toMatchObject({
+      key: 'effectorMinRange',
+      radiusM: 30,
+    })
     expect(hitRing(rings, destination(entity.pos, 180, 100), 1)).toBeNull()
+  })
+
+  it('reads the MIR and MRIR names, distance, height and basis of a jammer', () => {
+    const rings: EntityRings[] = [
+      {
+        kind: 'jammer',
+        entity,
+        sectorDeg: 360,
+        color: '#fff',
+        off: false,
+        rangeM: 2000,
+        mrirM: 1500,
+        minM: null,
+        mrirBasis: 'edited',
+        mrirFraction: 0.75,
+        altitudeFt: 400,
+      },
+    ]
+    expect(hitRing(rings, destination(entity.pos, 90, 2000), 1)).toMatchObject({
+      key: 'effectorMaxRange',
+      name: 'MIR',
+      distance: formatNm(2000),
+      height: '400 ft AGL',
+      basis: null,
+    })
+    expect(hitRing(rings, destination(entity.pos, 90, 1500), 1)).toMatchObject({
+      key: 'effectorDoctrinal',
+      name: 'MRIR',
+      distance: '0.81 nm',
+      basis: '0.75 MIR · Edited',
+    })
   })
 
   it('distinguishes envelope edges and Pd contours', () => {
@@ -104,5 +154,14 @@ describe('hitRing', () => {
     ] as const) {
       expect(hitRing(rings, destination(entity.pos, 90, radius), 1)?.key).toBe(key)
     }
+  })
+
+  it('gives a height line only to rings computed at the threat altitude', () => {
+    const rings = [{ ...sensor, band: { innerM: 20, outerM: 80 }, contourLowM: 60 }]
+    const heightAt = (radius: number) =>
+      hitRing(rings, destination(entity.pos, 90, radius), 1)?.height
+    expect(heightAt(100)).toBeNull()
+    expect(heightAt(80)).toBeNull()
+    expect(heightAt(60)).toBe('No threat')
   })
 })

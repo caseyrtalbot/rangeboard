@@ -23,6 +23,8 @@ import { ConnectSuggestPopup } from './ConnectSuggestPopup'
 import { IDLE_INTERACTION, routeInteraction } from './interactionRouter'
 import { SceneErrorBoundary } from './SceneErrorBoundary'
 import { useBoardInk } from './useBoardInk'
+import { ringModelOf } from './useRingModel'
+import { RING_HIT_TOLERANCE_PX } from './ringModel'
 import { withAlpha } from '../ui/ink'
 import type { Action } from './interactionRouter'
 
@@ -290,9 +292,13 @@ export const CanvasStage = memo(function CanvasStage({
     if (pointer && !clickSuppressed) {
       lastClicks.current = [...lastClicks.current.slice(-1), { ...pointer, t: performance.now() }]
     }
+    const onRing =
+      onEmpty &&
+      camera.scale > 0 &&
+      ringModelOf(useStore.getState()).hitAt(world, RING_HIT_TOLERANCE_PX / camera.scale) != null
     // Precedence lives in the router.
     const action = routeInteraction(
-      { kind: 'click-stage', onEmpty, inPlacePair: isInPlacePair() },
+      { kind: 'click-stage', onEmpty, inPlacePair: isInPlacePair(), onRing },
       {
         ...IDLE_INTERACTION,
         tool,

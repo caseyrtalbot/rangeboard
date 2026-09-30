@@ -86,6 +86,7 @@ export const UNIT_BY_FIELD = {
   // effector
   minRangeM: 'm',
   maxRangeM: 'm',
+  mrirM: 'm',
   engageTimeS: 's',
   pk: 'fraction',
   magazineSize: 'count',

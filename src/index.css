@@ -1018,6 +1018,61 @@ input[type='color']::-webkit-color-swatch {
   border-top: none;
 }
 
+/* The ring readout. The anchor places and flips it; the surface inside keeps
+   the .surface-float entry, which animates its own transform. */
+.ring-readout-anchor {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.ring-readout {
+  min-width: 150px;
+  max-width: 280px;
+  padding: var(--space-2) 10px;
+  color: var(--text-primary);
+  font-size: var(--type-meta-size);
+  line-height: 1.45;
+}
+
+.ring-readout-title {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.ring-readout-system {
+  font-weight: var(--type-title-weight);
+}
+
+.ring-readout-chip {
+  padding: 0 5px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-control);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  white-space: nowrap;
+}
+
+.ring-readout-distance {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--type-lead-size);
+}
+
+.ring-readout-height {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.ring-readout-basis {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
 .tile-attribution {
   position: absolute;
   bottom: 34px;

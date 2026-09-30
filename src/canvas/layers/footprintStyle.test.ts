@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_FIRE_DOCTRINE } from '../../model/types'
 import type { UasSpec } from '../../model/types'
 import { distanceFalloff, falloffRangeM, kineticPk } from '../../playback/pk'
 import { RING_KEYS } from '../../state/rings'
 import {
-  COMMIT_DASH,
   DETECT_DASH,
   EFFECTOR_MIN_DASH,
   GATE_WORD,
+  MIN_REST,
+  MIR_REST,
+  MRIR_REST,
   PD_HIGH_DASH,
   PLACARD_DASH,
-  RELEASE_DASH,
   RING_STYLE,
-  commitRangeM,
+  SENSOR_REST,
   effectorRingStyle,
   envelopeBandM,
-  releaseRangeM,
   ringKindFor,
+  ringState,
   sensorRingStyle,
 } from './footprintStyle'
 
@@ -167,50 +167,39 @@ describe('envelopeBandM', () => {
 })
 
 describe('effectorRingStyle', () => {
-  const on = { on: true, maxM: 10000, minM: 200, releaseM: 7400, commitM: 5100 }
+  const on = { on: true, maxM: 10000, mrirM: 6700, minM: 200 }
 
-  it('draws every ring when none coincide', () => {
-    expect(effectorRingStyle(on)).toEqual({
-      maxM: 10000,
-      minM: 200,
-      releaseM: 7400,
-      commitM: 5100,
-      grey: false,
-    })
+  it('draws MIR, MRIR and min range when none coincide', () => {
+    expect(effectorRingStyle(on)).toEqual({ maxM: 10000, mrirM: 6700, minM: 200, grey: false })
   })
 
-  it('drops a zero min range and a zero commit range', () => {
+  it('drops a zero min range and a zero MRIR', () => {
     expect(effectorRingStyle({ ...on, minM: 0 }).minM).toBeNull()
-    expect(effectorRingStyle({ ...on, commitM: 0 }).commitM).toBeNull()
+    expect(effectorRingStyle({ ...on, mrirM: 0 }).mrirM).toBeNull()
   })
 
-  it('pk-commit: release equals commit, only the commit ring draws', () => {
-    const s = effectorRingStyle({ ...on, releaseM: 5100 })
-    expect(s.releaseM).toBeNull()
-    expect(s.commitM).toBe(5100)
-    expect(effectorRingStyle({ ...on, releaseM: 5100.5 }).releaseM).toBeNull()
+  it('an MRIR coincident with MIR draws once, as MIR', () => {
+    expect(effectorRingStyle({ ...on, mrirM: 10000 }).mrirM).toBeNull()
+    expect(effectorRingStyle({ ...on, mrirM: 9999.5 }).mrirM).toBeNull()
+    expect(effectorRingStyle({ ...on, mrirM: 10000 }).maxM).toBe(10000)
   })
 
-  it('max-range: release equals max, only the max ring draws', () => {
-    const s = effectorRingStyle({ ...on, releaseM: 10000 })
-    expect(s.releaseM).toBeNull()
-    expect(s.maxM).toBe(10000)
-  })
-
-  it('a commit range at max range hides under the max ring', () => {
-    const s = effectorRingStyle({ ...on, releaseM: 10000, commitM: 10000 })
-    expect(s.commitM).toBeNull()
-    expect(s.releaseM).toBeNull()
-  })
-
-  it('off: grey max and min, no doctrinal rings', () => {
+  it('off: every ring grey', () => {
     expect(effectorRingStyle({ ...on, on: false })).toEqual({
       maxM: 10000,
+      mrirM: 6700,
       minM: 200,
-      releaseM: null,
-      commitM: null,
       grey: true,
     })
+  })
+})
+
+describe('ringState', () => {
+  it('rests unless active, and a disabled system stays grey whatever its activity', () => {
+    expect(ringState(false, false)).toBe('rest')
+    expect(ringState(true, false)).toBe('active')
+    expect(ringState(true, true)).toBe('disabled')
+    expect(ringState(false, true)).toBe('disabled')
   })
 })
 
@@ -233,56 +222,6 @@ describe('kineticPk', () => {
     expect(kineticPk(0.8, 10000, QUAD_G3, 5000)).toBeCloseTo(0.612, 12)
     expect(kineticPk(0.8, 10000, QUAD_G3, 10001)).toBe(0)
     expect(kineticPk(2, 10000, undefined, 0)).toBe(1)
-  })
-})
-
-describe('commitRangeM', () => {
-  it('is the slant range where the falloff brings Pk down to commitPk', () => {
-    // Peak 0.8 * 0.9 = 0.72; falloff must be 0.6 / 0.72; r = 10000 * (1 - 0.6/0.72) / 0.3.
-    const r = commitRangeM({ basePk: 0.8, uas: QUAD_G3, commitPk: 0.6, maxRangeM: 10000 })
-    expect(r).toBeCloseTo((10000 * (1 - 0.6 / 0.72)) / 0.3, 6)
-    expect(r).toBeCloseTo(5555.56, 1)
-  })
-
-  it('is the inverse of kineticPk at the commit Pk', () => {
-    for (const [basePk, uas, commitPk] of [
-      [0.8, QUAD_G3, 0.6],
-      [0.85, FPV_G1, 0.35],
-      [0.7, undefined, 0.5],
-    ] as Array<[number, UasSpec | undefined, number]>) {
-      const r = commitRangeM({ basePk, uas, commitPk, maxRangeM: 8000 })!
-      expect(r).not.toBeNull()
-      expect(kineticPk(basePk, 8000, uas, r)).toBeCloseTo(commitPk, 12)
-    }
-  })
-
-  it('is null when the effector never commits, or has no envelope', () => {
-    // 0.8 * 0.49 = 0.392 < 0.6: never commits.
-    expect(commitRangeM({ basePk: 0.8, uas: FPV_G1, commitPk: 0.6, maxRangeM: 10000 })).toBeNull()
-    expect(commitRangeM({ basePk: 0, uas: QUAD_G3, commitPk: 0.6, maxRangeM: 10000 })).toBeNull()
-    expect(commitRangeM({ basePk: 0.8, uas: undefined, commitPk: 0.6, maxRangeM: 0 })).toBeNull()
-  })
-
-  it('is the max range when the effector commits everywhere', () => {
-    expect(commitRangeM({ basePk: 1, uas: undefined, commitPk: 0.5, maxRangeM: 10000 })).toBe(10000)
-  })
-})
-
-describe('releaseRangeM', () => {
-  const doctrine = { ...DEFAULT_FIRE_DOCTRINE }
-
-  it('follows the launch policy', () => {
-    expect(releaseRangeM({ ...doctrine, launchPolicy: 'max-range' }, 10000, 5100)).toBe(10000)
-    expect(
-      releaseRangeM(
-        { ...doctrine, launchPolicy: 'range-fraction', launchRangeFraction: 0.74 },
-        10000,
-        5100,
-      ),
-    ).toBeCloseTo(7400, 9)
-    expect(releaseRangeM({ ...doctrine, launchPolicy: 'pk-commit' }, 10000, 5100)).toBe(5100)
-    expect(releaseRangeM({ ...doctrine, launchPolicy: 'pk-commit' }, 10000, null)).toBeNull()
-    expect(releaseRangeM({ ...doctrine, launchPolicy: 'latest' }, 10000, 5100)).toBeNull()
   })
 })
 
@@ -311,9 +250,20 @@ describe('RING_STYLE', () => {
     expect(RING_STYLE.classifyRings.dash).toEqual([10, 4])
     expect(PD_HIGH_DASH).toEqual([4, 6])
     expect(RING_STYLE.effectorMinRange.dash).toEqual(EFFECTOR_MIN_DASH)
-    expect(RING_STYLE.effectorDoctrinal.dash).toEqual(RELEASE_DASH)
-    expect(COMMIT_DASH).toEqual([6, 3, 1, 3])
+    expect(RING_STYLE.effectorDoctrinal).toEqual({
+      dash: null,
+      width: 1,
+      fillAlpha: 0.05,
+      ink: 'danger',
+    })
     expect(RING_STYLE.effectorMaxRange.dash).toBeNull()
     expect(RING_STYLE.sensorEnvelope.width).toBe(0)
+  })
+
+  it('names the at-rest dashes the mockup draws', () => {
+    expect(MIR_REST).toEqual({ dash: [8, 5], width: 1.4, opacity: 0.9 })
+    expect(MRIR_REST).toEqual({ dash: [3, 4], width: 1.1, opacity: 0.75 })
+    expect(MIN_REST).toEqual({ dash: [1, 4], width: 1.2, opacity: 0.75, lineCap: 'round' })
+    expect(SENSOR_REST).toEqual({ dash: [6, 4], width: 1.1, opacity: 0.8 })
   })
 })

@@ -91,4 +91,16 @@ describe('CommandPalette', () => {
     expect(html).toContain('<kbd class="kbd kbd-hint">⌘Z</kbd>')
     expect(html).not.toContain('Edit:')
   })
+
+  it('keeps ring acronyms upper case in the toggle labels', () => {
+    const html = renderToStaticMarkup(<CommandPalette onClose={() => {}} />)
+    for (const label of [
+      'Toggle MIR<',
+      'Toggle MRIR<',
+      'Toggle min range<',
+      'Toggle Pd contours<',
+    ]) {
+      expect(html).toContain(label)
+    }
+  })
 })
