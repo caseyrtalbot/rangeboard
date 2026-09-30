@@ -16,11 +16,17 @@ import { useStore } from '../../../state/store'
 import { FieldHelpProvider } from '../../../ui/kit'
 import { FragilityScreen } from './FragilityScreen'
 
+type Handler = (event: {
+  key?: string
+  target: { value: string }
+  preventDefault: () => void
+}) => void
 const interaction = vi.hoisted(() => ({
   cursor: 0,
   states: [] as unknown[],
   buttons: new Map<string, { disabled?: boolean; onClick: () => void }>(),
-  fields: new Map<string, (event: { target: { value: string } }) => void>(),
+  fields: new Map<string, Handler>(),
+  keys: new Map<string, Handler>(),
 }))
 vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
@@ -46,17 +52,23 @@ vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
       children?: unknown
       disabled?: boolean
       onClick?: () => void
+      onChange?: Handler
+      onKeyDown?: Handler
       label?: string
-      'data-finding'?: string
+      name?: string
+      'aria-label'?: string
     }
-    if (type === 'button' && typeof p.children === 'string' && p.onClick)
-      interaction.buttons.set(p.children, { disabled: p.disabled, onClick: p.onClick })
-    if (type === 'button' && p['data-finding'] && p.onClick)
-      interaction.buttons.set(`finding:${p['data-finding']}`, { onClick: p.onClick })
+    if (type === 'button' && p.onClick) {
+      const entry = { disabled: p.disabled, onClick: p.onClick }
+      if (typeof p.children === 'string') interaction.buttons.set(p.children, entry)
+      if (p['aria-label']) interaction.buttons.set(p['aria-label'], entry)
+    }
+    if ((type === 'select' || type === 'input') && p.name) {
+      if (p.onChange) interaction.fields.set(p.name, p.onChange)
+      if (p.onKeyDown) interaction.keys.set(p.name, p.onKeyDown)
+    }
     if (typeof type === 'function' && type.name === 'Field') {
-      const child = p.children as {
-        props?: { onChange?: (event: { target: { value: string } }) => void }
-      }
+      const child = p.children as { props?: { onChange?: Handler } }
       if (p.label && child?.props?.onChange) interaction.fields.set(p.label, child.props.onChange)
     }
     return actual.jsxDEV(type, props, ...rest)
@@ -200,6 +212,7 @@ function render(help = false) {
   interaction.cursor = 0
   interaction.buttons.clear()
   interaction.fields.clear()
+  interaction.keys.clear()
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(
     <FieldHelpProvider value={help}>
@@ -207,15 +220,41 @@ function render(help = false) {
     </FieldHelpProvider>,
   )
 }
+const event = (value: string, key?: string) => ({ key, target: { value }, preventDefault() {} })
 function change(label: string, value: string) {
   expect(interaction.fields.has(label)).toBe(true)
-  interaction.fields.get(label)!({ target: { value } })
+  interaction.fields.get(label)!(event(value))
   return render()
 }
-function grid() {
-  render()
-  change('Column values', '100,200,300,400,500')
-  return change('Row values', '10,20,30,40')
+function click(label: string) {
+  expect(interaction.buttons.has(label)).toBe(true)
+  interaction.buttons.get(label)!.onClick()
+  return render()
+}
+/** Type a value in a factor's add box and press Enter. */
+function addValue(axis: 'A' | 'B', value: string) {
+  change(`add-${axis}`, value)
+  interaction.keys.get(`add-${axis}`)!(event(value, 'Enter'))
+  return render()
+}
+const section = (html: string, title: string) => {
+  const from = html.indexOf(`<h3 class="psec-title">${title}</h3>`)
+  const to = html.indexOf('<section class="psec', from)
+  return html.slice(from, to < 0 ? undefined : to)
+}
+function manyRows(n: number): SensitivitySummary {
+  const base = sensitivitySummary()
+  const template = base.rows[0]
+  return {
+    ...base,
+    rows: Array.from({ length: n }, (_, i) => ({
+      ...template,
+      field: `field${i}`,
+      responses: Object.fromEntries(
+        SENSITIVITY_RESPONSES.map((r) => [r, { ...template.responses!.leakers, swing: i + 1 }]),
+      ) as typeof template.responses,
+    })),
+  }
 }
 
 describe('FragilityScreen', () => {
@@ -237,92 +276,107 @@ describe('FragilityScreen', () => {
     useStore.setState({ mc: IDLE_MC, ui: { ...useStore.getState().ui, showFieldHelp: false } })
   })
 
-  it('offers one no-ensemble chip, run actions and a disabled pin without an ensemble', () => {
-    const start = vi.fn()
-    useStore.setState({ runMonteCarlo: start })
+  it('names the top-bar Run for an empty ensemble, pins from the head and draws the empty grid', () => {
     const html = render()
-    expect(html).toContain('No ensemble</span>')
-    expect(html).not.toContain('No current ensemble result')
-    expect(html).not.toContain('Run settings are in the Inputs tab.')
-    expect(html.match(/>Run Monte Carlo</g)).toHaveLength(1)
-    expect(html).not.toContain('class="tile"')
-    expect(html).toContain('0 cells · 40 reps/cell')
-    expect(html).toContain(
-      'title="Planning-factor values. 40 replicates per cell. Enter 2–6 distinct values per factor; up to two different factors and 36 cells. Estimated time: no rate yet."',
-    )
-    expect(html).toContain(
-      'disabled="" title="Run Monte Carlo first to pin a baseline.">Pin as baseline',
-    )
-    interaction.buttons.get('Run Monte Carlo')!.onClick()
-    expect(start).toHaveBeenCalledOnce()
+    expect(html).toContain('No ensemble for this setup. Press Run (⌘↵) in the top bar to run it.')
+    // The top-bar Run runs the ensemble; the screen has no run, cancel or progress line for it.
+    expect(html).not.toContain('Run Monte Carlo<')
+    expect(html).not.toContain('Cancel Monte Carlo')
+    expect(html).not.toContain('replicates</span>')
+    expect(html).toContain('disabled="" title="Run Monte Carlo first to pin a baseline.">Pin<')
+    expect(html).toContain('12 cells · 40 runs each</span>')
+    expect(html.match(/class="sweep-cell blank"/g)).toHaveLength(12)
+    expect(html).toContain('Run sweep to fill')
     expect(html).toContain('>Run sensitivity</button>')
     expect(html).toContain(
       'aria-label="About sensitivity" title="Method: Morris then Sobol. Morris screening, then Sobol indices on the fields it keeps."',
     )
-    // The top-bar Run is the phase's one accent control.
+    // The Validity line carries findings and the missing asset; the screen repeats neither.
+    expect(html).not.toContain('Validity')
+    expect(html).not.toContain('Place asset')
     expect(html).not.toContain('class="primary"')
-    expect(html).toMatch(/<button type="button">Run Monte Carlo<\/button>/)
+    // Screen titles no longer repeat the tab name.
+    expect(html).not.toContain('<h3>Fragility</h3>')
   })
 
-  it('opens the library at its Assets group from Place asset', () => {
+  it('offers one Measure select and falls back to Kills without a defended asset', () => {
+    useStore.getState().replaceScenario({ ...emptyScenario(), runMode: 'monte-carlo' })
+    installResults()
+    const html = render()
+    expect(html.match(/<select/g)?.length).toBe(3) // Measure, Factor A, Factor B
+    expect(html).toContain(
+      '<option value="leakers" disabled="">Leakers (members) · needs asset</option>',
+    )
+    expect(html).toContain(
+      '<option value="minWarningS" disabled="">Min warning (s) · needs asset</option>',
+    )
+    expect(html).toContain('<option value="kills" selected="">Kills (members)</option>')
+    expect(html).toContain('<tr class="on" data-ensemble-row="kills"')
+    expect(html).toMatch(
+      /data-ensemble-row="leakers" title="Unavailable without a defended asset"><td>Leakers<\/td><td>— <\/td><td class="r2b-dim">needs asset/,
+    )
+    // With an asset the default Leakers returns.
     const scenario = emptyScenario()
     scenario.runMode = 'monte-carlo'
-    useStore.getState().replaceScenario(scenario)
-    const seq = useStore.getState().ui.libraryRequest.seq
-    expect(render()).toContain('No defended asset')
-    interaction.buttons.get('Place asset')!.onClick()
-    expect(useStore.getState().ui.libraryRequest).toEqual({
-      seq: seq + 1,
+    scenario.entities.push({
+      id: 'asset',
+      name: 'Asset',
       kind: 'asset',
-      modelId: null,
+      specId: null,
+      pos: { x: 0, y: 0 },
+      headingDeg: 0,
+      color: null,
+      notes: '',
     })
+    useStore.getState().replaceScenario(scenario)
+    installResults()
+    expect(render()).toContain('<tr class="on" data-ensemble-row="leakers"')
   })
 
-  it('shows every moved sentence as a help line with field help on', () => {
+  it('lets the Measure drive the ranking, the map and the sensitivity launch', () => {
+    const start = vi.fn()
+    installResults()
+    useStore.setState({ runSensitivity: start })
+    const leakers = render()
+    expect(leakers.indexOf('data-sensitivity-row="rcsM2"')).toBeLessThan(
+      leakers.indexOf('data-sensitivity-row="pk"'),
+    )
+    expect(leakers).toContain('aria-label="Sweep map · Leakers (members)"')
+    const kills = change('Measure', 'kills')
+    expect(kills.indexOf('data-sensitivity-row="pk"')).toBeLessThan(
+      kills.indexOf('data-sensitivity-row="rcsM2"'),
+    )
+    expect(kills).toContain('aria-label="Sweep map · Kills (members)"')
+    expect(kills).toContain('<tr class="on" data-ensemble-row="kills"')
+    click('Run again')
+    expect(start).toHaveBeenCalledWith('kills')
+  })
+
+  it('names the response a full-depth result ran on when the Measure differs', () => {
+    const runId = useStore.getState().playback.runId
+    const done = { ...IDLE_SENSITIVITY, status: 'done' as const, runId }
+    useStore.setState({ mc: { ...IDLE_MC, sensitivity: done, morris: MORRIS_FIXTURE } })
+    expect(section(render(), 'Sensitivity')).not.toContain('ran on')
+    const kills = section(change('Measure', 'kills'), 'Sensitivity')
+    expect(kills).toContain('ran on leakers</span>')
+  })
+
+  it('shows the moved sentences as help lines with field help on', () => {
     useStore.setState({ ui: { ...useStore.getState().ui, showFieldHelp: true } })
     const html = render(true)
+    expect(html).toContain('<p class="field-help">Run Monte Carlo first to pin a baseline.</p>')
     expect(html).toContain(
-      '<p class="field-help">Run Monte Carlo first to pin a baseline. Run settings are in the Inputs tab.</p>',
+      '<span class="field-help">One measure drives the ensemble focus, the sweep map and the sensitivity ranking.</span>',
     )
     expect(html).toContain(
-      '<p class="field-help">Planning-factor values. 40 replicates per cell.</p><p class="field-help">Enter 2–6 distinct values per factor; up to two different factors and 36 cells.</p>',
+      '<p class="field-help">Planning-factor values. Each cell is a 40-replicate run of the full scenario.',
     )
-    expect(html).not.toContain('<p class="field-help">Planning-factor values. Estimated time')
     expect(html).toContain(
       '<p class="field-help">Method: Morris then Sobol. Morris screening, then Sobol indices on the fields it keeps.</p>',
     )
-    expect(html).toContain('aria-expanded="true"')
-    expect(html).not.toContain('aria-expanded="false"')
   })
 
-  it('closes the cancel button while the pool is already stopping', () => {
-    const cancel = vi.fn()
-    useStore.setState({ cancelMonteCarlo: cancel })
-    const pool = { workers: 4, done: 12, total: null, stopRule: 'cancelled' as const }
-    useStore.setState({
-      mc: {
-        ...IDLE_MC,
-        status: 'running',
-        progress: 12,
-        total: 100,
-        pool: {
-          ...pool,
-          elapsedMs: 900,
-          perWorkerDone: [3, 3, 3, 3],
-          stopping: true,
-          discarded: 0,
-        },
-      },
-    })
-    const html = render()
-    expect(interaction.buttons.get('Stopping')?.disabled).toBe(true)
-    expect(interaction.buttons.has('Cancel Monte Carlo')).toBe(false)
-    expect(html).toContain('This run is already stopping.')
-    interaction.buttons.get('Stopping')!.onClick()
-    expect(cancel).not.toHaveBeenCalled()
-  })
-
-  it('mounts the Sobol chart on the Morris and Sobol results of the current sensitivity run', () => {
+  it('mounts the Sobol chart above the rows on the results of the current sensitivity run', () => {
     const runId = useStore.getState().playback.runId
     const done = { ...IDLE_SENSITIVITY, status: 'done' as const, runId }
     useStore.setState({
@@ -332,10 +386,8 @@ describe('FragilityScreen', () => {
     expect(html).toContain('data-sensitivity-widget="sobol"')
     expect(html).toContain('4 fields ranked by the total index')
     expect(html).toContain('kept 4 for Sobol')
-    // No one-at-a-time summary: no rows and no paired-replicate sentence.
     expect(html).not.toContain('data-sensitivity-row=')
-    expect(html).not.toContain('paired replicates')
-    // A stale sensitivity run withholds both results.
+    expect(html).not.toContain('paired runs · seed')
     useStore.setState({
       mc: { ...useStore.getState().mc, sensitivity: { ...done, status: 'stale' } },
     })
@@ -378,18 +430,11 @@ describe('FragilityScreen', () => {
       progress: 0,
       total: 1536,
     }
-    useStore.setState({
-      mc: { ...IDLE_MC, sensitivity: running, morris: MORRIS_FIXTURE },
-    })
+    useStore.setState({ mc: { ...IDLE_MC, sensitivity: running, morris: MORRIS_FIXTURE } })
     const quiet = render()
     expect(quiet).toContain('0 of 1536 evaluations · Sobol on 4 fields')
     expect(quiet).not.toContain('worker budget')
-
     const one = useStore.getState().scenario.entities[0]
-    const heavy = {
-      ...MORRIS_FIXTURE,
-      kept: [0, 1, 2, 3, 4, 5],
-    }
     useStore.setState({
       scenario: {
         ...useStore.getState().scenario,
@@ -398,7 +443,7 @@ describe('FragilityScreen', () => {
       mc: {
         ...IDLE_MC,
         sensitivity: { ...running, total: 2048 },
-        morris: heavy,
+        morris: { ...MORRIS_FIXTURE, kept: [0, 1, 2, 3, 4, 5] },
       },
     })
     expect(render()).toContain(
@@ -406,78 +451,75 @@ describe('FragilityScreen', () => {
     )
   })
 
-  it('passes the selected response to the sensitivity launch', () => {
-    const start = vi.fn()
-    useStore.setState({ runSensitivity: start })
-    render()
-    change('Sensitivity response', 'kills')
-    interaction.buttons.get('Run sensitivity')!.onClick()
-    expect(start).toHaveBeenCalledWith('kills')
-  })
-
   it('names the quick depth in the sensitivity (i) title', () => {
     useStore.getState().patchScenario({ sensitivityDepth: 'quick' })
     const html = render()
-    expect(html).toContain('>Run sensitivity</button>')
     expect(html).toContain('title="Method: one-at-a-time. One-at-a-time at p10 and p90."')
     expect(html).not.toContain('Morris screening')
   })
 
-  it('renders the current tiles, own intervals, map, ranked responses and validity rows', () => {
+  it('tables the five quantities with the mean and its own interval, the horizon once in the head', () => {
     installResults()
     const html = render()
-    expect(html.match(/class="tile"/g)).toHaveLength(3)
-    expect(html).toContain('3<small>/4 members')
-    expect(html).toContain('1<small>/4 members')
-    expect(html).toContain('2.8 to 3.2 (95% mean CI)')
-    expect(html).toContain('20<small> s')
-    expect(html).toContain('warning time in 40 of 40')
-    expect(html.match(/by T\+1:00/g)).toHaveLength(3)
-    expect(html.match(/data-sweep-cell=/g)).toHaveLength(2)
-    expect(html.indexOf('data-sensitivity-row="rcsM2"')).toBeLessThan(
-      html.indexOf('data-sensitivity-row="pk"'),
+    const ensemble = section(html, 'Ensemble')
+    expect(ensemble).toContain('40 runs · seed 123 · T+1:00</span>')
+    expect(ensemble.match(/T\+1:00/g)).toHaveLength(2) // the readout and its title
+    expect(ensemble.match(/data-ensemble-row=/g)).toHaveLength(5)
+    expect(ensemble).toContain(
+      '<td>Leakers</td><td>1 <span class="r2b-dim">/4</span></td><td class="r2b-dim">0.8–1.2</td>',
     )
+    expect(ensemble).toContain(
+      '<td>Kills</td><td>3 <span class="r2b-dim">/4</span></td><td class="r2b-dim">2.8–3.2</td>',
+    )
+    expect(ensemble).toContain(
+      '<td>First detect</td><td>10 <span class="r2b-dim">s</span></td><td class="r2b-dim">9–11</td>',
+    )
+    expect(ensemble).toContain(
+      '<td>Min warning</td><td>20 <span class="r2b-dim">s</span></td><td class="r2b-dim">19–21</td>',
+    )
+    // The total salvos carry no interval: the per-effector intervals do not sum.
+    expect(ensemble).toMatch(
+      /per-effector intervals only[^"]*"><td>Salvos<\/td><td>0 <span class="r2b-dim">salvos<\/span><\/td><td class="r2b-dim">—/,
+    )
+    expect(ensemble).toContain('title="MC mean · 2.8 to 3.2 (95% mean CI) · n=40"')
+    expect(ensemble).toContain('warning time in 40 of 40')
+    expect(ensemble).toMatch(
+      /title="(Replaces the pinned baseline[^"]*|Pin this laydown and ensemble for Compare)">Pin</,
+    )
+    expect(html.match(/data-sweep-cell=/g)).toHaveLength(2)
     expect(html).toContain('width:100%')
     expect(html).not.toContain('99 members')
-    expect(html).toContain('class="validity-finding frag-finding"')
-    const rows = html
-      .slice(html.indexOf('<section aria-label="Validity">'))
-      .split('class="validity-finding frag-finding"')
-      .slice(1)
-    expect(rows.length).toBeGreaterThan(0)
-    rows.forEach((row) => {
-      expect((row.match(/<summary>|<button /g) ?? []).length).toBe(1)
-      expect(row).toContain('aria-expanded="false"')
-    })
   })
 
-  it('carries the finding count as a header tag and draws each row as a glyph and headline', () => {
+  it('shows the top five sensitivity rows and toggles Show all', () => {
     installResults()
-    const html = render()
-    const section = html.slice(html.indexOf('<section aria-label="Validity">'))
-    const count = section.split('class="validity-finding frag-finding"').length - 1
-    expect(count).toBeGreaterThan(0)
-    expect(section).toMatch(
-      new RegExp(
-        `<h3>Validity</h3><span class="state (critical|warning)">.*?${count} findings?</span>`,
-      ),
-    )
-    expect(section).not.toContain('Full-run setup findings')
-    expect(section).not.toMatch(/>(INVALIDATES|LIMITS|INVALID)</)
-    expect(section).toMatch(/title="(INVALIDATES|LIMITS)" role="img"><i class="state-square"/)
+    const mc = useStore.getState().mc
+    useStore.setState({
+      mc: { ...mc, sensitivity: { ...mc.sensitivity, summary: manyRows(7) } },
+    })
+    const top = render()
+    expect(top.match(/data-sensitivity-row=/g)).toHaveLength(5)
+    expect(top).toContain('data-sensitivity-row="field6"')
+    expect(top).not.toContain('data-sensitivity-row="field1"')
+    const all = click('Show all 7')
+    expect(all.match(/data-sensitivity-row=/g)).toHaveLength(7)
+    expect(click('Show top 5').match(/data-sensitivity-row=/g)).toHaveLength(5)
   })
 
-  it('changes response ranking and preserves conditional definedness for times', () => {
+  it('opens a sensitivity row to p10, p90, SE and the definedness of a time response', () => {
     installResults()
     render()
-    const kills = change('Sensitivity response', 'kills')
-    expect(kills.indexOf('data-sensitivity-row="pk"')).toBeLessThan(
-      kills.indexOf('data-sensitivity-row="rcsM2"'),
-    )
-    const times = change('Sensitivity response', 'firstDetectS')
-    expect(times).toContain('conditional on defined times')
-    expect(times).toContain('75.0% [60.0%, 85.0%]')
-    expect(times).toContain('SE 0.12')
+    const times = change('Measure', 'firstDetectS')
+    expect(times).not.toContain('SE 0.12')
+    expect(times).toContain('aria-expanded="false"')
+    // The row button carries no string label; open it through its state setter.
+    const openIndex = interaction.states.findIndex((v) => v === null)
+    interaction.states[openIndex] = 'lib-coyote:pk'
+    const open = render()
+    expect(open).toContain('aria-expanded="true"')
+    expect(open).toContain('p10 1 → p90 2 · SE 0.12 · paired runs')
+    expect(open).toContain('conditional on defined times')
+    expect(open).toContain('75.0% [60.0%, 85.0%]')
   })
 
   it.each(['stale', 'running', 'error'] as const)(
@@ -494,23 +536,23 @@ describe('FragilityScreen', () => {
         },
       })
       const html = render()
-      expect(html).not.toContain('class="tile"')
+      expect(html).not.toContain('data-ensemble-row=')
       expect(html).not.toContain('data-sensitivity-row=')
-      expect(html).not.toContain('data-sweep-cell=')
+      expect(html).not.toMatch(/data-tone="(nominal|warning|critical)"/)
     },
   )
 
-  it('submits a 5 × 4 sweep and paints completion counts while results are pending', () => {
+  it('submits the chip grid and paints completion counts while results are pending', () => {
     const start = vi.fn()
     const cancel = vi.fn()
     useStore.setState({ runSweep: start, cancelSweep: cancel })
-    expect(grid()).toContain('20 cells')
+    render()
     expect(interaction.buttons.get('Run sweep')!.disabled).toBe(false)
     interaction.buttons.get('Run sweep')!.onClick()
     expect(start).toHaveBeenCalledWith({
       factors: [
-        { id: 'threatAltitudeFt', values: [100, 200, 300, 400, 500] },
-        { id: 'threatSpeedMps', values: [10, 20, 30, 40] },
+        { id: 'threatAltitudeFt', values: [100, 200, 400, 800] },
+        { id: 'threatSpeedMps', values: [20, 35, 50] },
       ],
       replicatesPerCell: 40,
       responses: [...SENSITIVITY_RESPONSES],
@@ -524,62 +566,64 @@ describe('FragilityScreen', () => {
           runId: state.playback.runId,
           status: 'running',
           progress: 7,
-          total: 20,
+          total: 12,
         },
       },
     })
     const html = render()
     expect(html.match(/data-tone="complete"/g)).toHaveLength(7)
-    expect(html).toContain('7 of 20 cells complete')
+    expect(html).toContain('7 of 12 cells complete')
+    expect(html).toContain('Running…')
     expect(interaction.buttons.get('Run sweep')!.disabled).toBe(true)
-    interaction.buttons.get('Cancel sweep')!.onClick()
+    interaction.buttons.get('Cancel')!.onClick()
     expect(cancel).toHaveBeenCalledOnce()
   })
 
-  it('blocks invalid picker values, duplicate factors and more than six values', () => {
-    grid()
-    for (const value of ['100', '100,100', '100,NaN', '1,2,3,4,5,6,7', '-1,2']) {
-      change('Column values', value)
-      expect(interaction.buttons.get('Run sweep')!.disabled).toBe(true)
+  it('adds chips by Enter under the current parse rules and refuses the rest', () => {
+    render()
+    for (const bad of ['100', 'abc', '-5', '1e']) {
+      const html = addValue('A', bad)
+      expect(html).toContain('<p class="line-error">Enter 2–6 distinct values per factor')
+      expect(html).toContain('aria-invalid="true"')
+      expect(html.match(/class="r2b-chip-t"/g)).toHaveLength(7)
     }
-    change('Column values', '100,200')
-    change('Row factor', 'threatAltitudeFt')
-    change('Row values', '100,200')
+    const added = addValue('A', '1600')
+    expect(added).toContain('<span class="r2b-chip-t">1600</span>')
+    expect(added).not.toContain('class="line-error"')
+    expect(added).toContain('15 cells')
+    // A suggested value adds through the same rule; six values close the add box.
+    const six = click('Add 50')
+    expect(six).not.toContain('name="add-A"')
+    expect(six).not.toContain('aria-label="Add 1200"')
+    expect(addValue('B', '0')).toContain('<p class="line-error">')
+    // Raid size takes positive integers only.
+    change('factor-B', 'raidSize')
+    expect(addValue('B', '2.5')).toContain('<p class="line-error">')
+  })
+
+  it('removes chips, factors and names the grid rule that blocks Run sweep', () => {
+    render()
+    click('Remove 20')
+    const one = click('Remove 35')
+    expect(one).toContain('<p class="line-error">Give each factor 2 to 6 values.</p>')
     expect(interaction.buttons.get('Run sweep')!.disabled).toBe(true)
+    expect(interaction.buttons.get('Run sweep')!.disabled).toBe(true)
+    const same = change('factor-B', 'threatAltitudeFt')
+    expect(same).toContain('<p class="line-error">Choose two different factors.</p>')
+    const single = click('Remove')
+    expect(single).toContain('>Add second factor</button>')
+    expect(single).toContain('4 cells · 40 runs each')
+    expect(interaction.buttons.get('Run sweep')!.disabled).toBe(false)
+    expect(click('Add second factor')).toContain('Factor B')
   })
 
-  it('sets the rule as an error line only while a value field is invalid', () => {
-    grid()
-    const bad = change('Column values', '100,NaN')
-    expect(bad.match(/class="field-error"/g)).toHaveLength(1)
-    expect(bad).toContain('aria-invalid="true"')
-    expect(bad).toContain('Enter 2–6 distinct values per factor')
-    expect(change('Column values', '100,200')).not.toContain('class="field-error"')
-  })
-
-  it('names the missing asset beside the sweep map, not in its caption', () => {
-    useStore.getState().replaceScenario({ ...emptyScenario(), runMode: 'monte-carlo' })
-    const html = grid()
-    const sweep = html.slice(
-      html.indexOf('<section aria-label="Factor sweep">'),
-      html.indexOf('<section aria-label="Sensitivity">'),
-    )
-    expect(sweep).toContain('<div class="frag-state-row">')
-    expect(sweep).toContain('No defended asset</span>')
-    expect(sweep).not.toContain('response unavailable')
-  })
-
-  it('opens a finding row on click', () => {
-    installResults()
-    const closed = render()
-    const key = [...interaction.buttons.keys()].find((k) => k.startsWith('finding:'))!
-    expect(closed).not.toContain('Review finding scope')
-    interaction.buttons.get(key)!.onClick()
-    const open = render()
-    expect(open).toContain('aria-expanded="true"')
-    expect(open).toContain('Review finding scope')
-    interaction.buttons.get(key)!.onClick()
-    expect(render()).not.toContain('aria-expanded="true"')
+  it('offers the environment presets as chips and suggestions without an add box', () => {
+    render()
+    const env = change('factor-A', 'environmentPreset')
+    expect(env).toContain('<span class="r2b-chip-t">Clear day</span>')
+    expect(env).toContain('<span class="r2b-chip-t">Fog, day</span>')
+    expect(env).not.toContain('name="add-A"')
+    expect(click('Add Rain, day')).toContain('<span class="r2b-chip-t">Rain, day</span>')
   })
 
   it.each(['mc', 'sweep'] as const)(
@@ -588,8 +632,11 @@ describe('FragilityScreen', () => {
       installResults()
       if (source === 'mc')
         useStore.setState({ mc: { ...useStore.getState().mc, sweep: IDLE_SWEEP } })
-      expect(grid()).toContain(
-        `Estimated time: ${source === 'mc' ? 40 : 80} s at ${source === 'mc' ? 20 : 10} replicates/s`,
+      const html = render()
+      // 12 cells × 40 replicates at 20 (mc) or 10 (sweep) replicates per second.
+      expect(html).toContain(`12 cells · 40 runs each · ~${source === 'mc' ? 24 : 48} s`)
+      expect(html).toContain(
+        `Estimated time: ${source === 'mc' ? 24 : 48} s at ${source === 'mc' ? 20 : 10} replicates/s`,
       )
     },
   )
@@ -610,8 +657,14 @@ describe('FragilityScreen', () => {
         },
       },
     })
+    render()
+    const openIndex = interaction.states.findIndex((v) => v === null)
+    interaction.states[openIndex] = 'lib-coyote:pk'
     const html = render()
     expect(html).toContain('warning time in 0 of 40')
+    expect(html).toContain(
+      '<td>Min warning</td><td>— <span class="r2b-dim">s</span></td><td class="r2b-dim">—</td>',
+    )
     expect(html).toContain('Response unavailable; run sensitivity again.')
     expect(html).not.toContain('NaN')
     expect(html).not.toContain('99 members')

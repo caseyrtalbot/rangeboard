@@ -45,8 +45,11 @@ vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
       'aria-label'?: string
       onChange?: (event: never) => void
     }
-    if (type === 'button' && typeof p.children === 'string' && p.onClick)
-      interaction.buttons.set(p.children, { disabled: p.disabled, onClick: p.onClick })
+    if (type === 'button' && p.onClick) {
+      const entry = { disabled: p.disabled, onClick: p.onClick }
+      if (typeof p.children === 'string') interaction.buttons.set(p.children, entry)
+      if (p['aria-label']) interaction.buttons.set(p['aria-label'], entry)
+    }
     if (type === 'input' && p.type === 'checkbox' && p['aria-label'] && p.onChange) {
       interaction.boxes.set(
         p['aria-label'],
@@ -156,6 +159,17 @@ function render() {
   Object.assign(useStore.getInitialState(), useStore.getState())
   return renderToStaticMarkup(<PlacementScreen />)
 }
+function click(label: string) {
+  expect(interaction.buttons.has(label)).toBe(true)
+  interaction.buttons.get(label)!.onClick()
+  return render()
+}
+const needsOf = (html: string) =>
+  [
+    ...(html.split('data-placement-needs="">')[1] ?? '')
+      .split('</div>')[0]
+      .matchAll(/<\/i>([^<]+)<\/span>/g),
+  ].map((m) => m[1])
 function check(label: string, value: boolean) {
   expect(interaction.boxes.has(label)).toBe(true)
   interaction.boxes.get(label)!({ target: { checked: value } })
@@ -191,21 +205,38 @@ describe('PlacementScreen', () => {
     useStore.setState({ mc: IDLE_MC })
   })
 
-  it('offers the objective, the movable systems and the contract budget, with Run disabled until one is checked', () => {
+  it('offers one Goal select, compact movable rows and the budget on the grid', () => {
     const html = render()
-    expect(html).toContain('No current placement result.')
-    expect(html).toContain('Minimize Leakers (members).')
+    expect(html).not.toContain('<h3>Placement</h3>')
+    expect(html).not.toContain('Objective')
+    expect(html).toContain(
+      '<option value="leakers" selected="">Minimize leakers (members)</option>',
+    )
+    expect(html).toContain('<option value="kills">Maximize kills (members)</option>')
+    expect(html).toContain('<option value="firstDetectS">Minimize first detect (s)</option>')
     // Only active sensors, effectors and C2 are movable: the asset is not offered.
     expect(html).toContain('aria-label="Move Coyote 1"')
     expect(html).toContain('aria-label="Move Giraffe 1"')
     expect(html).not.toContain('aria-label="Move Asset"')
-    // The contract defaults, and the seed of the scenario's run settings.
+    expect(html).toMatch(
+      /<div class="r2b-move-group">Sensors<\/div><label class="r2b-mv" title="Giraffe 1">.*<span class="r2b-kind">S<\/span>/,
+    )
+    expect(html).toContain('<span class="r2b-kind">E</span><span class="r2b-mv-nm">Coyote 1</span>')
+    expect(html).toContain('<span class="psec-readout">0 of 2</span>')
     expect(html).toContain('value="60"')
     expect(html).toContain('value="40"')
-    expect(html).toContain('<span class="mono">4821</span>')
+    expect(html).toContain('2,400 runs')
     expect(html).toContain('Main range · 4 points')
     expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
+    expect(needsOf(html)).toEqual(['a system to move'])
+    expect(html).toContain('No placement result yet.')
     expect(html).not.toContain('data-placement-row')
+  })
+
+  it('checks All and None from the head', () => {
+    render()
+    expect(click('All')).toContain('<span class="psec-readout">2 of 2</span>')
+    expect(click('None')).toContain('<span class="psec-readout">0 of 2</span>')
   })
 
   it('sends the checked systems, the range bounds and the edited budget to the run', () => {
@@ -214,8 +245,10 @@ describe('PlacementScreen', () => {
     render()
     check('Move Coyote 1', true)
     change('Evaluations', '6')
-    const html = change('Replicates per evaluation', '10')
+    const html = change('Runs each', '10')
+    expect(html).toContain('60 runs')
     expect(interaction.buttons.get('Run placement')!.disabled).toBe(false)
+    expect(html).not.toContain('data-placement-needs')
     expect(html).toContain('a 10-replicate run under common random numbers at seed 4821')
     interaction.buttons.get('Run placement')!.onClick()
     expect(start).toHaveBeenCalledWith({
@@ -227,20 +260,41 @@ describe('PlacementScreen', () => {
     })
   })
 
-  it('takes the direction from the response and blocks a run without bounds or a whole budget', () => {
+  it('lists what Run placement needs and takes the direction from the goal', () => {
+    const start = vi.fn()
+    useStore.setState({ runOptimize: start })
+    useStore.getState().patchScenario({ runMode: 'deterministic', boundaries: [] })
     render()
+    const html = change('Evaluations', '1')
+    expect(needsOf(html)).toEqual([
+      'Monte Carlo mode',
+      'a system to move',
+      'a range boundary',
+      'a whole-number budget',
+    ])
+    expect(html).toContain(
+      '<p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No range boundary on the board.</span></p><button type="button" class="mini">Draw boundary</button>',
+    )
+    click('Draw boundary')
+    expect(useStore.getState().ui.tool).toBe('boundary')
+    useStore.getState().patchScenario({ runMode: 'monte-carlo', boundaries: [RANGE] })
     check('Move Coyote 1', true)
-    // A kill count is maximized where a leaker count is minimized.
-    const kills = change('Placement response', 'kills')
-    expect(kills).toContain('Maximize Kills (members).')
-    change('Evaluations', '1')
-    expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
     change('Evaluations', '60')
-    expect(interaction.buttons.get('Run placement')!.disabled).toBe(false)
-    useStore.getState().patchScenario({ boundaries: [] })
-    const noRange = render()
-    expect(noRange).toContain('No range boundary. Draw one on the board before a placement run.')
-    expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
+    const kills = change('Goal', 'kills')
+    expect(kills).not.toContain('data-placement-needs')
+    interaction.buttons.get('Run placement')!.onClick()
+    expect(start.mock.calls[0][0].objective).toEqual({ response: 'kills', direction: 'maximize' })
+  })
+
+  it('disables the goals that need an asset and falls back to Maximize kills without one', () => {
+    useStore.getState().patchScenario({
+      entities: useStore.getState().scenario.entities.filter((e) => e.kind !== 'asset'),
+    })
+    const html = render()
+    expect(html).toContain(
+      '<option value="leakers" disabled="">Minimize leakers (members) · needs asset</option>',
+    )
+    expect(html).toContain('<option value="kills" selected="">Maximize kills (members)</option>')
   })
 
   it('marks a range the run would refuse, shows the reason and blocks the run from it', () => {
@@ -267,6 +321,7 @@ describe('PlacementScreen', () => {
     expect(refused).toContain(
       'The range boundary points lie on one line and enclose no area. A placement run needs a polygon.',
     )
+    expect(needsOf(refused)).toEqual(['a usable range boundary'])
     expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
   })
 
@@ -293,26 +348,36 @@ describe('PlacementScreen', () => {
     expect(html).toContain('incumbent 1.4 · 1.0 to 1.8 (95% mean CI) · n=40')
     interaction.buttons.get('Cancel placement')!.onClick()
     expect(cancel).toHaveBeenCalledOnce()
-    expect(interaction.buttons.has('Run placement')).toBe(true)
     expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
   })
 
-  it('ranks the candidates best first, marks the start row and says the run was cut', () => {
+  it('ranks the candidates best first on one interval scale with the change against the start', () => {
     installResult(cutResult())
     const html = render()
     expect(html).toContain('Run cut at 4 of 6 evaluations.')
-    expect(html).toContain('4 evaluations · 160 engine replicates')
+    expect(html).toContain('Leakers (members) · 4 evaluations</span>')
     const order = ['data-placement-row="1"', 'data-placement-row="2"', 'data-placement-row="3"']
     expect(order.map((mark) => html.indexOf(mark))).toEqual(
       [...order.map((mark) => html.indexOf(mark))].sort((a, b) => a - b),
     )
-    // Candidate 1 is trace index 2: 1500.24, -1200.46 rounds to one decimal.
-    expect(html).toContain('1500.2, -1200.5')
-    expect(html).toContain('1.4 · 1.0 to 1.8 (95% mean CI) · n=40')
-    // The starting laydown is candidate 3 here, so it carries the start mark and no extra row.
+    // One scale for the result: 1.0 (candidate 1 low end) to 2.9 (the start's high end).
+    expect(html).toContain('data-band="0.0-42.1"')
+    expect(html).toContain('data-band="26.3-68.4"')
+    expect(html).toContain('data-band="57.9-100.0"')
+    expect(html.match(/class="r2b-iv-ref" style="left:78.94/g)).toHaveLength(3)
+    // The start laydown is candidate 3: it reads its mean; the others read the change.
+    expect(html).toContain('<span class="r2b-cand-d good">−1.1</span>')
+    expect(html).toContain('<span class="r2b-cand-d good">−0.6</span>')
+    expect(html).toContain('<span class="r2b-cand-d">2.5</span>')
+    expect(html).toContain('class="r2b-cand start" data-placement-row="3"')
     expect(html.match(/data-placement-row=/g)).toHaveLength(3)
-    expect(html).toContain('>start<')
-    expect(html).toContain('Coyote 1 (m)')
+    expect(html).toContain('title="1.4 · 1.0 to 1.8 (95% mean CI) · n=40"')
+    expect(html).not.toContain('1500.2, -1200.5')
+    // A row opens to its coordinates.
+    // The open row is the screen's last state.
+    interaction.states[interaction.states.lastIndexOf(null)] = 0
+    const open = render()
+    expect(open).toContain('<span title="Coyote 1">Coyote 1</span><span>1500.2, -1200.5 m</span>')
   })
 
   it('appends the starting laydown when the ranking dropped it', () => {
@@ -323,7 +388,15 @@ describe('PlacementScreen', () => {
     expect(html).toContain('data-placement-row="start"')
     // The appended start row carries no Apply button: only a candidate is applied.
     expect(interaction.buttons.has('Apply placement 1')).toBe(true)
-    expect(html.match(/>Apply placement /g)).toHaveLength(2)
+    expect(html.match(/aria-label="Apply placement /g)).toHaveLength(2)
+  })
+
+  it('names the goal a result ran on when the Goal changes', () => {
+    installResult(cutResult())
+    render()
+    expect(change('Goal', 'kills')).toContain(
+      'This result is for Minimize leakers (members). Run placement again for the new goal.',
+    )
   })
 
   it('applies a candidate as a new scenario and never edits the current one', () => {
@@ -334,13 +407,12 @@ describe('PlacementScreen', () => {
     const after = useStore.getState().scenario
     expect(after.name).toBe(`${before.name} (placement 1)`)
     expect(after.entities.find((e) => e.id === EFFECTOR)!.pos).toEqual({ x: 1500.24, y: -1200.46 })
-    // Every other entity keeps its place, and the previous object is untouched.
     expect(after.entities.find((e) => e.id === SENSOR)!.pos).toEqual({ x: 0, y: 0 })
     expect(before.entities.find((e) => e.id === EFFECTOR)!.pos).toEqual({ x: 1700, y: -1700 })
     expect(before.name).not.toContain('placement')
     // A replacement starts a clean run, so the result no longer reads as current.
     expect(useStore.getState().mc.optimize.status).toBe('idle')
-    expect(render()).toContain('No current placement result.')
+    expect(render()).toContain('No placement result yet.')
   })
 
   it('withholds a result from another run or another board', () => {
@@ -350,67 +422,32 @@ describe('PlacementScreen', () => {
     useStore.setState({
       mc: { ...mc, optimize: { ...mc.optimize, basisSignature: 'other-board' } },
     })
-    expect(render()).toContain('No current placement result.')
+    expect(render()).toContain('No placement result yet.')
     useStore.setState({ mc: { ...mc, optimize: { ...mc.optimize, runId: 'other-run' } } })
-    expect(render()).toContain('No current placement result.')
+    expect(render()).toContain('No placement result yet.')
   })
 
-  it('keeps a deterministic scenario out of a placement run', () => {
-    useStore.getState().patchScenario({ runMode: 'deterministic' })
-    const html = render()
-    expect(html).toContain('Choose Monte Carlo mode in the Inputs tab to run a placement study.')
-    check('Move Coyote 1', true)
-    expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
-  })
-
-  it('gives every former muted sentence a home: (i), error line or empty-state row', () => {
-    useStore.getState().patchScenario({ runMode: 'deterministic', boundaries: [] })
+  it('keeps the method notes behind (i) and shows them as lines with field help on', () => {
     const idle = render()
     expect(idle).not.toContain('muted')
-    // Method notes sit behind a 24 px (i) whose title holds the unchanged note.
     expect(idle).toContain(
-      'aria-label="About movable systems" title="Every other entity, every threat and every asset stays put."',
+      'aria-label="About systems to move" title="Every other entity, every threat and every asset stays put."',
     )
     expect(idle).toContain(
       'aria-label="About bounds" title="A proposal stays inside the range polygon, in the meters world frame."',
     )
     expect(idle).toContain(
-      'aria-label="About budget" title="Engine replicates: evaluations × replicates per evaluation."',
+      'aria-label="About budget" title="Gaussian process with expected improvement over the movable positions. Each evaluation is a 40-replicate run under common random numbers at seed 4821. Engine replicates: evaluations × runs each. Modeled, not observed."',
     )
-    expect(idle).toContain(
-      'aria-label="About Placement response" title="Minimize Leakers (members)."',
-    )
-    // A mode status and a missing input are empty-state rows; a rule is an error line.
-    expect(idle).toMatch(
-      /<p class="empty-row"><span class="state warning">(?:(?!<\/p>).)*Choose Monte Carlo mode in the Inputs tab to run a placement study\.<\/span><\/p>/,
-    )
-    expect(idle).not.toContain('<p class="line-error">Choose Monte Carlo mode')
-    expect(idle).toMatch(
-      /<p class="empty-row"><span class="state warning">.*No range boundary\. Draw one on the board before a placement run\.<\/span><\/p>/,
-    )
-    expect(idle).toMatch(/class="empty-row">.*No current placement result\./)
     expect(idle).not.toContain('field-help')
-
-    change('Evaluations', '1')
+    installResult(cutResult())
     expect(render()).toContain(
-      '<p class="line-error">Enter whole numbers: at least 2 evaluations and 1 replicate.</p>',
+      'aria-label="About candidates" title="Best first by the objective mean.',
     )
-
-    // Field help on renders each note as a normal-weight line.
     useStore.setState(({ ui }) => ({ ui: { ...ui, showFieldHelp: true } }))
     expect(render()).toContain(
       '<p class="field-help">Every other entity, every threat and every asset stays put.</p>',
     )
     useStore.setState(({ ui }) => ({ ui: { ...ui, showFieldHelp: false } }))
-  })
-
-  it('puts the result basis and the Apply note behind the candidates (i) once a result exists', () => {
-    installResult(cutResult())
-    const html = render()
-    expect(html).not.toContain('muted')
-    expect(html).not.toContain('No current placement result.')
-    expect(html).toContain(
-      'aria-label="About candidate laydowns" title="Best first by the objective · 4 evaluations · 160 engine replicates. Apply installs a copy of this scenario with the candidate positions and clears the run; the current scenario is never edited in place."',
-    )
   })
 })
