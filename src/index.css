@@ -1978,9 +1978,7 @@ p.muted.small {
   margin-left: 0;
 }
 
-/* Fragility density: a section head with a mono readout and a 24 px (i), the
-   help line the field help switch shows, a state row, and finding rows that
-   open on click. */
+/* A method-note head: the (i) and its help line (NoteInfo in controls.tsx). */
 .frag-head {
   display: flex;
   align-items: center;
@@ -1990,60 +1988,6 @@ p.muted.small {
 
 .frag-head > h3 {
   margin: 0;
-}
-
-.frag-readout {
-  color: var(--text-secondary);
-  font-size: var(--type-machine-size);
-}
-
-.frag-state-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-/* A finding row is a glyph, the headline and a chevron: no rule between rows
-   and no panel-body frame on the head button. */
-.validity-finding.frag-finding {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-  padding-top: 0;
-  border-top: 0;
-}
-
-.frag-finding-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  min-height: var(--h-default);
-  padding: 0;
-  color: var(--text-primary);
-  font-size: var(--type-meta-size);
-  font-weight: var(--type-body-weight);
-  text-align: left;
-}
-
-.frag-finding-headline {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.frag-finding-head > svg {
-  flex: none;
-  color: var(--text-secondary);
-}
-
-.validity-finding.frag-finding > .frag-finding-head {
-  border-color: transparent;
-}
-
-.frag-finding-body {
-  padding-bottom: var(--space-2);
 }
 
 .check-row {
@@ -6845,6 +6789,541 @@ input[type='number'] {
 }
 
 /* ---------- Right panel: R2b Fragility and Placement ---------- */
+
+/* Shared by Fragility and Placement: a link button, a dim run of text, a note
+   line, and an empty state with its action. */
+.right-panel .r2b-link {
+  flex: none;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--type-label-size);
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+  text-underline-offset: 3px;
+}
+
+.right-panel .r2b-link:hover:not(:disabled) {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.right-panel .psec-body > .r2b-link {
+  align-self: flex-start;
+}
+
+.r2b-dim {
+  color: var(--text-tertiary);
+}
+
+.r2b-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--type-dense-size);
+  overflow-wrap: anywhere;
+}
+
+.r2b-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.r2b-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Ensemble: three columns, the Measure row marked by a left rule. */
+.right-panel .tb.r2b-ens th:first-child {
+  width: auto;
+}
+
+.r2b-ens .r2b-ens-mean {
+  width: 38%;
+}
+
+.r2b-ens .r2b-ens-ci {
+  width: 30%;
+}
+
+.right-panel .tb.r2b-ens :is(th, td):not(:first-child) {
+  text-align: right;
+}
+
+.right-panel .tb.r2b-ens tr.on td {
+  background: var(--surface-hover);
+}
+
+.right-panel .tb.r2b-ens tr.on td:first-child {
+  box-shadow: inset 2px 0 0 var(--text-primary);
+  padding-left: var(--space-2);
+}
+
+/* Sweep factors: the select, the value chips with an add box, and the suggested values. */
+.r2b-factor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.r2b-factor > .field > .r2b-factor-head {
+  justify-content: space-between;
+}
+
+.r2b-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.r2b-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  height: 24px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.r2b-chip-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.right-panel .r2b-chip > button {
+  display: grid;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-tertiary);
+  place-items: center;
+}
+
+.right-panel .r2b-chip > button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.r2b-chip > button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.r2b-chip.r2b-chip-add {
+  padding: 0;
+  border-style: dashed;
+  background: transparent;
+}
+
+.right-panel .r2b-chip-add > input {
+  width: 64px;
+  height: 100%;
+  min-height: 0;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.r2b-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+}
+
+.right-panel .r2b-suggest > button {
+  height: auto;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.right-panel .r2b-suggest > button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* The sweep map: an empty cell is a dashed frame until a run fills it. */
+.sweep-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 2px;
+}
+
+.sweep-cell.blank {
+  border: 1px dashed var(--rule-strong);
+}
+
+.sweep-cap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-2);
+  margin-top: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+}
+
+.sweep-cap-key {
+  margin-left: auto;
+  overflow-wrap: anywhere;
+}
+
+/* Sensitivity rows on the four columns: the name over two, the bar, the value. */
+.r2b-sens {
+  display: flex;
+  flex-direction: column;
+}
+
+.r2b-srow {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.right-panel .r2b-srow > button {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+  height: auto;
+  min-height: 28px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-body-weight);
+  text-align: left;
+}
+
+.right-panel .r2b-srow > button:hover {
+  background: var(--surface-hover);
+}
+
+.r2b-srow-nm {
+  grid-column: span 2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.r2b-srow-f {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.r2b-srow-bar {
+  display: block;
+  height: 8px;
+}
+
+.r2b-srow-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--text-secondary);
+}
+
+.r2b-srow-v {
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.r2b-srow-more {
+  margin: 0;
+  padding: 0 0 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  overflow-wrap: anywhere;
+}
+
+/* Placement: movable system rows with a kind tag, the budget total and the needs list. */
+.right-panel .r2b-move {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.r2b-move-group {
+  padding: var(--space-2) 0 2px;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-label-weight);
+}
+
+.right-panel .r2b-mv {
+  display: grid;
+  grid-template-columns: 16px 24px minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: center;
+  min-height: 26px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: var(--type-label-size);
+  cursor: pointer;
+}
+
+.right-panel .r2b-mv > input {
+  margin: 0;
+}
+
+.r2b-kind {
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+}
+
+.r2b-mv-nm {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.r2b-total {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.r2b-total-l {
+  color: var(--text-secondary);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+}
+
+.r2b-total-v {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: var(--h-default);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  white-space: pre;
+}
+
+.r2b-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.r2b-needs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+  font-size: var(--type-dense-size);
+}
+
+.r2b-needs > span {
+  min-width: 0;
+}
+
+.r2b-needs .state {
+  white-space: normal;
+}
+
+/* Candidates: rank, the interval on one scale, the change, then Apply. */
+.r2b-cands {
+  display: flex;
+  flex-direction: column;
+}
+
+.r2b-cand-axis,
+.r2b-cand-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.r2b-cand-axis {
+  min-height: 18px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.r2b-cand-main {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 48px;
+  gap: var(--space-2);
+  align-items: center;
+  min-width: 0;
+}
+
+.r2b-cand-axis .r2b-cand-main > :last-child {
+  text-align: right;
+}
+
+.r2b-cand-ax {
+  display: flex;
+  justify-content: space-between;
+}
+
+.r2b-cand {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.right-panel button.r2b-cand-main {
+  width: 100%;
+  height: auto;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-body-weight);
+  text-align: left;
+}
+
+.right-panel button.r2b-cand-main:hover {
+  background: var(--surface-hover);
+}
+
+.r2b-cand-rk {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.r2b-cand.start .r2b-cand-rk {
+  color: var(--text-tertiary);
+}
+
+.r2b-cand-d {
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.r2b-cand-d.good {
+  color: var(--status-nominal);
+}
+
+.r2b-cand-acts {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.r2b-iv {
+  position: relative;
+  height: 22px;
+}
+
+.r2b-iv-track {
+  position: absolute;
+  top: 10px;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+.r2b-iv-band {
+  position: absolute;
+  top: 6px;
+  height: 9px;
+  border-radius: 1px;
+  background: var(--rule-strong);
+}
+
+.r2b-iv-mean {
+  position: absolute;
+  top: 3px;
+  width: 2px;
+  height: 15px;
+  margin-left: -1px;
+  background: var(--text-primary);
+}
+
+.r2b-iv-ref {
+  position: absolute;
+  top: 2px;
+  width: 0;
+  height: 17px;
+  border-left: 1px dashed var(--text-tertiary);
+}
+
+.r2b-cand-pos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--space-3);
+  padding: 0 0 var(--space-2) 48px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.r2b-cand-pos > span:nth-child(odd) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* D6: under 360 px a sensitivity row gives the name the slack. */
+@container right-panel (max-width: 359.98px) {
+  .right-panel .r2b-srow > button {
+    grid-template-columns: minmax(0, 1fr) 56px 64px;
+    column-gap: var(--space-2);
+  }
+
+  .r2b-srow-nm {
+    grid-column: auto;
+  }
+
+  .r2b-cand-pos {
+    padding-left: 0;
+  }
+}
 
 /* ---------- Right panel: R2c Monitor and Outcome ---------- */
 

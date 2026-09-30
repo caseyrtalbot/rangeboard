@@ -62,7 +62,7 @@ describe('SweepMap', () => {
     expect(html).toContain('var(--status-nominal)')
     expect(html).toContain('color:var(--ink)')
     expect(html).toContain('40 replicates per cell')
-    expect(html).toContain('nominal 0 to &lt;2; warning 2 to &lt;4; critical 4 to 6')
+    expect(html).toContain('nominal 0–&lt;2 · warning 2–&lt;4 · critical 4–6')
     expect(html).toContain('Threat altitude (ft AGL)')
     expect(html).toContain('not requirement thresholds')
     expect(html).toContain('95% mean CI')
@@ -141,5 +141,29 @@ describe('SweepMap', () => {
     )
     expect(tones(html)).toEqual(['pending', 'pending', 'pending'])
     expect(html).not.toContain('No defended asset')
+  })
+
+  it('draws the empty grid before a run and names what fills it in the caption', () => {
+    const grid: SweepFactor[] = [factors[0], { id: 'threatSpeedMps', values: [20, 35] }]
+    const html = render('kills', grid, [])
+    expect(html.match(/class="sweep-cell blank"/g)).toHaveLength(6)
+    expect(html).not.toContain('>—<')
+    expect(html).toContain('Columns: Threat altitude (ft AGL) · Rows: Threat speed (m/s)')
+    expect(html).toContain('Run sweep to fill')
+    // The method sentence stays reachable in the caption title.
+    expect(html).toMatch(/<figcaption class="sweep-cap" title="Each cell’s full run/)
+    const running = renderToStaticMarkup(
+      <SweepMap
+        factors={grid}
+        cells={[]}
+        response="kills"
+        replicatesPerCell={40}
+        durationS={60}
+        progress={2}
+        running
+      />,
+    )
+    expect(running).toContain('Running…')
+    expect(running.match(/class="sweep-cell blank"/g)).toHaveLength(4)
   })
 })

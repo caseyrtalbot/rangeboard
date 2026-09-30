@@ -65,6 +65,7 @@ export function SweepMap({
   progress = 0,
   durationS,
   hasAsset = true,
+  running = false,
 }: {
   factors: SweepFactor[]
   cells: SweepCell[]
@@ -73,6 +74,8 @@ export function SweepMap({
   progress?: number
   durationS: number
   hasAsset?: boolean
+  /** A sweep is running: an empty cell waits for its value instead of for a run. */
+  running?: boolean
 }) {
   if (!sweepGridValid(factors))
     return (
@@ -99,22 +102,20 @@ export function SweepMap({
   const tones = higherBetter
     ? ['critical', 'warning', 'nominal']
     : ['nominal', 'warning', 'critical']
+  // The long method sentence sits in the caption title; the caption reads the axes and the key.
+  const method = `Each cell’s full run (horizon on cell) · MC mean per replicate · ${replicatesPerCell} replicates per cell. Relative range, not requirement thresholds. — unavailable; ✓ completed, values pending.`
+  const key =
+    values.length === 0
+      ? running
+        ? 'Running…'
+        : cells.length > 0
+          ? 'No values'
+          : 'Run sweep to fill'
+      : low === high
+        ? `all ${formatCount(low)}`
+        : `${tones[0]} ${formatCount(low)}–<${formatCount(low + step)} · warning ${formatCount(low + step)}–<${formatCount(high - step)} · ${tones[2]} ${formatCount(high - step)}–${formatCount(high)}`
   return (
     <figure style={{ margin: 0 }} aria-label={`Sweep map · ${SWEEP_RESPONSE_LABELS[response]}`}>
-      <figcaption className="muted small">
-        Each cell’s full run (horizon on cell) · MC mean per replicate · {replicatesPerCell}{' '}
-        replicates per cell. Relative range, not requirement thresholds:{' '}
-        {values.length === 0
-          ? 'no values yet'
-          : low === high
-            ? `all ${formatCount(low)} (middle step)`
-            : `${tones[0]} ${formatCount(low)} to <${formatCount(low + step)}; warning ${formatCount(low + step)} to <${formatCount(high - step)}; ${tones[2]} ${formatCount(high - step)} to ${formatCount(high)}`}
-        . — unavailable or pending; ✓ completed, values pending.
-      </figcaption>
-      <p className="small">
-        Columns: {SWEEP_FACTOR_LABELS[x.id]}
-        {y && <> · Rows: {SWEEP_FACTOR_LABELS[y.id]}</>}
-      </p>
       <div
         style={{
           display: 'grid',
@@ -161,6 +162,7 @@ export function SweepMap({
                   data-sweep-cell={`${i},${j}`}
                   data-tone={tone ?? (completed ? 'complete' : 'pending')}
                   title={`${axisValue(x.values[i])}${y ? ` / ${axisValue(v)}` : ''} · ${SWEEP_RESPONSE_LABELS[response]} · ${cell?.summary.replicates ?? replicatesPerCell} replicates · full run ${cellDuration} s${detail ? ` · ${detail}` : ''}`}
+                  className={tone || cell || completed ? 'sweep-cell' : 'sweep-cell blank'}
                   style={{
                     padding: 'var(--space-1)',
                     textAlign: 'center',
@@ -173,13 +175,20 @@ export function SweepMap({
                         : 'var(--text-secondary)',
                   }}
                 >
-                  {value == null ? (cell ? '—' : completed ? '✓' : '—') : formatCount(value)}
+                  {value == null ? (cell ? '—' : completed ? '✓' : '') : formatCount(value)}
                 </span>
               )
             })}
           </Fragment>
         ))}
       </div>
+      <figcaption className="sweep-cap" title={method}>
+        <span>
+          Columns: {SWEEP_FACTOR_LABELS[x.id]}
+          {y && <> · Rows: {SWEEP_FACTOR_LABELS[y.id]}</>}
+        </span>
+        <span className="sweep-cap-key">{key}</span>
+      </figcaption>
     </figure>
   )
 }

@@ -32,8 +32,8 @@ describe('AnalysisPanel screens', () => {
   })
 
   it('defaults each phase to its first screen and renders Inputs under the Validity line', () => {
-    expect(render({ phase: 'prepare' })).toContain('<h3>Fragility</h3>')
-    expect(render({ phase: 'prepare' })).toContain('No ensemble</span>')
+    expect(render({ phase: 'prepare' })).toContain('aria-label="Fragility"')
+    expect(render({ phase: 'prepare' })).toContain('No ensemble for this setup.')
     const inputs = render({ phase: 'prepare', screen: 'inputs' })
     // useId values differ between renders, so the check reads the two parts.
     expect(inputs.startsWith(renderToStaticMarkup(<PanelValidity phase="prepare" />))).toBe(true)
@@ -42,14 +42,14 @@ describe('AnalysisPanel screens', () => {
     installTrial()
     expect(render()).toContain('aria-label="Now"')
     expect(render({ phase: 'analyze' })).toContain('aria-label="Outcome"')
-    expect(render({ phase: 'prepare', screen: 'compare' })).toContain('<h3>Fragility</h3>')
+    expect(render({ phase: 'prepare', screen: 'compare' })).toContain('aria-label="Fragility"')
   })
 
   it('mounts Placement in Prepare and nowhere else', () => {
     const placement = render({ phase: 'prepare', screen: 'placement' })
     expect(placement).toContain('aria-label="Placement"')
-    expect(placement).toContain('No current placement result.')
-    expect(placement).not.toContain('<h3>Fragility</h3>')
+    expect(placement).toContain('No placement result yet.')
+    expect(placement).not.toContain('aria-label="Fragility"')
     for (const phase of ['execute', 'analyze'] as const) {
       expect(render({ phase, screen: 'placement' })).not.toContain('aria-label="Placement"')
     }
@@ -123,15 +123,14 @@ describe('AnalysisPanel screens', () => {
     const summary = runReplicates({ ...scenario, replicates: 2 })
     const state = useStore.getState()
     useStore.setState({ mc: { ...state.mc, status: 'done', runId: state.playback.runId, summary } })
-    for (const props of [
-      { phase: 'prepare', screen: 'fragility' },
-      { phase: 'analyze', screen: 'compare' },
-    ] as const) {
-      expect(render(props)).toContain(
-        `Monte Carlo · 2 replicates · Aleatory uncertainty · seed ${summary.seed}`,
-      )
-      expect(render(props)).toContain('full run')
-    }
+    expect(render({ phase: 'prepare', screen: 'fragility' })).toContain(
+      `${summary.replicates} runs · seed ${summary.seed} · T+`,
+    )
+    const compare = render({ phase: 'analyze', screen: 'compare' })
+    expect(compare).toContain(
+      `Monte Carlo · 2 replicates · Aleatory uncertainty · seed ${summary.seed}`,
+    )
+    expect(compare).toContain('full run')
     useStore.setState({ mc: { ...useStore.getState().mc, status: 'stale' } })
     expect(render({ phase: 'analyze', screen: 'compare' })).toContain('No current ensemble result.')
   })
