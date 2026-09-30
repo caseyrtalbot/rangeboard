@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RangeBoard Panel Redesign</title>
+<meta name="description" content="Clickable prototype of the RangeBoard right panel redesign: Prepare, Execute and Analyze screens with change notes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+</head>
+<body>
+<link rel="stylesheet" href="panel.css">
+
+<div class="proto-bar" role="toolbar" aria-label="Prototype controls">
+  <span class="proto-name">RangeBoard right panel <span class="mono">v1</span></span>
+  <span class="proto-group">
+    <span class="proto-label">Data</span>
+    <span class="seg seg-sm" role="group" aria-label="Sample data state">
+      <button type="button" id="proto-data-empty" data-proto="data" data-v="empty">Before run</button>
+      <button type="button" id="proto-data-results" data-proto="data" data-v="results">After run</button>
+    </span>
+  </span>
+  <span class="proto-group">
+    <span class="proto-label">Theme</span>
+    <span class="seg seg-sm" role="group" aria-label="Theme">
+      <button type="button" id="proto-theme-dark" data-proto="theme" data-v="dark">Night</button>
+      <button type="button" id="proto-theme-light" data-proto="theme" data-v="light">Paper</button>
+    </span>
+  </span>
+  <span class="proto-group">
+    <span class="proto-label">Drawer</span>
+    <span class="seg seg-sm" role="group" aria-label="Drawer width">
+      <button type="button" id="proto-drawer-280" data-proto="drawer" data-v="280">280</button>
+      <button type="button" id="proto-drawer-408" data-proto="drawer" data-v="408">408</button>
+      <button type="button" id="proto-drawer-560" data-proto="drawer" data-v="560">560</button>
+      <button type="button" id="proto-drawer-0" data-proto="drawer" data-v="0">Closed</button>
+    </span>
+  </span>
+  <button type="button" id="proto-notes" class="proto-toggle" data-proto="notes">Change notes</button>
+  <span class="proto-sample">Sample values from RUN-0006. Ensemble, sweep and placement numbers are examples.</span>
+</div>
+
+<div class="app" id="app">
+  <header class="topbar">
+    <span class="brand">Rangeboard</span>
+    <span class="scn">Untitled scenario</span>
+    <nav class="phases" aria-label="Phase">
+      <button type="button" id="phase-prepare" data-phase="prepare"><span class="mono step">01</span> Prepare</button>
+      <button type="button" id="phase-execute" data-phase="execute"><span class="mono step">02</span> Execute</button>
+      <button type="button" id="phase-analyze" data-phase="analyze"><span class="mono step">03</span> Analyze</button>
+    </nav>
+    <span class="top-actions">
+      <span class="run-progress mono" id="run-progress"></span>
+      <button type="button" class="primary" id="run-primary">Run <kbd>⌘↵</kbd></button>
+      <button type="button" class="icon-btn" aria-label="Settings" title="Settings">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg>
+      </button>
+      <button type="button" class="icon-btn" aria-label="File menu" title="File menu">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="3.5" cy="8" r=".9"/><circle cx="8" cy="8" r=".9"/><circle cx="12.5" cy="8" r=".9"/></svg>
+      </button>
+      <button type="button" class="icon-btn" id="drawer-toggle" data-act="drawer" aria-controls="panel" aria-label="Close panel" title="Close panel (])">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M10 3v10"/></svg>
+      </button>
+    </span>
+  </header>
+
+  <div class="main" id="main">
+    <section class="board" aria-label="Board (context only)">
+      <nav class="rail" aria-label="Board resources">
+        <button type="button" class="icon-btn" data-act="toast" data-msg="The Library drawer opens on the left." aria-label="Library" title="Library (L)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5v11M6 2.5v11M9 3l3.5 10"/></svg></button>
+        <button type="button" class="icon-btn" data-act="rail-entities" aria-label="Entities" title="Entities"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><circle cx="2.8" cy="4" r=".8"/><circle cx="2.8" cy="8" r=".8"/><circle cx="2.8" cy="12" r=".8"/></svg></button>
+      </nav>
+      <div class="board-canvas" id="board-canvas"></div>
+      <div class="transport" id="transport"></div>
+      <div class="statusbar mono" id="statusbar"></div>
+    </section>
+
+    <aside class="panel" id="panel" aria-label="Right panel">
+      <div class="drawer-handle" id="drawer-handle" role="separator" aria-orientation="vertical" aria-label="Resize panel" aria-valuemin="280" aria-valuemax="560" aria-valuenow="408" tabindex="0" title="Drag or use the arrow keys to resize. Drag past the minimum to close."></div>
+      <div class="panel-sticky">
+        <div class="tabrow" role="tablist" id="tabrow"></div>
+        <div id="validity"></div>
+      </div>
+      <div class="panel-body" id="panel-body"></div>
+    </aside>
+
+    <aside class="notes" id="notes" aria-label="Change notes"></aside>
+  </div>
+</div>
+
+<div class="popover" id="popover" hidden></div>
+
+<script src="panel.js"></script>
+</body>
+</html>

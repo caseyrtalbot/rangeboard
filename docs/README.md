@@ -22,6 +22,7 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [Plan.md](Plan.md) | Completed chrome refactor queue (Rows A to D); selects nothing |
 | [timeline/SPEC.md](timeline/SPEC.md) | Run timeline spec and four-phase plan; sessions advance only in the handoff |
 | [code-quality/Plan.md](code-quality/Plan.md) | Frozen queue for the three code-quality refactor follow-ups (Q1 to Q3); the handoff selects the row |
+| [right-panel/Plan.md](right-panel/Plan.md) | Frozen queue for the right panel redesign (R1 to R3) with its approved prototype; the handoff selects the row |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
 Run `npm run docs:check`; follow the [workflow](WORKFLOW.md#documentation-maintenance) when

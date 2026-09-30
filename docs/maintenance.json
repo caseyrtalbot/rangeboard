@@ -44,9 +44,9 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "7eba910dcee1814daaa9ceaf4e8bf67c15d1da284044a025f66cd7dac1758774",
-      "reviewedAt": "2026-09-29",
-      "note": "Index links docs/code-quality/Plan.md as the frozen queue for the three code-quality refactor follow-ups"
+      "sha256": "302f409073201a19435659a448ec35f9f2836068d5a84f72e3c34708f1c8109f",
+      "reviewedAt": "2026-09-30",
+      "note": "Index gains the right panel redesign plan row; no other entry changed"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "0428a125618d0128f40ce3d733d862c48830cc772136024d45a9d7fc3e5ef1a6",
+      "sha256": "f9d27f7a154398ebfbe35df54c8e45ccdee033fb074f0df05e7419fafb4da7a7",
       "reviewedAt": "2026-09-30",
-      "note": "Range ring rework fdfa6b3: Position records the merge, the lanes and the gate; Follow-ups gain the four ring items; Landmines gain the MRIR storage key and the onRing click rule; Tasking keeps Q2 held with the ring gate as the base."
+      "note": "Position records the plan commit on main (one ahead of origin, not pushed), the shared prototype link and the D13 confirmation"
     },
     {
       "document": "docs/Plan.md",
@@ -134,6 +134,13 @@
       "sha256": "0d9938d855d6f42cda86cf2fc760c97ec181ea1c371384ddddc609b0db817807",
       "reviewedAt": "2026-09-29",
       "note": "New frozen queue for the three code-quality refactor follow-ups (Q1 slot removal, Q2 card actions, Q3 sorted-index helper), authored against 418a893 from three read-only surveys; the user confirmed D2 on 2026-09-29"
+    },
+    {
+      "document": "docs/right-panel/Plan.md",
+      "inputs": [],
+      "sha256": "b068765746214a6fc98d56542079967a898c78cea35f5aae30e893e022c170ed",
+      "reviewedAt": "2026-09-30",
+      "note": "Source names the shared prototype link for agents without a checkout; D13 records the user's confirmation of 2026-09-29"
     },
     {
       "document": "docs/design/DESIGN_SYSTEM.md",

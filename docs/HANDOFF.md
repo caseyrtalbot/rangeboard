@@ -23,7 +23,10 @@ change) follows it as `ccfdf44`, pushed with the handoff update `418a893`.
 follow-ups (rows Q1 to Q3, authored 2026-09-29). Q1 is merged and pushed as `6c15b71`.
 The range ring rework (MIR and MRIR rings, at-rest and active styles, the ring readout),
 the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `fdfa6b3`.
-The Tasking selects Q2 and waits for the user's word. Execute one row per agent turn.
+[right-panel/Plan.md](right-panel/Plan.md) is the frozen queue for the right panel redesign
+(rows R1 to R3, authored 2026-09-29 from the approved prototype in
+[right-panel/prototype/](right-panel/prototype/index.html)). The Tasking selects R1 and
+waits for the user's word; Q2 stays held. Execute one row per agent turn.
 
 ## Position
 
@@ -34,10 +37,19 @@ The Tasking selects Q2 and waits for the user's word. Execute one row per agent 
   `refactor/code-quality`, then the handoff update `418a893`, the code-quality plan
   `45d31ef`, Q1 `6c15b71` and the Q1 handoff `539674d`, fast-forwarded from `quality/q1`,
   then the Q1 merge handoff `e2343f9`, the range ring rework `fdfa6b3`, fast-forwarded
-  from `rings/mir-mrir`, and this handoff update. `main` and `origin/main` match.
+  from `rings/mir-mrir`, the range ring handoff `79f6f73`, and the right panel plan
+  commit that holds this handoff. `main` is one commit ahead of `origin/main`; the plan
+  commit is not pushed.
   `engine/g`, `refactor/code-quality`, `quality/q1` and `rings/mir-mrir` (local and
   remote) are deleted. `git branch -a` shows `main` only, `git worktree list` shows the
   main checkout only and the stash list is empty.
+- Right panel redesign (2026-09-29): the user approved a two-version HTML prototype of the
+  right panel (Prepare, Execute and Analyze screens) and asked for the plan and this
+  handoff. The prototype is in `docs/right-panel/prototype/` and as an artifact that
+  anyone with the link can open (<https://claude.ai/artifact/WUuoMJLkcctLzBQHuJqG7Y>). The
+  plan is `docs/right-panel/Plan.md`, with decisions D1 to D13; the user confirmed D13 on
+  2026-09-29. No source file changed. The plan, the prototype, the index and registry lines
+  and this handoff are committed on `main` in one commit, not pushed.
 - Range ring rework (2026-09-29) `fdfa6b3`, approved from a reference page. The storage
   keys do not change: `effectorMaxRange` is MIR, `effectorDoctrinal` is MRIR and
   `effectorMinRange` is Min range. MRIR is the optional library `mrirM`, else 2/3 of MIR
@@ -744,34 +756,55 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Row Q2: delete the orphaned test-card actions.** The row, its owned files, facts, work
-steps, checks and stop condition are in [code-quality/Plan.md](code-quality/Plan.md#q2-delete-the-orphaned-test-card-actions-opus-medium).
-Start Q2 only when asked. The user held Q2 on 2026-09-29 after the Q1 merge.
+**Row R1: shell and shared primitives.** The row, its owned files, facts, work steps,
+checks and stop condition are in
+[right-panel/Plan.md](right-panel/Plan.md#r1-shell-and-shared-primitives-opus-high).
+Start R1 only when asked. Q2 of [code-quality/Plan.md](code-quality/Plan.md) stays held;
+both rows edit `src/state/store.ts`, in different blocks.
 
-- Base: `main` at the commit that holds this handoff. Branch `quality/q2`. No dirty path belongs
-  to Q2.
-- Outcome: the eight card actions, `bumpCardVersion` and `seedCards.ts` are gone; the card
-  data model and its cascade stay; production behavior is unchanged. The user confirmed
-  D2 on 2026-09-29: delete the card actions, keep the card data.
-- Exclusions: every item on the plan's Keep list (the card data model, the schema,
-  `validateScenario.ts`, the `deleteSelection` cascade, `Selection.cardId`, the
-  `EntityLayer.tsx` card ring, the fixtures and the `rangeboard.te.*` keys) and every file
-  the row does not own. Report other findings as follow-ups.
-- Verified facts: the pointers come from a read-only `opus-medium` survey on `418a893`
-  (2026-09-29); the orchestrator checked the action list, the missing production callers
-  and the `2213e42` decision against the source. Q1 did not touch a Q2 file except
-  `store.analysis.test.ts`, where Q1 changed only the `mcClient` mock; confirm the line of
-  the `addCard()` call before the edit. The base gate is the range ring gate in Position.
-- Next action: brief one `opus-medium` worker with the Q2 row, the gate and a 600 s
-  budget, per `~/.claude/rules/delegation.md`. Run the gate and read the diff yourself
-  before you count the row done.
-- Stop: the gate passes, the commit is on `quality/q2`, and this Tasking selects Q3. Do
-  not merge or push without the user's word.
+- Base: `main` at the commit that holds the plan and this handoff. Branch `panel/r1`. No
+  dirty path belongs to R1.
+- Outcome: the panel heading row is gone and its menu sits in the tab row; the store holds
+  `selectionOrigin`, `openSections`, `validityOpen` and `panelRequest`; `PanelSection`,
+  `ValidityLine`, `splitCommonPrefix` and `useRunHistorySave` exist with tests; the
+  status-bar Validity cell opens the drawer at the Validity line; `index.css` holds the
+  Right panel region with the grid, the container rules and the empty lane blocks. The
+  screens keep their current content until R2.
+- Exclusions: every screen file that R2 owns, the Inspector and detail panes (D4), the
+  engine, the schema and every file the row does not own. Report other findings as
+  follow-ups.
+- Verified facts: the pointers come from a read-only `sonnet-medium` survey on `79f6f73`
+  (2026-09-29). The orchestrator checked the drawer code, `openEntities`, `openDoctrine`,
+  the selection effect, the status-bar validity cell and the consumers of `SystemStatus`,
+  `RunHistory`, `RequirementGates` and `DebriefRecord` against the source. The base gate
+  is the range ring gate in Position (225 files, 2,518 tests); confirm it on the plan
+  commit.
+- Next action: brief one `opus-high` worker with the R1 row, the gate, the browser check
+  and a 2,400 s budget, per `~/.claude/rules/delegation.md`. Run the gate and read the
+  diff yourself before you count the row done.
+- Stop: the gate passes, the commit is on `panel/r1`, and this Tasking selects R2. Do not
+  merge or push without the user's word.
 
 The Follow-ups are candidates, not rows.
 
 ## Landmines
 
+- Right panel entry points find panel elements by DOM id or class: `openDoctrine` opens
+  `#prepare-doctrine` as a `details` (`App.tsx:906-921`), `openEntities` scrolls to
+  `.prepare-entity-register` (869-876), and the e2e file reads `#insp-tab-analysis`, the
+  tab labels (`board-shell.e2e.mjs:109, 190-201`) and `.right-resizer`. Keep the ids the
+  right panel plan lists in D9, or move the caller in the same row.
+- A selection switches the right panel to the Selected object tab when it becomes
+  non-empty (`App.tsx:903-905`). A panel control that selects without leaving its screen
+  needs the `selectionOrigin` rule of the right panel plan (D7).
+- The right panel screen tests render with `renderToStaticMarkup` and assert on the markup
+  string, with React hooks mocked, so a markup change breaks them by text. `SystemStatus`
+  exports `STATE_LABEL` and `stateTone` to the three detail panes, and the `.insp-row`,
+  `.tb`, `.tb-dense`, `.field-info` and `.field-help` rules also serve the Inspector and
+  Settings.
+- The drawer width lives in `rightW` and `RIGHT_PANEL_WIDTH_KEY`, but its 44 % viewport
+  cap is only CSS (`index.css:5249`, `max-width: 44vw`), so the stored width can exceed
+  the rendered width on a narrow window.
 - The effector ring storage keys keep their old names: `effectorDoctrinal` is the MRIR
   ring and `effectorMaxRange` the MIR ring. Renaming a key breaks saved views and
   `ui.ringOverrides`. A click on a ring edge routes `consume` in the select tool
