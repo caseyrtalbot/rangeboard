@@ -658,8 +658,10 @@ src/main.tsx   restores the Board and overrides autosaves (restoreAutosave and
                restoreOverrides read and adopt them), then starts both autosave
                subscriptions,
                mounts the override-subscriber boundary, exposes window.__store in dev
-src/App.tsx    right panel tabs and drawer, keyboard map, resizer; lazy boundaries for
-               AnalysisPanel, CommandPalette, UndoCue and RunTimeline (in the
+src/App.tsx    right panel tab row (with the Panel options menu) and drawer, the
+               `ui.panelRequest` handler, the board-selection tab switch (D7),
+               keyboard map, resizer; lazy boundaries for AnalysisPanel, the Inputs
+               Validity line (PanelValidity), CommandPalette, UndoCue and RunTimeline (in the
                `.runtl-dock` under the board in Execute and Analyze, with the
                RunTimelineResizer above it); CanvasStage holds the one for ContextMenu
 ```
@@ -1196,7 +1198,16 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   `fragility`, `inputs` and `placement` (Placement), Execute `now`, Analyze
   `outcome` and `compare`. `AnalysisPanel`
   takes the phase and the screen, falls back to the phase's first screen, and renders
-  `BoardPreparation` for `inputs`. `AnalysisNavigation` draws the phase's screen tabs
+  `BoardPreparation` for `inputs`. Above the screen it renders `PanelValidity`, the one
+  Validity line (`analysis/ValidityLine.tsx`): the forecast assessment in Prepare and
+  Execute, the completed trial's `view.validity` (else its forecast) in Analyze, and
+  PENDING before a completed trial. Execute hides it unless `ui.validityOpen` is set;
+  `setBoardPhase` clears the flag, so only the status-bar button opens it there.
+  App renders `PanelValidity` lazily above the shell's Inputs screen. `PanelSection`
+  (`src/ui/PanelSection.tsx`) is the one section head; a collapsible section keeps its
+  state in `ui.openSections` by DOM id. `analysis/trackNames.ts` holds
+  `splitCommonPrefix` (D3) and `analysis/useRunHistorySave.ts` the save hook the run
+  history uses. `AnalysisNavigation` draws the phase's screen tabs
   (`role="tab"` buttons in `.insp-tab-group`, sorted by `SCREEN_ORDER`)
   inside the one right-panel tab row, outside the content scroller; the current screen
   carries `insp-tab-analysis`. The contextual object tab follows them. Each screen has one owner component and one

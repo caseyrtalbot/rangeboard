@@ -1,8 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ComponentProps } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { AnalysisPanel } from './AnalysisPanel'
-import { BoardPreparation } from './BoardPreparation'
+import { AnalysisPanel, PanelValidity } from './AnalysisPanel'
 import { emptyScenario } from '../model/seed'
 import { useStore } from '../state/store'
 import { installTrial, observeTrial, unstartTrial } from './analysis/trialTestState'
@@ -18,6 +17,9 @@ const noTrial =
 // Execute holds the Play control, so its placeholder carries it inline.
 const nowPlay =
   '<p class="muted small">No trial yet. Press <button class="mini">Play</button> to run one.</p>'
+// Analyze before a completed trial: the Validity line reads PENDING and opens nothing.
+const pendingLine =
+  '<div class="vline vline-pending" id="validity-line"><span class="vline-label">Trial validity</span><span class="state inactive"><i class="state-square hollow" aria-hidden="true"></i>PENDING</span><span class="vline-count">No completed trial</span></div>'
 const trialScreens = [
   { phase: 'execute', screen: 'now' },
   { phase: 'analyze', screen: 'outcome' },
@@ -29,11 +31,14 @@ describe('AnalysisPanel screens', () => {
     useStore.getState().replaceScenario(emptyScenario())
   })
 
-  it('defaults each phase to its first screen and renders Inputs unchanged', () => {
+  it('defaults each phase to its first screen and renders Inputs under the Validity line', () => {
     expect(render({ phase: 'prepare' })).toContain('<h3>Fragility</h3>')
     expect(render({ phase: 'prepare' })).toContain('No ensemble</span>')
     const inputs = render({ phase: 'prepare', screen: 'inputs' })
-    expect(inputs).toBe(renderToStaticMarkup(<BoardPreparation />))
+    // useId values differ between renders, so the check reads the two parts.
+    expect(inputs.startsWith(renderToStaticMarkup(<PanelValidity phase="prepare" />))).toBe(true)
+    expect(inputs).toContain('<div class="inspector-body board-preparation">')
+    expect(inputs.startsWith('<div class="vline-wrap">')).toBe(true)
     installTrial()
     expect(render()).toContain('aria-label="Now"')
     expect(render({ phase: 'analyze' })).toContain('aria-label="Outcome"')
@@ -64,10 +69,14 @@ describe('AnalysisPanel screens', () => {
           summary: runReplicates({ ...scenario, replicates: 2 }),
         },
       })
-      const placeholder = props.phase === 'execute' ? nowPlay : noTrial
-      expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${placeholder}</div>`)
+      // Execute shows the line only while the status bar holds it open (D10).
+      const expected =
+        props.phase === 'execute'
+          ? `<div class="inspector-body analysis-panel">${nowPlay}</div>`
+          : `${pendingLine}<div class="inspector-body analysis-panel">${noTrial}</div>`
+      expect(render(props)).toBe(expected)
       useStore.getState().resetRun()
-      expect(render(props)).toBe(`<div class="inspector-body analysis-panel">${placeholder}</div>`)
+      expect(render(props)).toBe(expected)
     },
   )
 
@@ -83,6 +92,30 @@ describe('AnalysisPanel screens', () => {
     observeTrial(3, 1)
     expect(render({ phase: 'execute' })).toContain('observed through T+0:01 of ')
     expect(render({ phase: 'analyze' })).toContain('T+0:03 of 1:00 observed')
+  })
+
+  it('puts the Validity line over Prepare and Analyze, and over Execute only while open', () => {
+    expect(render({ phase: 'prepare' })).toContain(
+      '<span class="vline-label">Forecast validity</span>',
+    )
+    installTrial(3)
+    expect(render({ phase: 'analyze' })).toContain(pendingLine)
+    expect(render({ phase: 'execute' })).not.toContain('class="vline')
+    useStore.getState().setValidityOpen(true)
+    const open = render({ phase: 'execute' })
+    expect(open).toContain('<span class="vline-label">Forecast validity</span>')
+    expect(open).toContain('aria-expanded="true"')
+    useStore.getState().setValidityOpen(false)
+  })
+
+  it('reads the completed trial in Analyze', () => {
+    installTrial(60)
+    const playback = useStore.getState().playback
+    useStore.setState({ playback: { ...playback, completedAtMs: 2 } })
+    const html = render({ phase: 'analyze' })
+    expect(html).not.toContain('vline-pending')
+    expect(html).toMatch(/<span class="vline-label">(Trial|Forecast) validity<\/span>/)
+    expect(html).toMatch(/<span class="vline-count">\d+ findings?<\/span>/)
   })
 
   it('uses only the current ensemble for Fragility and Compare', () => {

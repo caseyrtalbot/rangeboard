@@ -29,9 +29,12 @@ const waitFor = (page, fn, arg) => page.waitForFunction(fn, arg, { timeout: 1000
 const PLACE_MODEL =
   '.palette-scroll .palette-section:not(:first-child) button[aria-label^="Place "]'
 
-async function open(t) {
+async function open(t, drawerWidth = 320) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
-  await ctx.addInitScript(() => localStorage.setItem('rangeboard.rightpanel.width', '320'))
+  await ctx.addInitScript(
+    (w) => localStorage.setItem('rangeboard.rightpanel.width', String(w)),
+    drawerWidth,
+  )
   const page = await ctx.newPage()
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
@@ -196,9 +199,9 @@ test('analysis screens follow the phase and no lens bar renders', async (t) => {
   await waitFor(page, () => document.querySelector('.insp-tab-group'))
   assert.deepEqual(await labels(), ['Outcome', 'Compare'])
   await page.click('#board-phase-execute')
-  // Execute has one screen, so it draws one Run monitor tab and no segmented control.
+  // Execute has one screen, so it draws one Monitor tab and no segmented control.
   await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
-  assert.deepEqual(await labels(), ['Run monitor'])
+  assert.deepEqual(await labels(), ['Monitor'])
   assert.equal(await has(page, '.lens-builtins'), false)
   assert.equal(await has(page, '.lens-layout'), false)
   assert.deepEqual(errors, [])
@@ -247,6 +250,32 @@ test('drawer: a selection keeps it closed and a resize drag past the minimum clo
   await page.mouse.up()
   await waitFor(page, () => document.getElementById('board-workspace-panel').hidden)
   assert.deepEqual(errors, [])
+})
+
+test('drawer: Prepare Inputs has no horizontal overflow at stored widths 280 and 560', async (t) => {
+  for (const width of [280, 560]) {
+    const { page, errors } = await open(t, width)
+    await page.click('#board-phase-prepare')
+    await page.click('.insp-tab-group [role="tab"]:text-is("Inputs")')
+    await waitFor(page, () => document.querySelector('#insp-tabpanel .board-preparation'))
+    const m = await page.evaluate(() => {
+      const panel = document.getElementById('insp-tabpanel')
+      const overflow = [panel, ...panel.querySelectorAll('*')].filter(
+        (el) =>
+          el.scrollWidth - el.clientWidth > 1 &&
+          ['auto', 'scroll'].includes(getComputedStyle(el).overflowX),
+      )
+      return {
+        width: document.querySelector('.right-panel').getBoundingClientRect().width,
+        overflow: overflow.map((el) => el.className || el.tagName),
+        wide: panel.scrollWidth - panel.clientWidth,
+      }
+    })
+    assert.ok(Math.abs(m.width - width) <= 1, `the drawer is ${width} px: ${m.width}`)
+    assert.equal(m.wide, 0, `no horizontal overflow at ${width} px`)
+    assert.deepEqual(m.overflow, [], `no scrolling child at ${width} px`)
+    assert.deepEqual(errors, [])
+  }
 })
 
 test('playback bar: the Timeline toggle opens the run timeline above the bar and pushes the canvas up', async (t) => {

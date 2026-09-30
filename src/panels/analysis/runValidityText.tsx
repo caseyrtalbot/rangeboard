@@ -36,7 +36,10 @@ export const SEVERITY_PILL: Record<
   limiting: { text: 'LIMITS', tone: 'warning' },
 }
 
-/** Selection exposes the existing threat editor without changing the laydown. */
+/**
+ * Selection exposes the existing threat editor without changing the laydown. A panel
+ * selection keeps the current tab and adds the Selected object tab (D7).
+ */
 // oxlint-disable-next-line react/only-export-components -- The validity words and this action share one module.
 export function FindingThreatActions({
   finding,
@@ -53,11 +56,7 @@ export function FindingThreatActions({
           className="mini"
           type="button"
           key={id}
-          onClick={() => {
-            const store = useStore.getState()
-            store.select({ entityIds: [id] })
-            store.setRightTab('inspect')
-          }}
+          onClick={() => useStore.getState().select({ entityIds: [id] }, false, 'panel')}
         >
           Select {entities.find((entity) => entity.id === id)?.name ?? id}
         </button>

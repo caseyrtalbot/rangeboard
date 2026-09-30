@@ -7,8 +7,6 @@ import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { trialForecast, trialResultOf } from '../../../analysis/trialResult'
 import type { TrialResultView } from '../../../analysis/trialResult'
 import { formatTime } from '../../../geometry/geo'
-import { saveRun } from '../../../io/runStore'
-import { analysisBasisSignature } from '../../../state/analysisBasis'
 import { useStore } from '../../../state/store'
 import { selectRunComplete } from '../../../state/selectors'
 import { selectTrialHorizon } from '../../../state/trialSelectors'
@@ -19,9 +17,8 @@ import {
   TrialEventLedger,
   TrialManifestRecord,
 } from '../DebriefRecord'
-import type { RunHistorySave } from '../RunHistory'
 import { RunHistory } from '../RunHistory'
-import { runRecordOf } from '../mc'
+import { useRunHistorySave } from '../useRunHistorySave'
 import { SystemStatus } from '../SystemStatus'
 import { lateKillText, trialOutcomeRows } from '../threatReadout'
 import type { TrialOutcomeRow } from '../threatReadout'
@@ -258,40 +255,6 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
       />
     </>
   )
-}
-
-/**
- * A save needs a finished ensemble for the current analysis basis; the sensitivity
- * companion joins it only when it finished on the same basis. The record is built
- * here, never in the store.
- */
-function useRunHistorySave(): RunHistorySave {
-  const scenario = useStore((state) => state.scenario)
-  const mc = useStore((state) => state.mc)
-  const playbackRunId = useStore((state) => state.playback.runId)
-  const signature = useMemo(() => analysisBasisSignature(scenario), [scenario])
-  const summary = mc.status === 'done' ? mc.summary : null
-  const enabled = summary != null && mc.basisSignature === signature
-  const reason = enabled
-    ? 'Save this ensemble to the run history'
-    : mc.status === 'running'
-      ? 'The ensemble is still running'
-      : summary == null
-        ? 'No finished ensemble to save'
-        : 'The scenario changed after the ensemble ran'
-  return {
-    enabled,
-    reason,
-    run: () => {
-      if (!summary) return Promise.reject(new Error('No finished ensemble to save.'))
-      const sensitivity =
-        mc.sensitivity.status === 'done' && mc.sensitivity.basisSignature === signature
-          ? mc.sensitivity.summary
-          : null
-      // The record names the overrides the run applied at launch.
-      return saveRun(runRecordOf(scenario, mc, playbackRunId, signature, sensitivity))
-    },
-  }
 }
 
 export function OutcomeScreen() {

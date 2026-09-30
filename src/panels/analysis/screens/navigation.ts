@@ -9,7 +9,7 @@ export const PHASE_SCREENS: Record<BoardPhase, Array<{ v: AnalysisScreen; label:
     { v: 'inputs', label: 'Inputs' },
     { v: 'placement', label: 'Placement' },
   ],
-  execute: [{ v: 'now', label: 'Run monitor' }],
+  execute: [{ v: 'now', label: 'Monitor' }],
   analyze: [
     { v: 'outcome', label: 'Outcome' },
     { v: 'compare', label: 'Compare' },

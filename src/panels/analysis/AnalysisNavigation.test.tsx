@@ -30,13 +30,13 @@ describe('AnalysisNavigation', () => {
     expect(labels).toEqual(['Inputs', 'Fragility', 'Placement'])
   })
 
-  it('draws one Run monitor tab for Execute and no segmented control', () => {
+  it('draws one Monitor tab for Execute and no segmented control', () => {
     expect(PHASE_SCREENS.execute).toHaveLength(1)
     const html = renderToStaticMarkup(
       <AnalysisNavigation phase="execute" screen="now" selected onNavigate={() => {}} />,
     )
     expect(html.match(/role="tab"/g)).toHaveLength(1)
-    expect(html).toContain('>Run monitor</button>')
+    expect(html).toContain('>Monitor</button>')
     expect(html).not.toContain('class="seg"')
   })
 

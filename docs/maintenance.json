@@ -37,9 +37,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "cbbe0c5d07af85f1f8f79c759d2af0142ec994b8b0e20720453abc064eb0a0d9",
-      "reviewedAt": "2026-09-29",
-      "note": "Code-quality refactor: App.tsx PanelTabs renders its one contextual tab directly and uses screenToWorld; setup and feature introduction unchanged."
+      "sha256": "0a45254ca8c245a402c0c852519d0998b8c8d827e6bb87c226b3fccaeea0ec3d",
+      "reviewedAt": "2026-09-30",
+      "note": "R1 App.tsx shell change (tab row menu, requestPanel, Validity line); README names no panel layout, no edit"
     },
     {
       "document": "docs/README.md",
@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "bf1a580326d68d2b55a926e0ecf731a07c73549feff574f1d38348a28583b937",
+      "sha256": "9643d5e314ce4cec9a38f794b6787cb54c5a8923f75d2a332f92b13d1f6fa93a",
       "reviewedAt": "2026-09-30",
-      "note": "MIR/MRIR rings follow-up: types.ts gains the MRIR basis helpers and the effector ring order is MIR, MRIR, Min range. The ring paragraph already lists that order and stays accurate."
+      "note": "R1: setBoardPhase closes the Validity line on a phase change; the guide's Validity line text stays accurate, no edit"
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "fd2f3328f2d3fb481a33f92645fd52aa1ef45956f8b9a7bd73786e3c1ace2ad3",
+      "sha256": "033f3b00d6658f45cb15c5a31a296de4fa688cb4d449689551c4eaf3ca40978d",
       "reviewedAt": "2026-09-30",
-      "note": "MIR/MRIR rings follow-up: mrirBasisOf and mrirBasisText moved from ringModel.ts to types.ts; the Inspector MRIR row shows the same basis words; EFFECTOR_RING_KEYS order is MIR, MRIR, Min range. Rings bullet updated."
+      "note": "R1: setBoardPhase clears ui.validityOpen, so Execute shows the Validity line only from the status-bar button; analysis screens row states it"
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "4319a7523d614fa90d531485a3543ca7bccdc0a3f538f97b5de4b844283c226f",
+      "sha256": "38cffd8d155deff1f7b9bded531d8b48e31250d654221b0a3a062ac10b8dab05",
       "reviewedAt": "2026-09-30",
-      "note": "MIR/MRIR rings: src/io runtime schema and validation add the optional mrirM field and scripts/build-library.mjs adds its unit; no gate, fixture or command changes, text stays accurate"
+      "note": "R1: e2e drawer width test at 280 and 560 px for Prepare Inputs; Execute tab reads Monitor"
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -98,9 +98,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "23344ca2604e53da976bbe706f324adec3e146dcbc38d9d2db3430974353ec53",
+      "sha256": "6554d4c2acedb70a2a326ae61474aed702338865a17b718e4a475f08f725be93",
       "reviewedAt": "2026-09-30",
-      "note": "MIR/MRIR rings: scripts/build-library.mjs only adds the mrirM unit to UNIT_BY_FIELD; no workflow, script command or lint config change, text stays accurate"
+      "note": "R1 e2e adds one drawer width test; the e2e and gate commands are unchanged, no edit"
     },
     {
       "document": "docs/HANDOFF.md",
@@ -150,9 +150,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "6566077614443929c6fda9dcd2487b91ea27a9e8d367220f5c912a350c4aaa6b",
+      "sha256": "ccb4f11a867c6e9fdc570fdaf00d2b1cdbfbf5fc1c7475d6dc664552f2cff4d5",
       "reviewedAt": "2026-09-30",
-      "note": "MIR/MRIR rings: rule 9 adds BoardInk.ringIdle; new Range rings entry states the at-rest dashes (MIR_REST, MRIR_REST, MIN_REST, SENSOR_REST) and the active rule; new Ring readout entry covers the .ring-readout surface-float and the pin"
+      "note": "R1: 32 px panel header paragraph replaced by the tab row with the Panel options menu, the Validity line and the D5, D6, D8 grid, width and edge rules"
     }
   ],
   "historical": [

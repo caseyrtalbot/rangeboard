@@ -186,16 +186,39 @@ too), the Reset run icon, the scrubber, speed, the raid
 waves, the frame chips, `+ Frame` (a popover with one name field and Save) and the
 Timeline toggle (`#run-timeline-toggle`). The clock and the run id render only in the status bar.
 
-The lifecycle navigation sits outside the scroll body. The right panel opens with a
-32 px header: the phase word (Prepare, Execute, Analyze) at 13/500 and a ⋯ Panel options
-menu with Show field help (a switch, off by default, D6), Collapse all and Expand all,
-which act on every `details` in the panel body. Below it one 32 px tab row in 12/500
-holds the phase's screens (Inputs · Fragility · Placement in Prepare; Run monitor in
-Execute; Outcome · Compare in Analyze), then the contextual tab last: the selected
-object's name after a 6 px accent dot, shown only while something is selected. The
-selected tab is marked by a 2 px underline in text 1; the accent stays for the primary
-action. A long object name ends in an ellipsis at half the row width. The Model library
-editor opens in the Library drawer, not in the right panel. Labels do not wrap, and no panel text may be inaccessible.
+The lifecycle navigation sits outside the scroll body. The right panel has no header:
+the selected top-bar tab names the phase. It opens with one 32 px tab row in 12/500 that
+holds the phase's screens (Inputs · Fragility · Placement in Prepare; Monitor in Execute;
+Outcome · Compare in Analyze), then the contextual tab: the selected object's name after
+a 6 px accent dot, shown only while something is selected. The ⋯ Panel options menu ends
+the row, pushed right. It holds Show field help (a switch, off by default), Collapse all
+and Expand all, which act on every `details` and every collapsible section in the panel
+body. The selected tab is marked by a 2 px underline in text 1; the accent stays for the
+primary action. A long object name ends in an ellipsis at half the row width. The Model
+library editor opens in the Library drawer, not in the right panel. Labels do not wrap,
+and no panel text may be inaccessible.
+
+In Prepare and Analyze one 30 px Validity line sits under the tab row, outside the
+scrolling body. It is the one place in the panel where validity findings render: the
+label, the state word, the finding count and a chevron. It opens in place, invalidating
+findings first; a finding with a fix carries its action. Prepare reads the forecast;
+Analyze reads the completed trial and reads PENDING before one. Execute shows the line
+only after the status-bar Validity button opens it. A selection made from a panel row
+keeps the current tab and adds the contextual tab; a board selection switches to it.
+
+Right panel layout rules ([Plan.md](../right-panel/Plan.md) D5, D6 and D8):
+
+- **Grid.** The panel grid (`.pgrid`) has four equal columns with 12 px gutters. A control
+  spans one, two or four columns (`.pg-1`, `.pg-2`, `.pg-4`), so boxes in one section
+  share edges with the boxes above them.
+- **Width.** The layout holds from 280 to 560 px. `.right-panel` is a size container
+  (`right-panel`), and the rules key on the panel width, never on the viewport. Under
+  360 px the grid folds to two columns, a four-option segmented control (`.seg.pg-seg4`)
+  becomes 2 × 2, and low-value columns and the word beside a state square drop. A dropped
+  value stays in the row or cell `title`.
+- **Edge.** Every section title and the first tab label start on the 14 px content edge.
+  A disclosure chevron hangs in the left padding (`PanelSection` in
+  `src/ui/PanelSection.tsx`, `.psec-chev`).
 
 ## 4. Components
 

@@ -1546,39 +1546,28 @@ input[type='color']::-webkit-color-swatch {
   display: none;
 }
 
-/* ---------- Inspector: header ---------- */
-
-/* 32 px: the phase word at 13/500 and the panel ⋯ menu. */
-.right-panel > .board-panel-heading.insp-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  flex: 0 0 auto;
-  height: 32px;
-  padding: 0 var(--space-1) 0 var(--panel-pad);
-}
-
-.right-panel > .insp-head > h2 {
-  margin: 0;
-  font-size: var(--type-title-size);
-  font-weight: var(--type-title-weight);
-  line-height: 32px;
-}
-
 /* ---------- Inspector: tab row ---------- */
 
-/* One row: the phase's screens, then the contextual tabs. Sticky by
-   construction: only the body below it takes overflow. State is one 2 px
-   underline plus contrast, drawn as a mark so the tab box never changes height. */
-.insp-tabs {
+/* One row: the phase's screens, the contextual tab, then the panel ⋯ menu pushed
+   right. Sticky by construction: only the body below it takes overflow. State is
+   one 2 px underline plus contrast, drawn as a mark so the tab box never changes
+   height. D8: the first tab label starts on the 14 px content edge. */
+.panel-tabbar {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   flex: 0 0 auto;
   height: 32px;
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-1) 0 calc(var(--panel-pad) - var(--space-2));
   background: var(--surface-panel);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.insp-tabs {
+  display: flex;
+  flex: 1 1 auto;
+  align-self: stretch;
+  align-items: stretch;
+  min-width: 0;
 }
 
 /* The screen group lays its tabs straight into the row. */
@@ -2997,6 +2986,23 @@ select.nu-unit {
 
 .status-bar .status-inline {
   height: calc(var(--h-dense) - 2px);
+}
+
+/* D10: a frameless button that opens the drawer at the Validity line. */
+.status-bar .sb-validity {
+  flex: none;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+}
+
+.status-bar .sb-validity:hover {
+  background: transparent;
+  color: var(--text-primary);
 }
 
 .sb-limits {
@@ -6342,3 +6348,349 @@ input[type='number'] {
   margin: 0;
   white-space: normal;
 }
+
+/* ---------- Right panel ---------- */
+
+/* docs/right-panel/Plan.md: the shared rules of the redesign, then one block per
+   R2 lane. D6: the panel is a size container, and every narrow rule keys on the
+   panel width, never on the viewport. */
+.right-panel {
+  container: right-panel / inline-size;
+}
+
+/* D5: four equal columns with 12 px gutters. A control spans one, two or four. */
+.pgrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.pgrid > .pg-1,
+.pgrid > .pg-2,
+.pgrid > .pg-4 {
+  min-width: 0;
+}
+
+.pgrid > .pg-1 {
+  grid-column: span 1;
+}
+
+.pgrid > .pg-2 {
+  grid-column: span 2;
+}
+
+.pgrid > .pg-4 {
+  grid-column: span 4;
+}
+
+/* D1: the Validity line sits between the tab row and the scrolling body. */
+.vline-wrap {
+  flex: 0 0 auto;
+}
+
+.right-panel .vline {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 var(--panel-pad);
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--type-label-size);
+  line-height: 30px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.right-panel button.vline:hover {
+  background: var(--surface-hover);
+}
+
+.right-panel button.vline:focus-visible {
+  outline-offset: -2px;
+}
+
+.vline-label {
+  flex: none;
+  color: var(--text-tertiary);
+}
+
+.vline-count {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+}
+
+.vline-chev {
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
+  color: var(--text-dim);
+}
+
+.vline-body {
+  max-height: 40vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-1) var(--panel-pad) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.vline-body[hidden] {
+  display: none;
+}
+
+.vline-finding {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-2);
+  align-items: start;
+  padding: var(--space-2) 0;
+}
+
+.vline-finding + .vline-finding {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.vline-finding > .state {
+  grid-row: 1;
+  grid-column: 1;
+  margin-top: 4px;
+}
+
+/* The severity word stays for a screen reader; the square and its title show it. */
+.vline-sev {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.vline-msg,
+.vline-gates,
+.vline-select {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.vline-msg {
+  overflow-wrap: anywhere;
+}
+
+.vline-gates {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.vline-act {
+  grid-row: 1;
+  grid-column: 3;
+}
+
+.vline-select > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* PanelSection: one head for every screen. D8: the chevron hangs in the left
+   padding, so every title starts on the content edge. */
+.psec {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.psec:last-child {
+  border-bottom: 0;
+}
+
+.psec.closed {
+  padding-bottom: 0;
+}
+
+.psec-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: 40px;
+  padding-top: var(--space-1);
+}
+
+.psec-title {
+  flex: none;
+  margin: 0;
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  white-space: nowrap;
+}
+
+.psec-title-toggle {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.right-panel .psec-toggle {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: left;
+}
+
+.right-panel .psec-toggle:hover {
+  background: transparent;
+}
+
+.psec-chev {
+  position: absolute;
+  top: 50%;
+  left: -13px;
+  display: grid;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  place-items: center;
+  color: var(--text-dim);
+}
+
+.psec-chev svg {
+  width: 12px;
+  height: 12px;
+}
+
+.psec-name {
+  flex: none;
+}
+
+.psec-sum {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--type-meta-size);
+  font-weight: var(--type-body-weight);
+  text-overflow: ellipsis;
+}
+
+.psec-readout {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.psec-end {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.psec-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.psec-body[hidden] {
+  display: none;
+}
+
+/* The unenclosed stat row: a top rule over each cell, no frame. */
+.pstat-row {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-2) var(--space-3);
+}
+
+.pstat {
+  min-width: 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.pstat-l {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-label-weight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pstat-v {
+  margin-top: 2px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--type-title-size);
+  white-space: nowrap;
+}
+
+/* D6: under 360 px the grid folds to two columns, a four-option segmented
+   control becomes 2 x 2, a stat row wraps and the Validity line drops its label. */
+@container right-panel (max-width: 359.98px) {
+  .pgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pgrid > .pg-2,
+  .pgrid > .pg-4 {
+    grid-column: span 2;
+  }
+
+  .seg.pg-seg4 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .seg.pg-seg4 button:nth-child(n + 3) {
+    border-top: 1px solid var(--border-control);
+  }
+
+  .pstat-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-flow: row;
+  }
+
+  .vline-label {
+    display: none;
+  }
+}
+
+/* ---------- Right panel: R2a Inputs ---------- */
+
+/* ---------- Right panel: R2b Fragility and Placement ---------- */
+
+/* ---------- Right panel: R2c Monitor and Outcome ---------- */
+
+/* ---------- Right panel: R2d Compare and saved runs ---------- */

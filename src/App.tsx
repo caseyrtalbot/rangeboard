@@ -12,7 +12,7 @@ import { screenToWorld } from './state/camera'
 import { RUN_TIMELINE_MAX_FRACTION, RUN_TIMELINE_MIN_H, useStore } from './state/store'
 import type { BoardPhase } from './state/runState'
 import { selectBoardPhase } from './state/selectors'
-import type { RightTab, Store } from './state/store'
+import type { PanelRequest, RightTab, Store } from './state/store'
 import type { GeoRef, Vec2 } from './model/types'
 import { CanvasStage } from './canvas/CanvasStage'
 import { IDLE_INTERACTION, routeInteraction } from './canvas/interactionRouter'
@@ -33,6 +33,7 @@ import { RIGHT_PANEL_OPEN_KEY, RIGHT_PANEL_WIDTH_KEY } from './io/storageKeys'
 import { readSetting, savedView, writeSetting } from './io/viewState'
 import { exportScenario } from './io/persist'
 import { ErrorBoundary } from './ui/ErrorBoundary'
+import { PANEL_SECTION_TOGGLE } from './ui/PanelSection'
 import { OpenInputsContext } from './panels/settings/openInputs'
 import {
   IconCommands,
@@ -54,6 +55,10 @@ const AnalysisPanel = lazy(() =>
 // The run timeline strip loads when it first opens.
 const RunTimeline = lazy(() =>
   import('./panels/timeline/RunTimeline').then((m) => ({ default: m.RunTimeline })),
+)
+// The Validity line above Inputs comes from the analysis chunk: Inputs renders in the shell.
+const PanelValidity = lazy(() =>
+  import('./panels/AnalysisPanel').then((m) => ({ default: m.PanelValidity })),
 )
 const CommandPalette = lazy(() =>
   import('./panels/CommandPalette').then((m) => ({ default: m.CommandPalette })),
@@ -216,13 +221,6 @@ function savedRightOpen(): boolean {
   return readSetting(RIGHT_PANEL_OPEN_KEY) !== '0'
 }
 
-/** The phase word the panel header shows. */
-const PHASE_WORD: Record<BoardPhase, string> = {
-  prepare: 'Prepare',
-  execute: 'Execute',
-  analyze: 'Analyze',
-}
-
 /** Arrow-key navigation across the panel tab row (roving tabindex). The row is
  * dynamic: the contextual tabs come and go, so it reads the tabs from the DOM. */
 function moveTab(e: React.KeyboardEvent<HTMLElement>) {
@@ -375,19 +373,27 @@ const PanelTabs = memo(function PanelTabs({
   )
 })
 
-/** Collapsible sections in the panel body: every `details` element and every
- * detail-section toggle (`DetailSection` with `collapsible`). */
+/** Collapsible sections in the panel body: every `details` element, every
+ * detail-section toggle (`DetailSection` with `collapsible`) and every
+ * `PanelSection` toggle. */
 function panelSections(): (HTMLDetailsElement | HTMLButtonElement)[] {
   return [
     ...document.querySelectorAll<HTMLDetailsElement | HTMLButtonElement>(
-      '#insp-tabpanel details, #insp-tabpanel .det-s-toggle',
+      `#insp-tabpanel details, #insp-tabpanel .det-s-toggle, #insp-tabpanel .${PANEL_SECTION_TOGGLE}`,
     ),
   ]
 }
 
-function setSectionOpen(section: HTMLDetailsElement | HTMLButtonElement, open: boolean) {
-  if (section instanceof HTMLDetailsElement) section.open = open
-  else if ((section.getAttribute('aria-expanded') === 'true') !== open) section.click()
+/** A `PanelSection` keeps its open state in the store; the rest keep their own. */
+function setAllPanelSections(open: boolean) {
+  const ids: string[] = []
+  for (const section of panelSections()) {
+    const id = section.dataset.sectionId
+    if (id != null) ids.push(id)
+    else if (section instanceof HTMLDetailsElement) section.open = open
+    else if ((section.getAttribute('aria-expanded') === 'true') !== open) section.click()
+  }
+  useStore.getState().setAllSections(open, ids)
 }
 
 /** The panel ⋯ menu: the field help switch (D6), then Collapse all and Expand all. */
@@ -400,7 +406,7 @@ function PanelMenu() {
   // Counted when the menu opens: the body may hold no collapsible section.
   const [sections, setSections] = useState(0)
   const setAll = (openAll: boolean) => {
-    for (const section of panelSections()) setSectionOpen(section, openAll)
+    setAllPanelSections(openAll)
     setOpen(false)
     buttonRef.current?.focus()
   }
@@ -900,25 +906,61 @@ export default function App() {
     [setRightTab],
   )
 
+  // D7: a board selection switches to the Selected object tab; a panel row keeps the
+  // current tab. The origin is a dependency, so a board click after a panel row switches.
+  const selectionOrigin = useStore((s) => s.ui.selectionOrigin)
   useEffect(() => {
-    if (hasObjectSelection && useStore.getState().ui.rightTab !== 'inspect') setRightTab('inspect')
-  }, [hasObjectSelection, setRightTab])
-  const openDoctrine = useCallback(() => {
-    setPrepareScreen('inputs')
-    setBoardPhase('prepare')
-    setPlacement(null)
-    setLibraryOpen(false)
+    if (
+      hasObjectSelection &&
+      selectionOrigin === 'board' &&
+      useStore.getState().ui.rightTab !== 'inspect'
+    )
+      setRightTab('inspect')
+  }, [hasObjectSelection, selectionOrigin, setRightTab])
+
+  // `requestPanel` in the store: open the drawer at the phase, the screen and the section.
+  const showPanel = useCallback(
+    ({ phase, screen, section }: PanelRequest) => {
+      if (phase) openPhase(phase)
+      if (screen) navigateAnalysis(screen)
+      setRightTab('analysis')
+      setRightOpen(true)
+      if (!section) return
+      useStore.getState().setSectionOpen(section, true)
+      requestAnimationFrame(() => {
+        const target = document.getElementById(section)
+        if (!target) return
+        if (target instanceof HTMLDetailsElement) target.open = true
+        const focusTarget =
+          target.querySelector<HTMLElement>(`summary, .${PANEL_SECTION_TOGGLE}`) ?? target
+        focusTarget.focus()
+        target.scrollIntoView({ block: 'start' })
+      })
+    },
+    [openPhase, navigateAnalysis, setRightTab, setRightOpen],
+  )
+  useEffect(
+    () =>
+      useStore.subscribe((state, previous) => {
+        if (state.ui.panelRequest.seq !== previous.ui.panelRequest.seq)
+          showPanel(state.ui.panelRequest)
+      }),
+    [showPanel],
+  )
+  const openDoctrine = useCallback(
+    () =>
+      useStore
+        .getState()
+        .requestPanel({ phase: 'prepare', screen: 'inputs', section: 'prepare-doctrine' }),
+    [],
+  )
+  // D10: the status-bar Validity button opens the drawer at the open Validity line.
+  const openValidity = useCallback(() => {
     setRightTab('analysis')
     setRightOpen(true)
-    requestAnimationFrame(() => {
-      const target = document.getElementById('prepare-doctrine')
-      if (!target) return
-      if (target instanceof HTMLDetailsElement) target.open = true
-      const focusTarget = target.querySelector('summary') ?? target
-      focusTarget.focus()
-      target.scrollIntoView({ block: 'start' })
-    })
-  }, [setBoardPhase, setRightTab, setRightOpen])
+    useStore.getState().setValidityOpen(true)
+    requestAnimationFrame(() => document.getElementById('validity-line')?.focus())
+  }, [setRightTab, setRightOpen])
 
   const [rightW, setRightW] = useState(savedRightWidth)
 
@@ -1120,7 +1162,7 @@ export default function App() {
           </div>
           {boardPhase !== 'prepare' && <RunTimelineDock />}
           {boardPhase !== 'prepare' && <TimelineBar />}
-          <StatusBar />
+          <StatusBar onOpenValidity={openValidity} />
         </div>
         <aside
           id="board-workspace-panel"
@@ -1129,10 +1171,6 @@ export default function App() {
           hidden={!rightOpen}
           aria-label="Board workspace panel"
         >
-          <div className="board-panel-heading insp-head">
-            <h2>{PHASE_WORD[boardPhase]}</h2>
-            <PanelMenu />
-          </div>
           <div
             className="right-resizer"
             role="separator"
@@ -1146,14 +1184,17 @@ export default function App() {
             onMouseDown={startRightResize}
             onKeyDown={nudgeRightWidth}
           />
-          <PanelTabs
-            activeTab={activeTab}
-            phase={boardPhase}
-            screen={analysisScreen}
-            objectLabel={objectLabel}
-            onNavigate={navigateAnalysis}
-            setRightTab={setRightTab}
-          />
+          <div className="panel-tabbar">
+            <PanelTabs
+              activeTab={activeTab}
+              phase={boardPhase}
+              screen={analysisScreen}
+              objectLabel={objectLabel}
+              onNavigate={navigateAnalysis}
+              setRightTab={setRightTab}
+            />
+            <PanelMenu />
+          </div>
           <FieldHelpProvider value={showFieldHelp}>
             <div
               className="right-panel-body"
@@ -1180,7 +1221,12 @@ export default function App() {
                 ))}
               {activeTab === 'analysis' &&
                 (analysisScreen === 'inputs' ? (
-                  <BoardPreparation />
+                  <>
+                    <Suspense fallback={null}>
+                      <PanelValidity phase={boardPhase} />
+                    </Suspense>
+                    <BoardPreparation />
+                  </>
                 ) : (
                   <Suspense fallback={<PanelLoading label="Loading analysis" />}>
                     <AnalysisPanel phase={boardPhase} screen={analysisScreen} />

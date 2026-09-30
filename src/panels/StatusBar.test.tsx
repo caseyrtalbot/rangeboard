@@ -52,6 +52,12 @@ describe('status bar', () => {
     expect(render()).toContain('km · m/s · ft AGL')
   })
 
+  it('makes the validity cell a frameless button (D10)', () => {
+    expect(render()).toContain(
+      '<button type="button" class="sb-validity" title="Open the validity findings">Validity ',
+    )
+  })
+
   it('tags validity findings with LIMITS', () => {
     useStore.getState().replaceScenario(parseAutosave(JSON.stringify(fixture)))
     const html = render()

@@ -165,7 +165,12 @@ function ClockCell() {
   )
 }
 
-export const StatusBar = memo(function StatusBar() {
+export const StatusBar = memo(function StatusBar({
+  onOpenValidity,
+}: {
+  /** D10: opens the drawer at the phase's screen with the Validity line open. */
+  onOpenValidity?: () => void
+}) {
   const runSeq = useStore((s) => s.playback.runSeq)
   const phase = useStore((s) => s.playback.phase)
   const seed = useStore((s) => runSettings(s.scenario).seed)
@@ -257,10 +262,15 @@ export const StatusBar = memo(function StatusBar() {
       <span className="sb-units">
         {units === 'aviation' ? 'nm · kt · ft AGL' : 'km · m/s · ft AGL'}
       </span>
-      <span className="sb-validity">
+      <button
+        type="button"
+        className="sb-validity"
+        title="Open the validity findings"
+        onClick={onOpenValidity}
+      >
         Validity {validity}
         {validity > 0 && <span className="sb-limits">LIMITS</span>}
-      </span>
+      </button>
     </div>
   )
 })

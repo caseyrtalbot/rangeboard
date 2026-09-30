@@ -21,13 +21,17 @@ Each validity finding appears once with its gates. Setup findings that cost a me
 come first, with a Select button for a threat that starts inside detection coverage.
 The [analysis navigation](../src/panels/analysis/AnalysisNavigation.tsx) is the phase's
 screen tabs inside the one right-panel tab row (Inputs, Fragility and Placement in
-Prepare; Run monitor in Execute; Outcome and Compare in Analyze). The row stays outside
+Prepare; Monitor in Execute; Outcome and Compare in Analyze). The row stays outside
 the scrolling panel. A contextual tab with the selected object's name follows the screens
 while something is selected. The model library editor opens in the Library drawer in place
 of the model list, with a Back to library control; the `openLibrary` store action routes
 Model basis, New model, the palette's model commands, Edit model specs and Place asset
-there. The panel header holds the phase word and a Panel options menu with the field help
-switch, Collapse all and Expand all.
+there. The panel has no header: a Panel options menu with the field help switch, Collapse
+all and Expand all ends the tab row. In Prepare and Analyze the
+[Validity line](../src/panels/analysis/ValidityLine.tsx) under the tab row shows the
+state, the finding count and, when opened, the findings with Place asset and Select
+actions. The status-bar Validity button opens the drawer at the line. The `requestPanel`
+store action opens the drawer at a phase, a screen and a section.
 
 The Library resource opens a drawer with model/system placement, drag-and-drop, model-basis
 editing, tactics and library import/export. `L` toggles it and Escape returns focus to its

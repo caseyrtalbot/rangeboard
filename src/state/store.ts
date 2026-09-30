@@ -24,6 +24,7 @@ import type { LayerKey, LayerPreset, LayerVisibility } from './layers'
 import { LAYER_PRESETS } from './layers'
 import { selectEffectiveLayers } from './selectors'
 import type { BoardPhase, McState, PlaybackState, RunResetReason, TrialState } from './runState'
+import type { AnalysisScreen } from '../panels/analysis/screens/navigation'
 import { freshPlayback, IDLE_MC, IDLE_OPTIMIZE, IDLE_TRIAL } from './runState'
 import type { ScenarioInstall, Selection } from './scenarioInstall'
 import { EMPTY_SELECTION, installScenario, runsForOverridesChange } from './scenarioInstall'
@@ -159,6 +160,20 @@ export interface UiState {
    * drawer focuses the `kind` group, or shows the editor for `modelId`.
    */
   libraryRequest: LibraryRequest
+  /**
+   * Where the last selection came from. A board selection switches the right panel to
+   * the Selected object tab; a panel row keeps the current tab (D7). Session only.
+   */
+  selectionOrigin: SelectionOrigin
+  /** Collapsible panel sections by DOM id. A missing id reads its default. Session only. */
+  openSections: Record<string, boolean>
+  /** The Validity line under the tab row is open. Session only. */
+  validityOpen: boolean
+  /**
+   * The last `requestPanel` call. App opens the drawer at the phase, the screen and
+   * the section when `seq` moves.
+   */
+  panelRequest: PanelRequest
   /** Run timeline strip under the board (docs/timeline/SPEC.md 2.1). */
   runTimeline: RunTimelineUi
 }
@@ -197,6 +212,17 @@ export interface LibraryRequest {
   seq: number
   kind: EntityKind | null
   modelId: string | null
+}
+
+export type SelectionOrigin = 'board' | 'panel'
+
+/** A request to show one place in the right panel. A null field keeps the current value. */
+export interface PanelRequest {
+  seq: number
+  phase: BoardPhase | null
+  screen: AnalysisScreen | null
+  /** The DOM id of a section to open and scroll into view. */
+  section: string | null
 }
 
 /** Autosave status. Its own slice so a write does not re-render every ui subscriber. */
@@ -336,7 +362,8 @@ export interface Store {
   deleteFrame: (id: string) => void
 
   // Selection / camera / ui
-  select: (patch: Partial<Selection>, additive?: boolean) => void
+  /** `origin` is `'board'` unless a panel row makes the selection (D7). */
+  select: (patch: Partial<Selection>, additive?: boolean, origin?: SelectionOrigin) => void
   clearSelection: () => void
   setCamera: (c: Camera) => void
   setTool: (t: Tool) => void
@@ -348,6 +375,11 @@ export interface Store {
    * and show its editor in the drawer.
    */
   openLibrary: (kind?: EntityKind, modelId?: string) => void
+  setSectionOpen: (id: string, open: boolean) => void
+  /** Sets every listed section id; Collapse all and Expand all pass the ids on screen. */
+  setAllSections: (open: boolean, ids: string[]) => void
+  setValidityOpen: (open: boolean) => void
+  requestPanel: (request: Omit<PanelRequest, 'seq'>) => void
   setShowFieldHelp: (v: boolean) => void
   setTheme: (t: Theme) => void
   setMoveUnderlay: (v: boolean) => void
@@ -627,6 +659,10 @@ export const useStore = create<Store>()((set, get) => {
       raidDraft: null,
       locationDialogOpen: false,
       libraryRequest: { seq: 0, kind: null, modelId: null },
+      selectionOrigin: 'board',
+      openSections: {},
+      validityOpen: false,
+      panelRequest: { seq: 0, phase: null, screen: null, section: null },
       runTimeline: {
         open: readSetting(ENGSTRIP_OPEN_KEY) === '1',
         heightPx: savedRunTimelineHeight(),
@@ -1389,7 +1425,7 @@ export const useStore = create<Store>()((set, get) => {
 
     deleteFrame: (id) => mutate((s) => ({ ...s, frames: s.frames.filter((f) => f.id !== id) })),
 
-    select: (patch, additive = false) =>
+    select: (patch, additive = false, origin = 'board') =>
       set((st) => {
         const next =
           additive && patch.entityIds
@@ -1399,7 +1435,11 @@ export const useStore = create<Store>()((set, get) => {
               }
             : { ...EMPTY_SELECTION, ...patch }
         // Re-selecting the same objects keeps the identity, so no subscriber re-renders.
-        return sameSelection(next, st.selection) ? st : { selection: next }
+        // The origin still moves, so a board click on a panel-selected object switches tab.
+        const same = sameSelection(next, st.selection)
+        if (st.ui.selectionOrigin === origin) return same ? st : { selection: next }
+        const ui = { ...st.ui, selectionOrigin: origin }
+        return same ? { ui } : { selection: next, ui }
       }),
 
     clearSelection: () => set({ selection: EMPTY_SELECTION }),
@@ -1444,6 +1484,30 @@ export const useStore = create<Store>()((set, get) => {
             modelId: modelId ?? null,
           },
         },
+      })),
+    setSectionOpen: (id, open) => {
+      if (get().ui.openSections[id] === open) return
+      set((st) => ({ ui: { ...st.ui, openSections: { ...st.ui.openSections, [id]: open } } }))
+    },
+    setAllSections: (open, ids) => {
+      if (ids.every((id) => get().ui.openSections[id] === open)) return
+      set((st) => ({
+        ui: {
+          ...st.ui,
+          openSections: {
+            ...st.ui.openSections,
+            ...Object.fromEntries(ids.map((id) => [id, open])),
+          },
+        },
+      }))
+    },
+    setValidityOpen: (open) => {
+      if (get().ui.validityOpen === open) return
+      set((st) => ({ ui: { ...st.ui, validityOpen: open } }))
+    },
+    requestPanel: (request) =>
+      set((st) => ({
+        ui: { ...st.ui, panelRequest: { ...request, seq: st.ui.panelRequest.seq + 1 } },
       })),
     setShowFieldHelp: (v) => {
       if (get().ui.showFieldHelp === v) return
@@ -1495,6 +1559,7 @@ export const useStore = create<Store>()((set, get) => {
       get().scrubTo(tS)
     },
     // Editing tools belong to Prepare: leaving it drops any drawing tool back to Select.
+    // A phase change closes the Validity line, so Execute shows it only from the status bar (D1).
     setBoardPhase: (boardPhase) =>
       set((st) =>
         st.ui.boardPhase === boardPhase
@@ -1504,6 +1569,7 @@ export const useStore = create<Store>()((set, get) => {
                 ...st.ui,
                 boardPhase,
                 tool: boardPhase === 'prepare' ? st.ui.tool : 'select',
+                validityOpen: false,
               },
             },
       ),

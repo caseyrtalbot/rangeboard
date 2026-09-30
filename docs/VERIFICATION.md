@@ -333,10 +333,12 @@ committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 p
   `node:test` file). It loads the firing fixture through `parseAutosave` and `loadScenario`
   in the page, then checks phase switching, selection routing, placement, the Escape chain
   and the debrief record against store state. One test checks that the analysis
-  screen control follows the phase (Outcome and Compare in Analyze, Now in Execute) and
+  screen control follows the phase (Outcome and Compare in Analyze, Monitor in Execute) and
   that no lens bar renders. Two drawer tests close and reopen the right panel with the
   top-bar button and `]`, check that the camera holds the board center, that a selection
-  keeps a closed drawer closed, and that a resize drag past the minimum closes it. Two
+  keeps a closed drawer closed, and that a resize drag past the minimum closes it. A
+  third drawer test stores the drawer width at 280 and at 560 px and checks that Prepare,
+  Inputs has no horizontal overflow in `#insp-tabpanel`. Two
   playback-bar tests enter Execute (Prepare renders no transport). The first opens and
   closes the run timeline (`#run-timeline`) from the Timeline toggle
   (`#run-timeline-toggle`) and checks the 28 px bar height, that the `.runtl-dock` bottom
