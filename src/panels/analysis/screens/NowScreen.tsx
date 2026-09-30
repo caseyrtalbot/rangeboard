@@ -1,42 +1,84 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import { useStore } from '../../../state/store'
 import { selectTrialSelection, selectTrialHorizon } from '../../../state/trialSelectors'
+import { trialKpisAt } from '../../../analysis/liveStats'
 import { trialResultOf } from '../../../analysis/trialResult'
 import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { trialSweepAt } from '../../../playback/trialSweepAt'
 import { deadTimeOf } from '../../../playback/deadTimes'
 import { trialMemberStatesAt } from '../../../playback/trialTrackState'
-import { resetAnalysisRun } from '../../../playback/runSession'
+import { toggleAnalysisRun } from '../../../playback/runSession'
 import { formatTime } from '../../../geometry/geo'
 import { State } from '../../../ui/kit'
-import { LiveStrip, PlayPrompt } from '../LiveStrip'
-import { stateTone } from '../SystemStatus'
+import type { StateTone } from '../../../ui/kit'
+import { PanelSection } from '../../../ui/PanelSection'
+import { SystemList } from '../SystemStatus'
 import { EmptyRow } from '../controls'
-import { lateKillText } from '../threatReadout'
+import { formatCount } from '../mc'
+import {
+  CHAIN_STAGES,
+  lateKillText,
+  STAGES_REACHED,
+  trackStageWord,
+  ttaReadout,
+} from '../threatReadout'
+import type { TrackStageWord } from '../threatReadout'
+import { splitCommonPrefix } from '../trackNames'
 
-const SettingsPanel = lazy(() =>
-  import('../../SettingsPanel').then((module) => ({ default: module.SettingsPanel })),
-)
-const columns = ['Track', 'State', 'Held', 'ID', 'Eng', 'Arr'] as const
-// Six columns in a 350 px panel: the three times and the state word hold their
-// width, the names clip.
-const columnWidth: Record<Column, string> = {
-  Track: '19%',
-  State: '30%',
-  Held: '15%',
-  ID: '12%',
-  Eng: '12%',
-  Arr: '12%',
+type SortColumn = 'track' | 'state' | 'held' | 'tta'
+
+const STAGE_TONE: Record<TrackStageWord, StateTone> = {
+  undetected: 'inactive',
+  detected: 'inactive',
+  tracked: 'inactive',
+  identified: 'inactive',
+  targeted: 'warning',
+  engaged: 'critical',
+  defeated: 'inactive',
+  leaked: 'critical',
 }
-type Column = (typeof columns)[number]
+
+/** The pre-Play line inside Execute: the Play control sits in the line itself. */
+function PlayPrompt() {
+  return (
+    <p className="muted small">
+      {'No trial yet. Press '}
+      <button className="mini" onClick={toggleAnalysisRun}>
+        Play
+      </button>
+      {' to run one.'}
+    </p>
+  )
+}
+
+/** Six pips, one per kill-chain stage; the reached stages fill and the last one leads. */
+function ChainPips({ state }: { state: TrackStageWord }) {
+  const reached = STAGES_REACHED[state]
+  const title = CHAIN_STAGES.slice(0, reached).join(' › ') || 'not detected'
+  const tone = state === 'leaked' ? ' leak' : state === 'defeated' ? ' dead' : ''
+  return (
+    <span className={`mon-pips${tone}`} title={title} aria-label={title} role="img">
+      {CHAIN_STAGES.map((stage, i) => (
+        <i key={stage} className={i < reached - 1 ? 'on' : i === reached - 1 ? 'now' : undefined} />
+      ))}
+    </span>
+  )
+}
+
+function selectOnKey(event: KeyboardEvent, id: string) {
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  useStore.getState().select({ entityIds: [id] }, false, 'panel')
+}
 
 export function NowScreen() {
   const selection = useStore(selectTrialSelection)
   const started = useStore((state) => state.playback.startedAtMs != null)
   const horizon = useStore((state) => selectTrialHorizon(state, state.playback.simTimeS))
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [sort, setSort] = useState<{ column: Column; descending: boolean }>({
-    column: 'Track',
+  const selected = useStore((state) => state.selection.entityIds)
+  const [sort, setSort] = useState<{ column: SortColumn; descending: boolean }>({
+    column: 'tta',
     descending: false,
   })
   const view = useMemo(
@@ -56,29 +98,22 @@ export function NowScreen() {
         view.attrition.events.filter((event) => event.uasId === a.uasId),
       ]),
     )
-    const ew = new Set(
-      view.scenario.entities
-        .filter((entity) => {
-          const type = view.scenario.library.find((model) => model.id === entity.specId)?.effector
-            ?.effectorType
-          return type === 'jammer' || type === 'hpm'
-        })
-        .map((entity) => entity.id),
-    )
-    return { entities, events, ew }
+    const members = view.attrition.threats.reduce((sum, row) => sum + row.shipCount, 0)
+    return { entities, events, members }
   }, [view])
   const data = useMemo(() => {
     if (!view || !index) return undefined
+    const name = (id: string) => index.entities.get(id)?.name ?? id
     const sweep = trialSweepAt(view, horizon)
     const held = new Map<string, string[]>()
     for (const sensor of sweep.sensors) {
       if (sensor.stateAtTime === 'not-held') continue
       const names = held.get(sensor.threatId) ?? []
-      names.push(index.entities.get(sensor.sensorId)?.name ?? sensor.sensorId)
+      names.push(name(sensor.sensorId))
       held.set(sensor.threatId, names)
     }
-    const reached = (time: number | null) => time != null && time <= horizon
-    const rows = view.assessments
+    const reached = (time: number | null | undefined) => time != null && time <= horizon
+    const tracks = view.assessments
       .filter((a) => a.status !== 'no-path')
       .map((a) => {
         const events = index.events.get(a.uasId) ?? []
@@ -91,67 +126,122 @@ export function NowScreen() {
         const count = Math.max(1, index.entities.get(a.uasId)?.formation?.count ?? 1)
         const death = deadTimeOf(view.attrition, a.uasId, count)
         const dead = death != null && reached(death.tS)
-        const leaked = trialMemberStatesAt(view, a.uasId, horizon).some((m) => m.leakageCredit)
-        const id = a.classificationAtS.hostileAtS
-        const state = leaked
-          ? 'leaked'
-          : dead
-            ? 'defeated'
-            : reached(firstShot)
-              ? 'engaged'
-              : reached(a.windowS?.[0] ?? null)
-                ? 'targeted'
-                : reached(id)
-                  ? 'identified'
-                  : held.has(a.uasId)
-                    ? 'tracked'
-                    : reached(a.firstDetectS)
-                      ? 'detected'
-                      : 'undetected'
+        const milestones = {
+          detected: reached(a.firstDetectS),
+          identified: reached(a.classificationAtS.hostileAtS),
+          targeted: reached(a.windowS?.[0]),
+          engaged: reached(firstShot),
+        }
+        const state = trackStageWord({
+          ...milestones,
+          leaked: trialMemberStatesAt(view, a.uasId, horizon).some((m) => m.leakageCredit),
+          dead,
+          held: held.has(a.uasId),
+        })
         return {
           key: a.uasId,
-          Track: index.entities.get(a.uasId)?.name ?? a.uasId,
-          State: state,
-          Late: dead && death.late ? lateKillText(death.tS) : null,
-          Held: held.get(a.uasId)?.join(', ') ?? '—',
-          ID: reached(id) ? id : null,
-          Eng: reached(firstShot) ? firstShot : null,
-          Arr: a.arrivalS,
+          name: name(a.uasId),
+          state,
+          milestones,
+          late: dead && death.late ? lateKillText(death.tS) : null,
+          held: held.get(a.uasId) ?? [],
+          tta: ttaReadout(a.arrivalS, horizon),
         }
       })
-    const components = trialSystemTelemetryAt(view, horizon).flatMap((group) => group.components)
+    const kpis = trialKpisAt(view, horizon)
+    const funnel: Array<{ key: string; title: string; value: string; of: number; zero: boolean }> =
+      (
+        [
+          ['DET', 'Detected', 'detected'],
+          ['ID', 'Identified hostile', 'identified'],
+          ['TGT', 'Targeted: firing window open', 'targeted'],
+          ['ENG', 'Engaged: salvo assigned', 'engaged'],
+        ] as const
+      ).map(([key, title, milestone]) => {
+        const n = tracks.filter((track) => track.milestones[milestone]).length
+        return {
+          key,
+          title: `${title}: ${n} of ${tracks.length} tracks`,
+          value: String(n),
+          of: tracks.length,
+          zero: n === 0,
+        }
+      })
+    // DEF and LEAK count members, as the Outcome result bar does: a late kill is a
+    // leaker, and without an active asset leakage is not measurable.
+    funnel.push({
+      key: 'DEF',
+      title: `Defeated before arrival: ${formatCount(kpis.kills)} of ${index.members} members`,
+      value: formatCount(kpis.kills),
+      of: index.members,
+      zero: kpis.kills === 0,
+    })
+    funnel.push({
+      key: 'LEAK',
+      title:
+        kpis.reportedLeakers == null
+          ? 'Leaked: not measurable without a defended asset'
+          : `Leaked: arrived undefeated, ${formatCount(kpis.reportedLeakers)} of ${index.members} members`,
+      value: kpis.reportedLeakers == null ? '—' : formatCount(kpis.reportedLeakers),
+      of: index.members,
+      zero: !kpis.reportedLeakers,
+    })
+    // The last five salvo and identification events at or before the horizon.
+    const salvoIndex = new Map<string, number>()
+    const events = [
+      ...view.attrition.events
+        .filter((event) => event.tS <= horizon)
+        .map((event) => {
+          const k = (salvoIndex.get(event.uasId) ?? 0) + 1
+          salvoIndex.set(event.uasId, k)
+          return {
+            tS: event.tS,
+            actor: name(event.effectorId),
+            text: `→ ${name(event.uasId)} · salvo ${k}`,
+          }
+        }),
+      ...view.assessments
+        .filter((a) => a.status !== 'no-path' && reached(a.classificationAtS.hostileAtS))
+        .map((a) => ({
+          tS: a.classificationAtS.hostileAtS!,
+          actor: name(a.uasId),
+          text: 'identified hostile',
+        })),
+    ]
+      .sort((a, b) => b.tS - a.tS)
+      .slice(0, 5)
     return {
-      rows,
-      effectors: components.filter((c) => c.kind === 'effector'),
-      sensors: components.filter((c) => c.kind === 'sensor'),
+      tracks,
+      funnel,
+      systems: trialSystemTelemetryAt(view, horizon),
+      events,
     }
   }, [view, index, horizon])
-  const rows = useMemo(
-    () =>
-      [...(data?.rows ?? [])].sort((a, b) => {
-        const x = a[sort.column]
-        const y = b[sort.column]
-        if (x == null) return y == null ? 0 : 1
-        if (y == null) return -1
-        return (
-          (typeof x === 'number' && typeof y === 'number'
-            ? x - y
-            : String(x).localeCompare(String(y))) * (sort.descending ? -1 : 1)
-        )
-      }),
-    [data, sort],
-  )
+  const rows = useMemo(() => {
+    const direction = sort.descending ? -1 : 1
+    return [...(data?.tracks ?? [])].sort((a, b) => {
+      const order =
+        sort.column === 'track'
+          ? a.name.localeCompare(b.name)
+          : sort.column === 'state'
+            ? STAGES_REACHED[b.state] - STAGES_REACHED[a.state]
+            : sort.column === 'held'
+              ? a.held.length - b.held.length
+              : a.tta.sortS === b.tta.sortS
+                ? 0
+                : a.tta.sortS < b.tta.sortS
+                  ? -1
+                  : 1
+      return order * direction || a.name.localeCompare(b.name)
+    })
+  }, [data, sort])
 
   if (
     selection.status === 'idle' ||
     selection.status === 'cancelled' ||
     (selection.status === 'ready' && !started)
   ) {
-    return (
-      <p className="muted small">
-        <PlayPrompt />
-      </p>
-    )
+    return <PlayPrompt />
   }
   if (!view || !data || !index) {
     return (
@@ -161,131 +251,112 @@ export function NowScreen() {
     )
   }
 
+  const split = splitCommonPrefix(rows.map((row) => row.name))
+  const online = data.systems.reduce((sum, group) => sum + group.activeComponents, 0)
+  const header = (column: SortColumn, label: string, title?: string, className?: string) => (
+    <th
+      scope="col"
+      className={className}
+      aria-sort={sort.column === column ? (sort.descending ? 'descending' : 'ascending') : 'none'}
+    >
+      <button
+        type="button"
+        title={title}
+        onClick={() => setSort({ column, descending: sort.column === column && !sort.descending })}
+      >
+        {label}
+      </button>
+    </th>
+  )
+
   return (
     <section className="analysis-primary" aria-label="Now">
-      <LiveStrip view={view} horizon={horizon} />
-      <h3>Kill chain</h3>
-      <table className="tb tb-dense" aria-label="Kill chain">
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th
-                key={column}
-                scope="col"
-                style={{ width: columnWidth[column] }}
-                aria-sort={
-                  sort.column === column ? (sort.descending ? 'descending' : 'ascending') : 'none'
-                }
-              >
-                <button
-                  type="button"
-                  style={{ padding: 0, fontSize: 'inherit' }}
-                  title={
-                    column === 'Arr'
-                      ? 'Planned arrival (m:ss)'
-                      : column === 'ID'
-                        ? 'Identified (m:ss)'
-                        : column === 'Eng'
-                          ? 'First engagement (m:ss)'
-                          : undefined
-                  }
-                  onClick={() =>
-                    setSort({ column, descending: sort.column === column && !sort.descending })
-                  }
-                >
-                  {column}
-                </button>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.key}>
-              <td title={row.Track}>{row.Track}</td>
-              <td title={row.Late ? `${row.State} · ${row.Late}` : row.State}>
-                <State
-                  tone={
-                    row.State === 'engaged' || row.State === 'leaked'
-                      ? 'critical'
-                      : row.State === 'targeted'
-                        ? 'warning'
-                        : 'inactive'
-                  }
-                  hollow={row.State === 'identified'}
-                  style={row.State === 'defeated' ? { color: 'var(--ghost)' } : undefined}
-                >
-                  {row.State}
-                </State>
-                {row.Late && <span className="muted"> {row.Late}</span>}
-              </td>
-              <td title={row.Held}>{row.Held}</td>
-              <td>{row.ID == null ? '—' : formatTime(row.ID)}</td>
-              <td>{row.Eng == null ? '—' : formatTime(row.Eng)}</td>
-              <td>{row.Arr == null ? '—' : formatTime(row.Arr)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <h3>Effectors · remaining / capacity</h3>
-      {data.effectors.map((effector) => {
-        const continuous = index.ew.has(effector.entityId)
-        const total = effector.capacityTotal
-        const remaining = effector.capacityRemaining
-        const fraction = continuous
-          ? 1
-          : total != null && total > 0 && remaining != null
-            ? remaining / total
-            : 0
-        const label = continuous
-          ? 'cont.'
-          : total == null || remaining == null
-            ? '—'
-            : `${remaining}/${total}`
-        return (
-          <div key={effector.entityId}>
-            <div className="insp-row">
-              <span>{effector.name}</span>
-              <span className="mono">{label}</span>
-            </div>
-            <div
-              className="rr-bar"
-              role="meter"
-              aria-label={`${effector.name} remaining capacity`}
-              aria-valuemin={0}
-              aria-valuemax={continuous ? 1 : (total ?? undefined)}
-              aria-valuenow={continuous ? 1 : (remaining ?? undefined)}
-              aria-valuetext={continuous ? 'Continuous' : label}
-            >
-              <div className="rr-bar-fill" style={{ width: `${fraction * 100}%` }} />
+      <div className="mon-funnel" aria-label="Kill-chain funnel">
+        {data.funnel.map((cell) => (
+          <div
+            key={cell.key}
+            className={`mon-f${cell.key === 'LEAK' ? ' leak' : ''}${cell.zero ? ' zero' : ''}`}
+            title={cell.title}
+          >
+            <div className="mon-f-k">{cell.key}</div>
+            <div className="mon-f-v">
+              {cell.value}
+              <small>/{cell.of}</small>
             </div>
           </div>
-        )
-      })}
-      <h3>Sensors</h3>
-      {data.sensors.map((sensor) => (
-        <div className="insp-row" key={sensor.entityId}>
-          <span>{sensor.name}</span>
-          <State tone={stateTone(sensor.state)}>{sensor.state}</State>
-          <span className="mono">
-            {sensor.tracksNow} held
-            {sensor.state === 'tracking' ? ` · ${formatTime(sensor.holdSeconds)} hold` : ''}
-          </span>
-        </div>
-      ))}
-      <div className="row" style={{ marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-        <button className="mini" onClick={() => resetAnalysisRun('manual')}>
-          New run
-        </button>
-        <button className="mini" onClick={() => setSettingsOpen(true)}>
-          Forecast and analysis
-        </button>
+        ))}
       </div>
-      {settingsOpen && (
-        <Suspense fallback={null}>
-          <SettingsPanel initialSection="run" onRequestClose={() => setSettingsOpen(false)} />
-        </Suspense>
-      )}
+      <PanelSection
+        title="Tracks"
+        readout={split.prefix ? `${split.prefix.trim()} · ${rows.length}` : rows.length}
+      >
+        <table className="tb tb-dense mon-tracks" aria-label="Tracks">
+          <thead>
+            <tr>
+              {header('track', 'Track')}
+              <th scope="col" className="mon-c-chain">
+                Chain
+              </th>
+              {header('state', 'State', undefined, 'mon-c-state')}
+              {header('held', 'Held by', undefined, 'mon-c-held')}
+              {header('tta', 'TTA', 'Time to arrival at the defended asset (m:ss)', 'mon-c-tta')}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr
+                key={row.key}
+                className={`mon-row${selected.includes(row.key) ? ' on' : ''}`}
+                tabIndex={0}
+                title={`${row.name} · ${row.state}${row.late ? ` · ${row.late}` : ''} · held by ${row.held.join(', ') || 'none'} · TTA ${row.tta.text}`}
+                onClick={() => useStore.getState().select({ entityIds: [row.key] }, false, 'panel')}
+                onKeyDown={(event) => selectOnKey(event, row.key)}
+              >
+                <td className="mono" title={row.name}>
+                  {split.rest[i]}
+                </td>
+                <td className="mon-c-chain">
+                  <ChainPips state={row.state} />
+                </td>
+                <td className="mon-c-state">
+                  <State
+                    tone={STAGE_TONE[row.state]}
+                    hollow={row.state === 'identified'}
+                    style={row.state === 'defeated' ? { color: 'var(--ghost)' } : undefined}
+                  >
+                    {row.state}
+                  </State>
+                </td>
+                <td className="mon-c-held" title={row.held.join(', ') || 'not held'}>
+                  {row.held.length ? row.held.join(', ') : '—'}
+                </td>
+                <td className={`mono mon-c-tta${row.tta.tone ? ` tta-${row.tta.tone}` : ''}`}>
+                  {row.tta.text}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </PanelSection>
+      <PanelSection title="Systems" readout={`${online} online`}>
+        <SystemList groups={data.systems} />
+      </PanelSection>
+      <PanelSection title="Recent events" readout="last 5">
+        {data.events.length === 0 ? (
+          <EmptyRow>No salvo or identification yet.</EmptyRow>
+        ) : (
+          <div className="mon-feed">
+            {data.events.map((event, i) => (
+              <div className="mon-ev" key={i}>
+                <span className="mon-ev-t">{formatTime(event.tS)}</span>
+                <span className="mon-ev-d">
+                  <b>{event.actor}</b> {event.text}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </PanelSection>
     </section>
   )
 }

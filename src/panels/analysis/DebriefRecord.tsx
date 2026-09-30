@@ -1,256 +1,213 @@
-import { useMemo, useState } from 'react'
-import type { AarSummary, Scenario } from '../../model/types'
-import type { AttritionReport } from '../../playback/attritionReport'
-import type { McSummary, SensitivitySummary } from '../../playback/mcRun'
-import type { ThreatAssessment } from '../../playback/sim'
-import { trialResultOf, type TrialResultView } from '../../analysis/trialResult'
-import { selectTrialSelection } from '../../state/trialSelectors'
-import { selectRunComplete } from '../../state/selectors'
-import { trialStateText, EmptyRow, NoteInfo } from './controls'
-import { useTrialResult } from '../../state/useTrialResult'
-import { buildRequirementGateReport } from '../../analysis/requirements'
-import type { RunValidityAssessment } from '../../analysis/runValidity'
-import { assessRunValidity } from '../../analysis/runValidity'
-import { trialSystemTelemetryAt } from '../../analysis/systemTelemetry'
-import { trialThreatPictureAt } from '../../analysis/threatAggregation'
-import { useStore } from '../../state/store'
-import { formatRunLabel } from '../../state/labels'
-import { formatTime } from '../../geometry/geo'
-import { exportRunRecord } from '../../io/persist'
+import { useEffect, useRef, useState } from 'react'
+import { buildAarSummary } from '../../analysis/aar'
+import { trialForecast, type TrialResultView } from '../../analysis/trialResult'
 import { downloadBoardFrame } from '../../canvas/frameCapture'
-import { resetAnalysisRun } from '../../playback/runSession'
-import { RequirementGates } from './RequirementGates'
-import { SystemStatus } from './SystemStatus'
-import { ThreatPicture } from './ThreatPicture'
-import { currentSensitivity, currentSummary } from './mc'
-import { SEVERITY_PILL, VALIDITY_TEXT } from './runValidityText'
+import { formatTime } from '../../geometry/geo'
+import { exportRunCsv } from '../../io/exportCsv'
+import type { CsvTableName } from '../../io/exportCsv'
+import { exportRunRecord } from '../../io/persist'
+import { analysisBasisSignature } from '../../state/analysisBasis'
+import { formatRunLabel } from '../../state/labels'
+import type { McState } from '../../state/runState'
+import { useStore } from '../../state/store'
 import { State } from '../../ui/kit'
+import { EmptyRow } from './controls'
+import { currentSensitivity, currentSummary, runRecordOf } from './mc'
 
-function RunActions({
-  scenario,
-  assessments,
-  report,
-  aar,
-  durationS,
-  mc,
-  sensitivity,
+/**
+ * Why the CSV tables are unavailable, or null when a finished ensemble exists for
+ * the current analysis basis. The tables come from the record Save writes.
+ */
+function ensembleCsvReason(mc: McState, signature: string): string | null {
+  if (mc.status === 'done' && mc.summary != null && mc.basisSignature === signature) return null
+  if (mc.status === 'running') return 'The ensemble is still running'
+  if (mc.status !== 'done' || mc.summary == null) return 'Run Monte Carlo to export the tables'
+  return 'The scenario changed after the ensemble ran'
+}
+
+/**
+ * The Export menu items. The CSV items stay disabled, with the reason as their
+ * title, until a finished ensemble exists for the current basis.
+ */
+export function ExportMenuItems({
+  onJson,
+  onPng,
+  onCsv,
 }: {
-  scenario: Scenario
-  assessments: ThreatAssessment[]
-  report: AttritionReport
-  aar: AarSummary
-  durationS: number
-  mc: McSummary | null
-  sensitivity: SensitivitySummary | null
+  onJson: () => void
+  onPng: () => void
+  onCsv: (name: CsvTableName) => void
 }) {
-  const [captureError, setCaptureError] = useState<string | null>(null)
-  const startedAtMs = useStore((state) => state.playback.startedAtMs)!
-  const completedAtMs = useStore((state) => state.playback.completedAtMs)!
-  const runId = useStore((state) => state.playback.runId)
-  const runSeq = useStore((state) => state.playback.runSeq)
-  const observedThroughS = useStore((state) => state.playback.observedThroughS)
-  const label = formatRunLabel(runSeq)
-  const runMeta = {
-    id: runId,
-    label,
-    sequence: runSeq,
-    startedAt: new Date(startedAtMs).toISOString(),
-    completedAt: new Date(completedAtMs).toISOString(),
-    durationS,
-    observedThroughS,
+  const scenario = useStore((state) => state.scenario)
+  const mc = useStore((state) => state.mc)
+  const csvReason = ensembleCsvReason(mc, analysisBasisSignature(scenario))
+  return (
+    <>
+      <button type="button" className="tb-menu-item" onClick={onJson}>
+        Debrief record<span className="out-fmt">JSON</span>
+      </button>
+      <button type="button" className="tb-menu-item" onClick={onPng}>
+        Final board frame<span className="out-fmt">PNG</span>
+      </button>
+      <hr className="tb-menu-sep" />
+      {(
+        [
+          ['per-threat', 'Per-threat table'],
+          ['per-effector', 'Per-effector table'],
+        ] as const
+      ).map(([name, text]) => (
+        <button
+          key={name}
+          type="button"
+          className="tb-menu-item"
+          disabled={csvReason != null}
+          title={csvReason ?? undefined}
+          onClick={() => onCsv(name)}
+        >
+          {text}
+          <span className="out-fmt">CSV</span>
+        </button>
+      ))}
+    </>
+  )
+}
+
+/**
+ * The Outcome Export menu: the debrief record (JSON), the final board frame (PNG),
+ * and the per-threat and per-effector tables (CSV) of the current ensemble.
+ */
+export function ExportMenu({ view }: { view: TrialResultView }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  // The dismissal rules of ui/usePopover, kept local: a static import of that hook
+  // from this lazy chunk splits the store into a preloaded chunk (check:bundle).
+  const [open, setOpen] = useState(false)
+  const toggle = () => setOpen((value) => !value)
+  useEffect(() => {
+    if (!open) return
+    function onDown(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return
+      e.stopPropagation()
+      setOpen(false)
+      buttonRef.current?.focus()
+    }
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey, true)
+    }
+  }, [open])
+  const [error, setError] = useState<string | null>(null)
+  const label = formatRunLabel(useStore((state) => state.playback.runSeq))
+
+  const done = (message: string | null) => {
+    setError(message)
+    setOpen(false)
+    buttonRef.current?.focus()
+  }
+
+  function exportJson() {
+    const state = useStore.getState()
+    const { playback } = state
+    const forecast = trialForecast(view)
+    const aar = buildAarSummary(
+      view.scenario,
+      forecast.assessments,
+      forecast.report,
+      forecast.impacts,
+    )
+    const runMeta = {
+      id: playback.runId,
+      label,
+      sequence: playback.runSeq,
+      startedAt: new Date(playback.startedAtMs ?? Date.now()).toISOString(),
+      completedAt: new Date(playback.completedAtMs ?? Date.now()).toISOString(),
+      durationS: view.durationS,
+      observedThroughS: playback.observedThroughS,
+    }
+    exportRunRecord(
+      view.scenario,
+      runMeta,
+      forecast.assessments,
+      forecast.report,
+      aar,
+      currentSummary(state.mc, playback.runId),
+      currentSensitivity(state.mc, playback.runId),
+      view.observedThroughS >= view.durationS ? view : null,
+    )
+    done(null)
   }
 
   function captureFinal() {
-    useStore.getState().scrubTo(durationS)
+    useStore.getState().scrubTo(view.durationS)
+    done(null)
     window.requestAnimationFrame(() =>
       window.requestAnimationFrame(() => {
         try {
-          setCaptureError(
-            downloadBoardFrame(`${scenario.name}-${label}-final`)
+          setError(
+            downloadBoardFrame(`${view.scenario.name}-${label}-final`)
               ? null
               : 'Could not capture the board canvas.',
           )
-        } catch (error) {
-          setCaptureError(
-            error instanceof Error ? error.message : 'Could not capture the board canvas.',
+        } catch (failure) {
+          setError(
+            failure instanceof Error ? failure.message : 'Could not capture the board canvas.',
           )
         }
       }),
     )
   }
 
+  function exportCsv(name: CsvTableName) {
+    const state = useStore.getState()
+    const signature = analysisBasisSignature(state.scenario)
+    const sensitivity =
+      state.mc.sensitivity.status === 'done' && state.mc.sensitivity.basisSignature === signature
+        ? state.mc.sensitivity.summary
+        : null
+    const record = runRecordOf(
+      state.scenario,
+      state.mc,
+      state.playback.runId,
+      signature,
+      sensitivity,
+    )
+    done(exportRunCsv(record, name) ? null : `The record holds no ${name} table.`)
+  }
+
   return (
-    <div className="debrief-actions">
+    <div className="tb-menu-wrap" ref={wrapRef}>
       <button
-        className="primary"
-        onClick={() => {
-          const state = useStore.getState()
-          const selection = selectTrialSelection(state)
-          const view =
-            selection.status === 'ready' &&
-            selection.runId === runId &&
-            state.scenario === scenario &&
-            state.playback.startedAtMs != null &&
-            selectRunComplete(state)
-              ? trialResultOf(selection.scenario, selection.result.manifest, selection.result)
-              : null
-          const trial = view && view.observedThroughS >= view.durationS ? view : null
-          exportRunRecord(scenario, runMeta, assessments, report, aar, mc, sensitivity, trial)
-        }}
+        ref={buttonRef}
+        type="button"
+        className="mini"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="outcome-export-panel"
+        onClick={toggle}
       >
-        Export debrief JSON
+        Export
       </button>
-      <button onClick={captureFinal}>Capture final PNG</button>
-      <button onClick={() => resetAnalysisRun('manual')}>New clean run</button>
-      {captureError && (
+      {open && (
+        <div
+          id="outcome-export-panel"
+          className="tb-menu-panel surface-float tb-menu-right"
+          role="dialog"
+          aria-label="Export"
+        >
+          <ExportMenuItems onJson={exportJson} onPng={captureFinal} onCsv={exportCsv} />
+        </div>
+      )}
+      {error && (
         <State tone="critical" role="status">
-          {captureError}
+          {error}
         </State>
       )}
     </div>
-  )
-}
-
-/**
- * Run-validity banner for the evidence record: the validity, then every finding
- * with the gates it bears on. Findings come from the one `assessRunValidity` call
- * the record already made, which is also the call the gates read.
- */
-export function RunValidityBanner({ assessment }: { assessment: RunValidityAssessment }) {
-  const text = VALIDITY_TEXT[assessment.validity]
-  return (
-    <div className={`run-validity validity-${assessment.validity}`}>
-      <div className="debrief-header">
-        <div>
-          <span className="debrief-kicker">Run validity</span>
-          <strong>{text.line}</strong>
-        </div>
-        <State tone={text.tone}>{text.pill}</State>
-      </div>
-      {assessment.findings.map((finding) => (
-        <div className="validity-finding" key={finding.id}>
-          <State tone={SEVERITY_PILL[finding.severity].tone}>
-            {SEVERITY_PILL[finding.severity].text}
-          </State>
-          <span>
-            {finding.message}
-            <small> Gates: {finding.gates.join(', ')}.</small>
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-export function DebriefRecord({
-  scenario,
-  assessments,
-  report,
-  aar,
-  durationS,
-  showValidity = true,
-  showTrialRecords = true,
-}: {
-  scenario: Scenario
-  assessments: ThreatAssessment[]
-  report: AttritionReport
-  aar: AarSummary
-  durationS: number
-  /** A lens with the validity widget already exposes the full finding record. */
-  showValidity?: boolean
-  /** Outcome owns these disclosures when the record is mounted there. */
-  showTrialRecords?: boolean
-}) {
-  const completedAtMs = useStore((state) => state.playback.completedAtMs)
-  const startedAtMs = useStore((state) => state.playback.startedAtMs)
-  const observedThroughS = useStore((state) => state.playback.observedThroughS)
-  const runSeq = useStore((state) => state.playback.runSeq)
-  const runId = useStore((state) => state.playback.runId)
-  const currentScenario = useStore((state) => state.scenario)
-  const mcState = useStore((state) => state.mc)
-  const mc = currentSummary(mcState, runId)
-  const sensitivity = currentSensitivity(mcState, runId)
-  const complete =
-    completedAtMs != null && startedAtMs != null && durationS > 0 && observedThroughS >= durationS
-  const trial = useTrialResult()
-  const selection = trial.selection
-  const view =
-    complete &&
-    selection.status === 'ready' &&
-    selection.runId === runId &&
-    scenario === currentScenario
-      ? trialResultOf(selection.scenario, selection.result.manifest, selection.result)
-      : null
-  const completedTrial = view && view.observedThroughS >= view.durationS ? view : null
-  // Forecast validity and gates share an assessment; neither adjudicates the trial.
-  const validity = useMemo(() => assessRunValidity(scenario, assessments), [scenario, assessments])
-  const requirements = useMemo(
-    () => buildRequirementGateReport(scenario, assessments, report, validity),
-    [scenario, assessments, report, validity],
-  )
-  const systems = useMemo(
-    () => (completedTrial ? trialSystemTelemetryAt(completedTrial, completedTrial.durationS) : []),
-    [completedTrial],
-  )
-  const threats = useMemo(
-    () => (completedTrial ? trialThreatPictureAt(completedTrial, completedTrial.durationS) : []),
-    [completedTrial],
-  )
-  if (!complete || completedAtMs == null || startedAtMs == null) return null
-  const componentCount = systems.reduce((sum, group) => sum + group.componentCount, 0)
-  return (
-    <details className="debrief-record evidence-products" open>
-      <summary className="debrief-header" role="status">
-        <strong>Evidence products</strong>
-        <span>{formatRunLabel(runSeq)} · Complete</span>
-      </summary>
-      {showTrialRecords &&
-        (completedTrial ? (
-          <section aria-label="Completed simulated trial record">
-            <p className="debrief-kicker">Completed simulated trial record</p>
-            <details className="analysis-disclosure">
-              <summary>Trial manifest</summary>
-              <TrialManifestRecord view={completedTrial} />
-            </details>
-            <details className="analysis-disclosure">
-              <summary>Trial system and component record · {componentCount} components</summary>
-              <SystemStatus groups={systems} expanded endOfRun />
-            </details>
-            <details className="analysis-disclosure">
-              <summary>Trial threat record</summary>
-              <ThreatPicture groups={threats} mode="debrief" />
-            </details>
-            <details className="analysis-disclosure">
-              <summary>
-                Trial engagement event ledger · {completedTrial.attrition.events.length} events
-              </summary>
-              <TrialEventLedger view={completedTrial} />
-            </details>
-          </section>
-        ) : (
-          <EmptyRow>{`${trialStateText(selection)} · completed trial record unavailable`}</EmptyRow>
-        ))}
-      <RunActions
-        scenario={scenario}
-        assessments={assessments}
-        report={report}
-        aar={aar}
-        durationS={durationS}
-        mc={mc}
-        sensitivity={sensitivity}
-      />
-      <details className="analysis-disclosure" aria-label="Forecast requirements">
-        <summary>
-          Forecast · requirement record · {requirements.met}/{requirements.required} met
-        </summary>
-        <NoteInfo
-          label="forecast requirements"
-          note="Deterministic planning envelope · these gates do not adjudicate the simulated trial."
-        />
-        {showValidity && <RunValidityBanner assessment={validity} />}
-        <RequirementGates report={requirements} />
-      </details>
-    </details>
   )
 }
 
