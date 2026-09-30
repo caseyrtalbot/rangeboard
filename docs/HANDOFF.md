@@ -25,12 +25,14 @@ The range ring rework (MIR and MRIR rings, at-rest and active styles, the ring r
 the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `fdfa6b3`.
 [right-panel/Plan.md](right-panel/Plan.md) is the frozen queue for the right panel redesign
 (rows R1 to R3, authored 2026-09-29 from the approved prototype in
-[right-panel/prototype/](right-panel/prototype/index.html)). The Tasking selects R1 and
-waits for the user's word; Q2 stays held. Execute one row per agent turn.
+[right-panel/prototype/](right-panel/prototype/index.html)). R1 (shell and shared
+primitives) is committed on `panel/r1` as `64aa156`, not merged or pushed. The Tasking
+selects R2 and waits for the user's word; R2 starts after the user merges R1. Q2 stays
+held. Execute one row per agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `main`. `main` holds Row G on top of
+- Repository `~/Projects/rangeboard`, checked out on `panel/r1`. `main` holds Row G on top of
   `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
   evidence with the Now card fix `a570e23` and the Row G handoff `6733fc2`, fast-forwarded
   from `engine/g`. The code-quality refactor `ccfdf44` follows, fast-forwarded from
@@ -38,11 +40,40 @@ waits for the user's word; Q2 stays held. Execute one row per agent turn.
   `45d31ef`, Q1 `6c15b71` and the Q1 handoff `539674d`, fast-forwarded from `quality/q1`,
   then the Q1 merge handoff `e2343f9`, the range ring rework `fdfa6b3`, fast-forwarded
   from `rings/mir-mrir`, the range ring handoff `79f6f73`, and the right panel plan
-  commit that holds this handoff. `main` is one commit ahead of `origin/main`; the plan
-  commit is not pushed.
+  commit `ae7ed95`. `main` is one commit ahead of `origin/main`; the plan commit is not
+  pushed. `panel/r1` holds R1 `64aa156` and the R1 handoff commit that holds this file on
+  top of `ae7ed95`; it is local only, not merged or pushed.
   `engine/g`, `refactor/code-quality`, `quality/q1` and `rings/mir-mrir` (local and
-  remote) are deleted. `git branch -a` shows `main` only, `git worktree list` shows the
-  main checkout only and the stash list is empty.
+  remote) are deleted. `git branch -a` shows `main` and `panel/r1`, `git worktree list`
+  shows the main checkout only and the stash list is empty.
+- R1 (2026-09-29) `64aa156` on `panel/r1`: the right panel shell and shared primitives.
+  The heading row is gone; Panel options ends the tab row (`.panel-tabbar`) and the
+  Execute tab reads Monitor (value `now`). The store holds `selectionOrigin`,
+  `openSections`, `validityOpen` and `panelRequest`, UI only and not persisted:
+  `select(patch, additive, origin = 'board')`, `setSectionOpen`,
+  `setAllSections(open, ids)`, `setValidityOpen` and `requestPanel`. `setBoardPhase`
+  clears `validityOpen`, as the prototype does. `openDoctrine` is a `requestPanel` call;
+  `openEntities` is unchanged (R2-int moves it). `ValidityLine`
+  (`src/panels/analysis/ValidityLine.tsx`) renders through `PanelValidity`
+  (`AnalysisPanel.tsx`) above `.inspector-body`; App loads it lazily above
+  `BoardPreparation`. The status-bar Validity cell is a button (D10). `PanelSection` is
+  in `src/ui/`, not `src/panels/analysis/` (see Landmines). `splitCommonPrefix`
+  (`analysis/trackNames.ts`) and `useRunHistorySave` (`analysis/useRunHistorySave.ts`,
+  a verbatim move) exist. `index.css` ends with the Right panel region: the size
+  container, `.pgrid` and `.pg-1`, `.pg-2`, `.pg-4`, `.vline-*`, `.psec-*`, `.pstat-row`,
+  the under-360 px container rules and the empty R2a to R2d blocks. The screens keep
+  their content and their own validity renders until R2. One `opus-high` worker built
+  the row and ran a Playwright check at 280, 408 and 560 px in Night and Paper, on an
+  empty board and after a Monte Carlo run, a sweep and a completed trial: no console
+  error, and no overflow or untitled clip in the tab row or the line. The orchestrator
+  read the diff, added the phase-change close with its store test, ran the gate and
+  spot-checked the captures. Gate on `64aa156`: `npm run check` passes (229 files, 2,544
+  tests; entry graph 107 guarded modules of 211 reachable, the one new module is
+  `src/ui/PanelSection.tsx`); `check:bundle` entry 368,942 and initial 388,537 (base
+  `ae7ed95`: 368,562 and 387,460); `check:silent` passes; `test:e2e` 14 of 14. The base
+  gate on `ae7ed95` passed with 225 files and 2,518 tests. Four test files and 26 tests
+  are new; three tests are rewritten for the Monitor label and the line markup; none is
+  deleted. No parity expect moved.
 - Right panel redesign (2026-09-29): the user approved a two-version HTML prototype of the
   right panel (Prepare, Execute and Analyze screens) and asked for the plan and this
   handoff. The prototype is in `docs/right-panel/prototype/` and as an artifact that
@@ -582,6 +613,14 @@ Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expan
 and the Row D items it listed. The three code-quality refactor follow-ups are rows Q1 to Q3
 in [code-quality/Plan.md](code-quality/Plan.md). What remains:
 
+From R1 of the right panel redesign (2026-09-29):
+
+- The status-bar Validity count reads the forecast in every phase. In Analyze the line
+  reads the completed trial's `view.validity`, so the button can open a line with a
+  different count.
+- The firing fixture's completed trial carries no `view.validity`, so Analyze reads its
+  forecast. This is the behavior before R1 (`OutcomeScreen.tsx`).
+
 From the range ring rework (2026-09-29):
 
 - With a pinned ring readout, Esc clears the pin and also the selection. The HUD pin is
@@ -756,54 +795,80 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Row R1: shell and shared primitives.** The row, its owned files, facts, work steps,
-checks and stop condition are in
-[right-panel/Plan.md](right-panel/Plan.md#r1-shell-and-shared-primitives-opus-high).
-Start R1 only when asked. Q2 of [code-quality/Plan.md](code-quality/Plan.md) stays held;
-both rows edit `src/state/store.ts`, in different blocks.
+**Row R2: screens, lanes R2a to R2d.** The lanes, their owned files, facts, work steps and
+checks are in [right-panel/Plan.md](right-panel/Plan.md#r2-screens). Start R2 only when
+asked, and only after the user merges `panel/r1`. Q2 of
+[code-quality/Plan.md](code-quality/Plan.md) stays held; both edit `src/state/store.ts`.
 
-- Base: `main` at the commit that holds the plan and this handoff. Branch `panel/r1`. No
-  dirty path belongs to R1.
-- Outcome: the panel heading row is gone and its menu sits in the tab row; the store holds
-  `selectionOrigin`, `openSections`, `validityOpen` and `panelRequest`; `PanelSection`,
-  `ValidityLine`, `splitCommonPrefix` and `useRunHistorySave` exist with tests; the
-  status-bar Validity cell opens the drawer at the Validity line; `index.css` holds the
-  Right panel region with the grid, the container rules and the empty lane blocks. The
-  screens keep their current content until R2.
-- Exclusions: every screen file that R2 owns, the Inspector and detail panes (D4), the
-  engine, the schema and every file the row does not own. Report other findings as
-  follow-ups.
-- Verified facts: the pointers come from a read-only `sonnet-medium` survey on `79f6f73`
-  (2026-09-29). The orchestrator checked the drawer code, `openEntities`, `openDoctrine`,
-  the selection effect, the status-bar validity cell and the consumers of `SystemStatus`,
-  `RunHistory`, `RequirementGates` and `DebriefRecord` against the source. The base gate
-  is the range ring gate in Position (225 files, 2,518 tests); confirm it on the plan
-  commit.
-- Next action: brief one `opus-high` worker with the R1 row, the gate, the browser check
-  and a 2,400 s budget, per `~/.claude/rules/delegation.md`. Run the gate and read the
-  diff yourself before you count the row done.
-- Stop: the gate passes, the commit is on `panel/r1`, and this Tasking selects R2. Do not
-  merge or push without the user's word.
+- Base: `main` after the user merges `panel/r1`. Four worktrees outside the repository at
+  `~/Projects/rangeboard-wt/r2a` to `r2d`, each with a `node_modules` symlink, on branches
+  `panel/r2a` to `panel/r2d`. No `git stash` while the worktrees exist.
+- Outcome: each lane builds its screens from the prototype with the R1 primitives,
+  removes the items the change notes mark CUT, MERGE or MOVE, removes its screen's own
+  validity render, and rewrites its tests. No lane edits `App.tsx`, `store.ts`, a doc,
+  the e2e file or another lane's files; a lane that needs one reports it to the
+  integrator (R2-int).
+- R1 facts the lanes need (the plan predates them):
+  - `PanelSection` is `src/ui/PanelSection.tsx`, not `src/panels/analysis/`. Props:
+    `title`, `readout`, `end`, `className`, and for a collapsible section `id` (the DOM
+    id and the `ui.openSections` key), `collapsible: true`, `defaultOpen` and `summary`.
+  - Grid classes: `.pgrid` with `.pg-1`, `.pg-2`, `.pg-4`; `.seg.pg-seg4` for a
+    four-option segmented control. Stat row: `.pstat-row` of `.pstat` cells with
+    `.pstat-l` and `.pstat-v`. The under-360 px rules key on the `right-panel`
+    container. Each lane adds rules only in its own block at the end of `index.css`.
+  - A panel row selects with `select({ entityIds: [id] }, false, 'panel')` and does not
+    call `setRightTab` (D7). A jump to another screen uses
+    `requestPanel({ phase, screen, section })`.
+  - `splitCommonPrefix` is in `src/panels/analysis/trackNames.ts`; `useRunHistorySave`
+    is in `src/panels/analysis/useRunHistorySave.ts`.
+  - At 280 px, Analyze, Outcome scrolls sideways: the `RunHistory` Save to history
+    `.mini` button is wider than `.inspector-body.analysis-panel`. R2c removes
+    `RunHistory` from Outcome and R2d reworks it; R2-int confirms the scroll is gone.
+- Gate per lane: `npm run check`, `npm run check:bundle`, `npm run check:silent` and
+  `E2E_URL=http://localhost:<port> npm run test:e2e` on a dev server port of the lane's
+  own. The base is 229 files and 2,544 tests on `64aa156`; confirm it on `main` after
+  the merge. Each lane reports its test changes, its bundle bytes and the entry-graph
+  line, and runs the browser check of the plan on the screens it owns.
+- Next action: create the four worktrees and brief the four workers in one message
+  (`opus-high` for R2a, R2b and R2c, `opus-medium` for R2d; 2,400 s each), per
+  `~/.claude/rules/delegation.md`. Run each lane's gate and read each diff yourself
+  before you commit the lane on its branch.
+- Stop: each lane's gate passes, each lane's commit is on its branch, and this Tasking
+  selects R2-int. Do not merge or push without the user's word.
 
 The Follow-ups are candidates, not rows.
 
 ## Landmines
 
-- Right panel entry points find panel elements by DOM id or class: `openDoctrine` opens
-  `#prepare-doctrine` as a `details` (`App.tsx:906-921`), `openEntities` scrolls to
-  `.prepare-entity-register` (869-876), and the e2e file reads `#insp-tab-analysis`, the
-  tab labels (`board-shell.e2e.mjs:109, 190-201`) and `.right-resizer`. Keep the ids the
-  right panel plan lists in D9, or move the caller in the same row.
-- A selection switches the right panel to the Selected object tab when it becomes
-  non-empty (`App.tsx:903-905`). A panel control that selects without leaving its screen
-  needs the `selectionOrigin` rule of the right panel plan (D7).
+- Right panel entry points find panel elements by DOM id or class: `openDoctrine` is a
+  `requestPanel` call, and `showPanel` (`App.tsx:922-949`) opens the section by DOM id
+  (a `details` or a `PanelSection` toggle) and focuses its head; `openEntities` scrolls
+  to `.prepare-entity-register` (875-882); the status-bar button focuses
+  `#validity-line`; the e2e file reads `#insp-tab-analysis`, the tab labels
+  (`board-shell.e2e.mjs:112, 192-205`) and `.right-resizer`. Keep the ids the right
+  panel plan lists in D9, or move the caller in the same row.
+- A board selection switches the right panel to the Selected object tab when it becomes
+  non-empty, or when the origin flips from `panel` to `board` (`App.tsx:911-919`). A
+  panel control selects with origin `'panel'` and keeps its screen (D7).
+  `FindingThreatActions` does; `BoardPreparation.tsx:24` still calls `setRightTab`
+  itself until R2a. `select` writes `ui.selectionOrigin` even when the selection is
+  unchanged, so a board click on a panel-selected object switches the tab.
+- `PanelSection` is in `src/ui/` because `BoardPreparation` is in the entry graph:
+  a module under the guarded `src/panels/analysis/` that it imports fails
+  `check:entry-graph`. Never run `check-entry-graph.mjs --write` to get past it.
+  `ValidityLine` reaches the shell only through the lazy `PanelValidity` in `App.tsx`.
+- Collapse all and Expand all read `[data-section-id]` from the `PanelSection` toggles on
+  screen and pass the ids to `setAllSections`; a section that is not rendered keeps its
+  state. They still set each `details` and `.det-s-toggle` in the DOM.
+- The Validity line is a sibling above `.inspector-body` (the scroller), not a sticky
+  child. `setBoardPhase` closes it; in Execute only the status-bar button opens it.
 - The right panel screen tests render with `renderToStaticMarkup` and assert on the markup
   string, with React hooks mocked, so a markup change breaks them by text. `SystemStatus`
   exports `STATE_LABEL` and `stateTone` to the three detail panes, and the `.insp-row`,
   `.tb`, `.tb-dense`, `.field-info` and `.field-help` rules also serve the Inspector and
   Settings.
 - The drawer width lives in `rightW` and `RIGHT_PANEL_WIDTH_KEY`, but its 44 % viewport
-  cap is only CSS (`index.css:5249`, `max-width: 44vw`), so the stored width can exceed
+  cap is only CSS (`index.css:5255`, `max-width: 44vw`), so the stored width can exceed
   the rendered width on a narrow window.
 - The effector ring storage keys keep their old names: `effectorDoctrinal` is the MRIR
   ring and `effectorMaxRange` the MIR ring. Renaming a key breaks saved views and
