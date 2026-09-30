@@ -21,6 +21,8 @@ dead rule, the kill types, and every milestone bounded at the kill), the user's 
 change) follows it as `ccfdf44`, pushed with the handoff update `418a893`.
 [code-quality/Plan.md](code-quality/Plan.md) is the frozen queue for the refactor's three
 follow-ups (rows Q1 to Q3, authored 2026-09-29). Q1 is merged and pushed as `6c15b71`.
+The range ring rework (MIR and MRIR rings, at-rest and active styles, the ring readout),
+the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `fdfa6b3`.
 The Tasking selects Q2 and waits for the user's word. Execute one row per agent turn.
 
 ## Position
@@ -31,9 +33,25 @@ The Tasking selects Q2 and waits for the user's word. Execute one row per agent 
   from `engine/g`. The code-quality refactor `ccfdf44` follows, fast-forwarded from
   `refactor/code-quality`, then the handoff update `418a893`, the code-quality plan
   `45d31ef`, Q1 `6c15b71` and the Q1 handoff `539674d`, fast-forwarded from `quality/q1`,
-  then this handoff update. `main` and `origin/main` match. `engine/g`,
-  `refactor/code-quality` and `quality/q1` are deleted. `git branch` shows `main` only,
-  `git worktree list` shows the main checkout only and the stash list is empty.
+  then the Q1 merge handoff `e2343f9`, the range ring rework `fdfa6b3`, fast-forwarded
+  from `rings/mir-mrir`, and this handoff update. `main` and `origin/main` match.
+  `engine/g`, `refactor/code-quality`, `quality/q1` and `rings/mir-mrir` (local and
+  remote) are deleted. `git branch -a` shows `main` only, `git worktree list` shows the
+  main checkout only and the stash list is empty.
+- Range ring rework (2026-09-29) `fdfa6b3`, approved from a reference page. The storage
+  keys do not change: `effectorMaxRange` is MIR, `effectorDoctrinal` is MRIR and
+  `effectorMinRange` is Min range. MRIR is the optional library `mrirM`, else 2/3 of MIR
+  as a planning factor (`mrirFractionOf`, `mrirBasisOf`, `mrirBasisText` in `types.ts`).
+  It is a board ring only; no engine file changed. The release and commit-Pk rings are
+  gone. Rings draw dashed in `BoardInk.ringIdle` at rest and solid with fill when active
+  (selected, or engaging or holding at the run cursor, `trialActiveIds`). The HUD readout
+  gives the system, the ring, nm at two decimals, the threat altitude and the MRIR basis;
+  a click pins it and keeps the selection (`onRing`). Jammer rings are ground projected.
+  Three parallel lanes (`opus-medium` data and Inspector, two `opus-high` for the readout
+  and the drawing), then a docs lane and a browser check; the orchestrator wrote the
+  contract, the click fix and the two browser-check fixes. Gate on `fdfa6b3`: `npm run
+  check` passes (225 files, 2,518 tests); `check:silent` and `check:bundle` pass; a
+  Playwright check on both themes shows no console error.
 - Q1 (2026-09-29) `6c15b71`: the single-worker Monte Carlo slot is gone. `mcClient.ts`
   keeps the pool and the sensitivity slot; `mc.worker.ts` has no replicate fall-through
   and no `McWorkerMessage` in `Posted`; `McRunRequest` is deleted. `store.analysis.test.ts`
@@ -552,6 +570,16 @@ Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expan
 and the Row D items it listed. The three code-quality refactor follow-ups are rows Q1 to Q3
 in [code-quality/Plan.md](code-quality/Plan.md). What remains:
 
+From the range ring rework (2026-09-29):
+
+- With a pinned ring readout, Esc clears the pin and also the selection. The HUD pin is
+  local state the Escape precedence in `interactionRouter.ts` cannot see.
+- NINJA `sectorDeg` is graded MANUFACTURER_CLAIM in `ninja.json`, but the Inspector shows
+  it as a planning factor: the model has no provenance row. Adding one changes the frozen
+  seed fixture that `src/model/seedLibrary.test.ts` compares.
+- No public source gives the jam beam width of CUAEWS DF or Modi II; both stay 360.
+- The Inspector MRIR slider moves the ring on release only (one undo step per drag).
+
 From the code-quality follow-up surveys (2026-09-29):
 
 - No production code sets `Selection.cardId`, so the `EntityLayer.tsx` card ring (95,
@@ -733,7 +761,7 @@ Start Q2 only when asked. The user held Q2 on 2026-09-29 after the Q1 merge.
   (2026-09-29); the orchestrator checked the action list, the missing production callers
   and the `2213e42` decision against the source. Q1 did not touch a Q2 file except
   `store.analysis.test.ts`, where Q1 changed only the `mcClient` mock; confirm the line of
-  the `addCard()` call before the edit. The base gate is the Q1 gate in Position.
+  the `addCard()` call before the edit. The base gate is the range ring gate in Position.
 - Next action: brief one `opus-medium` worker with the Q2 row, the gate and a 600 s
   budget, per `~/.claude/rules/delegation.md`. Run the gate and read the diff yourself
   before you count the row done.
@@ -744,6 +772,10 @@ The Follow-ups are candidates, not rows.
 
 ## Landmines
 
+- The effector ring storage keys keep their old names: `effectorDoctrinal` is the MRIR
+  ring and `effectorMaxRange` the MIR ring. Renaming a key breaks saved views and
+  `ui.ringOverrides`. A click on a ring edge routes `consume` in the select tool
+  (`onRing`), so the selected threat and the pinned readout survive the click.
 - `EngagementEvent.c2Id` is written once per (threat, effector) when `attrition.ts`
   builds the threat's routes (`ThreatState.assignC2Ids`), `null` on a direct route and
   absent on a legacy ledger or a unit fixture without the map. `runTimeline.ts`

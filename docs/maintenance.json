@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "e567a699cc7c45cd250b4a312550ae8a7951929bbaf7c8d51bfa558693b14227",
+      "sha256": "0428a125618d0128f40ce3d733d862c48830cc772136024d45a9d7fc3e5ef1a6",
       "reviewedAt": "2026-09-30",
-      "note": "Q1 merged to main by fast-forward (6c15b71, 539674d) and pushed; quality/q1 deleted; the Tasking selects Q2, held by the user"
+      "note": "Range ring rework fdfa6b3: Position records the merge, the lanes and the gate; Follow-ups gain the four ring items; Landmines gain the MRIR storage key and the onRing click rule; Tasking keeps Q2 held with the ring gate as the base."
     },
     {
       "document": "docs/Plan.md",
