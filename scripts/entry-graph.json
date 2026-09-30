@@ -68,7 +68,6 @@
     "src/panels/analysis/detail/ThreatDetail.tsx",
     "src/panels/analysis/detail/detailRows.tsx",
     "src/panels/analysis/labels.ts",
-    "src/panels/analysis/runValidityText.tsx",
     "src/panels/analysis/screens/navigation.ts",
     "src/panels/analysis/threatReadout.ts",
     "src/playback/attrition.ts",
