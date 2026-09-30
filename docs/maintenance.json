@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "606032042b453ab61a937c93522c3b93cbc75a13f356122710ace0bfc635ddce",
-      "reviewedAt": "2026-09-29",
-      "note": "Q1 complete on quality/q1 (6c15b71) with its gate; Position records the branch state and the unpushed plan commit 45d31ef; Tasking selects Q2 with the user's D2 confirmation"
+      "sha256": "e567a699cc7c45cd250b4a312550ae8a7951929bbaf7c8d51bfa558693b14227",
+      "reviewedAt": "2026-09-30",
+      "note": "Q1 merged to main by fast-forward (6c15b71, 539674d) and pushed; quality/q1 deleted; the Tasking selects Q2, held by the user"
     },
     {
       "document": "docs/Plan.md",

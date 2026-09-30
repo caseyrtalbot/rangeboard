@@ -20,21 +20,20 @@ dead rule, the kill types, and every milestone bounded at the kill), the user's 
 2026-09-28, is merged and pushed as `6733fc2`. The code-quality refactor (no behavior
 change) follows it as `ccfdf44`, pushed with the handoff update `418a893`.
 [code-quality/Plan.md](code-quality/Plan.md) is the frozen queue for the refactor's three
-follow-ups (rows Q1 to Q3, authored 2026-09-29). Q1 is complete on `quality/q1` and waits
-for the user's merge. The Tasking selects Q2. Execute one row per agent turn.
+follow-ups (rows Q1 to Q3, authored 2026-09-29). Q1 is merged and pushed as `6c15b71`.
+The Tasking selects Q2 and waits for the user's word. Execute one row per agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `quality/q1`. `main` holds Row G on
-  top of `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
+- Repository `~/Projects/rangeboard`, checked out on `main`. `main` holds Row G on top of
+  `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
   evidence with the Now card fix `a570e23` and the Row G handoff `6733fc2`, fast-forwarded
   from `engine/g`. The code-quality refactor `ccfdf44` follows, fast-forwarded from
-  `refactor/code-quality`, then the handoff update `418a893`, then the code-quality plan
-  `45d31ef`. `origin/main` is at `418a893`; `45d31ef` is not pushed. `quality/q1` holds
-  Q1 `6c15b71` and this handoff on top of `45d31ef`; it is not merged and not pushed.
-  `engine/g` and `refactor/code-quality` are deleted. `git branch` shows `main` and
-  `quality/q1`, `git worktree list` shows the main checkout only and the stash list is
-  empty.
+  `refactor/code-quality`, then the handoff update `418a893`, the code-quality plan
+  `45d31ef`, Q1 `6c15b71` and the Q1 handoff `539674d`, fast-forwarded from `quality/q1`,
+  then this handoff update. `main` and `origin/main` match. `engine/g`,
+  `refactor/code-quality` and `quality/q1` are deleted. `git branch` shows `main` only,
+  `git worktree list` shows the main checkout only and the stash list is empty.
 - Q1 (2026-09-29) `6c15b71`: the single-worker Monte Carlo slot is gone. `mcClient.ts`
   keeps the pool and the sensitivity slot; `mc.worker.ts` has no replicate fall-through
   and no `McWorkerMessage` in `Posted`; `McRunRequest` is deleted. `store.analysis.test.ts`
@@ -719,9 +718,9 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 **Row Q2: delete the orphaned test-card actions.** The row, its owned files, facts, work
 steps, checks and stop condition are in [code-quality/Plan.md](code-quality/Plan.md#q2-delete-the-orphaned-test-card-actions-opus-medium).
-Start Q2 only when asked, after the user merges `quality/q1`.
+Start Q2 only when asked. The user held Q2 on 2026-09-29 after the Q1 merge.
 
-- Base: `main` after the merge of `quality/q1`. Branch `quality/q2`. No dirty path belongs
+- Base: `main` at the commit that holds this handoff. Branch `quality/q2`. No dirty path belongs
   to Q2.
 - Outcome: the eight card actions, `bumpCardVersion` and `seedCards.ts` are gone; the card
   data model and its cascade stay; production behavior is unchanged. The user confirmed
