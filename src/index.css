@@ -2384,14 +2384,6 @@ select.nu-unit {
   margin-left: auto;
 }
 
-.roe-label {
-  flex: none;
-  color: var(--text-dim);
-  font-size: var(--type-label-size);
-  font-weight: var(--type-label-weight);
-  white-space: nowrap;
-}
-
 /* The ROE control sits in a widget header: compact, never full width. */
 .wg-x .seg {
   width: auto;
@@ -2805,16 +2797,6 @@ select.nu-unit {
   min-width: 0;
 }
 
-.adv-toggle {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: var(--type-meta-size);
-  color: var(--text-dim);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
 .chevron {
   display: inline-block;
   font-size: var(--type-meta-size);
@@ -2832,18 +2814,6 @@ select.nu-unit {
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.apply-check {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
-  text-transform: none;
-  letter-spacing: normal;
-  cursor: pointer;
-  white-space: nowrap;
 }
 
 /* ---------- Timeline ---------- */
@@ -3378,11 +3348,6 @@ select.nu-unit {
   font-family: var(--font-mono);
   font-size: var(--type-machine-size);
   white-space: nowrap;
-}
-
-/* The Inputs forecast line: mono text 1; a stale line keeps the warning ink. */
-.chip.forecast-line {
-  color: var(--text-primary);
 }
 
 /* The Run button's key hint: mono in the button's ink, no chip. */
@@ -5264,68 +5229,6 @@ input[type='number'] {
   overflow-wrap: anywhere;
 }
 
-.board-preparation section {
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.board-preparation h3 {
-  margin: 0 0 var(--space-2);
-  font-size: var(--type-title-size);
-}
-
-.board-preparation .board-object {
-  display: flex;
-  width: 100%;
-  text-align: left;
-  justify-content: space-between;
-  gap: var(--space-3);
-  white-space: normal;
-}
-
-.board-preparation .insp-row {
-  margin: 0;
-  padding-right: 0;
-  padding-left: 0;
-}
-
-.prepare-entity-register {
-  display: flex;
-  flex-direction: column;
-}
-
-.prepare-entity {
-  display: grid;
-  text-align: left;
-  gap: var(--space-1);
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--border-subtle);
-  white-space: normal;
-}
-
-.prepare-entity-name {
-  flex: 1 1 auto;
-}
-
-.prepare-entity-meta,
-.prepare-entity-state {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  color: var(--text-secondary);
-  font-size: var(--type-meta-size);
-}
-
-.prepare-finding-body {
-  min-width: 0;
-}
-
-.prepare-finding-gates {
-  display: block;
-  margin-top: var(--space-1);
-  font-size: var(--type-meta-size);
-  color: var(--text-secondary);
-}
-
 /* Resource drawer frees the laydown from a permanently docked library. */
 .board-app .main {
   position: relative;
@@ -5519,7 +5422,6 @@ input[type='number'] {
   max-width: calc(100vw - 100px);
 }
 
-.prepare-settings,
 .prepare-setting-body,
 .prepare-setting-controls {
   display: flex;
@@ -5537,17 +5439,6 @@ input[type='number'] {
 /* The Settings link to Prepare > Inputs is a panel-body action (V2). */
 .settings-body .prepare-setting-controls button {
   border-color: var(--rule-strong);
-}
-
-.prepare-setting {
-  border-top: 1px solid var(--border-subtle);
-}
-
-.prepare-setting > summary {
-  padding: var(--space-3) 0;
-  cursor: pointer;
-  font-size: var(--type-title-size);
-  font-weight: var(--type-title-weight);
 }
 
 .prepare-setting-body .field-row {
@@ -6311,16 +6202,6 @@ input[type='number'] {
   padding-block: var(--space-1);
 }
 
-.run-det {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
 /* Replicates done, the stop rule and the pool size. It wraps rather than
    pushing the button out of a 320 px panel. */
 .run-progress {
@@ -6688,6 +6569,280 @@ input[type='number'] {
 }
 
 /* ---------- Right panel: R2a Inputs ---------- */
+
+/* A short sentence in a section body: text 2, never muted gray. */
+.prep-note,
+.prep-run-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--type-meta-size);
+}
+
+/* The deterministic note takes the Runs and Seed columns, on the control line. */
+.pgrid > .prep-run-note {
+  align-self: end;
+  min-width: 0;
+}
+
+.right-panel .prep-settings-link {
+  align-self: center;
+  margin-left: 0;
+}
+
+/* The on/off switch: a 24 x 14 track at the control radius and a square knob. */
+.right-panel .prep-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--h-dense);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--type-meta-size);
+  white-space: nowrap;
+}
+
+.right-panel .prep-switch:hover {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.prep-switch-track {
+  position: relative;
+  flex: none;
+  width: 24px;
+  height: 14px;
+  border-radius: var(--radius-control);
+  background: var(--rule-strong);
+  transition: background-color var(--dur-fast) ease;
+}
+
+.prep-switch-track::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  background: var(--text-secondary);
+  content: '';
+  transition: transform var(--dur-fast) ease;
+}
+
+.prep-switch[aria-checked='true'] {
+  color: var(--text-primary);
+}
+
+.prep-switch[aria-checked='true'] .prep-switch-track {
+  background: var(--text-primary);
+}
+
+.prep-switch[aria-checked='true'] .prep-switch-track::after {
+  background: var(--surface-panel);
+  transform: translateX(10px);
+}
+
+/* D5: the gate table sits on the panel's four columns: gate, label, box, met. */
+.gtable {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gt-h,
+.gt-r {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--space-3);
+  align-items: center;
+}
+
+.gt-h {
+  height: 24px;
+  color: var(--text-tertiary);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+}
+
+.gt-h .gt-thr,
+.gt-r .gt-thr {
+  grid-column: 2 / span 2;
+}
+
+.gt-h .gt-met,
+.gt-r .gt-met {
+  grid-column: 4;
+  justify-self: end;
+}
+
+.gt-r {
+  min-height: 38px;
+  padding: 5px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.gt-g {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-label-weight);
+}
+
+.gt-g small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-body-weight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-thr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.gt-tl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-3);
+  align-items: center;
+}
+
+.gt-q {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gt-none {
+  padding-left: 8px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  line-height: var(--h-default);
+}
+
+.right-panel .gt-toggle {
+  display: inline-flex;
+  margin-right: -4px;
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  line-height: inherit;
+}
+
+.right-panel .gt-toggle:hover {
+  background: var(--surface-hover);
+}
+
+.gt-fail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 0 var(--space-2);
+}
+
+.gt-fail-l {
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+}
+
+.right-panel .gt-fail button.mini {
+  max-width: 100%;
+  margin-left: 0;
+  text-align: left;
+  white-space: normal;
+}
+
+.gt-why {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+/* D2: the Entities section. Rows group by kind; a row selects from the panel. */
+.prepare-entity-head {
+  padding: var(--space-2) 0 2px;
+  color: var(--text-tertiary);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+}
+
+.right-panel .prepare-entity {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  width: 100%;
+  min-height: 26px;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--type-meta-size);
+  font-weight: var(--type-body-weight);
+  text-align: left;
+}
+
+.right-panel .prepare-entity:hover {
+  background: var(--surface-hover);
+}
+
+.prepare-entity-kind {
+  border: 1px solid var(--rule-strong);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-machine-size);
+  line-height: 14px;
+  text-align: center;
+}
+
+.prepare-entity-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prepare-entity-state {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  white-space: nowrap;
+}
+
+.prepare-entity-state.warn {
+  color: var(--status-warning);
+}
+
+/* D6: under 360 px the gate labels stack above their boxes. */
+@container right-panel (max-width: 359.98px) {
+  .gt-h,
+  .gt-r {
+    grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr) 50px;
+    column-gap: var(--space-2);
+  }
+
+  .gt-tl {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 2px;
+  }
+
+  .gt-g small {
+    white-space: normal;
+  }
+}
 
 /* ---------- Right panel: R2b Fragility and Placement ---------- */
 

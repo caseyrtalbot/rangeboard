@@ -1,97 +1,79 @@
 /**
- * The forecast header on Prepare: one mono forecast line and the Deterministic
- * checkbox. The top bar holds the Run control.
+ * The Run section body on Prepare, Inputs: the run mode, the replicate count and
+ * the seed on the panel grid (D5). The top bar holds the Run control; the stop
+ * rule, what varies and the sensitivity depth stay in Settings, Run.
  */
 
-import type { McState } from '../../state/runState'
-import { useStore } from '../../state/store'
+import type { RunMode } from '../../model/types'
 import { runSettings } from '../../model/types'
-import type { StopRule } from '../../playback/mcRun'
+import { useStore } from '../../state/store'
+import { Field, Seg } from '../../ui/kit'
+import { IntInput } from '../settings/inputs'
 
-/** Chip title phrase per early stop rule. */
-const STOP_BY: Record<StopRule, string> = {
-  replicates: 'the replicate count',
-  halfWidth: 'the half-width rule on the end-of-run leaker mean',
-  budget: 'the execution budget',
-  cancelled: 'a cancel',
-}
+/** The Run tab's bounds (`RunTab.tsx`): the seed is a 32-bit unsigned integer. */
+const MIN_REPLICATES = 1
+const MAX_REPLICATES = 10000
+const MIN_SEED = 0
+const MAX_SEED = 4294967295
 
-/**
- * The one forecast line: class, mono text and a title that carries the basis and
- * the stopping rule. Monte Carlo reads `MC done / loop end · seed n`.
- */
-function forecastLine(
-  run: ReturnType<typeof runSettings>,
-  mc: McState,
-): { cls: string; text: string; title: string } {
-  if (run.runMode === 'deterministic') {
-    return {
-      cls: 'chip forecast-line',
-      text: 'DET · Pd threshold',
-      title: 'Deterministic expected-value run',
-    }
-  }
-  const total = run.uncertainty === 'total'
-  const halfWidth = run.targetHalfWidth != null
-  const end = halfWidth ? run.stopCap : run.replicates
-  const summary = mc.status === 'done' || mc.status === 'stale' ? mc.summary : null
-  const done = mc.status === 'running' ? mc.progress : (summary?.replicates ?? 0)
-  const of = mc.status === 'running' ? mc.total : end
-  const stale = mc.status === 'stale'
-  const text = `MC ${done} / ${of} · seed ${run.seed}${stale ? ' · stale' : ''}`
-  const basis = `Monte Carlo, ${run.replicates} replicates, seed ${run.seed}${
-    total ? ', total uncertainty' : ''
-  }`
-  const rule = `Stops on ${STOP_BY[halfWidth ? 'halfWidth' : 'replicates']}.`
-  const cls = stale ? 'chip forecast-line warn' : 'chip forecast-line'
-  switch (mc.status) {
-    case 'running':
-      return { cls, text, title: `Running replicates. ${rule}` }
-    case 'done':
-      return {
-        cls,
-        text,
-        title: `${basis}, stopped at ${summary?.replicates ?? 0} by ${
-          STOP_BY[summary?.stopped.rule ?? 'replicates']
-        }, ${Math.round(summary?.elapsedMs ?? 0)} ms`,
-      }
-    case 'stale':
-      return { cls, text, title: `Configuration changed since the replicates ran. ${rule}` }
-    case 'error':
-      return { cls, text, title: mc.error ?? `${basis}. Not run yet. ${rule}` }
-    default:
-      return { cls, text, title: `${basis}. Not run yet. ${rule}` }
-  }
-}
+const MODE_OPTIONS: Array<{ v: RunMode; label: string }> = [
+  { v: 'monte-carlo', label: 'Monte Carlo' },
+  { v: 'deterministic', label: 'Deterministic' },
+]
 
-/**
- * The forecast line and the Deterministic checkbox under it. Every other run
- * setting lives in the Run tab.
- */
+/** Mode over two columns; Runs and Seed one column each, or the one-pass note. */
 export function ForecastSettings() {
   const scenario = useStore((s) => s.scenario)
   const patchScenario = useStore((s) => s.patchScenario)
+  const showHelp = useStore((s) => s.ui.showFieldHelp)
   const run = runSettings(scenario)
-  const mc = useStore((s) => s.mc)
-  const line = forecastLine(run, mc)
   return (
-    <div aria-label="Forecast and analysis">
-      <span className={line.cls} title={line.title}>
-        {line.text}
-      </span>
-      <label
-        className="run-det"
-        title="Deterministic mode evaluates the model once, with no random draws."
-      >
-        <input
-          type="checkbox"
-          checked={run.runMode === 'deterministic'}
-          onChange={(event) =>
-            patchScenario({ runMode: event.target.checked ? 'deterministic' : 'monte-carlo' })
-          }
-        />
-        Deterministic (no sampling)
-      </label>
-    </div>
+    <>
+      <div className="pgrid">
+        <div className="pg-2">
+          <Field label="Mode">
+            <Seg
+              label="Run mode"
+              value={run.runMode}
+              options={MODE_OPTIONS}
+              onChange={(runMode) => patchScenario({ runMode })}
+            />
+          </Field>
+        </div>
+        {run.runMode === 'monte-carlo' ? (
+          <>
+            <div className="pg-1">
+              <Field label="Runs">
+                <IntInput
+                  value={run.replicates}
+                  min={MIN_REPLICATES}
+                  max={MAX_REPLICATES}
+                  onCommit={(replicates) => patchScenario({ replicates })}
+                />
+              </Field>
+            </div>
+            <div className="pg-1">
+              <Field label="Seed">
+                <IntInput
+                  value={run.seed}
+                  min={MIN_SEED}
+                  max={MAX_SEED}
+                  onCommit={(seed) => patchScenario({ seed })}
+                />
+              </Field>
+            </div>
+          </>
+        ) : (
+          <p className="pg-2 prep-run-note">
+            One expected-value pass. Fragility and Placement need Monte Carlo.
+          </p>
+        )}
+      </div>
+      {showHelp && (
+        <p className="field-help">
+          Stop rule, what varies and sensitivity depth stay in Settings, Run.
+        </p>
+      )}
+    </>
   )
 }

@@ -1,11 +1,45 @@
-import type { RequirementThresholds, Scenario } from '../../model/types'
+import type { RequirementThresholds } from '../../model/types'
 import { DEFAULT_REQUIREMENT_THRESHOLDS } from '../../model/types'
 import { useStore } from '../../state/store'
 import { Field } from '../../ui/kit'
 
-/** Requirement thresholds in force: the save, over the defaults. */
-function thresholdsOf(scenario: Pick<Scenario, 'requirements'>): RequirementThresholds {
-  return { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...scenario.requirements }
+type ThresholdField = keyof RequirementThresholds
+
+/**
+ * One pass-line box with the clamp and blank rules of the requirement inputs. A
+ * cleared probability commits nothing, so undo does not record the blank; a
+ * cleared minimum warning commits null (no minimum).
+ */
+export function ThresholdInput({ field, id }: { field: ThresholdField; id?: string }) {
+  const requirements = useStore((state) => state.scenario.requirements)
+  const patchScenario = useStore((state) => state.patchScenario)
+  const thresholds = { ...DEFAULT_REQUIREMENT_THRESHOLDS, ...requirements }
+  const rule = RULES[field]
+  const value = thresholds[field]
+  return (
+    <input
+      id={id}
+      type="number"
+      min={rule.min}
+      max={rule.max}
+      step={rule.step}
+      placeholder={rule.nullable ? 'None' : undefined}
+      value={value ?? ''}
+      onChange={(event) => {
+        const raw = event.target.value
+        if (raw === '' && !rule.nullable) return
+        const next = raw === '' ? null : clamp(Number(raw), rule.min, rule.max)
+        patchScenario({ requirements: { ...thresholds, [field]: next } })
+      }}
+    />
+  )
+}
+
+const RULES: Record<ThresholdField, { min: number; max: number; step: number; nullable?: true }> = {
+  pdDetect: { min: 0.05, max: 0.99, step: 0.05 },
+  pdTrackCumulative: { min: 0.05, max: 0.99, step: 0.05 },
+  maxResidualPerTrack: { min: 0, max: 1, step: 0.05 },
+  minWarningS: { min: 0, max: Number.MAX_SAFE_INTEGER, step: 5, nullable: true },
 }
 
 function clamp(value: number, low: number, high: number): number {
@@ -15,18 +49,10 @@ function clamp(value: number, low: number, high: number): number {
 
 /**
  * Requirement thresholds body: the pass lines the test defines. The engine
- * never sets one, so every field here is an input, not a readout.
+ * never sets one, so every field here is an input, not a readout. The Inputs gate
+ * table (`RequirementTable`) uses the same boxes.
  */
 function ThresholdsBody() {
-  const scenario = useStore((state) => state.scenario)
-  const patchScenario = useStore((state) => state.patchScenario)
-  const thresholds = thresholdsOf(scenario)
-  const patch = (next: Partial<RequirementThresholds>) =>
-    patchScenario({ requirements: { ...thresholds, ...next } })
-  // A cleared field commits nothing, so undo does not record the blank.
-  const onNumber = (apply: (n: number) => void) => (event: { target: { value: string } }) => {
-    if (event.target.value !== '') apply(Number(event.target.value))
-  }
   return (
     <>
       <div className="field-row">
@@ -34,60 +60,25 @@ function ThresholdsBody() {
           label="Detect: single-scan Pd"
           help="A radar contact counts as DETECT when its single-scan Pd reaches this value"
         >
-          <input
-            type="number"
-            min={0.05}
-            max={0.99}
-            step={0.05}
-            value={thresholds.pdDetect}
-            onChange={onNumber((n) => patch({ pdDetect: clamp(n, 0.05, 0.99) }))}
-          />
+          <ThresholdInput field="pdDetect" />
         </Field>
         <Field label="Track: cumulative Pd">
-          <input
-            type="number"
-            min={0.05}
-            max={0.99}
-            step={0.05}
-            value={thresholds.pdTrackCumulative}
-            onChange={onNumber((n) => patch({ pdTrackCumulative: clamp(n, 0.05, 0.99) }))}
-          />
+          <ThresholdInput field="pdTrackCumulative" />
         </Field>
       </div>
       <div className="field-row">
         <Field label="Effect: max residual per track">
-          <input
-            type="number"
-            min={0}
-            max={1}
-            step={0.05}
-            value={thresholds.maxResidualPerTrack}
-            onChange={onNumber((n) => patch({ maxResidualPerTrack: clamp(n, 0, 1) }))}
-          />
+          <ThresholdInput field="maxResidualPerTrack" />
         </Field>
         <Field label="Detect: min warning" unit="s" help="Blank = no minimum">
-          <input
-            type="number"
-            min={0}
-            step={5}
-            placeholder="None"
-            value={thresholds.minWarningS ?? ''}
-            onChange={(event) =>
-              patch({
-                minWarningS:
-                  event.target.value === ''
-                    ? null
-                    : clamp(Number(event.target.value), 0, Number.MAX_SAFE_INTEGER),
-              })
-            }
-          />
+          <ThresholdInput field="minWarningS" />
         </Field>
       </div>
     </>
   )
 }
 
-/** Requirement threshold inputs for a scenario preparation surface. */
+/** Requirement threshold inputs for the Settings panel, Scenario section. */
 export function RequirementSettings() {
   return <ThresholdsBody />
 }

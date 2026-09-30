@@ -3,75 +3,15 @@ import { effectiveDoctrine } from '../../model/types'
 import { LAUNCH_POLICIES } from '../../analysis/doctrineFactors'
 import { useStore } from '../../state/store'
 import { Info } from './Info'
-import { Field, Seg } from '../../ui/kit'
+import { Field } from '../../ui/kit'
 import { RoleSeg } from './controls'
+import { PrepSwitch, TitledSeg } from './EnvironmentSettings'
 
-/** Doctrine section body: the scenario-level planning factors that bind. */
-function DoctrineBody() {
-  const scenario = useStore((state) => state.scenario)
-  const patchScenario = useStore((state) => state.patchScenario)
-  const doctrine = effectiveDoctrine(scenario)
-  const patch = (next: Partial<typeof doctrine>) =>
-    patchScenario({ doctrine: { ...doctrine, ...next } })
-  const policy = LAUNCH_POLICIES.find((p) => p.v === doctrine.launchPolicy)
-  const fractionPct = Math.round(doctrine.launchRangeFraction * 100)
-  return (
-    <>
-      <Field label="Launch point" help={policy?.hint}>
-        <Seg
-          label="Launch point"
-          value={doctrine.launchPolicy}
-          options={LAUNCH_POLICIES.map((p) => ({ v: p.v as LaunchPolicy, label: p.label }))}
-          onChange={(launchPolicy) => patch({ launchPolicy })}
-        />
-      </Field>
-      <div className="field-row">
-        <Field
-          label="Release range"
-          unit={`${fractionPct}%`}
-          help="Release inside this share of max range"
-        >
-          <input
-            type="range"
-            min={10}
-            max={100}
-            step={5}
-            disabled={doctrine.launchPolicy !== 'range-fraction'}
-            value={fractionPct}
-            onChange={(event) => patch({ launchRangeFraction: Number(event.target.value) / 100 })}
-          />
-        </Field>
-        <Field label="Re-engagement depth" unit="cycles" help="Cycles kept before arrival">
-          <input
-            type="number"
-            min={0}
-            max={5}
-            step={1}
-            value={doctrine.opportunities}
-            onChange={(event) =>
-              patch({ opportunities: Math.max(0, Math.round(Number(event.target.value))) })
-            }
-          />
-        </Field>
-      </div>
-      <div className="field-row">
-        <Field label="Hostile declaration dwell" unit="s">
-          <input
-            type="number"
-            min={0}
-            step={1}
-            value={doctrine.declareHostileS}
-            onChange={(event) =>
-              patch({ declareHostileS: Math.max(0, Number(event.target.value)) })
-            }
-          />
-        </Field>
-      </div>
-    </>
-  )
-}
+const DOCTRINE_TITLE =
+  'Doctrinal fire control (default): stable track, hostile declaration, target dwell, launch-point policy, shoot-look-shoot with BDA. Off = ROE gating; preparation and travel times still apply.'
 
-function DoctrineInfo() {
+/** The fire-control method note behind the (i) in the section head. */
+export function FireControlInfo() {
   return (
     <Info label="About the fire-control sequence">
       <p>
@@ -98,51 +38,121 @@ function DoctrineInfo() {
   )
 }
 
-/** The ROE control and the doctrine toggle in the header; the doctrine factors in the body. */
-function DoctrineControls() {
+/**
+ * The Fire control section body: ROE and the Doctrine switch, then the doctrine
+ * factors while doctrine is on, else the one ROE gating line.
+ */
+export function FireDoctrineSettings({
+  launchLabels,
+}: {
+  /** The short segment labels; the full hint is each segment's title and the help. */
+  launchLabels: Record<LaunchPolicy, string>
+}) {
   const scenario = useStore((state) => state.scenario)
   const patchScenario = useStore((state) => state.patchScenario)
+  const doctrine = effectiveDoctrine(scenario)
+  const enabled = scenario.doctrine?.enabled ?? false
+  const patch = (next: Partial<typeof doctrine>) =>
+    patchScenario({ doctrine: { ...doctrine, ...next } })
+  const policy = LAUNCH_POLICIES.find((p) => p.v === doctrine.launchPolicy)
+  const fractionPct = Math.round(doctrine.launchRangeFraction * 100)
   return (
-    <>
-      <span className="roe-label">ROE</span>
-      <RoleSeg
-        value={scenario.roe ?? 'tight'}
-        options={[
-          { v: 'hold' as Roe, label: 'Hold' },
-          { v: 'tight' as Roe, label: 'Tight' },
-          { v: 'free' as Roe, label: 'Free' },
-        ]}
-        onChange={(roe) => patchScenario({ roe })}
-        dataRole="roe"
-      />
-      <label
-        className="adv-toggle"
-        title="Doctrinal fire control (default): stable track, hostile declaration, target dwell, launch-point policy, shoot-look-shoot with BDA. Off = ROE gating; preparation and travel times still apply."
-      >
-        <input
-          type="checkbox"
-          checked={scenario.doctrine?.enabled ?? false}
-          onChange={(event) =>
-            patchScenario({
-              doctrine: { ...effectiveDoctrine(scenario), enabled: event.target.checked },
-            })
-          }
-        />
-        Doctrine
-      </label>
-      <DoctrineInfo />
-    </>
-  )
-}
-
-/** ROE, doctrine header controls, and doctrine fields for scenario preparation. */
-export function FireDoctrineSettings() {
-  return (
-    <>
-      <div className="prepare-setting-controls">
-        <DoctrineControls />
+    <div className="pgrid">
+      <div className="pg-2">
+        <Field label="ROE">
+          <RoleSeg
+            value={scenario.roe ?? 'tight'}
+            options={[
+              { v: 'hold' as Roe, label: 'Hold' },
+              { v: 'tight' as Roe, label: 'Tight' },
+              { v: 'free' as Roe, label: 'Free' },
+            ]}
+            onChange={(roe) => patchScenario({ roe })}
+            dataRole="roe"
+          />
+        </Field>
       </div>
-      <DoctrineBody />
-    </>
+      <div className="pg-2">
+        <Field label="Doctrine">
+          <PrepSwitch
+            checked={enabled}
+            label={enabled ? 'On' : 'Off'}
+            title={DOCTRINE_TITLE}
+            onChange={(next) => patchScenario({ doctrine: { ...doctrine, enabled: next } })}
+          />
+        </Field>
+      </div>
+      {enabled ? (
+        <>
+          <div className="pg-4">
+            <Field label="Launch point" help={policy?.hint}>
+              <TitledSeg
+                label="Launch point"
+                cls="pg-seg4"
+                value={doctrine.launchPolicy}
+                options={LAUNCH_POLICIES.map((p) => ({
+                  v: p.v,
+                  label: launchLabels[p.v],
+                  title: p.hint,
+                }))}
+                onChange={(launchPolicy) => patch({ launchPolicy })}
+              />
+            </Field>
+          </div>
+          {doctrine.launchPolicy === 'range-fraction' && (
+            <div className="pg-4">
+              <Field
+                label="Release range"
+                unit={`${fractionPct}%`}
+                help="Release inside this share of max range"
+              >
+                <input
+                  type="range"
+                  min={10}
+                  max={100}
+                  step={5}
+                  value={fractionPct}
+                  onChange={(event) =>
+                    patch({ launchRangeFraction: Number(event.target.value) / 100 })
+                  }
+                />
+              </Field>
+            </div>
+          )}
+          <div className="pg-2">
+            <Field label="Re-engagement depth" unit="cycles" help="Cycles kept before arrival">
+              <input
+                type="number"
+                min={0}
+                max={5}
+                step={1}
+                value={doctrine.opportunities}
+                onChange={(event) =>
+                  patch({ opportunities: Math.max(0, Math.round(Number(event.target.value))) })
+                }
+              />
+            </Field>
+          </div>
+          <div className="pg-2">
+            <Field label="Declaration dwell" unit="s" help="Hostile declaration dwell">
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={doctrine.declareHostileS}
+                onChange={(event) =>
+                  patch({ declareHostileS: Math.max(0, Number(event.target.value)) })
+                }
+              />
+            </Field>
+          </div>
+        </>
+      ) : (
+        <p className="pg-4 prep-note">
+          ROE gating only. Every ready effector fires when the window opens. Preparation and travel
+          times still apply.
+        </p>
+      )}
+    </div>
   )
 }
