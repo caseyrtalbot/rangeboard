@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { formatTime } from '../../../geometry/geo'
+import { trialKpisAt } from '../../../analysis/liveStats'
 import type { McSummary } from '../../../playback/mcRun'
 import { createTrialManifest } from '../../../playback/trialTypes'
 import { analysisBasisSignature } from '../../../state/analysisBasis'
@@ -12,8 +12,8 @@ import { OutcomeScreen } from './OutcomeScreen'
 
 const interaction = vi.hoisted(() => ({
   sort: { column: 'track', descending: false },
+  trackView: 'strip' as 'strip' | 'table',
   buttons: new Map<string, () => void>(),
-  save: null as null | { enabled: boolean; run: () => Promise<{ evicted: string[] }> },
   saved: [] as unknown[],
 }))
 vi.mock('../../../io/runStore', () => ({
@@ -39,6 +39,7 @@ vi.mock('react', async (importOriginal) => {
           },
         ]
       }
+      if (initial === 'strip') return [interaction.trackView, () => {}]
       return actual.useState(initial)
     },
   }
@@ -46,12 +47,12 @@ vi.mock('react', async (importOriginal) => {
 vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
-    const button = props as { children?: unknown; onClick?: () => void }
+    const button = props as { children?: unknown; onClick?: () => void; className?: string }
     if (type === 'button' && typeof button.children === 'string' && button.onClick) {
       interaction.buttons.set(button.children, button.onClick)
     }
-    if (typeof type === 'function' && type.name === 'RunHistory')
-      interaction.save = (props as { save: typeof interaction.save }).save
+    if (type === 'button' && button.className === 'pstat out-gates' && button.onClick)
+      interaction.buttons.set('Gates met', button.onClick)
     return actual.jsxDEV(type, props, ...rest)
   }
   return { ...actual, jsxDEV }
@@ -76,20 +77,24 @@ function complete() {
   return fixture
 }
 
-function tile(html: string, label: string) {
-  const start = html.indexOf(`<span class="tl">${label}</span>`)
+function stat(html: string, label: string) {
+  const start = html.indexOf(`<div class="pstat-l">${label}</div>`)
   expect(start).toBeGreaterThan(-1)
   return html.slice(start, html.indexOf('</div></div>', start))
 }
 
 function tracks(html: string) {
   const body = html.slice(html.indexOf('<tbody>'), html.indexOf('</tbody>'))
-  return [...body.matchAll(/<tr><td[^>]*>([^<]+)<\/td>/g)].map((match) => match[1])
+  return [...body.matchAll(/<tr[^>]*><td[^>]*>([^<]+)<\/td>/g)].map((match) => match[1])
 }
+
+const segments = (html: string, kind: string) =>
+  (html.match(new RegExp(`<i class="${kind}"></i>`, 'g')) ?? []).length
 
 describe('OutcomeScreen', () => {
   beforeEach(() => {
     interaction.sort = { column: 'track', descending: false }
+    interaction.trackView = 'strip'
     interaction.buttons.clear()
     complete()
   })
@@ -119,57 +124,93 @@ describe('OutcomeScreen', () => {
     })
     const html = render()
     expect(html).toContain(status === 'preparing' ? 'Preparing trial' : 'Trial failed')
-    expect(html).not.toContain('tiles c3')
+    expect(html).not.toContain('out-resbar')
     expect(html).not.toContain('<table')
   })
 
   it('requires completed playback and a fully observed retained result', () => {
     installTrial(3)
     const partial = render()
-    expect(partial).toContain('T+0:03 of 1:00 observed')
     expect(partial).toContain('Complete playback in Execute')
     expect(partial).toMatch(
       /class="empty-row">.*Trial in progress\. Complete playback in Execute to see the outcome\./,
     )
     expect(partial).not.toContain('muted')
-    expect(partial).not.toContain('tiles c3')
+    expect(partial).not.toContain('out-resbar')
     observeTrial(60)
-    expect(render()).not.toContain('tiles c3')
+    expect(render()).not.toContain('out-resbar')
     complete()
     const trial = useStore.getState().trial
     const result = { ...trial.result!, observedThroughS: 3 }
     useStore.setState({ trial: { ...trial, result } })
-    expect(render()).not.toContain('tiles c3')
+    expect(render()).not.toContain('out-resbar')
   })
 
-  it('renders exactly six full-horizon tiles once after completion, even after rewind', () => {
+  it('states the provenance once, the result bar against trialKpisAt and the stat row', () => {
     const { manifest, view } = complete()
     const html = render()
     expect(html).toContain(
-      `simulated trial · one draw · seed ${manifest.seed} · T+1:00 of 1:00 observed`,
+      `<span title="One simulated draw">Trial · seed ${manifest.seed} · T+1:00</span>`,
     )
-    expect(html.match(/class="tiles c3"/g)).toHaveLength(1)
-    expect(html.match(/class="tile"/g)).toHaveLength(6)
-    expect(tile(html, 'Defeated before arrival')).toContain('>3<small>/9 members</small>')
-    expect(tile(html, 'Arrived undefeated')).toContain('>3<small>/9 members</small>')
-    expect(tile(html, 'Late kills')).toContain('>2<small>/9 members</small>')
-    expect(tile(html, 'First detect')).toContain('T+0:01')
+    expect(html).not.toContain('simulated trial · one draw')
+    expect(html).not.toContain('by T+')
+    const kpis = trialKpisAt(view, view.durationS)
+    expect([kpis.kills, kpis.lateKills, kpis.reportedLeakers]).toEqual([3, 2, 3])
+    // A late kill is a leaker: leaked alone is the leakers less the late kills.
+    expect(segments(html, 'def')).toBe(kpis.kills)
+    expect(segments(html, 'late')).toBe(kpis.lateKills)
+    expect(segments(html, 'leak')).toBe(kpis.reportedLeakers! - kpis.lateKills)
+    expect(segments(html, 'na')).toBe(9 - kpis.kills - kpis.reportedLeakers!)
+    expect(html).toContain(
+      'aria-label="3 defeated before arrival, 2 late kills, 1 leaked of 9 members"',
+    )
+    expect(stat(html, 'First detect')).toContain('T+0:01')
     // No threat lost every member: the first death is unreached.
-    expect(tile(html, 'First effect')).toContain('>—<small')
-    expect(tile(html, 'Salvos')).toContain('>8<small')
-    expect(tile(html, 'Salvos')).toContain('4 kinetic · 4 EW')
-    expect(html.match(new RegExp(`by T\\+${formatTime(view.durationS)}`, 'g'))).toHaveLength(6)
-    expect(html).toContain('font-size:var(--type-dense-size)')
-    expect(tracks(html)).toEqual(['flyby', 'moving', 'swarm'])
+    expect(stat(html, 'First effect')).toContain('pstat-v">—')
+    expect(html).toContain('title="4 kinetic · 4 EW · 0 DE"')
+    expect(stat(html, 'Salvos')).toContain('pstat-v">8')
+    expect(html).toMatch(/<span class="pstat-v">\d+<small>\/6<\/small><\/span>/)
     expect(html).not.toContain('Trial threat record')
+  })
+
+  it('opens Prepare, Inputs, Requirements from Gates met', () => {
+    const request = vi.spyOn(useStore.getState(), 'requestPanel')
+    const original = useStore.getState().requestPanel
+    useStore.setState({ requestPanel: request as typeof original })
+    const html = render()
+    expect(html).toContain('class="pstat out-gates"')
+    interaction.buttons.get('Gates met')!()
+    expect(request).toHaveBeenCalledWith({
+      phase: 'prepare',
+      screen: 'inputs',
+      section: 'prepare-requirements',
+    })
+    useStore.setState({ requestPanel: original })
+  })
+
+  it('draws strips on one axis by default and the table on toggle', () => {
+    const strips = render()
+    expect(strips).toContain('class="out-strips"')
+    expect(strips.match(/class="out-strip"/g)).toHaveLength(3)
+    expect(strips).toContain('class="out-mk det"')
+    expect(strips).toContain('class="out-mk eng"')
+    expect(strips).toContain('class="out-mk arr"')
+    expect(strips).toContain('>1:00</span>')
+    expect(strips).not.toContain('<table')
+    interaction.trackView = 'table'
+    const table = render()
+    expect(tracks(table)).toEqual(['flyby', 'moving', 'swarm'])
+    for (const label of ['Detect', 'ID', 'Engage', 'Effect', 'Slv', 'Result'])
+      expect(table).toContain(`>${label}</button>`)
+    expect(table).toContain('<th scope="col" class="out-c-fx"')
   })
 
   it.each([
     ['Track', ['swarm', 'moving', 'flyby'], ['flyby', 'moving', 'swarm']],
-    ['D', ['swarm', 'moving', 'flyby'], ['flyby', 'moving', 'swarm']],
+    ['Detect', ['swarm', 'moving', 'flyby'], ['flyby', 'moving', 'swarm']],
     ['ID', ['flyby', 'swarm', 'moving'], ['moving', 'swarm', 'flyby']],
-    ['ENG', ['moving', 'swarm', 'flyby'], ['swarm', 'moving', 'flyby']],
-    ['FX', ['swarm', 'moving', 'flyby'], ['swarm', 'moving', 'flyby']],
+    ['Engage', ['moving', 'swarm', 'flyby'], ['swarm', 'moving', 'flyby']],
+    ['Effect', ['swarm', 'moving', 'flyby'], ['swarm', 'moving', 'flyby']],
     ['Slv', ['flyby', 'moving', 'swarm'], ['swarm', 'moving', 'flyby']],
     ['Result', ['flyby', 'moving', 'swarm'], ['swarm', 'flyby', 'moving']],
   ])(
@@ -190,6 +231,7 @@ describe('OutcomeScreen', () => {
           : a,
       )
       useStore.setState({ trial: { ...trial, result: { ...result, assessments } } })
+      interaction.trackView = 'table'
       render()
       interaction.buttons.get(header as string)!()
       const sorted = render()
@@ -202,25 +244,29 @@ describe('OutcomeScreen', () => {
     },
   )
 
-  it('keeps existing ledger, manifest, component and validity content in closed record rows', () => {
+  it('keeps the ledger, the systems and the manifest as closed records, and nothing else', () => {
     const html = render()
     expect(html).toContain('<summary>Event ledger · 8 events</summary>')
-    expect(html).toContain('<summary>Manifest · 3 components</summary>')
-    expect(html).toContain('<summary>Validity · ')
-    expect(html).toMatch(/ · \d+ findings<\/summary>/)
+    expect(html).toContain('<summary>Systems at end of run · 3 components</summary>')
+    expect(html).toContain('<summary>Manifest · ')
     expect(html.match(/class="event-ledger"/g)).toHaveLength(1)
     expect(html).toContain('Jam succeeded')
-    expect(html).toContain('Jam failed')
     expect(html).toContain('mixed-fixed-trial')
-    expect(html).toContain('Build revision unavailable')
-    expect(html).toMatch(
-      /<p class="empty-row"><span class="state warning">(?:(?!<\/p>).)*No trial validity assessment was captured\.<\/span><\/p>/,
-    )
-    expect(html).toContain('title="Forecast · requirement validity."')
-    expect(html).toContain('Export debrief JSON')
-    expect(html).toContain('Capture final PNG')
-    expect(html).toContain('Forecast · requirement record')
+    expect(html).toContain('class="sys-list"')
     expect(html).not.toContain('class="analysis-disclosure" open')
+    for (const removed of [
+      'Evidence products',
+      'evidence-products',
+      'New clean run',
+      'Forecast · requirement record',
+      '<summary>Validity',
+      'Run history',
+      'Save to history',
+      'Export debrief JSON',
+    ])
+      expect(html).not.toContain(removed)
+    expect(html).toContain('>Save run</button>')
+    expect(html).toContain('>Export</button>')
   })
 
   it('reads FX and First effect at the death, and a late kill as its own word', () => {
@@ -237,18 +283,23 @@ describe('OutcomeScreen', () => {
     ].sort((a, b) => a.tS - b.tS)
     const result = { ...state.trial.result!, report: { ...report, events } }
     useStore.setState({ trial: { ...state.trial, result } })
+    interaction.trackView = 'table'
     const html = render()
     const cells = (id: string) => {
-      const start = html.indexOf(`<td title="${id}">`)
+      const start = html.indexOf(`<td class="mono" title="${id}">`)
       return html.slice(start, html.indexOf('</tr>', start))
     }
-    expect(cells('moving')).toContain('<td>0:02</td><td>3</td>')
+    expect(cells('moving')).toContain(
+      '<td class="mono out-c-fx">0:02</td><td class="mono out-c-slv">3</td>',
+    )
     expect(cells('moving')).toContain('defeated (hard)')
-    expect(cells('swarm')).toContain('<td>—</td><td>8</td>')
+    expect(cells('swarm')).toContain(
+      '<td class="mono out-c-fx">—</td><td class="mono out-c-slv">8</td>',
+    )
     expect(cells('swarm')).toContain('>leaked</span>')
     expect(cells('swarm')).toContain('late kill T+0:10')
-    expect(cells('swarm')).not.toContain('defeated')
-    expect(tile(html, 'First effect')).toContain('0:02')
+    expect(cells('swarm')).not.toContain('>defeated')
+    expect(stat(html, 'First effect')).toContain('0:02')
   })
 
   it('keeps missing detection/effect and no-asset leakage undefined', () => {
@@ -275,13 +326,12 @@ describe('OutcomeScreen', () => {
     }
     useStore.setState({ scenario, trial: { ...state.trial, scenario, manifest, result } })
     const html = render()
-    expect(tile(html, 'Arrived undefeated')).toContain('>—<small>/9 members</small>')
-    expect(tile(html, 'First detect')).toContain('>—<small')
-    expect(tile(html, 'First effect')).toContain('>—<small')
-    expect(html).toMatch(
-      /class="empty-row"><span class="state warning">.*No defended asset · arrival and leakage unavailable\.<\/span>/,
-    )
-    expect(html).not.toContain('<p class="muted small">No defended asset')
+    expect(stat(html, 'First detect')).toContain('pstat-v">—')
+    expect(stat(html, 'First effect')).toContain('pstat-v">—')
+    expect(html).toContain('No defended asset · arrival is not measurable')
+    expect(html).toContain('aria-label="0 defeated of 9 members; arrival is not measurable"')
+    expect(segments(html, 'leak')).toBe(0)
+    expect(segments(html, 'na')).toBe(9)
   })
 })
 
@@ -311,9 +361,11 @@ describe('Save to history', () => {
       },
     })
     interaction.saved.length = 0
-    render()
-    expect(interaction.save?.enabled).toBe(true)
-    await interaction.save!.run()
+    interaction.buttons.clear()
+    const html = render()
+    expect(html).toContain('title="Save this ensemble to the run history">Save run</button>')
+    interaction.buttons.get('Save run')!()
+    await Promise.resolve()
     const record = interaction.saved[0] as { manifest: { overrides: unknown[] } }
     expect(record.manifest.overrides).toEqual([applied])
     expect(useOverrides.getState().overrides).toEqual([])

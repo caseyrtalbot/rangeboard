@@ -536,3 +536,76 @@ export function threatReadoutAt({
       : `SIMULATED TRIAL · THROUGH T+${formatTime(tObs)} · ALT CONSTANT`,
   }
 }
+
+/** A Monitor track row's state word, in kill-chain order. */
+export type TrackStageWord =
+  | 'undetected'
+  | 'detected'
+  | 'tracked'
+  | 'identified'
+  | 'targeted'
+  | 'engaged'
+  | 'defeated'
+  | 'leaked'
+
+/** The six kill-chain stages the Monitor chain pips draw. */
+export const CHAIN_STAGES = ['detect', 'track', 'identify', 'target', 'engage', 'defeat'] as const
+
+/** Stages reached per state word. Defeated and leaked both close the chain. */
+export const STAGES_REACHED: Record<TrackStageWord, number> = {
+  undetected: 0,
+  detected: 1,
+  tracked: 2,
+  identified: 3,
+  targeted: 4,
+  engaged: 5,
+  defeated: 6,
+  leaked: 6,
+}
+
+/**
+ * The milestones one track reached by the horizon, latest first: leaked wins over a
+ * late kill, a death at or before the horizon is a defeat, then the first salvo, the
+ * firing window, the hostile identification, a sensor hold and the first detection.
+ */
+export function trackStageWord(track: {
+  leaked: boolean
+  dead: boolean
+  engaged: boolean
+  targeted: boolean
+  identified: boolean
+  held: boolean
+  detected: boolean
+}): TrackStageWord {
+  if (track.leaked) return 'leaked'
+  if (track.dead) return 'defeated'
+  if (track.engaged) return 'engaged'
+  if (track.targeted) return 'targeted'
+  if (track.identified) return 'identified'
+  if (track.held) return 'tracked'
+  if (track.detected) return 'detected'
+  return 'undetected'
+}
+
+/**
+ * D13: the time-to-arrival tone thresholds are display constants, not requirements.
+ * Under `critical` seconds reads critical, under `warning` seconds reads warning.
+ */
+export const TTA_TONE_S = { critical: 60, warning: 120 } as const
+
+/**
+ * Time to arrival at the horizon: the planned arrival minus the horizon in m:ss,
+ * `arrived` at or after arrival, and a dash without an arrival. `sortS` orders the
+ * most urgent first and a missing arrival last.
+ */
+export function ttaReadout(
+  arrivalS: number | null,
+  horizonS: number,
+): { text: string; tone: 'critical' | 'warning' | null; sortS: number } {
+  if (arrivalS == null) return { text: DASH, tone: null, sortS: Number.POSITIVE_INFINITY }
+  const left = arrivalS - horizonS
+  if (left <= 0) return { text: 'arrived', tone: 'critical', sortS: left }
+  const tone =
+    left < TTA_TONE_S.critical ? 'critical' : left < TTA_TONE_S.warning ? 'warning' : null
+  return { text: formatTime(left), tone, sortS: left }
+}

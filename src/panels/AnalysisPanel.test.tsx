@@ -90,8 +90,8 @@ describe('AnalysisPanel screens', () => {
       expect(html).not.toContain('No trial yet')
     }
     observeTrial(3, 1)
-    expect(render({ phase: 'execute' })).toContain('observed through T+0:01 of ')
-    expect(render({ phase: 'analyze' })).toContain('T+0:03 of 1:00 observed')
+    expect(render({ phase: 'execute' })).toContain('aria-label="Kill-chain funnel"')
+    expect(render({ phase: 'analyze' })).toContain('Trial in progress')
   })
 
   it('puts the Validity line over Prepare and Analyze, and over Execute only while open', () => {

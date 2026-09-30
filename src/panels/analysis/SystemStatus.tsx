@@ -1,12 +1,5 @@
-import {
-  FORECAST_IN_ANALYZE,
-  FULL_RUN,
-  reached,
-  type ExecutionHorizon,
-} from '../../analysis/horizon'
-import { useState } from 'react'
 import { State } from '../../ui/kit'
-import { EmptyRow, NoteInfo } from './controls'
+import { EmptyRow } from './controls'
 import type { StateTone } from '../../ui/kit'
 import type {
   ComponentTelemetry,
@@ -59,97 +52,77 @@ function componentDetail(component: Component): string {
   return `${component.purpose} · ${detail}${capacity ? ` · ${capacity}` : ''}`
 }
 
-function ComponentRow({ component }: { component: Component }) {
-  const summary =
-    component.kind === 'sensor'
-      ? `${component.tracksNow} now · ${component.tracksSeen} seen${component.holdSeconds > 0 ? ` · hold ${formatTime(component.holdSeconds)}` : ''}`
-      : component.kind === 'c2'
-        ? `${component.tracksNow} now · ${component.tracksSeen} routed`
-        : `${plural(component.targetsNow, 'target')} · ${plural(component.salvosAssigned, 'salvo')}${component.capacityTotal != null ? ` · ${component.capacityRemaining}/${component.capacityTotal}` : ''}`
-  return (
-    <div className="component-telemetry-row" title={componentDetail(component)}>
-      <span className={`component-kind kind-${component.kind}`}>
-        {component.kind === 'sensor' ? 'S' : component.kind === 'c2' ? 'C2' : 'E'}
-      </span>
-      <span className="component-copy">
-        <strong title={component.name}>{component.name}</strong>
-        <small>{summary}</small>
-      </span>
-      <State tone={stateTone(component.state)}>{STATE_LABEL[component.state]}</State>
-    </div>
-  )
-}
+const GROUPS: Array<[Component['kind'], string]> = [
+  ['sensor', 'Sensors'],
+  ['c2', 'C2'],
+  ['effector', 'Effectors'],
+]
 
-function SystemCard({ group, defaultOpen }: { group: Group; defaultOpen: boolean }) {
-  const [open, setOpen] = useState(defaultOpen)
+// A magazine larger than this reads as text only; the pips would not fit a row.
+const MAX_PIPS = 12
+
+/** The per-kind readout: held tracks and hold time, routed tracks, or the magazine. */
+function Readout({ component }: { component: Component }) {
+  if (component.kind === 'sensor')
+    return (
+      <>
+        {component.tracksNow} held
+        {component.holdSeconds > 0 ? ` · ${formatTime(component.holdSeconds)}` : ''}
+      </>
+    )
+  if (component.kind === 'c2') return <>{component.tracksSeen} routed</>
+  const total = component.capacityTotal
+  const remaining = component.capacityRemaining
+  if (total == null) return <>cont.</>
+  if (remaining == null) return <>—</>
   return (
-    <div className="system-telemetry-card">
-      <button className="system-telemetry-head" onClick={() => setOpen((value) => !value)}>
-        <span className={`chevron${open ? ' open' : ''}`}>▸</span>
-        <span className="system-name">{group.name}</span>
-        <span className="system-live-summary">
-          {group.activeComponents}/{group.componentCount} online · {group.tracksNow} tracks ·{' '}
-          {group.salvosAssigned} salvos
-        </span>
-      </button>
-      {open && (
-        <div className="component-telemetry-list">
-          {group.components.map((component) => (
-            <ComponentRow key={component.entityId} component={component} />
+    <>
+      {total <= MAX_PIPS && (
+        <span className="sys-mag" aria-hidden="true">
+          {Array.from({ length: total }, (_, i) => (
+            <i key={i} className={i < remaining ? 'full' : undefined} />
           ))}
-          <details>
-            <summary>Details</summary>
-            {group.components.map((component) => (
-              <p className="muted small" key={component.entityId}>
-                <strong>{component.name}</strong> · {componentDetail(component)}
-              </p>
-            ))}
-          </details>
-        </div>
+        </span>
       )}
-    </div>
+      {remaining}/{total}
+    </>
   )
 }
 
 /**
- * Component telemetry list. The state pill is a sampled instant: what the
- * component was doing at the cursor time the caller asked for, which in an
- * evidence record is the last frame. Set `endOfRun` so the column says so.
+ * One systems list grouped Sensors, C2 and Effectors. Each row holds a state square
+ * and word (the word drops under 360 px; the row title keeps it) and a readout. The
+ * state is a sampled instant: at the cursor, or the last frame in a record.
  */
-export function SystemStatus({
-  groups,
-  expanded = true,
-  endOfRun = false,
-  horizon = FULL_RUN,
-  sampledAtS,
-}: {
-  groups: Group[]
-  expanded?: boolean
-  endOfRun?: boolean
-  horizon?: ExecutionHorizon
-  /** Time used by the caller to compute every group and component count. */
-  sampledAtS?: number
-}) {
-  if (horizon.scoped && !reached(0, horizon)) return <EmptyRow>No system telemetry yet.</EmptyRow>
-  // Group totals and hover details must come from the same reached sample.
-  if (horizon.scoped && !reached(sampledAtS, horizon))
-    return <EmptyRow>{FORECAST_IN_ANALYZE}</EmptyRow>
-  if (groups.length === 0) return <EmptyRow>No sensors, C2, or effectors placed.</EmptyRow>
+export function SystemList({ groups }: { groups: Group[] }) {
+  const components = groups.flatMap((group): Component[] => group.components)
+  if (components.length === 0) return <EmptyRow>No sensors, C2, or effectors placed.</EmptyRow>
   return (
-    <div className="system-telemetry-list">
-      {endOfRun && (
-        <NoteInfo
-          label="telemetry state"
-          note="State shows the final sampled instant, not the run outcome; cumulative counts cover the run."
-        />
-      )}
-      {groups.map((group, index) => (
-        <SystemCard
-          key={group.id}
-          group={group}
-          defaultOpen={expanded && (groups.length <= 3 || index === 0)}
-        />
-      ))}
+    <div className="sys-list">
+      {GROUPS.map(([kind, label]) => {
+        const rows = components.filter((component) => component.kind === kind)
+        if (rows.length === 0) return null
+        return (
+          <div key={kind} role="group" aria-label={label}>
+            <div className="sys-group">{label}</div>
+            {rows.map((component) => (
+              <div
+                className="sys-row"
+                key={component.entityId}
+                title={`${component.name} · ${STATE_LABEL[component.state]} · ${componentDetail(component)}`}
+              >
+                <span className="sys-nm">{component.name}</span>
+                <State tone={stateTone(component.state)}>
+                  <span className="sys-w">{STATE_LABEL[component.state]}</span>
+                </State>
+                <span className="sys-rd">
+                  <Readout component={component} />
+                </span>
+              </div>
+            ))}
+          </div>
+        )
+      })}
     </div>
   )
 }

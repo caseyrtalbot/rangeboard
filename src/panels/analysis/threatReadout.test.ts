@@ -16,6 +16,11 @@ import {
   threatReadoutAt,
   trialTelemetryAt,
   trialOutcomeRows,
+  CHAIN_STAGES,
+  STAGES_REACHED,
+  trackStageWord,
+  TTA_TONE_S,
+  ttaReadout,
 } from './threatReadout'
 import { trialThreatPictureAt } from '../../analysis/threatAggregation'
 
@@ -360,5 +365,44 @@ describe('trial outcome rows', () => {
       },
     }
     expect(trialOutcomeRows(trial).find((row) => row.id === 'parked')?.states).toEqual(['no path'])
+  })
+})
+
+describe('Monitor stage and time to arrival', () => {
+  const none = {
+    leaked: false,
+    dead: false,
+    engaged: false,
+    targeted: false,
+    identified: false,
+    held: false,
+    detected: false,
+  }
+
+  it('derives the latest reached stage, leaked over a late kill', () => {
+    expect(trackStageWord(none)).toBe('undetected')
+    expect(trackStageWord({ ...none, detected: true })).toBe('detected')
+    expect(trackStageWord({ ...none, detected: true, held: true })).toBe('tracked')
+    expect(trackStageWord({ ...none, held: true, identified: true })).toBe('identified')
+    expect(trackStageWord({ ...none, identified: true, targeted: true })).toBe('targeted')
+    expect(trackStageWord({ ...none, targeted: true, engaged: true })).toBe('engaged')
+    expect(trackStageWord({ ...none, engaged: true, dead: true })).toBe('defeated')
+    expect(trackStageWord({ ...none, dead: true, leaked: true })).toBe('leaked')
+    expect(CHAIN_STAGES).toHaveLength(6)
+    expect(STAGES_REACHED.defeated).toBe(6)
+    expect(STAGES_REACHED.leaked).toBe(6)
+    expect(STAGES_REACHED.identified).toBe(3)
+  })
+
+  it('reads TTA in m:ss with the D13 display tones', () => {
+    expect(TTA_TONE_S).toEqual({ critical: 60, warning: 120 })
+    expect(ttaReadout(null, 10)).toEqual({ text: '—', tone: null, sortS: Infinity })
+    expect(ttaReadout(310, 10)).toEqual({ text: '5:00', tone: null, sortS: 300 })
+    expect(ttaReadout(130, 10)).toMatchObject({ text: '2:00', tone: null })
+    expect(ttaReadout(129, 10)).toMatchObject({ text: '1:59', tone: 'warning' })
+    expect(ttaReadout(70, 10)).toMatchObject({ text: '1:00', tone: 'warning' })
+    expect(ttaReadout(69, 10)).toMatchObject({ text: '0:59', tone: 'critical' })
+    expect(ttaReadout(10, 10)).toMatchObject({ text: 'arrived', tone: 'critical' })
+    expect(ttaReadout(5, 10)).toMatchObject({ text: 'arrived', sortS: -5 })
   })
 })

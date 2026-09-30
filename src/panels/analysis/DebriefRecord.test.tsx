@@ -1,47 +1,45 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { buildAarSummary } from '../../analysis/aar'
-import { engagementPicture } from '../../analysis/impact'
+import { trialForecast } from '../../analysis/trialResult'
 import { exportRunRecord } from '../../io/persist'
+import { exportRunCsv } from '../../io/exportCsv'
+import type { McSummary } from '../../playback/mcRun'
+import { analysisBasisSignature } from '../../state/analysisBasis'
 import { useStore } from '../../state/store'
-import { IDLE_TRIAL } from '../../state/runState'
-import { runReplicates } from '../../playback/mcRun'
-import { scenarioDurationS } from '../../model/scenario'
-import { DebriefRecord } from './DebriefRecord'
+import { ExportMenu, ExportMenuItems } from './DebriefRecord'
 import { installTrial } from './trialTestState'
 
-const actions = vi.hoisted(() => ({ export: undefined as (() => void) | undefined }))
+const idleMc = useStore.getState().mc
+const actions = vi.hoisted(() => ({ buttons: new Map<string, () => void>() }))
 vi.mock('../../io/persist', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../io/persist')>()),
   exportRunRecord: vi.fn(),
 }))
-// Capture the real rendered button handler while keeping React's server render intact.
+vi.mock('../../io/exportCsv', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../io/exportCsv')>()),
+  exportRunCsv: vi.fn(() => true),
+}))
+// The menu renders open, so its items mount in the server render.
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  return {
+    ...actual,
+    useState: (initial: unknown) =>
+      initial === false ? [true, () => {}] : actual.useState(initial),
+  }
+})
+// Capture each rendered menu item's handler by its first text child.
 vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
     const button = props as { children?: unknown; onClick?: () => void }
-    if (type === 'button' && button.children === 'Export debrief JSON')
-      actions.export = button.onClick
+    const first = Array.isArray(button.children) ? button.children[0] : button.children
+    if (type === 'button' && typeof first === 'string' && button.onClick)
+      actions.buttons.set(first, button.onClick)
     return actual.jsxDEV(type, props, ...rest)
   }
   return { ...actual, jsxDEV }
 })
-
-function render() {
-  const scenario = useStore.getState().scenario
-  const { assessments, report, impacts } = engagementPicture(scenario)
-  const aar = buildAarSummary(scenario, assessments, report, impacts)
-  Object.assign(useStore.getInitialState(), useStore.getState())
-  return renderToStaticMarkup(
-    <DebriefRecord
-      scenario={scenario}
-      assessments={assessments}
-      report={report}
-      aar={aar}
-      durationS={scenarioDurationS(scenario)}
-    />,
-  )
-}
 
 function complete() {
   const fixture = installTrial(60)
@@ -57,127 +55,78 @@ function complete() {
   return fixture
 }
 
-describe('DebriefRecord', () => {
+function items() {
+  Object.assign(useStore.getInitialState(), useStore.getState())
+  return renderToStaticMarkup(
+    <ExportMenuItems onJson={() => {}} onPng={() => {}} onCsv={() => {}} />,
+  )
+}
+
+function finishEnsemble(signature: string, status: 'done' | 'running' = 'done') {
+  const state = useStore.getState()
+  useStore.setState({
+    mc: {
+      ...state.mc,
+      status,
+      runId: state.playback.runId,
+      basisSignature: signature,
+      summary: status === 'done' ? ({} as McSummary) : null,
+    },
+  })
+}
+
+describe('Export menu', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    actions.export = undefined
+    actions.buttons.clear()
+    useStore.setState({ mc: idleMc })
     complete()
   })
 
-  it('keeps the completed records after rewind without repeating the outcome grid', () => {
-    const html = render()
-    const trial = html.slice(
-      html.indexOf('aria-label="Completed simulated trial record"'),
-      html.indexOf('class="debrief-actions"'),
-    )
-    expect(html).not.toContain('Pre-arrival hard kills')
-    expect(html).toContain('Export debrief JSON')
-    expect(html).toContain('Capture final PNG')
-    expect(trial).toContain('Trial engagement event ledger · 8 events')
-    expect(trial).toContain('Jam succeeded')
-    expect(trial).toContain('Jam failed')
-    expect(trial).toContain('Trial system and component record')
-    expect(trial).toContain('0 now · 1 seen')
-    expect(trial).toContain('nominal-aleatory')
-    expect(trial).toContain('mixed-fixed-trial')
-    expect(trial).toContain('Build revision unavailable')
-    expect(trial).not.toMatch(/E\[k\]|E\[n\]|planning envelope|ALL GATES MET|REQUIREMENTS NOT MET/)
+  it('holds the debrief record, the final frame and two CSV tables', () => {
+    const html = items()
+    expect(html).toContain('Debrief record<span class="out-fmt">JSON</span>')
+    expect(html).toContain('Final board frame<span class="out-fmt">PNG</span>')
+    expect(html).toContain('Per-threat table<span class="out-fmt">CSV</span>')
+    expect(html).toContain('Per-effector table<span class="out-fmt">CSV</span>')
   })
 
-  it('labels forecast requirements separately from the trial record', () => {
-    const html = render()
-    expect(html).toContain('aria-label="Forecast requirements"')
-    expect(html).toContain('Forecast · requirement record')
-    // The caveat keeps its words behind a 24 px (i).
-    expect(html).toContain(
-      'aria-label="About forecast requirements" title="Deterministic planning envelope · these gates do not adjudicate the simulated trial."',
+  it('disables the CSV items with the reason until an ensemble finishes on the current basis', () => {
+    expect(items().match(/disabled="" title="Run Monte Carlo to export the tables"/g)).toHaveLength(
+      2,
     )
-    const forecast = html.slice(html.indexOf('aria-label="Forecast requirements"'))
-    expect(forecast).not.toContain('class="muted small"')
-    expect(html.indexOf('Completed simulated trial record')).toBeLessThan(
-      html.indexOf('Forecast · requirement record'),
-    )
+    const signature = analysisBasisSignature(useStore.getState().scenario)
+    finishEnsemble(signature, 'running')
+    expect(items()).toContain('title="The ensemble is still running"')
+    finishEnsemble('another-basis')
+    expect(items()).toContain('title="The scenario changed after the ensemble ran"')
+    finishEnsemble(signature)
+    const html = items()
+    expect(html).not.toContain('disabled')
+    expect(html).not.toContain('title=')
   })
 
-  it('exports the matching completed trial with unchanged forecast inputs and ensemble selections', () => {
+  it('exports the completed trial with the forecast the trial ran and the current ensemble', () => {
     const { view } = complete()
-    render()
-    expect(actions.export).toBeTypeOf('function')
-    actions.export!()
+    Object.assign(useStore.getInitialState(), useStore.getState())
+    renderToStaticMarkup(<ExportMenu view={view} />)
+    actions.buttons.get('Debrief record')!()
     const args = vi.mocked(exportRunRecord).mock.calls[0]
-    expect(args[7]).toBe(view)
-    expect(args[3]).toBe(engagementPicture(useStore.getState().scenario).report)
+    expect(args[0]).toBe(view.scenario)
+    expect(args[3]).toEqual(trialForecast(view).report)
     expect(args[3]).not.toBe(view.attrition)
     expect(args.slice(5, 7)).toEqual([null, null])
+    expect(args[7]).toBe(view)
   })
 
-  it.each(['idle', 'preparing', 'error'] as const)(
-    'keeps the legacy completed export without a trial when %s',
-    (status) => {
-      const trial = useStore.getState().trial
-      useStore.setState({
-        trial:
-          status === 'idle'
-            ? IDLE_TRIAL
-            : {
-                ...trial,
-                status,
-                error: status === 'error' ? 'Trial failed' : null,
-              },
-      })
-      const html = render()
-      expect(html).not.toContain('aria-label="Completed simulated trial record"')
-      expect(html).toMatch(/class="empty-row">.*· completed trial record unavailable<\/span>/)
-      actions.export!()
-      expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBeNull()
-    },
-  )
-
-  it.each(['incomplete', 'run mismatch', 'basis mismatch', 'unstarted'] as const)(
-    'rechecks %s at export click time',
-    (change) => {
-      render()
-      const state = useStore.getState()
-      if (change === 'incomplete')
-        useStore.setState({
-          playback: { ...state.playback, observedThroughS: 3, completedAtMs: null },
-        })
-      if (change === 'run mismatch')
-        useStore.setState({ playback: { ...state.playback, runId: 'another-run' } })
-      if (change === 'basis mismatch')
-        useStore.setState({ scenario: { ...state.scenario, entities: [] } })
-      if (change === 'unstarted')
-        useStore.setState({ playback: { ...state.playback, startedAtMs: null } })
-      actions.export!()
-      expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBeNull()
-    },
-  )
-
-  it('preserves a current ensemble in export independently of the trial', () => {
-    const { scenario, view } = complete()
-    const summary = runReplicates({ ...scenario, replicates: 2 })
-    const state = useStore.getState()
-    useStore.setState({ mc: { ...state.mc, status: 'done', runId: state.playback.runId, summary } })
-    render()
-    actions.export!()
-    expect(vi.mocked(exportRunRecord).mock.calls[0][5]).toBe(summary)
-    expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBe(view)
-  })
-
-  it('excludes a ready result whose retained observation does not cover the trial duration', () => {
-    const trial = useStore.getState().trial
-    const result = { ...trial.result!, observedThroughS: 3 }
-    useStore.setState({ trial: { ...trial, result } })
-    const html = render()
-    expect(html).not.toContain('aria-label="Completed simulated trial record"')
-    expect(html).toMatch(/class="empty-row">.*· completed trial record unavailable<\/span>/)
-    actions.export!()
-    expect(vi.mocked(exportRunRecord).mock.calls[0][7]).toBeNull()
-  })
-
-  it('does not mount an incomplete record', () => {
-    installTrial(3)
-    expect(render()).toBe('')
-    expect(actions.export).toBeUndefined()
+  it('exports a CSV table from the record Save writes', () => {
+    const { view } = complete()
+    finishEnsemble(analysisBasisSignature(useStore.getState().scenario))
+    Object.assign(useStore.getInitialState(), useStore.getState())
+    renderToStaticMarkup(<ExportMenu view={view} />)
+    actions.buttons.get('Per-threat table')!()
+    const [record, name] = vi.mocked(exportRunCsv).mock.calls[0]
+    expect(name).toBe('per-threat')
+    expect(record.scenario).toBe(useStore.getState().scenario)
   })
 })

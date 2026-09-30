@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
-import { buildAarSummary } from '../../../analysis/aar'
+import type { CSSProperties } from 'react'
 import { trialKpisAt } from '../../../analysis/liveStats'
+import { buildRequirementGateReport } from '../../../analysis/requirements'
 import { assessRunValidity } from '../../../analysis/runValidity'
 import { trialSystemTelemetryAt } from '../../../analysis/systemTelemetry'
 import { trialForecast, trialResultOf } from '../../../analysis/trialResult'
@@ -10,47 +10,57 @@ import { formatTime } from '../../../geometry/geo'
 import { useStore } from '../../../state/store'
 import { selectRunComplete } from '../../../state/selectors'
 import { selectTrialHorizon } from '../../../state/trialSelectors'
-import { State } from '../../../ui/kit'
-import {
-  DebriefRecord,
-  RunValidityBanner,
-  TrialEventLedger,
-  TrialManifestRecord,
-} from '../DebriefRecord'
-import { RunHistory } from '../RunHistory'
+import { Seg, State } from '../../../ui/kit'
+import type { StateTone } from '../../../ui/kit'
+import { PanelSection } from '../../../ui/PanelSection'
+import { ExportMenu, TrialEventLedger, TrialManifestRecord } from '../DebriefRecord'
 import { useRunHistorySave } from '../useRunHistorySave'
-import { SystemStatus } from '../SystemStatus'
+import { SystemList } from '../SystemStatus'
 import { lateKillText, trialOutcomeRows } from '../threatReadout'
-import type { TrialOutcomeRow } from '../threatReadout'
+import type { TrialOutcomeRow, TrialOutcomeWord } from '../threatReadout'
+import { splitCommonPrefix } from '../trackNames'
 import { EmptyRow, NoteInfo, trialStateText } from '../controls'
 import { useTrialResult } from '../../../state/useTrialResult'
-import { VALIDITY_TEXT } from '../runValidityText'
+import { formatCount } from '../mc'
 
 type SortColumn = 'track' | 'detect' | 'identify' | 'engage' | 'effect' | 'salvos' | 'result'
-const columns: Array<{ key: SortColumn; label: string; title: string }> = [
+const columns: Array<{ key: SortColumn; label: string; title: string; className?: string }> = [
   { key: 'track', label: 'Track', title: 'Threat track' },
-  { key: 'detect', label: 'D', title: 'First detection, T+ minutes:seconds' },
+  { key: 'detect', label: 'Detect', title: 'First detection, T+ minutes:seconds' },
   { key: 'identify', label: 'ID', title: 'First hostile identification, T+ minutes:seconds' },
-  { key: 'engage', label: 'ENG', title: 'First salvo assignment, T+ minutes:seconds' },
-  { key: 'effect', label: 'FX', title: 'First defeat effect, T+ minutes:seconds' },
-  { key: 'salvos', label: 'Slv', title: 'Assigned salvos' },
+  { key: 'engage', label: 'Engage', title: 'First salvo assignment, T+ minutes:seconds' },
+  {
+    key: 'effect',
+    label: 'Effect',
+    title: 'First defeat effect, T+ minutes:seconds',
+    className: 'out-c-fx',
+  },
+  { key: 'salvos', label: 'Slv', title: 'Assigned salvos', className: 'out-c-slv' },
   { key: 'result', label: 'Result', title: 'Track result at the completed horizon' },
 ]
 const machineStyle: CSSProperties = {
   fontFamily: 'var(--font-mono)',
   fontSize: 'var(--type-dense-size)',
 }
-// Seven columns; the track name and the result word take the slack.
-const columnWidth: Record<SortColumn, string> = {
-  track: '23%',
-  detect: '10%',
-  identify: '10%',
-  engage: '10%',
-  effect: '10%',
-  salvos: '8%',
-  result: '29%',
-}
 const timeText = (value: number | null) => (value == null ? '—' : formatTime(value))
+
+const RESULT_TONE: Record<TrialOutcomeWord, StateTone> = {
+  leaked: 'critical',
+  active: 'warning',
+  'defeated (hard)': 'inactive',
+  'defeated (mission)': 'inactive',
+  'no path': 'inactive',
+}
+
+/** One short result word per track: the strip column is narrow; the title keeps the rest. */
+function ResultWord({ row }: { row: TrialOutcomeRow }) {
+  const word = row.states[0]
+  return (
+    <State tone={RESULT_TONE[word]} title={row.result} style={machineStyle}>
+      {word.startsWith('defeated') ? 'defeated' : word}
+    </State>
+  )
+}
 
 /**
  * The operator floor stamp of one trial: decisions whose raw operator wait fell
@@ -64,7 +74,7 @@ function flooredText(totals: TrialResultView['attrition']['totals']): string | n
   return `operator wait floored in ${floored} of ${totals.operatorDecisions ?? floored} decisions`
 }
 
-function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS: number }) {
+function OutcomeTable({ rows, names }: { rows: TrialOutcomeRow[]; names: Map<string, string> }) {
   const [sort, setSort] = useState<{ column: SortColumn; descending: boolean }>({
     column: 'track',
     descending: false,
@@ -82,8 +92,8 @@ function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS:
   })
   return (
     <table
-      className="tb tb-dense"
-      aria-label={`Per-threat outcomes through T+${formatTime(durationS)}; times in minutes:seconds`}
+      className="tb tb-dense out-table"
+      aria-label="Per-track outcomes, times in minutes:seconds"
     >
       <thead>
         <tr>
@@ -91,7 +101,7 @@ function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS:
             <th
               key={column.key}
               scope="col"
-              style={{ width: columnWidth[column.key] }}
+              className={column.className}
               aria-sort={
                 sort.column === column.key ? (sort.descending ? 'descending' : 'ascending') : 'none'
               }
@@ -115,28 +125,22 @@ function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS:
       </thead>
       <tbody>
         {sorted.map((row) => (
-          <tr key={row.id}>
-            <td title={row.track}>{row.track}</td>
-            {[row.detect, row.identify, row.engage, row.effect].map((value, index) => (
-              <td key={index}>{timeText(value)}</td>
+          <tr
+            key={row.id}
+            title={`${row.track} · effect ${timeText(row.effect)} · ${row.salvos} salvos`}
+          >
+            <td className="mono" title={row.track}>
+              {names.get(row.id) ?? row.track}
+            </td>
+            {[row.detect, row.identify, row.engage].map((value, index) => (
+              <td className="mono" key={index}>
+                {timeText(value)}
+              </td>
             ))}
-            <td>{row.salvos}</td>
+            <td className="mono out-c-fx">{timeText(row.effect)}</td>
+            <td className="mono out-c-slv">{row.salvos}</td>
             <td title={row.result}>
-              {row.states.map((word) => (
-                <State
-                  key={word}
-                  tone={word === 'leaked' ? 'critical' : word === 'active' ? 'warning' : 'inactive'}
-                  style={machineStyle}
-                >
-                  {word}
-                </State>
-              ))}
-              {row.lateKillS != null && (
-                <span className="muted" style={machineStyle}>
-                  {' '}
-                  {lateKillText(row.lateKillS)}
-                </span>
-              )}
+              <ResultWord row={row} />
             </td>
           </tr>
         ))}
@@ -145,72 +149,275 @@ function OutcomeTable({ rows, durationS }: { rows: TrialOutcomeRow[]; durationS:
   )
 }
 
+const pct = (s: number, durationS: number) =>
+  `${((Math.max(0, Math.min(s, durationS)) / durationS) * 100).toFixed(2)}%`
+
+/**
+ * One strip per track on one axis from 0 to the duration: detection, identification,
+ * each salvo, arrival, and a defeat or late kill when present.
+ */
+function OutcomeStrips({
+  view,
+  rows,
+  names,
+}: {
+  view: TrialResultView
+  rows: TrialOutcomeRow[]
+  names: Map<string, string>
+}) {
+  const durationS = view.durationS
+  const arrivals = new Map(view.assessments.map((a) => [a.uasId, a.arrivalS]))
+  const ticks = [0, durationS / 4, durationS / 2, (3 * durationS) / 4, durationS]
+  return (
+    <>
+      <div className="out-axis" aria-hidden="true">
+        <span />
+        <span className="out-axis-ticks">
+          {ticks.map((s, i) => (
+            <span
+              key={i}
+              style={{
+                left: pct(s, durationS),
+                transform: `translateX(${i === 0 ? '0' : i === ticks.length - 1 ? '-100%' : '-50%'})`,
+              }}
+            >
+              {formatTime(s)}
+            </span>
+          ))}
+        </span>
+        <span />
+      </div>
+      <div className="out-strips">
+        {rows.map((row) => {
+          const arrival = arrivals.get(row.id) ?? null
+          const end = row.effect ?? arrival ?? row.lateKillS ?? durationS
+          const salvos = view.attrition.events.filter(
+            (event) => event.uasId === row.id && event.tS <= durationS,
+          )
+          return (
+            <div className="out-strip" key={row.id} title={`${row.track} · ${row.result}`}>
+              <span className="out-nm" title={row.track}>
+                {names.get(row.id) ?? row.track}
+              </span>
+              <span className="out-lane">
+                {row.detect != null && (
+                  <i
+                    className="out-ln"
+                    style={{
+                      left: pct(row.detect, durationS),
+                      width: `${((Math.max(0, Math.min(end, durationS) - row.detect) / durationS) * 100).toFixed(2)}%`,
+                    }}
+                  />
+                )}
+                {row.detect != null && (
+                  <i
+                    className="out-mk det"
+                    style={{ left: pct(row.detect, durationS) }}
+                    title={`Detect T+${formatTime(row.detect)}`}
+                  />
+                )}
+                {row.identify != null && (
+                  <i
+                    className="out-mk id"
+                    style={{ left: pct(row.identify, durationS) }}
+                    title={`Identified T+${formatTime(row.identify)}`}
+                  />
+                )}
+                {salvos.map((event, index) => (
+                  <i
+                    key={index}
+                    className="out-mk eng"
+                    style={{ left: pct(event.tS, durationS) }}
+                    title={`${view.scenario.entities.find((e) => e.id === event.effectorId)?.name ?? event.effectorId} salvo ${index + 1} · T+${formatTime(event.tS)}`}
+                  />
+                ))}
+                {arrival != null && arrival <= durationS && (
+                  <i
+                    className="out-mk arr"
+                    style={{ left: pct(arrival, durationS) }}
+                    title={`Arrival T+${formatTime(arrival)}`}
+                  />
+                )}
+                {row.effect != null && (
+                  <i
+                    className="out-mk def"
+                    style={{ left: pct(row.effect, durationS) }}
+                    title={`Defeated T+${formatTime(row.effect)}`}
+                  />
+                )}
+                {row.lateKillS != null && (
+                  <i
+                    className="out-mk late"
+                    style={{ left: pct(row.lateKillS, durationS) }}
+                    title={`${row.track} · ${lateKillText(row.lateKillS)}`}
+                  />
+                )}
+              </span>
+              <ResultWord row={row} />
+            </div>
+          )
+        })}
+      </div>
+      <div className="out-key" aria-hidden="true">
+        <span>
+          <i className="out-mk det" />
+          detect
+        </span>
+        <span>
+          <i className="out-mk id" />
+          identify
+        </span>
+        <span>
+          <i className="out-mk eng" />
+          salvo
+        </span>
+        <span>
+          <i className="out-mk arr" />
+          arrival
+        </span>
+        <span>
+          <i className="out-mk def" />
+          defeat
+        </span>
+        <span>
+          <i className="out-mk late" />
+          late kill
+        </span>
+      </div>
+    </>
+  )
+}
+
+/**
+ * One segment per modeled member: defeated before arrival, late kill or leaked, as
+ * `trialKpisAt` counts them. A late kill is a leaker. Without an active asset the
+ * bar shows the defeats and states that arrival is not measurable.
+ */
+function ResultBar({
+  view,
+  kpis,
+  population,
+}: {
+  view: TrialResultView
+  kpis: ReturnType<typeof trialKpisAt>
+  population: number
+}) {
+  const defeated = Math.round(kpis.kills)
+  const late = view.hasActiveAsset ? Math.round(kpis.lateKills) : 0
+  const leakers = view.hasActiveAsset ? Math.round(kpis.reportedLeakers ?? 0) : 0
+  const leaked = Math.max(0, leakers - late)
+  const other = Math.max(0, population - defeated - late - leaked)
+  const segments = [
+    ...Array<string>(defeated).fill('def'),
+    ...Array<string>(late).fill('late'),
+    ...Array<string>(leaked).fill('leak'),
+    ...Array<string>(other).fill('na'),
+  ]
+  const label = view.hasActiveAsset
+    ? `${formatCount(kpis.kills)} defeated before arrival, ${late} late kills, ${leaked} leaked of ${population} members`
+    : `${formatCount(kpis.kills)} defeated of ${population} members; arrival is not measurable`
+  return (
+    <div className="out-result">
+      <div
+        className={`out-resbar${segments.length > 40 ? ' dense' : ''}`}
+        role="img"
+        aria-label={label}
+        title={label}
+        style={{ gridTemplateColumns: `repeat(${Math.max(1, segments.length)}, minmax(0, 1fr))` }}
+      >
+        {segments.map((kind, index) => (
+          <i key={index} className={kind} />
+        ))}
+      </div>
+      <div className="out-legend">
+        <span>
+          <i className="out-sq def" />
+          <b>{formatCount(kpis.kills)}</b> defeated before arrival
+        </span>
+        {view.hasActiveAsset ? (
+          <>
+            <span>
+              <i className="out-sq late" />
+              <b>{late}</b> late kills
+            </span>
+            <span>
+              <i className="out-sq leak" />
+              <b>{leaked}</b> leaked
+            </span>
+          </>
+        ) : (
+          <span>No defended asset · arrival is not measurable</span>
+        )}
+        <span className="muted">of {population} members</span>
+      </div>
+    </div>
+  )
+}
+
 function CompletedOutcome({ view }: { view: TrialResultView }) {
+  const [trackView, setTrackView] = useState<'strip' | 'table'>('strip')
   const data = useMemo(() => {
     const kpis = trialKpisAt(view, view.durationS)
     const rows = trialOutcomeRows(view)
     const systems = trialSystemTelemetryAt(view, view.durationS)
-    // Retained only for the labeled requirement record and export. It runs the
-    // values the trial ran, the manifest's overrides included.
+    // Gates met reads the forecast the trial ran, the manifest's overrides included.
     const forecast = trialForecast(view)
-    const validity = view.validity ?? assessRunValidity(view.scenario, forecast.assessments)
-    const aar = buildAarSummary(
+    const validity = assessRunValidity(view.scenario, forecast.assessments)
+    const gates = buildRequirementGateReport(
       view.scenario,
       forecast.assessments,
       forecast.report,
-      forecast.impacts,
+      validity,
     )
-    return { kpis, rows, systems, forecast, validity, aar }
+    return { kpis, rows, systems, gates }
   }, [view])
-  const { kpis, rows, systems, forecast, validity, aar } = data
+  const { kpis, rows, systems, gates } = data
   const population = view.attrition.threats.reduce((sum, row) => sum + row.shipCount, 0)
   const componentCount = systems.reduce((sum, group) => sum + group.componentCount, 0)
+  const split = splitCommonPrefix(rows.map((row) => row.track))
+  const names = new Map(rows.map((row, i) => [row.id, split.rest[i]]))
   const first = (values: Array<number | null>) => {
     const defined = values.filter((value): value is number => value != null)
     return defined.length ? `T+${formatTime(Math.min(...defined))}` : '—'
   }
-  const horizon = <small style={{ display: 'block' }}>by T+{formatTime(view.durationS)}</small>
-  const count = (value: number | null) => (
-    <>
-      {value ?? '—'}
-      <small>/{population} members</small>
-    </>
-  )
-  const tiles: Array<[string, ReactNode]> = [
-    ['Defeated before arrival', count(kpis.kills)],
-    ['Arrived undefeated', count(kpis.reportedLeakers)],
-    ['Late kills', count(kpis.lateKills)],
-    ['First detect', first(rows.map((row) => row.detect))],
-    ['First effect', first(rows.map((row) => row.effect))],
-    [
-      'Salvos',
-      <>
-        {kpis.kineticShots + kpis.deSalvos + kpis.jamSalvos}
-        <small style={{ display: 'block' }}>
-          {kpis.kineticShots} kinetic · {kpis.jamSalvos} EW
-          {kpis.deSalvos > 0 && <> · {kpis.deSalvos} DE</>}
-        </small>
-      </>,
-    ],
-  ]
-  const validityText = VALIDITY_TEXT[validity.validity]
+  const salvos = kpis.kineticShots + kpis.deSalvos + kpis.jamSalvos
   const floored = flooredText(view.attrition.totals)
+  const openRequirements = () =>
+    useStore
+      .getState()
+      .requestPanel({ phase: 'prepare', screen: 'inputs', section: 'prepare-requirements' })
   return (
     <>
-      <div className="tiles c3" aria-label="Completed trial outcomes">
-        {tiles.map(([label, value]) => (
-          <div className="tile" key={label}>
-            <span className="tl">{label}</span>
-            <div className="tv" style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
-              {value}
-              {horizon}
-            </div>
-          </div>
-        ))}
+      <ResultBar view={view} kpis={kpis} population={population} />
+      <div className="pstat-row out-stats" aria-label="Completed trial outcomes">
+        <div className="pstat">
+          <div className="pstat-l">First detect</div>
+          <div className="pstat-v">{first(rows.map((row) => row.detect))}</div>
+        </div>
+        <div className="pstat">
+          <div className="pstat-l">First effect</div>
+          <div className="pstat-v">{first(rows.map((row) => row.effect))}</div>
+        </div>
+        <div
+          className="pstat"
+          title={`${kpis.kineticShots} kinetic · ${kpis.jamSalvos} EW · ${kpis.deSalvos} DE`}
+        >
+          <div className="pstat-l">Salvos</div>
+          <div className="pstat-v">{salvos}</div>
+        </div>
+        <button
+          type="button"
+          className="pstat out-gates"
+          title="Forecast requirement gates · open Prepare, Requirements"
+          onClick={openRequirements}
+        >
+          <span className="pstat-l">Gates met</span>
+          <span className="pstat-v">
+            {gates.met}
+            <small>/{gates.required}</small>
+          </span>
+        </button>
       </div>
-      {!view.hasActiveAsset && (
-        <EmptyRow>No defended asset · arrival and leakage unavailable.</EmptyRow>
-      )}
       {floored && (
         <p className="empty-row">
           <State tone="warning" hollow>
@@ -218,41 +425,79 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
           </State>
         </p>
       )}
-      <OutcomeTable rows={rows} durationS={view.durationS} />
-      <section aria-label="Records">
+      <PanelSection
+        title="Tracks"
+        readout={split.prefix ? `${split.prefix.trim()} · ${rows.length}` : rows.length}
+        end={
+          <Seg
+            value={trackView}
+            options={[
+              { v: 'strip', label: 'Strip' },
+              { v: 'table', label: 'Table' },
+            ]}
+            onChange={setTrackView}
+            label="Track view"
+          />
+        }
+      >
+        {trackView === 'strip' ? (
+          <OutcomeStrips view={view} rows={rows} names={names} />
+        ) : (
+          <OutcomeTable rows={rows} names={names} />
+        )}
+      </PanelSection>
+      <section className="out-records" aria-label="Records">
         <details className="analysis-disclosure">
           <summary>Event ledger · {view.attrition.events.length} events</summary>
           <TrialEventLedger view={view} />
         </details>
         <details className="analysis-disclosure">
-          <summary>Manifest · {componentCount} components</summary>
-          <TrialManifestRecord view={view} />
-          <SystemStatus groups={systems} expanded endOfRun />
+          <summary>Systems at end of run · {componentCount} components</summary>
+          <NoteInfo
+            label="telemetry state"
+            note="State shows the final sampled instant, not the run outcome; cumulative counts cover the run."
+          />
+          <SystemList groups={systems} />
         </details>
         <details className="analysis-disclosure">
-          <summary>
-            Validity · {view.validity ? 'Trial' : 'Forecast requirements'} ·{' '}
-            <State tone={validityText.tone}>{validityText.pill}</State> · {validity.findings.length}{' '}
-            findings
-          </summary>
-          {!view.validity && (
-            <>
-              <EmptyRow>No trial validity assessment was captured.</EmptyRow>
-              <NoteInfo label="validity" note="Forecast · requirement validity." />
-            </>
-          )}
-          <RunValidityBanner assessment={validity} />
+          <summary>Manifest · {view.manifest.runId}</summary>
+          <TrialManifestRecord view={view} />
         </details>
       </section>
-      <DebriefRecord
-        scenario={view.scenario}
-        assessments={forecast.assessments}
-        report={forecast.report}
-        aar={aar}
-        durationS={view.durationS}
-        showTrialRecords={false}
-        showValidity={false}
-      />
+    </>
+  )
+}
+
+/** The Save run control and its result line. */
+function SaveRun() {
+  const save = useRunHistorySave()
+  const [notice, setNotice] = useState<string | null>(null)
+  return (
+    <>
+      <button
+        type="button"
+        className="mini"
+        disabled={!save.enabled}
+        title={save.reason}
+        onClick={() =>
+          save.run().then(
+            ({ evicted }) =>
+              setNotice(
+                evicted.length
+                  ? `Saved · ${evicted.length} oldest evicted`
+                  : 'Saved to Compare, Saved runs',
+              ),
+            (error) => setNotice(error instanceof Error ? error.message : 'Save failed'),
+          )
+        }
+      >
+        Save run
+      </button>
+      {notice && (
+        <span className="out-notice" role="status" title={notice}>
+          {notice}
+        </span>
+      )}
     </>
   )
 }
@@ -262,42 +507,40 @@ export function OutcomeScreen() {
   const { selection, snapshot } = trial
   const complete = useStore(selectRunComplete)
   const horizon = useStore((state) => selectTrialHorizon(state, state.playback.observedThroughS))
-  const save = useRunHistorySave()
   if (
     selection.status === 'idle' ||
     selection.status === 'cancelled' ||
     (selection.status === 'ready' && !snapshot)
   ) {
-    // The history does not depend on a trial, so it renders below the placeholder.
-    return (
-      <>
-        <EmptyRow>No trial yet. Press Play in Execute to run one.</EmptyRow>
-        <RunHistory save={save} />
-      </>
-    )
+    return <EmptyRow>No trial yet. Press Play in Execute to run one.</EmptyRow>
   }
   const view =
     selection.status === 'ready' && snapshot
       ? trialResultOf(selection.scenario, selection.result.manifest, selection.result)
       : null
+  const done = view != null && complete && horizon >= view.durationS
   return (
     <section className="analysis-primary" aria-label="Outcome">
-      <h3>Outcome</h3>
-      <p className="analysis-scope">
-        {view
-          ? `simulated trial · one draw · seed ${view.manifest.seed} · T+${formatTime(horizon)} of ${formatTime(view.durationS)} observed`
-          : trialStateText(selection)}
-      </p>
-      {view && complete && horizon >= view.durationS ? (
-        <CompletedOutcome key={view.manifest.runId} view={view} />
+      {done ? (
+        <>
+          <div className="out-prov">
+            <span title="One simulated draw">
+              Trial · seed {view.manifest.seed} · T+{formatTime(view.durationS)}
+            </span>
+            <span className="out-prov-end">
+              <SaveRun />
+              <ExportMenu view={view} />
+            </span>
+          </div>
+          <CompletedOutcome key={view.manifest.runId} view={view} />
+        </>
       ) : (
         <EmptyRow>
           {view
             ? 'Trial in progress. Complete playback in Execute to see the outcome.'
-            : 'Outcome is waiting for a trial.'}
+            : trialStateText(selection)}
         </EmptyRow>
       )}
-      <RunHistory save={save} />
     </section>
   )
 }

@@ -7327,4 +7327,508 @@ input[type='number'] {
 
 /* ---------- Right panel: R2c Monitor and Outcome ---------- */
 
+/* Monitor: the kill-chain funnel. DET to ENG count tracks; DEF and LEAK count
+   members. Each cell title names its denominator. */
+.mon-funnel {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  column-gap: var(--space-2);
+  padding-top: var(--space-3);
+}
+
+.mon-f {
+  min-width: 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.mon-f-k {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+  text-overflow: ellipsis;
+}
+
+.mon-f-v {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--type-title-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mon-f-v small {
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+}
+
+.mon-f.leak .mon-f-v {
+  color: var(--status-critical);
+}
+
+.mon-f.zero .mon-f-v {
+  color: var(--text-tertiary);
+}
+
+/* Monitor tracks: a row selects its track with origin panel (D7). */
+.mon-tracks th:first-child {
+  width: 44px;
+}
+
+.mon-tracks .mon-c-chain {
+  width: 48px;
+}
+
+.mon-tracks .mon-c-state {
+  width: 96px;
+}
+
+.mon-tracks .mon-c-tta {
+  width: 52px;
+  text-align: right;
+}
+
+.mon-tracks th button {
+  padding: 0;
+  font-size: inherit;
+}
+
+.mon-row {
+  cursor: pointer;
+}
+
+.mon-row:hover,
+.mon-row.on {
+  background: var(--surface-hover);
+}
+
+.mon-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.mon-pips {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.mon-pips i {
+  width: 5px;
+  height: 9px;
+  background: var(--rule-strong);
+}
+
+.mon-pips i.on {
+  background: var(--text-secondary);
+}
+
+.mon-pips i.now {
+  background: var(--text-primary);
+}
+
+.mon-pips.leak i:is(.on, .now) {
+  background: var(--status-critical);
+}
+
+.mon-pips.dead i:is(.on, .now) {
+  background: var(--ghost);
+}
+
+/* D13: display tones for time to arrival, not requirements. */
+.tb td.tta-warning {
+  color: var(--status-warning);
+}
+
+.tb td.tta-critical {
+  color: var(--status-critical);
+}
+
+/* Systems: one list grouped Sensors, C2 and Effectors (Monitor, Outcome records). */
+.sys-group {
+  padding: var(--space-2) 0 2px;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+  font-weight: var(--type-label-weight);
+}
+
+.sys-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px 96px;
+  gap: var(--space-2);
+  align-items: center;
+  min-height: 28px;
+  border-top: 1px solid var(--rule);
+  font-size: var(--type-dense-size);
+}
+
+.sys-nm {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sys-row > .state {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sys-rd {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sys-mag {
+  display: inline-flex;
+  gap: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.sys-mag i {
+  width: 5px;
+  height: 10px;
+  border: 1px solid var(--text-tertiary);
+}
+
+.sys-mag i.full {
+  background: var(--text-secondary);
+  border-color: var(--text-secondary);
+}
+
+/* Recent events and the feed rows. */
+.mon-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.mon-ev {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: var(--space-2);
+  padding: 5px 0;
+  border-top: 1px solid var(--rule);
+  font-size: var(--type-dense-size);
+}
+
+.mon-ev-t {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.mon-ev-d {
+  min-width: 0;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.mon-ev-d b {
+  color: var(--text-primary);
+  font-weight: var(--type-label-weight);
+}
+
+/* Outcome: the provenance line with Save run and Export at its end. */
+.out-prov {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.out-prov-end {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.out-notice {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.out-fmt {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+/* The result bar: one segment per member. */
+.out-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.out-resbar {
+  display: grid;
+  gap: 2px;
+  height: 18px;
+}
+
+.out-resbar.dense {
+  gap: 0;
+}
+
+.out-resbar i,
+.out-sq {
+  display: block;
+  height: 100%;
+  background: var(--rule-strong);
+}
+
+.out-sq {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+}
+
+:is(.out-resbar i, .out-sq).def {
+  background: var(--status-nominal);
+}
+
+:is(.out-resbar i, .out-sq).late {
+  background: var(--status-warning);
+}
+
+:is(.out-resbar i, .out-sq).leak {
+  background: var(--status-critical);
+}
+
+.out-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--text-secondary);
+  font-size: var(--type-dense-size);
+}
+
+.out-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.out-legend b {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: var(--type-label-weight);
+}
+
+.out-stats {
+  margin: var(--space-3) 0;
+}
+
+.right-panel button.out-gates {
+  display: block;
+  height: auto;
+  padding: 6px 0 0;
+  border: 0;
+  border-top: 1px solid var(--rule-strong);
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+
+.out-gates .pstat-l,
+.out-gates .pstat-v {
+  display: block;
+}
+
+.out-gates small {
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+}
+
+.right-panel button.out-gates:hover .pstat-l {
+  color: var(--text-primary);
+}
+
+/* Outcome tracks: strips on one axis from 0 to the duration. */
+.out-axis,
+.out-strip {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 64px;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.out-axis {
+  min-height: 18px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--type-dense-size);
+}
+
+.out-axis-ticks {
+  position: relative;
+  min-height: 14px;
+}
+
+.out-axis-ticks > span {
+  position: absolute;
+  white-space: nowrap;
+}
+
+.out-strips {
+  display: flex;
+  flex-direction: column;
+}
+
+.out-strip {
+  height: 24px;
+  border-top: 1px solid var(--rule);
+  font-size: var(--type-dense-size);
+}
+
+.out-nm {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.out-strip > .state {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.out-lane {
+  position: relative;
+  display: block;
+  height: 16px;
+}
+
+.out-ln {
+  position: absolute;
+  top: 7px;
+  height: 2px;
+  background: var(--rule-strong);
+}
+
+.out-lane .out-mk {
+  position: absolute;
+  top: 3px;
+  margin-left: -5px;
+}
+
+.out-mk {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+
+.out-mk.det {
+  border: 1.5px solid var(--text-secondary);
+  border-radius: 50%;
+  background: var(--surface-panel);
+}
+
+.out-mk.id {
+  width: 2px;
+  background: var(--text-primary);
+}
+
+.out-lane .out-mk.id {
+  margin-left: -1px;
+}
+
+.out-mk.eng {
+  background: var(--runtl-effector, var(--text-secondary));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.out-mk.arr {
+  width: 4px;
+  background: var(--status-critical);
+}
+
+.out-lane .out-mk.arr {
+  margin-left: -2px;
+}
+
+.out-mk.def {
+  background: var(--status-nominal);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.out-mk.late {
+  background: var(--status-warning);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.out-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--text-tertiary);
+  font-size: var(--type-dense-size);
+}
+
+.out-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Outcome tracks as a table. */
+.out-table th:first-child {
+  width: 44px;
+}
+
+.out-table th:nth-child(n + 2):nth-child(-n + 5) {
+  width: 46px;
+}
+
+.out-table th.out-c-slv {
+  width: 30px;
+}
+
+.out-table th button {
+  padding: 0;
+  font-size: inherit;
+}
+
+/* D6: under 360 px Held by, Effect, Slv and the system state word drop; each
+   stays in the row title. */
+@container right-panel (max-width: 359.98px) {
+  .mon-c-held,
+  .out-c-fx,
+  .out-c-slv {
+    display: none;
+  }
+
+  .sys-row {
+    grid-template-columns: minmax(0, 1fr) 8px 96px;
+  }
+
+  .sys-w {
+    display: none;
+  }
+
+  .mon-funnel {
+    column-gap: 6px;
+  }
+}
+
+
 /* ---------- Right panel: R2d Compare and saved runs ---------- */

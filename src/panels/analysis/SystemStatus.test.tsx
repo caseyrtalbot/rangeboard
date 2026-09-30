@@ -1,18 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import fixture from '../../playback/__fixtures__/detection-outside-rings.json'
-import { EMPTY_HORIZON, FORECAST_IN_ANALYZE } from '../../analysis/horizon'
 import { engagementPicture } from '../../analysis/impact'
+import type { ComponentTelemetry, SystemTelemetryGroup } from '../../analysis/systemTelemetry'
 import { systemTelemetryAt } from '../../analysis/systemTelemetry'
 import { parseAutosave } from '../../io/persist'
 import { detectionsAt } from '../../playback/detection'
-import { SystemStatus } from './SystemStatus'
-
-// An empty-state row with this sentence; the State markup inside it is not matched.
-const emptyRow = (sentence: string) =>
-  new RegExp(
-    `<p class="empty-row">(?:(?!</p>).)*${sentence.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</span></p>`,
-  )
+import { STATE_LABEL, stateTone, SystemList } from './SystemStatus'
 
 const scenario = parseAutosave(JSON.stringify(fixture))
 scenario.paths.forEach((path) => {
@@ -22,49 +16,103 @@ const { assessments, report } = engagementPicture(scenario)
 const groupsAt = (t: number) =>
   systemTelemetryAt(scenario, assessments, report, t, detectionsAt(scenario, t))
 
-describe('SystemStatus visibility', () => {
-  it('defaults DebriefRecord mounts to full-run telemetry', () => {
-    const html = renderToStaticMarkup(<SystemStatus groups={groupsAt(2000)} expanded endOfRun />)
-    expect(html).toContain('final sampled instant')
-    // The method note sits behind the (i), and no sentence is set muted.
-    expect(html).toContain('aria-label="About telemetry state" title="State shows the final')
-    expect(html).not.toContain('telemetry-note')
-    expect(html).toMatch(/[1-9]\d* salvos/)
-    expect(html).toMatch(/[1-9]\d* effects/)
-  })
+function component(patch: Partial<ComponentTelemetry>): ComponentTelemetry {
+  return {
+    entityId: 'id',
+    name: 'name',
+    kind: 'sensor',
+    purpose: 'purpose',
+    active: true,
+    state: 'ready',
+    tracksNow: 0,
+    tracksSeen: 0,
+    classifications: 0,
+    trackSeconds: 0,
+    holdSeconds: 0,
+    targetsNow: 0,
+    salvosAssigned: 0,
+    effectsLanded: 0,
+    expectedKills: 0,
+    capacityRemaining: null,
+    capacityTotal: null,
+    downstreamEffectors: 0,
+    ...patch,
+  }
+}
 
-  it('uses reached groups in collapsed buttons and expanded hover detail', () => {
-    const props = { groups: groupsAt(1), horizon: { scoped: true, horizonS: 1 }, sampledAtS: 1 }
-    const collapsed = renderToStaticMarkup(<SystemStatus {...props} expanded={false} />)
-    expect(collapsed).toContain('0 tracks · 0 salvos')
-    expect(collapsed).not.toContain('component-telemetry-row')
-    const open = renderToStaticMarkup(<SystemStatus {...props} />)
-    expect(open).toContain('0 salvos · 0 effects · E[k] 0.00')
-    expect(open).not.toMatch(/[1-9]\d* (salvos|effects|seen)/)
-  })
+function group(components: ComponentTelemetry[]): SystemTelemetryGroup {
+  return {
+    id: 'g',
+    name: 'Group',
+    activeComponents: components.length,
+    componentCount: components.length,
+    tracksNow: 0,
+    tracksSeen: 0,
+    salvosAssigned: 0,
+    effectsLanded: 0,
+    expectedKills: 0,
+    components,
+  }
+}
 
-  it('has no telemetry rows for EMPTY_HORIZON', () => {
+describe('SystemList', () => {
+  it('groups Sensors, C2 and Effectors with a state word and a per-kind readout', () => {
     const html = renderToStaticMarkup(
-      <SystemStatus groups={groupsAt(2000)} horizon={EMPTY_HORIZON} />,
+      <SystemList
+        groups={[
+          group([
+            component({
+              entityId: 'e1',
+              name: 'Coyote',
+              kind: 'effector',
+              state: 'ready',
+              capacityRemaining: 3,
+              capacityTotal: 4,
+            }),
+            component({ entityId: 'e2', name: 'Jammer', kind: 'effector', state: 'target' }),
+            component({
+              entityId: 'c1',
+              name: 'FAAD C2',
+              kind: 'c2',
+              state: 'routing',
+              tracksSeen: 2,
+            }),
+            component({
+              entityId: 's1',
+              name: 'Radar',
+              kind: 'sensor',
+              state: 'tracking',
+              tracksNow: 2,
+              holdSeconds: 42,
+            }),
+          ]),
+        ]}
+      />,
     )
-    expect(html).toMatch(emptyRow('No system telemetry yet.'))
-    expect(renderToStaticMarkup(<SystemStatus groups={[]} />)).toMatch(
-      emptyRow('No sensors, C2, or effectors placed.'),
+    const order = [...html.matchAll(/<div class="sys-group">([^<]+)<\/div>/g)].map((m) => m[1])
+    expect(order).toEqual(['Sensors', 'C2', 'Effectors'])
+    expect(html).toContain('<span class="sys-nm">FAAD C2</span>')
+    expect(html).toContain('<span class="sys-w">ROUTING</span>')
+    expect(html).toContain('<span class="sys-rd">2 routed</span>')
+    expect(html).toContain('<span class="sys-rd">2 held · 0:42</span>')
+    expect(html).toContain(
+      '<span class="sys-mag" aria-hidden="true"><i class="full"></i><i class="full"></i><i class="full"></i><i></i></span>3/4',
     )
-    expect(html).not.toContain('system-telemetry-head')
+    expect(html).toContain('<span class="sys-rd">cont.</span>')
+    // The row title keeps the state word that drops under 360 px.
+    expect(html).toContain('title="FAAD C2 · ROUTING · purpose')
   })
 
-  it('rejects unreached or unspecified samples for scoped custom mounts', () => {
-    for (const sampledAtS of [undefined, 250]) {
-      const html = renderToStaticMarkup(
-        <SystemStatus
-          groups={groupsAt(2000)}
-          horizon={{ scoped: true, horizonS: 1 }}
-          sampledAtS={sampledAtS}
-        />,
-      )
-      expect(html).toMatch(emptyRow(FORECAST_IN_ANALYZE))
-      expect(html).not.toContain('system-telemetry-head')
-    }
+  it('reads real telemetry and keeps the shared state table', () => {
+    const html = renderToStaticMarkup(<SystemList groups={groupsAt(2000)} />)
+    expect(html).toContain('class="sys-row"')
+    expect(STATE_LABEL.depleted).toBe('EMPTY')
+    expect(stateTone('tracking')).toBe('nominal')
+  })
+
+  it('states an empty board', () => {
+    expect(renderToStaticMarkup(<SystemList groups={[]} />)).toContain(
+      'No sensors, C2, or effectors placed.',
+    )
   })
 })
