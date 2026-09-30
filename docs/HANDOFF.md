@@ -26,11 +26,9 @@ the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `f
 [right-panel/Plan.md](right-panel/Plan.md) is the frozen queue for the right panel redesign
 (rows R1 to R3, authored 2026-09-29 from the approved prototype in
 [right-panel/prototype/](right-panel/prototype/index.html)). R1 (shell and shared
-primitives) is merged and pushed as `64aa156`. R2 (screens) is four lanes. R2b, R2c and
-R2d are committed on `panel/r2b` to `panel/r2d`, not merged and not pushed. R2a is built in
-its worktree but not committed, because its gate fails `check:entry-graph` and the fix
-waits for the user's decision. The Tasking selects R2-int and waits for the user's word.
-Q2 stays held. Execute one row per agent turn.
+primitives) is merged and pushed as `64aa156`. R2 (screens) is four lanes, committed on
+`panel/r2a` to `panel/r2d`, not merged and not pushed. The Tasking selects R2-int and
+waits for the user's word. Q2 stays held. Execute one row per agent turn.
 
 ## Position
 
@@ -46,9 +44,9 @@ Q2 stays held. Execute one row per agent turn.
   `panel/r1`, then the R1 merge handoff that holds this file. `main` and `origin/main`
   are equal. `engine/g`, `refactor/code-quality`, `quality/q1`, `rings/mir-mrir` and
   `panel/r1` are deleted; `panel/r1` was never pushed. Then the R2 lanes handoff that
-  holds this file, on `main`, not pushed. The branches `panel/r2a` to `panel/r2d` sit on
-  `1b8008b` in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d`, each with a
-  `node_modules` symlink; none is pushed. The stash list is empty.
+  holds this file, on `main`, not pushed. The branches `panel/r2a` to `panel/r2d` branch
+  from `1b8008b`, one commit each, in the worktrees `~/Projects/rangeboard-wt/r2a` to
+  `r2d`, each with a `node_modules` symlink; none is pushed. The stash list is empty.
 - R2 (2026-09-29), four lanes on `1b8008b`, not merged and not pushed. Four workers built
   the lanes in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d` (`opus-high` for
   R2a to R2c, `opus-medium` for R2d); each ran the gate and a Playwright check at 280, 408
@@ -56,19 +54,22 @@ Q2 stays held. Execute one row per agent turn.
   `#insp-tabpanel` and no untitled clip. The orchestrator read each diff, made the fixes
   named below and ran each lane's gate itself. Lanes do not edit docs, so each lane ran
   the parts of `npm run check`: `docs:check` fails on each lane only on the review
-  fingerprints of `PROJECT_GUIDE.md`, `ENGINEERING_REFERENCE.md` and `DESIGN_SYSTEM.md`
-  (R2-int records them), and every other part passes. `AnalysisPanel.test.tsx` asserts
+  fingerprints of `PROJECT_GUIDE.md`, `ENGINEERING_REFERENCE.md` and `DESIGN_SYSTEM.md`,
+  and on R2a also `VERIFICATION.md` and `WORKFLOW.md`, which fingerprint `scripts/`
+  (R2-int records them); every other part passes. `AnalysisPanel.test.tsx` asserts
   on every screen, and no lane owned it; each lane changed only its own screen's
   assertions there.
-  - R2a (Inputs) on `panel/r2a`, built but not committed: five `PanelSection`s (Run
+  - R2a (Inputs) `354b8cd` on `panel/r2a`: five `PanelSection`s (Run
     with Mode, Runs, Seed, the stale chip and Settings; Environment with the Effects
     switch; Fire control with the Doctrine switch; Requirements as `RequirementTable` on
     the four columns; Entities, closed by default), no Run validity section, and register
-    rows that select with origin `panel`. Gate: 230 files, 2,547 tests; `check:bundle`
-    entry 370,461 (`buildRequirementGateReport` now reaches the entry chunk) and initial
-    390,412; `check:silent` passes; `test:e2e` 14 of 14. `check:entry-graph` fails on one
-    line: `Guarded module is frozen but no longer reaches the entry:
-    src/panels/analysis/runValidityText.tsx`.
+    rows that select with origin `panel`. `BoardPreparation` no longer imports
+    `runValidityText.tsx`, so it left the entry graph; on the user's word the freeze was
+    rewritten with `check-entry-graph.mjs --write` (that module removed, nothing added).
+    Gate: 230 files, 2,547 tests; entry graph 106 guarded modules of 212 reachable (the
+    new unguarded module is `src/panels/RequirementTable.tsx`); `check:bundle` entry
+    370,461 (`buildRequirementGateReport` now reaches the entry chunk) and initial
+    390,412; `check:silent` passes; `test:e2e` 14 of 14.
   - R2b (Fragility and Placement) `b157b4f` on `panel/r2b`: one Measure select with the
     asset fallback, the five-quantity ensemble table, the sweep chips and empty map grid,
     the sensitivity rows with Show all; Placement goal, systems, bounds, budget with the
@@ -869,12 +870,6 @@ held; both edit `src/state/store.ts`.
   merge `panel/r2a`, `panel/r2b`, `panel/r2c` and `panel/r2d` in that order. The lanes
   are in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d`; remove the worktrees at
   the merge. No `git stash` while they exist.
-- Before the merge: R2a waits for the user's decision on `runValidityText.tsx` (see Landmines).
-  Option (a): rewrite the freeze with `node scripts/check-entry-graph.mjs --write` and name
-  D1 in the commit; the plan's Do not mix list forbids that without the user's word.
-  Option (b): generalize `FindingThreatActions` in `runValidityText.tsx` into a
-  threat-select component that `RequirementTable` imports. Then rerun the R2a gate and
-  commit R2a on `panel/r2a`.
 - Expected conflicts: `src/index.css` (the lane blocks are disjoint; keep both sides),
   and `src/panels/AnalysisPanel.test.tsx`, where R2b, R2c and R2d each changed only their
   own screen's assertions (R2b and R2d both split the loop in `uses only the current
@@ -897,9 +892,10 @@ held; both edit `src/state/store.ts`.
     `.debrief-*`, `.evidence-products`, `.run-validity`, `.requirement-gate`,
     `.gate-*`); keep `.live-head`, which `TimelineBar` uses. `.tiles` and `.tile` have
     no user after R2b. Check each with a grep of `src/` before you delete it.
-  - Docs: every lane leaves `docs:check` failing only on the review fingerprints of
-    `PROJECT_GUIDE.md`, `ENGINEERING_REFERENCE.md` and `DESIGN_SYSTEM.md`. Update them
-    per plan step 2 and record each review with a concrete note.
+  - Docs: the lanes leave `docs:check` failing only on the review fingerprints of
+    `PROJECT_GUIDE.md`, `ENGINEERING_REFERENCE.md` and `DESIGN_SYSTEM.md`, and through
+    R2a's `scripts/entry-graph.json` also `VERIFICATION.md` and `WORKFLOW.md`. Update
+    them per plan step 2 and record each review with a concrete note.
 - Gate: `npm run check`, `npm run check:bundle`, `npm run check:silent` and
   `E2E_URL=http://localhost:<port> npm run test:e2e` on the merged branch, then the
   plan's browser check at 280, 408 and 560 px in Night and Paper. Measure the merged
@@ -938,9 +934,8 @@ The Follow-ups are candidates, not rows.
 - `check:entry-graph` also fails when a frozen module stops reaching the entry. R2a hit it:
   `BoardPreparation` was the only entry importer of `runValidityText.tsx`, and D1 removes
   the Inputs findings. For the same reason R2a keeps `ForecastSettings.tsx` as the Run
-  section body and puts `RequirementTable.tsx` in `src/panels/`. The session's permission
-  check refused `check-entry-graph.mjs --write` as a CI bypass; a freeze rewrite needs the
-  user's word.
+  section body and puts `RequirementTable.tsx` in `src/panels/`. The user authorized the
+  freeze rewrite on 2026-09-29; any other rewrite needs the user's word.
 - A static import of `src/ui/usePopover` from a lazy analysis module (`RunHistory.tsx`,
   `DebriefRecord.tsx`) splits the store into a preloaded chunk (the entry metric falls
   near 243 kB) and fails `check:bundle`.

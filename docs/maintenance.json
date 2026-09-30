@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "53fe569c512fe51453e9b1b2205dff994177840e0f9de963cdd6cfab342a141e",
+      "sha256": "9d258c08130631b744772fe3b473902ac73cd9b8b576697c7748c415dc375b19",
       "reviewedAt": "2026-09-30",
-      "note": "R2 lanes: records R2b, R2c and R2d on their branches with each gate, R2a built and held on the entry-graph freeze decision, the R2 follow-ups and landmines, and a Tasking that selects R2-int"
+      "note": "R2a committed as 354b8cd with the user-authorized freeze rewrite; the handoff records all four lanes on their branches and selects R2-int"
     },
     {
       "document": "docs/Plan.md",
