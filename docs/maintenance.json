@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "bfe0748b142b122d44489afb45c2f11ecc80d28e6a2e3d036c12974bc7bafc2a",
+      "sha256": "fc1a3aff989f2498a1e0035562dbdf2d7aaa3a551e1ff819562af5477c0c6729",
       "reviewedAt": "2026-09-30",
-      "note": "R1 on panel/r1 as 64aa156: Position records R1 and its gate, Follow-ups add the two R1 items, Landmines update the entry points and add the R1 primitives, Tasking selects R2"
+      "note": "R1 merged: panel/r1 fast-forwarded to main and pushed; Position and Tasking base updated, panel/r1 deleted"
     },
     {
       "document": "docs/Plan.md",

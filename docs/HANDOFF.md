@@ -26,13 +26,12 @@ the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `f
 [right-panel/Plan.md](right-panel/Plan.md) is the frozen queue for the right panel redesign
 (rows R1 to R3, authored 2026-09-29 from the approved prototype in
 [right-panel/prototype/](right-panel/prototype/index.html)). R1 (shell and shared
-primitives) is committed on `panel/r1` as `64aa156`, not merged or pushed. The Tasking
-selects R2 and waits for the user's word; R2 starts after the user merges R1. Q2 stays
-held. Execute one row per agent turn.
+primitives) is merged and pushed as `64aa156`. The Tasking selects R2 and waits for the
+user's word. Q2 stays held. Execute one row per agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `panel/r1`. `main` holds Row G on top of
+- Repository `~/Projects/rangeboard`, checked out on `main`. `main` holds Row G on top of
   `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
   evidence with the Now card fix `a570e23` and the Row G handoff `6733fc2`, fast-forwarded
   from `engine/g`. The code-quality refactor `ccfdf44` follows, fast-forwarded from
@@ -40,13 +39,12 @@ held. Execute one row per agent turn.
   `45d31ef`, Q1 `6c15b71` and the Q1 handoff `539674d`, fast-forwarded from `quality/q1`,
   then the Q1 merge handoff `e2343f9`, the range ring rework `fdfa6b3`, fast-forwarded
   from `rings/mir-mrir`, the range ring handoff `79f6f73`, and the right panel plan
-  commit `ae7ed95`. `main` is one commit ahead of `origin/main`; the plan commit is not
-  pushed. `panel/r1` holds R1 `64aa156` and the R1 handoff commit that holds this file on
-  top of `ae7ed95`; it is local only, not merged or pushed.
-  `engine/g`, `refactor/code-quality`, `quality/q1` and `rings/mir-mrir` (local and
-  remote) are deleted. `git branch -a` shows `main` and `panel/r1`, `git worktree list`
-  shows the main checkout only and the stash list is empty.
-- R1 (2026-09-29) `64aa156` on `panel/r1`: the right panel shell and shared primitives.
+  commit `ae7ed95`, then R1 `64aa156` and the R1 handoff `3d69bce`, fast-forwarded from
+  `panel/r1`, then the R1 merge handoff that holds this file. `main` and `origin/main`
+  are equal. `engine/g`, `refactor/code-quality`, `quality/q1`, `rings/mir-mrir` and
+  `panel/r1` are deleted; `panel/r1` was never pushed. `git branch -a` shows `main`
+  only, `git worktree list` shows the main checkout only and the stash list is empty.
+- R1 (2026-09-29) `64aa156`, merged and pushed: the right panel shell and shared primitives.
   The heading row is gone; Panel options ends the tab row (`.panel-tabbar`) and the
   Execute tab reads Monitor (value `now`). The store holds `selectionOrigin`,
   `openSections`, `validityOpen` and `panelRequest`, UI only and not persisted:
@@ -797,10 +795,10 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 **Row R2: screens, lanes R2a to R2d.** The lanes, their owned files, facts, work steps and
 checks are in [right-panel/Plan.md](right-panel/Plan.md#r2-screens). Start R2 only when
-asked, and only after the user merges `panel/r1`. Q2 of
+asked. Q2 of
 [code-quality/Plan.md](code-quality/Plan.md) stays held; both edit `src/state/store.ts`.
 
-- Base: `main` after the user merges `panel/r1`. Four worktrees outside the repository at
+- Base: `main` at the commit that holds this handoff. Four worktrees outside the repository at
   `~/Projects/rangeboard-wt/r2a` to `r2d`, each with a `node_modules` symlink, on branches
   `panel/r2a` to `panel/r2d`. No `git stash` while the worktrees exist.
 - Outcome: each lane builds its screens from the prototype with the R1 primitives,
@@ -826,8 +824,8 @@ asked, and only after the user merges `panel/r1`. Q2 of
     `RunHistory` from Outcome and R2d reworks it; R2-int confirms the scroll is gone.
 - Gate per lane: `npm run check`, `npm run check:bundle`, `npm run check:silent` and
   `E2E_URL=http://localhost:<port> npm run test:e2e` on a dev server port of the lane's
-  own. The base is 229 files and 2,544 tests on `64aa156`; confirm it on `main` after
-  the merge. Each lane reports its test changes, its bundle bytes and the entry-graph
+  own. The base is 229 files and 2,544 tests on `64aa156`; confirm it on the base
+  commit. Each lane reports its test changes, its bundle bytes and the entry-graph
   line, and runs the browser check of the plan on the screens it owns.
 - Next action: create the four worktrees and brief the four workers in one message
   (`opus-high` for R2a, R2b and R2c, `opus-medium` for R2d; 2,400 s each), per
