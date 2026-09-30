@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "fc1a3aff989f2498a1e0035562dbdf2d7aaa3a551e1ff819562af5477c0c6729",
+      "sha256": "53fe569c512fe51453e9b1b2205dff994177840e0f9de963cdd6cfab342a141e",
       "reviewedAt": "2026-09-30",
-      "note": "R1 merged: panel/r1 fast-forwarded to main and pushed; Position and Tasking base updated, panel/r1 deleted"
+      "note": "R2 lanes: records R2b, R2c and R2d on their branches with each gate, R2a built and held on the entry-graph freeze decision, the R2 follow-ups and landmines, and a Tasking that selects R2-int"
     },
     {
       "document": "docs/Plan.md",

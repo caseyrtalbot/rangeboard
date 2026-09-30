@@ -26,8 +26,11 @@ the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `f
 [right-panel/Plan.md](right-panel/Plan.md) is the frozen queue for the right panel redesign
 (rows R1 to R3, authored 2026-09-29 from the approved prototype in
 [right-panel/prototype/](right-panel/prototype/index.html)). R1 (shell and shared
-primitives) is merged and pushed as `64aa156`. The Tasking selects R2 and waits for the
-user's word. Q2 stays held. Execute one row per agent turn.
+primitives) is merged and pushed as `64aa156`. R2 (screens) is four lanes. R2b, R2c and
+R2d are committed on `panel/r2b` to `panel/r2d`, not merged and not pushed. R2a is built in
+its worktree but not committed, because its gate fails `check:entry-graph` and the fix
+waits for the user's decision. The Tasking selects R2-int and waits for the user's word.
+Q2 stays held. Execute one row per agent turn.
 
 ## Position
 
@@ -42,8 +45,55 @@ user's word. Q2 stays held. Execute one row per agent turn.
   commit `ae7ed95`, then R1 `64aa156` and the R1 handoff `3d69bce`, fast-forwarded from
   `panel/r1`, then the R1 merge handoff that holds this file. `main` and `origin/main`
   are equal. `engine/g`, `refactor/code-quality`, `quality/q1`, `rings/mir-mrir` and
-  `panel/r1` are deleted; `panel/r1` was never pushed. `git branch -a` shows `main`
-  only, `git worktree list` shows the main checkout only and the stash list is empty.
+  `panel/r1` are deleted; `panel/r1` was never pushed. Then the R2 lanes handoff that
+  holds this file, on `main`, not pushed. The branches `panel/r2a` to `panel/r2d` sit on
+  `1b8008b` in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d`, each with a
+  `node_modules` symlink; none is pushed. The stash list is empty.
+- R2 (2026-09-29), four lanes on `1b8008b`, not merged and not pushed. Four workers built
+  the lanes in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d` (`opus-high` for
+  R2a to R2c, `opus-medium` for R2d); each ran the gate and a Playwright check at 280, 408
+  and 560 px in Night and Paper with no console error, no sideways scroll in
+  `#insp-tabpanel` and no untitled clip. The orchestrator read each diff, made the fixes
+  named below and ran each lane's gate itself. Lanes do not edit docs, so each lane ran
+  the parts of `npm run check`: `docs:check` fails on each lane only on the review
+  fingerprints of `PROJECT_GUIDE.md`, `ENGINEERING_REFERENCE.md` and `DESIGN_SYSTEM.md`
+  (R2-int records them), and every other part passes. `AnalysisPanel.test.tsx` asserts
+  on every screen, and no lane owned it; each lane changed only its own screen's
+  assertions there.
+  - R2a (Inputs) on `panel/r2a`, built but not committed: five `PanelSection`s (Run
+    with Mode, Runs, Seed, the stale chip and Settings; Environment with the Effects
+    switch; Fire control with the Doctrine switch; Requirements as `RequirementTable` on
+    the four columns; Entities, closed by default), no Run validity section, and register
+    rows that select with origin `panel`. Gate: 230 files, 2,547 tests; `check:bundle`
+    entry 370,461 (`buildRequirementGateReport` now reaches the entry chunk) and initial
+    390,412; `check:silent` passes; `test:e2e` 14 of 14. `check:entry-graph` fails on one
+    line: `Guarded module is frozen but no longer reaches the entry:
+    src/panels/analysis/runValidityText.tsx`.
+  - R2b (Fragility and Placement) `b157b4f` on `panel/r2b`: one Measure select with the
+    asset fallback, the five-quantity ensemble table, the sweep chips and empty map grid,
+    the sensitivity rows with Show all; Placement goal, systems, bounds, budget with the
+    needs list, and candidates on one scale. Gate: 229 files, 2,545 tests; entry graph
+    107 guarded modules of 211 reachable; `check:bundle` entry 369,222 and initial
+    389,815; `check:silent` passes; `test:e2e` 14 of 14. The orchestrator changed the
+    Fragility and Placement assertions in `AnalysisPanel.test.tsx`.
+  - R2c (Monitor and Outcome) `5019169` on `panel/r2c`: the six-cell funnel, track rows with
+    chain pips, the state word, Held by and TTA (D13 constants `TTA_TONE_S`), one systems
+    list with C2 and magazine pips, and recent events; Outcome's provenance line with Save
+    run and the Export menu, the member result bar, the stat row with Gates met, strips
+    and table, and three record disclosures. `LiveStrip.tsx`, `RequirementGates.tsx` and
+    `RunValidityBanner` are deleted with their tests. Gate: 227 files, 2,533 tests; entry
+    graph 107 of 211; `check:bundle` entry 369,176 and initial 389,626; `check:silent`
+    passes; `test:e2e` 13 of 14. The one failure is planned: the debrief test waits for
+    `details.evidence-products` (`board-shell.e2e.mjs:181`), which step 9 removes, and
+    only R2-int edits the e2e file.
+  - R2d (Compare and saved runs) `7c52702` on `panel/r2d`: interval rows with the band
+    chart, the baseline row, one saved-run table with A and B picks, row menus, Save
+    current, and the A − B table; the Findings section is gone. Gate: 229 files, 2,551
+    tests; entry graph 107 of 211; `check:bundle` entry 369,250 and initial 389,446;
+    `check:silent` passes; `test:e2e` 14 of 14. The orchestrator moved `defaultPicks` to
+    `savedRunPicks.ts` (it added an `only-export-components` warning) and restored the
+    Compare region (`section.analysis-primary`, `aria-label="Compare"`) that the other
+    screens keep.
 - R1 (2026-09-29) `64aa156`, merged and pushed: the right panel shell and shared primitives.
   The heading row is gone; Panel options ends the tab row (`.panel-tabbar`) and the
   Execute tab reads Monitor (value `now`). The store holds `selectionOrigin`,
@@ -611,6 +661,23 @@ Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expan
 and the Row D items it listed. The three code-quality refactor follow-ups are rows Q1 to Q3
 in [code-quality/Plan.md](code-quality/Plan.md). What remains:
 
+From R2 of the right panel redesign (2026-09-29):
+
+- The prototype's new-seed button in the Run section (plan follow-up).
+- `ForecastSettings.tsx` copies the replicate and seed bounds of `RunTab.tsx`, which does
+  not export them.
+- The Inputs Entities rows show full names, not the D3 prefix split: `trackNames.ts` is
+  under the guarded prefix and outside the entry freeze.
+- `FragilityScreen.tsx` keeps a local `TIME_CI_MIN_N = 30` that mirrors `mc.ts`.
+- A static import of `src/ui/usePopover` from `RunHistory.tsx` or `DebriefRecord.tsx`
+  split the store into a preloaded chunk and failed `check:bundle`; both files keep a
+  local copy of the dismissal code. Find the cause, then share the hook.
+- The sweep map keeps its three-tone status cells; the prototype draws a ramp, but the
+  plan limited `SweepMap` to the caption and the empty grid.
+- Fragility Pin is a text button: `src/ui/icons` has no pin glyph.
+- The Inputs `.prep-note` lines are status sentences, which the landmine on `EmptyRow`
+  says render as an `EmptyRow`.
+
 From R1 of the right panel redesign (2026-09-29):
 
 - The status-bar Validity count reads the forecast in every phase. In Analyze the line
@@ -793,46 +860,59 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Row R2: screens, lanes R2a to R2d.** The lanes, their owned files, facts, work steps and
-checks are in [right-panel/Plan.md](right-panel/Plan.md#r2-screens). Start R2 only when
-asked. Q2 of
-[code-quality/Plan.md](code-quality/Plan.md) stays held; both edit `src/state/store.ts`.
+**Row R2-int: integration, docs, review and capture.** The ownership, work steps and stop
+condition are in [right-panel/Plan.md](right-panel/Plan.md#r2-int-integration-docs-review-and-capture).
+Start R2-int only when asked. Q2 of [code-quality/Plan.md](code-quality/Plan.md) stays
+held; both edit `src/state/store.ts`.
 
-- Base: `main` at the commit that holds this handoff. Four worktrees outside the repository at
-  `~/Projects/rangeboard-wt/r2a` to `r2d`, each with a `node_modules` symlink, on branches
-  `panel/r2a` to `panel/r2d`. No `git stash` while the worktrees exist.
-- Outcome: each lane builds its screens from the prototype with the R1 primitives,
-  removes the items the change notes mark CUT, MERGE or MOVE, removes its screen's own
-  validity render, and rewrites its tests. No lane edits `App.tsx`, `store.ts`, a doc,
-  the e2e file or another lane's files; a lane that needs one reports it to the
-  integrator (R2-int).
-- R1 facts the lanes need (the plan predates them):
-  - `PanelSection` is `src/ui/PanelSection.tsx`, not `src/panels/analysis/`. Props:
-    `title`, `readout`, `end`, `className`, and for a collapsible section `id` (the DOM
-    id and the `ui.openSections` key), `collapsible: true`, `defaultOpen` and `summary`.
-  - Grid classes: `.pgrid` with `.pg-1`, `.pg-2`, `.pg-4`; `.seg.pg-seg4` for a
-    four-option segmented control. Stat row: `.pstat-row` of `.pstat` cells with
-    `.pstat-l` and `.pstat-v`. The under-360 px rules key on the `right-panel`
-    container. Each lane adds rules only in its own block at the end of `index.css`.
-  - A panel row selects with `select({ entityIds: [id] }, false, 'panel')` and does not
-    call `setRightTab` (D7). A jump to another screen uses
-    `requestPanel({ phase, screen, section })`.
-  - `splitCommonPrefix` is in `src/panels/analysis/trackNames.ts`; `useRunHistorySave`
-    is in `src/panels/analysis/useRunHistorySave.ts`.
-  - At 280 px, Analyze, Outcome scrolls sideways: the `RunHistory` Save to history
-    `.mini` button is wider than `.inspector-body.analysis-panel`. R2c removes
-    `RunHistory` from Outcome and R2d reworks it; R2-int confirms the scroll is gone.
-- Gate per lane: `npm run check`, `npm run check:bundle`, `npm run check:silent` and
-  `E2E_URL=http://localhost:<port> npm run test:e2e` on a dev server port of the lane's
-  own. The base is 229 files and 2,544 tests on `64aa156`; confirm it on the base
-  commit. Each lane reports its test changes, its bundle bytes and the entry-graph
-  line, and runs the browser check of the plan on the screens it owns.
-- Next action: create the four worktrees and brief the four workers in one message
-  (`opus-high` for R2a, R2b and R2c, `opus-medium` for R2d; 2,400 s each), per
-  `~/.claude/rules/delegation.md`. Run each lane's gate and read each diff yourself
-  before you commit the lane on its branch.
-- Stop: each lane's gate passes, each lane's commit is on its branch, and this Tasking
-  selects R2-int. Do not merge or push without the user's word.
+- Base: `main` at the commit that holds this handoff. Create `panel/r2-int` from it and
+  merge `panel/r2a`, `panel/r2b`, `panel/r2c` and `panel/r2d` in that order. The lanes
+  are in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d`; remove the worktrees at
+  the merge. No `git stash` while they exist.
+- Before the merge: R2a waits for the user's decision on `runValidityText.tsx` (see Landmines).
+  Option (a): rewrite the freeze with `node scripts/check-entry-graph.mjs --write` and name
+  D1 in the commit; the plan's Do not mix list forbids that without the user's word.
+  Option (b): generalize `FindingThreatActions` in `runValidityText.tsx` into a
+  threat-select component that `RequirementTable` imports. Then rerun the R2a gate and
+  commit R2a on `panel/r2a`.
+- Expected conflicts: `src/index.css` (the lane blocks are disjoint; keep both sides),
+  and `src/panels/AnalysisPanel.test.tsx`, where R2b, R2c and R2d each changed only their
+  own screen's assertions (R2b and R2d both split the loop in `uses only the current
+  ensemble for Fragility and Compare`; keep the Fragility half from R2b and the Compare
+  half from R2d).
+- Integration items the lanes reported:
+  - `openEntities` (`App.tsx:875-882`) opens `#prepare-entities` through
+    `requestPanel({ phase: 'prepare', screen: 'inputs', section: 'prepare-entities' })`.
+    The section is closed by default and still carries `.prepare-entity-register`, so
+    today the rail only scrolls to its closed head.
+  - The e2e test `debrief record opens on run completion with a status summary`
+    (`board-shell.e2e.mjs:170-190`) waits for `details.evidence-products`, which R2c
+    removed. It is the only e2e failure on `panel/r2c` (13 of 14). Rewrite it for the
+    Outcome provenance line and the Export menu.
+  - After R2c, OutcomeScreen no longer renders `RunHistory`. Delete `RunHistory`,
+    `RunHistoryView` and their four tests when no module imports them; `SavedRunsView`
+    still opens a record with `RunRecordView`.
+  - Orphan CSS: R2c left its old rules (`.live-card`, `.live-clock`, `.live-bar`,
+    `.live-row`, `.live-value`, `.rr-bar`, `.system-telemetry-*`, `.component-*`,
+    `.debrief-*`, `.evidence-products`, `.run-validity`, `.requirement-gate`,
+    `.gate-*`); keep `.live-head`, which `TimelineBar` uses. `.tiles` and `.tile` have
+    no user after R2b. Check each with a grep of `src/` before you delete it.
+  - Docs: every lane leaves `docs:check` failing only on the review fingerprints of
+    `PROJECT_GUIDE.md`, `ENGINEERING_REFERENCE.md` and `DESIGN_SYSTEM.md`. Update them
+    per plan step 2 and record each review with a concrete note.
+- Gate: `npm run check`, `npm run check:bundle`, `npm run check:silent` and
+  `E2E_URL=http://localhost:<port> npm run test:e2e` on the merged branch, then the
+  plan's browser check at 280, 408 and 560 px in Night and Paper. Measure the merged
+  bundle: the lane entries were R2a 370,461, R2b 369,222, R2c 369,176 and R2d 369,250
+  gzip bytes against 368,942 on the base (budget 380,000). The full `npm test` timed out
+  once on `sensitivity.parity.test.ts` and once on `sampling.test.ts` while four lanes
+  ran at once; both passed alone and on a quiet rerun, with no expect moved.
+- Next action: the merges, the integration items, the docs, the gate and the browser
+  check; then the `opus-high` review and the `fable-medium` comparison against the
+  prototype (1,500 s each), and the capture under
+  `docs/field-te/evidence/right-panel-r2-<date>/`.
+- Stop: the gate passes, the commit is on `panel/r2-int`, and this Tasking selects R3.
+  Do not merge or push without the user's word.
 
 The Follow-ups are candidates, not rows.
 
@@ -855,6 +935,24 @@ The Follow-ups are candidates, not rows.
   a module under the guarded `src/panels/analysis/` that it imports fails
   `check:entry-graph`. Never run `check-entry-graph.mjs --write` to get past it.
   `ValidityLine` reaches the shell only through the lazy `PanelValidity` in `App.tsx`.
+- `check:entry-graph` also fails when a frozen module stops reaching the entry. R2a hit it:
+  `BoardPreparation` was the only entry importer of `runValidityText.tsx`, and D1 removes
+  the Inputs findings. For the same reason R2a keeps `ForecastSettings.tsx` as the Run
+  section body and puts `RequirementTable.tsx` in `src/panels/`. The session's permission
+  check refused `check-entry-graph.mjs --write` as a CI bypass; a freeze rewrite needs the
+  user's word.
+- A static import of `src/ui/usePopover` from a lazy analysis module (`RunHistory.tsx`,
+  `DebriefRecord.tsx`) splits the store into a preloaded chunk (the entry metric falls
+  near 243 kB) and fails `check:bundle`.
+- `AnalysisPanel.test.tsx` asserts on the markup of every screen. A screen lane changes
+  only its own screen's assertions there.
+- A lane gate cannot pass `docs:check`: `PROJECT_GUIDE.md` and `ENGINEERING_REFERENCE.md`
+  fingerprint `src/`, and `DESIGN_SYSTEM.md` fingerprints `src/index.css`, `src/ui/` and
+  `src/charts/`. A lane runs the other parts of `npm run check`; the integrator records
+  the reviews.
+- With four lanes running at once, the full `npm test` timed out on
+  `sensitivity.parity.test.ts` and on `sampling.test.ts`. Rerun on a quiet machine before
+  you count a timeout as a failure.
 - Collapse all and Expand all read `[data-section-id]` from the `PanelSection` toggles on
   screen and pass the ids to `setAllSections`; a section that is not rendered keeps its
   state. They still set each `details` and `.det-s-toggle` in the DOM.
