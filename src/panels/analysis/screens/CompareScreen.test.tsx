@@ -6,11 +6,10 @@ import { emptyScenario } from '../../../model/seed'
 import type { Entity, Scenario } from '../../../model/types'
 import { createRunManifest } from '../../../model/runRecord'
 import type { RunRecord } from '../../../model/runRecord'
-import type { RunSummary } from '../../../io/runStore'
 import { useStore } from '../../../state/store'
 import { IDLE_TRIAL } from '../../../state/runState'
 import { installTrial, unstartTrial } from '../trialTestState'
-import { CompareScreen, SavedRunCompareView } from './CompareScreen'
+import { CompareScreen, SavedRunDelta } from './CompareScreen'
 
 const interaction = vi.hoisted(() => ({ buttons: new Map<string, () => void>() }))
 vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
@@ -99,27 +98,32 @@ function render() {
   return renderToStaticMarkup(<CompareScreen />)
 }
 function row(html: string, label: string) {
-  const start = html.indexOf(`>${label}</th>`)
+  const start = html.indexOf(`<div class="cmp-dp" title="${label} · `)
   expect(start).toBeGreaterThan(-1)
-  return html.slice(start, html.indexOf('</tr>', start))
+  const next = html.indexOf('<div class="cmp-dp"', start + 1)
+  return html.slice(start, next === -1 ? html.indexOf('</section>', start) : next)
 }
+const SECTION_HEAD =
+  '<section class="psec"><div class="psec-head"><h3 class="psec-title">Trial against ensemble</h3>'
 
 describe('CompareScreen', () => {
   beforeEach(() => {
     interaction.buttons.clear()
+    useStore.setState({ baseline: null })
     complete()
   })
 
   it.each(['idle', 'cancelled', 'unstarted'] as const)(
-    'preserves the single pre-Play placeholder for %s',
+    'keeps the single pre-Play placeholder in the trial section for %s',
     (status) => {
       if (status === 'unstarted') unstartTrial()
       else
         useStore.setState({
           trial: status === 'idle' ? IDLE_TRIAL : { ...useStore.getState().trial, status },
         })
+      // Saved runs render nothing until the run store answers.
       expect(render()).toBe(
-        '<p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No trial yet. Press Play in Execute to run one.</span></p>',
+        `<section class="analysis-primary" aria-label="Compare">${SECTION_HEAD}</div><div class="psec-body"><p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No trial yet. Press Play in Execute to run one.</span></p></div></section></section>`,
       )
     },
   )
@@ -140,91 +144,116 @@ describe('CompareScreen', () => {
       )
       // The header Run control starts a run (D4); Compare draws no button of its own.
       expect(html).not.toContain('Run Monte Carlo')
-      expect(interaction.buttons.has('Run Monte Carlo')).toBe(false)
-      expect(html).not.toContain('<section')
-      expect(html).not.toContain('<table')
-      expect(html).not.toContain('No pinned baseline')
+      expect(html).not.toContain('<button')
+      expect(html).not.toContain('cmp-dp')
+      expect(html).not.toContain('No baseline.')
     },
   )
 
-  it('renders the chart and five comparable quantities from a completed trial, including after rewind', () => {
+  it('draws the chart and one interval row per quantity from a completed trial', () => {
     const html = render()
     expect(html).toContain(
-      'Monte Carlo · 40 replicates · Aleatory uncertainty · seed 7 · 95 % band',
+      '<span class="psec-readout">40 runs<span class="cmp-seed"> · seed 7</span></span>',
     )
     expect(html).toContain('role="img" aria-label="Kills before arrival, members of 9.')
-    expect(html).toContain('class="tb tb-dense"')
-    expect(row(html, 'Kills')).toContain('>3 /9 members</td>')
+    expect(html).not.toContain('<table')
+    expect(html.match(/<div class="cmp-dp" /g)).toHaveLength(5)
+    expect(row(html, 'Kills')).toContain(
+      'Kills · trial 3 /9 members · ensemble mean 2.5 /9 members',
+    )
+    expect(row(html, 'Kills')).toContain('95 % CI of mean 2 to 3 /9 members')
+    expect(row(html, 'Kills')).toContain('<small>0–9 mem</small>')
+    expect(row(html, 'Kills')).toContain('<span class="cmp-tv">3</span>')
     expect(row(html, 'Kills')).toContain('state nominal')
     expect(row(html, 'Leakers')).toContain('state warning')
-    expect(row(html, 'First detect')).toContain('1.1 s from T0')
-    expect(row(html, 'First detect')).toContain('inside')
-    expect(row(html, 'Min warning')).toContain('>—</td>')
-    expect(row(html, 'Salvos')).toContain('>8 salvos</td>')
-    expect(row(html, 'Salvos')).toContain('Unavailable')
-    expect(row(html, 'Salvos')).not.toContain('state nominal')
-    expect(html).toContain('First detect: MC conditional mean')
-    expect(html).toContain('detected in 40 of 40')
-    expect(html).toContain('No pinned baseline')
-    expect(html).not.toContain('disabled="">Pin</button>')
-    expect(html).not.toContain('Current − Baseline')
+    expect(row(html, 'First detect')).toContain('trial 1.1 s from T0')
+    expect(row(html, 'First detect')).toContain('detected in 40 of 40')
+    expect(row(html, 'First detect')).toContain('>inside</span>')
+    expect(row(html, 'Min warning')).toContain('<span class="cmp-tv">—</span>')
+    expect(row(html, 'Salvos')).toContain('<span class="cmp-tv">8</span>')
+    expect(row(html, 'Salvos')).toContain('95 % CI of mean unavailable')
+    expect(row(html, 'Salvos')).toContain('Aggregate interval unavailable')
+    expect(row(html, 'Salvos')).not.toContain('class="state')
+    expect(html).toContain('No baseline.')
+    expect(html).not.toContain('disabled="" title="Needs a finished ensemble')
     expect(html).not.toContain('>Clear</button>')
+    expect(html).not.toContain('cmp-base"')
   })
 
-  it('pins the current ensemble, compares against it and clears it from the Baseline row', () => {
+  it('places the band, the mean and the trial dot on the row scale', () => {
+    const kills = row(render(), 'Kills')
+    // Kills run 0 to 9 members: band 2 to 3, mean 2.5, trial 3.
+    expect(kills).toContain(
+      'class="cmp-band" style="left:22.22%;width:calc(33.33% - 22.22% + 2px)"',
+    )
+    expect(kills).toContain('class="cmp-mean" style="left:27.78%"')
+    expect(kills).toContain('class="cmp-trial" style="left:33.33%"')
+  })
+
+  it('moves the interval method to the head (i) and drops the Findings section', () => {
+    const html = render()
+    expect(html).toContain('aria-label="About Trial against ensemble"')
+    expect(html).toContain('Bands are 95 % intervals on the ensemble mean, not replicate ranges')
+    expect(html).toContain('against the ensemble: 40 replicates, aleatory uncertainty, seed 7')
+    expect(html).not.toContain('Findings')
+    expect(html).not.toContain('validity-finding')
+    expect(html).not.toContain('Interval and definedness details')
+  })
+
+  it('pins the current ensemble, draws its tick and clears it from the Baseline row', () => {
     let html = render()
-    interaction.buttons.get('Pin')!()
+    interaction.buttons.get('Pin current')!()
     const pinned = useStore.getState().baseline!
     expect(pinned.mc.seed).toBe(7)
     expect(pinned.scenario).toBe(useStore.getState().scenario)
     expect(pinned.label).toContain(useStore.getState().scenario.name)
-    // A different current ensemble against the pinned one: one more kill, one fewer salvo.
+    // A different current ensemble against the pinned one: one more kill.
     const mc = useStore.getState().mc.summary!
     useStore.setState({
-      mc: {
-        ...useStore.getState().mc,
-        summary: { ...mc, kills: band(3.5, 3, 4), perEffector: { gun: mc.perEffector.gun } },
-      },
+      mc: { ...useStore.getState().mc, summary: { ...mc, kills: band(3.5, 3, 4) } },
     })
     html = render()
     expect(html).toContain(`Baseline · ${pinned.label}`)
-    expect(html).not.toContain('pinned ')
+    expect(html).not.toContain('<span class="muted small"> pinned')
+    expect(html).toContain('Baseline mean, dashed')
+    expect(html.match(/class="cmp-base"/g)).toHaveLength(5)
+    expect(row(html, 'Kills')).toContain('baseline mean 2.5 /9 members')
+    expect(row(html, 'Kills')).toContain('class="cmp-base" style="left:27.78%"')
+    expect(html).toContain('The dashed tick is the pinned baseline mean')
+    expect(html).not.toContain('>Pin current</button>')
     useStore.setState({ baseline: { ...pinned, label: 'Reference' } })
     expect(render()).toContain('Baseline · Reference<span class="muted small"> pinned ')
     useStore.setState({ baseline: pinned })
-    expect(html).toContain('Baseline mean, dashed')
-    expect(html).toContain('>Baseline</th>')
-    expect(html).toContain('>Current − Baseline</th>')
-    expect(row(html, 'Kills')).toContain('>2.5 /9 members</td>')
-    expect(row(html, 'Kills')).toContain('>+1 members</td>')
-    expect(row(html, 'Salvos')).toContain('>8 salvos</td><td')
-    expect(row(html, 'Salvos')).toContain('>-4 salvos</td>')
-    expect(row(html, 'Min warning').match(/>4 s<\/td>/g)).toHaveLength(2)
-    expect(row(html, 'Min warning')).toContain('>0 s</td>')
-    expect(html).toContain('Deltas are current ensemble mean minus baseline mean.')
+    render()
     interaction.buttons.get('Clear')!()
     expect(useStore.getState().baseline).toBeNull()
     html = render()
-    expect(html).toContain('No pinned baseline')
-    expect(html).not.toContain('>Baseline</th>')
+    expect(html).toContain('No baseline.')
+    expect(html).not.toContain('class="cmp-base"')
   })
 
-  it('disables Pin when the done summary belongs to another basis', () => {
+  it('disables Pin current when the done summary belongs to another basis', () => {
     useStore.setState({ mc: { ...useStore.getState().mc, basisSignature: 'another basis' } })
     const html = render()
-    expect(html).toContain('disabled="">Pin</button>')
-    interaction.buttons.get('Pin')!()
+    expect(html).toContain(
+      'disabled="" title="Needs a finished ensemble for the current scenario">Pin current</button>',
+    )
+    interaction.buttons.get('Pin current')!()
     expect(useStore.getState().baseline).toBeNull()
   })
 
   it('does not compare incomplete playback or a partially retained trial', () => {
     useStore.setState({ playback: { ...useStore.getState().playback, completedAtMs: null } })
-    expect(render()).not.toContain('<table')
+    let html = render()
+    expect(html).not.toContain('cmp-dp')
+    expect(html).toContain('Trial in progress. Complete playback in Execute to compare.')
+    expect(html).not.toContain('aria-label="Export chart as PNG"')
     complete()
     const trial = useStore.getState().trial
     const result = { ...trial.result!, observedThroughS: 3 }
     useStore.setState({ trial: { ...trial, result } })
-    expect(render()).not.toContain('<table')
+    html = render()
+    expect(html).not.toContain('cmp-dp')
   })
 
   it('keeps unavailable means, bands and conditional time sample counts explicit', () => {
@@ -236,30 +265,19 @@ describe('CompareScreen', () => {
       },
     })
     const html = render()
-    expect(row(html, 'Kills')).toContain('Unavailable')
-    expect(row(html, 'Kills')).not.toContain('inside')
-    expect(row(html, 'First detect')).toContain('Unavailable')
-    expect(html).toContain('detected in 4 of 40')
+    expect(row(html, 'Kills')).toContain('ensemble mean — · 95 % CI of mean unavailable')
+    expect(row(html, 'Kills')).not.toContain('cmp-band')
+    expect(row(html, 'Kills')).not.toContain('class="state')
+    expect(row(html, 'First detect')).toContain('95 % CI of mean unavailable')
+    expect(row(html, 'First detect')).toContain('detected in 4 of 40')
   })
 
-  it('renders disagreement findings with one action per row', () => {
-    const mc = complete()
-    useStore.setState({
-      mc: { ...useStore.getState().mc, summary: { ...mc, kills: band(1, 0, 2) } },
-    })
+  it('offers a PNG export icon in the section head', () => {
     const html = render()
-    expect(html).toContain('simulated trial 3/9 members; ensemble 95 % mean band 0 to 2/9 members')
-    const findings = html.split('class="validity-finding"').slice(1)
-    for (const finding of findings)
-      expect(finding.slice(0, finding.indexOf('</section>')).match(/<button/g)).toHaveLength(1)
-    interaction.buttons.get('Review tracks in Prepare')!()
-    expect(useStore.getState().ui.boardPhase).toBe('prepare')
-  })
-
-  it('offers a PNG export beside the compare chart', () => {
-    const html = render()
-    expect(html).toContain('aria-label="Export the chart"')
-    expect(html).toContain('>Export PNG</button>')
+    expect(html).toContain('aria-label="Export chart as PNG" title="Export chart as PNG"')
+    expect(html.indexOf('aria-label="Export chart as PNG"')).toBeLessThan(
+      html.indexOf('class="psec-body"'),
+    )
   })
 })
 
@@ -338,90 +356,47 @@ const runB = saved('run-b', 6, {
   minWarningS: stat(5, 3, 7),
   perEffector: { 'gun-1': { salvos: stat(6, 5, 7), kills: stat(3, 2, 4) } },
 })
-const listed = (record: RunRecord): RunSummary => ({
-  id: record.id,
-  label: record.label,
-  savedAt: record.savedAt,
-  seed: record.mc.seed,
-  replicates: record.mc.replicates,
-  scenarioName: record.scenario.name,
-  bytes: 1024,
-})
-
-function savedView(props: Partial<SavedRunCompareViewProps> = {}) {
-  return renderToStaticMarkup(
-    <SavedRunCompareView
-      runs={[listed(runA), listed(runB)]}
-      a={runA}
-      b={runB}
-      error={null}
-      onPick={() => {}}
-      {...props}
-    />,
-  )
+function delta(a: RunRecord = runA, b: RunRecord = runB) {
+  return renderToStaticMarkup(<SavedRunDelta a={a} b={b} />)
 }
-type SavedRunCompareViewProps = Parameters<typeof SavedRunCompareView>[0]
+function deltaRow(html: string, label: string) {
+  const start = html.indexOf(`>${label}</th>`)
+  expect(start).toBeGreaterThan(-1)
+  return html.slice(start, html.indexOf('</tr>', start))
+}
 
-describe('SavedRunCompareView', () => {
-  it('asks for two saved runs before it compares any', () => {
-    expect(savedView({ runs: [], a: null, b: null })).toContain(
-      '0 saved runs. Save two runs on Outcome',
-    )
-    expect(savedView({ runs: [listed(runA)], a: runA, b: null })).toContain(
-      '1 saved run. Save two runs on Outcome',
-    )
-    expect(savedView({ runs: [listed(runA)], a: runA, b: null })).not.toContain('<table')
-    expect(savedView({ b: null })).toContain('Choose two saved runs to see the delta table.')
-    expect(
-      savedView({ error: 'Run history is unavailable: this browser provides no IndexedDB.' }),
-    ).toContain('this browser provides no IndexedDB')
-  })
-
-  it('lists every saved run in both pickers with the chosen one selected', () => {
-    const html = savedView()
-    expect(html.match(/<select/g)).toHaveLength(2)
-    expect(html.match(/<option value="run-a">/g)).toHaveLength(1)
-    expect(html).toContain('aria-label="Run A"')
-    expect(html).toContain('aria-label="Run B"')
-    expect(html).toContain('<option value="run-a" selected="">')
-    expect(html).toContain('<option value="run-b" selected="">')
-  })
-
-  it('differences the five quantities, each side with its own interval', () => {
-    const html = savedView()
+describe('SavedRunDelta', () => {
+  it('differences the five quantities, with the interval under each mean and none on the difference', () => {
+    const html = delta()
     expect(html).toContain('aria-label="Saved run A against saved run B"')
-    expect(html).toContain(
-      'Each cell holds the ensemble mean and, under it, the 95 % interval on that mean.',
-    )
     // Kills 2.5 of 9 against 1.5 of 6: the means differ by 1 member.
-    expect(row(html, 'Kills')).toContain(
-      '>2.5 /9 members<small style="display:block">2 to 3 /9 members</small>',
-    )
-    expect(row(html, 'Kills')).toContain(
-      '>1.5 /6 members<small style="display:block">1 to 2 /6 members</small>',
-    )
-    expect(row(html, 'Kills')).toContain('>+1 members</td>')
+    expect(deltaRow(html, 'Kills')).toContain('>2.5<small>2–3</small></td>')
+    expect(deltaRow(html, 'Kills')).toContain('>1.5<small>1–2</small></td>')
+    expect(deltaRow(html, 'Kills')).toContain('title="+1 members">+1 mem</td>')
     // Leakers 2 against 3, first detect 2 s against 3 s, min warning 4 s against 5 s.
-    expect(row(html, 'Leakers')).toContain('>-1 members</td>')
-    expect(row(html, 'First detect')).toContain('>1 to 3 s from T0</small>')
-    expect(row(html, 'First detect')).toContain('>-1 s from T0</td>')
-    expect(row(html, 'Min warning')).toContain('>-1 s</td>')
+    expect(deltaRow(html, 'Leakers')).toContain('>-1 mem</td>')
+    expect(deltaRow(html, 'First detect')).toContain('>2<small>1–3</small></td>')
+    expect(deltaRow(html, 'First detect')).toContain('title="-1 s from T0">-1 s</td>')
+    expect(deltaRow(html, 'Min warning')).toContain('>-1 s</td>')
     // One effector each, so the aggregate salvo interval is that effector's: 4 against 6.
-    expect(row(html, 'Salvos')).toContain('>3 to 5 salvos</small>')
-    expect(row(html, 'Salvos')).toContain('>-2 salvos</td>')
+    expect(deltaRow(html, 'Salvos')).toContain('>4<small>3–5</small></td>')
+    expect(deltaRow(html, 'Salvos')).toContain('>-2 slv</td>')
+    expect(html).toContain('No interval is claimed on the difference of two independent runs.')
+    // The difference cell never carries an interval.
+    for (const label of ['Kills', 'Leakers', 'First detect', 'Min warning', 'Salvos'])
+      expect(deltaRow(html, label).match(/<small>/g)).toHaveLength(2)
   })
 
-  it('states each record basis, the differing populations and the delta rule', () => {
-    const html = savedView()
+  it('states each record basis in its column title and the differing populations', () => {
+    const html = delta()
     expect(html).toContain(
-      'A · Camp Able · run-a · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 9 members',
+      'title="A · Camp Able · run-a · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 9 members"',
     )
     expect(html).toContain(
-      'B · Camp Able · run-b · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 6 members',
+      'title="B · Camp Able · run-b · 40 replicates · Total uncertainty · seed 7 · full run T+1:00 · 6 members"',
     )
     expect(html).toContain('Populations differ, 9 against 6 members; count deltas are in members.')
-    expect(html).toContain('no interval is claimed on a difference of two independent runs')
-    expect(savedView({ b: runA })).toContain('Both sides are the same record; every delta is zero.')
+    expect(delta(runA, runA)).not.toContain('Populations differ')
   })
 
   it('leaves leakage and warning unavailable on a record with no defended asset', () => {
@@ -432,18 +407,11 @@ describe('SavedRunCompareView', () => {
         entities: savedScenario.entities.filter((e) => e.kind !== 'asset'),
       },
     }
-    const html = savedView({ b: noAsset })
-    expect(row(html, 'Leakers')).toContain('Unavailable')
-    expect(row(html, 'Leakers')).toContain('>—</td>')
-    expect(row(html, 'Min warning')).toContain('>—</td>')
-    expect(html).toContain('No defended asset; unavailable.')
-  })
-
-  it('offers each record its own export buttons', () => {
-    const html = savedView()
-    expect(html).toContain('aria-label="Export A this run"')
-    expect(html).toContain('aria-label="Export B this run"')
-    expect(html.match(/>Threat CSV<\/button>/g)).toHaveLength(2)
-    expect(html.match(/>JSON<\/button>/g)).toHaveLength(2)
+    const html = delta(runA, noAsset)
+    expect(deltaRow(html, 'Leakers')).toContain(
+      'title="mean unavailable · 95 % CI unavailable · No defended asset; unavailable.">—<small>no CI</small>',
+    )
+    expect(deltaRow(html, 'Leakers')).toContain('>—</td>')
+    expect(deltaRow(html, 'Min warning')).toContain('>—</td>')
   })
 })

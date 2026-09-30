@@ -7,7 +7,11 @@ import type { RunRecord } from '../../model/runRecord'
 import { runReplicates } from '../../playback/mcRun'
 import type { RunSummary } from '../../io/runStore'
 import type { RunHistorySave } from './RunHistory'
-import { RunHistoryView, RunRecordView } from './RunHistory'
+import { RunHistoryView, RunMenuItems, RunRecordView, SavedRunsView } from './RunHistory'
+import { defaultPicks } from './savedRunPicks'
+import { useRunHistorySave } from './useRunHistorySave'
+import { analysisBasisSignature } from '../../state/analysisBasis'
+import { useStore } from '../../state/store'
 import probe from '../../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
 
 const scenario: Scenario = {
@@ -213,5 +217,145 @@ describe('RunRecordView', () => {
     )
     expect(withRows).toContain('title="Export the sensitivity rows"')
     expect(withRows).not.toContain('title="Export the sensitivity rows" disabled')
+  })
+})
+
+const second: RunSummary = { ...listed, id: 'run-2', label: 'Camp Able · second' }
+
+function savedRuns(props: Partial<Parameters<typeof SavedRunsView>[0]> = {}) {
+  return renderToStaticMarkup(
+    <SavedRunsView
+      runs={[second, listed]}
+      a="run-2"
+      b="run-1"
+      opened={null}
+      notice={null}
+      error={null}
+      save={save}
+      delta={<p>DELTA</p>}
+      onPick={() => {}}
+      onLoad={() => Promise.resolve(null)}
+      onOpen={() => {}}
+      onDelete={() => {}}
+      onSave={() => {}}
+      onImport={() => {}}
+      onExportSqlite={() => {}}
+      {...props}
+    />,
+  )
+}
+
+describe('SavedRunsView', () => {
+  it('lists each run with its A and B picks, its saved time and a row menu', () => {
+    const html = savedRuns()
+    expect(html).toContain('>Saved runs</h3><span class="psec-readout">2</span>')
+    expect(html).toContain('aria-label="Saved runs"')
+    expect(html.match(/class="saved-pick"/g)).toHaveLength(4)
+    expect(html).toContain('aria-pressed="true" aria-label="Set Camp Able · second as A"')
+    expect(html).toContain('aria-pressed="false" aria-label="Set Camp Able · second as B"')
+    expect(html).toContain('aria-pressed="true" aria-label="Set Camp Able · saved as B"')
+    expect(html).toContain(
+      `title="${record.label} · seed ${summary.seed} · ${summary.replicates} replicates"`,
+    )
+    expect(html).toContain('aria-label="Camp Able · saved actions"')
+    // The menu stays shut until it is pressed; no row button reads Open or Delete.
+    expect(html).not.toContain('>Open</button>')
+    expect(html).not.toContain('Save to history')
+  })
+
+  it('shows the A − B comparison only when A and B are two different records', () => {
+    expect(savedRuns()).toContain('<p>DELTA</p>')
+    expect(savedRuns({ b: 'run-2' })).not.toContain('DELTA')
+    expect(savedRuns({ b: 'run-2' })).toContain('Pick A and B to see the difference.')
+    expect(savedRuns({ b: null })).toContain('Pick A and B to see the difference.')
+  })
+
+  it('enables Save current by the save rule, with the reason as its title', () => {
+    expect(savedRuns()).toMatch(/title="Save this ensemble to the run history">Save current</)
+    const off = savedRuns({
+      save: { ...save, enabled: false, reason: 'No finished ensemble to save' },
+    })
+    expect(off).toContain('disabled="" title="No finished ensemble to save">Save current</button>')
+    expect(off).toContain('aria-label="Saved run options"')
+  })
+
+  it('reports the empty list, the notice and the error, and opens a record below the list', () => {
+    expect(savedRuns({ runs: [] })).toContain('No saved run yet.')
+    expect(savedRuns({ runs: [] })).not.toContain('<table')
+    expect(savedRuns({ notice: 'Saved to history.' })).toContain('role="status">Saved to history.')
+    expect(savedRuns({ error: 'Run history is unavailable.' })).toContain(
+      'Run history is unavailable.',
+    )
+    const opened = savedRuns({ opened: record })
+    expect(opened.indexOf('aria-label="Saved runs"')).toBeLessThan(
+      opened.indexOf('aria-label="Saved run Camp Able · saved"'),
+    )
+  })
+})
+
+describe('RunMenuItems', () => {
+  const items = (value: RunRecord | null) =>
+    renderToStaticMarkup(
+      <RunMenuItems record={value} onOpen={() => {}} onExport={() => {}} onDelete={() => {}} />,
+    )
+
+  it('offers Open, the four exports and Delete, in that order', () => {
+    const html = items({ ...record, sensitivity: null })
+    const labels = [...html.matchAll(/>([^<>]+)<\/button>/g)].map((m) => m[1])
+    expect(labels).toEqual([
+      'Open',
+      'JSON',
+      'Per-threat CSV',
+      'Per-effector CSV',
+      'Sensitivity CSV',
+      'Delete',
+    ])
+    expect(html).toContain('title="This run carries no sensitivity result">Sensitivity CSV')
+  })
+
+  it('holds the exports until the record is read', () => {
+    expect(items(null).match(/title="Reading the saved run"/g)).toHaveLength(4)
+  })
+})
+
+describe('defaultPicks', () => {
+  const runs = [second, listed]
+  it('defaults A and B to the two newest records', () => {
+    expect(defaultPicks(runs, { a: null, b: null })).toEqual({ a: 'run-2', b: 'run-1' })
+    expect(defaultPicks([listed], { a: null, b: null })).toEqual({ a: 'run-1', b: null })
+    expect(defaultPicks([], { a: null, b: null })).toEqual({ a: null, b: null })
+  })
+
+  it('keeps a pick that still exists and refills a deleted one', () => {
+    expect(defaultPicks(runs, { a: 'run-1', b: 'run-2' })).toEqual({ a: 'run-1', b: 'run-2' })
+    expect(defaultPicks(runs, { a: 'gone', b: 'run-2' })).toEqual({ a: 'run-1', b: 'run-2' })
+  })
+})
+
+describe('useRunHistorySave', () => {
+  function Probe() {
+    const value = useRunHistorySave()
+    return <i>{`${value.enabled}|${value.reason}`}</i>
+  }
+  // A server render reads the initial state, so each render copies the live state there.
+  const probeText = () => {
+    Object.assign(useStore.getInitialState(), useStore.getState())
+    return renderToStaticMarkup(<Probe />)
+  }
+
+  it('enables a save only for a finished ensemble on the current basis', () => {
+    const state = useStore.getState()
+    useStore.setState({ scenario })
+    expect(probeText()).toContain('false|No finished ensemble to save')
+    useStore.setState({ mc: { ...state.mc, status: 'running' } })
+    expect(probeText()).toContain('false|The ensemble is still running')
+    const signature = analysisBasisSignature(scenario)
+    useStore.setState({
+      mc: { ...state.mc, status: 'done', summary, basisSignature: signature },
+    })
+    expect(probeText()).toContain('true|Save this ensemble to the run history')
+    useStore.setState({ mc: { ...state.mc, status: 'done', summary, basisSignature: 'other' } })
+    expect(probeText()).toContain('false|The scenario changed after the ensemble ran')
+    useStore.setState(state)
   })
 })

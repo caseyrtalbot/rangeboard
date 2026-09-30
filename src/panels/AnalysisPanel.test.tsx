@@ -14,6 +14,8 @@ function render(props?: ComponentProps<typeof AnalysisPanel>): string {
 
 const noTrial =
   '<p class="empty-row"><span class="state warning"><i class="state-square hollow" aria-hidden="true"></i>No trial yet. Press Play in Execute to run one.</span></p>'
+// Compare keeps the placeholder in its Trial against ensemble section (R2d).
+const compareNoTrial = `<section class="analysis-primary" aria-label="Compare"><section class="psec"><div class="psec-head"><h3 class="psec-title">Trial against ensemble</h3></div><div class="psec-body">${noTrial}</div></section></section>`
 // Execute holds the Play control, so its placeholder carries it inline.
 const nowPlay =
   '<p class="muted small">No trial yet. Press <button class="mini">Play</button> to run one.</p>'
@@ -73,7 +75,7 @@ describe('AnalysisPanel screens', () => {
       const expected =
         props.phase === 'execute'
           ? `<div class="inspector-body analysis-panel">${nowPlay}</div>`
-          : `${pendingLine}<div class="inspector-body analysis-panel">${noTrial}</div>`
+          : `${pendingLine}<div class="inspector-body analysis-panel">${props.screen === 'compare' ? compareNoTrial : noTrial}</div>`
       expect(render(props)).toBe(expected)
       useStore.getState().resetRun()
       expect(render(props)).toBe(expected)
@@ -126,11 +128,10 @@ describe('AnalysisPanel screens', () => {
     expect(render({ phase: 'prepare', screen: 'fragility' })).toContain(
       `${summary.replicates} runs · seed ${summary.seed} · T+`,
     )
-    const compare = render({ phase: 'analyze', screen: 'compare' })
-    expect(compare).toContain(
-      `Monte Carlo · 2 replicates · Aleatory uncertainty · seed ${summary.seed}`,
+    // Compare reads the ensemble in its section head (R2d).
+    expect(render({ phase: 'analyze', screen: 'compare' })).toContain(
+      `2 runs<span class="cmp-seed"> · seed ${summary.seed}</span>`,
     )
-    expect(compare).toContain('full run')
     useStore.setState({ mc: { ...useStore.getState().mc, status: 'stale' } })
     expect(render({ phase: 'analyze', screen: 'compare' })).toContain('No current ensemble result.')
   })
