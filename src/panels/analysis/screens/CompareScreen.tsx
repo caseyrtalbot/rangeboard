@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import { trialKpisAt } from '../../../analysis/liveStats'
-import { assessRunValidity } from '../../../analysis/runValidity'
-import { trialForecast } from '../../../analysis/trialResult'
 import type { TrialResultView } from '../../../analysis/trialResult'
 import { trialSeriesOf } from '../../../analysis/trialSeries'
 import { BandChart } from '../../../charts/BandChart'
@@ -13,8 +11,6 @@ import { entityActive, runSettings } from '../../../model/types'
 import type { RunRecord } from '../../../model/runRecord'
 import type { BandSeries, McSummary, Stat } from '../../../playback/mcRun'
 import { DT } from '../../../playback/clock'
-import type { RunSummary } from '../../../io/runStore'
-import { getRun, listRuns } from '../../../io/runStore'
 import { safeName } from '../../../io/persist'
 import { analysisBasisSignature } from '../../../state/analysisBasis'
 import type { PinnedBaseline } from '../../../state/baseline'
@@ -22,14 +18,27 @@ import { defaultBaselineLabel } from '../../../state/baseline'
 import { selectRunComplete } from '../../../state/selectors'
 import { useStore } from '../../../state/store'
 import { selectTrialHorizon } from '../../../state/trialSelectors'
+import { IconInfo } from '../../../ui/icons'
 import { State } from '../../../ui/kit'
+import { PanelSection } from '../../../ui/PanelSection'
 import { EmptyRow, trialStateText, trialViewOf } from '../controls'
 import { useTrialResult } from '../../../state/useTrialResult'
 import { currentSummary, formatCount, statMean, timeStatSub } from '../mc'
-import { RecordExports } from '../RunHistory'
-import { SEVERITY_PILL } from '../runValidityText'
+import { SavedRuns } from '../RunHistory'
+import { useRunHistorySave } from '../useRunHistorySave'
 
+type MeanKey = 'kills' | 'leakers' | 'firstDetect' | 'minWarning' | 'salvos'
+const ROW_KEYS: MeanKey[] = ['kills', 'leakers', 'firstDetect', 'minWarning', 'salvos']
+/** The short unit under a row label; the row title spells the unit out. */
+const SCALE_UNIT: Record<MeanKey, string> = {
+  kills: 'mem',
+  leakers: 'mem',
+  firstDetect: 's',
+  minWarning: 's',
+  salvos: 'slv',
+}
 type DeltaRow = {
+  key: MeanKey
   label: string
   trial: number | null
   mean: number | null
@@ -38,22 +47,13 @@ type DeltaRow = {
   unit: string
   note?: string
 }
-type MeanKey = 'kills' | 'leakers' | 'firstDetect' | 'minWarning' | 'salvos'
-const ROW_KEYS: MeanKey[] = ['kills', 'leakers', 'firstDetect', 'minWarning', 'salvos']
-// Interval ends and units must remain readable at the panel's minimum width.
-const cellStyle: CSSProperties = {
-  whiteSpace: 'normal',
-  overflowWrap: 'anywhere',
-  overflow: 'visible',
-}
 const finite = (value: number | null | undefined) =>
   value != null && Number.isFinite(value) ? value : null
-const loadError = (error: unknown) =>
-  error instanceof Error ? error.message : 'Run history is unavailable.'
 const minimum = (values: Array<number | null>) => {
   const defined = values.filter((value): value is number => finite(value) != null)
   return defined.length ? Math.min(...defined) : null
 }
+const isCount = (key: MeanKey) => key === 'kills' || key === 'leakers'
 
 /** End-of-run ensemble means of the five compared quantities, on the summary's own horizon and population. */
 function ensembleMeans(mc: McSummary, hasAsset: boolean) {
@@ -79,39 +79,119 @@ function ensembleMeans(mc: McSummary, hasAsset: boolean) {
 }
 
 const signed = (value: number) => `${value > 0 ? '+' : ''}${formatCount(value)}`
+// Four characters hold the trial column at every drawer width.
+const short = (value: number) =>
+  Math.abs(value) >= 100 ? `${Math.round(value)}` : formatCount(value)
 
 /**
- * A chart and its PNG button. The chart paints from CSS custom properties, so the
- * export passes the panel surface as a background the SVG does not carry.
+ * One scale per row. A count runs from zero to the raid (or the baseline mean,
+ * when a larger raid set it); a time or salvo scale spans every value it draws,
+ * with a tenth of the span as margin, on whole numbers.
  */
-function ChartExport({ name, children }: { name: string; children: ReactNode }) {
-  const frame = useRef<HTMLDivElement>(null)
-  const [error, setError] = useState<string | null>(null)
+function scaleOf(row: DeltaRow, baseMean: number | null, population: number): [number, number] {
+  if (isCount(row.key)) return [0, Math.max(population, baseMean ?? 0, 1)]
+  const values = [row.lo, row.hi, row.mean, row.trial, baseMean].filter(
+    (value): value is number => finite(value) != null,
+  )
+  if (!values.length) return [0, 1]
+  const lo = Math.min(...values)
+  const hi = Math.max(...values)
+  const pad = hi > lo ? (hi - lo) / 10 : Math.max(Math.abs(hi) / 10, 1)
+  return [Math.max(0, Math.floor(lo - pad)), Math.ceil(hi + pad)]
+}
+
+/** One quantity: its band, mean, baseline tick and trial dot on the row's own scale. */
+function IntervalRow({
+  row,
+  baseMean,
+  population,
+  baseNote,
+}: {
+  row: DeltaRow
+  baseMean: number | null
+  population: number
+  baseNote: string | null
+}) {
+  const [a, b] = scaleOf(row, baseMean, population)
+  const at = (value: number) =>
+    `${(Math.min(1, Math.max(0, (value - a) / (b - a))) * 100).toFixed(2)}%`
+  const comparable = row.trial != null && row.mean != null && row.lo != null && row.hi != null
+  const inside = comparable && row.trial! >= row.lo! && row.trial! <= row.hi!
+  const text = (value: number | null) => (value == null ? '—' : `${formatCount(value)} ${row.unit}`)
+  const title = [
+    `${row.label} · trial ${text(row.trial)}`,
+    `ensemble mean ${text(row.mean)}`,
+    row.lo == null || row.hi == null
+      ? '95 % CI of mean unavailable'
+      : `95 % CI of mean ${formatCount(row.lo)} to ${formatCount(row.hi)} ${row.unit}`,
+    baseNote != null && `baseline mean ${text(baseMean)}`,
+    row.note,
+    comparable && (inside ? 'inside' : 'outside'),
+  ]
+    .filter(Boolean)
+    .join(' · ')
   return (
-    <>
-      <div ref={frame}>{children}</div>
-      <div className="insp-row" aria-label="Export the chart">
-        <span className="muted small">Chart</span>
-        <button
-          className="mini"
-          type="button"
-          onClick={() => {
-            exportChartPng(frame.current, `${name}.png`, { background: readTokens().surface }).then(
-              () => setError(null),
-              (reason: unknown) =>
-                setError(reason instanceof Error ? reason.message : 'Could not export the chart.'),
-            )
-          }}
-        >
-          Export PNG
-        </button>
-      </div>
-      {error && (
-        <State tone="critical" role="status">
-          {error}
-        </State>
-      )}
-    </>
+    <div className="cmp-dp" title={title}>
+      <span className="cmp-q">
+        {row.label}
+        <small>
+          {a}–{b} {SCALE_UNIT[row.key]}
+        </small>
+      </span>
+      <span className="cmp-plot" aria-hidden="true">
+        <span className="cmp-ax" />
+        {row.lo != null && row.hi != null && (
+          <span
+            className="cmp-band"
+            style={{ left: at(row.lo), width: `calc(${at(row.hi)} - ${at(row.lo)} + 2px)` }}
+          />
+        )}
+        {row.mean != null && <span className="cmp-mean" style={{ left: at(row.mean) }} />}
+        {baseNote != null && baseMean != null && (
+          <span className="cmp-base" style={{ left: at(baseMean) }} />
+        )}
+        {row.trial != null && <span className="cmp-trial" style={{ left: at(row.trial) }} />}
+      </span>
+      <span className="cmp-tv">{row.trial == null ? '—' : short(row.trial)}</span>
+      <span className="cmp-flag">
+        {comparable ? (
+          <State tone={inside ? 'nominal' : 'warning'} title={inside ? 'inside' : 'outside'}>
+            <span className="cmp-flag-w">{inside ? 'inside' : 'outside'}</span>
+          </State>
+        ) : (
+          '—'
+        )}
+      </span>
+    </div>
+  )
+}
+
+/** A 16 px download arrow for the chart export; the button carries the label. */
+function IconDownload() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M8 2.5v8M4.75 7.25 8 10.5l3.25-3.25M3 13.5h10" />
+    </svg>
+  )
+}
+
+/** The method note behind the head (i); with field help on it also renders as a line. */
+function InfoButton({ label, note }: { label: string; note: string }) {
+  return (
+    <button type="button" className="field-info" aria-label={`About ${label}`} title={note}>
+      <IconInfo />
+    </button>
   )
 }
 
@@ -119,54 +199,63 @@ function CompletedCompare({
   view,
   mc,
   baseline,
+  frame,
 }: {
   view: TrialResultView
   mc: McSummary
   baseline: PinnedBaseline | null
+  frame: RefObject<HTMLDivElement | null>
 }) {
   const data = useMemo(() => {
     const kpis = trialKpisAt(view, view.durationS)
     const { population, i, salvos, salvoMean } = ensembleMeans(mc, view.hasActiveAsset)
     const countRow = (
+      key: MeanKey,
       label: string,
       trial: number | null,
       band: BandSeries,
       available = true,
     ): DeltaRow => ({
+      key,
       label,
       trial,
       mean: available && mc.replicates > 0 ? finite(band.mean[i]) : null,
       lo: available && mc.replicates >= 2 ? finite(band.lo[i]) : null,
       hi: available && mc.replicates >= 2 ? finite(band.hi[i]) : null,
       unit: `/${population} members`,
+      note: available ? undefined : 'No defended asset; unavailable.',
     })
     const timeRow = (
+      key: MeanKey,
       label: string,
       trial: number | null,
       stat: Stat,
       quantity: 'detected' | 'warning',
       available = true,
     ): DeltaRow => ({
+      key,
       label,
       trial,
       mean: available ? statMean(stat) : null,
       lo: available && stat.n >= 30 && stat.conf === 0.95 ? finite(stat.lo) : null,
       hi: available && stat.n >= 30 && stat.conf === 0.95 ? finite(stat.hi) : null,
-      unit: label === 'First detect' ? 's from T0' : 's',
+      unit: key === 'firstDetect' ? 's from T0' : 's',
       note: available ? timeStatSub(stat, quantity) : 'No defended asset; unavailable.',
     })
     const salvoBand =
       salvos.length === 1 && salvos[0].n >= 2 && salvos[0].conf === 0.95 ? salvos[0] : null
-    const rows = [
-      countRow('Kills', kpis.kills, mc.kills),
-      countRow('Leakers', kpis.reportedLeakers, mc.leakers, view.hasActiveAsset),
+    const rows: DeltaRow[] = [
+      countRow('kills', 'Kills', kpis.kills, mc.kills),
+      countRow('leakers', 'Leakers', kpis.reportedLeakers, mc.leakers, view.hasActiveAsset),
       timeRow(
+        'firstDetect',
         'First detect',
         minimum(view.assessments.map((a) => a.firstDetectS)),
         mc.firstDetectS,
         'detected',
       ),
       timeRow(
+        'minWarning',
         'Min warning',
         view.hasActiveAsset ? minimum(view.assessments.map((a) => a.warningS)) : null,
         mc.minWarningS,
@@ -174,6 +263,7 @@ function CompletedCompare({
         view.hasActiveAsset,
       ),
       {
+        key: 'salvos',
         label: 'Salvos',
         trial: kpis.kineticShots + kpis.deSalvos + kpis.jamSalvos,
         mean: salvoMean,
@@ -185,20 +275,12 @@ function CompletedCompare({
           : 'Aggregate interval unavailable; per-effector intervals cannot be added.',
       },
     ]
-    // The forecast runs the values the trial ran, the manifest's overrides included.
-    const forecast = trialForecast(view)
-    const validity = assessRunValidity(view.scenario, forecast.assessments, undefined, {
-      assessments: view.assessments,
-      kills: kpis.kills,
-      mc,
-    })
     return {
       rows,
       population,
       trial: trialSeriesOf(view, view.durationS).kpi.find(
         (series) => series.id === 'kpi.expectedKills',
       )!,
-      findings: validity.findings.filter((finding) => finding.id !== 'planning-envelope'),
     }
   }, [view, mc])
   // The baseline keeps its own population and horizon; only means are compared, never bands.
@@ -217,22 +299,13 @@ function CompletedCompare({
     }
     return { population, means, series, hasAsset }
   }, [baseline])
-  const value = (number: number | null, unit: string) =>
-    number == null ? '—' : `${formatCount(number)} ${unit}`
-  const headers = base
-    ? ['Quantity', 'Trial', 'Ensemble mean', '95 % band', 'Baseline', 'Current − Baseline', 'Flag']
-    : ['Quantity', 'Trial', 'Ensemble mean', '95 % band', 'Flag']
-  const widths = base
-    ? ['16%', '12%', '15%', '19%', '14%', '12%', '12%']
-    : ['18%', '18%', '20%', '24%', '20%']
+  const baseNote =
+    baseline && base
+      ? `${baseline.label} · ${base.population} members${base.population !== data.population ? ', population differs' : ''}`
+      : null
   return (
     <>
-      <p className="muted small">
-        Simulated trial · one draw · seed {view.manifest.seed} · through T+
-        {formatTime(view.durationS)}. Kills exclude late effects. Bands are intervals on ensemble
-        means, not replicate ranges; count bounds may use Wilson or rule of three.
-      </p>
-      <ChartExport name={`${safeName(view.scenario.name)}.compare`}>
+      <div ref={frame}>
         <BandChart
           ensemble={mc.kills}
           trial={data.trial}
@@ -241,121 +314,57 @@ function CompletedCompare({
           population={data.population}
           replicates={mc.replicates}
         />
-      </ChartExport>
-      <table
-        className="tb tb-dense"
+      </div>
+      <div
+        className="cmp-dots"
+        role="group"
         aria-label={`Trial against ensemble through T+${formatTime(view.durationS)}`}
       >
-        <thead>
-          <tr>
-            {headers.map((label, i) => (
-              <th key={label} scope="col" style={{ ...cellStyle, width: widths[i] }}>
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.rows.map((row, r) => {
-            const comparable =
-              row.trial != null && row.mean != null && row.lo != null && row.hi != null
-            const inside = comparable && row.trial! >= row.lo! && row.trial! <= row.hi!
-            const baseMean = base ? base.means[ROW_KEYS[r]] : null
-            const baseUnit = r < 2 && base ? `/${base.population} members` : row.unit
-            const delta = row.mean != null && baseMean != null ? row.mean - baseMean : null
-            return (
-              <tr key={row.label}>
-                <th scope="row" style={{ ...cellStyle, width: widths[0] }}>
-                  {row.label}
-                </th>
-                <td style={cellStyle}>{value(row.trial, row.unit)}</td>
-                <td style={cellStyle}>{value(row.mean, row.unit)}</td>
-                <td style={cellStyle}>
-                  {row.lo == null || row.hi == null
-                    ? 'Unavailable'
-                    : `${formatCount(row.lo)} to ${formatCount(row.hi)} ${row.unit}`}
-                </td>
-                {base && <td style={cellStyle}>{value(baseMean, baseUnit)}</td>}
-                {base && (
-                  <td style={cellStyle}>
-                    {delta == null ? '—' : `${signed(delta)} ${r < 2 ? 'members' : row.unit}`}
-                  </td>
-                )}
-                <td style={cellStyle}>
-                  {comparable ? (
-                    <State
-                      tone={inside ? 'nominal' : 'warning'}
-                      style={{ whiteSpace: 'normal', fontSize: 'var(--type-dense-size)' }}
-                    >
-                      {inside ? 'inside' : 'outside'}
-                    </State>
-                  ) : (
-                    '—'
-                  )}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-      <details className="analysis-disclosure">
-        <summary>Interval and definedness details</summary>
-        {data.rows
-          .filter((row) => row.note)
-          .map((row) => (
-            <p className="muted small" key={row.label}>
-              {row.label}: {row.note}
-            </p>
-          ))}
-        {!view.hasActiveAsset && (
-          <p className="muted small">No defended asset · arrival and leakage unavailable.</p>
-        )}
-        {baseline && base && (
-          <p className="muted small">
-            Baseline: {baseline.label} · {baseline.mc.replicates} replicates · seed{' '}
-            {baseline.mc.seed} · full run T+{formatTime(baseline.mc.durationS)} · {base.population}{' '}
-            members
-            {base.population !== data.population
-              ? ' (population differs; count deltas are in members)'
-              : ''}
-            {!base.hasAsset ? ' · no defended asset, leakage and warning unavailable' : ''}. Deltas
-            are current ensemble mean minus baseline mean.
-          </p>
-        )}
-      </details>
-      <section aria-label="Findings">
-        <h4>Findings</h4>
-        {data.findings.map((finding) => (
-          <div className="validity-finding" key={finding.id}>
-            <State tone={SEVERITY_PILL[finding.severity].tone}>
-              {SEVERITY_PILL[finding.severity].text}
-            </State>
-            <div>
-              <p>{finding.message}</p>
-              <button
-                className="mini"
-                type="button"
-                onClick={() => {
-                  const store = useStore.getState()
-                  if (finding.uasIds.length) {
-                    store.select({ entityIds: finding.uasIds })
-                    store.setRightTab('inspect')
-                  }
-                  store.setBoardPhase('prepare')
-                }}
-              >
-                {finding.uasIds.length ? 'Review tracks in Prepare' : 'Review in Prepare'}
-              </button>
-            </div>
-          </div>
+        <div
+          className="cmp-dp-head"
+          aria-hidden="true"
+          title="Quantity and scale · end of run, 95 % CI of the ensemble mean · trial value · flag"
+        >
+          <span>Quantity</span>
+          <span>End of run, 95 % CI of mean</span>
+          <span className="cmp-tv">Trial</span>
+          <span>Flag</span>
+        </div>
+        {data.rows.map((row) => (
+          <IntervalRow
+            key={row.key}
+            row={row}
+            baseMean={base ? base.means[row.key] : null}
+            population={data.population}
+            baseNote={baseNote}
+          />
         ))}
-        {!data.findings.length && <p className="muted small">No findings.</p>}
-      </section>
+      </div>
     </>
   )
 }
 
-/** Pin, Clear and the pinned label. Pin needs a done summary for the current run and basis. */
+/** The method note of the trial section: the basis of both sides and the interval rules. */
+function trialNote(
+  view: TrialResultView | null,
+  mc: McSummary,
+  uncertainty: string,
+  baseline: PinnedBaseline | null,
+): string {
+  return [
+    view &&
+      `One simulated draw, seed ${view.manifest.seed}, through T+${formatTime(view.durationS)}, against the ensemble: ${mc.replicates} replicates, ${uncertainty} uncertainty, seed ${mc.seed}, full run T+${formatTime(mc.durationS)}.`,
+    'Bands are 95 % intervals on the ensemble mean, not replicate ranges; count bounds may use Wilson or the rule of three, and a time band needs 30 defined samples.',
+    'Kills exclude late effects.',
+    view && !view.hasActiveAsset && 'No defended asset: arrival and leakage are unavailable.',
+    baseline &&
+      `The dashed tick is the pinned baseline mean (${baseline.label}, ${baseline.mc.replicates} replicates, seed ${baseline.mc.seed}); a count is in members of each raid.`,
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+/** The baseline row: its label and Clear, or Pin current. Pin needs a done summary for the current run and basis. */
 function BaselineRow({ mc, current }: { mc: McSummary | null; current: boolean }) {
   const baseline = useStore((state) => state.baseline)
   const pinBaseline = useStore((state) => state.pinBaseline)
@@ -368,33 +377,40 @@ function BaselineRow({ mc, current }: { mc: McSummary | null; current: boolean }
           timeStyle: 'short',
         })
       : null
-  return (
-    <div className="insp-row" aria-label="Baseline">
-      <span>
-        {baseline ? (
-          <>
-            Baseline · {baseline.label}
-            {pinnedAt && <span className="muted small"> pinned {pinnedAt}</span>}
-          </>
-        ) : (
-          'No pinned baseline'
-        )}
-      </span>
-      <span style={{ display: 'flex', gap: 'var(--space-2)' }}>
-        {baseline && (
-          <button className="mini" type="button" onClick={clearBaseline}>
-            Clear
-          </button>
-        )}
-        <button
-          className="mini"
-          type="button"
-          disabled={!mc || !current}
-          onClick={() => pinBaseline()}
+  if (baseline) {
+    const label = `Baseline · ${baseline.label}${pinnedAt ? ` pinned ${pinnedAt}` : ''}`
+    return (
+      <div className="cmp-base-row pinned" aria-label="Baseline">
+        <span
+          className="cmp-base-label"
+          title={`${label} · ${baseline.mc.replicates} replicates · seed ${baseline.mc.seed} · full run T+${formatTime(baseline.mc.durationS)}`}
         >
-          Pin
+          Baseline · {baseline.label}
+          {pinnedAt && <span className="muted small"> pinned {pinnedAt}</span>}
+        </span>
+        <button className="mini" type="button" onClick={clearBaseline}>
+          Clear
         </button>
-      </span>
+      </div>
+    )
+  }
+  const ready = mc != null && current
+  return (
+    <div className="cmp-base-row" aria-label="Baseline">
+      <span className="cmp-base-label">No baseline.</span>
+      <button
+        className="mini"
+        type="button"
+        disabled={!ready}
+        title={
+          ready
+            ? 'Pin this ensemble as the baseline'
+            : 'Needs a finished ensemble for the current scenario'
+        }
+        onClick={() => pinBaseline()}
+      >
+        Pin current
+      </button>
     </div>
   )
 }
@@ -467,219 +483,104 @@ const hasAssetIn = (record: RunRecord) =>
 const runScope = (record: RunRecord, population: number) =>
   `${record.mc.replicates} replicates · ${record.manifest.uncertainty === 'total' ? 'Total uncertainty' : 'Aleatory uncertainty'} · seed ${record.mc.seed} · full run T+${formatTime(record.mc.durationS)} · ${population} members`
 
-// Each side's interval sits under its mean, so no unit breaks mid-word.
-const compareWidths = ['22%', '28%', '28%', '22%']
-
-export interface SavedRunCompareViewProps {
-  runs: RunSummary[]
-  a: RunRecord | null
-  b: RunRecord | null
-  error: string | null
-  onPick: (side: 'a' | 'b', id: string) => void
-}
-
 /**
- * Two saved runs side by side. Each side keeps its own replicate basis, horizon
- * and population, so only the means are differenced. A count delta is in members,
- * because two records may raid different populations.
+ * Saved run A against saved run B, under the Saved runs list. Each side keeps its
+ * own replicate basis, horizon and population, so only the means are differenced,
+ * and no interval is drawn on the difference. A count delta is in members, because
+ * two records may raid different populations.
  */
-export function SavedRunCompareView({ runs, a, b, error, onPick }: SavedRunCompareViewProps) {
-  const left = a ? savedRunRows(a.mc, hasAssetIn(a)) : null
-  const right = b ? savedRunRows(b.mc, hasAssetIn(b)) : null
-  const picker = (side: 'a' | 'b', record: RunRecord | null) => (
-    <div className="insp-row">
-      <span>Run {side.toUpperCase()}</span>
-      <select
-        value={record?.id ?? ''}
-        aria-label={`Run ${side.toUpperCase()}`}
-        onChange={(event) => onPick(side, event.target.value)}
-      >
-        <option value="">choose a saved run…</option>
-        {runs.map((run) => (
-          <option key={run.id} value={run.id}>
-            {run.label}
-          </option>
-        ))}
-      </select>
-    </div>
+export function SavedRunDelta({ a, b }: { a: RunRecord; b: RunRecord }) {
+  const left = savedRunRows(a.mc, hasAssetIn(a))
+  const right = savedRunRows(b.mc, hasAssetIn(b))
+  const side = (row: RunRow) => (
+    <td
+      className="saved-num"
+      title={[
+        row.mean == null ? 'mean unavailable' : `mean ${formatCount(row.mean)} ${row.unit}`,
+        row.lo == null || row.hi == null
+          ? '95 % CI unavailable'
+          : `95 % CI ${formatCount(row.lo)} to ${formatCount(row.hi)}`,
+        row.note,
+      ]
+        .filter(Boolean)
+        .join(' · ')}
+    >
+      {row.mean == null ? '—' : formatCount(row.mean)}
+      <small>
+        {row.lo == null || row.hi == null
+          ? 'no CI'
+          : `${formatCount(row.lo)}–${formatCount(row.hi)}`}
+      </small>
+    </td>
   )
-  const value = (number: number | null, unit: string) =>
-    number == null ? '—' : `${formatCount(number)} ${unit}`
-  const band = (row: RunRow) =>
-    row.lo == null || row.hi == null
-      ? 'Unavailable'
-      : `${formatCount(row.lo)} to ${formatCount(row.hi)} ${row.unit}`
+  const populations =
+    left.population !== right.population
+      ? ` Populations differ, ${left.population} against ${right.population} members; count deltas are in members.`
+      : ''
   return (
-    <section aria-label="Compare saved runs">
-      <h4>Compare saved runs</h4>
-      {error && <p className="muted small">{error}</p>}
-      {!error && runs.length < 2 && (
-        <p className="muted small">
-          {runs.length} saved {runs.length === 1 ? 'run' : 'runs'}. Save two runs on Outcome to
-          compare them here.
-        </p>
-      )}
-      {runs.length >= 2 && (
-        <>
-          {picker('a', a)}
-          {picker('b', b)}
-          {a && b && left && right && (
-            <>
-              <p className="analysis-scope">
-                A · {a.label} · {runScope(a, left.population)}
-              </p>
-              <p className="analysis-scope">
-                B · {b.label} · {runScope(b, right.population)}
-              </p>
-              <p className="muted small">
-                Each cell holds the ensemble mean and, under it, the 95 % interval on that mean. A
-                count is members of that record's own raid.
-              </p>
-              <table className="tb tb-dense" aria-label="Saved run A against saved run B">
-                <thead>
-                  <tr>
-                    {['Quantity', 'A', 'B', 'A − B'].map((label, index) => (
-                      <th
-                        key={label}
-                        scope="col"
-                        style={{ ...cellStyle, width: compareWidths[index] }}
-                      >
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {ROW_KEYS.map((key, r) => {
-                    const rowA = left.rows[r]
-                    const rowB = right.rows[r]
-                    const delta =
-                      rowA.mean != null && rowB.mean != null ? rowA.mean - rowB.mean : null
-                    const side = (row: RunRow) => (
-                      <td style={cellStyle}>
-                        {value(row.mean, row.unit)}
-                        <small style={{ display: 'block' }}>{band(row)}</small>
-                      </td>
-                    )
-                    return (
-                      <tr key={key}>
-                        <th scope="row" style={{ ...cellStyle, width: compareWidths[0] }}>
-                          {rowA.label}
-                        </th>
-                        {side(rowA)}
-                        {side(rowB)}
-                        <td style={cellStyle}>
-                          {delta == null
-                            ? '—'
-                            : `${signed(delta)} ${r < 2 ? 'members' : rowA.unit}`}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-              <details className="analysis-disclosure">
-                <summary>Interval and definedness details</summary>
-                {left.rows.map((row, r) => (
-                  <p className="muted small" key={row.label}>
-                    {row.label} · A: {row.note ?? 'Interval on the ensemble mean.'} · B:{' '}
-                    {right.rows[r].note ?? 'Interval on the ensemble mean.'}
-                  </p>
-                ))}
-                {left.population !== right.population && (
-                  <p className="muted small">
-                    Populations differ, {left.population} against {right.population} members; count
-                    deltas are in members.
-                  </p>
-                )}
-                {a.id === b.id && (
-                  <p className="muted small">
-                    Both sides are the same record; every delta is zero.
-                  </p>
-                )}
-                <p className="muted small">
-                  Bands are intervals on each record's own ensemble mean. Deltas are A minus B; no
-                  interval is claimed on a difference of two independent runs.
-                </p>
-              </details>
-              <RecordExports record={a} title="Export A" />
-              <RecordExports record={b} title="Export B" />
-            </>
-          )}
-          {(!a || !b) && (
-            <p className="muted small">Choose two saved runs to see the delta table.</p>
-          )}
-        </>
-      )}
-    </section>
+    <>
+      <table className="tb saved-delta" aria-label="Saved run A against saved run B">
+        <colgroup>
+          <col />
+          <col className="saved-c-num" />
+          <col className="saved-c-num" />
+          <col className="saved-c-num" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">Quantity</th>
+            <th
+              scope="col"
+              className="saved-num"
+              title={`A · ${a.label} · ${runScope(a, left.population)}`}
+            >
+              A
+            </th>
+            <th
+              scope="col"
+              className="saved-num"
+              title={`B · ${b.label} · ${runScope(b, right.population)}`}
+            >
+              B
+            </th>
+            <th scope="col" className="saved-num">
+              A − B
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {ROW_KEYS.map((key, r) => {
+            const rowA = left.rows[r]
+            const rowB = right.rows[r]
+            const delta = rowA.mean != null && rowB.mean != null ? rowA.mean - rowB.mean : null
+            const unit = isCount(key) ? 'members' : rowA.unit
+            return (
+              <tr key={key}>
+                <th scope="row" title={`${rowA.label} · A ${rowA.unit} · B ${rowB.unit}`}>
+                  {rowA.label}
+                </th>
+                {side(rowA)}
+                {side(rowB)}
+                <td
+                  className="saved-num"
+                  title={delta == null ? undefined : `${signed(delta)} ${unit}`}
+                >
+                  {delta == null ? '—' : `${signed(delta)} ${SCALE_UNIT[key]}`}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+      <p className="field-help">
+        Each cell is the ensemble mean with the 95 % interval on that mean under it. No interval is
+        claimed on the difference of two independent runs.{populations}
+      </p>
+    </>
   )
 }
 
-/** The container: the run list, the two opened records, and nothing until the first read settles. */
-function SavedRunCompare() {
-  const [load, setLoad] = useState<{
-    status: 'loading' | 'ready' | 'error'
-    runs: RunSummary[]
-    error: string | null
-  }>({ status: 'loading', runs: [], error: null })
-  const [sides, setSides] = useState<{ a: RunRecord | null; b: RunRecord | null }>({
-    a: null,
-    b: null,
-  })
-
-  useEffect(() => {
-    let live = true
-    // The two newest records open by default.
-    const open = (side: 'a' | 'b', id: string | undefined) => {
-      if (!id) return
-      getRun(id).then(
-        (record) => {
-          if (live && record) setSides((current) => ({ ...current, [side]: record }))
-        },
-        (error: unknown) => {
-          if (live) setLoad((state) => ({ ...state, status: 'error', error: loadError(error) }))
-        },
-      )
-    }
-    listRuns().then(
-      (runs) => {
-        if (!live) return
-        setLoad({ status: 'ready', runs, error: null })
-        open('a', runs[0]?.id)
-        open('b', runs[1]?.id)
-      },
-      (error: unknown) => {
-        if (live) setLoad({ status: 'error', runs: [], error: loadError(error) })
-      },
-    )
-    return () => {
-      live = false
-    }
-  }, [])
-
-  if (load.status === 'loading') return null
-  return (
-    <SavedRunCompareView
-      runs={load.runs}
-      a={sides.a}
-      b={sides.b}
-      error={load.error}
-      onPick={(side, id) => {
-        if (!id) {
-          setSides((current) => ({ ...current, [side]: null }))
-          return
-        }
-        getRun(id).then(
-          (record) => {
-            if (record) setSides((current) => ({ ...current, [side]: record }))
-          },
-          (error: unknown) =>
-            setLoad((state) => ({ ...state, status: 'error', error: loadError(error) })),
-        )
-      }}
-    />
-  )
-}
+const TRIAL_TITLE = 'Trial against ensemble'
 
 export function CompareScreen() {
   const trial = useTrialResult()
@@ -690,6 +591,10 @@ export function CompareScreen() {
   const complete = useStore(selectRunComplete)
   const horizon = useStore((state) => selectTrialHorizon(state, state.playback.observedThroughS))
   const baseline = useStore((state) => state.baseline)
+  const showHelp = useStore((state) => state.ui.showFieldHelp)
+  const save = useRunHistorySave()
+  const frame = useRef<HTMLDivElement>(null)
+  const [exportError, setExportError] = useState<string | null>(null)
   const mc = currentSummary(mcState, runId)
   // Also guards a summary restored without a signature; an edit is already stale.
   const current = useMemo(
@@ -699,58 +604,103 @@ export function CompareScreen() {
         mcState.basisSignature === analysisBasisSignature(scenario)),
     [mc, mcState.basisSignature, scenario],
   )
-  // Saved-run comparison needs no trial and no current ensemble, so it renders
-  // below both placeholders.
+  // Saved runs need no trial and no current ensemble, so they render under every state.
+  const saved = <SavedRuns save={save} delta={(a, b) => <SavedRunDelta a={a} b={b} />} />
   if (
     selection.status === 'idle' ||
     selection.status === 'cancelled' ||
     (selection.status === 'ready' && !snapshot)
   ) {
     return (
-      <>
-        <EmptyRow>No trial yet. Press Play in Execute to run one.</EmptyRow>
-        <SavedRunCompare />
-      </>
+      <section className="analysis-primary" aria-label="Compare">
+        <PanelSection title={TRIAL_TITLE}>
+          <EmptyRow>No trial yet. Press Play in Execute to run one.</EmptyRow>
+        </PanelSection>
+        {saved}
+      </section>
     )
   }
   if (!mc)
     return (
-      <>
-        <div role="region" aria-label="Compare" className="muted small">
-          Monte Carlo ·{' '}
-          {mcState.status === 'running'
-            ? 'Running ensemble.'
-            : mcState.status === 'error'
-              ? mcState.error
-              : 'No current ensemble result.'}
-        </div>
-        <SavedRunCompare />
-      </>
+      <section className="analysis-primary" aria-label="Compare">
+        <PanelSection title={TRIAL_TITLE}>
+          <p className="muted small">
+            Monte Carlo ·{' '}
+            {mcState.status === 'running'
+              ? 'Running ensemble.'
+              : mcState.status === 'error'
+                ? mcState.error
+                : 'No current ensemble result.'}
+          </p>
+        </PanelSection>
+        {saved}
+      </section>
     )
   const view = trialViewOf(trial)
+  const ready =
+    view != null && complete && horizon >= view.durationS && mc.durationS === view.durationS
+  const uncertainty = runSettings(scenario).uncertainty === 'total' ? 'total' : 'aleatory'
+  const note = trialNote(ready ? view : null, mc, uncertainty, baseline)
+  const exportPng = () => {
+    // The chart paints from CSS custom properties, so the export passes the panel surface.
+    const name = view ? safeName(view.scenario.name) : 'scenario'
+    exportChartPng(frame.current, `${name}.compare.png`, {
+      background: readTokens().surface,
+    }).then(
+      () => setExportError(null),
+      (reason: unknown) =>
+        setExportError(reason instanceof Error ? reason.message : 'Could not export the chart.'),
+    )
+  }
   return (
     <section className="analysis-primary" aria-label="Compare">
-      <h3>Compare</h3>
-      <p className="analysis-scope">
-        Monte Carlo · {mc.replicates} replicates ·{' '}
-        {runSettings(scenario).uncertainty === 'total'
-          ? 'Total uncertainty'
-          : 'Aleatory uncertainty'}{' '}
-        · seed {mc.seed} · 95 % band · full run T+{formatTime(mc.durationS)}
-      </p>
-      {view && complete && horizon >= view.durationS && mc.durationS === view.durationS ? (
-        <CompletedCompare view={view} mc={mc} baseline={baseline} />
-      ) : (
-        <p className="muted small">
-          {!view
-            ? trialStateText(selection)
-            : mc.durationS !== view.durationS
-              ? 'Ensemble and trial horizons differ. Run Monte Carlo again for this trial.'
-              : 'Trial in progress. Complete playback in Execute to compare.'}
-        </p>
-      )}
-      <BaselineRow mc={mc} current={current} />
-      <SavedRunCompare />
+      <PanelSection
+        title={TRIAL_TITLE}
+        className="cmp-trial-sec"
+        // Under 360 px the seed drops from the head; the (i) note keeps it.
+        readout={
+          <>
+            {mc.replicates.toLocaleString('en-US')} runs
+            <span className="cmp-seed"> · seed {mc.seed}</span>
+          </>
+        }
+        end={
+          <>
+            {ready && (
+              <button
+                type="button"
+                className="saved-icon"
+                aria-label="Export chart as PNG"
+                title="Export chart as PNG"
+                onClick={exportPng}
+              >
+                <IconDownload />
+              </button>
+            )}
+            <InfoButton label={TRIAL_TITLE} note={note} />
+          </>
+        }
+      >
+        {showHelp && <p className="field-help">{note}</p>}
+        {ready ? (
+          <CompletedCompare view={view} mc={mc} baseline={baseline} frame={frame} />
+        ) : (
+          <p className="muted small">
+            {!view
+              ? trialStateText(selection)
+              : mc.durationS !== view.durationS
+                ? 'Ensemble and trial horizons differ. Run Monte Carlo again for this trial.'
+                : 'Trial in progress. Complete playback in Execute to compare.'}
+          </p>
+        )}
+        {exportError && (
+          <State tone="critical" role="status">
+            {exportError}
+          </State>
+        )}
+        <BaselineRow mc={mc} current={current} />
+      </PanelSection>
+      {saved}
     </section>
   )
 }
