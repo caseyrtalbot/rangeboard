@@ -147,7 +147,10 @@ function timeRow(stat: Stat, quantity: 'detected' | 'warning') {
   const end = (v: number) =>
     (stat.hi - stat.lo) / 2 < 10 ? formatCount(Number(v.toFixed(1))) : `${Math.round(v)}`
   const defined =
-    statMean(stat) != null && stat.n >= TIME_CI_MIN_N && Number.isFinite(stat.lo + stat.hi)
+    statMean(stat) != null &&
+    stat.n >= TIME_CI_MIN_N &&
+    stat.conf === 0.95 &&
+    Number.isFinite(stat.lo + stat.hi)
   return {
     mean: numberText(statMean(stat)),
     unit: 's',

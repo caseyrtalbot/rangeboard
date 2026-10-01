@@ -15,11 +15,14 @@ export function PrepSwitch({
   checked,
   label,
   title,
+  ariaLabel,
   onChange,
 }: {
   checked: boolean
   label: string
   title?: string
+  /** The switch's name when its visible text is only the state word. */
+  ariaLabel?: string
   onChange: (checked: boolean) => void
 }) {
   return (
@@ -28,6 +31,7 @@ export function PrepSwitch({
       className="prep-switch"
       role="switch"
       aria-checked={checked}
+      aria-label={ariaLabel}
       title={title}
       onClick={() => onChange(!checked)}
     >
@@ -111,7 +115,8 @@ export function EnvironmentSettings() {
       )}
       <div className="pgrid">
         <div className="pg-2">
-          <Field label="Sky">
+          <div className="field">
+            <span>Sky</span>
             <Seg
               label="Sky"
               value={environment.precipitation ?? 'clear'}
@@ -122,10 +127,11 @@ export function EnvironmentSettings() {
               ]}
               onChange={(precipitation) => updateEnvironment({ precipitation })}
             />
-          </Field>
+          </div>
         </div>
         <div className="pg-2">
-          <Field label="Light">
+          <div className="field">
+            <span>Light</span>
             <Seg
               label="Light"
               value={environment.light ?? 'day'}
@@ -135,17 +141,18 @@ export function EnvironmentSettings() {
               ]}
               onChange={(light) => updateEnvironment({ light })}
             />
-          </Field>
+          </div>
         </div>
         <div className="pg-2">
-          <Field label="EM clutter">
+          <div className="field">
+            <span>EM clutter</span>
             <TitledSeg
               label="EM clutter"
               value={environment.emBackground ?? 'rural'}
               options={EM_OPTIONS}
               onChange={(emBackground) => updateEnvironment({ emBackground })}
             />
-          </Field>
+          </div>
         </div>
         <div className="pg-2">
           <Field

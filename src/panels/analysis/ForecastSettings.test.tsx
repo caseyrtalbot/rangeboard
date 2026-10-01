@@ -41,7 +41,7 @@ describe('ForecastSettings, the Run section body', () => {
   it('puts Mode over two columns and Runs and Seed over one column each', () => {
     const html = render()
     expect(html).toContain(
-      '<div class="pgrid"><div class="pg-2"><label class="field"><span>Mode</span>',
+      '<div class="pgrid"><div class="pg-2"><div class="field"><span>Mode</span>',
     )
     expect(html).toContain('aria-label="Run mode"')
     expect(html).toMatch(/aria-pressed="true" class="active">Monte Carlo<\/button>/)

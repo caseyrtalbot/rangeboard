@@ -376,7 +376,7 @@ describe('SavedRunDelta', () => {
     // Leakers 2 against 3, first detect 2 s against 3 s, min warning 4 s against 5 s.
     expect(deltaRow(html, 'Leakers')).toContain('>-1 mem</td>')
     expect(deltaRow(html, 'First detect')).toContain('>2<small>1–3</small></td>')
-    expect(deltaRow(html, 'First detect')).toContain('title="-1 s from T0">-1 s</td>')
+    expect(deltaRow(html, 'First detect')).toContain('title="-1 s">-1 s</td>')
     expect(deltaRow(html, 'Min warning')).toContain('>-1 s</td>')
     // One effector each, so the aggregate salvo interval is that effector's: 4 against 6.
     expect(deltaRow(html, 'Salvos')).toContain('>4<small>3–5</small></td>')

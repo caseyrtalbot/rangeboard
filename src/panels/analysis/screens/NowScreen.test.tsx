@@ -33,7 +33,7 @@ const cell = (html: string, key: string) => {
 
 // Execute holds the Play control, so the placeholder carries it inline.
 const nowPlay =
-  '<p class="muted small">No trial yet. Press <button class="mini">Play</button> to run one.</p>'
+  '<p class="muted small">No trial yet. Press <button type="button" class="mini">Play</button> to run one.</p>'
 
 describe('NowScreen cursor telemetry', () => {
   it('ready: retains exactly one pre-Play placeholder', () => {

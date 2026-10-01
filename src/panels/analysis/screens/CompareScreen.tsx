@@ -553,7 +553,7 @@ export function SavedRunDelta({ a, b }: { a: RunRecord; b: RunRecord }) {
             const rowA = left.rows[r]
             const rowB = right.rows[r]
             const delta = rowA.mean != null && rowB.mean != null ? rowA.mean - rowB.mean : null
-            const unit = isCount(key) ? 'members' : rowA.unit
+            const unit = isCount(key) ? 'members' : key === 'firstDetect' ? 's' : rowA.unit
             return (
               <tr key={key}>
                 <th scope="row" title={`${rowA.label} · A ${rowA.unit} · B ${rowB.unit}`}>

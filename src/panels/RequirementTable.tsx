@@ -137,21 +137,23 @@ function GateRow({
         </span>
       </div>
       {blocking && open && (
-        <div className="gt-fail" id={failId}>
-          <span className="gt-fail-l">Blocking</span>
-          {gate.failures.map((failure) => (
-            <button
-              key={failure.uasId}
-              type="button"
-              className="mini"
-              title={`${failure.name}: ${failure.reason}`}
-              onClick={() =>
-                useStore.getState().select({ entityIds: [failure.uasId] }, false, 'panel')
-              }
-            >
-              {failure.name} <span className="gt-why">{failure.reason}</span>
-            </button>
-          ))}
+        <div className="gt-fail" id={failId} role="row">
+          <span className="gt-fail-cell" role="cell">
+            <span className="gt-fail-l">Blocking</span>
+            {gate.failures.map((failure) => (
+              <button
+                key={failure.uasId}
+                type="button"
+                className="mini"
+                title={`${failure.name}: ${failure.reason}`}
+                onClick={() =>
+                  useStore.getState().select({ entityIds: [failure.uasId] }, false, 'panel')
+                }
+              >
+                {failure.name} <span className="gt-why">{failure.reason}</span>
+              </button>
+            ))}
+          </span>
         </div>
       )}
     </>

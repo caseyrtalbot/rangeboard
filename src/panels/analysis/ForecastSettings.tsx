@@ -31,14 +31,15 @@ export function ForecastSettings() {
     <>
       <div className="pgrid">
         <div className="pg-2">
-          <Field label="Mode">
+          <div className="field">
+            <span>Mode</span>
             <Seg
               label="Run mode"
               value={run.runMode}
               options={MODE_OPTIONS}
               onChange={(runMode) => patchScenario({ runMode })}
             />
-          </Field>
+          </div>
         </div>
         {run.runMode === 'monte-carlo' ? (
           <>

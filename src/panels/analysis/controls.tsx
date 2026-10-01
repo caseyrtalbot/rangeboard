@@ -2,10 +2,6 @@ import type { TrialSelection } from '../../state/trialSelectors'
 import { trialResultOf } from '../../analysis/trialResult'
 import { formatTime } from '../../geometry/geo'
 import type { useTrialResult } from '../../state/useTrialResult'
-import { useMemo } from 'react'
-import type { Scenario } from '../../model/types'
-import type { EngagementPicture } from '../../analysis/impact'
-import { engagementPicture } from '../../analysis/impact'
 import { useStore } from '../../state/store'
 import { State } from '../../ui/kit'
 import { IconInfo } from '../../ui/icons'
@@ -39,15 +35,6 @@ export function RoleSeg<T extends string>({
       ))}
     </div>
   )
-}
-
-/** Refresh the view memo when scenario or run identity changes. */
-// oxlint-disable-next-line react/only-export-components -- Screen hooks share this module with RoleSeg.
-export function useForecastEngagement(scenario: Scenario, runId: string): EngagementPicture {
-  return useMemo(() => {
-    void runId
-    return engagementPicture(scenario)
-  }, [scenario, runId])
 }
 
 /** Only a started, available trial can supply outcomes to a consumer. */

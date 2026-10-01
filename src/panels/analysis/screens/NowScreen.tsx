@@ -44,7 +44,7 @@ function PlayPrompt() {
   return (
     <p className="muted small">
       {'No trial yet. Press '}
-      <button className="mini" onClick={toggleAnalysisRun}>
+      <button type="button" className="mini" onClick={toggleAnalysisRun}>
         Play
       </button>
       {' to run one.'}

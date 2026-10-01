@@ -19,7 +19,7 @@ import { SystemList } from '../SystemStatus'
 import { lateKillText, trialOutcomeRows } from '../threatReadout'
 import type { TrialOutcomeRow, TrialOutcomeWord } from '../threatReadout'
 import { splitCommonPrefix } from '../trackNames'
-import { EmptyRow, NoteInfo, trialStateText } from '../controls'
+import { EmptyRow, trialStateText } from '../controls'
 import { useTrialResult } from '../../../state/useTrialResult'
 import { formatCount } from '../mc'
 
@@ -354,8 +354,13 @@ function ResultBar({
   )
 }
 
+// The record's method note sits in its summary title, so no (i) row sits in Records.
+const SYSTEMS_NOTE =
+  'State shows the final sampled instant, not the run outcome; cumulative counts cover the run.'
+
 function CompletedOutcome({ view }: { view: TrialResultView }) {
   const [trackView, setTrackView] = useState<'strip' | 'table'>('strip')
+  const showHelp = useStore((state) => state.ui.showFieldHelp)
   const data = useMemo(() => {
     const kpis = trialKpisAt(view, view.durationS)
     const rows = trialOutcomeRows(view)
@@ -452,11 +457,10 @@ function CompletedOutcome({ view }: { view: TrialResultView }) {
           <TrialEventLedger view={view} />
         </details>
         <details className="analysis-disclosure">
-          <summary>Systems at end of run · {componentCount} components</summary>
-          <NoteInfo
-            label="telemetry state"
-            note="State shows the final sampled instant, not the run outcome; cumulative counts cover the run."
-          />
+          <summary title={SYSTEMS_NOTE}>
+            Systems at end of run · {componentCount} components
+          </summary>
+          {showHelp && <p className="field-help">{SYSTEMS_NOTE}</p>}
           <SystemList groups={systems} />
         </details>
         <details className="analysis-disclosure">

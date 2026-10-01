@@ -247,7 +247,11 @@ describe('OutcomeScreen', () => {
   it('keeps the ledger, the systems and the manifest as closed records, and nothing else', () => {
     const html = render()
     expect(html).toContain('<summary>Event ledger · 8 events</summary>')
-    expect(html).toContain('<summary>Systems at end of run · 3 components</summary>')
+    expect(html).toContain(
+      '<summary title="State shows the final sampled instant, not the run outcome; cumulative counts cover the run.">Systems at end of run · 3 components</summary>',
+    )
+    // The method note is the summary title; no (i) row sits in Records.
+    expect(html).not.toContain('About telemetry state')
     expect(html).toContain('<summary>Manifest · ')
     expect(html.match(/class="event-ledger"/g)).toHaveLength(1)
     expect(html).toContain('Jam succeeded')

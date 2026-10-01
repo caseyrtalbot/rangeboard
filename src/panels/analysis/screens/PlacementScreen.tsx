@@ -484,7 +484,10 @@ export function PlacementScreen() {
               const s = row.objective
               const defined = s.n > 0 && Number.isFinite(s.mean)
               const bounded = defined && Number.isFinite(s.lo) && Number.isFinite(s.hi)
-              const delta = start && defined ? s.mean - start.objective.mean : null
+              const delta =
+                start && defined && Number.isFinite(start.objective.mean)
+                  ? s.mean - start.objective.mean
+                  : null
               const better =
                 delta != null &&
                 (RESPONSE_DIRECTION[result.objective.response] === 'minimize'

@@ -59,7 +59,8 @@ export function FireDoctrineSettings({
   return (
     <div className="pgrid">
       <div className="pg-2">
-        <Field label="ROE">
+        <div className="field">
+          <span>ROE</span>
           <RoleSeg
             value={scenario.roe ?? 'tight'}
             options={[
@@ -70,17 +71,19 @@ export function FireDoctrineSettings({
             onChange={(roe) => patchScenario({ roe })}
             dataRole="roe"
           />
-        </Field>
+        </div>
       </div>
       <div className="pg-2">
-        <Field label="Doctrine">
+        <div className="field">
+          <span>Doctrine</span>
           <PrepSwitch
             checked={enabled}
             label={enabled ? 'On' : 'Off'}
+            ariaLabel="Doctrine"
             title={DOCTRINE_TITLE}
             onChange={(next) => patchScenario({ doctrine: { ...doctrine, enabled: next } })}
           />
-        </Field>
+        </div>
       </div>
       {enabled ? (
         <>

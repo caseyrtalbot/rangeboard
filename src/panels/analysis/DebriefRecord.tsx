@@ -85,6 +85,7 @@ export function ExportMenu({ view }: { view: TrialResultView }) {
   const toggle = () => setOpen((value) => !value)
   useEffect(() => {
     if (!open) return
+    wrapRef.current?.querySelector<HTMLElement>('[role="dialog"] button:not(:disabled)')?.focus()
     function onDown(e: MouseEvent) {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
     }
@@ -275,7 +276,9 @@ export function TrialEventLedger({ view }: { view: TrialResultView }) {
       })}
       {view.attrition.events.length === 0 && <EmptyRow>No engagement events recorded.</EmptyRow>}
       {visible < view.attrition.events.length && (
-        <button onClick={() => setVisible((count) => count + 20)}>Show next events</button>
+        <button type="button" onClick={() => setVisible((count) => count + 20)}>
+          Show next events
+        </button>
       )}
     </div>
   )

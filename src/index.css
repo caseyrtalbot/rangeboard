@@ -6267,6 +6267,11 @@ input[type='number'] {
   padding: 2px 0 var(--space-2);
 }
 
+/* The one cell of the blocking row; its items keep the row's flex layout. */
+.gt-fail-cell {
+  display: contents;
+}
+
 .gt-fail-l {
   color: var(--text-tertiary);
   font-size: var(--type-dense-size);
