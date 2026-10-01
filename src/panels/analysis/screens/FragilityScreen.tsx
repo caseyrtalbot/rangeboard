@@ -459,6 +459,7 @@ export function FragilityScreen() {
     modeReason ?? busyReason ?? (fields.length === 0 ? 'Add a spread to a field first' : undefined)
   const reps = SWEEP_DEFAULTS.replicatesPerCell
   const estimateS = rate == null ? null : Math.ceil((count * reps) / rate)
+  const sweepReadout = `${count} cells · ${reps} runs each${estimateS == null ? '' : ` · ~${estimateS} s`}`
   const sweepNote = `Planning-factor values. Each cell is a ${reps}-replicate run of the full scenario. ${SWEEP_VALUE_RULE} Estimated time: ${
     estimateS == null ? 'no rate yet' : `${estimateS} s at ${formatCount(rate!)} replicates/s`
   }.`
@@ -576,9 +577,8 @@ export function FragilityScreen() {
         title="Sweep"
         readout={
           factors && (
-            <span title={sweepNote}>
-              {`${count} cells · ${reps} runs each${estimateS == null ? '' : ` · ~${estimateS} s`}`}
-            </span>
+            // The title repeats the readout, so a clipped readout at 280 px stays reachable (D6).
+            <span title={`${sweepReadout}. ${sweepNote}`}>{sweepReadout}</span>
           )
         }
         end={
