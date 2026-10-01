@@ -209,7 +209,6 @@ export function BoardPreparation() {
 
       <PanelSection
         id="prepare-entities"
-        className="prepare-entity-register"
         collapsible
         defaultOpen={false}
         title="Entities"

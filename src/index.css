@@ -566,9 +566,9 @@ button:disabled {
 }
 
 /* A panel-body action draws a frame so it reads as a control, not as text.
-   The frame stays on a disabled action. Register rows, table sort headers and
-   danger actions keep their own edges; a segment or tab has no border width. */
-.inspector-body button:not(.board-object, .danger, th > button) {
+   The frame stays on a disabled action. Table sort headers and danger actions
+   keep their own edges; a segment or tab has no border width. */
+.inspector-body button:not(.danger, th > button) {
   border-color: var(--rule-strong);
 }
 
@@ -1990,13 +1990,6 @@ p.muted.small {
   margin: 0;
 }
 
-.check-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 22px;
-}
-
 /* A slider and its numeric read-out on one line: the number is the precise
    entry, the slider is the coarse one. */
 .insp-inline {
@@ -3206,18 +3199,7 @@ select.nu-unit {
   font-size: var(--type-meta-size);
 }
 
-/* ---------- Run monitor card ---------- */
-
-/* The Execute run monitor: the clock, the observed horizon bar, then label and
-   value rows. One rule-strong frame at the control radius, as on the canvas. */
-.live-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-control);
-}
+/* ---------- Transport live head ---------- */
 
 .live-head {
   display: flex;
@@ -3225,73 +3207,6 @@ select.nu-unit {
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-2);
   min-width: 0;
-}
-
-.live-tag {
-  font-size: var(--type-label-size);
-  font-weight: var(--type-label-weight);
-  color: var(--accent);
-}
-
-.live-time {
-  flex: 0 0 auto;
-  font-family: var(--font-mono);
-  font-size: var(--type-machine-size);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  color: var(--text);
-}
-
-.live-state {
-  flex: 1 1 140px;
-  min-width: 0;
-  text-align: right;
-  color: var(--text-tertiary);
-  font-size: var(--type-meta-size);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* The run monitor clock: lead size, title weight, mono. */
-.live-clock {
-  flex: 1 1 auto;
-  min-width: 0;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: var(--type-lead-size);
-  font-weight: var(--type-title-weight);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* The observed horizon: a 4 px bar, the observed share filled in text 1. */
-.live-bar {
-  height: 4px;
-  margin-block: var(--space-1);
-  background: var(--rule-strong);
-}
-
-.live-bar-fill {
-  height: 100%;
-  background: var(--text-primary);
-}
-
-.live-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  min-height: 20px;
-  color: var(--text-secondary);
-  font-size: var(--type-meta-size);
-}
-
-.live-value {
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: var(--type-machine-size);
-  white-space: nowrap;
 }
 
 /* The Run button's key hint: mono in the button's ink, no chip. */
@@ -3308,16 +3223,6 @@ select.nu-unit {
   flex: 0 0 auto;
   padding: 2px 6px;
   font-size: var(--type-meta-size);
-}
-
-.run-ready .live-tag,
-.run-preview .live-tag,
-.run-replay .live-tag {
-  color: var(--text-dim);
-}
-
-.run-complete .live-tag {
-  color: var(--good);
 }
 
 /* The run header carries the model basis as a chip; the KPI readings moved
@@ -4397,17 +4302,6 @@ input[type='number'] {
 
 /* Remaining-capacity meter (NowScreen) */
 
-.rr-bar {
-  height: 3px;
-  background: var(--border-subtle);
-  overflow: hidden;
-}
-
-.rr-bar-fill {
-  height: 100%;
-  background: var(--accent);
-}
-
 .analysis-empty {
   margin: 0;
   padding: 2px 0 2px var(--space-2);
@@ -4421,10 +4315,6 @@ input[type='number'] {
 .tiles {
   display: grid;
   gap: var(--space-2);
-}
-
-.tiles.c3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .tiles.c2 {
@@ -4493,8 +4383,7 @@ input[type='number'] {
   line-height: 1.25;
 }
 
-.data-horizon-label,
-.debrief-kicker {
+.data-horizon-label {
   color: var(--accent);
   font-size: var(--type-label-size);
   font-weight: var(--type-label-weight);
@@ -4542,215 +4431,11 @@ input[type='number'] {
   font-size: var(--type-dense-size);
 }
 
-/* Requirement gates do not compensate for one another. */
-.requirements-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* Rule 3 allows exactly one opaque fill for the single headline judgement on
-   a panel. This is it: the requirement verdict, in the state ink with ink
-   text. Every other state on the panel is a colour, a stroke or a square. */
-.requirements-verdict {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-2);
-  font-size: var(--type-meta-size);
-}
-
-.requirements-verdict strong {
-  font-size: var(--type-title-size);
-}
-
-.requirements-verdict.verdict-pass {
-  background: var(--good);
-  color: var(--ink);
-}
-
-.requirements-verdict.verdict-fail {
-  background: var(--danger);
-  color: var(--ink);
-}
-
-.requirement-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
-}
-
-.requirement-gate {
-  min-width: 0;
-  padding: var(--space-2) 0;
-  border-top: 2px solid var(--rule-strong);
-}
-
-.requirement-gate.gate-pass {
-  border-top-color: var(--good);
-}
-
-.requirement-gate.gate-fail {
-  border-top-color: var(--danger);
-}
-
-.gate-head {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 5px;
-}
-
-.gate-head strong {
-  overflow: hidden;
-  font-size: var(--type-meta-size);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.gate-count,
-.gate-metric {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.gate-count {
-  color: var(--text-dim);
-  font-size: var(--type-machine-size);
-}
-
-.gate-metric {
-  margin-top: 5px;
-  font-size: var(--type-machine-size);
-}
-
-.gate-detail,
-.gate-failures {
-  margin-top: 2px;
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
-  line-height: 1.35;
-}
-
-.gate-failures summary {
-  color: var(--danger);
-  cursor: pointer;
-}
-
-.gate-failures div {
-  margin-top: 3px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Systems retain component-level data while the summary stays scannable. */
-.system-telemetry-list,
-.component-telemetry-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.system-telemetry-list {
-  gap: 5px;
-}
-
-.system-telemetry-card {
-  overflow: hidden;
-  border-top: 1px solid var(--border-subtle);
-  background: transparent;
-}
-
-.system-telemetry-head,
 .threat-data-group-head {
   display: grid;
   width: 100%;
   border: 0;
   text-align: left;
-}
-
-.system-telemetry-head {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 6px;
-  padding: var(--space-2);
-}
-
-.system-name,
-.system-live-summary {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.system-name {
-  font-weight: var(--type-title-weight);
-}
-
-.system-live-summary {
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: var(--type-machine-size);
-}
-
-.component-telemetry-list {
-  border-top: 1px solid var(--border);
-}
-
-.component-telemetry-row {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 6px;
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.component-telemetry-row:last-child {
-  border-bottom: 0;
-}
-
-.component-kind {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 20px;
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
-}
-
-.component-kind.kind-sensor {
-  color: var(--good);
-}
-
-.component-kind.kind-c2 {
-  color: var(--accent);
-}
-
-.component-kind.kind-effector {
-  color: var(--warn);
-}
-
-.component-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-
-.component-copy strong,
-.component-copy small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.component-copy strong {
-  font-size: var(--type-meta-size);
-}
-
-.component-copy small {
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
 }
 
 /* Threats scale by tactic, wave, and platform without dropping track rows. */
@@ -4942,77 +4627,6 @@ input[type='number'] {
   font-size: var(--type-meta-size);
 }
 
-/* Completed mode is a sealed, run-labeled debrief record. */
-.debrief-record {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0 0 0 var(--space-2);
-  border-left: 2px solid var(--rule);
-}
-
-.debrief-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.debrief-header > div {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-
-.debrief-header strong {
-  overflow: hidden;
-  font-family: var(--font-mono);
-  font-size: var(--type-machine-size);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.evidence-products .debrief-header strong {
-  font-family: inherit;
-  font-size: var(--type-title-size);
-  font-weight: var(--type-title-weight);
-}
-
-.debrief-meta {
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: var(--type-machine-size);
-}
-
-/* Run validity states what the run can carry before the record states any
-   result. Same header idiom as the record itself; the left rule carries the
-   severity so the pill is never the only signal. */
-.run-validity {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 0 0 0 var(--space-2);
-  border-left: 2px solid var(--text-dim);
-}
-
-.run-validity.validity-valid {
-  border-left-color: var(--good);
-}
-
-.run-validity.validity-valid-limited {
-  border-left-color: var(--warn);
-}
-
-.run-validity.validity-invalid {
-  border-left-color: var(--danger);
-}
-
-.run-validity .debrief-header strong {
-  font-family: inherit;
-  font-size: var(--type-meta-size);
-  white-space: normal;
-}
-
 .valid {
   display: flex;
   align-items: flex-start;
@@ -5063,22 +4677,6 @@ input[type='number'] {
 
 .fid-tag[data-validation='none'] {
   color: var(--warn);
-}
-
-.debrief-actions {
-  display: grid;
-  grid-template-columns: 1.25fr 1fr 1fr;
-  gap: 5px;
-}
-
-.debrief-actions button {
-  padding: 4px 3px;
-  border: 1px solid var(--border-control);
-  font-size: var(--type-meta-size);
-}
-
-.debrief-actions button.primary {
-  border-color: var(--accent);
 }
 
 .event-ledger {
@@ -5688,20 +5286,12 @@ input[type='number'] {
 .board-app
   .right-panel
   :is(
-    .live-state,
     .ts,
     .capacity-row > span,
-    .gate-head strong,
-    .gate-failures div,
-    .system-name,
-    .system-live-summary,
-    .component-copy strong,
-    .component-copy small,
     .threat-data-title,
     .threat-data-count,
     .threat-data-head strong,
     .threat-data-detail,
-    .debrief-header strong,
     .event-route strong,
     .event-route small
   ) {
@@ -5711,33 +5301,17 @@ input[type='number'] {
   text-overflow: clip;
 }
 
-.board-app .right-panel :is(.tv, .gate-count, .system-live-summary, .threat-data-count) {
+.board-app .right-panel :is(.tv, .threat-data-count) {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.board-app .right-panel :is(.system-telemetry-head, .threat-data-group-head) {
+.board-app .right-panel .threat-data-group-head {
   grid-template-columns: auto minmax(0, 1fr);
 }
 
-.board-app .right-panel :is(.system-live-summary, .threat-data-count) {
+.board-app .right-panel .threat-data-count {
   grid-column: 2;
-  text-align: left;
-}
-
-.board-app .right-panel .debrief-actions {
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-}
-
-.board-app .right-panel .debrief-actions button {
-  white-space: normal;
-}
-
-.board-app .right-panel .debrief-header {
-  flex-wrap: wrap;
-}
-
-.board-app .right-panel .live-state {
   text-align: left;
 }
 
@@ -5840,14 +5414,12 @@ input[type='number'] {
   color: var(--text-secondary);
 }
 
-.analysis-disclosure,
-.evidence-products {
+.analysis-disclosure {
   margin-top: var(--space-3);
   border-top: 1px solid var(--border-subtle);
 }
 
-.analysis-disclosure > summary,
-.evidence-products > summary {
+.analysis-disclosure > summary {
   padding: var(--space-3) 0;
   cursor: pointer;
   font-size: var(--type-title-size);
@@ -7829,7 +7401,6 @@ input[type='number'] {
     column-gap: 6px;
   }
 }
-
 
 /* ---------- Right panel: R2d Compare and saved runs ---------- */
 

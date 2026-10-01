@@ -872,14 +872,14 @@ export default function App() {
       setPlacement(null)
   }, [])
   const toggleLibrary = useCallback(() => setLibraryOpen((open) => !open), [])
-  const openEntities = useCallback(() => {
-    openPhase('prepare')
-    setPrepareScreen('inputs')
-    setRightOpen(true)
-    requestAnimationFrame(() =>
-      document.querySelector('.prepare-entity-register')?.scrollIntoView(),
-    )
-  }, [openPhase, setRightOpen])
+  // D2: the rail's Entities button opens the closed Entities section on Inputs.
+  const openEntities = useCallback(
+    () =>
+      useStore
+        .getState()
+        .requestPanel({ phase: 'prepare', screen: 'inputs', section: 'prepare-entities' }),
+    [],
+  )
   const openCommands = useCallback(() => setPaletteOpen(true), [])
   // D4: Layers opens the View menu at its Layers section. DOM-driven, so the rail
   // needs no store state: the tool row owns the menu and its open state.

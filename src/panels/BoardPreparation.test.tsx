@@ -180,9 +180,7 @@ describe('BoardPreparation', () => {
   it('closes Entities by default with the counts and selects a row from the panel', () => {
     pathedThreats()
     const html = render()
-    expect(html).toContain(
-      '<section class="psec closed prepare-entity-register" id="prepare-entities">',
-    )
+    expect(html).toContain('<section class="psec closed" id="prepare-entities">')
     expect(html).toContain('title="3 placed · 2 threats">3 placed · 2 threats</span>')
     useStore.getState().setSectionOpen('prepare-entities', true)
     const open = render()

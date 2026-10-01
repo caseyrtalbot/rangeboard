@@ -167,7 +167,7 @@ test('Escape chain: the Location dialog closes first, then the placement, then c
   assert.deepEqual(errors, [])
 })
 
-test('debrief record opens on run completion with a status summary', async (t) => {
+test('Outcome shows the provenance line and the Export menu on run completion', async (t) => {
   const { page, errors } = await open(t)
   await page.click('#board-phase-analyze')
   // Sampled Play prepares a trial first; completion needs the matching ready trial.
@@ -178,14 +178,25 @@ test('debrief record opens on run completion with a status summary', async (t) =
     const { durationOf } = await import('/src/state/selectors.ts')
     s.completeRun(durationOf(s.scenario))
   })
-  await waitFor(page, () => document.querySelector('details.evidence-products'))
-  assert.equal(
-    await page.evaluate(() =>
-      document.querySelector('details.evidence-products').hasAttribute('open'),
-    ),
-    true,
+  await waitFor(page, () => document.querySelector('.out-prov'))
+  assert.match(await page.textContent('.out-prov'), /^Trial · seed \d+ · T\+\d+:\d\d/)
+  await page.click('.out-prov button[aria-controls="outcome-export-panel"]')
+  const items = await page.$$eval('#outcome-export-panel .tb-menu-item', (buttons) =>
+    buttons.map((b) => ({ text: b.textContent, disabled: b.disabled, title: b.title })),
   )
-  assert.equal(await page.getAttribute('details.evidence-products > summary', 'role'), 'status')
+  assert.deepEqual(
+    items.map((item) => [item.text, item.disabled]),
+    [
+      ['Debrief recordJSON', false],
+      ['Final board framePNG', false],
+      ['Per-threat tableCSV', true],
+      ['Per-effector tableCSV', true],
+    ],
+  )
+  // The fixture has no ensemble, so each CSV item names why it is disabled.
+  assert.equal(items[2].title, 'Run Monte Carlo to export the tables')
+  await page.keyboard.press('Escape')
+  await waitFor(page, () => !document.querySelector('#outcome-export-panel'))
   assert.deepEqual(errors, [])
 })
 
