@@ -1155,14 +1155,6 @@ input[type='color']::-webkit-color-swatch {
   line-height: 1.35;
 }
 
-.ro-ghost {
-  margin-top: 8px;
-  padding-left: 8px;
-  border-left: 2px solid var(--ghost);
-  color: var(--ghost);
-  font-size: var(--type-meta-size);
-}
-
 .ro-foot {
   display: flex;
   align-items: center;
@@ -1842,14 +1834,6 @@ p.muted.small {
   font-weight: var(--type-body-weight);
 }
 
-.insp-row.interactive {
-  cursor: pointer;
-}
-
-.insp-row.interactive:hover {
-  background: var(--surface-hover);
-}
-
 .insp-row.stacked {
   flex-direction: column;
   align-items: stretch;
@@ -2137,30 +2121,6 @@ select.nu-unit {
 
 /* ---------- Inspector: keyboard reference ---------- */
 
-.insp-shortcuts {
-  display: flex;
-  flex-direction: column;
-}
-
-.insp-shortcut {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  min-height: 26px;
-  margin: 0 calc(var(--panel-pad) * -1);
-  padding: 0 var(--panel-pad);
-  color: var(--text-secondary);
-  font-size: var(--type-meta-size);
-}
-
-.insp-shortcut-keys {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  flex: 0 0 auto;
-}
-
 /* ---------- Segmented control ---------- */
 
 /* One ruled block: no inner padding, no fill, hairline dividers. The divider
@@ -2262,10 +2222,6 @@ select.nu-unit {
   gap: 0;
 }
 
-.analysis-panel > .analysis-empty {
-  margin: var(--space-2) 0 0;
-}
-
 /* Widget frame */
 .wg {
   border-bottom: 1px solid var(--border-subtle);
@@ -2277,17 +2233,6 @@ select.nu-unit {
   gap: 6px;
   min-width: 0;
   padding: var(--space-2) 0 var(--space-1);
-}
-
-.wg-toggle {
-  flex: none;
-  padding: 0 2px;
-  border: 0;
-  background: transparent;
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
-  line-height: 1;
-  cursor: pointer;
 }
 
 .wg-t {
@@ -2313,33 +2258,6 @@ select.nu-unit {
   white-space: nowrap;
 }
 
-.wg-x {
-  display: flex;
-  align-items: center;
-  flex: none;
-  gap: 6px;
-  margin-left: auto;
-}
-
-/* The ROE control sits in a widget header: compact, never full width. */
-.wg-x .seg {
-  width: auto;
-  min-width: 0;
-}
-
-.wg-x .seg button {
-  padding: 1px 6px;
-  font-size: var(--type-meta-size);
-}
-
-.wh {
-  display: flex;
-  align-items: center;
-  flex: none;
-  gap: 2px;
-  margin-left: 6px;
-}
-
 .wg-b .field input,
 .wg-b .field select {
   max-width: 100%;
@@ -2352,7 +2270,6 @@ select.nu-unit {
   margin: 0;
 }
 
-.wmv,
 .wx {
   padding: 0 3px;
   border: 0;
@@ -2362,20 +2279,10 @@ select.nu-unit {
   cursor: pointer;
 }
 
-.wmv {
-  font-size: var(--type-meta-size);
-}
-
-.wmv:disabled {
-  color: var(--text-disabled);
-  cursor: default;
-}
-
 .wx {
   font-size: var(--type-body-size);
 }
 
-.wmv:not(:disabled):hover,
 .wx:hover {
   color: var(--text);
 }
@@ -2621,101 +2528,20 @@ select.nu-unit {
    is prose, so it leaves the table monospace and wraps instead of clipping to
    nothing. The five fixed columns hold 74 percent, so Source keeps about the
    width it had before the Spread column. */
-.src-tb {
-  font-size: var(--type-dense-size);
-}
-
-.tb.src-tb th:nth-child(1) {
-  width: 20%;
-}
-
-.tb.src-tb th:nth-child(2) {
-  width: 13%;
-}
-
-.tb.src-tb th:nth-child(3) {
-  width: 11%;
-}
-
-.tb.src-tb th:nth-child(4) {
-  width: 15%;
-}
-
-.tb.src-tb th:nth-child(5) {
-  width: auto;
-}
-
-.tb.src-tb th:nth-child(6) {
-  width: 15%;
-}
-
-.tb.src-tb th:nth-child(7) {
-  width: var(--space-5);
-}
 
 /* `.tb td:not(:first-child)` is monospace, so these carry the same class count
    and win on order; the two mono columns take it back by class. */
-.tb.src-tb td {
-  font-family: var(--font-ui);
-  vertical-align: top;
-}
-
-.tb.src-tb td.mono {
-  font-family: var(--font-mono);
-}
 
 /* The spread is short machine data, but "17 of 20 (pseudo)" is wider than the
    column at a 320 px panel. It wraps at the spaces instead of clipping, so no
    count is lost. */
-.src-tb td:nth-child(4) {
-  overflow-wrap: normal;
-  white-space: normal;
-}
-
-.src-tb td:nth-child(5) {
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
-.src-tb a {
-  color: var(--accent);
-}
-
-.src-tb button.mini {
-  margin-left: 0;
-  padding: 0 var(--space-1);
-}
 
 /* Customize rows */
-.params {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-1) var(--space-2);
-  font-size: var(--type-meta-size);
-}
-
-.params label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  color: var(--text-dim);
-  white-space: nowrap;
-  cursor: pointer;
-}
 
 .add {
   padding: var(--space-3) 0 var(--space-2);
 }
 
-.cat {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  margin-top: 6px;
-}
-
-.cat button.mini,
 .save button.mini {
   align-self: auto;
   margin-left: 0;
@@ -2743,14 +2569,6 @@ select.nu-unit {
 
 .chevron.open {
   transform: rotate(90deg);
-}
-
-.section-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
 }
 
 /* ---------- Timeline ---------- */
@@ -3217,12 +3035,6 @@ select.nu-unit {
   padding: 0;
   color: inherit;
   background: transparent;
-}
-
-.run-reset {
-  flex: 0 0 auto;
-  padding: 2px 6px;
-  font-size: var(--type-meta-size);
 }
 
 /* The run header carries the model basis as a chip; the KPI readings moved
@@ -4302,15 +4114,6 @@ input[type='number'] {
 
 /* Remaining-capacity meter (NowScreen) */
 
-.analysis-empty {
-  margin: 0;
-  padding: 2px 0 2px var(--space-2);
-  border-left: 2px solid var(--border-default);
-  font-size: var(--type-body-size);
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
-
 /* KPI tiles: the reading at the cursor time, two or three to a row. */
 .tiles {
   display: grid;
@@ -4381,54 +4184,6 @@ input[type='number'] {
   white-space: normal;
   overflow-wrap: anywhere;
   line-height: 1.25;
-}
-
-.data-horizon-label {
-  color: var(--accent);
-  font-size: var(--type-label-size);
-  font-weight: var(--type-label-weight);
-}
-
-/* Outcome is a transparent set of measures, never a rolled-up score. */
-.outcome-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.capacity-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.capacity-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1px 8px;
-  padding: var(--space-1) 0;
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: var(--type-dense-size);
-}
-
-.capacity-row:last-child {
-  border-bottom: 0;
-}
-
-.capacity-row > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.capacity-row strong {
-  font-family: var(--font-mono);
-  font-weight: var(--type-label-weight);
-}
-
-.capacity-row small {
-  grid-column: 1 / -1;
-  color: var(--text-dim);
-  font-size: var(--type-dense-size);
 }
 
 .threat-data-group-head {
@@ -4634,26 +4389,8 @@ input[type='number'] {
   font-size: var(--type-body-size);
 }
 
-.valid .state,
-.validity-finding .state {
+.valid .state {
   flex: none;
-}
-
-.validity-finding {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  padding-top: 5px;
-  border-top: 1px solid var(--border-subtle);
-  color: var(--text-dim);
-  font-size: var(--type-meta-size);
-  line-height: 1.35;
-}
-
-.validity-finding small {
-  color: var(--text-dim);
-  font-size: var(--type-label-size);
-  font-weight: var(--type-label-weight);
 }
 
 /* Fidelity tags: the models behind a result, with tier and validation status.
@@ -5287,7 +5024,6 @@ input[type='number'] {
   .right-panel
   :is(
     .ts,
-    .capacity-row > span,
     .threat-data-title,
     .threat-data-count,
     .threat-data-head strong,
@@ -5315,99 +5051,6 @@ input[type='number'] {
   text-align: left;
 }
 
-.analysis-layout-popover {
-  position: absolute;
-  top: 100%;
-  right: var(--space-2);
-  z-index: 40;
-  width: min(380px, calc(100% - 16px));
-  max-height: calc(100dvh - 300px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: var(--space-3);
-  background: var(--surface-panel);
-  border: 1px solid var(--border-strong);
-}
-
-.analysis-layout-head,
-.analysis-layout-preset,
-.analysis-layout-save > div {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.analysis-layout-head h3 {
-  flex: 1;
-  margin: 0;
-  font-size: var(--type-title-size);
-}
-
-.analysis-layout-section {
-  padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.analysis-layout-section h4 {
-  margin: var(--space-2) 0;
-  font-size: var(--type-label-size);
-}
-
-.analysis-layout-presets {
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-.analysis-layout-preset-apply {
-  flex: 1;
-  min-width: 0;
-  text-align: left;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.analysis-layout-preset-apply[aria-pressed='true'] {
-  background: var(--surface-hover);
-}
-
-.analysis-layout-catalog {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  padding: var(--space-2) 0;
-}
-
-.analysis-layout-catalog button {
-  white-space: normal;
-}
-
-.analysis-layout-save {
-  display: grid;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-  font-size: var(--type-meta-size);
-}
-
-.analysis-layout-save input {
-  flex: 1;
-  min-width: 0;
-}
-
-.board-app .right-panel .wg-toggle {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: baseline;
-  flex-wrap: wrap;
-  min-width: 0;
-  gap: var(--space-1);
-  padding: var(--space-2) 0;
-  text-align: left;
-  line-height: 1.4;
-  background: transparent;
-  border: 0;
-  white-space: normal;
-}
-
 .analysis-scope {
   margin: var(--space-2) 0;
   font-size: var(--type-meta-size);
@@ -5426,39 +5069,8 @@ input[type='number'] {
   overflow-wrap: anywhere;
 }
 
-.analysis-settings-context {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin: var(--space-2) 0;
-  font-size: var(--type-meta-size);
-  color: var(--text-secondary);
-}
-
-.analysis-settings-edit {
-  margin: var(--space-2) 0;
-  white-space: normal;
-}
-
-.board-app .right-panel .wg-toggle {
-  padding: var(--space-1) 0;
-}
-
-.board-app .right-panel .wg-toggle .wg-t {
-  flex: 1 1 0;
-}
-
-.board-app .right-panel :is(.wg-x, .wh) {
-  order: 1;
-}
-
 .board-app .right-panel .wg-m {
   order: 2;
-}
-
-.validity-details > summary {
-  padding: var(--space-2) 0;
 }
 
 /* Settings shares the floating-menu surface; the native modal owns focus. */
