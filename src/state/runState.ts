@@ -168,3 +168,18 @@ export function freshPlayback(
     resetReason,
   }
 }
+
+/**
+ * The placement result that answers for the board on screen: a finished run on the
+ * current playback run and the current analysis basis. A run in progress, another
+ * playback run or another basis reads null.
+ */
+export function currentOptimize(
+  optimize: OptimizeState,
+  runId: string,
+  basis: string,
+): OptimizeResult | null {
+  return optimize.status === 'done' && optimize.runId === runId && optimize.basisSignature === basis
+    ? optimize.summary
+    : null
+}

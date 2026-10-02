@@ -16,6 +16,7 @@ import type { SensitivityResponse, Stat } from '../../../playback/mcRun'
 import type { Laydown, OptimizeObjective, OptimizeResult } from '../../../playback/optimizeTypes'
 import { analysisBasisSignature } from '../../../state/analysisBasis'
 import { OPTIMIZE_DEFAULTS } from '../../../state/analysisRequests'
+import { currentOptimize } from '../../../state/runState'
 import { useStore } from '../../../state/store'
 import { IconInfo } from '../../../ui/icons'
 import { Field, State } from '../../../ui/kit'
@@ -136,6 +137,8 @@ export function PlacementScreen() {
   const cancelOptimize = useStore((s) => s.cancelOptimize)
   const replaceScenario = useStore((s) => s.replaceScenario)
   const showHelp = useStore((s) => s.ui.showFieldHelp)
+  const preview = useStore((s) => s.ui.placementPreview)
+  const setPreview = useStore((s) => s.setPlacementPreview)
 
   const [chosen, setChosen] = useState<SensitivityResponse>('leakers')
   const [checked, setChecked] = useState<string[]>([])
@@ -176,10 +179,7 @@ export function PlacementScreen() {
   const running = optimize.status === 'running' && optimize.runId === runId
   const direction = RESPONSE_DIRECTION[response]
   // A result answers for the board it ran on: the same run and the same analysis basis.
-  const result =
-    optimize.status === 'done' && optimize.runId === runId && optimize.basisSignature === basis
-      ? optimize.summary
-      : null
+  const result = currentOptimize(optimize, runId, basis)
   const rows = result ? candidateRows(result) : []
   const nameOf = (id: string) => scenario.entities.find((e) => e.id === id)?.name ?? id
   const cut = result != null && result.trace.length < result.budget.evaluations
@@ -496,6 +496,8 @@ export function PlacementScreen() {
                   ? delta < 0
                   : delta > 0)
               const open = openRow === i
+              // Only a preview of this result shows on the board, so only it reads as pressed.
+              const shown = preview?.source === result && preview.rank === row.rank
               const label = row.rank != null ? `#${row.rank}` : 'Start'
               return (
                 <div
@@ -541,6 +543,28 @@ export function PlacementScreen() {
                       </span>
                     </button>
                     <span className="r2b-cand-acts">
+                      {row.rank != null && (
+                        <button
+                          type="button"
+                          className="mini"
+                          aria-label={`Preview placement ${row.rank}`}
+                          aria-pressed={shown}
+                          title={
+                            shown
+                              ? 'Hide these positions on the board'
+                              : 'Show these positions on the board'
+                          }
+                          onClick={() =>
+                            setPreview(
+                              shown
+                                ? null
+                                : { rank: row.rank!, positions: row.positions, source: result },
+                            )
+                          }
+                        >
+                          Preview
+                        </button>
+                      )}
                       {row.rank != null && (
                         <button
                           type="button"

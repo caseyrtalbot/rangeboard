@@ -50,8 +50,9 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    (`#6a7178` night, `#767d84` paper) for a probable or inferred link, and the knob rim
    (`#121415` night, text 1 on paper) for the heading and system rotation handles, and the
    at-rest ring ink `ringIdle` (`#f4f3ee` night, text 1 on paper). The
-   system rotation handle and the move-underlay outline take the tool ink (8.8:1 night,
-   5.3:1 paper). An anchored name and a spoke callout draw over a board-tone glyph halo
+   system rotation handle, the move-underlay outline and the placement preview (an
+   outline friend frame at 0.7 opacity and a `[4, 4]` dashed leader) take the tool ink
+   (8.8:1 night, 5.3:1 paper). An anchored name and a spoke callout draw over a board-tone glyph halo
    (`LABEL_HALO_PX`, a 2.5 px stroke under the fill, 1.25 px outside each letter), so a
    flight path, a leader or a coverage tint does not run through the text and no filled
    patch shows over a tint. A heading handle that points down into the label moves the

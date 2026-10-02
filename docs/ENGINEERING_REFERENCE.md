@@ -606,7 +606,8 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                (the board ink table for ui.theme and prefers-color-scheme), hoverCursor.ts
                (the hovered entity's pointer cursor, released when that entity unmounts),
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
-               style source)
+               style source; PlacementPreviewLayer draws ui.placementPreview on the live
+               Layer after CalloutLayer while currentOptimize returns its source result)
 src/panels/    Toolbar (the 36 px header: brand, scenario name, the lifecycle tabs, the
                phase RunControl, settings, the ⋯ menu with Storage, drawer toggle;
                BoardTools, the 28 px tool row), StatusBar (the 24 px status bar: run

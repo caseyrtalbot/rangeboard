@@ -1,0 +1,2380 @@
+{
+  "baseUrl": "http://localhost:5293",
+  "viewport": {
+    "width": 1400,
+    "height": 900
+  },
+  "fixture": "docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json",
+  "range": {
+    "id": "bnd-r3-range",
+    "name": "R3 range",
+    "type": "range",
+    "closed": true,
+    "altBandFt": null,
+    "points": [
+      {
+        "x": -2500,
+        "y": -2500
+      },
+      {
+        "x": 2500,
+        "y": -2500
+      },
+      {
+        "x": 2500,
+        "y": 2500
+      },
+      {
+        "x": -2500,
+        "y": 2500
+      }
+    ]
+  },
+  "spec": {
+    "move": [
+      "Coyote Block 2 interceptor 1",
+      "Giraffe 1X 3D radar (Saab) 1"
+    ],
+    "evaluations": "6",
+    "replicates": "4"
+  },
+  "summary": {
+    "captures": 24,
+    "passed": 24,
+    "failed": [],
+    "behavior": {
+      "408-night": true,
+      "408-paper": true,
+      "280-night": true,
+      "280-paper": true
+    }
+  },
+  "behavior": {
+    "408-night": {
+      "run": {
+        "status": "done",
+        "error": null,
+        "candidates": 5,
+        "moved": 2,
+        "objective": {
+          "response": "leakers",
+          "direction": "minimize"
+        }
+      },
+      "off": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "on": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "escape": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "on2": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "phase": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "phaseBack": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "beforeRerun": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "rerun": {
+        "status": "done",
+        "error": null,
+        "candidates": 5,
+        "moved": 2,
+        "objective": {
+          "response": "leakers",
+          "direction": "minimize"
+        }
+      },
+      "afterRerun": {
+        "stage": true,
+        "field": 2,
+        "leaders": 0,
+        "frames": 0
+      },
+      "beforeApply": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "apply": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "appliedName": "Untitled scenario (placement 2)",
+      "applyRenamed": true,
+      "pass": true
+    },
+    "408-paper": {
+      "run": {
+        "status": "done",
+        "error": null,
+        "candidates": 5,
+        "moved": 2,
+        "objective": {
+          "response": "leakers",
+          "direction": "minimize"
+        }
+      },
+      "off": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "on": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "escape": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "on2": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "phase": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "phaseBack": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "beforeRerun": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "rerun": {
+        "status": "done",
+        "error": null,
+        "candidates": 5,
+        "moved": 2,
+        "objective": {
+          "response": "leakers",
+          "direction": "minimize"
+        }
+      },
+      "afterRerun": {
+        "stage": true,
+        "field": 2,
+        "leaders": 0,
+        "frames": 0
+      },
+      "beforeApply": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "apply": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "appliedName": "Untitled scenario (placement 2)",
+      "applyRenamed": true,
+      "pass": true
+    },
+    "280-night": {
+      "run": {
+        "status": "done",
+        "error": null,
+        "candidates": 5,
+        "moved": 2,
+        "objective": {
+          "response": "leakers",
+          "direction": "minimize"
+        }
+      },
+      "off": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "on": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "escape": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "on2": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "phase": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "phaseBack": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "beforeRerun": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "rerun": {
+        "status": "done",
+        "error": null,
+        "candidates": 5,
+        "moved": 2,
+        "objective": {
+          "response": "leakers",
+          "direction": "minimize"
+        }
+      },
+      "afterRerun": {
+        "stage": true,
+        "field": 2,
+        "leaders": 0,
+        "frames": 0
+      },
+      "beforeApply": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "apply": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "appliedName": "Untitled scenario (placement 2)",
+      "applyRenamed": true,
+      "pass": true
+    },
+    "280-paper": {
+      "run": {
+        "status": "done",
+        "error": null,
+        "candidates": 5,
+        "moved": 2,
+        "objective": {
+          "response": "leakers",
+          "direction": "minimize"
+        }
+      },
+      "off": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "on": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "escape": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "on2": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "phase": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "phaseBack": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "beforeRerun": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "rerun": {
+        "status": "done",
+        "error": null,
+        "candidates": 5,
+        "moved": 2,
+        "objective": {
+          "response": "leakers",
+          "direction": "minimize"
+        }
+      },
+      "afterRerun": {
+        "stage": true,
+        "field": 2,
+        "leaders": 0,
+        "frames": 0
+      },
+      "beforeApply": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "apply": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "appliedName": "Untitled scenario (placement 2)",
+      "applyRenamed": true,
+      "pass": true
+    }
+  },
+  "captures": [
+    {
+      "file": "placement-off-408-night.png",
+      "state": "off",
+      "width": 408,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-on-408-night.png",
+      "state": "on",
+      "width": 408,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "true",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgb(235, 233, 227)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-escape-408-night.png",
+      "state": "escape",
+      "width": 408,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-phase-execute-408-night.png",
+      "state": "phase-execute",
+      "width": 408,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Monitor",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-rerun-408-night.png",
+      "state": "rerun",
+      "width": 408,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": 2,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-apply-408-night.png",
+      "state": "apply",
+      "width": 408,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-off-408-paper.png",
+      "state": "off",
+      "width": 408,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-on-408-paper.png",
+      "state": "on",
+      "width": 408,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "true",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgb(33, 34, 32)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-escape-408-paper.png",
+      "state": "escape",
+      "width": 408,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-phase-execute-408-paper.png",
+      "state": "phase-execute",
+      "width": 408,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Monitor",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-rerun-408-paper.png",
+      "state": "rerun",
+      "width": 408,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": 2,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-apply-408-paper.png",
+      "state": "apply",
+      "width": 408,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 407,
+      "scrollWidth": 407,
+      "clientWidth": 407,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-off-280-night.png",
+      "state": "off",
+      "width": 280,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [
+        {
+          "el": "section.analysis-primary.r2b-screen > section.psec > div.psec-head > span.psec-readout",
+          "text": "Leakers (members) · 6 evaluations",
+          "scrollWidth": 218,
+          "clientWidth": 144,
+          "childTitle": "Leakers (members) · 6 evaluations · 24 engine replicates"
+        }
+      ],
+      "clippedCount": 1,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-on-280-night.png",
+      "state": "on",
+      "width": 280,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [
+        {
+          "el": "section.analysis-primary.r2b-screen > section.psec > div.psec-head > span.psec-readout",
+          "text": "Leakers (members) · 6 evaluations",
+          "scrollWidth": 218,
+          "clientWidth": 144,
+          "childTitle": "Leakers (members) · 6 evaluations · 24 engine replicates"
+        }
+      ],
+      "clippedCount": 1,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "true",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgb(235, 233, 227)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-escape-280-night.png",
+      "state": "escape",
+      "width": 280,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [
+        {
+          "el": "section.analysis-primary.r2b-screen > section.psec > div.psec-head > span.psec-readout",
+          "text": "Leakers (members) · 6 evaluations",
+          "scrollWidth": 218,
+          "clientWidth": 144,
+          "childTitle": "Leakers (members) · 6 evaluations · 24 engine replicates"
+        }
+      ],
+      "clippedCount": 1,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-phase-execute-280-night.png",
+      "state": "phase-execute",
+      "width": 280,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Monitor",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-rerun-280-night.png",
+      "state": "rerun",
+      "width": 280,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": 2,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [
+        {
+          "el": "section.analysis-primary.r2b-screen > section.psec > div.psec-head > span.psec-readout",
+          "text": "Leakers (members) · 6 evaluations",
+          "scrollWidth": 218,
+          "clientWidth": 144,
+          "childTitle": "Leakers (members) · 6 evaluations · 24 engine replicates"
+        }
+      ],
+      "clippedCount": 1,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-apply-280-night.png",
+      "state": "apply",
+      "width": 280,
+      "theme": "night",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-off-280-paper.png",
+      "state": "off",
+      "width": 280,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [
+        {
+          "el": "section.analysis-primary.r2b-screen > section.psec > div.psec-head > span.psec-readout",
+          "text": "Leakers (members) · 6 evaluations",
+          "scrollWidth": 218,
+          "clientWidth": 144,
+          "childTitle": "Leakers (members) · 6 evaluations · 24 engine replicates"
+        }
+      ],
+      "clippedCount": 1,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-on-280-paper.png",
+      "state": "on",
+      "width": 280,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": 2,
+        "leaders": 2,
+        "frames": 2
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [
+        {
+          "el": "section.analysis-primary.r2b-screen > section.psec > div.psec-head > span.psec-readout",
+          "text": "Leakers (members) · 6 evaluations",
+          "scrollWidth": 218,
+          "clientWidth": 144,
+          "childTitle": "Leakers (members) · 6 evaluations · 24 engine replicates"
+        }
+      ],
+      "clippedCount": 1,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "true",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgb(33, 34, 32)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-escape-280-paper.png",
+      "state": "escape",
+      "width": 280,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [
+        {
+          "el": "section.analysis-primary.r2b-screen > section.psec > div.psec-head > span.psec-readout",
+          "text": "Leakers (members) · 6 evaluations",
+          "scrollWidth": 218,
+          "clientWidth": 144,
+          "childTitle": "Leakers (members) · 6 evaluations · 24 engine replicates"
+        }
+      ],
+      "clippedCount": 1,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-phase-execute-280-paper.png",
+      "state": "phase-execute",
+      "width": 280,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Monitor",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-rerun-280-paper.png",
+      "state": "rerun",
+      "width": 280,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": 2,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [
+        {
+          "el": "section.analysis-primary.r2b-screen > section.psec > div.psec-head > span.psec-readout",
+          "text": "Leakers (members) · 6 evaluations",
+          "scrollWidth": 218,
+          "clientWidth": 144,
+          "childTitle": "Leakers (members) · 6 evaluations · 24 engine replicates"
+        }
+      ],
+      "clippedCount": 1,
+      "acts": [
+        {
+          "label": "Preview placement 1",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 1",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 2",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 2",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 3",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 3",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 4",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 4",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Preview placement 5",
+          "pressed": "false",
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        },
+        {
+          "label": "Apply placement 5",
+          "pressed": null,
+          "fits": true,
+          "width": 64,
+          "height": 24,
+          "background": "rgba(0, 0, 0, 0)"
+        }
+      ],
+      "clippedNoTitle": [],
+      "pass": true
+    },
+    {
+      "file": "placement-apply-280-paper.png",
+      "state": "apply",
+      "width": 280,
+      "theme": "paper",
+      "errors": [],
+      "board": {
+        "stage": true,
+        "field": null,
+        "leaders": 0,
+        "frames": 0
+      },
+      "panel": true,
+      "tab": "Placement",
+      "panelWidth": 279,
+      "scrollWidth": 279,
+      "clientWidth": 279,
+      "sidewaysScroll": false,
+      "wide": [],
+      "innerScroll": [],
+      "clipped": [],
+      "clippedCount": 0,
+      "acts": [],
+      "clippedNoTitle": [],
+      "pass": true
+    }
+  ]
+}

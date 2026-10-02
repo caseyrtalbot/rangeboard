@@ -807,6 +807,7 @@ export default function App() {
       case 'clear-board':
         st.closeContextMenu()
         st.cancelDraft()
+        st.setPlacementPreview(null)
         st.setTool('select')
         st.clearSelection()
         return

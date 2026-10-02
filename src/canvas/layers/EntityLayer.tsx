@@ -139,7 +139,7 @@ function DestroyedStrike({ points, width }: { points: number[]; width: number })
  * An outline frame carries its letter in the entity color, because the dark board
  * shows through the unfilled frame.
  */
-function FriendFrame({
+export function FriendFrame({
   kind,
   color,
   filled,

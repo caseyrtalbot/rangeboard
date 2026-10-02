@@ -405,6 +405,39 @@ describe('PlacementScreen', () => {
     expect(html.match(/aria-label="Apply placement /g)).toHaveLength(2)
   })
 
+  it('previews one candidate on the board at a time and toggles it off', () => {
+    installResult(cutResult())
+    const html = render()
+    // The start row is candidate 3 here, so every row carries Preview before Apply.
+    expect(html.match(/aria-label="Preview placement \d" aria-pressed="false"/g)).toHaveLength(3)
+    expect(html.indexOf('aria-label="Preview placement 1"')).toBeLessThan(
+      html.indexOf('aria-label="Apply placement 1"'),
+    )
+    const scenario = useStore.getState().scenario
+    const one = click('Preview placement 1')
+    const preview = useStore.getState().ui.placementPreview!
+    expect(preview.rank).toBe(1)
+    expect(preview.positions).toEqual({ [EFFECTOR]: { x: 1500.24, y: -1200.46 } })
+    expect(preview.source).toBe(useStore.getState().mc.optimize.summary)
+    expect(one).toContain('aria-label="Preview placement 1" aria-pressed="true"')
+    // Another row replaces the preview; the shown row clears it.
+    const two = click('Preview placement 2')
+    expect(useStore.getState().ui.placementPreview!.rank).toBe(2)
+    expect(two).toContain('aria-label="Preview placement 1" aria-pressed="false"')
+    expect(two).toContain('aria-label="Preview placement 2" aria-pressed="true"')
+    expect(click('Preview placement 2')).not.toContain('aria-pressed="true"')
+    expect(useStore.getState().ui.placementPreview).toBeNull()
+    expect(useStore.getState().scenario).toBe(scenario)
+  })
+
+  it('reads a preview of an older result as not pressed', () => {
+    installResult(cutResult())
+    render()
+    click('Preview placement 1')
+    installResult(cutResult())
+    expect(render()).not.toContain('aria-pressed="true"')
+  })
+
   it('names the goal a result ran on when the Goal changes', () => {
     installResult(cutResult())
     render()

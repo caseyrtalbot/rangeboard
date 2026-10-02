@@ -6423,9 +6423,26 @@ input[type='number'] {
   color: var(--status-nominal);
 }
 
+/* Preview stacks over Apply, so the interval keeps its width at 280 px. */
 .r2b-cand-acts {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: var(--space-1);
+  justify-content: center;
+  padding: var(--space-1) 0;
+}
+
+.r2b-cand-acts button.mini {
+  align-self: stretch;
+  margin-left: 0;
+  white-space: nowrap;
+}
+
+/* A shown preview reads as pressed: text 1 on ink, per the design system. */
+.r2b-cand-acts button.mini[aria-pressed='true'] {
+  border-color: var(--text-primary);
+  background: var(--text-primary);
+  color: var(--ink);
 }
 
 .r2b-iv {

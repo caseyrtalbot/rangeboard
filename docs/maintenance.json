@@ -37,34 +37,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "06fedf81e3129c47e28b8ee802971927bbd740ef55488d37606b605a7df2ebf8",
-      "reviewedAt": "2026-10-01",
-      "note": "R2 right panel (c1d9caf..d5c7419): read the four lane commits and the integration diff; README names no panel screen, component or control that R2 changed; no change."
+      "sha256": "7193ccae255391e6d86b5560a6ecfebd7350be7f7f0e0fd4ab397cc4d25eccd8",
+      "reviewedAt": "2026-10-02",
+      "note": "R3 placement preview: App.tsx gains one setPlacementPreview(null) call in the clear-board case. README names no Placement control or board Escape behavior; no change."
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "1c18fa1c11900089d58b560bf669e350bec45f095e21527db82e81f4f762bf6f",
+      "sha256": "f4dc341e6b08662963d32577b19d2f1bd6d93dcabdaf3945f18eb83f9fa0ce4c",
       "reviewedAt": "2026-10-02",
-      "note": "Historical evidence lists the Pre-R3 cleanup browser check, 2026-10-02, above the R2 record in date order"
+      "note": "Historical evidence lists the Right panel R3 browser check, 2026-10-02, above the Pre-R3 cleanup record"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "ba7ad2d26de4a6a9542d951d8a123510225558f72853b92943c22ba89498dbb4",
+      "sha256": "8e119e0e125f4db74d1dc3a82eff45ba96479bc8f83e5d7c0c42b91f4ede34a7",
       "reviewedAt": "2026-10-02",
-      "note": "Pre-R3 cleanup: the saved-run row menu Delete takes two presses (Confirm delete); the review fixes (the Fragility suggestion pool by value, the Entities note wording, three dead CSS comments) name no guide text."
+      "note": "R3 placement preview: the Placement row names Preview, and the Placement paragraph describes the board preview (outline frame, leader over 0.5 m, short name), one at a time, the match rule and the clears (Escape, phase change, replace including Apply)."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "d868fccb75ebf2a5308bee68e5f65d97c126066cb758ee15513550be9d84ecf2",
+      "sha256": "bbf79e5d0af646ede8f9a59e2701369d1c960e3c63e587e7d9430519f2f36dd5",
       "reviewedAt": "2026-10-02",
-      "note": "Pre-R3 cleanup: PanelValidity renders nothing and skips the forecast assessment while Execute hides the line; chainTitle in threatReadout.ts gives the chain pip text; the review fixes change no module, store or export."
+      "note": "R3 placement preview: the canvas row names PlacementPreviewLayer on the live Layer after CalloutLayer, drawn while currentOptimize returns its source result. No invariant changes; the preview stays out of the scenario, the undo history and storage."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -150,9 +150,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "3f5e913bcb98eee9e24f59815f27dbdb82e53b6f9dace9e3ed4a9bb56f80eb7a",
+      "sha256": "b4d05c01e9fc4a0b0704ce5dec4baf28263e2dd4dfb204ecac7295dc7d71bc93",
       "reviewedAt": "2026-10-02",
-      "note": "Pre-R3 cleanup: chain pip text for a leaked track names the stages it holds at the cursor, then leaked; aria-current on the selected Monitor row; the deleted dead CSS classes are named nowhere in this doc."
+      "note": "R3 placement preview: the tool ink rule adds the preview frame and its [4, 4] leader. The new pressed Preview rule in the R2b block inverts to text 1 on ink as the pressed-control rule says."
     }
   ],
   "historical": [

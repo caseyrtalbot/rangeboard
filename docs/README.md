@@ -46,6 +46,7 @@ Proposals preserve design decisions as issued; the records below them show what 
 Earlier plans, earlier handoffs and the wave completion write-ups were removed on
 2026-09-16 and remain in Git history.
 
+- [Right panel R3 browser check, 2026-10-02](field-te/evidence/right-panel-r3-2026-10-02/README.md)
 - [Pre-R3 cleanup browser check, 2026-10-02](field-te/evidence/pre-r3-cleanup-2026-10-02/README.md)
 - [Right panel R2 browser check, 2026-10-01](field-te/evidence/right-panel-r2-2026-10-01/README.md)
 - [Row G kill types browser check, 2026-09-28](field-te/evidence/engine-g-2026-09-28/README.md)

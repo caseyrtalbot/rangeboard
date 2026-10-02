@@ -71,7 +71,7 @@ import {
 import { ENGSTRIP_OPEN_KEY, RUN_TIMELINE_HEIGHT_KEY } from '../io/storageKeys'
 import type { McSweepMessage, McWorkerMessage, SensitivityResponse } from '../playback/mcRun'
 import type { AnalysisSinks, OptimizeSpec, SensitivityMessage, SweepSpec } from './analysisRequests'
-import type { OptimizeWorkerMessage } from '../playback/optimizeTypes'
+import type { Laydown, OptimizeResult, OptimizeWorkerMessage } from '../playback/optimizeTypes'
 import type { RunTimelineKind } from '../analysis/runTimeline'
 import type { TimeViewport } from '../charts/timeViewport'
 import {
@@ -165,6 +165,12 @@ export interface UiState {
    * the Selected object tab; a panel row keeps the current tab (D7). Session only.
    */
   selectionOrigin: SelectionOrigin
+  /**
+   * The placement candidate drawn on the board, and the result it came from. The board
+   * draws it only while that result is still the current one. Session only; never
+   * written to the scenario or the undo history.
+   */
+  placementPreview: PlacementPreview | null
   /** Collapsible panel sections by DOM id. A missing id reads its default. Session only. */
   openSections: Record<string, boolean>
   /** The Validity line under the tab row is open. Session only. */
@@ -215,6 +221,13 @@ export interface LibraryRequest {
 }
 
 export type SelectionOrigin = 'board' | 'panel'
+
+/** One placement candidate on the board: its rank, its positions and the result it belongs to. */
+export interface PlacementPreview {
+  rank: number
+  positions: Laydown
+  source: OptimizeResult
+}
 
 /** A request to show one place in the right panel. A null field keeps the current value. */
 export interface PanelRequest {
@@ -379,6 +392,7 @@ export interface Store {
   /** Sets every listed section id; Collapse all and Expand all pass the ids on screen. */
   setAllSections: (open: boolean, ids: string[]) => void
   setValidityOpen: (open: boolean) => void
+  setPlacementPreview: (preview: PlacementPreview | null) => void
   requestPanel: (request: Omit<PanelRequest, 'seq'>) => void
   setShowFieldHelp: (v: boolean) => void
   setTheme: (t: Theme) => void
@@ -546,7 +560,11 @@ function sameSelection(a: Selection, b: Selection): boolean {
   )
 }
 
-/** Every in-progress interaction field, as `cancelDraft` clears them. */
+/**
+ * Every in-progress interaction field, as `cancelDraft` clears them, plus the placement
+ * preview: a replace drops it, and `cancelDraft` keeps it because library placement and
+ * calibration also call `cancelDraft`.
+ */
 const CLEARED_DRAFT: Pick<
   UiState,
   | 'draftPoints'
@@ -559,6 +577,7 @@ const CLEARED_DRAFT: Pick<
   | 'locationDialogOpen'
   | 'raidDraft'
   | 'connectSuggestion'
+  | 'placementPreview'
 > = {
   draftPoints: [],
   pathEntityId: null,
@@ -570,6 +589,7 @@ const CLEARED_DRAFT: Pick<
   locationDialogOpen: false,
   raidDraft: null,
   connectSuggestion: null,
+  placementPreview: null,
 }
 
 export const useStore = create<Store>()((set, get) => {
@@ -660,6 +680,7 @@ export const useStore = create<Store>()((set, get) => {
       locationDialogOpen: false,
       libraryRequest: { seq: 0, kind: null, modelId: null },
       selectionOrigin: 'board',
+      placementPreview: null,
       openSections: {},
       validityOpen: false,
       panelRequest: { seq: 0, phase: null, screen: null, section: null },
@@ -1505,6 +1526,10 @@ export const useStore = create<Store>()((set, get) => {
       if (get().ui.validityOpen === open) return
       set((st) => ({ ui: { ...st.ui, validityOpen: open } }))
     },
+    setPlacementPreview: (placementPreview) => {
+      if (get().ui.placementPreview === placementPreview) return
+      set((st) => ({ ui: { ...st.ui, placementPreview } }))
+    },
     requestPanel: (request) =>
       set((st) => ({
         ui: { ...st.ui, panelRequest: { ...request, seq: st.ui.panelRequest.seq + 1 } },
@@ -1560,6 +1585,7 @@ export const useStore = create<Store>()((set, get) => {
     },
     // Editing tools belong to Prepare: leaving it drops any drawing tool back to Select.
     // A phase change closes the Validity line, so Execute shows it only from the status bar (D1).
+    // A placement preview belongs to Prepare, so a phase change drops it too.
     setBoardPhase: (boardPhase) =>
       set((st) =>
         st.ui.boardPhase === boardPhase
@@ -1570,6 +1596,7 @@ export const useStore = create<Store>()((set, get) => {
                 boardPhase,
                 tool: boardPhase === 'prepare' ? st.ui.tool : 'select',
                 validityOpen: false,
+                placementPreview: null,
               },
             },
       ),

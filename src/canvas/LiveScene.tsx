@@ -20,6 +20,7 @@ import { EngagementLayer } from './layers/EngagementLayer'
 import { TrackLayer } from './layers/TrackLayer'
 import { EntityLayer, shownHandleDeg } from './layers/EntityLayer'
 import { CalloutLayer } from './layers/CalloutLayer'
+import { PlacementPreviewLayer } from './layers/PlacementPreviewLayer'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
 
 // These two read the store themselves, so a per-frame render must not reach them.
@@ -270,6 +271,7 @@ export function LiveScene(props: Props) {
       />
       <StaticSystemHandleLayer />
       <CalloutLayer placements={labelPlacements} />
+      <PlacementPreviewLayer />
     </>
   )
 }

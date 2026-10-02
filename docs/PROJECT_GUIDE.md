@@ -163,7 +163,7 @@ screen selects Inputs.
 | --- | --- | --- | --- |
 | [Fragility](../src/panels/analysis/screens/FragilityScreen.tsx) | Prepare | Monte Carlo ensemble and sensitivity | One Measure select (a measure that needs a defended asset is disabled without one and falls back to Kills); an Ensemble table of five quantities with the mean and the 95 % interval on the mean, and Pin; a factor [sweep map](../src/charts/SweepMap.tsx) over one or two scenario factors with value chips; sensitivity rows for the measure, top five and Show all; Run sweep and Run sensitivity. The top-bar Run runs the ensemble |
 | Inputs | Prepare | Scenario | Run, Environment, Fire control, Requirements (the gate table) and Entities in [BoardPreparation](../src/panels/BoardPreparation.tsx) |
-| [Placement](../src/panels/analysis/screens/PlacementScreen.tsx) | Prepare | Optimize run over the current scenario | Objective, movable systems and budget; progress with the best evaluation so far; up to five candidate laydowns with intervals; Apply installs one as a new scenario named with the suffix `(placement N)` |
+| [Placement](../src/panels/analysis/screens/PlacementScreen.tsx) | Prepare | Optimize run over the current scenario | Objective, movable systems and budget; progress with the best evaluation so far; up to five candidate laydowns with intervals; Preview draws one candidate on the board; Apply installs one as a new scenario named with the suffix `(placement N)` |
 | [Monitor](../src/panels/analysis/screens/NowScreen.tsx) | Execute | Sampled trial at the cursor | A kill-chain funnel of six counts (DET, ID, TGT, ENG, DEF, LEAK); Tracks with chain pips, the state, Held by and time to arrival; one Systems list grouped Sensors, C2 and Effectors; the last five salvo and identification events |
 | [Outcome](../src/panels/analysis/screens/OutcomeScreen.tsx) | Analyze | Completed trial | A provenance line with Save run and an Export menu; a result bar with one segment per member; First detect, First effect, Salvos and Gates met; Tracks as strips or a sortable table; Event ledger, Systems at end of run and Manifest records that open in place |
 | [Compare](../src/panels/analysis/screens/CompareScreen.tsx) | Analyze | Ensemble with the trial marked, plus a pinned baseline; any two saved runs | [Band chart](../src/charts/BandChart.tsx), interval rows with an inside/outside flag, a Baseline row with Pin current and Clear, PNG export of the chart, and a saved-run table with A and B picks, row menus and the A − B table (means differenced, no interval on the difference) |
@@ -197,7 +197,13 @@ and the store starts no placement run on one. A range whose points lie on one li
 enclose under 1 m² or under 4e-3 of their bounding box, is refused at launch with that
 reason, and no worker starts. Apply copies the scenario through the existing replace
 action, so the candidate is a new scenario and the optimize result is cleared with the
-other analyses on install. Calibrate, a button per field on the Systems tab, opens a
+other analyses on install. Preview on a candidate row draws that laydown on the board: a
+hollow friend frame in the tool ink at each candidate position, a dashed leader from the
+current position (none under 0.5 m) and the short name. It writes nothing to an entity
+and never enters the undo history. One candidate shows at a time; Preview on the shown
+row hides it. The preview draws only while the result still matches the board (the same
+run, the same analysis basis, the same result), and it clears on Escape, on a phase
+change and on any scenario replace, Apply included. Calibrate, a button per field on the Systems tab, opens a
 dialog that turns typed counts or times into a posterior (beta with the Jeffreys prior
 for a proportion, normal-gamma for a time); Accept writes an ordinary override whose
 reason records the prior, the observation and the posterior. Saved runs on Compare
