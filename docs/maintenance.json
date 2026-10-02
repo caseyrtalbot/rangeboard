@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "1149a3230a5e89085d2b120ddf80f823cb74fdb4da69ff401a49248aa5b16efd",
+      "sha256": "8e7aadae060441e8102140a4896751756ba193d2d9df746c2a4105d9957610c4",
       "reviewedAt": "2026-10-02",
-      "note": "R3 handoff: Position records R3 8856c13 on panel/r3 (not merged or pushed) with its deviations, tests, docs, evidence and gate, and the branch list; Follow-ups add three R3 items; Landmines add the preview show rule and the check:bundle build order; the Tasking selects nothing, the right panel queue is complete."
+      "note": "R3 merge handoff: Position records the fast-forward of 8856c13 and ca6e4d9 from panel/r3, the push and the deleted branch; the Tasking still selects nothing, the right panel queue is complete."
     },
     {
       "document": "docs/Plan.md",

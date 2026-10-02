@@ -30,15 +30,12 @@ primitives) is merged and pushed as `64aa156`. R2 (screens: lanes R2a to R2d, th
 integration R2-int) is merged and pushed as `ad6211c`. A fresh review of R1 and R2
 (2026-10-02) found no must-fix. The pre-R3 cleanup closed its should-fix items and most
 nits; it is merged and pushed as `0f3d4d2`. R3 (placement preview on the board), the last
-row, is committed on `panel/r3` as `8856c13` and waits for the user's word to merge and
-push. The queue is complete, and the Tasking selects nothing. Q2 stays held. Execute one
+row, is merged and pushed as `8856c13` with its handoff `ca6e4d9`. The queue is complete, and the Tasking selects nothing. Q2 stays held. Execute one
 row per agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `panel/r3`, which branches from
-  `main` at `0c5723f` and holds the R3 commit `8856c13` and the R3 handoff; neither is
-  merged or pushed. `main` holds Row G on top of
+- Repository `~/Projects/rangeboard`, checked out on `main`. `main` holds Row G on top of
   `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
   evidence with the Now card fix `a570e23` and the Row G handoff `6733fc2`, fast-forwarded
   from `engine/g`. The code-quality refactor `ccfdf44` follows, fast-forwarded from
@@ -53,13 +50,15 @@ row per agent turn.
   review fixes, the docs, the evidence and the R2-int handoff `ad6211c`),
   fast-forwarded from `panel/r2-int`, then the R2 merge handoff `cdeb978` and the R3
   handoff `bbeabe0`. Then the pre-R3 cleanup (`2e2f48f` to `0f3d4d2`), fast-forwarded from
-  `cleanup/pre-r3`, then the cleanup handoff `0c5723f`. `main` and
+  `cleanup/pre-r3`, then the cleanup handoff `0c5723f`. Then R3 `8856c13` and the R3
+  handoff `ca6e4d9`, fast-forwarded from `panel/r3`, then the R3 merge handoff that holds
+  this file. `main` and
   `origin/main` are equal. `panel/r2a` to `panel/r2d`, `panel/r2-int`,
-  `cleanup/c1-inputs`, `cleanup/c2-monitor`, `cleanup/c3-analyze` and `cleanup/pre-r3`
-  are deleted, none was pushed, and `~/Projects/rangeboard-wt/` is gone. `git branch -a`
-  shows `main` and `panel/r3`, `git worktree list` shows the main checkout only and the stash list
+  `cleanup/c1-inputs`, `cleanup/c2-monitor`, `cleanup/c3-analyze`, `cleanup/pre-r3` and
+  `panel/r3` are deleted, none was pushed, and `~/Projects/rangeboard-wt/` is gone. `git branch -a`
+  shows `main` only, `git worktree list` shows the main checkout only and the stash list
   is empty.
-- R3 (2026-10-02), committed on `panel/r3` as `8856c13`, not merged or pushed. One
+- R3 (2026-10-02), merged and pushed as `8856c13` on the user's word. One
   `opus-high` worker built it. `ui.placementPreview` (`{ rank, positions, source }`,
   session only) with `setPlacementPreview`; it never touches the scenario or the undo
   stacks. `currentOptimize(optimize, runId, basis)` in `runState.ts` holds the match rule
@@ -985,7 +984,7 @@ closed the Outcome, Run monitor, Inputs, Fragility and findings items):
 ## Tasking
 
 None. R3 was the last row of [right-panel/Plan.md](right-panel/Plan.md), and the queue is
-complete. `panel/r3` waits for the user's word to merge and push. Q2 of
+complete; R3 is merged and pushed. Q2 of
 [code-quality/Plan.md](code-quality/Plan.md) stays held. The Follow-ups are candidates,
 not rows; never invent a row.
 
