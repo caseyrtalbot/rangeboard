@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "9d258c08130631b744772fe3b473902ac73cd9b8b576697c7748c415dc375b19",
-      "reviewedAt": "2026-09-30",
-      "note": "R2a committed as 354b8cd with the user-authorized freeze rewrite; the handoff records all four lanes on their branches and selects R2-int"
+      "sha256": "422d63a0650846a6971edd2da517ebe3a1ee968b362de52bef2c050f1d4ac00d",
+      "reviewedAt": "2026-10-02",
+      "note": "R2-int close: R2 lane merges, integration d5c7419, review fixes 7d53ac6, capture fix 390257f, docs 8440cc1, evidence ad5c09f with the 2026-10-02 recheck, gate on ad5c09f; R2-int follow-ups; Field label landmine; Tasking selects R3 with the merged R2 gate as its base."
     },
     {
       "document": "docs/Plan.md",

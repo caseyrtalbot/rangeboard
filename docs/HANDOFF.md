@@ -26,9 +26,10 @@ the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `f
 [right-panel/Plan.md](right-panel/Plan.md) is the frozen queue for the right panel redesign
 (rows R1 to R3, authored 2026-09-29 from the approved prototype in
 [right-panel/prototype/](right-panel/prototype/index.html)). R1 (shell and shared
-primitives) is merged and pushed as `64aa156`. R2 (screens) is four lanes, committed on
-`panel/r2a` to `panel/r2d`, not merged and not pushed. The Tasking selects R2-int and
-waits for the user's word. Q2 stays held. Execute one row per agent turn.
+primitives) is merged and pushed as `64aa156`. R2 (screens: lanes R2a to R2d, then the
+integration R2-int) is on `panel/r2-int`, gate green, not merged and not pushed. The
+Tasking selects R3, the last row, and waits for the user's word. Q2 stays held. Execute
+one row per agent turn.
 
 ## Position
 
@@ -43,10 +44,12 @@ waits for the user's word. Q2 stays held. Execute one row per agent turn.
   commit `ae7ed95`, then R1 `64aa156` and the R1 handoff `3d69bce`, fast-forwarded from
   `panel/r1`, then the R1 merge handoff that holds this file. `main` and `origin/main`
   are equal. `engine/g`, `refactor/code-quality`, `quality/q1`, `rings/mir-mrir` and
-  `panel/r1` are deleted; `panel/r1` was never pushed. Then the R2 lanes handoff that
-  holds this file, on `main`, not pushed. The branches `panel/r2a` to `panel/r2d` branch
-  from `1b8008b`, one commit each, in the worktrees `~/Projects/rangeboard-wt/r2a` to
-  `r2d`, each with a `node_modules` symlink; none is pushed. The stash list is empty.
+  `panel/r1` are deleted; `panel/r1` was never pushed. Then the two R2 lanes handoffs
+  `fe0d8c9` and `c1d9caf` on `main`, not pushed. `panel/r2-int` branches from `c1d9caf`
+  and holds the four lane merges, the integration, the review fixes, the docs, the
+  evidence and the R2-int handoff that holds this file. The lane branches `panel/r2a` to
+  `panel/r2d` and their worktrees under `~/Projects/rangeboard-wt/` remain until the
+  merge. The stash list is empty.
 - R2 (2026-09-29), four lanes on `1b8008b`, not merged and not pushed. Four workers built
   the lanes in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d` (`opus-high` for
   R2a to R2c, `opus-medium` for R2d); each ran the gate and a Playwright check at 280, 408
@@ -95,6 +98,34 @@ waits for the user's word. Q2 stays held. Execute one row per agent turn.
     `savedRunPicks.ts` (it added an `only-export-components` warning) and restored the
     Compare region (`section.analysis-primary`, `aria-label="Compare"`) that the other
     screens keep.
+  - R2-int (2026-09-30 to 2026-10-01) on `panel/r2-int`: the four lanes merged in order
+    (`7645db7`, `665d1a1`, `638a0b7`, `c4e6888`; the one conflict, in
+    `AnalysisPanel.test.tsx`, kept the Fragility half from R2b and the Compare half from
+    R2d). Integration `d5c7419`: `openEntities` is a `requestPanel` call to
+    `#prepare-entities`; the e2e debrief test reads the Outcome provenance line and the
+    Export menu; `RunHistory` and `RunHistoryView` are deleted with four tests; every rule
+    whose classes lost their last source user in R2 is deleted from `index.css`
+    (compared against `1b8008b`). An `opus-high` review found one must-fix (a `Field`
+    label root clicked the segment or switch inside it, on ROE, Doctrine, Mode, Sky,
+    Light and EM clutter) and four should-fix items. A `fable-medium` comparison against
+    the prototype at 280, 408 and 560 px in both themes found four class 1 items, seven
+    class 2 and eight class 3. Fixes `7d53ac6`: the six fields take a `div` root, the
+    95 % column shows only 95 % time intervals, a Placement change no longer reads NaN,
+    the dead `useForecastEngagement` goes, the Export menu focuses its first item, and
+    the Systems note moves into its record summary title. The other class 1 items and
+    the class 2 and 3 items are follow-ups. The capture fix `390257f` puts the Sweep
+    readout text in its title. Docs `8440cc1`: DESIGN_SYSTEM, PROJECT_GUIDE,
+    ENGINEERING_REFERENCE and VERIFICATION; README and WORKFLOW reviewed with no change.
+    Evidence `ad5c09f`:
+    [right-panel-r2-2026-10-01](field-te/evidence/right-panel-r2-2026-10-01/README.md),
+    144 captures at 280, 408 and 560 px in Night and Paper over four states at `7d53ac6`;
+    136 pass, and the 8 Fragility readout fails at 280 px meet the title rule after
+    `390257f` (recheck 2026-10-02 in its README). 0 console errors, no sideways scroll,
+    and the four behavior checks pass. Gate on `ad5c09f` (`src/` as at `390257f`):
+    `npm run check` passes (228 files, 2,540 tests; entry graph 106 guarded modules of
+    212 reachable); `check:bundle` entry 370,373 and initial 391,809 gzip bytes (budgets
+    380,000 and 400,000); `check:silent` finds no pattern against `c1d9caf`; the e2e
+    passes 14 of 14.
 - R1 (2026-09-29) `64aa156`, merged and pushed: the right panel shell and shared primitives.
   The heading row is gone; Panel options ends the tab row (`.panel-tabbar`) and the
   Execute tab reads Monitor (value `now`). The store holds `selectionOrigin`,
@@ -662,6 +693,32 @@ Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expan
 and the Row D items it listed. The three code-quality refactor follow-ups are rows Q1 to Q3
 in [code-quality/Plan.md](code-quality/Plan.md). What remains:
 
+From R2-int of the right panel redesign (2026-10-01):
+
+- Class 1 left open, each outside R2's scope: the Outcome operator floor stamp stays in
+  the body (a trial model note, not a `runValidity` finding; moving it into the Validity
+  line needs one); at the full sensitivity depth Fragility shows the Morris and Sobol
+  widget and no swing rows, which come only from the one-at-a-time depth (D11); the
+  Outcome Manifest record lists every manifest field, `basisSignature` included, where
+  the prototype lists seven rows.
+- Class 2: at 280 px the Outcome stat row folds 3 + 1 (the prototype 2 × 2), the Event
+  ledger squeezes names and the Compare baseline Clear wraps; one-threat track names clip
+  at 408 and 280 px (titled); the Sobol widget clips labels and overprints values at
+  408 px; Placement Systems to move repeats a name whose short and full names match; the
+  sliders put the value beside a short slider, the prototype in the label row.
+- Class 3: the Analyze Validity line reads Forecast validity when the trial carries no
+  `view.validity`; Settings is a framed button, the prototype a text link; fields carry
+  their own (i); Monitor Systems rows have no kind tag; the result bar reads "of 1
+  members"; Saved runs shows a notice line, the prototype a toast; the chart legend reads
+  Simulated trial.
+- Review nits: the Requirements summary adds "· n not evaluated" to the plan text;
+  `RecordExports` is exported for in-file use; `InfoButton` is defined in three screens
+  and `IconDownload` in `CompareScreen.tsx`; the Monitor defeated state word carries an
+  inline `--ghost` style; `.prepare-entity-group` has no rule.
+- `NoteInfo` in `panels/analysis/controls.tsx` has no user since `7d53ac6` moved the
+  Systems note into its summary title; the plan's Do not mix list keeps it. Delete it
+  with `.frag-head` when no pane needs it.
+
 From R2 of the right panel redesign (2026-09-29):
 
 - The prototype's new-seed button in the Run section (plan follow-up).
@@ -832,24 +889,11 @@ From the Row B review, still open:
   toggle's icon no longer shows the open state.
 - Some `+ Frame` and popover items have no static-render test.
 
-From the `fable-medium` canvas comparison, class 1 (structure) items still open:
+From the `fable-medium` canvas comparison, class 1 (structure) items still open (R2
+closed the Outcome, Run monitor, Inputs, Fragility and findings items):
 
 - Entity view keeps a second tab level (Telemetry · Configure · Model basis) under the
   one tab row, so P3 stays open there.
-- Outcome: `Export debrief JSON` is a second accent-filled control and `New clean run` is
-  a rival run verb beside the top-bar `Run again` (P1).
-- Run monitor keeps body buttons `New run` and `Forecast and analysis` under Sensors (D7).
-- Run monitor sections are `Kill chain`, `Effectors`, `Sensors` as 15 px headings; the
-  canvas shows Engagements (open), Tracks and Run validity as 32 px collapsible rows with
-  counts; no Run validity section exists in Execute.
-- Inputs carries the `Entity register` list and a `Run validity` block with full finding
-  paragraphs; the canvas shows findings as one collapsed row with a count and tag.
-- Inputs repeats the scenario name and run id in its header (P2) with an INVALID tag;
-  the canvas card reads `Scenario inputs` with a PENDING tag.
-- Fragility has no `Monte Carlo` section header or (i); the 15 px `Fragility` heading
-  repeats the tab label.
-- Open findings show the `Gates:` line and a Select button; `Review finding scope` is one
-  disclosure at the bottom, not a dense button per finding.
 - Sweep factor selects carry the unit in the option text; the section (i) sits at the far
   right, not beside the title.
 - Panel options: the switch has no visible state; `Reset section layout` and the
@@ -861,54 +905,31 @@ From the `fable-medium` canvas comparison, class 1 (structure) items still open:
 
 ## Tasking
 
-**Row R2-int: integration, docs, review and capture.** The ownership, work steps and stop
-condition are in [right-panel/Plan.md](right-panel/Plan.md#r2-int-integration-docs-review-and-capture).
-Start R2-int only when asked. Q2 of [code-quality/Plan.md](code-quality/Plan.md) stays
-held; both edit `src/state/store.ts`.
+**Row R3: placement preview on the board.** The owned files, facts, work steps, checks and
+stop condition are in
+[right-panel/Plan.md](right-panel/Plan.md#r3-placement-preview-on-the-board-opus-high). It is the
+last row of the queue. Start R3 only when asked. Q2 of
+[code-quality/Plan.md](code-quality/Plan.md) stays held; both edit `src/state/store.ts`.
 
-- Base: `main` at the commit that holds this handoff. Create `panel/r2-int` from it and
-  merge `panel/r2a`, `panel/r2b`, `panel/r2c` and `panel/r2d` in that order. The lanes
-  are in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d`; remove the worktrees at
-  the merge. No `git stash` while they exist.
-- Expected conflicts: `src/index.css` (the lane blocks are disjoint; keep both sides),
-  and `src/panels/AnalysisPanel.test.tsx`, where R2b, R2c and R2d each changed only their
-  own screen's assertions (R2b and R2d both split the loop in `uses only the current
-  ensemble for Fragility and Compare`; keep the Fragility half from R2b and the Compare
-  half from R2d).
-- Integration items the lanes reported:
-  - `openEntities` (`App.tsx:875-882`) opens `#prepare-entities` through
-    `requestPanel({ phase: 'prepare', screen: 'inputs', section: 'prepare-entities' })`.
-    The section is closed by default and still carries `.prepare-entity-register`, so
-    today the rail only scrolls to its closed head.
-  - The e2e test `debrief record opens on run completion with a status summary`
-    (`board-shell.e2e.mjs:170-190`) waits for `details.evidence-products`, which R2c
-    removed. It is the only e2e failure on `panel/r2c` (13 of 14). Rewrite it for the
-    Outcome provenance line and the Export menu.
-  - After R2c, OutcomeScreen no longer renders `RunHistory`. Delete `RunHistory`,
-    `RunHistoryView` and their four tests when no module imports them; `SavedRunsView`
-    still opens a record with `RunRecordView`.
-  - Orphan CSS: R2c left its old rules (`.live-card`, `.live-clock`, `.live-bar`,
-    `.live-row`, `.live-value`, `.rr-bar`, `.system-telemetry-*`, `.component-*`,
-    `.debrief-*`, `.evidence-products`, `.run-validity`, `.requirement-gate`,
-    `.gate-*`); keep `.live-head`, which `TimelineBar` uses. `.tiles` and `.tile` have
-    no user after R2b. Check each with a grep of `src/` before you delete it.
-  - Docs: the lanes leave `docs:check` failing only on the review fingerprints of
-    `PROJECT_GUIDE.md`, `ENGINEERING_REFERENCE.md` and `DESIGN_SYSTEM.md`, and through
-    R2a's `scripts/entry-graph.json` also `VERIFICATION.md` and `WORKFLOW.md`. Update
-    them per plan step 2 and record each review with a concrete note.
+- Base: `main` after the R2 merge. Branch `panel/r3`. One `opus-high` worker, 1,500 s.
+- Outcome: Preview on a Placement candidate draws hollow markers in the tool ink at the
+  candidate positions, a dashed leader from each current position and the short name;
+  nothing is written to an entity or the undo history. The preview clears when the
+  result stops matching the board, when the phase leaves Prepare, on Apply and on Escape.
+- Facts since the plan: the Placement candidates are `.r2b-cand` rows in
+  `PlacementScreen.tsx` with Apply in `.r2b-cand-acts`; `candidateRows` and the result
+  match rule (run id and `analysisBasisSignature`) are in that file. `Laydown` is a type
+  import only from `playback/optimizeTypes.ts`. Escape order lives in
+  `src/canvas/interactionRouter.ts`.
 - Gate: `npm run check`, `npm run check:bundle`, `npm run check:silent` and
-  `E2E_URL=http://localhost:<port> npm run test:e2e` on the merged branch, then the
-  plan's browser check at 280, 408 and 560 px in Night and Paper. Measure the merged
-  bundle: the lane entries were R2a 370,461, R2b 369,222, R2c 369,176 and R2d 369,250
-  gzip bytes against 368,942 on the base (budget 380,000). The full `npm test` timed out
-  once on `sensitivity.parity.test.ts` and once on `sampling.test.ts` while four lanes
-  ran at once; both passed alone and on a quiet rerun, with no expect moved.
-- Next action: the merges, the integration items, the docs, the gate and the browser
-  check; then the `opus-high` review and the `fable-medium` comparison against the
-  prototype (1,500 s each), and the capture under
-  `docs/field-te/evidence/right-panel-r2-<date>/`.
-- Stop: the gate passes, the commit is on `panel/r2-int`, and this Tasking selects R3.
-  Do not merge or push without the user's word.
+  `E2E_URL=http://localhost:<port> npm run test:e2e`, then the plan's browser check with a
+  preview on and off in both themes, saved under
+  `docs/field-te/evidence/right-panel-r3-<date>/`. The base is the merged R2 gate:
+  228 files, 2,540 tests, bundle entry 370,373 gzip bytes, e2e 14 of 14. If you reuse the
+  R2 capture script, note that it looks for a `title` only on the clipped element and its
+  ancestors, so a `title` on a child span reads as a fail; read those by hand.
+- Stop: the gate passes, the commit is on `panel/r3`, and this Tasking selects nothing;
+  the queue is complete. Do not merge or push without the user's word.
 
 The Follow-ups are candidates, not rows.
 
@@ -916,17 +937,22 @@ The Follow-ups are candidates, not rows.
 
 - Right panel entry points find panel elements by DOM id or class: `openDoctrine` is a
   `requestPanel` call, and `showPanel` (`App.tsx:922-949`) opens the section by DOM id
-  (a `details` or a `PanelSection` toggle) and focuses its head; `openEntities` scrolls
-  to `.prepare-entity-register` (875-882); the status-bar button focuses
+  (a `details` or a `PanelSection` toggle) and focuses its head; `openEntities` is a
+  `requestPanel` call to `#prepare-entities`; the status-bar button focuses
   `#validity-line`; the e2e file reads `#insp-tab-analysis`, the tab labels
   (`board-shell.e2e.mjs:112, 192-205`) and `.right-resizer`. Keep the ids the right
   panel plan lists in D9, or move the caller in the same row.
 - A board selection switches the right panel to the Selected object tab when it becomes
   non-empty, or when the origin flips from `panel` to `board` (`App.tsx:911-919`). A
   panel control selects with origin `'panel'` and keeps its screen (D7).
-  `FindingThreatActions` does; `BoardPreparation.tsx:24` still calls `setRightTab`
-  itself until R2a. `select` writes `ui.selectionOrigin` even when the selection is
+  `FindingThreatActions`, the Inputs register rows, the gate table's blocking-track
+  buttons and the Monitor rows do. `select` writes `ui.selectionOrigin` even when the selection is
   unchanged, so a board click on a panel-selected object switches the tab.
+- `Field` renders a `<label>` root while both `help` and `error` are undefined. A label
+  with no `for` forwards a click to its first labelable descendant, and a `<button>` is
+  labelable, so a segmented control or a switch under a bare `Field` changed its value
+  on a click on the label text (fixed in `7d53ac6` with a `div class="field"` root). Wrap
+  a segmented control or a switch in a `div`, never a bare `Field`.
 - `PanelSection` is in `src/ui/` because `BoardPreparation` is in the entry graph:
   a module under the guarded `src/panels/analysis/` that it imports fails
   `check:entry-graph`. Never run `check-entry-graph.mjs --write` to get past it.
