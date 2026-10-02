@@ -2522,20 +2522,6 @@ select.nu-unit {
   font-family: var(--font-mono);
 }
 
-/* Sources table. Six short columns in a 320 px panel (Field, Value, Basis,
-   Spread, Source, Date), plus a remove column on a custom model. The field
-   key, the value, the spread and the date are machine data; the source name
-   is prose, so it leaves the table monospace and wraps instead of clipping to
-   nothing. The five fixed columns hold 74 percent, so Source keeps about the
-   width it had before the Spread column. */
-
-/* `.tb td:not(:first-child)` is monospace, so these carry the same class count
-   and win on order; the two mono columns take it back by class. */
-
-/* The spread is short machine data, but "17 of 20 (pseudo)" is wider than the
-   column at a 320 px panel. It wraps at the spaces instead of clipping, so no
-   count is lost. */
-
 /* Customize rows */
 
 .add {

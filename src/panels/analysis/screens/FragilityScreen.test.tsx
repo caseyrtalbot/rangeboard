@@ -612,6 +612,13 @@ describe('FragilityScreen', () => {
     expect(click('Remove 1000')).not.toContain('r2b-chip-t">1000<')
   })
 
+  it('hides a suggestion that a chip already holds by value', () => {
+    expect(render()).toContain('aria-label="Add 1200"')
+    const html = addValue('A', '1.2e3')
+    expect(html).toContain('<span class="r2b-chip-t">1200</span>')
+    expect(html).not.toContain('aria-label="Add 1200"')
+  })
+
   it('clears a refused add when a chip is removed', () => {
     render()
     expect(addValue('A', 'abc')).toContain('aria-invalid="true"')

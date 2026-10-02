@@ -268,7 +268,12 @@ function FactorBlock({
   const [refused, setRefused] = useState(false)
   const chips = chipsOf(draft)
   const full = chips.length >= SWEEP_VALUES_MAX
-  const pool = SWEEP_SUGGESTED[draft.id].suggest.filter((v) => !chips.includes(v))
+  // A numeric suggestion matches a chip by value, so `1.2e3` hides Add 1200.
+  const taken = (v: string) =>
+    draft.id === 'environmentPreset'
+      ? chips.includes(v)
+      : chips.some((c) => Number(c) === Number(v))
+  const pool = SWEEP_SUGGESTED[draft.id].suggest.filter((v) => !taken(v))
   const label = SWEEP_FACTOR_LABELS[draft.id]
   // A numeric chip prints its parsed number the way the map axis does (`1e3` reads 1000).
   const text = (v: string) =>

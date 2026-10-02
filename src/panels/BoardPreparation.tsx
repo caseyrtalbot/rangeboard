@@ -217,8 +217,8 @@ export function BoardPreparation() {
           <Info label="About the entities">
             <p>
               Every placed entity with its forecast state. Select a row to select the entity on the
-              board; the Selected object tab opens it. The Entities button in the board rail opens
-              this section.
+              board; the current tab stays and the Selected object tab holds it. The Entities button
+              in the board rail opens this section.
             </p>
           </Info>
         }
