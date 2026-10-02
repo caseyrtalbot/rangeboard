@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "b1c48c6c2b51ebf121ec8bbe1e7ebcad43e4c1f1600424f7623b43e555531c3a",
+      "sha256": "40c00daea9f5124123d444acd3de422d79f5a24246ea721b0e0b490e10fe670d",
       "reviewedAt": "2026-10-02",
-      "note": "R2 merged: Position records the fast-forward of panel/r2-int to main at ad6211c, the push, and the deleted lane branches and worktrees; the R3 base is main at this commit."
+      "note": "Final R3 handoff: fresh R1 and R2 review (four fable-medium reviewers on cdeb978, no must-fix) recorded as follow-ups; R3 Tasking rewritten against main: layer mount in LiveScene, entry-graph rule, currentOptimize helper in runState, preview state and show rule, clears in CLEARED_DRAFT, setBoardPhase and clear-board, marker, leader and label decisions, checks, 2,400 s budget and the browser check that runs a placement optimization."
     },
     {
       "document": "docs/Plan.md",

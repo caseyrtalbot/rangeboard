@@ -27,8 +27,8 @@ the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `f
 (rows R1 to R3, authored 2026-09-29 from the approved prototype in
 [right-panel/prototype/](right-panel/prototype/index.html)). R1 (shell and shared
 primitives) is merged and pushed as `64aa156`. R2 (screens: lanes R2a to R2d, then the
-integration R2-int) is merged and pushed as `ad6211c`. The
-Tasking selects R3, the last row, and waits for the user's word. Q2 stays held. Execute
+integration R2-int) is merged and pushed as `ad6211c`. A fresh review of R1 and R2
+(2026-10-02) found no must-fix; its items are follow-ups. The Tasking selects R3, the last row, and waits for the user's word. Q2 stays held. Execute
 one row per agent turn.
 
 ## Position
@@ -694,6 +694,43 @@ Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expan
 and the Row D items it listed. The three code-quality refactor follow-ups are rows Q1 to Q3
 in [code-quality/Plan.md](code-quality/Plan.md). What remains:
 
+From the fresh review of R1 and R2 (2026-10-02, four `fable-medium` reviewers on
+`cdeb978`; no must-fix; the targeted tests passed: 19 files, 189 tests):
+
+- Should-fix, checked in code: the Entities (i) text says a row opens the Selected object
+  tab (`BoardPreparation.tsx:217-220`), but D7 keeps the current tab, and the test asserts
+  that. Change the text and the `Inspect <name>` label (96), not the behavior. The
+  prototype holds the same sentence.
+- Should-fix, checked in code: a leaked track's chain pips read `detect › … › defeat`
+  (`NowScreen.tsx:58`; `STAGES_REACHED.leaked` is 6, `threatReadout.ts:563`). The
+  prototype has the same text.
+- Should-fix, checked in code: `.validity-finding` (`index.css:4638-4657`) has no user
+  since R2a deleted `runValidityText.tsx`.
+- Should-fix: `NowScreen.test.tsx:113` "selects a track from its row" calls `select`
+  itself and never fires the row's click or Enter/Space handler.
+- Should-fix: Compare interval rows hide their only header row from assistive technology
+  (`CompareScreen.tsx:134-166, 323-332`) and explain the row in a `title` on a `div`.
+- Should-fix: the saved-run row menu deletes on one click with no confirm or undo,
+  directly under the exports (`RunHistory.tsx:357-359, 730-739`). The old list also
+  deleted on one click.
+- Nits: under 360 px the Validity line drops its label and no `title` keeps it
+  (`index.css:6079-6081`, D6); `RequirementTable.test.tsx:74` names four columns and
+  checks three; the "completed trial in Analyze" test accepts either validity source; Mode
+  reads Run mode to assistive technology (`ForecastSettings.tsx:35-37`);
+  `useTrialValidity(false)` still subscribes outside Analyze (`AnalysisPanel.tsx:35-41`);
+  the Monitor State sort puts the furthest stage first in ascending order
+  (`NowScreen.tsx:227`); Monitor track rows have no role or `aria-selected` (307-314);
+  the debrief JSON embeds the ensemble only on the same run id while the CSV items gate on
+  the basis (`DebriefRecord.tsx:139`, older than R2); the Export and row menus take Tab
+  only, no arrow keys; a Sweep chip shows the raw token (`1e3`) while the axis shows
+  1000; a refused chip error stays after a chip removal (`FragilityScreen.tsx:268-276`);
+  a Placement change under 0.05 prints `+0` (`PlacementScreen.tsx:537`).
+- Dead CSS older than R2 (no user at `1b8008b` either): `analysis-layout-*`,
+  `analysis-settings-*`, `capacity-list`, `capacity-row`, `outcome-summary`,
+  `data-horizon-label`, `insp-shortcut*`, `src-tb`, `analysis-empty`, `ro-ghost`,
+  `run-reset`, `section-right`, `validity-details`, `wg-toggle`, `wg-x`, `wh`, `wmv`, `cat`,
+  `params`, `interactive`. Check each with a grep of `src/` before you delete it.
+
 From R2-int of the right panel redesign (2026-10-01):
 
 - Class 1 left open, each outside R2's scope: the Outcome operator floor stamp stays in
@@ -906,29 +943,90 @@ closed the Outcome, Run monitor, Inputs, Fragility and findings items):
 
 ## Tasking
 
-**Row R3: placement preview on the board.** The owned files, facts, work steps, checks and
-stop condition are in
+**Row R3: placement preview on the board.** The goal, checks and stop condition are in
 [right-panel/Plan.md](right-panel/Plan.md#r3-placement-preview-on-the-board-opus-high). It is the
-last row of the queue. Start R3 only when asked. Q2 of
-[code-quality/Plan.md](code-quality/Plan.md) stays held; both edit `src/state/store.ts`.
+last row of the queue. A fresh review on 2026-10-02 checked the row against `main` at
+`cdeb978`; this Tasking holds its corrections and decisions, and where it differs from the
+plan, this Tasking wins. Start R3 only when asked. Q2 of
+[code-quality/Plan.md](code-quality/Plan.md) stays held: Q2 owns `store.ts` 321-331 and
+1262-1370, R3 touches other lines, so the hold is order only.
 
-- Base: `main` at the commit that holds this handoff. Branch `panel/r3`. One `opus-high` worker, 1,500 s.
-- Outcome: Preview on a Placement candidate draws hollow markers in the tool ink at the
-  candidate positions, a dashed leader from each current position and the short name;
-  nothing is written to an entity or the undo history. The preview clears when the
-  result stops matching the board, when the phase leaves Prepare, on Apply and on Escape.
-- Facts since the plan: the Placement candidates are `.r2b-cand` rows in
-  `PlacementScreen.tsx` with Apply in `.r2b-cand-acts`; `candidateRows` and the result
-  match rule (run id and `analysisBasisSignature`) are in that file. `Laydown` is a type
-  import only from `playback/optimizeTypes.ts`. Escape order lives in
-  `src/canvas/interactionRouter.ts`.
-- Gate: `npm run check`, `npm run check:bundle`, `npm run check:silent` and
-  `E2E_URL=http://localhost:<port> npm run test:e2e`, then the plan's browser check with a
-  preview on and off in both themes, saved under
-  `docs/field-te/evidence/right-panel-r3-<date>/`. The base is the merged R2 gate:
-  228 files, 2,540 tests, bundle entry 370,373 gzip bytes, e2e 14 of 14. If you reuse the
-  R2 capture script, note that it looks for a `title` only on the clipped element and its
-  ancestors, so a `title` on a child span reads as a fail; read those by hand.
+- Base: `main` at the commit that holds this handoff. Branch `panel/r3`. One `opus-high`
+  worker, 2,400 s (the plan's 1,500 s does not cover a browser check that must run a
+  placement optimization).
+- Owns: `src/state/store.ts` (the field, its action and the three clears below);
+  `src/state/runState.ts` (one result helper); new
+  `src/canvas/layers/PlacementPreviewLayer.tsx` and its test; `src/canvas/LiveScene.tsx`,
+  the mount only; `src/canvas/layers/EntityLayer.tsx`, the `FriendFrame` export only;
+  `src/App.tsx`, one line in the `clear-board` case; `PlacementScreen.tsx`, the Preview
+  button and the move of its match rule; the tests of those files; `PROJECT_GUIDE.md`
+  (the Placement row near 166 and the paragraph near 191) and the canvas row of
+  `ENGINEERING_REFERENCE.md` (near 596-609).
+- Plan corrections:
+  - The layer mounts in `LiveScene.tsx` after `CalloutLayer` (`LiveScene.tsx:272`), not in
+    `CanvasStage.tsx`. `CanvasStage` mounts only the tile, underlay and grid layers and the
+    two scenes (`CanvasStage.tsx:419-459`); a third Konva Layer adds a canvas. The mount
+    stays inside `SceneErrorBoundary`.
+  - Import `Laydown` from `src/playback/optimizeTypes.ts` as a type. The entry-graph check
+    fails only when a guarded module reaches the entry for the first time;
+    `optimizeTypes.ts` is already frozen there and exports values, so the type import is
+    the rule for this file, not a gate risk.
+  - "The result stops matching the board" needs no new watcher. The store marks the
+    optimize run stale on a basis or override change (`scenarioInstall.ts:216-246`), and
+    `PlacementScreen.tsx:178-182` already reads the match rule (status `done`, the same
+    `runId` as `playback.runId`, the same `analysisBasisSignature`). Move that rule into
+    `currentOptimize(mc, runId, basis)` in `src/state/runState.ts` (not under the guarded
+    `src/panels/analysis/`), and use it in the screen and the layer.
+- Decisions (the plan left these open):
+  - State: `UiState.placementPreview: { rank: number; positions: Laydown; source:
+    OptimizeResult } | null`, session only, beside `selectionOrigin` (`store.ts:167`),
+    with `setPlacementPreview`. Writes go through `set((st) => ({ ui: { ...st.ui, ... } }))`
+    as `setValidityOpen` does (1506). Persistence is per field (`writeView`), so the field
+    stays out of storage with no extra code.
+  - Show rule: the layer draws only while `currentOptimize` returns a result and that
+    result is the same object as `source`. A rerun on the same board then hides an old
+    preview with no clear call.
+  - Clears: add `placementPreview: null` to `CLEARED_DRAFT` (`store.ts:550`, which
+    `install` spreads on every replace, so Apply, load and undo of a replace clear it), to
+    `setBoardPhase` (1563, beside `validityOpen: false`), and call
+    `setPlacementPreview(null)` in the `clear-board` case (`App.tsx:807`). Do not clear it
+    in `cancelDraft`: library placement and calibration also call `cancelDraft`
+    (`App.tsx:537, 756, 1132`).
+  - One preview at a time. Preview on another row replaces it; Preview on the shown row
+    clears it. The button sits in `.r2b-cand-acts` before Apply, with `aria-pressed` and a
+    visible pressed state.
+  - Marker: the friend frame outline (`FriendFrame` with `filled={false}`,
+    `EntityLayer.tsx:142`) in `ink.tool` at opacity 0.7. Export `FriendFrame`; do not copy
+    it. Do not name anything "ghost" in code: `PHASE_STYLE.ghost` is a hard-kill track
+    phase (`EntityLayer.tsx:57`).
+  - Leader: a `Line` from the current position, `stroke={ink.tool}`, `strokeWidth` 1,
+    `strokeScaleEnabled={false}`, dash `[4, 4]` as a module constant (Konva compares dash
+    arrays by identity). Skip the leader when the candidate is within 0.5 m of the
+    current position; draw the marker only.
+  - Label: `boardDesignator(name)` (`labelLayout.ts:130`) at `LABEL_FONT_PX` in
+    `ink.label` with the halo `CalloutLayer.tsx:24-34` uses. No collision layout.
+  - Draw only ids in `positions` that exist in `scenario.entities`. Add no
+    `LayerVisibility` key.
+- Checks: a store test that `setPlacementPreview` leaves `scenario`, `past` and `future`
+  the same objects (the pattern in `store.panel.test.ts`), and that each clear works
+  (`replaceScenario`, `setBoardPhase`); a layer test with `react-konva` mocked as in
+  `EntityLayer.test.tsx:11-25` (no draw without a match, no leader under 0.5 m); a
+  PlacementScreen test for the button and `aria-pressed` (that file mocks `react` and
+  `useState` at lines 19-36 and asserts on static markup); Apply still installs a copy through `replaceScenario(withPlacement(...))`
+  (`PlacementScreen.tsx:118-128`), unchanged. An Escape test must close any tooltip
+  first: the tooltip capture listener takes Escape while a tip is open.
+- Gate: `npm run check`, `npm run check:bundle` (report the entry against 370,373 gzip
+  bytes), `npm run check:silent` and `E2E_URL=http://localhost:<port> npm run test:e2e`.
+  The base is the merged R2 gate: 228 files, 2,540 tests, e2e 14 of 14. List each new
+  test. Record `docs:review` notes for both docs; both fingerprint all of `src/`.
+- Browser check: the R2 script
+  ([right-panel-r2-capture.mjs.txt](field-te/evidence/right-panel-r2-2026-10-01/right-panel-r2-capture.mjs.txt))
+  never runs a placement optimization, so it shows no candidate rows. Extend a copy to
+  run one on the fixture, then capture the preview on and off at 408 and 280 px in Night
+  and Paper, and the clears on Escape, phase change and Apply. That script looks for a
+  `title` only on the clipped element and its ancestors, so a `title` on a child span
+  reads as a fail; read those by hand. Save under
+  `docs/field-te/evidence/right-panel-r3-<date>/` with a README.
 - Stop: the gate passes, the commit is on `panel/r3`, and this Tasking selects nothing;
   the queue is complete. Do not merge or push without the user's word.
 
