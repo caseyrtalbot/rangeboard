@@ -381,7 +381,8 @@ Breaking one of these breaks the app.
   and `trialSweepAt.ts` derive charts, member outcomes and sensor/effector telemetry from
   that one ledger and observation history. Execute outcomes stop at the lesser of cursor
   and observed horizon; unavailable trials never substitute a forecast.
-  `useForecastEngagement` retains the deterministic `engagementPicture` path. Forecast
+  `engagementPicture` stays the deterministic forecast path; Inputs, the Validity line
+  and the status bar read it. Forecast
   and Monte Carlo are separately labeled, numerically unchanged analyses; their controls
   live on the Run tab (`panels/settings/RunTab.tsx`) and in the one run control
   (`panels/analysis/RunControl.tsx`) in the top bar, whose label follows the phase.
@@ -615,10 +616,13 @@ src/panels/    Toolbar (the 36 px header: brand, scenario name, the lifecycle ta
                spreadText.ts),
                LibraryEditor, settings/ (RunTab, SystemsTab, PhysicsTab and
                CalibrateDialog), AnalysisPanel (+ analysis/screens/ for the
-               Fragility, Inputs, Placement (PlacementScreen), Now, Outcome and
-               Compare screens and their phase map,
+               Fragility, Inputs, Placement (PlacementScreen), Now (the Monitor tab),
+               Outcome and Compare screens and their phase map,
                analysis/ for the shared readers, records and settings, analysis/detail/,
-               analysis/ForecastSettings.tsx for forecast/MC controls),
+               analysis/ForecastSettings.tsx for the Run section's Mode, Runs and Seed,
+               analysis/savedRunPicks.ts for the default A and B saved-run picks),
+               RequirementTable.tsx (the Requirements gate table on Inputs; it sits in
+               src/panels/ because BoardPreparation is in the entry graph),
                TimelineBar (the 28 px transport outside Prepare; exports the rAF loop
                hook App mounts and the play-label selector; holds the + Frame popover and the Timeline
                toggle, `#run-timeline-toggle`, whose open flag lives in `ui.runTimeline`),
@@ -793,12 +797,12 @@ Each fact below has exactly one definition. Read it there; never add a second co
   from samples that playback does not keep; its `lastTrackS` is the last kept hold end,
   on the sweep grid like the clipped holds. A dead threat's trial phase is `ghost`, hard or soft. Its pill
   reads `HARD KILL`, `MISSION KILL` or `DEFEATED (MIXED)`, and `LEAKED` for a late
-  death. A late kill is a leaker: Outcome, Now and the Debrief threat record print it as
+  death. A late kill is a leaker: Outcome, Monitor and the Debrief threat record print it as
   `late kill T+m:ss` and never as a defeat. The FX column, `First effect`, the FX text on a
   Debrief threat card and the FX mark on the threat detail survival chart read the
-  threat's death and exclude a late one. The Now Run monitor `Defeated` row counts
-  pre-arrival defeats over the modeled members (the attrition rows' `shipCount`), as the
-  Outcome `Defeated before arrival` tile does. A timeline effect mark from a `flightCapped`
+  threat's death and exclude a late one. The Monitor `DEF` cell counts pre-arrival
+  defeats over the modeled members (the attrition rows' `shipCount`), as the Outcome
+  result bar does. A timeline effect mark from a `flightCapped`
   event carries `capped`, and its tooltip adds that word. `liveStats.ts` imports
   `deadTimeOf` through the `threatAggregation` re-export: a direct `deadTimes` edge
   splits the store into a preloaded chunk and fails `check:bundle`. `TRIAL_ENGINE_REVISION` moved to `rangeboard-trial-r4-v3` with the
@@ -1104,7 +1108,7 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   the tracker and false tracks, a C2 node fusion, classification and the operator.
   `modelsUsed
 (scenario)` and `modelsForEntity(scenario, id)` read the scenario, never the picture; the
-  Outcome validity row and the detail pane header show the tags, and the export carries
+  detail pane header shows the tags, and the export carries
   `models` and `dataBasis.semantics`. `parameter-spread` is reported under Monte Carlo with
   `total` only. `radar-pd` is `datasheet`: `validation.verify.test.ts` checks the range law
   against the Blighter A400 and Echodyne sheets, and `convergence.verify.test.ts` holds the
@@ -1206,40 +1210,45 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   App renders `PanelValidity` lazily above the shell's Inputs screen. `PanelSection`
   (`src/ui/PanelSection.tsx`) is the one section head; a collapsible section keeps its
   state in `ui.openSections` by DOM id. `analysis/trackNames.ts` holds
-  `splitCommonPrefix` (D3) and `analysis/useRunHistorySave.ts` the save hook the run
-  history uses. `AnalysisNavigation` draws the phase's screen tabs
+  `splitCommonPrefix` (D3) and `analysis/useRunHistorySave.ts` the save hook that Save run
+  on Outcome and Save current on Compare use. `AnalysisNavigation` draws the phase's screen tabs
   (`role="tab"` buttons in `.insp-tab-group`, sorted by `SCREEN_ORDER`)
   inside the one right-panel tab row, outside the content scroller; the current screen
   carries `insp-tab-analysis`. The contextual object tab follows them. Each screen has one owner component and one
   result basis: Fragility the current `McSummary`, `SensitivitySummary` and `SweepSummary`
   through `currentSummary`, `currentSensitivity` and `currentSweep`; Now the retained
-  trial through `trialSweepAt` and `trialSystemTelemetryAt` at the cursor horizon;
+  trial through `trialSweepAt` and `trialSystemTelemetryAt` at the cursor horizon
+  (the Monitor tab: the funnel, track rows with TTA from `ttaReadout` and `TTA_TONE_S`
+  in `threatReadout.ts`, one Systems list with C2 and the recent events);
   Outcome the completed `TrialResultView` through `trialResultOf`; Compare the completed
   trial against the current `McSummary` and the pinned baseline, plus any two saved
-  history records side by side (`SavedRunCompareView`: means differenced, no interval on
-  a difference of independent runs); Placement the `McState.optimize` result and
+  history records as A and B (`SavedRuns` in `RunHistory.tsx`, picks defaulting to the
+  two newest through `defaultPicks`; means differenced, no interval on a difference of
+  independent runs); Placement the `McState.optimize` result and
   `optimizeBest`, and its Apply installs a copy through `replaceScenario` with the name
   suffix `(placement N)`. The deterministic
-  forecast appears on no screen; Outcome and Compare call `engagementPicture` only for
-  requirement validity and the `forecast-trial-disagreement` finding. Before the first
-  Play, Now, Outcome and Compare each render one placeholder line.
+  forecast draws no outcome on a screen; Inputs reads it for the Requirements gate table
+  (`buildRequirementGateReport`), and Outcome reads `trialForecast` only for Gates met.
+  Before the first Play, Monitor, Outcome and Compare each render one placeholder line.
   `Scenario.observedPresetId` is written on reset and first play only and stays out of
   the basis signature. `SURVIVAL_LABELS`
   and `KPI_LABELS` (`panels/analysis/labels.ts`) remain the one name table; `useTrialResult`
   supplies trial cursor telemetry. Trial series remain cursor/observation-bounded in
-  Analyze too. DebriefRecord retains completion guards, current-result readers and exports
-  behind Evidence products and exports `TrialEventLedger` and `TrialManifestRecord`, which
-  the Outcome records rows open in place; the outcome tiles render once, on Outcome.
-  `EmptyRow` and `NoteInfo` live in `panels/analysis/controls.tsx`, so SystemStatus and the detail panes use them without importing
-  DebriefRecord. `isTypingTarget` is one export in `ui/typingTarget.ts`, used by App's
+  Analyze too. DebriefRecord holds the Outcome `ExportMenu` (debrief JSON, final frame
+  PNG, and per-threat and per-effector CSV from `runRecordOf`, disabled with the reason
+  without a finished ensemble for the current basis) and exports `TrialEventLedger` and
+  `TrialManifestRecord`, which the Outcome records rows open in place.
+  `EmptyRow` lives in `panels/analysis/controls.tsx`, so SystemStatus and the detail panes
+  use it without importing DebriefRecord; `NoteInfo` stays there with no current user. `isTypingTarget` is one export in `ui/typingTarget.ts`, used by App's
   keyboard map and RunControl's run shortcut. `RightTab` is `'inspect' | 'analysis'`;
   `savedView` drops a saved `'library'` and App opens such a view on analysis.
-  Now samples within the execution horizon: event counts include reached assignments,
+  Monitor samples within the execution horizon: event counts include reached assignments,
   while effect times, Pk and kill deltas wait for the effect. The run timeline draws the
   model `runTimelineOf` returns, already censored; no component compares a time with the
-  horizon. Compare findings route to Prepare.
-  Run settings live on the Run tab; the Run button sits in the top bar and the
-  Deterministic checkbox under the forecast line on Prepare > Inputs.
+  horizon. Gates met on Outcome opens Prepare > Inputs at Requirements through
+  `requestPanel`.
+  Run settings live on the Run tab; the Run button sits in the top bar, and Mode, Runs and
+  Seed sit in the Run section on Prepare > Inputs.
 - **Pinned baseline** (`src/state/baseline.ts`): `PinnedBaseline` is `pinnedAt` (ISO),
   `label`, `scenario`, `mc` (`McSummary`) and `scenarioHash` (the `analysisBasisSignature`
   at the pin). `pinBaseline(label?)` needs a done summary for the current run and basis
@@ -1247,8 +1256,8 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   name and the local pin time. `clearBaseline` sets null; `restoreBaseline` is the
   persistence-only install. The baseline is store state beside the scenario: never in
   `Scenario`, `past` or a worker request, and never cleared by a scenario edit. Compare
-  draws its `mc.kills.mean` dashed on `BandChart` and adds Baseline and Current minus
-  Baseline columns to the delta table. Its storage key and validation are under
+  draws its `mc.kills.mean` dashed on `BandChart` and a baseline tick on each interval
+  row. Its storage key and validation are under
   **Storage keys** above.
 - **Selection detail** (`src/panels/EntityWorkspace.tsx`): the Board shell routes one
   selected entity into Telemetry, Configure and Model basis. `DetailPane` is the one
@@ -1381,7 +1390,7 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   evaluation or reads the optimize worker.
 - **SQLite schema** (`src/io/exportSqlite.ts`): the five tables `runs`, `per_target`,
   `per_effector`, `sensitivity` and `sobol` are declared once there and written by
-  `exportRunsSqlite`; `downloadRunsSqlite` wraps it for the history button. `sobol` is
+  `exportRunsSqlite`; `downloadRunsSqlite` wraps it for Export all runs (SQLite) in the Saved runs menu. `sobol` is
   empty by construction because no `RunRecord` field carries Sobol indices. `sql.js`
   1.14.2 is pinned and loaded only by dynamic import with its wasm URL, so it stays out of
   the entry chunk.

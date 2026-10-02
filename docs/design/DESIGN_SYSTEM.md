@@ -166,9 +166,9 @@ the pool ends; Execute reads the transport word (Play, Pause, Resume when paused
 Retry); Analyze reads Run again. The mono progress line ends in an ellipsis before the
 button. The button ends in a `kbd.run-key` that shows ⌘↵ in the button ink, and its title
 ends `(⌘↵)`. Meta+Enter (Ctrl+Enter off macOS) runs the phase's primary action unless
-focus is in a text field. The `Deterministic (no sampling)` checkbox is not in the bar:
-it sits under the forecast line in Prepare > Inputs, and the Run tab of Settings keeps
-the run mode control. Settings, the ⋯ menu and the drawer toggle are 28 px
+focus is in a text field. The run mode is not in the bar: Mode (Monte Carlo or
+Deterministic) sits in the Run section of Prepare > Inputs, and the Run tab of Settings
+keeps the run mode control. Settings, the ⋯ menu and the drawer toggle are 28 px
 icon-only buttons with an `aria-label` and a title. The ⋯ menu holds New, Import and
 Export, then a separator, then Storage, which opens the Storage panel in place of the
 menu; while recovery notices exist the Storage item shows a warning state with the count
@@ -229,8 +229,8 @@ Right panel layout rules ([Plan.md](../right-panel/Plan.md) D5, D6 and D8):
   (`--h-primary`: 7 px by 12 px pad): the `--accent` fill with `--accent-ink` text at
   weight 500. Its hover keeps the fill at `brightness(1.08)` and its press at
   `brightness(0.92)`, so the ink stays legible. The top-bar Run is the phase's one
-  `.primary`. An analysis screen's own run action (Run Monte Carlo) is a default 28 px
-  panel-body button. `.danger`: critical text, border on hover. `.active`: hover tone plus
+  `.primary`. An analysis screen's own run action (Run sweep, Run sensitivity) is a
+  `.mini` button at the end of its section head. `.danger`: critical text, border on hover. `.active`: hover tone plus
   text 1. Disabled drops to `--text-disabled`. A panel-body action
   (`.inspector-body button`) draws a 1 px `--rule-strong` frame, disabled included;
   register rows, table sort headers and danger actions keep their own edges. A disabled
@@ -258,7 +258,10 @@ Right panel layout rules ([Plan.md](../right-panel/Plan.md) D5, D6 and D8):
 - **Inputs.** Sunken fill, rule strong border, text 2 border on hover, 2 px focus outline.
   A unit sits inside the field in mono text 2 (`.nu-unit`). Only a field that accepts
   input carries a frame.
-- **Field** (`Field`, `.field`). Label above the control in label size. `unit` renders
+- **Field** (`Field`, `.field`). Label above the control in label size. Without `help`
+  and `error` its root is a `<label>`, which forwards a click on its text to the first
+  button inside it, so a segmented control or a switch takes a `div.field` root with a
+  `span` label instead. `unit` renders
   in `.nu-unit` inside the frame, after the control. `help` ends the label row in a
   24 px (i) button (`.field-info`, `aria-label="About <label>"`) whose title holds the
   text. The text also renders as a `.field-help` line (12 px, text 2) under the control
@@ -268,27 +271,22 @@ Right panel layout rules ([Plan.md](../right-panel/Plan.md) D5, D6 and D8):
   div and the child must be one React element, which takes the label's `id`. The label
   holds the noun only. A blank that means a derived default shows the placeholder `Auto`,
   and the derivation sentence goes in `help`. A slider row shows its value as a
-  right-aligned mono readout through `unit` (`12 kt`, `270°`). The forecast header on
-  Inputs is one mono line in text 1, `MC done / loop end · seed n`, with the stopping
-  rule in its title and the `Deterministic (no sampling)` checkbox under it. A stale
-  forecast line takes the warning ink.
+  right-aligned mono readout through `unit` (`12 kt`, `270°`). The Run section on
+  Inputs (`#prepare-run`) holds Mode over two columns and Runs and Seed over one column
+  each. Its head end holds `ENSEMBLE STALE` as a warning `State` while the ensemble is
+  stale, and a Settings button that opens Settings at Run.
 - **Error line** (`.line-error`). A rule outside a Field that shows only while its input
   is invalid: 11 px, critical, the same style as `.field-error`.
 - **Section method note** (`.field-info`, `.field-help`). A section note or (i) outside a
   Field uses the Field classes. A section head may end in a 24 px (i) button
   (`aria-label="About <section>"`, the note in its title). With field help on, the note
   also renders under the head as one or more 12 px text 2 lines at normal weight. A
-  machine readout in a section head is mono 12 px text 2 (`n cells · 40 reps/cell`). A
-  section head may carry a count tag as a `State` in the tone of the worst item
-  (Validity: `3 findings`).
+  machine readout in a section head is mono 12 px text 2 (`n cells · 40 runs each`). It
+  clips with an ellipsis at 280 px, so its title holds the readout facts. A section head
+  may carry a count tag as a `State` in the tone of the worst item.
 - **Empty state** (`.empty-row`). A hollow warning `State` names the missing input
   (`No ensemble`, `No defended asset`), with a `.mini` action beside it when one exists.
   The State may hold a full sentence and wraps.
-- **Finding row** (`.frag-finding`). A 28 px button with a severity glyph, the finding's
-  first clause unchanged, and a chevron (right closed, down open) with `aria-expanded`.
-  The glyph is the 8 px state square in the tone ink; the severity word is its title and
-  accessible name and is not shown. No rule between rows and no panel-body frame. The
-  rest of the finding and its scope open below. With field help on, rows render open.
 - **Detail pane header** (`DetailHeader`). Back, glyph, name and state, then the model
   line in mono meta (`.det-m`). Under it one `Model basis` row: tier and validation
   words in text 2 and a 24 px (i) whose title lists each model as label · tier ·
@@ -326,14 +324,19 @@ Right panel layout rules ([Plan.md](../right-panel/Plan.md) D5, D6 and D8):
   the even `[4, 4]` dash (`TRACK_ELLIPSE_DASH`), distinct from every ring dash. A
   truth-path track draws the cross alone. The layer is censored at the observed horizon
   like every other trial surface.
-- **KPI tiles** (`.tiles.c2`, `.tiles.c3`, `.tile`). Two or three columns, no borders.
+- **KPI tiles** (`.tiles.c2`, `.tile`; the saved-run record). Two columns, no borders.
   Label in text 3 (`.tl`), value in mono at the lead size (15 px) with a small
   denominator (`.tv`).
   A tile label reserves two lines (`min-height: 2.4em`) so the values in a row align.
-- **Run monitor card** (`.live-card`, `LiveStrip` in Execute). A 1 px `--rule-strong`
-  border at `--radius-control`, an exception to the surface rules. It holds a 15/500 mono
-  clock, a 4 px `--rule-strong` progress bar filled in text 1, and 20 px rows with the
-  label in text 2 at 12 px and the value in mono text 1.
+- **Kill-chain funnel** (`.mon-funnel`, on Monitor). Six cells on one row: DET, ID, TGT,
+  ENG, DEF and LEAK. Each cell has a 1 px `--rule-strong` top rule, the key in mono text 3
+  at the dense size and the count in mono text 1 at the title size. DET to ENG count the
+  tracks that reached the stage; DEF and LEAK count members. The cell title names the
+  denominator. A zero count takes text 3, and the LEAK count takes `--status-critical`.
+- **Chain pips** (`.mon-pips`, the Chain column on Monitor). Six 5 by 9 px bars, one per
+  stage: `--rule-strong` before the stage, text 2 for a stage passed, text 1 for the
+  current stage. A leaked track draws them in `--status-critical`, a defeated track in
+  `--ghost`. The pips are a `role="img"` with the stage in the title.
 - **Run timeline** (`src/panels/timeline/`, every class under the `.runtl` prefix in
   `index.css`). The strip sits in `.runtl-dock` between the board and the playback bar in
   Execute and Analyze. From the top: a 28 px header (title, then the horizon in mono
@@ -409,21 +412,21 @@ Right panel layout rules ([Plan.md](../right-panel/Plan.md) D5, D6 and D8):
   the overview window take `transition: none !important`, which beats the inline glide.
 - **Inspector rows** (`.insp-row`). Flex rows, 28 px minimum height, baseline aligned,
   bleeding to the panel padding line.
-- **Per-threat table** (`.tb.tb-dense`, the kill-chain table on Now and the outcome table
-  on Outcome). One row per track. Fixed layout: each column header carries its width as a
-  percentage, so the three or four time columns hold their width and the name and result
-  columns take the slack. Cells are mono at `--type-dense-size`. In the right panel a
+- **Per-threat table** (`.tb.tb-dense`, the Tracks table on Monitor and the Table view of
+  Tracks on Outcome). One row per track. Fixed layout: the narrow columns hold their width
+  and the name and result columns take the slack. Cells are mono at `--type-dense-size`. In the right panel a
   dense cell clips with an ellipsis and never wraps; the full text is in the cell
-  `title`. Each header is a sort button with `aria-sort`; an abbreviated header (D, ID,
-  ENG, FX, Slv, Arr) spells its meaning and unit in the button title. A result or state
+  `title`. Each header is a sort button with `aria-sort`; an abbreviated header (ID, Slv,
+  TTA) spells its meaning and unit in the button title. TTA takes the warning ink under
+  120 s and the critical ink under 60 s (`TTA_TONE_S`, display constants, not
+  requirements). A result or state
   word is a `State` in its ink: leaked or engaged critical, active or targeted warning,
   identified hollow, defeated in `--ghost`. A leaker's late kill follows the word as
   muted text, `late kill T+m:ss`.
-- **Inventory bar** (`.rr-bar`, `.rr-bar-fill`; the effector row on Now). An
-  `.insp-row` with the effector name and `remaining/capacity` in mono, then a 3 px bar
-  in `--border-subtle` with the remaining fraction filled in `--accent`. The bar is a
-  `role="meter"` with min, max, now and a value text. A jam or HPM channel shows a full
-  bar and `cont.`.
+- **Magazine pips** (`.sys-mag`; the effector row in the Systems list). One 5 by 10 px
+  pip per round with a 1 px text 3 border, filled in text 2 while the round remains, then
+  `remaining/capacity`. A magazine above 12 rounds shows the text only. A jam or HPM
+  channel shows `cont.`.
 - **Sweep map** (`SweepMap` in `src/charts/SweepMap.tsx`, on Fragility). A CSS grid with
   one label column plus one column per value of the first factor, and one row per value
   of the second factor (one row, `Full run`, with one factor), all in `--font-mono` at
@@ -431,15 +434,20 @@ Right panel layout rules ([Plan.md](../right-panel/Plan.md) D5, D6 and D8):
   the displayed values' range: `--status-nominal`, `--status-warning`,
   `--status-critical`, ordered so the better third is nominal. The value prints in
   `--ink` on the fill. A cell with no value is unfilled: a dash in `--text-secondary`
-  while pending, a check mark in `--status-nominal` when complete. The caption states the
-  scale, the replicates per cell and that the thirds are relative, never a requirement.
-  Each cell title carries the factor values, response, replicates, horizon and interval.
+  for a cell without a value, a check mark in `--status-nominal` when complete. Before a
+  run the map draws its empty grid: each cell is a 28 px dashed `--rule-strong` frame
+  (`.sweep-cell.blank`). The caption (`.sweep-cap`) sits under the grid in text 3 at the
+  dense size. It reads the axes (`Columns: … · Rows: …`) and, at its end, the key: the
+  three value ranges, or `Run sweep to fill`, `Running…` or `No values`. Its title holds
+  the method sentence: the replicates per cell and that the thirds are relative, never a
+  requirement. Each cell title carries the factor values, response, replicates, horizon
+  and interval.
 
 The Board has a 44 px resource rail with five 32 px icon-only buttons: Library, Entities,
 Layers and Frames at the top, Commands at the bottom. Each button has an `aria-label` and
 a title with its key in parentheses when it has one. The Library button carries the rail's
 open mark, a 2 px bar in text 1 on the rail's left edge, while the drawer is open.
-Entities opens the entity register. Layers opens the View menu at its Layers section
+Entities opens the Entities section of Prepare > Inputs (`#prepare-entities`). Layers opens the View menu at its Layers section
 (`#view-menu-layers`). Frames focuses `+ Frame` in the transport and is disabled in
 Prepare. The overlaid Library drawer (306 px default, existing saved width retained)
 starts below the canvas tools row and stops above the transport. It has a 32 px header
@@ -487,15 +495,13 @@ arrival and Planned CPA; times retain the machine-data role.
 Analyze has one run control, the header Run button beside the screen tabs. A screen body
 in Analyze does not draw its own run button.
 
-Each analysis screen is one labeled section with one basis line (`.analysis-scope`)
-under its heading and one caveat per section header, never on a tile. Tiles are `.tiles.c3` with the denominator and horizon inside the tile. Records,
-findings and evidence products use native disclosures (`.analysis-disclosure`). A
-placeholder before the first Play is an empty-state row. The band chart on Compare draws the
+Each analysis screen is one labeled section (`section.analysis-primary`) that states its
+basis once: Outcome in its provenance line, Fragility and Compare in a section head
+readout. Records use native disclosures (`.analysis-disclosure`). A placeholder before the first Play is an empty-state row. The band chart on Compare draws the
 95 % band in `--rule-strong`, the ensemble mean in `--text-secondary`, the trial in
 `--chart-1` with its endpoint marked, and the pinned baseline mean dashed in
-`--text-tertiary`; its axis labels are mono at `--type-dense-size`. The delta table flag
-is a `State`: `inside` nominal, `outside` warning. Findings link to Prepare without
-changing data until an input is edited. Chart scope text reads “Shown
+`--text-tertiary`; its axis labels are mono at `--type-dense-size`. The interval-row flag
+is a `State`: `inside` nominal, `outside` warning. Chart scope text reads “Shown
 through T+m:ss” or “No outcomes observed yet” in the legend accessibility label, or a
 visually hidden span when there is no legend. A preview playhead may show a later time.
 These reuse existing chart and text tokens.

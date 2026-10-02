@@ -123,9 +123,10 @@ following the [maintenance procedure](WORKFLOW.md#documentation-maintenance).
   - SQLite: `io/exportSqlite.test.ts` (the file opens in the `sqlite3` CLI with every
     table keyed on `run_id`, a join returns per-target rows for two runs, `sobol` is
     empty, a quantile with too few replicates is NULL).
-  - Compare and record: `panels/analysis/screens/CompareScreen.test.tsx` (the saved-run
-    comparison), `panels/analysis/RunHistory.test.tsx` (lineage disclosure, the export
-    buttons), `io/exportCsv.test.ts` (RFC 4180 quoting, units in headers),
+  - Compare and record: `panels/analysis/screens/CompareScreen.test.tsx` (the A − B
+    saved-run comparison), `panels/analysis/RunHistory.test.tsx` (lineage disclosure, the
+    export buttons, the saved-run table with A and B picks and row menus, the Save current
+    rule, and `defaultPicks` from `savedRunPicks.ts`), `io/exportCsv.test.ts` (RFC 4180 quoting, units in headers),
     `io/runExport.test.ts` (the `rangeboardRunRecord: 1` package in
     `io/runRecordPackage.ts` round-trips and a
     debrief export is refused), `charts/exportPng.test.ts` (the PNG pipeline under
@@ -315,16 +316,17 @@ committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 p
 
   | Screen | Tests | Browser check |
   | --- | --- | --- |
-  | Fragility | `panels/analysis/screens/FragilityScreen.test.tsx`, `charts/SweepMap.test.tsx` | Run a sweep from the screen; the map paints cell by cell as it completes |
-  | Now | `panels/analysis/screens/NowScreen.test.tsx` | Play at 30x; the run line, kill chain, bars and sensor rows update with no dropped canvas frame and no scenario input shown |
-  | Outcome | `panels/analysis/screens/OutcomeScreen.test.tsx`, `panels/analysis/DebriefRecord.test.tsx`, `panels/analysis/RunHistory.test.tsx`, `io/runStore.test.ts` | A completed run; the tiles render once, the table sorts, the records open in place; Save to history lists the ensemble, the row survives a reload and opens in place |
+  | Inputs | `panels/BoardPreparation.test.tsx`, `panels/RequirementTable.test.tsx` | The five sections in order; six gate rows with four pass-line boxes; the rail's Entities button opens the closed Entities section; at 280 px the gate labels stack above their boxes |
+  | Fragility | `panels/analysis/screens/FragilityScreen.test.tsx`, `charts/SweepMap.test.tsx` | The map draws its empty grid; run a sweep from the screen; the map paints cell by cell as it completes |
+  | Monitor | `panels/analysis/screens/NowScreen.test.tsx`, `panels/analysis/SystemStatus.test.tsx`, `panels/analysis/threatReadout.test.ts` | Play at 30x; the funnel, track rows with chain pips and TTA, the Systems list and recent events update with no dropped canvas frame and no scenario input shown |
+  | Outcome | `panels/analysis/screens/OutcomeScreen.test.tsx`, `panels/analysis/DebriefRecord.test.tsx`, `panels/analysis/RunHistory.test.tsx`, `io/runStore.test.ts` | A completed run; the provenance line, the result bar and the track strips render, the table toggle sorts, the records open in place; the Export menu disables the CSV items with the reason until an ensemble finishes; Save run lists the ensemble, the row survives a reload and opens in place |
   | Settings Systems | `panels/settings/SystemsTab.test.tsx`, `state/overrides.test.ts`, `state/trialManifestOverrides.test.ts` | Edit a field with a reason; the override shows beside the source value, `rangeboard.overrides.v1` holds it across a reload, a sampled trial's manifest lists it, reset clears it |
   | Settings Physics | `panels/settings/PhysicsTab.test.tsx` | Toggle two fallbacks, reload and check persistence; inspect the completed trial's Manifest for the switch list and fallback floor; Reset physics clears the list; all six Phase 3 controls describe the active physical model selected when cleared |
-  | Compare | `panels/analysis/screens/CompareScreen.test.tsx`, `charts/BandChart.test.tsx`, `analysis/runValidity.test.ts` | A completed run with an ensemble; the band chart, delta table and disagreement finding render |
+  | Compare | `panels/analysis/screens/CompareScreen.test.tsx`, `charts/BandChart.test.tsx` | A completed run with an ensemble; the band chart and one interval row per quantity render |
   | Baseline | `state/baseline.test.ts`, the persistence tests above | Pin, reload, compare against the dashed baseline, clear; the Storage section lists `rangeboard.baseline.v1` |
   | Placement | `panels/analysis/screens/PlacementScreen.test.tsx`, `playback/optimize.worker.test.ts` | Pick an objective and one movable system, run with a small budget; the progress line advances and the best-so-far updates; up to five candidates list with intervals; Apply installs a scenario named `(placement N)` and the board shows the moved system; an edit after Apply clears the result |
-  | Save and Compare | `panels/analysis/screens/CompareScreen.test.tsx`, `panels/analysis/RunHistory.test.tsx` | Save two runs to history; on Compare pick both as saved runs, the delta table differences the means with no interval on the difference; each history tile opens its Lineage in place |
-  | Export | `io/runExport.test.ts`, `io/exportCsv.test.ts`, `io/exportSqlite.test.ts`, `charts/exportPng.test.ts` | From a history tile download JSON, the three CSV tables and the chart PNG (the PNG opens with the computed paint); Import run reads the JSON back and lists it; Export SQLite downloads one file that opens in the `sqlite3` CLI and a join across two runs returns rows |
+  | Save and Compare | `panels/analysis/screens/CompareScreen.test.tsx`, `panels/analysis/RunHistory.test.tsx` | Save two runs to history; on Compare pick them as A and B, the A − B table differences the means with no interval on the difference; Open shows the record, and each tile opens its Lineage in place |
+  | Export | `io/runExport.test.ts`, `io/exportCsv.test.ts`, `io/exportSqlite.test.ts`, `charts/exportPng.test.ts` | From a saved-run row menu download JSON and the three CSV tables, and the chart PNG from the Compare head (the PNG opens with the computed paint); Import run reads the JSON back and lists it; Export SQLite downloads one file that opens in the `sqlite3` CLI and a join across two runs returns rows |
   | Calibrate | `panels/settings/CalibrateDialog.test.tsx`, `analysis/calibrate.test.ts` | On the Systems tab press Calibrate on a proportion field and on a time field; type counts, the posterior and its interval show before Accept; Accept writes an override whose reason names the prior, observation and posterior, and the override survives a reload |
 
   `panels/AnalysisPanel.test.tsx` and `panels/analysis/AnalysisNavigation.test.tsx` cover
@@ -332,7 +334,7 @@ committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 p
 - `scripts/e2e/board-shell.e2e.mjs` is the tracked shell spec (`npm run test:e2e`, a
   `node:test` file). It loads the firing fixture through `parseAutosave` and `loadScenario`
   in the page, then checks phase switching, selection routing, placement, the Escape chain
-  and the debrief record against store state. One test checks that the analysis
+  and the Outcome provenance line and Export menu against store state. One test checks that the analysis
   screen control follows the phase (Outcome and Compare in Analyze, Monitor in Execute) and
   that no lens bar renders. Two drawer tests close and reopen the right panel with the
   top-bar button and `]`, check that the camera holds the board center, that a selection
@@ -351,9 +353,11 @@ committing; it is lossless and the 2026-09-16 pass cut the retained PNGs by 29 p
   button inside it, and that no phase row renders. A second header test checks that the
   tabs hold the viewport center, that the groups fit their tracks, and that Storage opens
   from the ⋯ menu and keeps a 14 px right margin. The
-  debrief check calls
+  test "Outcome shows the provenance line and the Export menu on run completion" calls
   `startRun`, waits for trial status `ready` or `error`, then calls `completeRun`;
-  completion requires a matching ready trial. `npm run test:e2e` needs a running Vite
+  completion requires a matching ready trial. It then checks the provenance line, the four
+  Export items with the two CSV items disabled and their reason, and that Escape closes the
+  menu. `npm run test:e2e` needs a running Vite
   server: start `npm run dev -- --port <port> --strictPort` first and pass
   `E2E_URL=http://localhost:<port>`; without `E2E_URL` the spec reads
   `http://localhost:5377`.

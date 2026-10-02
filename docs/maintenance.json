@@ -37,34 +37,34 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "0a45254ca8c245a402c0c852519d0998b8c8d827e6bb87c226b3fccaeea0ec3d",
-      "reviewedAt": "2026-09-30",
-      "note": "R1 App.tsx shell change (tab row menu, requestPanel, Validity line); README names no panel layout, no edit"
+      "sha256": "06fedf81e3129c47e28b8ee802971927bbd740ef55488d37606b605a7df2ebf8",
+      "reviewedAt": "2026-10-01",
+      "note": "R2 right panel (c1d9caf..d5c7419): read the four lane commits and the integration diff; README names no panel screen, component or control that R2 changed; no change."
     },
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "302f409073201a19435659a448ec35f9f2836068d5a84f72e3c34708f1c8109f",
-      "reviewedAt": "2026-09-30",
-      "note": "Index gains the right panel redesign plan row; no other entry changed"
+      "sha256": "922a496aa41a88c97401b1e84e704912b2210cb117ef2beecbaee935218120ff",
+      "reviewedAt": "2026-10-01",
+      "note": "Historical evidence lists the Right panel R2 browser check, 2026-10-01, above the Row G record in date order"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "9643d5e314ce4cec9a38f794b6787cb54c5a8923f75d2a332f92b13d1f6fa93a",
-      "reviewedAt": "2026-09-30",
-      "note": "R1: setBoardPhase closes the Validity line on a phase change; the guide's Validity line text stays accurate, no edit"
+      "sha256": "303ace68ddc17dc32c80e3c21bdc7bb65a78b4967dd97a6f5b1b2e443bd268c5",
+      "reviewedAt": "2026-10-02",
+      "note": "Recheck after 390257f (the Fragility Sweep readout title repeats the readout): the guide names no section head readout or title; the R2 review of 2026-10-01 holds, no edit."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "033f3b00d6658f45cb15c5a31a296de4fa688cb4d449689551c4eaf3ca40978d",
-      "reviewedAt": "2026-09-30",
-      "note": "R1: setBoardPhase clears ui.validityOpen, so Execute shows the Validity line only from the status-bar button; analysis screens row states it"
+      "sha256": "1c4d8fdb61cc3c85ab2e98aaa21a6d9628879656aa7cd60084696547db7bb8d8",
+      "reviewedAt": "2026-10-02",
+      "note": "Recheck after 390257f (the Fragility Sweep readout title repeats the readout): no module, store or export changed; the R2 review of 2026-10-01 holds, no edit."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "38cffd8d155deff1f7b9bded531d8b48e31250d654221b0a3a062ac10b8dab05",
-      "reviewedAt": "2026-09-30",
-      "note": "R1: e2e drawer width test at 280 and 560 px for Prepare Inputs; Execute tab reads Monitor"
+      "sha256": "992e43bae26b7d4b814bfdcd08130702c9d5cd7cc01b4e9e02145af0c4d2ddf6",
+      "reviewedAt": "2026-10-01",
+      "note": "R2 right panel: Compare and record test list adds the saved-run table, Save current rule and defaultPicks; screen browser-check table adds Inputs (BoardPreparation, RequirementTable), renames Now to Monitor with SystemStatus and threatReadout tests, rewrites Fragility, Outcome, Compare, Save and Compare and Export checks; e2e paragraph names the Outcome provenance line and Export menu test."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -98,9 +98,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "6554d4c2acedb70a2a326ae61474aed702338865a17b718e4a475f08f725be93",
-      "reviewedAt": "2026-09-30",
-      "note": "R1 e2e adds one drawer width test; the e2e and gate commands are unchanged, no edit"
+      "sha256": "03e0a415bb9ef2e61aad45f8e7c8652363a071e8b961c7ef5a4cb2bd4df715c5",
+      "reviewedAt": "2026-10-01",
+      "note": "R2 right panel (c1d9caf..d5c7419): read the lane commits, the entry-graph freeze rewrite and the e2e change; the workflow and entry-graph rules hold as written and name no count or panel item; no change."
     },
     {
       "document": "docs/HANDOFF.md",
@@ -150,9 +150,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "ccb4f11a867c6e9fdc570fdaf00d2b1cdbfbf5fc1c7475d6dc664552f2cff4d5",
-      "reviewedAt": "2026-09-30",
-      "note": "R1: 32 px panel header paragraph replaced by the tab row with the Panel options menu, the Validity line and the D5, D6, D8 grid, width and edge rules"
+      "sha256": "db3a511feabfcd3d2c9f9a16c13ba7e3b5053f23dd16f8c9cd3565524def4bee",
+      "reviewedAt": "2026-10-02",
+      "note": "R2 right panel: run mode now in the Inputs Run section (top bar paragraph, Field forecast header replaced by the Run section with ENSEMBLE STALE and Settings); screen run actions are .mini Run sweep and Run sensitivity; Finding row removed; KPI tiles only .tiles.c2 on the saved-run record; Run monitor card replaced by the kill-chain funnel and chain pips; per-threat table headers and TTA tones; Inventory bar replaced by magazine pips; Sweep map empty grid and caption; rail Entities opens #prepare-entities; analysis screen paragraph drops tiles, findings and the delta table. 390257f: the section head readout example reads runs each, and a readout clipped at 280 px carries its facts in its title."
     }
   ],
   "historical": [
