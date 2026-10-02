@@ -27,7 +27,7 @@ the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `f
 (rows R1 to R3, authored 2026-09-29 from the approved prototype in
 [right-panel/prototype/](right-panel/prototype/index.html)). R1 (shell and shared
 primitives) is merged and pushed as `64aa156`. R2 (screens: lanes R2a to R2d, then the
-integration R2-int) is on `panel/r2-int`, gate green, not merged and not pushed. The
+integration R2-int) is merged and pushed as `ad6211c`. The
 Tasking selects R3, the last row, and waits for the user's word. Q2 stays held. Execute
 one row per agent turn.
 
@@ -42,15 +42,16 @@ one row per agent turn.
   then the Q1 merge handoff `e2343f9`, the range ring rework `fdfa6b3`, fast-forwarded
   from `rings/mir-mrir`, the range ring handoff `79f6f73`, and the right panel plan
   commit `ae7ed95`, then R1 `64aa156` and the R1 handoff `3d69bce`, fast-forwarded from
-  `panel/r1`, then the R1 merge handoff that holds this file. `main` and `origin/main`
-  are equal. `engine/g`, `refactor/code-quality`, `quality/q1`, `rings/mir-mrir` and
+  `panel/r1`, then the R1 merge handoff `1b8008b`. `engine/g`, `refactor/code-quality`, `quality/q1`, `rings/mir-mrir` and
   `panel/r1` are deleted; `panel/r1` was never pushed. Then the two R2 lanes handoffs
-  `fe0d8c9` and `c1d9caf` on `main`, not pushed. `panel/r2-int` branches from `c1d9caf`
-  and holds the four lane merges, the integration, the review fixes, the docs, the
-  evidence and the R2-int handoff that holds this file. The lane branches `panel/r2a` to
-  `panel/r2d` and their worktrees under `~/Projects/rangeboard-wt/` remain until the
-  merge. The stash list is empty.
-- R2 (2026-09-29), four lanes on `1b8008b`, not merged and not pushed. Four workers built
+  `fe0d8c9` and `c1d9caf`, then R2-int (the four lane merges, the integration, the
+  review fixes, the docs, the evidence and the R2-int handoff `ad6211c`),
+  fast-forwarded from `panel/r2-int`, then the R2 merge handoff that holds this file.
+  `main` and `origin/main` are equal. `panel/r2a` to `panel/r2d` and `panel/r2-int` are
+  deleted, none was pushed, and `~/Projects/rangeboard-wt/` is gone. `git branch -a`
+  shows `main` only, `git worktree list` shows the main checkout only and the stash list
+  is empty.
+- R2 (2026-09-29), four lanes on `1b8008b`, merged and pushed through R2-int. Four workers built
   the lanes in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d` (`opus-high` for
   R2a to R2c, `opus-medium` for R2d); each ran the gate and a Playwright check at 280, 408
   and 560 px in Night and Paper with no console error, no sideways scroll in
@@ -98,7 +99,7 @@ one row per agent turn.
     `savedRunPicks.ts` (it added an `only-export-components` warning) and restored the
     Compare region (`section.analysis-primary`, `aria-label="Compare"`) that the other
     screens keep.
-  - R2-int (2026-09-30 to 2026-10-01) on `panel/r2-int`: the four lanes merged in order
+  - R2-int (2026-09-30 to 2026-10-02) on `panel/r2-int`, merged and pushed: the four lanes merged in order
     (`7645db7`, `665d1a1`, `638a0b7`, `c4e6888`; the one conflict, in
     `AnalysisPanel.test.tsx`, kept the Fragility half from R2b and the Compare half from
     R2d). Integration `d5c7419`: `openEntities` is a `requestPanel` call to
@@ -911,7 +912,7 @@ stop condition are in
 last row of the queue. Start R3 only when asked. Q2 of
 [code-quality/Plan.md](code-quality/Plan.md) stays held; both edit `src/state/store.ts`.
 
-- Base: `main` after the R2 merge. Branch `panel/r3`. One `opus-high` worker, 1,500 s.
+- Base: `main` at the commit that holds this handoff. Branch `panel/r3`. One `opus-high` worker, 1,500 s.
 - Outcome: Preview on a Placement candidate draws hollow markers in the tool ink at the
   candidate positions, a dashed leader from each current position and the short name;
   nothing is written to an entity or the undo history. The preview clears when the

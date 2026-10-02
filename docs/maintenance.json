@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "422d63a0650846a6971edd2da517ebe3a1ee968b362de52bef2c050f1d4ac00d",
+      "sha256": "b1c48c6c2b51ebf121ec8bbe1e7ebcad43e4c1f1600424f7623b43e555531c3a",
       "reviewedAt": "2026-10-02",
-      "note": "R2-int close: R2 lane merges, integration d5c7419, review fixes 7d53ac6, capture fix 390257f, docs 8440cc1, evidence ad5c09f with the 2026-10-02 recheck, gate on ad5c09f; R2-int follow-ups; Field label landmine; Tasking selects R3 with the merged R2 gate as its base."
+      "note": "R2 merged: Position records the fast-forward of panel/r2-int to main at ad6211c, the push, and the deleted lane branches and worktrees; the R3 base is main at this commit."
     },
     {
       "document": "docs/Plan.md",
