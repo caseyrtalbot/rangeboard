@@ -351,6 +351,19 @@ describe('PlacementScreen', () => {
     expect(interaction.buttons.get('Run placement')!.disabled).toBe(true)
   })
 
+  it('prints a change that rounds to zero unsigned', () => {
+    const result = cutResult()
+    // Candidate 2 sits 0.03 under the start mean of 2.5.
+    result.candidates[1] = {
+      ...result.candidates[1],
+      objective: evaluation(3, 2.47, 200, 200).objective,
+    }
+    installResult(result)
+    const html = render()
+    expect(html).toMatch(/<span class="r2b-cand-d[^"]*">0<\/span>/)
+    expect(html).not.toMatch(/<span class="r2b-cand-d[^"]*">[+−]0<\/span>/)
+  })
+
   it('ranks the candidates best first on one interval scale with the change against the start', () => {
     installResult(cutResult())
     const html = render()

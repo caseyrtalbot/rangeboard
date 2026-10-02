@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { idHash } from '../../geometry/prng'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Scenario } from '../../model/types'
 import { createRunManifest } from '../../model/runRecord'
 import type { RunRecord } from '../../model/runRecord'
@@ -13,6 +13,47 @@ import { useRunHistorySave } from './useRunHistorySave'
 import { analysisBasisSignature } from '../../state/analysisBasis'
 import { useStore } from '../../state/store'
 import probe from '../../../docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+
+// Opt-in hook state for the menu tests: each render replays useState by call order,
+// so a press can change state and the next render shows it.
+type Press = (event: { stopPropagation: () => void }) => void
+const interaction = vi.hoisted(() => ({
+  active: false,
+  cursor: 0,
+  states: [] as unknown[],
+  buttons: new Map<string, Press>(),
+}))
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  return {
+    ...actual,
+    useState: (initial: unknown) => {
+      if (!interaction.active) return actual.useState(initial)
+      const index = interaction.cursor++
+      if (!(index in interaction.states))
+        interaction.states[index] = typeof initial === 'function' ? initial() : initial
+      return [
+        interaction.states[index],
+        (value: unknown) => {
+          interaction.states[index] =
+            typeof value === 'function' ? value(interaction.states[index]) : value
+        },
+      ]
+    },
+  }
+})
+vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
+  const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
+    const p = props as { children?: unknown; onClick?: Press; 'aria-label'?: string }
+    if (type === 'button' && p.onClick) {
+      if (typeof p.children === 'string') interaction.buttons.set(p.children, p.onClick)
+      if (p['aria-label']) interaction.buttons.set(p['aria-label'], p.onClick)
+    }
+    return actual.jsxDEV(type, props, ...rest)
+  }
+  return { ...actual, jsxDEV }
+})
 
 const scenario: Scenario = {
   ...(structuredClone(probe) as unknown as Scenario),
@@ -227,7 +268,14 @@ describe('SavedRunsView', () => {
 describe('RunMenuItems', () => {
   const items = (value: RunRecord | null) =>
     renderToStaticMarkup(
-      <RunMenuItems record={value} onOpen={() => {}} onExport={() => {}} onDelete={() => {}} />,
+      <RunMenuItems
+        record={value}
+        confirming={false}
+        onOpen={() => {}}
+        onExport={() => {}}
+        onArm={() => {}}
+        onDelete={() => {}}
+      />,
     )
 
   it('offers Open, the four exports and Delete, in that order', () => {
@@ -246,6 +294,59 @@ describe('RunMenuItems', () => {
 
   it('holds the exports until the record is read', () => {
     expect(items(null).match(/title="Reading the saved run"/g)).toHaveLength(4)
+  })
+})
+
+describe('saved-run row menu Delete', () => {
+  afterEach(() => {
+    interaction.active = false
+    interaction.states = []
+    interaction.buttons.clear()
+  })
+  const deleted: string[] = []
+  const render = () => {
+    interaction.cursor = 0
+    interaction.buttons.clear()
+    return savedRuns({ runs: [listed], onDelete: (id) => deleted.push(id) })
+  }
+  const press = (label: string) => {
+    const stopPropagation = vi.fn()
+    expect(interaction.buttons.has(label)).toBe(true)
+    interaction.buttons.get(label)!({ stopPropagation })
+    return stopPropagation
+  }
+  const toggleMenu = () => press('Camp Able · saved actions')
+
+  it('arms on the first press and keeps the menu open, then deletes on the second', () => {
+    interaction.active = true
+    deleted.length = 0
+    render()
+    toggleMenu()
+    expect(render()).toContain('>Delete</button>')
+    expect(press('Delete')).toHaveBeenCalled()
+    expect(deleted).toEqual([])
+    const armed = render()
+    expect(armed).toContain('>Confirm delete</button>')
+    expect(armed).not.toContain('>Delete</button>')
+    expect(press('Confirm delete')).not.toHaveBeenCalled()
+    expect(deleted).toEqual(['run-1'])
+  })
+
+  it('resets Confirm delete when the menu closes and opens again', () => {
+    interaction.active = true
+    deleted.length = 0
+    render()
+    toggleMenu()
+    render()
+    press('Delete')
+    expect(render()).toContain('>Confirm delete</button>')
+    toggleMenu()
+    expect(render()).not.toContain('Delete</button>')
+    toggleMenu()
+    const reopened = render()
+    expect(reopened).toContain('>Delete</button>')
+    expect(reopened).not.toContain('Confirm delete')
+    expect(deleted).toEqual([])
   })
 })
 

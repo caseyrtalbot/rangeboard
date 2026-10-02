@@ -312,16 +312,23 @@ function exportRecord(record: RunRecord, kind: RecordExportKind) {
   else exportRunCsv(record, kind)
 }
 
-/** The items of a row menu. The exports wait for the record, and Sensitivity CSV needs one. */
+/**
+ * The items of a row menu. The exports wait for the record, and Sensitivity CSV needs one.
+ * Delete takes two presses: the first arms it as Confirm delete and keeps the menu open.
+ */
 export function RunMenuItems({
   record,
+  confirming,
   onOpen,
   onExport,
+  onArm,
   onDelete,
 }: {
   record: RunRecord | null
+  confirming: boolean
   onOpen: () => void
   onExport: (kind: RecordExportKind) => void
+  onArm: () => void
   onDelete: () => void
 }) {
   const exportItem = (kind: RecordExportKind, label: string) => {
@@ -354,8 +361,17 @@ export function RunMenuItems({
       {exportItem('per-effector', 'Per-effector CSV')}
       {exportItem('sensitivity', 'Sensitivity CSV')}
       <hr className="tb-menu-sep" />
-      <button type="button" className="tb-menu-item" onClick={onDelete}>
-        Delete
+      <button
+        type="button"
+        className="tb-menu-item"
+        onClick={(event) => {
+          if (confirming) return onDelete()
+          // The menu closes on any item press; stopping here keeps it open with focus here.
+          event.stopPropagation()
+          onArm()
+        }}
+      >
+        {confirming ? 'Confirm delete' : 'Delete'}
       </button>
     </>
   )
@@ -459,16 +475,21 @@ function RunRowMenu({
   onDelete: (id: string) => void
 }) {
   const [record, setRecord] = useState<RunRecord | null>(null)
+  const [confirming, setConfirming] = useState(false)
   return (
     <PanelMenu
       label={`${run.label} actions`}
       title="Open, export or delete"
       onOpen={() => {
+        // A menu closed after the first Delete press opens with Delete unarmed.
+        setConfirming(false)
         onLoad(run.id).then(setRecord, () => setRecord(null))
       }}
     >
       <RunMenuItems
         record={record}
+        confirming={confirming}
+        onArm={() => setConfirming(true)}
         onOpen={() => onOpen(run.id)}
         onExport={(kind) => {
           if (record) exportRecord(record, kind)

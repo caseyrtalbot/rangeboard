@@ -118,7 +118,7 @@ function IntervalRow({
   const comparable = row.trial != null && row.mean != null && row.lo != null && row.hi != null
   const inside = comparable && row.trial! >= row.lo! && row.trial! <= row.hi!
   const text = (value: number | null) => (value == null ? '—' : `${formatCount(value)} ${row.unit}`)
-  const title = [
+  const parts = [
     `${row.label} · trial ${text(row.trial)}`,
     `ensemble mean ${text(row.mean)}`,
     row.lo == null || row.hi == null
@@ -126,13 +126,18 @@ function IntervalRow({
       : `95 % CI of mean ${formatCount(row.lo)} to ${formatCount(row.hi)} ${row.unit}`,
     baseNote != null && `baseline mean ${text(baseMean)}`,
     row.note,
-    comparable && (inside ? 'inside' : 'outside'),
   ]
+  const title = [...parts, comparable && (inside ? 'inside' : 'outside')]
+    .filter(Boolean)
+    .join(' · ')
+  // The head row and plot are aria-hidden, so the row speaks this sentence instead.
+  const description = [...parts, comparable && `trial ${inside ? 'inside' : 'outside'} the 95 % CI`]
     .filter(Boolean)
     .join(' · ')
   return (
     <div className="cmp-dp" title={title}>
-      <span className="cmp-q">
+      <span className="r2b-sr">{description}</span>
+      <span className="cmp-q" aria-hidden="true">
         {row.label}
         <small>
           {a}–{b} {SCALE_UNIT[row.key]}
@@ -152,8 +157,10 @@ function IntervalRow({
         )}
         {row.trial != null && <span className="cmp-trial" style={{ left: at(row.trial) }} />}
       </span>
-      <span className="cmp-tv">{row.trial == null ? '—' : short(row.trial)}</span>
-      <span className="cmp-flag">
+      <span className="cmp-tv" aria-hidden="true">
+        {row.trial == null ? '—' : short(row.trial)}
+      </span>
+      <span className="cmp-flag" aria-hidden="true">
         {comparable ? (
           <State tone={inside ? 'nominal' : 'warning'} title={inside ? 'inside' : 'outside'}>
             <span className="cmp-flag-w">{inside ? 'inside' : 'outside'}</span>

@@ -534,7 +534,8 @@ export function PlacementScreen() {
                           ? defined
                             ? formatCount(Number(s.mean.toFixed(1)))
                             : '—'
-                          : `${delta > 0 ? '+' : delta < 0 ? '−' : ''}${formatCount(Number(Math.abs(delta).toFixed(1)))}`}
+                          : // A change that rounds to zero prints unsigned.
+                            `${Number(Math.abs(delta).toFixed(1)) === 0 ? '' : delta > 0 ? '+' : '−'}${formatCount(Number(Math.abs(delta).toFixed(1)))}`}
                       </span>
                     </button>
                     <span className="r2b-cand-acts">
