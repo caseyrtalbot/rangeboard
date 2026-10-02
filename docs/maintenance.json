@@ -44,27 +44,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "922a496aa41a88c97401b1e84e704912b2210cb117ef2beecbaee935218120ff",
-      "reviewedAt": "2026-10-01",
-      "note": "Historical evidence lists the Right panel R2 browser check, 2026-10-01, above the Row G record in date order"
+      "sha256": "1c18fa1c11900089d58b560bf669e350bec45f095e21527db82e81f4f762bf6f",
+      "reviewedAt": "2026-10-02",
+      "note": "Historical evidence lists the Pre-R3 cleanup browser check, 2026-10-02, above the R2 record in date order"
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "a4a060857f8b03031e802281b8af2326a9e3af04106e6b72644ff7545ea69c31",
+      "sha256": "ba7ad2d26de4a6a9542d951d8a123510225558f72853b92943c22ba89498dbb4",
       "reviewedAt": "2026-10-02",
-      "note": "Pre-R3 cleanup: the saved-run row menu Delete takes two presses (Confirm delete); Entities row text, Mode name, chain pip text, State sort, Compare row descriptions, chip numbers and the Placement zero change named no guide text; dead CSS names no guide item."
+      "note": "Pre-R3 cleanup: the saved-run row menu Delete takes two presses (Confirm delete); the review fixes (the Fragility suggestion pool by value, the Entities note wording, three dead CSS comments) name no guide text."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "549c8e2c2648409f18d90ce27f2a05de9767acdc074b41b1e01ab310265c90ff",
+      "sha256": "d868fccb75ebf2a5308bee68e5f65d97c126066cb758ee15513550be9d84ecf2",
       "reviewedAt": "2026-10-02",
-      "note": "Pre-R3 cleanup: PanelValidity renders nothing and skips the forecast assessment while Execute hides the line; chainTitle in threatReadout.ts gives the chain pip text. The RunMenuItems Delete confirm is below this doc's depth."
+      "note": "Pre-R3 cleanup: PanelValidity renders nothing and skips the forecast assessment while Execute hides the line; chainTitle in threatReadout.ts gives the chain pip text; the review fixes change no module, store or export."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -150,9 +150,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "11ca861eb2c147e4a3789a2a2c1cffde3b9c50d6689fc7a02214a46aae80c8e2",
+      "sha256": "3f5e913bcb98eee9e24f59815f27dbdb82e53b6f9dace9e3ed4a9bb56f80eb7a",
       "reviewedAt": "2026-10-02",
-      "note": "Pre-R3 cleanup: chain pips text for a leaked track and aria-current on the selected Monitor row; the deleted dead CSS classes are named nowhere in this doc."
+      "note": "Pre-R3 cleanup: chain pip text for a leaked track names the stages it holds at the cursor, then leaked; aria-current on the selected Monitor row; the deleted dead CSS classes are named nowhere in this doc."
     }
   ],
   "historical": [

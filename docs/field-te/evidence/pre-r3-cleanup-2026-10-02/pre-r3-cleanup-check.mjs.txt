@@ -1,0 +1,153 @@
+// Pre-R3 cleanup browser check. Evidence of a dated run, not a test.
+// Usage: node pre-r3-cleanup-check.mjs <base-url> <out-dir> <repo-root>
+import { chromium } from 'playwright'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+const [BASE = 'http://localhost:5195', OUT = './out', ROOT = '.'] = process.argv.slice(2)
+const RAW = readFileSync(join(ROOT, 'docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'), 'utf8')
+mkdirSync(OUT, { recursive: true })
+const browser = await chromium.launch()
+const st = (p, fn, a) => p.evaluate(fn, a)
+const waitFor = (p, fn, a, timeout = 120000) => p.waitForFunction(fn, a, { timeout, polling: 100 })
+const settle = (p) => p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 200)))))
+const results = {}
+
+async function open(width, theme) {
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
+  await ctx.addInitScript((w) => localStorage.setItem('rangeboard.rightpanel.width', String(w)), width)
+  const page = await ctx.newPage()
+  const errors = []
+  page.on('pageerror', (e) => errors.push(e.message.slice(0, 200)))
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text().slice(0, 200)))
+  page.on('dialog', (d) => { errors.push('dialog: ' + d.message()); d.accept() })
+  await page.goto(BASE)
+  await waitFor(page, () => document.querySelector('.konvajs-content canvas') && window.__store, null, 60000)
+  await st(page, (t) => window.__store.getState().setTheme(t), theme)
+  await st(page, async (raw) => {
+    const { parseAutosave } = await import('/src/io/persist.ts')
+    window.__store.getState().loadScenario(parseAutosave(raw))
+  }, RAW)
+  await settle(page)
+  return { ctx, page, errors }
+}
+const go = async (p, phase, screen, section = null) => { await st(p, (r) => window.__store.getState().requestPanel(r), { phase, screen, section }); await settle(p) }
+
+for (const [themeName, theme] of [['night', 'dark'], ['paper', 'light']]) {
+  const r = (results[themeName] = {})
+  // 1. Inputs at 280 px: the Validity line title and the Entities text.
+  {
+    const { ctx, page, errors } = await open(280, theme)
+    await go(page, 'prepare', 'inputs', 'prepare-entities')
+    await page.waitForSelector('#validity-line', { timeout: 30000 })
+    await settle(page)
+    r.inputs280 = await st(page, () => {
+      const line = document.querySelector('#validity-line')
+      const label = line?.querySelector('.vline-label')
+      const info = [...document.querySelectorAll('#insp-tabpanel [aria-label="About the entities"]')].map((b) => b.getAttribute('title') || b.textContent)
+      const row = document.querySelector('.prepare-entity')
+      return {
+        lineTitle: line?.getAttribute('title'),
+        labelDisplay: label ? getComputedStyle(label).display : null,
+        entityRowLabel: row?.getAttribute('aria-label'),
+        modeName: document.querySelector('#insp-tabpanel [aria-label="Mode"]') ? 'Mode' : null,
+        oldModeName: !!document.querySelector('#insp-tabpanel [aria-label="Run mode"]'),
+        entitiesInfo: info,
+      }
+    })
+    await page.screenshot({ path: join(OUT, `inputs-280-${themeName}.png`) })
+    r.inputs280.errors = errors.slice()
+    await ctx.close()
+  }
+  // 2. Trial: Monitor rows, chain text, aria-current, State sort.
+  {
+    const { ctx, page, errors } = await open(408, theme)
+    await go(page, 'execute', 'now')
+    await st(page, () => window.__store.getState().startRun())
+    await waitFor(page, () => window.__store.getState().trial.status === 'ready')
+    await st(page, async () => {
+      const { durationOf } = await import('/src/state/selectors.ts')
+      const s = window.__store.getState()
+      s.completeRun(durationOf(s.scenario))
+    })
+    await go(page, 'execute', 'now')
+    const rows = () => st(page, () => [...document.querySelectorAll('tr.mon-row')].map((tr) => ({
+      name: tr.querySelector('td')?.textContent?.trim(),
+      state: tr.querySelector('.mon-c-state')?.textContent?.trim(),
+      chain: tr.querySelector('.mon-pips')?.getAttribute('aria-label'),
+      current: tr.getAttribute('aria-current'),
+    })))
+    const before = await rows()
+    const tab0 = await st(page, () => window.__store.getState().ui.rightTab)
+    await page.locator('tr.mon-row').first().click()
+    await settle(page)
+    const afterClick = await rows()
+    const tab1 = await st(page, () => window.__store.getState().ui.rightTab)
+    const stateHead = page.locator('#insp-tabpanel th button', { hasText: /^State$/ })
+    let sortAsc = null
+    if (await stateHead.count()) {
+      await stateHead.first().click(); await settle(page)
+      sortAsc = { sort: await st(page, () => [...document.querySelectorAll('#insp-tabpanel th')].map((t) => t.getAttribute('aria-sort')).filter(Boolean)), rows: (await rows()).map((x) => x.state) }
+    }
+    r.monitor = {
+      rows: before.length,
+      leaked: before.filter((x) => /leak/i.test(x.state ?? '')).map((x) => x.chain),
+      defeatOnLeaked: before.filter((x) => /leak/i.test(x.state ?? '') && /defeat/.test(x.chain ?? '')).length,
+      chains: [...new Set(before.map((x) => `${x.state} :: ${x.chain}`))],
+      currentBefore: before.filter((x) => x.current === 'true').length,
+      currentAfter: afterClick.filter((x) => x.current === 'true').map((x) => x.name),
+      tabBefore: tab0,
+      tabAfter: tab1,
+      sortAsc,
+      errors: errors.slice(),
+    }
+    await page.screenshot({ path: join(OUT, `monitor-complete-408-${themeName}.png`) })
+    await ctx.close()
+  }
+  // 3. Monte Carlo: Compare spoken rows, Save current, two-press Delete; Placement untouched.
+  {
+    const { ctx, page, errors } = await open(408, theme)
+    await st(page, () => window.__store.getState().runMonteCarlo())
+    await waitFor(page, () => ['done', 'error'].includes(window.__store.getState().mc.status))
+    // The interval rows mark the trial, so complete one first.
+    await st(page, () => window.__store.getState().startRun())
+    await waitFor(page, () => window.__store.getState().trial.status === 'ready')
+    await st(page, async () => {
+      const { durationOf } = await import('/src/state/selectors.ts')
+      const s = window.__store.getState()
+      s.completeRun(durationOf(s.scenario))
+    })
+    await go(page, 'analyze', 'compare')
+    await page.waitForSelector('#insp-tabpanel .cmp-dp', { timeout: 30000 }).catch(() => {})
+    const spoken = await st(page, () => [...document.querySelectorAll('#insp-tabpanel .cmp-dp .r2b-sr')].map((s) => s.textContent.trim()))
+    const save = page.locator('#insp-tabpanel button', { hasText: /^Save current$/ })
+    let del = null
+    if (await save.count()) {
+      await save.first().click()
+      await waitFor(page, () => document.querySelectorAll('table.saved-tb tbody tr').length > 0, null, 30000).catch(() => {})
+      const count0 = await page.locator('table.saved-tb tbody tr').count()
+      const trigger = page.locator('table.saved-tb button[aria-label$=" actions"]').first()
+      const item = () => page.locator('.tb-menu-panel button.tb-menu-item', { hasText: /delete/i }).first()
+      await trigger.click(); await settle(page)
+      await item().click(); await settle(page)
+      const armed = { text: await item().textContent().catch(() => null), menuOpen: await page.locator('.tb-menu-panel').count(), focused: await st(page, () => document.activeElement?.textContent?.trim()) }
+      await page.keyboard.press('Escape'); await settle(page)
+      const closed = await page.locator('table.saved-tb .tb-menu-panel').count()
+      if (closed === 0) await trigger.click()
+      await settle(page)
+      await page.waitForTimeout(300)
+      const reopened = await item().textContent().catch(() => null)
+      await item().click(); await settle(page)
+      await item().click(); await settle(page)
+      await page.waitForTimeout(500)
+      const count1 = await page.locator('table.saved-tb tbody tr').count()
+      del = { rowsBefore: count0, armed, menuAfterEscape: closed, reopened, rowsAfterConfirm: count1 }
+    }
+    r.compare = { spoken, delete: del, errors: errors.slice() }
+    await page.screenshot({ path: join(OUT, `compare-mc-408-${themeName}.png`) })
+    await ctx.close()
+  }
+}
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify({ base: BASE, date: new Date().toISOString().slice(0, 10), results }, null, 2))
+console.log(JSON.stringify(results, null, 1))
+await browser.close()

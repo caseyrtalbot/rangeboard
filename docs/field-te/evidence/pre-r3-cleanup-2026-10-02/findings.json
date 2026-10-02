@@ -1,0 +1,130 @@
+{
+  "base": "http://localhost:5195",
+  "date": "2026-10-02",
+  "results": {
+    "night": {
+      "inputs280": {
+        "lineTitle": "Forecast validity: A gate below is not scored: the run never made that measurement.",
+        "labelDisplay": "none",
+        "entityRowLabel": "Select DJI Mavic 3 (G1 quad) 1",
+        "modeName": "Mode",
+        "oldModeName": false,
+        "entitiesInfo": [
+          "About the entities"
+        ],
+        "errors": []
+      },
+      "monitor": {
+        "rows": 1,
+        "leaked": [
+          "detect › track › identify › target › engage › leaked"
+        ],
+        "defeatOnLeaked": 0,
+        "chains": [
+          "leaked :: detect › track › identify › target › engage › leaked"
+        ],
+        "currentBefore": 0,
+        "currentAfter": [
+          "DJI Mavic 3 (G1 quad) 1"
+        ],
+        "tabBefore": "analysis",
+        "tabAfter": "analysis",
+        "sortAsc": {
+          "sort": [
+            "none",
+            "ascending",
+            "none",
+            "none"
+          ],
+          "rows": [
+            "leaked"
+          ]
+        },
+        "errors": []
+      },
+      "compare": {
+        "spoken": [
+          "Kills · trial 0 /1 members · ensemble mean 0.1 /1 members · 95 % CI of mean 0.0 to 0.3 /1 members · trial outside the 95 % CI",
+          "Leakers · trial 1 /1 members · ensemble mean 0.9 /1 members · 95 % CI of mean 0.7 to 1.0 /1 members · trial outside the 95 % CI",
+          "First detect · trial 0.5 s from T0 · ensemble mean 0.6 s from T0 · 95 % CI of mean 0.5 to 0.7 s from T0 · MC conditional mean · first single-scan hit · ±0.1 s (95% mean CI) · n=30 · detected in 30 of 30 · 89% to 100% (95% Wilson) · trial inside the 95 % CI",
+          "Min warning · trial 475.5 s · ensemble mean 475.4 s · 95 % CI of mean 475.3 to 475.5 s · MC conditional mean · arrival minus first single-scan hit · ±0.1 s (95% mean CI) · n=30 · warning time in 30 of 30 · 89% to 100% (95% Wilson) · trial inside the 95 % CI",
+          "Salvos · trial 2 salvos · ensemble mean 1.9 salvos · 95 % CI of mean 1.8 to 2.0 salvos · One effector; its salvo interval is the aggregate interval. · trial inside the 95 % CI"
+        ],
+        "delete": {
+          "rowsBefore": 1,
+          "armed": {
+            "text": "Confirm delete",
+            "menuOpen": 1,
+            "focused": "Confirm delete"
+          },
+          "menuAfterEscape": 0,
+          "reopened": "Delete",
+          "rowsAfterConfirm": 0
+        },
+        "errors": []
+      }
+    },
+    "paper": {
+      "inputs280": {
+        "lineTitle": "Forecast validity: A gate below is not scored: the run never made that measurement.",
+        "labelDisplay": "none",
+        "entityRowLabel": "Select DJI Mavic 3 (G1 quad) 1",
+        "modeName": "Mode",
+        "oldModeName": false,
+        "entitiesInfo": [
+          "About the entities"
+        ],
+        "errors": []
+      },
+      "monitor": {
+        "rows": 1,
+        "leaked": [
+          "detect › track › identify › target › engage › leaked"
+        ],
+        "defeatOnLeaked": 0,
+        "chains": [
+          "leaked :: detect › track › identify › target › engage › leaked"
+        ],
+        "currentBefore": 0,
+        "currentAfter": [
+          "DJI Mavic 3 (G1 quad) 1"
+        ],
+        "tabBefore": "analysis",
+        "tabAfter": "analysis",
+        "sortAsc": {
+          "sort": [
+            "none",
+            "ascending",
+            "none",
+            "none"
+          ],
+          "rows": [
+            "leaked"
+          ]
+        },
+        "errors": []
+      },
+      "compare": {
+        "spoken": [
+          "Kills · trial 0 /1 members · ensemble mean 0.1 /1 members · 95 % CI of mean 0.0 to 0.3 /1 members · trial outside the 95 % CI",
+          "Leakers · trial 1 /1 members · ensemble mean 0.9 /1 members · 95 % CI of mean 0.7 to 1.0 /1 members · trial outside the 95 % CI",
+          "First detect · trial 0.5 s from T0 · ensemble mean 0.6 s from T0 · 95 % CI of mean 0.5 to 0.7 s from T0 · MC conditional mean · first single-scan hit · ±0.1 s (95% mean CI) · n=30 · detected in 30 of 30 · 89% to 100% (95% Wilson) · trial inside the 95 % CI",
+          "Min warning · trial 475.5 s · ensemble mean 475.4 s · 95 % CI of mean 475.3 to 475.5 s · MC conditional mean · arrival minus first single-scan hit · ±0.1 s (95% mean CI) · n=30 · warning time in 30 of 30 · 89% to 100% (95% Wilson) · trial inside the 95 % CI",
+          "Salvos · trial 2 salvos · ensemble mean 1.9 salvos · 95 % CI of mean 1.8 to 2.0 salvos · One effector; its salvo interval is the aggregate interval. · trial inside the 95 % CI"
+        ],
+        "delete": {
+          "rowsBefore": 1,
+          "armed": {
+            "text": "Confirm delete",
+            "menuOpen": 1,
+            "focused": "Confirm delete"
+          },
+          "menuAfterEscape": 0,
+          "reopened": "Delete",
+          "rowsAfterConfirm": 0
+        },
+        "errors": []
+      }
+    }
+  }
+}
