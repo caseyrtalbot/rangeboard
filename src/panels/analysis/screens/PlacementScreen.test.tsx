@@ -360,7 +360,8 @@ describe('PlacementScreen', () => {
     }
     installResult(result)
     const html = render()
-    expect(html).toMatch(/<span class="r2b-cand-d[^"]*">0<\/span>/)
+    // A lower mean is better for Leakers, but a change that prints 0 takes no tone.
+    expect(html).toContain('<span class="r2b-cand-d">0</span>')
     expect(html).not.toMatch(/<span class="r2b-cand-d[^"]*">[+−]0<\/span>/)
   })
 

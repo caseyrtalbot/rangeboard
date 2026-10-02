@@ -488,8 +488,10 @@ export function PlacementScreen() {
                 start && defined && Number.isFinite(start.objective.mean)
                   ? s.mean - start.objective.mean
                   : null
+              // A change that rounds to zero at one decimal is no change and takes no tone.
               const better =
                 delta != null &&
+                Number(Math.abs(delta).toFixed(1)) !== 0 &&
                 (RESPONSE_DIRECTION[result.objective.response] === 'minimize'
                   ? delta < 0
                   : delta > 0)
