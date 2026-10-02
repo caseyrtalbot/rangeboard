@@ -1,0 +1,328 @@
+// Right panel R2 browser check (R2-int). Evidence of a dated run, not a test.
+// Usage: node right-panel-r2-capture.mjs <base-url> <out-dir> <repo-root>
+import { chromium } from 'playwright'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+const [BASE_URL = 'http://localhost:5187', OUT = './out', ROOT = '.'] = process.argv.slice(2)
+const FIXTURE = 'docs/field-te/evidence/onboarding-2026-09-04/firing-scenario.json'
+const RAW = readFileSync(join(ROOT, FIXTURE), 'utf8')
+const VIEWPORT = { width: 1400, height: 900 }
+const WIDTHS = [280, 408, 560]
+const THEMES = { night: 'dark', paper: 'light' }
+const STATES = ['empty', 'mc', 'trial', 'sweep']
+const SWEEP = { factors: [{ id: 'threatAltitudeFt', values: [100, 300, 600] }] }
+mkdirSync(join(OUT, 'all'), { recursive: true })
+
+const browser = await chromium.launch()
+const st = (page, fn, arg) => page.evaluate(fn, arg)
+const waitFor = (page, fn, arg, timeout = 120000) =>
+  page.waitForFunction(fn, arg, { timeout, polling: 100 })
+const settle = (page) =>
+  page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 150)))),
+  )
+
+async function open(width, theme, withFixture) {
+  const ctx = await browser.newContext({ viewport: VIEWPORT })
+  await ctx.addInitScript((w) => localStorage.setItem('rangeboard.rightpanel.width', String(w)), width)
+  const page = await ctx.newPage()
+  const errors = []
+  const dialogs = []
+  page.on('pageerror', (e) => errors.push({ kind: 'pageerror', text: e.message.slice(0, 300) }))
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push({ kind: 'console', text: m.text().slice(0, 300) })
+  })
+  page.on('dialog', (d) => {
+    dialogs.push(d.message())
+    d.accept()
+  })
+  await page.goto(BASE_URL, { waitUntil: 'load' })
+  await waitFor(page, () => document.querySelector('.konvajs-content canvas') && window.__store, null, 60000)
+  await st(page, (t) => window.__store.getState().setTheme(t), theme)
+  if (withFixture)
+    await st(page, async (raw) => {
+      const { parseAutosave } = await import('/src/io/persist.ts')
+      window.__store.getState().loadScenario(parseAutosave(raw))
+    }, RAW)
+  await settle(page)
+  return { ctx, page, errors, dialogs }
+}
+
+async function go(page, phase, screen, section = null) {
+  await st(page, (r) => window.__store.getState().requestPanel(r), { phase, screen, section })
+  await settle(page)
+}
+
+async function openAllSections(page) {
+  for (let i = 0; i < 3; i++) {
+    await st(page, () => {
+      const ids = [...document.querySelectorAll('#insp-tabpanel section.psec[id]')].map((s) => s.id)
+      window.__store.getState().setAllSections(true, ids)
+    })
+    await settle(page)
+  }
+  return st(page, () => ({
+    sections: [...document.querySelectorAll('#insp-tabpanel section.psec[id]')].map((s) => s.id),
+    closed: [...document.querySelectorAll('#insp-tabpanel section.psec.closed')].map((s) => s.id || s.querySelector('.psec-title')?.textContent),
+  }))
+}
+
+// The three pass criteria read in the page.
+function measure() {
+  const panel = document.getElementById('insp-tabpanel')
+  if (!panel) return { panel: false }
+  const pr = panel.getBoundingClientRect()
+  const tab = document.querySelector('.insp-tabs [role="tab"][aria-selected="true"]')?.textContent?.trim()
+  const hidden = (el, cs, r) =>
+    r.width <= 1 ||
+    r.height <= 1 ||
+    cs.visibility === 'hidden' ||
+    cs.display === 'none' ||
+    /rect\(0/.test(cs.clip) ||
+    /inset\(50%/.test(cs.clipPath)
+  const path = (el) => {
+    const parts = []
+    for (let n = el; n && n !== panel && parts.length < 4; n = n.parentElement) {
+      const c = typeof n.className === 'string' && n.className ? '.' + n.className.trim().split(/\s+/).join('.') : ''
+      parts.unshift(n.tagName.toLowerCase() + (n.id ? '#' + n.id : '') + c)
+    }
+    return parts.join(' > ')
+  }
+  const rowOf = (el) => el.closest('tr, li, [role="row"], summary, button, label, .insp-row, [class*="row"], .field, .pstat')
+  const titled = (el) => {
+    const row = rowOf(el)
+    for (let n = el; n && n !== panel; n = n.parentElement) {
+      if (n.hasAttribute('title') && n.getAttribute('title')) return true
+      if (n === row) break
+    }
+    return false
+  }
+  const wide = []
+  const innerScroll = []
+  const clipped = []
+  for (const el of panel.querySelectorAll('*')) {
+    const r = el.getBoundingClientRect()
+    const cs = getComputedStyle(el)
+    if (hidden(el, cs, r)) continue
+    if (r.width > panel.clientWidth + 0.5)
+      wide.push({ el: path(el), width: Math.round(r.width * 10) / 10 })
+    if (/(auto|scroll)/.test(cs.overflowX) && el.scrollWidth > el.clientWidth + 1)
+      innerScroll.push({ el: path(el), scrollWidth: el.scrollWidth, clientWidth: el.clientWidth })
+    if (el.closest('svg') || el.tagName === 'CANVAS') continue
+    const text = (el.textContent || '').trim()
+    if (!text) continue
+    const ownText = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())
+    const clips = /(hidden|clip)/.test(cs.overflowX) || cs.textOverflow === 'ellipsis'
+    if (!clips || !(ownText || cs.textOverflow === 'ellipsis')) continue
+    if (el.scrollWidth > el.clientWidth + 1 && !titled(el))
+      clipped.push({ el: path(el), text: text.slice(0, 60), scrollWidth: el.scrollWidth, clientWidth: el.clientWidth })
+  }
+  return {
+    panel: true,
+    tab,
+    panelWidth: Math.round(pr.width),
+    scrollWidth: panel.scrollWidth,
+    clientWidth: panel.clientWidth,
+    sidewaysScroll: panel.scrollWidth > panel.clientWidth || wide.length > 0,
+    wide: wide.slice(0, 10),
+    innerScroll: innerScroll.slice(0, 10),
+    clipped: clipped.slice(0, 20),
+    clippedCount: clipped.length,
+  }
+}
+
+const captures = []
+async function record(ctxInfo, screen, state, width, themeName, extra = {}) {
+  const { page, errors } = ctxInfo
+  const m = await page.evaluate(measure)
+  const name = `${screen}-${state}-${width}-${themeName}.png`
+  await page.screenshot({ path: join(OUT, 'all', name) })
+  const errs = errors.splice(0)
+  const row = {
+    file: name,
+    screen,
+    state,
+    width,
+    theme: themeName,
+    errors: errs,
+    ...m,
+    ...extra,
+    pass: errs.length === 0 && m.panel && !m.sidewaysScroll && m.clippedCount === 0,
+  }
+  captures.push(row)
+  console.log(`${row.pass ? 'pass' : 'FAIL'} ${name} tab=${m.tab} sw=${m.scrollWidth}/${m.clientWidth} wide=${m.wide?.length} clipped=${m.clippedCount} errs=${errs.length}`)
+}
+
+async function prepareScreens(c, state, width, themeName) {
+  await go(c.page, 'prepare', 'inputs')
+  const sections = await openAllSections(c.page)
+  await record(c, 'inputs', state, width, themeName, { sections })
+  await go(c.page, 'prepare', 'fragility')
+  await record(c, 'fragility', state, width, themeName)
+  await go(c.page, 'prepare', 'placement')
+  await record(c, 'placement', state, width, themeName)
+}
+async function analyzeScreens(c, state, width, themeName) {
+  await go(c.page, 'analyze', 'outcome')
+  await record(c, 'outcome', state, width, themeName)
+  await go(c.page, 'analyze', 'compare')
+  await record(c, 'compare', state, width, themeName)
+}
+
+for (const width of WIDTHS) {
+  for (const [themeName, theme] of Object.entries(THEMES)) {
+    for (const state of STATES) {
+      const c = await open(width, theme, state !== 'empty')
+      const { page } = c
+      if (state === 'mc') {
+        await st(page, () => window.__store.getState().runMonteCarlo())
+        await waitFor(page, () => ['done', 'error'].includes(window.__store.getState().mc.status))
+      }
+      if (state === 'sweep') {
+        await st(page, (s) => window.__store.getState().runSweep(s), SWEEP)
+        await waitFor(page, () => ['done', 'error'].includes(window.__store.getState().mc.sweep.status))
+      }
+      const status = await st(page, () => {
+        const s = window.__store.getState()
+        return { mc: s.mc.status, sweep: s.mc.sweep.status, trial: s.trial.status }
+      })
+      if (state === 'trial') {
+        // Monitor during the trial, then complete it.
+        await go(page, 'execute', 'now')
+        await st(page, () => window.__store.getState().startRun())
+        await waitFor(page, () => window.__store.getState().trial.status === 'ready')
+        await waitFor(page, () => window.__store.getState().playback.simTimeS > 60, null, 60000).catch(() => {})
+        await st(page, () => window.__store.getState().pauseRun())
+        await settle(page)
+        const simTime = await st(page, () => window.__store.getState().playback.simTimeS)
+        await record(c, 'monitor', 'trial', width, themeName, { simTime })
+        await st(page, async () => {
+          const { durationOf } = await import('/src/state/selectors.ts')
+          const s = window.__store.getState()
+          s.completeRun(durationOf(s.scenario))
+        })
+        await settle(page)
+        await analyzeScreens(c, state, width, themeName)
+        await prepareScreens(c, state, width, themeName)
+      } else {
+        await prepareScreens(c, state, width, themeName)
+        await go(page, 'execute', 'now')
+        await record(c, 'monitor', state, width, themeName)
+        await analyzeScreens(c, state, width, themeName)
+      }
+      captures.filter((r) => r.width === width && r.theme === themeName && r.state === state).forEach((r) => {
+        r.runStatus = status
+        r.dialogs = c.dialogs.slice()
+      })
+      await c.ctx.close()
+    }
+  }
+}
+
+// Behavior checks, Night theme, 408 px unless stated.
+const behavior = {}
+{
+  const c = await open(408, 'dark', true)
+  const { page } = c
+  await go(page, 'prepare', 'inputs')
+  await openAllSections(page)
+  const read = () =>
+    st(page, () => {
+      const s = window.__store.getState().scenario
+      return { roe: s.roe ?? null, doctrineEnabled: s.doctrine?.enabled ?? null, runMode: s.runMode ?? null }
+    })
+  const labels = {}
+  for (const label of ['ROE', 'Doctrine', 'Mode']) {
+    const before = await read()
+    const loc = page.locator(`#insp-tabpanel .field > span:text-is("${label}")`).first()
+    const found = (await loc.count()) > 0
+    if (found) await loc.click()
+    await settle(page)
+    const after = await read()
+    labels[label] = { found, before, after, unchanged: JSON.stringify(before) === JSON.stringify(after) }
+  }
+  behavior.labelClicks = { ...labels, pass: Object.values(labels).every((l) => l.found && l.unchanged) }
+
+  await go(page, 'analyze', 'outcome')
+  await st(page, () => window.__store.getState().setSectionOpen('prepare-entities', false))
+  await settle(page)
+  await page.click('nav.board-resource-rail button[aria-label="Entities"]')
+  await settle(page)
+  behavior.railEntities = await st(page, () => {
+    const s = window.__store.getState()
+    const sec = document.getElementById('prepare-entities')
+    return {
+      phase: s.ui.boardPhase,
+      tab: document.querySelector('.insp-tabs [role="tab"][aria-selected="true"]')?.textContent?.trim(),
+      sectionPresent: !!sec,
+      sectionOpen: !!sec && !sec.classList.contains('closed'),
+      head: sec?.querySelector('.psec-head')?.textContent?.trim().slice(0, 80) ?? null,
+    }
+  })
+  behavior.railEntities.pass =
+    behavior.railEntities.phase === 'prepare' && behavior.railEntities.tab === 'Inputs' && behavior.railEntities.sectionOpen
+  behavior.railEntities.errors = c.errors.splice(0)
+  await c.ctx.close()
+}
+{
+  const c = await open(408, 'dark', true)
+  const { page } = c
+  await st(page, () => window.__store.getState().setSectionOpen('prepare-requirements', false))
+  await go(page, 'execute', 'now')
+  await st(page, () => window.__store.getState().startRun())
+  await waitFor(page, () => window.__store.getState().trial.status === 'ready')
+  await st(page, async () => {
+    const { durationOf } = await import('/src/state/selectors.ts')
+    const s = window.__store.getState()
+    s.completeRun(durationOf(s.scenario))
+  })
+  await go(page, 'analyze', 'outcome')
+  const gates = page.locator('#insp-tabpanel button.out-gates')
+  const found = (await gates.count()) > 0
+  if (found) await gates.click()
+  await settle(page)
+  await page.waitForTimeout(400)
+  behavior.gatesMet = await st(page, () => {
+    const s = window.__store.getState()
+    const sec = document.getElementById('prepare-requirements')
+    const panel = document.getElementById('insp-tabpanel')
+    const r = sec?.getBoundingClientRect()
+    const pr = panel?.getBoundingClientRect()
+    return {
+      phase: s.ui.boardPhase,
+      tab: document.querySelector('.insp-tabs [role="tab"][aria-selected="true"]')?.textContent?.trim(),
+      sectionPresent: !!sec,
+      sectionOpen: !!sec && !sec.classList.contains('closed'),
+      sectionTopInPanel: r && pr ? Math.round(r.top - pr.top) : null,
+      sectionVisible: !!(r && pr && r.top >= pr.top - 1 && r.top < pr.bottom),
+      focused: document.activeElement?.closest('#prepare-requirements') != null,
+    }
+  })
+  behavior.gatesMet.buttonFound = found
+  behavior.gatesMet.pass =
+    found && behavior.gatesMet.phase === 'prepare' && behavior.gatesMet.tab === 'Inputs' &&
+    behavior.gatesMet.sectionOpen && behavior.gatesMet.sectionVisible
+  behavior.gatesMet.errors = c.errors.splice(0)
+  await page.screenshot({ path: join(OUT, 'all', 'inputs-gates-408-night.png') })
+  await c.ctx.close()
+}
+{
+  const rows = captures.filter((r) => r.screen === 'outcome' && r.width === 280)
+  behavior.outcome280 = {
+    readings: rows.map((r) => ({ file: r.file, scrollWidth: r.scrollWidth, clientWidth: r.clientWidth, wide: r.wide.length })),
+    pass: rows.length > 0 && rows.every((r) => !r.sidewaysScroll),
+  }
+}
+
+await browser.close()
+const summary = {
+  captures: captures.length,
+  passed: captures.filter((r) => r.pass).length,
+  failed: captures.filter((r) => !r.pass).map((r) => r.file),
+}
+writeFileSync(
+  join(OUT, 'findings.json'),
+  JSON.stringify({ baseUrl: BASE_URL, viewport: VIEWPORT, fixture: FIXTURE, sweep: SWEEP, summary, behavior, captures }, null, 2) + '\n',
+)
+console.log(JSON.stringify({ summary, behavior: Object.fromEntries(Object.entries(behavior).map(([k, v]) => [k, v.pass])) }))
