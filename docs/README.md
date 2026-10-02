@@ -18,11 +18,8 @@ handoffs were cancelled on 2026-09-06 and remain in Git history.
 | [VERIFICATION.md](VERIFICATION.md) | Commands, tests, parity and browser procedures |
 | [WORKFLOW.md](WORKFLOW.md) | Bounded work, documentation maintenance, handoffs and orchestration |
 | [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Implemented visual rules, tokens and shared components |
-| [HANDOFF.md](HANDOFF.md) | Position and landmines; rewritten in place, never a journal |
-| [Plan.md](Plan.md) | Completed chrome refactor queue (Rows A to D); selects nothing |
-| [timeline/SPEC.md](timeline/SPEC.md) | Run timeline spec and four-phase plan; sessions advance only in the handoff |
+| [HANDOFF.md](HANDOFF.md) | Open work, follow-ups and landmines; rewritten in place, never a journal |
 | [code-quality/Plan.md](code-quality/Plan.md) | Frozen queue for the three code-quality refactor follow-ups (Q1 to Q3); the handoff selects the row |
-| [right-panel/Plan.md](right-panel/Plan.md) | Frozen queue for the right panel redesign (R1 to R3) with its approved prototype; the handoff selects the row |
 
 Maintenance ownership and input fingerprints live in [maintenance.json](maintenance.json).
 Run `npm run docs:check`; follow the [workflow](WORKFLOW.md#documentation-maintenance) when

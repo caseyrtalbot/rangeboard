@@ -1,7 +1,7 @@
 /**
  * Run timeline viewport: the visible window `[t0S, t0S + winS]` of the time
- * axis. Pure: no React, no DOM. The contract is docs/timeline/SPEC.md
- * section 2.3.
+ * axis. Pure: no React, no DOM. docs/ENGINEERING_REFERENCE.md (Run timeline
+ * model) holds the contract.
  */
 
 import { tickStepS } from './timeAxis'

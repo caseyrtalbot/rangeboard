@@ -1,7 +1,8 @@
 # Right panel R2 browser check, 2026-10-01
 
 This is the browser check of Row R2 of the right panel redesign
-([Plan.md](../../../right-panel/Plan.md), R2-int steps 3 and 6). It ran on branch
+(`docs/right-panel/Plan.md`, R2-int steps 3 and 6; the plan is removed and stays in Git
+history at `3b51e7e`). It ran on branch
 `panel/r2-int` at `7d53ac6`. The working tree held uncommitted doc edits only; no file
 under `src/` differed from the commit. The Vite dev server ran the source on port 5187.
 Playwright used headless Chromium at a 1400 by 900 viewport, with a fresh isolated

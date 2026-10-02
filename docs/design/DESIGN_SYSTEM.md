@@ -207,7 +207,7 @@ Analyze reads the completed trial and reads PENDING before one. Execute shows th
 only after the status-bar Validity button opens it. A selection made from a panel row
 keeps the current tab and adds the contextual tab; a board selection switches to it.
 
-Right panel layout rules ([Plan.md](../right-panel/Plan.md) D5, D6 and D8):
+Right panel layout rules:
 
 - **Grid.** The panel grid (`.pgrid`) has four equal columns with 12 px gutters. A control
   spans one, two or four columns (`.pg-1`, `.pg-2`, `.pg-4`), so boxes in one section

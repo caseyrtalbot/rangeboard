@@ -1,8 +1,8 @@
 # Right panel R3 browser check, 2026-10-02
 
 This is the browser check of Row R3 of the right panel redesign, the placement preview
-on the board ([Plan.md](../../../right-panel/Plan.md), R3, and the R3 Tasking of
-[HANDOFF.md](../../../HANDOFF.md)). It ran on branch `panel/r3` on the R3 change before
+on the board (`docs/right-panel/Plan.md`, R3, and the R3 Tasking of `docs/HANDOFF.md`;
+both are in Git history at `0c5723f`). It ran on branch `panel/r3` on the R3 change before
 its commit; no file under `src/` changed after the run. The Vite dev server ran the source on port 5293. Playwright used
 headless Chromium at a 1400 by 900 viewport, with a fresh isolated context for each
 combination of drawer width and theme.

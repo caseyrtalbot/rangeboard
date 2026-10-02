@@ -61,6 +61,6 @@ One zustand store holds the Board; persistence is localStorage.
 
 ## Learned Workspace Facts
 
-- `docs/Plan.md` is the completed chrome refactor queue (Rows A to D, merged as `f4363a3`; Row E merged as `353caee`) and `docs/timeline/SPEC.md` is the completed run timeline plan (four phases, on `main` at `aabf928`); Row F (two engine decisions) is merged as `6cb16f9`; Row G (one dead rule, the kill types, milestones bounded at the kill) is merged as `6733fc2` and the code-quality refactor as `ccfdf44`; `docs/code-quality/Plan.md` is the frozen queue for the refactor's three follow-ups (Q1 to Q3); `docs/HANDOFF.md` holds the position, the follow-ups and the landmines, and selects the current row.
+- `docs/code-quality/Plan.md` is the only open plan: a frozen queue whose Q1 is merged, Q2 is held and Q3 waits on Q2. `docs/HANDOFF.md` holds the open work, the follow-ups and the landmines, and selects the current row. Completed plans (the chrome refactor, the run timeline spec, the right panel redesign) are removed; Git history keeps them.
 - `src/analysis/series.ts` is deleted; use trialSeries and mc helpers (`heldTracksOnGrid`, `liveKpisAt`, `residualOnGrid`)—do not restore `series.ts` or retired ENGINEERING_REFERENCE symbols (`withBands`, `TRACK_LADDER_STYLE`).
 - Run `npm run check:silent` before each commit (CI checks added lines only); intentional matches need `// silent-ok: <reason>`; `check:silent:all` lists pre-existing tree findings that are out of lane unless owned; rules live under `scripts/silent/rules` (see docs/VERIFICATION.md).

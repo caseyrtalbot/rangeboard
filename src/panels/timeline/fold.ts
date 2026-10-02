@@ -1,5 +1,5 @@
 /**
- * Same-name threat fold (docs/timeline/SPEC.md 1.2). Past GROUP_AT threat rows,
+ * Same-name threat fold. Past GROUP_AT threat rows,
  * threats that share a label minus a trailing " <n>" fold into one fold row.
  * Pure: the entries hold references to the model's rows, never copies.
  */

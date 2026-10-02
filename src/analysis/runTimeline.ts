@@ -1,8 +1,8 @@
 /**
  * Run timeline model: one run's rows by side then kind (sensors, C2, tracks,
  * effectors, threats), each with spans and marks, censored at the observed
- * horizon. Pure: no React, no DOM. The contract is docs/timeline/SPEC.md
- * section 2.2.
+ * horizon. Pure: no React, no DOM. docs/ENGINEERING_REFERENCE.md (Run timeline
+ * model) holds the contract.
  */
 
 import type { Entity } from '../model/types'

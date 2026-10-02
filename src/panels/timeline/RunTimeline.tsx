@@ -47,7 +47,7 @@ function stateText(selection: TrialSelection): string {
 }
 
 /**
- * Run timeline strip (docs/timeline/SPEC.md section 1). App mounts it lazily
+ * Run timeline strip (docs/PROJECT_GUIDE.md). App mounts it lazily
  * inside `.runtl-dock`, which holds the height; the root fills it. The model
  * arrives censored at the horizon; this component maps times to pixels and
  * never compares a time with the horizon. Session state lives in

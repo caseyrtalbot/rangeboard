@@ -180,7 +180,7 @@ export interface UiState {
    * the section when `seq` moves.
    */
   panelRequest: PanelRequest
-  /** Run timeline strip under the board (docs/timeline/SPEC.md 2.1). */
+  /** Run timeline strip under the board. */
   runTimeline: RunTimelineUi
 }
 

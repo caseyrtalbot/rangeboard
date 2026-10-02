@@ -5346,9 +5346,9 @@ input[type='number'] {
 
 /* ---------- Right panel ---------- */
 
-/* docs/right-panel/Plan.md: the shared rules of the redesign, then one block per
-   R2 lane. D6: the panel is a size container, and every narrow rule keys on the
-   panel width, never on the viewport. */
+/* The shared rules of the right panel, then one block per screen group. The panel
+   is a size container, and every narrow rule keys on the panel width, never on the
+   viewport (DESIGN_SYSTEM.md, Right panel layout rules). */
 .right-panel {
   container: right-panel / inline-size;
 }

@@ -132,7 +132,7 @@ row. A sensor row expands to one sub-lane per held track. Any row hides for the 
 with its × control. Nothing draws past the observed horizon. The strip draws the model
 from [runTimeline.ts](../src/analysis/runTimeline.ts) and loads in its own lazy chunk. A
 resizer above the strip sets its height from 120 px to 60 percent of the window. The open
-state and the height are saved. The [spec](timeline/SPEC.md) holds the plan.
+state and the height are saved.
 
 A click on a row label selects that entity on the board; a track row and a sensor's
 sub-lane select their threat, and a false track selects nothing. A board selection highlights every line that draws

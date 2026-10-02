@@ -6,18 +6,18 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "8eb4522dcf277f31b20888b447fbe18fcb82d02b0e5241fc9ac7b8a4d1391ad9",
-      "reviewedAt": "2026-09-29",
-      "note": "Workspace fact names docs/code-quality/Plan.md (Q1 to Q3); the handoff selects the current row"
+      "sha256": "6fae5f6b6680437d631fecac497450565e91bdd8675f4d3eaee0a3a46d40ea22",
+      "reviewedAt": "2026-10-02",
+      "note": "Stale docs cleanup: the workspace fact names docs/code-quality/Plan.md as the only open plan (Q1 merged, Q2 held, Q3 waits) and says completed plans are removed; HANDOFF holds the open work."
     },
     {
       "document": "CLAUDE.md",
       "inputs": [
         "AGENTS.md"
       ],
-      "sha256": "70e4173514c9e0ca2cea50ae4dbcec23687196569ca4025ca0938f94b372e14e",
-      "reviewedAt": "2026-09-29",
-      "note": "AGENTS.md workspace fact changed for the current-row wording; CLAUDE.md still points to AGENTS.md"
+      "sha256": "8f2f39260ef015a8d52637d8963ff0b0467b6740a094501f242a123ef49ca369",
+      "reviewedAt": "2026-10-02",
+      "note": "AGENTS.md workspace fact changed for the plan cleanup; CLAUDE.md still only points to AGENTS.md."
     },
     {
       "document": "CONTEXT.md",
@@ -44,27 +44,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "f4dc341e6b08662963d32577b19d2f1bd6d93dcabdaf3945f18eb83f9fa0ce4c",
+      "sha256": "f82846fc0773c5e8a7247e800638a9666ad717a5aff064d16710619c4a46cd6d",
       "reviewedAt": "2026-10-02",
-      "note": "Historical evidence lists the Right panel R3 browser check, 2026-10-02, above the Pre-R3 cleanup record"
+      "note": "Stale docs cleanup: the index drops the deleted Plan.md, timeline/SPEC.md and right-panel/Plan.md rows; HANDOFF row reads open work, follow-ups and landmines."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "8e119e0e125f4db74d1dc3a82eff45ba96479bc8f83e5d7c0c42b91f4ede34a7",
+      "sha256": "bcab19d63bbd8b64bf4ec07e6b6cbe76d07a123271babc1f7af26364fe33317c",
       "reviewedAt": "2026-10-02",
-      "note": "R3 placement preview: the Placement row names Preview, and the Placement paragraph describes the board preview (outline frame, leader over 0.5 m, short name), one at a time, the match rule and the clears (Escape, phase change, replace including Apply)."
+      "note": "Stale docs cleanup: the run timeline paragraph drops the link to the deleted timeline/SPEC.md; source changes are comments only (runTimeline.ts, timeViewport.ts, RunTimeline.tsx, fold.ts, store.ts, index.css) that now point to the current docs."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "bbf79e5d0af646ede8f9a59e2701369d1c960e3c63e587e7d9430519f2f36dd5",
+      "sha256": "434ec23024e8f94fd49cb6892ebef2c3d6690879127ff8b51b9a82945aa62141",
       "reviewedAt": "2026-10-02",
-      "note": "R3 placement preview: the canvas row names PlacementPreviewLayer on the live Layer after CalloutLayer, drawn while currentOptimize returns its source result. No invariant changes; the preview stays out of the scenario, the undo history and storage."
+      "note": "Stale docs cleanup: source changes are comments only; runTimeline.ts and timeViewport.ts now name this file's Run timeline model entry as the contract, which still matches the code."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -98,35 +98,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "03e0a415bb9ef2e61aad45f8e7c8652363a071e8b961c7ef5a4cb2bd4df715c5",
-      "reviewedAt": "2026-10-01",
-      "note": "R2 right panel (c1d9caf..d5c7419): read the lane commits, the entry-graph freeze rewrite and the e2e change; the workflow and entry-graph rules hold as written and name no count or panel item; no change."
+      "sha256": "bd3c933d75d2d148cea5af6e8b1169ab2b2acaa61649c49b42411d0f44d3b165",
+      "reviewedAt": "2026-10-02",
+      "note": "Stale docs cleanup: the handoff holds only open work in three sections (Tasking, Follow-ups, Landmines); a completed plan is deleted."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "8e7aadae060441e8102140a4896751756ba193d2d9df746c2a4105d9957610c4",
+      "sha256": "1f607b0f9beb0aa27d5ee85cf85fe49f297ef22b27f97a1e528d9305c05d086a",
       "reviewedAt": "2026-10-02",
-      "note": "R3 merge handoff: Position records the fast-forward of 8856c13 and ca6e4d9 from panel/r3, the push and the deleted branch; the Tasking still selects nothing, the right panel queue is complete."
-    },
-    {
-      "document": "docs/Plan.md",
-      "inputs": [],
-      "sha256": "b986405a69a205f0b1f868084fe194afa6653cfca8332a6f334135303ec8a0d6",
-      "reviewedAt": "2026-09-26",
-      "note": "Row D appended: Row C follow-ups in four lanes, D10 wording decision."
-    },
-    {
-      "document": "docs/timeline/SPEC.md",
-      "inputs": [
-        "CONTEXT.md",
-        "src/panels/timeline/RunTimeline.tsx",
-        "src/playback/retainTrial.ts",
-        "src/analysis/trialSeries.ts"
-      ],
-      "sha256": "208d37029b334e7086739b89cac665d8dadf0158eab5c42a5276e4b051fbdc28",
-      "reviewedAt": "2026-09-30",
-      "note": "CONTEXT.md gained the MIR and MRIR board-ring terms only; the run timeline spec uses neither and its terms, behavior and ownership table still hold"
+      "note": "Reset to open work only: Tasking selects nothing and states the code-quality queue (Q2 held, Q3 waits); Follow-ups regrouped by area, checked against 3b51e7e, fixed or stale items removed; Landmines lose lane notes, plan links and duplicates, line references updated; Position and Evidence removed."
     },
     {
       "document": "docs/code-quality/Plan.md",
@@ -136,13 +117,6 @@
       "note": "New frozen queue for the three code-quality refactor follow-ups (Q1 slot removal, Q2 card actions, Q3 sorted-index helper), authored against 418a893 from three read-only surveys; the user confirmed D2 on 2026-09-29"
     },
     {
-      "document": "docs/right-panel/Plan.md",
-      "inputs": [],
-      "sha256": "b068765746214a6fc98d56542079967a898c78cea35f5aae30e893e022c170ed",
-      "reviewedAt": "2026-09-30",
-      "note": "Source names the shared prototype link for agents without a checkout; D13 records the user's confirmation of 2026-09-29"
-    },
-    {
       "document": "docs/design/DESIGN_SYSTEM.md",
       "inputs": [
         "src/index.css",
@@ -150,9 +124,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "b4d05c01e9fc4a0b0704ce5dec4baf28263e2dd4dfb204ecac7295dc7d71bc93",
+      "sha256": "49baa8fc76cfb6ce30f959aa055feadbe9b39bc406216b6a2dfc43e3fe5f3a46",
       "reviewedAt": "2026-10-02",
-      "note": "R3 placement preview: the tool ink rule adds the preview frame and its [4, 4] leader. The new pressed Preview rule in the R2b block inverts to text 1 on ink as the pressed-control rule says."
+      "note": "Stale docs cleanup: the right panel layout rules no longer cite the deleted right-panel/Plan.md decisions; the index.css right panel header comment points here. The rules themselves are unchanged."
     }
   ],
   "historical": [
