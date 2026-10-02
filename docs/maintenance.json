@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "303ace68ddc17dc32c80e3c21bdc7bb65a78b4967dd97a6f5b1b2e443bd268c5",
+      "sha256": "a4a060857f8b03031e802281b8af2326a9e3af04106e6b72644ff7545ea69c31",
       "reviewedAt": "2026-10-02",
-      "note": "Recheck after 390257f (the Fragility Sweep readout title repeats the readout): the guide names no section head readout or title; the R2 review of 2026-10-01 holds, no edit."
+      "note": "Pre-R3 cleanup: the saved-run row menu Delete takes two presses (Confirm delete); Entities row text, Mode name, chain pip text, State sort, Compare row descriptions, chip numbers and the Placement zero change named no guide text; dead CSS names no guide item."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "1c4d8fdb61cc3c85ab2e98aaa21a6d9628879656aa7cd60084696547db7bb8d8",
+      "sha256": "549c8e2c2648409f18d90ce27f2a05de9767acdc074b41b1e01ab310265c90ff",
       "reviewedAt": "2026-10-02",
-      "note": "Recheck after 390257f (the Fragility Sweep readout title repeats the readout): no module, store or export changed; the R2 review of 2026-10-01 holds, no edit."
+      "note": "Pre-R3 cleanup: PanelValidity renders nothing and skips the forecast assessment while Execute hides the line; chainTitle in threatReadout.ts gives the chain pip text. The RunMenuItems Delete confirm is below this doc's depth."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -150,9 +150,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "db3a511feabfcd3d2c9f9a16c13ba7e3b5053f23dd16f8c9cd3565524def4bee",
+      "sha256": "11ca861eb2c147e4a3789a2a2c1cffde3b9c50d6689fc7a02214a46aae80c8e2",
       "reviewedAt": "2026-10-02",
-      "note": "R2 right panel: run mode now in the Inputs Run section (top bar paragraph, Field forecast header replaced by the Run section with ENSEMBLE STALE and Settings); screen run actions are .mini Run sweep and Run sensitivity; Finding row removed; KPI tiles only .tiles.c2 on the saved-run record; Run monitor card replaced by the kill-chain funnel and chain pips; per-threat table headers and TTA tones; Inventory bar replaced by magazine pips; Sweep map empty grid and caption; rail Entities opens #prepare-entities; analysis screen paragraph drops tiles, findings and the delta table. 390257f: the section head readout example reads runs each, and a readout clipped at 280 px carries its facts in its title."
+      "note": "Pre-R3 cleanup: chain pips text for a leaked track and aria-current on the selected Monitor row; the deleted dead CSS classes are named nowhere in this doc."
     }
   ],
   "historical": [

@@ -1206,7 +1206,8 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   Validity line (`analysis/ValidityLine.tsx`): the forecast assessment in Prepare and
   Execute, the completed trial's `view.validity` (else its forecast) in Analyze, and
   PENDING before a completed trial. Execute hides it unless `ui.validityOpen` is set;
-  `setBoardPhase` clears the flag, so only the status-bar button opens it there.
+  `setBoardPhase` clears the flag, so only the status-bar button opens it there. While
+  it is hidden, `PanelValidity` renders nothing and skips the forecast assessment.
   App renders `PanelValidity` lazily above the shell's Inputs screen. `PanelSection`
   (`src/ui/PanelSection.tsx`) is the one section head; a collapsible section keeps its
   state in `ui.openSections` by DOM id. `analysis/trackNames.ts` holds
@@ -1219,7 +1220,7 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   through `currentSummary`, `currentSensitivity` and `currentSweep`; Now the retained
   trial through `trialSweepAt` and `trialSystemTelemetryAt` at the cursor horizon
   (the Monitor tab: the funnel, track rows with TTA from `ttaReadout` and `TTA_TONE_S`
-  in `threatReadout.ts`, one Systems list with C2 and the recent events);
+  and chain pip text from `chainTitle` in `threatReadout.ts`, one Systems list with C2 and the recent events);
   Outcome the completed `TrialResultView` through `trialResultOf`; Compare the completed
   trial against the current `McSummary` and the pinned baseline, plus any two saved
   history records as A and B (`SavedRuns` in `RunHistory.tsx`, picks defaulting to the

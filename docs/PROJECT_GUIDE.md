@@ -203,7 +203,8 @@ for a proportion, normal-gamma for a time); Accept writes an ordinary override w
 reason records the prior, the observation and the posterior. Saved runs on Compare
 export every saved run as one SQLite file; a row menu exports one record as a JSON
 package that Import run reads back, and the per-threat, per-effector and sensitivity CSV
-tables. Open shows the record in place, with its lineage on demand.
+tables. Open shows the record in place, with its lineage on demand. Delete takes two
+presses: the first turns the item into Confirm delete and keeps the menu open.
 
 The Outcome Export menu holds the debrief record (JSON), the final board frame (PNG) and
 the per-threat and per-effector tables (CSV); the CSV items need a finished ensemble for

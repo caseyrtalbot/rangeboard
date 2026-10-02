@@ -336,7 +336,9 @@ Right panel layout rules ([Plan.md](../right-panel/Plan.md) D5, D6 and D8):
 - **Chain pips** (`.mon-pips`, the Chain column on Monitor). Six 5 by 9 px bars, one per
   stage: `--rule-strong` before the stage, text 2 for a stage passed, text 1 for the
   current stage. A leaked track draws them in `--status-critical`, a defeated track in
-  `--ghost`. The pips are a `role="img"` with the stage in the title.
+  `--ghost`. The pips are a `role="img"` with the stages in the title; a leaked track
+  names the stages it reached, then `leaked`, never `defeat`. The selected track row
+  carries `aria-current`.
 - **Run timeline** (`src/panels/timeline/`, every class under the `.runtl` prefix in
   `index.css`). The strip sits in `.runtl-dock` between the board and the playback bar in
   Execute and Analyze. From the top: a 28 px header (title, then the horizon in mono
