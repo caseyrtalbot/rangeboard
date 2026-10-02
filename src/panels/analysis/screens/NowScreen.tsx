@@ -18,6 +18,7 @@ import { EmptyRow } from '../controls'
 import { formatCount } from '../mc'
 import {
   CHAIN_STAGES,
+  chainTitle,
   lateKillText,
   STAGES_REACHED,
   trackStageWord,
@@ -52,10 +53,13 @@ function PlayPrompt() {
   )
 }
 
-/** Six pips, one per kill-chain stage; the reached stages fill and the last one leads. */
-function ChainPips({ state }: { state: TrackStageWord }) {
+/**
+ * Six pips, one per kill-chain stage; the reached stages fill and the last one leads.
+ * `prior` is the stage reached before a leak, so the text never claims a defeat.
+ */
+function ChainPips({ state, prior }: { state: TrackStageWord; prior: TrackStageWord }) {
   const reached = STAGES_REACHED[state]
-  const title = CHAIN_STAGES.slice(0, reached).join(' › ') || 'not detected'
+  const title = chainTitle(state, prior)
   const tone = state === 'leaked' ? ' leak' : state === 'defeated' ? ' dead' : ''
   return (
     <span className={`mon-pips${tone}`} title={title} aria-label={title} role="img">
@@ -132,6 +136,12 @@ export function NowScreen() {
           targeted: reached(a.windowS?.[0]),
           engaged: reached(firstShot),
         }
+        const prior = trackStageWord({
+          ...milestones,
+          leaked: false,
+          dead: false,
+          held: held.has(a.uasId),
+        })
         const state = trackStageWord({
           ...milestones,
           leaked: trialMemberStatesAt(view, a.uasId, horizon).some((m) => m.leakageCredit),
@@ -142,6 +152,7 @@ export function NowScreen() {
           key: a.uasId,
           name: name(a.uasId),
           state,
+          prior,
           milestones,
           late: dead && death.late ? lateKillText(death.tS) : null,
           held: held.get(a.uasId) ?? [],
@@ -224,7 +235,7 @@ export function NowScreen() {
         sort.column === 'track'
           ? a.name.localeCompare(b.name)
           : sort.column === 'state'
-            ? STAGES_REACHED[b.state] - STAGES_REACHED[a.state]
+            ? STAGES_REACHED[a.state] - STAGES_REACHED[b.state]
             : sort.column === 'held'
               ? a.held.length - b.held.length
               : a.tta.sortS === b.tta.sortS
@@ -307,6 +318,7 @@ export function NowScreen() {
               <tr
                 key={row.key}
                 className={`mon-row${selected.includes(row.key) ? ' on' : ''}`}
+                aria-current={selected.includes(row.key) ? 'true' : undefined}
                 tabIndex={0}
                 title={`${row.name} · ${row.state}${row.late ? ` · ${row.late}` : ''} · held by ${row.held.join(', ') || 'none'} · TTA ${row.tta.text}`}
                 onClick={() => useStore.getState().select({ entityIds: [row.key] }, false, 'panel')}
@@ -316,7 +328,7 @@ export function NowScreen() {
                   {split.rest[i]}
                 </td>
                 <td className="mon-c-chain">
-                  <ChainPips state={row.state} />
+                  <ChainPips state={row.state} prior={row.prior} />
                 </td>
                 <td className="mon-c-state">
                   <State

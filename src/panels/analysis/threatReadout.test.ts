@@ -17,6 +17,7 @@ import {
   trialTelemetryAt,
   trialOutcomeRows,
   CHAIN_STAGES,
+  chainTitle,
   STAGES_REACHED,
   trackStageWord,
   TTA_TONE_S,
@@ -392,6 +393,17 @@ describe('Monitor stage and time to arrival', () => {
     expect(STAGES_REACHED.defeated).toBe(6)
     expect(STAGES_REACHED.leaked).toBe(6)
     expect(STAGES_REACHED.identified).toBe(3)
+  })
+
+  it('names a leaked chain by the stages it reached, never defeat', () => {
+    expect(chainTitle('engaged', 'engaged')).toBe('detect › track › identify › target › engage')
+    expect(chainTitle('defeated', 'engaged')).toContain('› defeat')
+    expect(chainTitle('undetected', 'undetected')).toBe('not detected')
+    expect(chainTitle('leaked', 'engaged')).toBe(
+      'detect › track › identify › target › engage › leaked',
+    )
+    expect(chainTitle('leaked', 'identified')).toBe('detect › track › identify › leaked')
+    expect(chainTitle('leaked', 'undetected')).toBe('leaked')
   })
 
   it('reads TTA in m:ss with the D13 display tones', () => {
