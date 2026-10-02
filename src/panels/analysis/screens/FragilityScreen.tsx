@@ -270,7 +270,13 @@ function FactorBlock({
   const full = chips.length >= SWEEP_VALUES_MAX
   const pool = SWEEP_SUGGESTED[draft.id].suggest.filter((v) => !chips.includes(v))
   const label = SWEEP_FACTOR_LABELS[draft.id]
-  const text = (v: string) => (draft.id === 'environmentPreset' ? presetLabel(v) : v)
+  // A numeric chip prints its parsed number the way the map axis does (`1e3` reads 1000).
+  const text = (v: string) =>
+    draft.id === 'environmentPreset'
+      ? presetLabel(v)
+      : Number.isFinite(Number(v))
+        ? `${Number(v)}`
+        : v
   const add = (value: string) => {
     const next = withValue(draft, value)
     setRefused(next == null)
@@ -315,7 +321,10 @@ function FactorBlock({
               type="button"
               aria-label={`Remove ${text(v)}`}
               disabled={disabled}
-              onClick={() => onChange(withoutValue(draft, v))}
+              onClick={() => {
+                setRefused(false)
+                onChange(withoutValue(draft, v))
+              }}
             >
               <IconClose />
             </button>

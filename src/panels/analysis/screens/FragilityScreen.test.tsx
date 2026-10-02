@@ -601,6 +601,25 @@ describe('FragilityScreen', () => {
     expect(addValue('B', '2.5')).toContain('<p class="line-error">')
   })
 
+  it('prints a chip as its parsed number, the way the map axis prints it', () => {
+    render()
+    const html = addValue('A', '1e3')
+    expect(html).toContain(
+      '<span class="r2b-chip" title="1000"><span class="r2b-chip-t">1000</span>',
+    )
+    expect(html).not.toContain('>1e3<')
+    expect(interaction.buttons.has('Remove 1000')).toBe(true)
+    expect(click('Remove 1000')).not.toContain('r2b-chip-t">1000<')
+  })
+
+  it('clears a refused add when a chip is removed', () => {
+    render()
+    expect(addValue('A', 'abc')).toContain('aria-invalid="true"')
+    const html = click('Remove 200')
+    expect(html).not.toContain('<p class="line-error">Enter 2–6 distinct values per factor')
+    expect(html).not.toContain('aria-invalid="true"')
+  })
+
   it('removes chips, factors and names the grid rule that blocks Run sweep', () => {
     render()
     click('Remove 20')

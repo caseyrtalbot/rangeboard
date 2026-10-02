@@ -163,14 +163,14 @@ describe('CompareScreen', () => {
     )
     expect(row(html, 'Kills')).toContain('95 % CI of mean 2 to 3 /9 members')
     expect(row(html, 'Kills')).toContain('<small>0–9 mem</small>')
-    expect(row(html, 'Kills')).toContain('<span class="cmp-tv">3</span>')
+    expect(row(html, 'Kills')).toContain('<span class="cmp-tv" aria-hidden="true">3</span>')
     expect(row(html, 'Kills')).toContain('state nominal')
     expect(row(html, 'Leakers')).toContain('state warning')
     expect(row(html, 'First detect')).toContain('trial 1.1 s from T0')
     expect(row(html, 'First detect')).toContain('detected in 40 of 40')
     expect(row(html, 'First detect')).toContain('>inside</span>')
-    expect(row(html, 'Min warning')).toContain('<span class="cmp-tv">—</span>')
-    expect(row(html, 'Salvos')).toContain('<span class="cmp-tv">8</span>')
+    expect(row(html, 'Min warning')).toContain('<span class="cmp-tv" aria-hidden="true">—</span>')
+    expect(row(html, 'Salvos')).toContain('<span class="cmp-tv" aria-hidden="true">8</span>')
     expect(row(html, 'Salvos')).toContain('95 % CI of mean unavailable')
     expect(row(html, 'Salvos')).toContain('Aggregate interval unavailable')
     expect(row(html, 'Salvos')).not.toContain('class="state')
@@ -178,6 +178,18 @@ describe('CompareScreen', () => {
     expect(html).not.toContain('disabled="" title="Needs a finished ensemble')
     expect(html).not.toContain('>Clear</button>')
     expect(html).not.toContain('cmp-base"')
+  })
+
+  it('gives each row a spoken description since the head row and plot are hidden', () => {
+    const kills = row(render(), 'Kills')
+    expect(kills).toContain(
+      '<span class="r2b-sr">Kills · trial 3 /9 members · ensemble mean 2.5 /9 members · 95 % CI of mean 2 to 3 /9 members · trial inside the 95 % CI</span>',
+    )
+    expect(kills).toContain('<span class="cmp-q" aria-hidden="true">')
+    expect(kills).toContain('<span class="cmp-flag" aria-hidden="true">')
+    expect(row(render(), 'Leakers')).toMatch(
+      /<span class="r2b-sr">Leakers · trial [^<]*· trial outside the 95 % CI<\/span>/,
+    )
   })
 
   it('places the band, the mean and the trial dot on the row scale', () => {
