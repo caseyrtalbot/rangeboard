@@ -34,7 +34,7 @@ export function ForecastSettings() {
           <div className="field">
             <span>Mode</span>
             <Seg
-              label="Run mode"
+              label="Mode"
               value={run.runMode}
               options={MODE_OPTIONS}
               onChange={(runMode) => patchScenario({ runMode })}

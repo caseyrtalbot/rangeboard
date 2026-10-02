@@ -43,7 +43,7 @@ describe('ForecastSettings, the Run section body', () => {
     expect(html).toContain(
       '<div class="pgrid"><div class="pg-2"><div class="field"><span>Mode</span>',
     )
-    expect(html).toContain('aria-label="Run mode"')
+    expect(html).toContain('aria-label="Mode"')
     expect(html).toMatch(/aria-pressed="true" class="active">Monte Carlo<\/button>/)
     expect(html).toMatch(
       /<div class="pg-1"><label class="field"><span>Runs<\/span><input[^>]*value="100"/,
