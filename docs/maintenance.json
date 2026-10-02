@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "40c00daea9f5124123d444acd3de422d79f5a24246ea721b0e0b490e10fe670d",
+      "sha256": "0fa8388017dff1444d5d92344587cb8969687a7df568a519f2fc71256c0f5be7",
       "reviewedAt": "2026-10-02",
-      "note": "Final R3 handoff: fresh R1 and R2 review (four fable-medium reviewers on cdeb978, no must-fix) recorded as follow-ups; R3 Tasking rewritten against main: layer mount in LiveScene, entry-graph rule, currentOptimize helper in runState, preview state and show rule, clears in CLEARED_DRAFT, setBoardPhase and clear-board, marker, leader and label decisions, checks, 2,400 s budget and the browser check that runs a placement optimization."
+      "note": "Cleanup handoff: Position records the pre-R3 cleanup fast-forward 0f3d4d2 with its lanes, review fixes, evidence and gate, and the deleted cleanup branches; Follow-ups keep the five items the cleanup left open; the R3 Tasking line references rechecked on 0f3d4d2 and its gate base moved to 2,551 tests and entry 370,470."
     },
     {
       "document": "docs/Plan.md",

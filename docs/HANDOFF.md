@@ -28,8 +28,9 @@ the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `f
 [right-panel/prototype/](right-panel/prototype/index.html)). R1 (shell and shared
 primitives) is merged and pushed as `64aa156`. R2 (screens: lanes R2a to R2d, then the
 integration R2-int) is merged and pushed as `ad6211c`. A fresh review of R1 and R2
-(2026-10-02) found no must-fix; its items are follow-ups. The Tasking selects R3, the last row, and waits for the user's word. Q2 stays held. Execute
-one row per agent turn.
+(2026-10-02) found no must-fix. The pre-R3 cleanup closed its should-fix items and most
+nits; it is merged and pushed as `0f3d4d2`. The Tasking selects R3, the last row, and
+waits for the user's word. Q2 stays held. Execute one row per agent turn.
 
 ## Position
 
@@ -42,15 +43,38 @@ one row per agent turn.
   then the Q1 merge handoff `e2343f9`, the range ring rework `fdfa6b3`, fast-forwarded
   from `rings/mir-mrir`, the range ring handoff `79f6f73`, and the right panel plan
   commit `ae7ed95`, then R1 `64aa156` and the R1 handoff `3d69bce`, fast-forwarded from
-  `panel/r1`, then the R1 merge handoff `1b8008b`. `engine/g`, `refactor/code-quality`, `quality/q1`, `rings/mir-mrir` and
-  `panel/r1` are deleted; `panel/r1` was never pushed. Then the two R2 lanes handoffs
+  `panel/r1`, then the R1 merge handoff `1b8008b`. `engine/g`, `refactor/code-quality`,
+  `quality/q1`, `rings/mir-mrir` and `panel/r1` are deleted; `panel/r1` was never pushed. Then the two R2 lanes handoffs
   `fe0d8c9` and `c1d9caf`, then R2-int (the four lane merges, the integration, the
   review fixes, the docs, the evidence and the R2-int handoff `ad6211c`),
-  fast-forwarded from `panel/r2-int`, then the R2 merge handoff that holds this file.
-  `main` and `origin/main` are equal. `panel/r2a` to `panel/r2d` and `panel/r2-int` are
-  deleted, none was pushed, and `~/Projects/rangeboard-wt/` is gone. `git branch -a`
+  fast-forwarded from `panel/r2-int`, then the R2 merge handoff `cdeb978` and the R3
+  handoff `bbeabe0`. Then the pre-R3 cleanup (`2e2f48f` to `0f3d4d2`), fast-forwarded from
+  `cleanup/pre-r3`, then the cleanup handoff that holds this file. `main` and
+  `origin/main` are equal. `panel/r2a` to `panel/r2d`, `panel/r2-int`,
+  `cleanup/c1-inputs`, `cleanup/c2-monitor`, `cleanup/c3-analyze` and `cleanup/pre-r3`
+  are deleted, none was pushed, and `~/Projects/rangeboard-wt/` is gone. `git branch -a`
   shows `main` only, `git worktree list` shows the main checkout only and the stash list
   is empty.
+- Pre-R3 cleanup (2026-10-02), merged and pushed as `0f3d4d2`. It closes the items of the
+  fresh review of R1 and R2 (Follow-ups). Three `opus-medium` lanes in worktrees from
+  `bbeabe0`: C1 Inputs and shell `c2d891c` (the Entities note and row label follow D7,
+  Mode names itself Mode, the blocking gate cell spans the three columns, the hidden
+  Validity line computes nothing, each Validity title starts with its label), C2 Monitor
+  `aa56950` (`chainTitle`: a leaked track reads the stages it holds, then `leaked`; State
+  sorts least advanced first; `aria-current` on the selected row; the row test fires the
+  real handlers), C3 `104c734` (Compare rows carry a spoken description, saved-run Delete
+  takes two presses, sweep chips print the parsed number, a chip removal clears a refused
+  add, a Placement change that rounds to 0 prints unsigned). The orchestrator deleted the
+  dead CSS (`2e2f48f`, 389 lines; mixed selector lists keep their live parts), removed the
+  `good` tone from a 0 change (`15d0d7d`) and wrote the docs (`71ed959`). An `opus-high`
+  review found no must-fix; its fixes `dfe5699`: a Fragility suggestion that a chip holds
+  by value is hidden, the Entities note says the current tab stays, and three orphan CSS
+  comments go. Evidence `0f3d4d2`:
+  [pre-r3-cleanup-2026-10-02](field-te/evidence/pre-r3-cleanup-2026-10-02/README.md),
+  Inputs at 280 px, Monitor and Compare at 408 px in Night and Paper, 0 console errors.
+  Gate on `0f3d4d2` (`src/` as at `dfe5699`): `npm run check` passes (228 files, 2,551
+  tests; entry graph 106 of 212); `check:bundle` entry 370,470 and initial 391,051 gzip
+  bytes; `check:silent` passes; the e2e passes 14 of 14.
 - R2 (2026-09-29), four lanes on `1b8008b`, merged and pushed through R2-int. Four workers built
   the lanes in the worktrees `~/Projects/rangeboard-wt/r2a` to `r2d` (`opus-high` for
   R2a to R2c, `opus-medium` for R2d); each ran the gate and a Playwright check at 280, 408
@@ -694,42 +718,21 @@ Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expan
 and the Row D items it listed. The three code-quality refactor follow-ups are rows Q1 to Q3
 in [code-quality/Plan.md](code-quality/Plan.md). What remains:
 
-From the fresh review of R1 and R2 (2026-10-02, four `fable-medium` reviewers on
-`cdeb978`; no must-fix; the targeted tests passed: 19 files, 189 tests):
+From the fresh review of R1 and R2 and the pre-R3 cleanup (2026-10-02). The cleanup
+closed every should-fix item and the nits not listed here:
 
-- Should-fix, checked in code: the Entities (i) text says a row opens the Selected object
-  tab (`BoardPreparation.tsx:217-220`), but D7 keeps the current tab, and the test asserts
-  that. Change the text and the `Inspect <name>` label (96), not the behavior. The
-  prototype holds the same sentence.
-- Should-fix, checked in code: a leaked track's chain pips read `detect › … › defeat`
-  (`NowScreen.tsx:58`; `STAGES_REACHED.leaked` is 6, `threatReadout.ts:563`). The
-  prototype has the same text.
-- Should-fix, checked in code: `.validity-finding` (`index.css:4638-4657`) has no user
-  since R2a deleted `runValidityText.tsx`.
-- Should-fix: `NowScreen.test.tsx:113` "selects a track from its row" calls `select`
-  itself and never fires the row's click or Enter/Space handler.
-- Should-fix: Compare interval rows hide their only header row from assistive technology
-  (`CompareScreen.tsx:134-166, 323-332`) and explain the row in a `title` on a `div`.
-- Should-fix: the saved-run row menu deletes on one click with no confirm or undo,
-  directly under the exports (`RunHistory.tsx:357-359, 730-739`). The old list also
-  deleted on one click.
-- Nits: under 360 px the Validity line drops its label and no `title` keeps it
-  (`index.css:6079-6081`, D6); `RequirementTable.test.tsx:74` names four columns and
-  checks three; the "completed trial in Analyze" test accepts either validity source; Mode
-  reads Run mode to assistive technology (`ForecastSettings.tsx:35-37`);
-  `useTrialValidity(false)` still subscribes outside Analyze (`AnalysisPanel.tsx:35-41`);
-  the Monitor State sort puts the furthest stage first in ascending order
-  (`NowScreen.tsx:227`); Monitor track rows have no role or `aria-selected` (307-314);
-  the debrief JSON embeds the ensemble only on the same run id while the CSV items gate on
-  the basis (`DebriefRecord.tsx:139`, older than R2); the Export and row menus take Tab
-  only, no arrow keys; a Sweep chip shows the raw token (`1e3`) while the axis shows
-  1000; a refused chip error stays after a chip removal (`FragilityScreen.tsx:268-276`);
-  a Placement change under 0.05 prints `+0` (`PlacementScreen.tsx:537`).
-- Dead CSS older than R2 (no user at `1b8008b` either): `analysis-layout-*`,
-  `analysis-settings-*`, `capacity-list`, `capacity-row`, `outcome-summary`,
-  `data-horizon-label`, `insp-shortcut*`, `src-tb`, `analysis-empty`, `ro-ghost`,
-  `run-reset`, `section-right`, `validity-details`, `wg-toggle`, `wg-x`, `wh`, `wmv`, `cat`,
-  `params`, `interactive`. Check each with a grep of `src/` before you delete it.
+- The debrief JSON embeds the ensemble only on the same run id, while the CSV items and
+  Save gate on the basis (`DebriefRecord.tsx:139`). This rule is older than R2 and
+  changes export content, so the cleanup left it.
+- The Compare inside/outside flag compares the trial with the unrounded interval bounds
+  (`CompareScreen.tsx:119`), so a trial of 0 against a printed `0.0 to 0.3` can read
+  outside. The visible flag and the spoken text agree.
+- `Confirm delete` has no live region; a screen reader may not announce the new label,
+  because focus stays on the same button (`RunHistory.tsx:364-374`).
+- Monitor `prior` takes the hold at the cursor, so a leaker that lost its hold before
+  arrival reads `detect › leaked` (`NowScreen.tsx:139-144`).
+- The saved-run and Export menus take Tab only. They are disclosure dialogs of buttons,
+  not `role="menu"`, so Tab is the expected key; arrow keys are a choice, not a defect.
 
 From R2-int of the right panel redesign (2026-10-01):
 
@@ -946,7 +949,7 @@ closed the Outcome, Run monitor, Inputs, Fragility and findings items):
 **Row R3: placement preview on the board.** The goal, checks and stop condition are in
 [right-panel/Plan.md](right-panel/Plan.md#r3-placement-preview-on-the-board-opus-high). It is the
 last row of the queue. A fresh review on 2026-10-02 checked the row against `main` at
-`cdeb978`; this Tasking holds its corrections and decisions, and where it differs from the
+`cdeb978`, and every line reference below was checked again on `0f3d4d2`; this Tasking holds its corrections and decisions, and where it differs from the
 plan, this Tasking wins. Start R3 only when asked. Q2 of
 [code-quality/Plan.md](code-quality/Plan.md) stays held: Q2 owns `store.ts` 321-331 and
 1262-1370, R3 touches other lines, so the hold is order only.
@@ -1015,9 +1018,9 @@ plan, this Tasking wins. Start R3 only when asked. Q2 of
   `useState` at lines 19-36 and asserts on static markup); Apply still installs a copy through `replaceScenario(withPlacement(...))`
   (`PlacementScreen.tsx:118-128`), unchanged. An Escape test must close any tooltip
   first: the tooltip capture listener takes Escape while a tip is open.
-- Gate: `npm run check`, `npm run check:bundle` (report the entry against 370,373 gzip
+- Gate: `npm run check`, `npm run check:bundle` (report the entry against 370,470 gzip
   bytes), `npm run check:silent` and `E2E_URL=http://localhost:<port> npm run test:e2e`.
-  The base is the merged R2 gate: 228 files, 2,540 tests, e2e 14 of 14. List each new
+  The base is the gate on `0f3d4d2`: 228 files, 2,551 tests, e2e 14 of 14. List each new
   test. Record `docs:review` notes for both docs; both fingerprint all of `src/`.
 - Browser check: the R2 script
   ([right-panel-r2-capture.mjs.txt](field-te/evidence/right-panel-r2-2026-10-01/right-panel-r2-capture.mjs.txt))
