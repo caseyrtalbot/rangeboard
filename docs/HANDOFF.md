@@ -29,12 +29,16 @@ the user's request of 2026-09-29 outside the Q queue, is merged and pushed as `f
 primitives) is merged and pushed as `64aa156`. R2 (screens: lanes R2a to R2d, then the
 integration R2-int) is merged and pushed as `ad6211c`. A fresh review of R1 and R2
 (2026-10-02) found no must-fix. The pre-R3 cleanup closed its should-fix items and most
-nits; it is merged and pushed as `0f3d4d2`. The Tasking selects R3, the last row, and
-waits for the user's word. Q2 stays held. Execute one row per agent turn.
+nits; it is merged and pushed as `0f3d4d2`. R3 (placement preview on the board), the last
+row, is committed on `panel/r3` as `8856c13` and waits for the user's word to merge and
+push. The queue is complete, and the Tasking selects nothing. Q2 stays held. Execute one
+row per agent turn.
 
 ## Position
 
-- Repository `~/Projects/rangeboard`, checked out on `main`. `main` holds Row G on top of
+- Repository `~/Projects/rangeboard`, checked out on `panel/r3`, which branches from
+  `main` at `0c5723f` and holds the R3 commit `8856c13` and the R3 handoff; neither is
+  merged or pushed. `main` holds Row G on top of
   `69db432`: lane G1 `003faed`, lane G2 `d302ab9`, the review fixes `70512e0`, the
   evidence with the Now card fix `a570e23` and the Row G handoff `6733fc2`, fast-forwarded
   from `engine/g`. The code-quality refactor `ccfdf44` follows, fast-forwarded from
@@ -49,12 +53,37 @@ waits for the user's word. Q2 stays held. Execute one row per agent turn.
   review fixes, the docs, the evidence and the R2-int handoff `ad6211c`),
   fast-forwarded from `panel/r2-int`, then the R2 merge handoff `cdeb978` and the R3
   handoff `bbeabe0`. Then the pre-R3 cleanup (`2e2f48f` to `0f3d4d2`), fast-forwarded from
-  `cleanup/pre-r3`, then the cleanup handoff that holds this file. `main` and
+  `cleanup/pre-r3`, then the cleanup handoff `0c5723f`. `main` and
   `origin/main` are equal. `panel/r2a` to `panel/r2d`, `panel/r2-int`,
   `cleanup/c1-inputs`, `cleanup/c2-monitor`, `cleanup/c3-analyze` and `cleanup/pre-r3`
   are deleted, none was pushed, and `~/Projects/rangeboard-wt/` is gone. `git branch -a`
-  shows `main` only, `git worktree list` shows the main checkout only and the stash list
+  shows `main` and `panel/r3`, `git worktree list` shows the main checkout only and the stash list
   is empty.
+- R3 (2026-10-02), committed on `panel/r3` as `8856c13`, not merged or pushed. One
+  `opus-high` worker built it. `ui.placementPreview` (`{ rank, positions, source }`,
+  session only) with `setPlacementPreview`; it never touches the scenario or the undo
+  stacks. `currentOptimize(optimize, runId, basis)` in `runState.ts` holds the match rule
+  that `PlacementScreen` read inline. `PlacementPreviewLayer` mounts in `LiveScene` after
+  `CalloutLayer` and draws only while `currentOptimize` returns the same object as
+  `source`: an outline `FriendFrame` (now exported) in `ink.tool` at 0.7, a `[4, 4]`
+  dashed leader from 0.5 m out, and the `boardDesignator` name with the callout halo.
+  Clears: `CLEARED_DRAFT` (every replace, Apply included), `setBoardPhase`, and the
+  `clear-board` case in `App.tsx` (board Escape). The Preview button sits before Apply in
+  `.r2b-cand-acts` with `aria-pressed`; another row replaces, the shown row clears.
+  Deviations from the Tasking: `currentOptimize` takes `mc.optimize`, not `mc`; the state
+  shape is the exported `PlacementPreview` interface; the R2b block of `index.css` stacks
+  Preview over Apply (side by side they wrapped in the 64 px column) and adds a pressed
+  rule in text 1 on ink. New tests: two store tests (preview out of the scenario and the
+  undo history; the replace and phase clears) and the persistence test extended, three
+  layer tests, two `PlacementScreen` tests. Docs: `PROJECT_GUIDE.md`,
+  `ENGINEERING_REFERENCE.md`, the `DESIGN_SYSTEM.md` tool ink rule, the evidence index;
+  `README.md` reviewed with no change. Evidence:
+  [right-panel-r3-2026-10-02](field-te/evidence/right-panel-r3-2026-10-02/README.md),
+  24 of 24 captures at 408 and 280 px in Night and Paper, 0 console errors, every clear
+  read on the stage. Gate on `8856c13`: `npm run check` passes (229 files, 2,558
+  tests, +1 file and +7 tests on the base; entry graph 106 of 213, the new unguarded
+  module is `PlacementPreviewLayer.tsx`); `check:bundle` entry 370,778 (+308) and
+  initial 391,389 gzip bytes; `check:silent` passes; the e2e passes 14 of 14.
 - Pre-R3 cleanup (2026-10-02), merged and pushed as `0f3d4d2`. It closes the items of the
   fresh review of R1 and R2 (Follow-ups). Three `opus-medium` lanes in worktrees from
   `bbeabe0`: C1 Inputs and shell `c2d891c` (the Entities note and row label follow D7,
@@ -718,6 +747,15 @@ Row F took the two Phase 1 engine items. Row E took the timeline nits, the Expan
 and the Row D items it listed. The three code-quality refactor follow-ups are rows Q1 to Q3
 in [code-quality/Plan.md](code-quality/Plan.md). What remains:
 
+From R3 (2026-10-02):
+
+- A preview marker can sit under another board label (on the fixture, the Coyote
+  candidate sits under the `engage order` connection label). The Tasking chose no
+  collision layout.
+- The Placement screen keeps its goal, its checked systems and its budget in local
+  state, so a phase change away and back resets them.
+- The Candidates (i) note (`resultNote`) describes Apply only, not Preview.
+
 From the fresh review of R1 and R2 and the pre-R3 cleanup (2026-10-02). The cleanup
 closed every should-fix item and the nits not listed here:
 
@@ -946,97 +984,19 @@ closed the Outcome, Run monitor, Inputs, Fragility and findings items):
 
 ## Tasking
 
-**Row R3: placement preview on the board.** The goal, checks and stop condition are in
-[right-panel/Plan.md](right-panel/Plan.md#r3-placement-preview-on-the-board-opus-high). It is the
-last row of the queue. A fresh review on 2026-10-02 checked the row against `main` at
-`cdeb978`, and every line reference below was checked again on `0f3d4d2`; this Tasking holds its corrections and decisions, and where it differs from the
-plan, this Tasking wins. Start R3 only when asked. Q2 of
-[code-quality/Plan.md](code-quality/Plan.md) stays held: Q2 owns `store.ts` 321-331 and
-1262-1370, R3 touches other lines, so the hold is order only.
-
-- Base: `main` at the commit that holds this handoff. Branch `panel/r3`. One `opus-high`
-  worker, 2,400 s (the plan's 1,500 s does not cover a browser check that must run a
-  placement optimization).
-- Owns: `src/state/store.ts` (the field, its action and the three clears below);
-  `src/state/runState.ts` (one result helper); new
-  `src/canvas/layers/PlacementPreviewLayer.tsx` and its test; `src/canvas/LiveScene.tsx`,
-  the mount only; `src/canvas/layers/EntityLayer.tsx`, the `FriendFrame` export only;
-  `src/App.tsx`, one line in the `clear-board` case; `PlacementScreen.tsx`, the Preview
-  button and the move of its match rule; the tests of those files; `PROJECT_GUIDE.md`
-  (the Placement row near 166 and the paragraph near 191) and the canvas row of
-  `ENGINEERING_REFERENCE.md` (near 596-609).
-- Plan corrections:
-  - The layer mounts in `LiveScene.tsx` after `CalloutLayer` (`LiveScene.tsx:272`), not in
-    `CanvasStage.tsx`. `CanvasStage` mounts only the tile, underlay and grid layers and the
-    two scenes (`CanvasStage.tsx:419-459`); a third Konva Layer adds a canvas. The mount
-    stays inside `SceneErrorBoundary`.
-  - Import `Laydown` from `src/playback/optimizeTypes.ts` as a type. The entry-graph check
-    fails only when a guarded module reaches the entry for the first time;
-    `optimizeTypes.ts` is already frozen there and exports values, so the type import is
-    the rule for this file, not a gate risk.
-  - "The result stops matching the board" needs no new watcher. The store marks the
-    optimize run stale on a basis or override change (`scenarioInstall.ts:216-246`), and
-    `PlacementScreen.tsx:178-182` already reads the match rule (status `done`, the same
-    `runId` as `playback.runId`, the same `analysisBasisSignature`). Move that rule into
-    `currentOptimize(mc, runId, basis)` in `src/state/runState.ts` (not under the guarded
-    `src/panels/analysis/`), and use it in the screen and the layer.
-- Decisions (the plan left these open):
-  - State: `UiState.placementPreview: { rank: number; positions: Laydown; source:
-    OptimizeResult } | null`, session only, beside `selectionOrigin` (`store.ts:167`),
-    with `setPlacementPreview`. Writes go through `set((st) => ({ ui: { ...st.ui, ... } }))`
-    as `setValidityOpen` does (1506). Persistence is per field (`writeView`), so the field
-    stays out of storage with no extra code.
-  - Show rule: the layer draws only while `currentOptimize` returns a result and that
-    result is the same object as `source`. A rerun on the same board then hides an old
-    preview with no clear call.
-  - Clears: add `placementPreview: null` to `CLEARED_DRAFT` (`store.ts:550`, which
-    `install` spreads on every replace, so Apply, load and undo of a replace clear it), to
-    `setBoardPhase` (1563, beside `validityOpen: false`), and call
-    `setPlacementPreview(null)` in the `clear-board` case (`App.tsx:807`). Do not clear it
-    in `cancelDraft`: library placement and calibration also call `cancelDraft`
-    (`App.tsx:537, 756, 1132`).
-  - One preview at a time. Preview on another row replaces it; Preview on the shown row
-    clears it. The button sits in `.r2b-cand-acts` before Apply, with `aria-pressed` and a
-    visible pressed state.
-  - Marker: the friend frame outline (`FriendFrame` with `filled={false}`,
-    `EntityLayer.tsx:142`) in `ink.tool` at opacity 0.7. Export `FriendFrame`; do not copy
-    it. Do not name anything "ghost" in code: `PHASE_STYLE.ghost` is a hard-kill track
-    phase (`EntityLayer.tsx:57`).
-  - Leader: a `Line` from the current position, `stroke={ink.tool}`, `strokeWidth` 1,
-    `strokeScaleEnabled={false}`, dash `[4, 4]` as a module constant (Konva compares dash
-    arrays by identity). Skip the leader when the candidate is within 0.5 m of the
-    current position; draw the marker only.
-  - Label: `boardDesignator(name)` (`labelLayout.ts:130`) at `LABEL_FONT_PX` in
-    `ink.label` with the halo `CalloutLayer.tsx:24-34` uses. No collision layout.
-  - Draw only ids in `positions` that exist in `scenario.entities`. Add no
-    `LayerVisibility` key.
-- Checks: a store test that `setPlacementPreview` leaves `scenario`, `past` and `future`
-  the same objects (the pattern in `store.panel.test.ts`), and that each clear works
-  (`replaceScenario`, `setBoardPhase`); a layer test with `react-konva` mocked as in
-  `EntityLayer.test.tsx:11-25` (no draw without a match, no leader under 0.5 m); a
-  PlacementScreen test for the button and `aria-pressed` (that file mocks `react` and
-  `useState` at lines 19-36 and asserts on static markup); Apply still installs a copy through `replaceScenario(withPlacement(...))`
-  (`PlacementScreen.tsx:118-128`), unchanged. An Escape test must close any tooltip
-  first: the tooltip capture listener takes Escape while a tip is open.
-- Gate: `npm run check`, `npm run check:bundle` (report the entry against 370,470 gzip
-  bytes), `npm run check:silent` and `E2E_URL=http://localhost:<port> npm run test:e2e`.
-  The base is the gate on `0f3d4d2`: 228 files, 2,551 tests, e2e 14 of 14. List each new
-  test. Record `docs:review` notes for both docs; both fingerprint all of `src/`.
-- Browser check: the R2 script
-  ([right-panel-r2-capture.mjs.txt](field-te/evidence/right-panel-r2-2026-10-01/right-panel-r2-capture.mjs.txt))
-  never runs a placement optimization, so it shows no candidate rows. Extend a copy to
-  run one on the fixture, then capture the preview on and off at 408 and 280 px in Night
-  and Paper, and the clears on Escape, phase change and Apply. That script looks for a
-  `title` only on the clipped element and its ancestors, so a `title` on a child span
-  reads as a fail; read those by hand. Save under
-  `docs/field-te/evidence/right-panel-r3-<date>/` with a README.
-- Stop: the gate passes, the commit is on `panel/r3`, and this Tasking selects nothing;
-  the queue is complete. Do not merge or push without the user's word.
-
-The Follow-ups are candidates, not rows.
+None. R3 was the last row of [right-panel/Plan.md](right-panel/Plan.md), and the queue is
+complete. `panel/r3` waits for the user's word to merge and push. Q2 of
+[code-quality/Plan.md](code-quality/Plan.md) stays held. The Follow-ups are candidates,
+not rows; never invent a row.
 
 ## Landmines
 
+- A placement preview draws only while `currentOptimize` returns the same result object
+  as `ui.placementPreview.source`. A rerun or a basis change hides it and leaves the field
+  set; a check that reads only the field reads a stale preview as shown. `cancelDraft`
+  keeps the preview, because library placement and calibration call it.
+- `check:bundle` measures `dist` and does not build. Run `npm run build` (or
+  `npm run check`, which ends with it) first, or it reports the last build.
 - Right panel entry points find panel elements by DOM id or class: `openDoctrine` is a
   `requestPanel` call, and `showPanel` (`App.tsx:922-949`) opens the section by DOM id
   (a `details` or a `PanelSection` toggle) and focuses its head; `openEntities` is a

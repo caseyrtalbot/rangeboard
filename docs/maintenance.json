@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "0fa8388017dff1444d5d92344587cb8969687a7df568a519f2fc71256c0f5be7",
+      "sha256": "1149a3230a5e89085d2b120ddf80f823cb74fdb4da69ff401a49248aa5b16efd",
       "reviewedAt": "2026-10-02",
-      "note": "Cleanup handoff: Position records the pre-R3 cleanup fast-forward 0f3d4d2 with its lanes, review fixes, evidence and gate, and the deleted cleanup branches; Follow-ups keep the five items the cleanup left open; the R3 Tasking line references rechecked on 0f3d4d2 and its gate base moved to 2,551 tests and entry 370,470."
+      "note": "R3 handoff: Position records R3 8856c13 on panel/r3 (not merged or pushed) with its deviations, tests, docs, evidence and gate, and the branch list; Follow-ups add three R3 items; Landmines add the preview show rule and the check:bundle build order; the Tasking selects nothing, the right panel queue is complete."
     },
     {
       "document": "docs/Plan.md",
