@@ -27,9 +27,14 @@ export function ValidityLine({ phase, assessment, source, entities }: ValidityLi
   const open = useStore((s) => s.ui.validityOpen)
   if (phase === 'execute' && !open) return null
   const label = source === 'trial' ? 'Trial validity' : 'Forecast validity'
+  // D6: under 360 px the label drops, so each title starts with it.
   if (assessment == null)
     return (
-      <div className="vline vline-pending" id="validity-line">
+      <div
+        className="vline vline-pending"
+        id="validity-line"
+        title={`${label}: ${VALIDITY_TEXT.pending.pill} · No completed trial`}
+      >
         <span className="vline-label">{label}</span>
         <State tone={VALIDITY_TEXT.pending.tone} hollow>
           {VALIDITY_TEXT.pending.pill}
@@ -51,7 +56,7 @@ export function ValidityLine({ phase, assessment, source, entities }: ValidityLi
         id="validity-line"
         aria-expanded={open}
         aria-controls="validity-findings"
-        title={text.line}
+        title={`${label}: ${text.line}`}
         onClick={() => useStore.getState().setValidityOpen(!open)}
       >
         <span className="vline-label">{label}</span>

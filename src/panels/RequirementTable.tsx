@@ -138,7 +138,8 @@ function GateRow({
       </div>
       {blocking && open && (
         <div className="gt-fail" id={failId} role="row">
-          <span className="gt-fail-cell" role="cell">
+          {/* One cell across the table's three columns, so the table reads even. */}
+          <span className="gt-fail-cell" role="cell" aria-colspan={3}>
             <span className="gt-fail-l">Blocking</span>
             {gate.failures.map((failure) => (
               <button

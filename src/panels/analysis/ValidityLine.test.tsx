@@ -90,6 +90,13 @@ describe('ValidityLine', () => {
     expect(html).not.toContain('<button')
   })
 
+  it('starts each title with the label that drops under 360 px (D6)', () => {
+    const line = render({ assessment: assessment('valid', []) })
+    expect(line).toMatch(/<button[^>]*id="validity-line"[^>]*title="Forecast validity: [^"]+"/)
+    const pending = render({ phase: 'analyze', source: 'trial' })
+    expect(pending).toContain('title="Trial validity: PENDING · No completed trial"')
+  })
+
   it('opens in place with the invalidating findings first', () => {
     useStore.getState().setValidityOpen(true)
     const html = render({ assessment: assessment('invalid', [noAsset, spawn]) })

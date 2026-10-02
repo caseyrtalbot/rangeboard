@@ -7,6 +7,14 @@ import { RequirementTable } from './RequirementTable'
 
 // The boxes have no local state; their change handlers are captured by id from the markup.
 const changes = vi.hoisted(() => new Map<string, (event: { target: { value: string } }) => void>())
+// The open gate is local state; a test seeds it through the first useState call.
+const openGate = vi.hoisted(() => ({ current: undefined as string | undefined }))
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  const useState = ((init: unknown) =>
+    actual.useState(openGate.current ?? init)) as typeof actual.useState
+  return { ...actual, useState }
+})
 vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
@@ -71,7 +79,7 @@ describe('RequirementTable', () => {
     useStore.getState().replaceScenario(emptyScenario())
   })
 
-  it('lays the gate, label, box and met on the four columns', () => {
+  it('lays gate, pass line (label and box) and met as three table columns', () => {
     const html = render()
     expect(html).toContain(
       '<div class="gt-h" role="row"><span role="columnheader">Gate</span><span class="gt-thr" role="columnheader">Pass line</span><span class="gt-met" role="columnheader">Met</span></div>',
@@ -97,6 +105,15 @@ describe('RequirementTable', () => {
     )
     expect(html).not.toContain('gate-effect-blocking')
     expect(html).not.toContain('class="gt-fail"')
+  })
+
+  it('spans the one blocking cell over the three columns', () => {
+    openGate.current = 'track'
+    const html = render()
+    openGate.current = undefined
+    expect(html).toContain(
+      '<div class="gt-fail" id="gate-track-blocking" role="row"><span class="gt-fail-cell" role="cell" aria-colspan="3">',
+    )
   })
 
   it('keeps the clamp and blank rules of the requirement inputs', () => {

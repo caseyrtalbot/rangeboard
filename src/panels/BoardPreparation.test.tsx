@@ -13,7 +13,7 @@ vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
   const jsxDEV: typeof actual.jsxDEV = (type, props, ...rest) => {
     const p = props as { 'aria-label'?: string; onClick?: () => void }
-    if (type === 'button' && p['aria-label']?.startsWith('Inspect ') && p.onClick)
+    if (type === 'button' && p['aria-label']?.startsWith('Select ') && p.onClick)
       rows.set(p['aria-label'], p.onClick)
     return actual.jsxDEV(type, props, ...rest)
   }
@@ -192,10 +192,10 @@ describe('BoardPreparation', () => {
     )
     expect(open.indexOf('>Threats <')).toBeLessThan(open.indexOf('>Sensors <'))
     const threat = useStore.getState().scenario.entities.find((entity) => entity.kind === 'uas')!
-    expect(open).toContain(`aria-label="Inspect ${threat.name}"`)
+    expect(open).toContain(`aria-label="Select ${threat.name}"`)
     expect(open).toContain(`<span class="prepare-entity-name">${threat.name}</span>`)
     expect(open).not.toContain(threat.id)
-    rows.get(`Inspect ${threat.name}`)?.()
+    rows.get(`Select ${threat.name}`)?.()
     const state = useStore.getState()
     expect(state.selection.entityIds).toEqual([threat.id])
     expect(state.ui.selectionOrigin).toBe('panel')

@@ -93,7 +93,7 @@ const EntityRegisterRow = memo(function EntityRegisterRow({
     <button
       className="prepare-entity"
       type="button"
-      aria-label={`Inspect ${entity.name}`}
+      aria-label={`Select ${entity.name}`}
       title={`${entity.name} · ${state}`}
       onClick={() => useStore.getState().select({ entityIds: [entity.id] }, false, 'panel')}
     >
@@ -216,8 +216,9 @@ export function BoardPreparation() {
         end={
           <Info label="About the entities">
             <p>
-              Every placed entity with its forecast state. Select a row to open it in the Selected
-              object tab. The Entities button in the board rail opens this section.
+              Every placed entity with its forecast state. Select a row to select the entity on the
+              board; the Selected object tab opens it. The Entities button in the board rail opens
+              this section.
             </p>
           </Info>
         }

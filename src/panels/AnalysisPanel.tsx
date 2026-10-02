@@ -7,6 +7,7 @@ import type { BoardPhase } from '../state/runState'
 import { selectRunComplete } from '../state/selectors'
 import { useStore } from '../state/store'
 import { selectTrialHorizon, selectTrialSelection } from '../state/trialSelectors'
+import type { TrialSelection } from '../state/trialSelectors'
 import { BoardPreparation } from './BoardPreparation'
 import { ValidityLine } from './analysis/ValidityLine'
 import { CompareScreen } from './analysis/screens/CompareScreen'
@@ -27,13 +28,16 @@ interface TrialValidity {
   source: 'forecast' | 'trial'
 }
 
+/** The selection outside Analyze: a constant, so the hook subscribes to no change. */
+const NO_SELECTION: TrialSelection = { status: 'idle', runId: '' }
+
 /**
  * The completed trial's assessment, or null before the trial completes. A trial
  * without a captured assessment reads its forecast, as the Outcome record does.
  * Outside Analyze it reads nothing, so a playback tick does not re-render it.
  */
 function useTrialValidity(enabled: boolean): TrialValidity {
-  const selection = useStore(selectTrialSelection)
+  const selection = useStore((s) => (enabled ? selectTrialSelection(s) : NO_SELECTION))
   const started = useStore((s) => enabled && s.playback.startedAtMs != null)
   const complete = useStore((s) => enabled && selectRunComplete(s))
   const horizon = useStore((s) =>
@@ -59,14 +63,17 @@ function useTrialValidity(enabled: boolean): TrialValidity {
  */
 export function PanelValidity({ phase }: { phase: BoardPhase }) {
   const scenario = useStore((s) => s.scenario)
+  // Execute shows the line only while the status bar holds it open (D10).
+  const shown = useStore((s) => phase !== 'execute' || s.ui.validityOpen)
   const forecast = useMemo(
     () =>
-      phase === 'analyze'
+      phase === 'analyze' || !shown
         ? null
         : assessRunValidity(scenario, engagementPicture(scenario).assessments),
-    [phase, scenario],
+    [phase, shown, scenario],
   )
   const trial = useTrialValidity(phase === 'analyze')
+  if (!shown) return null
   return (
     <ValidityLine
       phase={phase}

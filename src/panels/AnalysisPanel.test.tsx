@@ -21,7 +21,7 @@ const nowPlay =
   '<p class="muted small">No trial yet. Press <button type="button" class="mini">Play</button> to run one.</p>'
 // Analyze before a completed trial: the Validity line reads PENDING and opens nothing.
 const pendingLine =
-  '<div class="vline vline-pending" id="validity-line"><span class="vline-label">Trial validity</span><span class="state inactive"><i class="state-square hollow" aria-hidden="true"></i>PENDING</span><span class="vline-count">No completed trial</span></div>'
+  '<div class="vline vline-pending" id="validity-line" title="Trial validity: PENDING · No completed trial"><span class="vline-label">Trial validity</span><span class="state inactive"><i class="state-square hollow" aria-hidden="true"></i>PENDING</span><span class="vline-count">No completed trial</span></div>'
 const trialScreens = [
   { phase: 'execute', screen: 'now' },
   { phase: 'analyze', screen: 'outcome' },
@@ -110,7 +110,7 @@ describe('AnalysisPanel screens', () => {
     useStore.getState().setValidityOpen(false)
   })
 
-  it('reads the completed trial in Analyze', () => {
+  it('reads Trial or Forecast validity once the trial completes in Analyze', () => {
     installTrial(60)
     const playback = useStore.getState().playback
     useStore.setState({ playback: { ...playback, completedAtMs: 2 } })
