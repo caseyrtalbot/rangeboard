@@ -564,6 +564,17 @@ export const STAGES_REACHED: Record<TrackStageWord, number> = {
 }
 
 /**
+ * The chain pips' text. A leaked track fills all six pips but never claims `defeat`:
+ * it names the stages it reached before arrival (`prior`), then `leaked`.
+ */
+export function chainTitle(state: TrackStageWord, prior: TrackStageWord): string {
+  if (state === 'leaked') {
+    return [...CHAIN_STAGES.slice(0, Math.min(STAGES_REACHED[prior], 5)), 'leaked'].join(' › ')
+  }
+  return CHAIN_STAGES.slice(0, STAGES_REACHED[state]).join(' › ') || 'not detected'
+}
+
+/**
  * The milestones one track reached by the horizon, latest first: leaked wins over a
  * late kill, a death at or before the horizon is a defeat, then the first salvo, the
  * firing window, the hostile identification, a sensor hold and the first detection.

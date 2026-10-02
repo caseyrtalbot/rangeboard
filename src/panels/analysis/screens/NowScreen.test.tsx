@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStore } from '../../../state/store'
 import { IDLE_TRIAL } from '../../../state/runState'
 import { installTrial, observeTrial, unstartTrial } from '../trialTestState'
@@ -8,11 +8,56 @@ import { trialKpisAt } from '../../../analysis/liveStats'
 import { trialResultOf } from '../../../analysis/trialResult'
 import { NowScreen } from './NowScreen'
 
+type KeyHandler = (event: { key: string; preventDefault: () => void }) => void
+// Static markup runs no handlers, so the rendered row and header handlers are captured
+// here and called directly; useState keeps its value across renders.
+const interaction = vi.hoisted(() => ({
+  cursor: 0,
+  states: [] as unknown[],
+  rows: new Map<string, { onClick: () => void; onKeyDown: KeyHandler }>(),
+  headers: new Map<string, () => void>(),
+}))
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  return {
+    ...actual,
+    useState: (initial: unknown) => {
+      const index = interaction.cursor++
+      if (!(index in interaction.states))
+        interaction.states[index] = typeof initial === 'function' ? initial() : initial
+      return [
+        interaction.states[index],
+        (value: unknown) => {
+          interaction.states[index] = value
+        },
+      ]
+    },
+  }
+})
+vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
+  const jsxDEV: typeof actual.jsxDEV = (type, props, key, ...rest) => {
+    const p = props as { children?: unknown; onClick?: () => void; onKeyDown?: KeyHandler }
+    if (type === 'tr' && key != null && p.onClick && p.onKeyDown)
+      interaction.rows.set(String(key), { onClick: p.onClick, onKeyDown: p.onKeyDown })
+    if (type === 'button' && typeof p.children === 'string' && p.onClick)
+      interaction.headers.set(p.children, p.onClick)
+    return actual.jsxDEV(type, props, key, ...rest)
+  }
+  return { ...actual, jsxDEV }
+})
+
 function render() {
   Object.assign(useStore.getInitialState(), useStore.getState())
+  interaction.cursor = 0
+  interaction.rows.clear()
+  interaction.headers.clear()
   return renderToStaticMarkup(<NowScreen />)
 }
 
+beforeEach(() => {
+  interaction.states = []
+})
 afterEach(() => vi.restoreAllMocks())
 
 // A status line inside role="status" renders as an EmptyRow; the State markup is not matched.
@@ -112,11 +157,67 @@ describe('NowScreen cursor telemetry', () => {
 
   it('selects a track from its row with origin panel and keeps the tab', () => {
     installTrial(3)
+    useStore.setState(({ ui }) => ({
+      ui: { ...ui, rightTab: 'analysis', selectionOrigin: 'board' },
+    }))
     const html = render()
     expect(html).toContain('class="mon-row" tabindex="0"')
-    useStore.getState().select({ entityIds: ['moving'] }, false, 'panel')
-    expect(useStore.getState().ui.selectionOrigin).toBe('panel')
-    expect(render()).toContain('class="mon-row on"')
+    expect(html).not.toContain('aria-current')
+    // A click selects with origin panel and leaves the tab alone (D7).
+    interaction.rows.get('moving')!.onClick()
+    let state = useStore.getState()
+    expect(state.selection.entityIds).toEqual(['moving'])
+    expect(state.ui.selectionOrigin).toBe('panel')
+    expect(state.ui.rightTab).toBe('analysis')
+    expect(row(render(), 'moving')).not.toContain('aria-current')
+    const selectedRow = render().match(/<tr class="mon-row on"[^>]*>/)?.[0]
+    expect(selectedRow).toContain('aria-current="true"')
+    expect(render().match(/aria-current/g)).toHaveLength(1)
+    // Enter and Space select through the key handler; other keys do nothing.
+    const preventDefault = vi.fn()
+    useStore.setState(({ ui }) => ({ ui: { ...ui, selectionOrigin: 'board' } }))
+    interaction.rows.get('swarm')!.onKeyDown({ key: 'a', preventDefault })
+    expect(useStore.getState().selection.entityIds).toEqual(['moving'])
+    expect(preventDefault).not.toHaveBeenCalled()
+    interaction.rows.get('swarm')!.onKeyDown({ key: 'Enter', preventDefault })
+    state = useStore.getState()
+    expect(state.selection.entityIds).toEqual(['swarm'])
+    expect(state.ui.selectionOrigin).toBe('panel')
+    interaction.rows.get('flyby')!.onKeyDown({ key: ' ', preventDefault })
+    state = useStore.getState()
+    expect(state.selection.entityIds).toEqual(['flyby'])
+    expect(preventDefault).toHaveBeenCalledTimes(2)
+    expect(state.ui.rightTab).toBe('analysis')
+  })
+
+  it('sorts State ascending from the least advanced stage, like every other column', () => {
+    installTrial(60)
+    observeTrial(60, 60)
+    render()
+    interaction.headers.get('State')!()
+    const states = (html: string) =>
+      [...html.matchAll(/<td class="mon-c-state">.*?>(\w+)<\/span><\/td>/g)].map((m) => m[1])
+    const ascending = render()
+    expect(ascending).toContain('aria-sort="ascending"><button type="button">State')
+    const rank = (words: string[]) =>
+      words.map((w) =>
+        [
+          'undetected',
+          'detected',
+          'tracked',
+          'identified',
+          'targeted',
+          'engaged',
+          'defeated',
+          'leaked',
+        ].indexOf(w),
+      )
+    const up = rank(states(ascending)).map((n) => Math.min(n, 6))
+    expect(up.length).toBeGreaterThan(1)
+    expect(up).toEqual([...up].sort((a, b) => a - b))
+    interaction.headers.get('State')!()
+    const down = rank(states(render())).map((n) => Math.min(n, 6))
+    expect(down).toEqual([...down].sort((a, b) => b - a))
   })
 
   it('lists the last five salvo and identification events, newest first', () => {
@@ -186,6 +287,10 @@ describe('NowScreen cursor telemetry', () => {
     expect(swarm).toContain('class="state critical"')
     expect(swarm).toContain('class="mon-pips leak"')
     expect(swarm).not.toContain('defeated')
+    expect(swarm).not.toContain('defeat')
+    expect(swarm).toMatch(/title="[^"]*› leaked" aria-label="[^"]*› leaked"/)
+    // The pips still fill all six.
+    expect(swarm.match(/<i class="(on|now)"><\/i>/g)).toHaveLength(6)
   })
 
   it('scrubbing a completed run back hides future effects and identification', () => {
