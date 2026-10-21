@@ -25,9 +25,9 @@
         "src/model/types.ts",
         "src/playback/trackTypes.ts"
       ],
-      "sha256": "0ecdc38b58a93e6867cf9f9ac4444bf787b824b5ee5727697027ae8b69f8ea78",
+      "sha256": "44bb84bdc0aaf9d4b70fa4030773b36b768f5e33d8c2411d145933feb2b77538",
       "reviewedAt": "2026-10-21",
-      "note": "ISR CAP: types.ts adds CapOrbit and FlightPath.cap; the Threat glossary entry names the orbit as a path source."
+      "note": "Phase lines: types.ts adds BoundaryType phase-line, PhaseLineDesignation, Boundary.designation and CapOrbit.exit; glossary gains a Phase line entry."
     },
     {
       "document": "README.md",
@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "55cf1a53994b4fc7d9d9fcc568ffdd441d33e3136fa60c2e04cbe6c6427f1066",
-      "reviewedAt": "2026-10-22",
-      "note": "Added the Measure tool paragraph after the ring readout: rubber band, entity-following ends, bearing/range/BRAA readout, removal, session-only state."
+      "sha256": "a7219ac762152ca4080192ca9987ad6f9260797a27a98862071036be3ff3807e",
+      "reviewedAt": "2026-11-16",
+      "note": "Rebase of phase lines and CAP egress onto the Measure tool and symbology primer: both features' text is present and the merged sections are consistent."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "73eeb14bf9fb34c1b32011b05be05986c0c42558c4bd04a780ec7902de147c22",
-      "reviewedAt": "2026-10-22",
-      "note": "Measure tool: stage draggable under measure, ui.measureFrom/ui.measures, MeasureLayer and geometry/measure.ts, cursor state, M key, router entity and stage clicks."
+      "sha256": "35d6c03564462627b2de416d9f9cb987c1b0c0f1f9a4c41d3072116201d45cff",
+      "reviewedAt": "2026-11-16",
+      "note": "Rebase of phase lines and CAP egress onto the Measure tool and symbology primer: both features' text is present and the merged sections are consistent."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "3563dabea6ab51ce1cb991a34ee58c86c87ebec2d8ef906e2124b107ac4e8473",
-      "reviewedAt": "2026-10-21",
-      "note": "Dependabot bump of four npm packages in package.json and the lock (origin a5017ce) after the ISR CAP review; the verification guide names no package versions, so its text stands."
+      "sha256": "a0affa98dd5e13523f6932dc8790ababb2e199df8383b66ae72fb83916be70f2",
+      "reviewedAt": "2026-11-16",
+      "note": "Rebase of phase lines and CAP egress onto the Measure tool and symbology primer: both features' text is present and the merged sections are consistent."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "a09b4193daecd362c77b86e587ebe3ae4fced673675ec00fd2869b7fd4238f92",
-      "reviewedAt": "2026-10-21",
-      "note": "Symbology merge handoff after the rebase onto the ISR CAP commit: the Tasking records the fast-forward of symbology/primer into main, its gate and evidence, and the deleted branch; the ISR CAP and Board symbology follow-up groups both stand."
+      "sha256": "8e17f1d28f534c402b7c43df024a875b80301dcff2c895ab01957dc6c6619858",
+      "reviewedAt": "2026-11-16",
+      "note": "Rebase of phase lines and CAP egress onto the Measure tool and symbology primer: both features' text is present and the merged sections are consistent."
     },
     {
       "document": "docs/code-quality/Plan.md",
@@ -124,9 +124,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "d5dff6773b8d2a15771ea9e4b2ab786308bb649e463994882516f1acf3a1ad4f",
-      "reviewedAt": "2026-10-22",
-      "note": "Measurement line and readout take the tool ink with the board glyph halo; added to the tool-ink list."
+      "sha256": "e36a305af9c6127fd45032ddf756a6de34e5578ca8760eb9ee8b3db511d964b4",
+      "reviewedAt": "2026-11-16",
+      "note": "Rebase of phase lines and CAP egress onto the Measure tool and symbology primer: both features' text is present and the merged sections are consistent."
     }
   ],
   "historical": [

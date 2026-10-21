@@ -32,6 +32,11 @@ _Avoid_: System, emitter, item
 A red UAS entity with a planned flight path or an ISR CAP (a circular orbit the path points are generated from). The truth object, not the picture of it.
 _Avoid_: Flying object, drone, target
 
+**Phase line**:
+An open boundary that marks a control measure (PL, FLOT, FEBA, FSCL, CFL). A CAP egress
+crosses one. It gates nothing in the engine.
+_Avoid_: Line, border, limit
+
 **Track**:
 The blue picture of one threat, or of nothing (a false track). A sensor track is held by one
 sensor. A fused track is formed by a C2 node from sensor tracks.

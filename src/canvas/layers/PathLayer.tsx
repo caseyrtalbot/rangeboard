@@ -9,7 +9,8 @@ import { dist, formatDistance, pathLength } from '../../geometry/geo'
 import { entityInk } from '../../ui/ink'
 import { useBoardInk } from '../useBoardInk'
 import { captionClear } from '../labelLayout'
-import { capIngressPoint } from '../../model/cap'
+import { capEgressPoints, capIngressPoint, egressLineOf } from '../../model/cap'
+import { phaseLineLabel } from '../../model/phaseLine'
 
 interface Props {
   mouseWorld: Vec2 | null
@@ -82,7 +83,8 @@ const FlightPathShape = memo(function FlightPathShape({
 /**
  * One committed ISR CAP: the dashed ingress leg, the dashed orbit circle, a center mark
  * and one caption off the circle's east point. The orbit vertices draw as the circle,
- * not as waypoint dots.
+ * not as waypoint dots. With an exit over a phase line, the egress leg draws as an arrow
+ * from the orbit exit with a dot at the crossing.
  */
 const CapPathShape = memo(function CapPathShape({
   path,
@@ -90,12 +92,17 @@ const CapPathShape = memo(function CapPathShape({
   color,
   etaS,
   units,
+  egressLine,
+  egressLabel,
 }: {
   path: FlightPath
   cap: CapOrbit
   color: string
   etaS: number
   units: UiState['units']
+  /** The resolved phase line points, so the memo keys on the line itself. */
+  egressLine: Vec2[] | null
+  egressLabel: string | null
 }) {
   const k = useStore((s) => s.camera.scale)
   const start = path.points[0]
@@ -104,7 +111,20 @@ const CapPathShape = memo(function CapPathShape({
     () => (start && ingress ? [start.x, start.y, ingress.x, ingress.y] : null),
     [start, ingress],
   )
-  const text = `R ${formatDistance(cap.radiusM, units)} · ${cap.laps} laps · ${Math.round(etaS)} s`
+  // The orbit ends on the ingress point, so the egress leg starts there.
+  const egress = useMemo(
+    () => (ingress && egressLine ? capEgressPoints(ingress, egressLine) : []),
+    [ingress, egressLine],
+  )
+  const egressFlat = useMemo(() => {
+    if (egress.length === 0) return null
+    const orbitEnd = path.points.length - egress.length - 1
+    return orbitEnd < 0 ? null : path.points.slice(orbitEnd).flatMap((pt) => [pt.x, pt.y])
+  }, [path.points, egress])
+  const crossing = egressFlat ? egress[0] : null
+  const text =
+    `R ${formatDistance(cap.radiusM, units)} · ${cap.laps} laps · ${Math.round(etaS)} s` +
+    (egressFlat && egressLabel ? ` · egress ${egressLabel}` : '')
   return (
     <Group listening={false}>
       {leg && (
@@ -126,6 +146,19 @@ const CapPathShape = memo(function CapPathShape({
         strokeScaleEnabled={false}
       />
       <CenterMark p={cap.center} k={k} color={color} />
+      {egressFlat && (
+        <Arrow
+          points={egressFlat}
+          stroke={color}
+          strokeWidth={1.5}
+          dash={PATH_DASH}
+          strokeScaleEnabled={false}
+          pointerLength={10 / k}
+          pointerWidth={8 / k}
+          fill={color}
+        />
+      )}
+      {crossing && <Circle x={crossing.x} y={crossing.y} radius={3 / k} fill={color} />}
       {/* Counter-scaled, as the path caption, just outside the east point. */}
       <Group
         x={cap.center.x + cap.radiusM + 8 / k}
@@ -240,7 +273,9 @@ export function PathLayer({ mouseWorld }: Props) {
     const entity = scenario.entities.find((e) => e.id === p.entityId)
     if (!entity) return null
     const color = entityInk(entity, modelFor(scenario, entity))
-    if (p.cap)
+    if (p.cap) {
+      const egressLine = egressLineOf(scenario.boundaries, p.cap)
+      const line = egressLine && scenario.boundaries.find((b) => b.id === p.cap?.exit?.boundaryId)
       return (
         <CapPathShape
           key={p.id}
@@ -249,8 +284,11 @@ export function PathLayer({ mouseWorld }: Props) {
           color={color}
           etaS={pathDurationS(scenario, p)}
           units={units}
+          egressLine={egressLine}
+          egressLabel={line ? phaseLineLabel(line) : null}
         />
       )
+    }
     const lengthM = pathLength(p.points)
     return (
       <FlightPathShape

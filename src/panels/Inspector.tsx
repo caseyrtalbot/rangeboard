@@ -3,6 +3,7 @@ import type { KeyboardEvent } from 'react'
 import type {
   Boundary,
   BoundaryType,
+  PhaseLineDesignation,
   Connection,
   Entity,
   EntityKind,
@@ -42,6 +43,8 @@ import type { RingKey } from '../state/rings'
 import { RING_HINTS, RING_LABELS } from './ringLabels'
 import { formatDistance, formatNm, formatSpeed, pathLength } from '../geometry/geo'
 import { CAP_MIN_RADIUS_M } from '../model/cap'
+import { CapExitField } from './CapExitField'
+import { PHASE_LINE_DESIGNATIONS, phaseLineLabel } from '../model/phaseLine'
 import { evaluateIntegration, integrationSummary } from '../model/integration'
 import type { IntegrationConfidence } from '../model/integration'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
@@ -91,6 +94,7 @@ const BOUNDARY_NAME_SUGGESTIONS: Record<BoundaryType, string[]> = {
   restricted: ['ROZ', 'Restricted area', 'NFA', 'TFR'],
   asset: ['Defended asset area', 'Base boundary', 'Critical asset zone'],
   corridor: ['Ingress corridor', 'Air corridor', 'Transit corridor'],
+  'phase-line': ['BLUE', 'RED', 'GREEN', 'GOLD', 'SILVER', 'AMBER'],
 }
 
 /** Standard airspace band values from the seed library boundaries, feet. */
@@ -1336,6 +1340,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
                 <>
                   <Row label="Pattern" value="ISR CAP" />
                   <CapOrbitFields key={path.id} path={path} cap={path.cap} />
+                  <CapExitField path={path} cap={path.cap} />
                   {/* World +y is south; north is its negation, as the entity position. */}
                   <Row label="Center east (m)" value={Math.round(path.cap.center.x)} />
                   <Row label="Center north (m)" value={Math.round(-path.cap.center.y)} />
@@ -1466,11 +1471,16 @@ function EntityInspector({ entity }: { entity: Entity }) {
 
 function BoundaryInspector({ boundary }: { boundary: Boundary }) {
   const { updateBoundary, deleteSelection } = useStore.getState()
+  const phaseLine = boundary.type === 'phase-line'
   return (
     <div className="inspector-body insp">
       <ObjectHeader
         name={boundary.name || 'Unnamed boundary'}
-        type={`Airspace boundary · ${boundary.type}`}
+        type={
+          phaseLine
+            ? `Control measure · ${phaseLineLabel(boundary)}`
+            : `Airspace boundary · ${boundary.type}`
+        }
       />
 
       <Section label="Definition">
@@ -1491,38 +1501,62 @@ function BoundaryInspector({ boundary }: { boundary: Boundary }) {
             <option value="restricted">restricted</option>
             <option value="asset">asset</option>
             <option value="corridor">corridor</option>
+            <option value="phase-line">phase line</option>
           </select>
         </Field>
+        {phaseLine && (
+          <Field label="Designation">
+            <select
+              value={boundary.designation ?? 'PL'}
+              onChange={(e) =>
+                updateBoundary(boundary.id, {
+                  designation: e.target.value as PhaseLineDesignation,
+                })
+              }
+            >
+              {PHASE_LINE_DESIGNATIONS.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {`${d.id} · ${d.name}`}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
       </Section>
 
       <Section label="Geometry">
-        <div className="field-row">
-          <Field label="Floor (ft)">
-            <input
-              type="number"
-              list="boundary-alt-options"
-              value={boundary.altBandFt?.[0] ?? ''}
-              onChange={(e) =>
-                updateBoundary(boundary.id, {
-                  altBandFt: [Number(e.target.value), boundary.altBandFt?.[1] ?? 0],
-                })
-              }
-            />
-          </Field>
-          <Field label="Ceiling (ft)">
-            <input
-              type="number"
-              list="boundary-alt-options"
-              value={boundary.altBandFt?.[1] ?? ''}
-              onChange={(e) =>
-                updateBoundary(boundary.id, {
-                  altBandFt: [boundary.altBandFt?.[0] ?? 0, Number(e.target.value)],
-                })
-              }
-            />
-          </Field>
-        </div>
-        <Options id="boundary-alt-options" values={BOUNDARY_ALT_SUGGESTIONS_FT} />
+        {/* A phase line is a ground trace: it has no altitude band. */}
+        {!phaseLine && (
+          <>
+            <div className="field-row">
+              <Field label="Floor (ft)">
+                <input
+                  type="number"
+                  list="boundary-alt-options"
+                  value={boundary.altBandFt?.[0] ?? ''}
+                  onChange={(e) =>
+                    updateBoundary(boundary.id, {
+                      altBandFt: [Number(e.target.value), boundary.altBandFt?.[1] ?? 0],
+                    })
+                  }
+                />
+              </Field>
+              <Field label="Ceiling (ft)">
+                <input
+                  type="number"
+                  list="boundary-alt-options"
+                  value={boundary.altBandFt?.[1] ?? ''}
+                  onChange={(e) =>
+                    updateBoundary(boundary.id, {
+                      altBandFt: [boundary.altBandFt?.[0] ?? 0, Number(e.target.value)],
+                    })
+                  }
+                />
+              </Field>
+            </div>
+            <Options id="boundary-alt-options" values={BOUNDARY_ALT_SUGGESTIONS_FT} />
+          </>
+        )}
         <Row label="Vertices" value={boundary.points.length} />
       </Section>
 

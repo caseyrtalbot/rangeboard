@@ -686,7 +686,13 @@ export interface Connection {
   latencyS?: number
 }
 
-export type BoundaryType = 'range' | 'restricted' | 'asset' | 'corridor'
+export type BoundaryType = 'range' | 'restricted' | 'asset' | 'corridor' | 'phase-line'
+
+/**
+ * Control measure a phase line carries: forward line of own troops, forward edge of the
+ * battle area, fire support coordination line, coordinated fire line, or a named phase line.
+ */
+export type PhaseLineDesignation = 'FLOT' | 'FEBA' | 'FSCL' | 'CFL' | 'PL'
 
 export interface Boundary {
   id: string
@@ -696,6 +702,8 @@ export interface Boundary {
   closed: boolean
   /** Airspace floor/ceiling labels, shown in airspace mode. */
   altBandFt: [number, number] | null
+  /** Phase lines only; absent on old saves and other types. */
+  designation?: PhaseLineDesignation | null
 }
 
 /** A circular loiter that the path points are generated from. Absent or null: a hand-drawn path. */
@@ -705,6 +713,14 @@ export interface CapOrbit {
   radiusM: number
   /** Whole orbits flown after the ingress leg, at least 1. */
   laps: number
+  /** What follows the last orbit. Absent or null: the path ends on the orbit. */
+  exit?: CapExit | null
+}
+
+/** An egress leg across one phase-line boundary, then on along the same heading. */
+export interface CapExit {
+  kind: 'egress'
+  boundaryId: string
 }
 
 export interface FlightPath {

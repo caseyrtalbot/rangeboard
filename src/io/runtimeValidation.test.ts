@@ -240,6 +240,43 @@ describe('Board runtime acceptance', () => {
     ]
     expect(parseScenarioData(s).boundaries[0].points).toHaveLength(2)
   })
+  it('requires an open phase line and keeps designation on phase lines only', () => {
+    const s = laydown()
+    const points = [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+    ]
+    s.boundaries = [
+      { id: 'b', name: 'BLUE', type: 'phase-line', points, closed: true, altBandFt: null },
+    ]
+    expect(() => parseScenarioData(s)).toThrow('boundaries[0].closed: a phase line is never closed')
+    s.boundaries[0].closed = false
+    s.boundaries[0].designation = 'FSCL'
+    expect(parseScenarioData(s).boundaries[0].designation).toBe('FSCL')
+    s.boundaries[0].designation = 'XYZ' as never
+    expect(() => parseScenarioData(s)).toThrow('boundaries[0].designation')
+    s.boundaries[0].designation = 'PL'
+    s.boundaries[0].type = 'corridor'
+    expect(() => parseScenarioData(s)).toThrow(
+      'boundaries[0].designation: only a phase line carries a designation',
+    )
+    s.boundaries[0].designation = null
+    expect(parseScenarioData(s).boundaries[0].type).toBe('corridor')
+  })
+  it('requires a CAP exit to name a boundary', () => {
+    const s = laydown()
+    s.paths[0].cap = {
+      center: { x: 0, y: -2000 },
+      radiusM: 500,
+      laps: 2,
+      exit: { kind: 'egress', boundaryId: ' ' },
+    }
+    expect(() => parseScenarioData(s)).toThrow(
+      'paths[0].cap.exit.boundaryId: expected a nonempty boundary ID',
+    )
+    s.paths[0].cap.exit = { kind: 'egress', boundaryId: 'b' }
+    expect(parseScenarioData(s).paths[0].cap?.exit).toEqual({ kind: 'egress', boundaryId: 'b' })
+  })
   it('validates libraries through the same model contract and duplicate checks', () => {
     const model = emptyScenario().library[0]
     expect(parseLibraryData({ rangeboardLibrary: 1, models: [model] })).toEqual([model])

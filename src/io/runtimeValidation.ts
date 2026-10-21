@@ -176,6 +176,15 @@ function semantics(o: Record<string, unknown>, owner: string, path: string): voi
     o.points.length < 2
   )
     invalid(`${path}.points`, 'expected at least two points')
+  if (owner === 'Boundary') {
+    // A phase line is a line, never an area; only a phase line carries a designation.
+    if (o.type === 'phase-line' && o.closed !== false)
+      invalid(`${path}.closed`, 'a phase line is never closed')
+    if (o.type !== 'phase-line' && o.designation != null)
+      invalid(`${path}.designation`, 'only a phase line carries a designation')
+  }
+  if (owner === 'CapExit' && (typeof o.boundaryId !== 'string' || !o.boundaryId.trim()))
+    invalid(`${path}.boundaryId`, 'expected a nonempty boundary ID')
   if (owner === 'FormationSpec') range('count', 1, MAX_ARRAY_LENGTH, true)
   if (owner === 'CapOrbit') {
     range('radiusM', 0, Infinity, false, true)

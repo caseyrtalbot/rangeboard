@@ -136,6 +136,14 @@ capture and not checked again.
 - Enter does nothing under the cap tool; the second click or a double click finishes it.
   `HudLayer` says so. A CAP ends after its laps, so laps bound the scenario duration.
 - The cap caption takes one fixed slot at the east point, with no `captionClear` search.
+- The egress leg starts at the orbit's ingress point, not at the orbit point nearest the
+  phase line, so it can cross the orbit interior (`capPathPoints`).
+- An exit that names a boundary absent from the scenario still loads; `egressLineOf`
+  ignores it and the Then control shows `missing`.
+- A phase line's end label sits with its top-left corner on the vertex and can overlap
+  the line; no offset along the end segment.
+- Only the hold by laps exists; the racetrack shape, hold by minutes and the strike leg
+  from the 2026-10-21 design are not built.
 
 ### Board, rail and header
 

@@ -59,7 +59,9 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    caption box clears every glyph and data block; otherwise it draws on hover. A path
    caption takes the first clear slot back along its last leg; an ISR CAP draws a dashed
    ingress leg and circle in the entity ink with one caption at the east point, and its
-   draft circle and radius readout take the selection ink. The system rotation handle,
+   draft circle and radius readout take the selection ink. A phase line draws solid and
+   unfilled in the effector amber (`KIND_INK.effector`), the one board ink no other
+   boundary type uses, with its label at both ends. The system rotation handle,
    the move-underlay outline, the placement preview (an outline ground frame with its
    function icon at 0.7 opacity, a `[4, 4]` dashed leader and a one-line block) and a
    measurement (a 1.5 px line, `[6, 4]` dashed while it follows the cursor, a dot on a

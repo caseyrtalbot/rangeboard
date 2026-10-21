@@ -1563,7 +1563,12 @@ Konva conventions:
   readouts over the callouts, from `src/geometry/measure.ts`. The cap tool keeps the orbit center there; its second click calls
   `finishCap`, which stores `FlightPath.cap` and generates the points with `capPathPoints`
   (`src/model/cap.ts`), so the engine never reads the orbit. `updateCap` regenerates the
-  points from the entity position.
+  points from the entity position. `CapOrbit.exit` (`{ kind: 'egress', boundaryId }`)
+  appends `capEgressPoints`: the nearest point of the phase line to the orbit exit, then
+  `CAP_EGRESS_BEYOND_M` on the same heading; `egressLineOf` resolves the line and ignores
+  an exit that names no phase line. The store clears exits that name a deleted or retyped
+  boundary in the same undo step (`withoutCapExitsTo`). A `phase-line` boundary is never
+  closed and alone carries `designation` (`runtimeValidation.ts`).
 - Each layer reads its flag through `selectEffectiveLayers` and returns `null`;
   `CanvasStage` does no gating.
 - Everything a layer draws at time t is derived at render from the scenario and

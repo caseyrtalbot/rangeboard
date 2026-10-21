@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { dist, pathLength } from '../geometry/geo'
-import type { CapOrbit } from './types'
+import { bearingDeg, dist, pathLength } from '../geometry/geo'
+import type { Boundary, CapOrbit } from './types'
 import {
   CAP_DEFAULT_RADIUS_M,
+  CAP_EGRESS_BEYOND_M,
   CAP_MIN_RADIUS_M,
   CAP_POINTS_PER_LAP,
+  capEgressPoints,
   capPathPoints,
   capRadiusFrom,
+  egressLineOf,
 } from './cap'
 
 const cap: CapOrbit = { center: { x: 2000, y: -3000 }, radiusM: 800, laps: 3 }
@@ -58,5 +61,56 @@ describe('capRadiusFrom', () => {
     expect(capRadiusFrom(c, { x: 10 + CAP_MIN_RADIUS_M, y: 10 })).toBe(CAP_MIN_RADIUS_M)
     expect(capRadiusFrom(c, { x: 30, y: 10 })).toBe(CAP_DEFAULT_RADIUS_M)
     expect(capRadiusFrom(c, c)).toBe(CAP_DEFAULT_RADIUS_M)
+  })
+})
+
+// A north-south line 3 km east of the orbit center.
+const line = [
+  { x: 5000, y: -8000 },
+  { x: 5000, y: 2000 },
+]
+
+function boundary(type: Boundary['type']): Boundary {
+  return { id: 'b', name: 'BLUE', type, points: line, closed: false, altBandFt: null }
+}
+
+describe('capEgressPoints', () => {
+  it('crosses at the nearest line point, then runs on 5 km on the same heading', () => {
+    const exit = { x: 2800, y: -3000 }
+    const pts = capEgressPoints(exit, line)
+    expect(pts).toHaveLength(2)
+    expect(pts[0].x).toBeCloseTo(5000, 6)
+    expect(pts[0].y).toBeCloseTo(-3000, 6)
+    expect(dist(pts[0], pts[1])).toBeCloseTo(CAP_EGRESS_BEYOND_M, 6)
+    expect(bearingDeg(pts[0], pts[1])).toBeCloseTo(bearingDeg(exit, pts[0]), 6)
+  })
+
+  it('is empty for a one-point line and for an exit on the line', () => {
+    expect(capEgressPoints({ x: 0, y: 0 }, [line[0]])).toEqual([])
+    expect(capEgressPoints({ x: 5000, y: 0 }, line)).toEqual([])
+  })
+})
+
+describe('egressLineOf', () => {
+  const exiting: CapOrbit = { ...cap, exit: { kind: 'egress', boundaryId: 'b' } }
+
+  it('is null without an exit or when the boundary is not a phase line', () => {
+    expect(egressLineOf([boundary('phase-line')], cap)).toBeNull()
+    expect(egressLineOf([boundary('corridor')], exiting)).toBeNull()
+    expect(egressLineOf([], exiting)).toBeNull()
+  })
+
+  it('returns the phase line points', () => {
+    expect(egressLineOf([boundary('phase-line')], exiting)).toBe(line)
+  })
+})
+
+describe('capPathPoints with an egress line', () => {
+  it('appends exactly the two egress points and leaves the orbit alone', () => {
+    const plain = capPathPoints(start, cap)
+    const out = capPathPoints(start, cap, line)
+    expect(out).toHaveLength(plain.length + 2)
+    expect(out.slice(0, plain.length)).toEqual(plain)
+    expect(out.slice(plain.length)).toEqual(capEgressPoints(plain[plain.length - 1], line))
   })
 })

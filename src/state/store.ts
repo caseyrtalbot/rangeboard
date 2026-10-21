@@ -51,8 +51,15 @@ import { emptyScenario } from '../model/seed'
 import { importModels, resetBuiltin } from '../model/libraryLifecycle'
 import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
 import { rotatePoint } from '../geometry/geo'
-import { CAP_DEFAULT_LAPS, CAP_MIN_RADIUS_M, capPathPoints, capRadiusFrom } from '../model/cap'
+import {
+  CAP_DEFAULT_LAPS,
+  CAP_MIN_RADIUS_M,
+  capPathPoints,
+  capRadiusFrom,
+  egressLineOf,
+} from '../model/cap'
 import type { DisplayUnits } from '../geometry/geo'
+import { phaseLines } from '../model/phaseLine'
 import { evaluateIntegration, profileFor, suggestLinksFor } from '../model/integration'
 import type { SuggestedLink } from '../model/integration'
 import {
@@ -568,6 +575,26 @@ export interface Store {
   clearOptimize: () => void
 }
 
+/** Default phase line names, in the order new lines take them. */
+const PHASE_LINE_NAMES = ['BLUE', 'RED', 'GREEN', 'GOLD', 'SILVER', 'AMBER']
+
+/**
+ * Clear every CAP exit that names `boundaryId` and regenerate those paths without the
+ * egress leg, so a path never keeps a leg across a line that is gone or no longer one.
+ */
+function withoutCapExitsTo(s: Scenario, boundaryId: string): Scenario {
+  if (!s.paths.some((p) => p.cap?.exit?.boundaryId === boundaryId)) return s
+  return {
+    ...s,
+    paths: s.paths.map((p) => {
+      if (p.cap?.exit?.boundaryId !== boundaryId) return p
+      const entity = s.entities.find((e) => e.id === p.entityId)
+      const cap = { ...p.cap, exit: null }
+      return { ...p, cap, points: entity ? capPathPoints(entity.pos, cap, null) : p.points }
+    }),
+  }
+}
+
 /** Record a deleted builtin (seed) id so the load-time seed merge does not restore it. */
 function withDeletedSeed(s: Scenario, id: string, builtin: boolean | undefined): string[] {
   const have = s.deletedSeedIds ?? []
@@ -839,6 +866,7 @@ export const useStore = create<Store>()((set, get) => {
         }
         if (boundaryId) {
           next = { ...next, boundaries: next.boundaries.filter((b) => b.id !== boundaryId) }
+          next = withoutCapExitsTo(next, boundaryId)
         }
         if (connectionId) {
           next = { ...next, connections: next.connections.filter((c) => c.id !== connectionId) }
@@ -1065,6 +1093,20 @@ export const useStore = create<Store>()((set, get) => {
       set((st) => ({ ui: { ...st.ui, draftPoints: [] } }))
       if (points.length < 2) return
       mutate((s) => {
+        if (ui.boundaryType === 'phase-line') {
+          // A phase line is always open; it takes the first unused color name.
+          const used = new Set(phaseLines(s.boundaries).map((b) => b.name))
+          const line: Boundary = {
+            id: newId('bnd'),
+            name: PHASE_LINE_NAMES.find((n) => !used.has(n)) ?? '',
+            type: 'phase-line',
+            points,
+            closed: false,
+            altBandFt: null,
+            designation: 'PL',
+          }
+          return { ...s, boundaries: [...s.boundaries, line] }
+        }
         const typeName = ui.boundaryType.charAt(0).toUpperCase() + ui.boundaryType.slice(1)
         const boundary: Boundary = {
           id: newId('bnd'),
@@ -1123,7 +1165,7 @@ export const useStore = create<Store>()((set, get) => {
         const path: FlightPath = {
           id: newId('pth'),
           entityId,
-          points: capPathPoints(entity.pos, cap),
+          points: capPathPoints(entity.pos, cap, egressLineOf(s.boundaries, cap)),
           speedMps: null,
           startDelayS: 0,
           cap,
@@ -1146,7 +1188,7 @@ export const useStore = create<Store>()((set, get) => {
         radiusM: Math.max(CAP_MIN_RADIUS_M, radiusM),
         laps: Math.max(1, Math.round(laps)),
       }
-      const points = capPathPoints(entity.pos, cap)
+      const points = capPathPoints(entity.pos, cap, egressLineOf(scenario.boundaries, cap))
       mutate((s) => ({
         ...s,
         paths: s.paths.map((p) => (p.id === pathId ? { ...p, cap, points } : p)),
@@ -1190,10 +1232,18 @@ export const useStore = create<Store>()((set, get) => {
       ),
 
     updateBoundary: (id, patch) =>
-      mutate((s) => ({
-        ...s,
-        boundaries: s.boundaries.map((b) => (b.id === id ? { ...b, ...patch } : b)),
-      })),
+      mutate((s) => {
+        const prev = s.boundaries.find((b) => b.id === id)
+        if (!prev) return s
+        let b: Boundary = { ...prev, ...patch }
+        const leaving = prev.type === 'phase-line' && b.type !== 'phase-line'
+        if (leaving) b = { ...b, designation: null }
+        if (patch.type === 'phase-line') {
+          b = { ...b, closed: false, designation: b.designation ?? 'PL' }
+        }
+        const next = { ...s, boundaries: s.boundaries.map((x) => (x.id === id ? b : x)) }
+        return leaving ? withoutCapExitsTo(next, id) : next
+      }),
 
     updatePath: (id, patch) =>
       mutate((s) => ({

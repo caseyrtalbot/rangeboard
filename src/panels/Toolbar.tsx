@@ -56,7 +56,7 @@ const BOARD_TOOLS = [
   { id: 'path', label: 'Path', hint: 'Draw a UAS flight path' },
 ] as const
 
-const BOUNDARY_TYPES: BoundaryType[] = ['range', 'restricted', 'asset', 'corridor']
+const BOUNDARY_TYPES: BoundaryType[] = ['range', 'restricted', 'asset', 'corridor', 'phase-line']
 
 /**
  * The scenario ⋯ menu: file actions, then Storage (D5). Storage replaces the menu
@@ -301,7 +301,7 @@ export const BoardTools = memo(function BoardTools({
             >
               {BOUNDARY_TYPES.map((boundary) => (
                 <option key={boundary} value={boundary}>
-                  {boundary}
+                  {boundary.replace('-', ' ')}
                 </option>
               ))}
             </select>

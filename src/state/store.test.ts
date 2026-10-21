@@ -368,6 +368,67 @@ describe('store scenario actions', () => {
     expect(b.name).toBe('Restricted 1')
   })
 
+  it('finishes a phase line open with designation PL and the next color name', () => {
+    const draw = () => {
+      useStore.getState().setBoundaryType('phase-line')
+      useStore.getState().addDraftPoint({ x: 0, y: 0 })
+      useStore.getState().addDraftPoint({ x: 1000, y: 0 })
+      useStore.getState().addDraftPoint({ x: 1000, y: 1000 })
+      useStore.getState().finishBoundary(true)
+    }
+    draw()
+    draw()
+    const [a, b] = useStore.getState().scenario.boundaries
+    expect(a).toMatchObject({ type: 'phase-line', closed: false, designation: 'PL', name: 'BLUE' })
+    expect(b).toMatchObject({ closed: false, designation: 'PL', name: 'RED' })
+  })
+
+  /** A CAP whose exit names a phase line north of the orbit; returns the ids. */
+  function capWithExit() {
+    useStore.getState().setBoundaryType('phase-line')
+    useStore.getState().addDraftPoint({ x: -10000, y: -12000 })
+    useStore.getState().addDraftPoint({ x: 10000, y: -12000 })
+    useStore.getState().finishBoundary(false)
+    const lineId = useStore.getState().scenario.boundaries[0].id
+    useStore.getState().addEntityFromModel('lib-mugin5', { x: 0, y: 0 })
+    const uasId = useStore.getState().scenario.entities[0].id
+    useStore.getState().beginCap(uasId)
+    useStore.getState().addDraftPoint({ x: 0, y: -4000 })
+    useStore.getState().finishCap({ x: 1500, y: -4000 })
+    const pathId = useStore.getState().scenario.paths[0].id
+    useStore.getState().updateCap(pathId, { exit: { kind: 'egress', boundaryId: lineId } })
+    return { lineId, pathId }
+  }
+
+  /** The cap has no exit and its points end on the orbit. */
+  function expectNoExit() {
+    const path = useStore.getState().scenario.paths[0]
+    expect(path.cap?.exit ?? null).toBeNull()
+    const { exit: _exit, ...orbit } = path.cap!
+    expect(path.points).toHaveLength(capPathPoints({ x: 0, y: 0 }, orbit).length)
+  }
+
+  it('deleting a phase line named by a CAP exit clears the exit in one step', () => {
+    const { lineId } = capWithExit()
+    const withExit = useStore.getState().scenario.paths[0]
+    expect(withExit.cap?.exit?.boundaryId).toBe(lineId)
+    const { exit: _exit, ...orbit } = withExit.cap!
+    expect(withExit.points.length).toBeGreaterThan(capPathPoints({ x: 0, y: 0 }, orbit).length)
+    useStore.getState().select({ boundaryId: lineId })
+    useStore.getState().deleteSelection()
+    expect(useStore.getState().scenario.boundaries).toHaveLength(0)
+    expectNoExit()
+    useStore.getState().undo()
+    expect(useStore.getState().scenario.paths[0]).toEqual(withExit)
+  })
+
+  it('changing a phase line to another type clears its designation and CAP exits', () => {
+    const { lineId } = capWithExit()
+    useStore.getState().updateBoundary(lineId, { type: 'corridor' })
+    expect(useStore.getState().scenario.boundaries[0].designation).toBeNull()
+    expectNoExit()
+  })
+
   it('creates a new card version with the same cardId, a minor bump, and no runs', () => {
     const st = useStore.getState()
     const id = st.addCard()

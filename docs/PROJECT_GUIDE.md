@@ -52,7 +52,14 @@ second sets the radius; a double click on the center takes 1 km. The orbit is st
 `FlightPath.cap` (center, radius, laps, default 3) and its points are generated from it
 (`src/model/cap.ts`), so the engine flies a plain path. The board draws the ingress leg,
 the dashed circle and one caption (radius, laps, flight time); the Inspector Flight path
-section edits Radius and Laps on blur or Enter, one undo step each.
+section edits Radius and Laps on blur or Enter, one undo step each. The Then control
+ends the orbit with Stop or Egress: Egress names a phase line, and the generated path
+gains a leg from the orbit exit to the nearest point of that line and 5 km beyond; the
+caption adds `egress PL BLUE`. A phase line is a boundary of type phase line drawn with
+the Boundary tool: always open, never filled, in the amber ink, labeled at both ends with
+its designation (PL, FLOT, FEBA, FSCL or CFL) and name; a new one is PL BLUE, then RED,
+GREEN, GOLD, SILVER, AMBER. The Inspector edits the designation in place of the altitude
+band. Deleting a phase line, or changing its type, clears every egress that named it.
 The connect popup opens after a blue-force drop or from the Inspector Network section.
 It lists every known integration of the system against the board: a partner with an
 unlinked instance on the board reads ON BOARD with the distance to the nearest one and a

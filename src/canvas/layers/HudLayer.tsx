@@ -125,6 +125,7 @@ export function HudLayer({ stageRef }: Props) {
   const units = useStore((s) => s.ui.units)
   const tool = useStore((s) => s.ui.tool)
   const draftCount = useStore((s) => s.ui.draftPoints.length)
+  const boundaryType = useStore((s) => s.ui.boundaryType)
   const pathEntityId = useStore((s) => s.ui.pathEntityId)
   const raidDraft = useStore((s) => s.ui.raidDraft)
   const satUnanchored = useStore(
@@ -141,10 +142,13 @@ export function HudLayer({ stageRef }: Props) {
   const barPx = stepM * scale
 
   const hints: Record<string, string> = {
+    // A phase line is open, so its hint never offers to close the shape.
     boundary:
-      draftCount === 0
-        ? 'Boundary: click to place points. Double-click or press Enter to finish. Esc cancels.'
-        : `Boundary: ${draftCount} points. Double-click or Enter to close. Esc cancels.`,
+      boundaryType === 'phase-line'
+        ? 'Phase line: click points along the line. Double-click or Enter to finish. Esc cancels.'
+        : draftCount === 0
+          ? 'Boundary: click to place points. Double-click or press Enter to finish. Esc cancels.'
+          : `Boundary: ${draftCount} points. Double-click or Enter to close. Esc cancels.`,
     path: pathEntityId
       ? 'Path: click waypoints. Double-click or Enter to finish. Esc cancels.'
       : 'Path: click a UAS to start its flight path.',
