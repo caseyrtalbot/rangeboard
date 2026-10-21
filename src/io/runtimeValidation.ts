@@ -177,6 +177,10 @@ function semantics(o: Record<string, unknown>, owner: string, path: string): voi
   )
     invalid(`${path}.points`, 'expected at least two points')
   if (owner === 'FormationSpec') range('count', 1, MAX_ARRAY_LENGTH, true)
+  if (owner === 'CapOrbit') {
+    range('radiusM', 0, Infinity, false, true)
+    range('laps', 1, MAX_ARRAY_LENGTH, true)
+  }
   if (owner === 'SensorSpec')
     for (const key of ['trackInitN', 'trackInitM', 'trackDropMisses'])
       range(key, 1, MAX_ARRAY_LENGTH, true)

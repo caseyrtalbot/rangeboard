@@ -29,7 +29,7 @@ A sensor, C2 node, effector or threat placed on the board. A marker or an asset 
 _Avoid_: System, emitter, item
 
 **Threat**:
-A red UAS entity with a planned flight path. The truth object, not the picture of it.
+A red UAS entity with a planned flight path or an ISR CAP (a circular orbit the path points are generated from). The truth object, not the picture of it.
 _Avoid_: Flying object, drone, target
 
 **Track**:

@@ -148,6 +148,10 @@ export function HudLayer({ stageRef }: Props) {
     path: pathEntityId
       ? 'Path: click waypoints. Double-click or Enter to finish. Esc cancels.'
       : 'Path: click a UAS to start its flight path.',
+    cap:
+      draftCount === 0
+        ? 'ISR CAP: click the orbit center.'
+        : 'ISR CAP: click to set the radius. Double-click the center for 1 km. Esc cancels.',
     connect: 'Connect: click the source entity, then the target entity.',
     calibrate: 'Calibrate: click two points on the image, then enter the true distance.',
   }

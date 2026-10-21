@@ -3,6 +3,7 @@ import type {
   BasemapMode,
   Boundary,
   BoundaryType,
+  CapOrbit,
   Connection,
   Entity,
   EntityKind,
@@ -50,6 +51,7 @@ import { emptyScenario } from '../model/seed'
 import { importModels, resetBuiltin } from '../model/libraryLifecycle'
 import { describeConfiguration, describeThreats, standardCovariates } from '../model/seedCards'
 import { rotatePoint } from '../geometry/geo'
+import { CAP_DEFAULT_LAPS, CAP_MIN_RADIUS_M, capPathPoints, capRadiusFrom } from '../model/cap'
 import type { DisplayUnits } from '../geometry/geo'
 import { evaluateIntegration, profileFor, suggestLinksFor } from '../model/integration'
 import type { SuggestedLink } from '../model/integration'
@@ -91,7 +93,7 @@ import {
 /** Lens id stamped on every run; `Scenario.observedPresetId` keeps saved scenarios loadable. */
 const OBSERVED_PRESET_ID = 'run-summary'
 
-export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'calibrate'
+export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'cap' | 'calibrate'
 export type RightTab = 'inspect' | 'analysis'
 /** Theme choice. `system` follows the OS colour-scheme query; the other two pin it. */
 export type Theme = 'system' | 'dark' | 'light'
@@ -119,9 +121,9 @@ export interface UiState {
   basemap: BasemapMode
   tool: Tool
   boundaryType: BoundaryType
-  /** In-progress boundary or path points, world meters. */
+  /** In-progress boundary or path points, world meters; under 'cap', the orbit center. */
   draftPoints: Vec2[]
-  /** Entity that a new path is being drawn for. */
+  /** Entity that a new path or ISR CAP is being drawn for. */
   pathEntityId: string | null
   connectFromId: string | null
   calibrateA: Vec2 | null
@@ -160,6 +162,11 @@ export interface UiState {
    * drawer focuses the `kind` group, or shows the editor for `modelId`.
    */
   libraryRequest: LibraryRequest
+  /**
+   * The last `requestPlacement` call. App arms board placement of `modelId` when `seq`
+   * moves, the same arming the Library drawer performs. Session only.
+   */
+  placementRequest: PlacementRequest
   /**
    * Where the last selection came from. A board selection switches the right panel to
    * the Selected object tab; a panel row keeps the current tab (D7). Session only.
@@ -211,6 +218,11 @@ export interface RunTimelineUi {
   follow: boolean
   /** null reads as `{ t0S: 0, winS: DEFAULT_WINDOW_S }`, clamped to the run. */
   viewport: TimeViewport | null
+}
+
+export interface PlacementRequest {
+  seq: number
+  modelId: string | null
 }
 
 /** One request to open the library drawer. `seq` counts the calls; 0 is none. */
@@ -312,6 +324,12 @@ export interface Store {
   finishBoundary: (closed: boolean) => void
   beginPath: (entityId: string) => void
   finishPath: () => void
+  /** Arms the ISR CAP tool: the next click sets the orbit center, the one after the radius. */
+  beginCap: (entityId: string) => void
+  /** ONE mutate replacing the entity's path with a CAP centered on the draft point. */
+  finishCap: (edge: Vec2) => void
+  /** Merges a CAP patch and regenerates the points from the entity's current position. */
+  updateCap: (pathId: string, patch: Partial<CapOrbit>) => void
   cancelDraft: () => void
   updateBoundary: (id: string, patch: Partial<Boundary>) => void
   updatePath: (id: string, patch: Partial<FlightPath>) => void
@@ -394,6 +412,8 @@ export interface Store {
   setValidityOpen: (open: boolean) => void
   setPlacementPreview: (preview: PlacementPreview | null) => void
   requestPanel: (request: Omit<PanelRequest, 'seq'>) => void
+  /** Arm board placement of one library model, as the Library drawer's Place does. */
+  requestPlacement: (modelId: string) => void
   setShowFieldHelp: (v: boolean) => void
   setTheme: (t: Theme) => void
   setMoveUnderlay: (v: boolean) => void
@@ -679,6 +699,7 @@ export const useStore = create<Store>()((set, get) => {
       raidDraft: null,
       locationDialogOpen: false,
       libraryRequest: { seq: 0, kind: null, modelId: null },
+      placementRequest: { seq: 0, modelId: null },
       selectionOrigin: 'board',
       placementPreview: null,
       openSections: {},
@@ -1057,6 +1078,57 @@ export const useStore = create<Store>()((set, get) => {
         }
         return { ...s, paths: [...s.paths.filter((p) => p.entityId !== entityId), path] }
       })
+    },
+
+    beginCap: (entityId) =>
+      set((st) => ({
+        ui: { ...st.ui, tool: 'cap', pathEntityId: entityId, draftPoints: [] },
+      })),
+
+    finishCap: (edge) => {
+      const { ui, scenario } = get()
+      const entityId = ui.pathEntityId
+      const center = ui.draftPoints[0]
+      const entity = scenario.entities.find((e) => e.id === entityId)
+      set((st) => ({ ui: { ...st.ui, draftPoints: [], pathEntityId: null, tool: 'select' } }))
+      if (!entityId || !center || !entity) return
+      const cap: CapOrbit = {
+        center,
+        radiusM: capRadiusFrom(center, edge),
+        laps: CAP_DEFAULT_LAPS,
+      }
+      mutate((s) => {
+        const path: FlightPath = {
+          id: newId('pth'),
+          entityId,
+          points: capPathPoints(entity.pos, cap),
+          speedMps: null,
+          startDelayS: 0,
+          cap,
+        }
+        return { ...s, paths: [...s.paths.filter((p) => p.entityId !== entityId), path] }
+      })
+    },
+
+    updateCap: (pathId, patch) => {
+      const { scenario } = get()
+      const path = scenario.paths.find((p) => p.id === pathId)
+      const entity = path && scenario.entities.find((e) => e.id === path.entityId)
+      if (!path?.cap || !entity) return
+      const merged = { ...path.cap, ...patch }
+      // A cleared or partial input keeps the current value instead of a NaN orbit.
+      const radiusM = Number.isFinite(merged.radiusM) ? merged.radiusM : path.cap.radiusM
+      const laps = Number.isFinite(merged.laps) ? merged.laps : path.cap.laps
+      const cap: CapOrbit = {
+        ...merged,
+        radiusM: Math.max(CAP_MIN_RADIUS_M, radiusM),
+        laps: Math.max(1, Math.round(laps)),
+      }
+      const points = capPathPoints(entity.pos, cap)
+      mutate((s) => ({
+        ...s,
+        paths: s.paths.map((p) => (p.id === pathId ? { ...p, cap, points } : p)),
+      }))
     },
 
     cancelDraft: () =>
@@ -1533,6 +1605,13 @@ export const useStore = create<Store>()((set, get) => {
     requestPanel: (request) =>
       set((st) => ({
         ui: { ...st.ui, panelRequest: { ...request, seq: st.ui.panelRequest.seq + 1 } },
+      })),
+    requestPlacement: (modelId) =>
+      set((st) => ({
+        ui: {
+          ...st.ui,
+          placementRequest: { seq: st.ui.placementRequest.seq + 1, modelId },
+        },
       })),
     setShowFieldHelp: (v) => {
       if (get().ui.showFieldHelp === v) return

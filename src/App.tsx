@@ -857,6 +857,18 @@ export default function App() {
     [],
   )
 
+  // `requestPlacement` in the store: arm the board to place that library model.
+  useEffect(
+    () =>
+      useStore.subscribe((state, previous) => {
+        const request = state.ui.placementRequest
+        if (request.seq === previous.ui.placementRequest.seq || !request.modelId) return
+        const model = state.scenario.library.find((m) => m.id === request.modelId)
+        if (model) armPlacement({ kind: 'model', id: model.id, name: model.name })
+      }),
+    [armPlacement],
+  )
+
   const openPhase = useCallback(
     (phase: BoardPhase) => {
       setPlacement(null)

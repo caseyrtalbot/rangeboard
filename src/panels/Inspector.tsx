@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import type {
   Boundary,
   BoundaryType,
   Connection,
   Entity,
   EntityKind,
+  CapOrbit,
   FlightPath,
   FormationShape,
 } from '../model/types'
@@ -39,6 +41,7 @@ import type { RaidDraft } from '../state/store'
 import type { RingKey } from '../state/rings'
 import { RING_HINTS, RING_LABELS } from './ringLabels'
 import { formatDistance, formatNm, formatSpeed, pathLength } from '../geometry/geo'
+import { CAP_MIN_RADIUS_M } from '../model/cap'
 import { evaluateIntegration, integrationSummary } from '../model/integration'
 import type { IntegrationConfidence } from '../model/integration'
 import { effectiveRadiusM, rangeBasis } from '../analysis/range'
@@ -459,6 +462,58 @@ function PathSpeedField({ path, cruise, max }: { path: FlightPath; cruise: numbe
 }
 
 /**
+ * Radius and laps of an ISR CAP. Each field keeps a local draft while typing and
+ * writes the orbit once on blur or Enter, so a half-typed radius never snaps to the
+ * floor and one edit is one undo step.
+ */
+function CapOrbitFields({ path, cap }: { path: FlightPath; cap: CapOrbit }) {
+  const { updateCap } = useStore.getState()
+  const [radiusDraft, setRadiusDraft] = useState<string | null>(null)
+  const [lapsDraft, setLapsDraft] = useState<string | null>(null)
+  const commitRadius = () => {
+    if (radiusDraft == null) return
+    setRadiusDraft(null)
+    const radiusM = Number(radiusDraft)
+    if (Number.isFinite(radiusM) && radiusM !== cap.radiusM) updateCap(path.id, { radiusM })
+  }
+  const commitLaps = () => {
+    if (lapsDraft == null) return
+    setLapsDraft(null)
+    const laps = Number(lapsDraft)
+    if (Number.isFinite(laps) && laps !== cap.laps) updateCap(path.id, { laps })
+  }
+  const onEnter = (commit: () => void) => (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') commit()
+  }
+  return (
+    <div className="field-row">
+      <Field label="Radius (m)">
+        <input
+          type="number"
+          min={CAP_MIN_RADIUS_M}
+          step={50}
+          value={radiusDraft ?? Math.round(cap.radiusM)}
+          onChange={(e) => setRadiusDraft(e.target.value)}
+          onBlur={commitRadius}
+          onKeyDown={onEnter(commitRadius)}
+        />
+      </Field>
+      <Field label="Laps">
+        <input
+          type="number"
+          min={1}
+          step={1}
+          value={lapsDraft ?? cap.laps}
+          onChange={(e) => setLapsDraft(e.target.value)}
+          onBlur={commitLaps}
+          onKeyDown={onEnter(commitLaps)}
+        />
+      </Field>
+    </div>
+  )
+}
+
+/**
  * Tactic raid builder, shown in place of the Inspector body while a raid draft is
  * armed. Commit happens on the next canvas click or through "Use default axis".
  */
@@ -707,6 +762,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
     deleteSelection,
     setTool,
     beginPath,
+    beginCap,
     updatePath,
     deletePathForEntity,
     selectSystem,
@@ -1276,7 +1332,17 @@ function EntityInspector({ entity }: { entity: Entity }) {
         <Section label="Flight path">
           {path ? (
             <>
-              <Row label="Waypoints" value={path.points.length} />
+              {path.cap ? (
+                <>
+                  <Row label="Pattern" value="ISR CAP" />
+                  <CapOrbitFields key={path.id} path={path} cap={path.cap} />
+                  {/* World +y is south; north is its negation, as the entity position. */}
+                  <Row label="Center east (m)" value={Math.round(path.cap.center.x)} />
+                  <Row label="Center north (m)" value={Math.round(-path.cap.center.y)} />
+                </>
+              ) : (
+                <Row label="Waypoints" value={path.points.length} />
+              )}
               <Row label="Track length" value={formatDistance(pathLength(path.points), units)} />
               <div className="field-row">
                 {(() => {
@@ -1317,6 +1383,7 @@ function EntityInspector({ entity }: { entity: Entity }) {
             prepare && (
               <Actions>
                 <button onClick={() => beginPath(entity.id)}>Draw flight path</button>
+                <button onClick={() => beginCap(entity.id)}>Draw ISR CAP</button>
               </Actions>
             )
           )}

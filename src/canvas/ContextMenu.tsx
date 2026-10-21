@@ -243,6 +243,16 @@ export function ContextMenu() {
             onPick={() => st.beginPath(entity.id)}
           />
         )}
+        {prepare && entity.kind === 'uas' && (
+          <Item
+            label={
+              scenario.paths.some((p) => p.entityId === entity.id && p.cap)
+                ? 'Redraw ISR CAP'
+                : 'Draw ISR CAP'
+            }
+            onPick={() => st.beginCap(entity.id)}
+          />
+        )}
         {entity.kind === 'uas' && (
           <Item
             label={entity.showRange ? 'Hide range ring' : 'Show range ring'}

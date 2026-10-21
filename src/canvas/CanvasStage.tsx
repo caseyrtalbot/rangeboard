@@ -103,6 +103,7 @@ export const CanvasStage = memo(function CanvasStage({
   const addDraftPoint = useStore((s) => s.addDraftPoint)
   const finishBoundary = useStore((s) => s.finishBoundary)
   const finishPath = useStore((s) => s.finishPath)
+  const finishCap = useStore((s) => s.finishCap)
   const setCalibratePoint = useStore((s) => s.setCalibratePoint)
   const addSystemFromPreset = useStore((s) => s.addSystemFromPreset)
   const openContextMenu = useStore((s) => s.openContextMenu)
@@ -264,6 +265,9 @@ export const CanvasStage = memo(function CanvasStage({
       case 'add-draft-point':
         addDraftPoint(world)
         return
+      case 'finish-cap':
+        finishCap(world)
+        return
       case 'set-calibrate-point':
         setCalibratePoint(world)
         return
@@ -304,6 +308,8 @@ export const CanvasStage = memo(function CanvasStage({
         tool,
         raidDraft: raidDraft != null,
         placementArmed: onPlace != null,
+        // Read at click time: both clicks of a double click land before a re-render.
+        capCenterPlaced: tool === 'cap' && useStore.getState().ui.draftPoints.length > 0,
         clickSuppressed,
       },
     )
@@ -312,7 +318,8 @@ export const CanvasStage = memo(function CanvasStage({
 
   function handleDblClick() {
     // Konva pairs any two clicks inside its time window into a dblclick, even far
-    // apart, so only a true in-place double-click finishes.
+    // apart, so only a true in-place double-click finishes. Under 'cap' the pair's
+    // second click already finished the CAP, so the dblclick finishes nothing.
     if (!isInPlacePair()) return
     if (tool === 'boundary') finishBoundary(true)
     if (tool === 'path') finishPath()
@@ -336,7 +343,8 @@ export const CanvasStage = memo(function CanvasStage({
 
   const drawing = tool !== 'select'
   // Tools whose draft geometry follows the cursor.
-  const cursorDrawn = tool === 'boundary' || tool === 'path' || tool === 'calibrate'
+  const cursorDrawn =
+    tool === 'boundary' || tool === 'path' || tool === 'cap' || tool === 'calibrate'
   // Picking one of those tools starts from the cursor's current place.
   useEffect(() => {
     if (cursorDrawn) setMouseWorld(mouseWorldRef.current)

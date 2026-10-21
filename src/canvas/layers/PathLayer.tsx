@@ -1,7 +1,7 @@
 import { selectEffectiveLayers } from '../../state/selectors'
 import { memo, useMemo } from 'react'
 import { Arrow, Circle, Group, Line, Text } from 'react-konva'
-import type { Entity, FlightPath, Vec2 } from '../../model/types'
+import type { CapOrbit, Entity, FlightPath, Vec2 } from '../../model/types'
 import type { UiState } from '../../state/store'
 import { useStore } from '../../state/store'
 import { modelFor, pathDurationS } from '../../model/scenario'
@@ -9,6 +9,7 @@ import { dist, formatDistance, pathLength } from '../../geometry/geo'
 import { entityInk } from '../../ui/ink'
 import { useBoardInk } from '../useBoardInk'
 import { captionClear } from '../labelLayout'
+import { capIngressPoint } from '../../model/cap'
 
 interface Props {
   mouseWorld: Vec2 | null
@@ -78,6 +79,111 @@ const FlightPathShape = memo(function FlightPathShape({
   )
 })
 
+/**
+ * One committed ISR CAP: the dashed ingress leg, the dashed orbit circle, a center mark
+ * and one caption off the circle's east point. The orbit vertices draw as the circle,
+ * not as waypoint dots.
+ */
+const CapPathShape = memo(function CapPathShape({
+  path,
+  cap,
+  color,
+  etaS,
+  units,
+}: {
+  path: FlightPath
+  cap: CapOrbit
+  color: string
+  etaS: number
+  units: UiState['units']
+}) {
+  const k = useStore((s) => s.camera.scale)
+  const start = path.points[0]
+  const ingress = useMemo(() => (start ? capIngressPoint(start, cap) : null), [start, cap])
+  const leg = useMemo(
+    () => (start && ingress ? [start.x, start.y, ingress.x, ingress.y] : null),
+    [start, ingress],
+  )
+  const text = `R ${formatDistance(cap.radiusM, units)} · ${cap.laps} laps · ${Math.round(etaS)} s`
+  return (
+    <Group listening={false}>
+      {leg && (
+        <Line
+          points={leg}
+          stroke={color}
+          strokeWidth={1.5}
+          dash={PATH_DASH}
+          strokeScaleEnabled={false}
+        />
+      )}
+      <Circle
+        x={cap.center.x}
+        y={cap.center.y}
+        radius={cap.radiusM}
+        stroke={color}
+        strokeWidth={1.5}
+        dash={PATH_DASH}
+        strokeScaleEnabled={false}
+      />
+      <CenterMark p={cap.center} k={k} color={color} />
+      {/* Counter-scaled, as the path caption, just outside the east point. */}
+      <Group
+        x={cap.center.x + cap.radiusM + 8 / k}
+        y={cap.center.y - 5.5 / k}
+        scaleX={1 / k}
+        scaleY={1 / k}
+      >
+        <Text fontFamily="JetBrains Mono" text={text} fontSize={11} fill={color} />
+      </Group>
+    </Group>
+  )
+})
+
+/** The rubber band of a CAP draft: the center mark and a circle out to the cursor. */
+function CapDraftShape({
+  center,
+  mouseWorld,
+  k,
+  units,
+}: {
+  center: Vec2
+  mouseWorld: Vec2 | null
+  k: number
+  units: UiState['units']
+}) {
+  const ink = useBoardInk()
+  const r = mouseWorld ? dist(center, mouseWorld) : 0
+  return (
+    <Group listening={false}>
+      <CenterMark p={center} k={k} color={ink.selection} />
+      {mouseWorld && r > 0 && (
+        <>
+          <Circle
+            x={center.x}
+            y={center.y}
+            radius={r}
+            stroke={ink.selection}
+            strokeWidth={1.5}
+            dash={DRAFT_DASH}
+            strokeScaleEnabled={false}
+            opacity={0.8}
+          />
+          <Group x={mouseWorld.x} y={mouseWorld.y} scaleX={1 / k} scaleY={1 / k}>
+            <Text
+              fontFamily="JetBrains Mono"
+              x={10}
+              y={-16}
+              text={`R ${formatDistance(r, units)}`}
+              fontSize={12}
+              fill={ink.selection}
+            />
+          </Group>
+        </>
+      )}
+    </Group>
+  )
+}
+
 /** The rubber band of a boundary or path draft, from its start to the cursor. */
 function DraftShape({
   start,
@@ -133,12 +239,24 @@ export function PathLayer({ mouseWorld }: Props) {
   const paths = (showPaths ? scenario.paths : []).map((p) => {
     const entity = scenario.entities.find((e) => e.id === p.entityId)
     if (!entity) return null
+    const color = entityInk(entity, modelFor(scenario, entity))
+    if (p.cap)
+      return (
+        <CapPathShape
+          key={p.id}
+          path={p}
+          cap={p.cap}
+          color={color}
+          etaS={pathDurationS(scenario, p)}
+          units={units}
+        />
+      )
     const lengthM = pathLength(p.points)
     return (
       <FlightPathShape
         key={p.id}
         path={p}
-        color={entityInk(entity, modelFor(scenario, entity))}
+        color={color}
         lengthM={lengthM}
         etaS={pathDurationS(scenario, p)}
         units={units}
@@ -155,6 +273,9 @@ export function PathLayer({ mouseWorld }: Props) {
         : undefined
     draft = <DraftShape start={start} draftPoints={draftPoints} mouseWorld={mouseWorld} k={k} />
   }
+  // Before the center click the cursor alone shows the tool.
+  if (tool === 'cap' && draftPoints.length > 0)
+    draft = <CapDraftShape center={draftPoints[0]} mouseWorld={mouseWorld} k={k} units={units} />
 
   let calibrate = null
   if (tool === 'calibrate' && (calibrateA || calibrateB)) {
@@ -192,6 +313,19 @@ export function PathLayer({ mouseWorld }: Props) {
       {paths}
       {draft}
       {calibrate}
+    </>
+  )
+}
+
+/** A small cross on an orbit center. */
+function CenterMark({ p, k, color }: { p: Vec2; k: number; color: string }) {
+  const r = 5 / k
+  const across = useMemo(() => [p.x - r, p.y, p.x + r, p.y], [p, r])
+  const down = useMemo(() => [p.x, p.y - r, p.x, p.y + r], [p, r])
+  return (
+    <>
+      <Line points={across} stroke={color} strokeWidth={1.5} strokeScaleEnabled={false} />
+      <Line points={down} stroke={color} strokeWidth={1.5} strokeScaleEnabled={false} />
     </>
   )
 }

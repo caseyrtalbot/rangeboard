@@ -5,6 +5,13 @@ import { selectEffectiveLayers } from './selectors'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RUN_TIMELINE_DEFAULT_H, RUN_TIMELINE_MIN_H, useStore } from './store'
 import { scenarioDurationS } from '../model/scenario'
+import {
+  CAP_DEFAULT_LAPS,
+  CAP_DEFAULT_RADIUS_M,
+  CAP_MIN_RADIUS_M,
+  CAP_POINTS_PER_LAP,
+  capPathPoints,
+} from '../model/cap'
 import { analysisBasisSignature } from './analysisBasis'
 import { bumpCardVersion } from './labels'
 import { DEFAULT_LAYERS, EXECUTE_DEFAULT_LAYERS, LAYER_PRESETS, ringVisible } from './layers'
@@ -252,6 +259,86 @@ describe('store scenario actions', () => {
     // The Phase 3 point-mass model accelerates at 2 m/s2 to the 50 m/s cruise:
     // 25 s over the first 625 m, then 187.5 s at cruise, rounded up.
     expect(scenarioDurationS(useStore.getState().scenario)).toBe(213)
+  })
+
+  it('draws an ISR CAP that replaces the existing path in one undoable step', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-mugin5', { x: 0, y: 0 })
+    const uasId = useStore.getState().scenario.entities[0].id
+    st.beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: 5000, y: 0 })
+    useStore.getState().finishPath()
+    useStore.getState().beginCap(uasId)
+    expect(useStore.getState().ui).toMatchObject({
+      tool: 'cap',
+      pathEntityId: uasId,
+      draftPoints: [],
+    })
+    useStore.getState().addDraftPoint({ x: 0, y: -4000 })
+    useStore.getState().finishCap({ x: 1500, y: -4000 })
+    const { scenario, ui } = useStore.getState()
+    expect(ui).toMatchObject({ tool: 'select', pathEntityId: null, draftPoints: [] })
+    expect(scenario.paths).toHaveLength(1)
+    const path = scenario.paths[0]
+    expect(path.cap).toEqual({ center: { x: 0, y: -4000 }, radiusM: 1500, laps: CAP_DEFAULT_LAPS })
+    expect(path.points).toEqual(capPathPoints({ x: 0, y: 0 }, path.cap!))
+    expect(path).toMatchObject({ entityId: uasId, speedMps: null, startDelayS: 0 })
+    useStore.getState().undo()
+    expect(useStore.getState().scenario.paths[0].cap).toBeUndefined()
+  })
+
+  it('a CAP edge click on the center takes the default radius', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-mugin5', { x: 0, y: 0 })
+    const uasId = useStore.getState().scenario.entities[0].id
+    st.beginCap(uasId)
+    useStore.getState().addDraftPoint({ x: 2000, y: 0 })
+    useStore.getState().finishCap({ x: 2010, y: 0 })
+    expect(useStore.getState().scenario.paths[0].cap?.radiusM).toBe(CAP_DEFAULT_RADIUS_M)
+  })
+
+  it('finishCap with no center resets the draft and changes nothing', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-mugin5', { x: 0, y: 0 })
+    const uasId = useStore.getState().scenario.entities[0].id
+    st.beginCap(uasId)
+    const before = useStore.getState().scenario
+    useStore.getState().finishCap({ x: 1000, y: 0 })
+    expect(useStore.getState().scenario).toBe(before)
+    expect(useStore.getState().ui).toMatchObject({ tool: 'select', pathEntityId: null })
+  })
+
+  it('updateCap regenerates the points from the entity and clamps radius and laps', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-mugin5', { x: 0, y: 0 })
+    const uasId = useStore.getState().scenario.entities[0].id
+    st.beginCap(uasId)
+    useStore.getState().addDraftPoint({ x: 0, y: -3000 })
+    useStore.getState().finishCap({ x: 0, y: -2000 })
+    const pathId = useStore.getState().scenario.paths[0].id
+    useStore.getState().moveEntity(uasId, { x: 500, y: 500 })
+    useStore.getState().updateCap(pathId, { radiusM: 2000, laps: 2 })
+    let path = useStore.getState().scenario.paths[0]
+    expect(path.cap).toEqual({ center: { x: 0, y: -3000 }, radiusM: 2000, laps: 2 })
+    expect(path.points).toEqual(capPathPoints({ x: 500, y: 500 }, path.cap!))
+    useStore.getState().updateCap(pathId, { radiusM: 10, laps: 0 })
+    path = useStore.getState().scenario.paths[0]
+    expect(path.cap).toMatchObject({ radiusM: CAP_MIN_RADIUS_M, laps: 1 })
+    expect(path.points).toHaveLength(2 + CAP_POINTS_PER_LAP)
+    useStore.getState().updateCap(pathId, { laps: 2.6 })
+    expect(useStore.getState().scenario.paths[0].cap?.laps).toBe(3)
+  })
+
+  it('updateCap leaves a hand-drawn path unchanged', () => {
+    const st = useStore.getState()
+    st.addEntityFromModel('lib-mugin5', { x: 0, y: 0 })
+    const uasId = useStore.getState().scenario.entities[0].id
+    st.beginPath(uasId)
+    useStore.getState().addDraftPoint({ x: 5000, y: 0 })
+    useStore.getState().finishPath()
+    const before = useStore.getState().scenario
+    useStore.getState().updateCap(before.paths[0].id, { radiusM: 2000 })
+    expect(useStore.getState().scenario).toBe(before)
   })
 
   it('defaults connection labels from endpoint kinds', () => {

@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
-import type { IntegrationConfidence } from '../model/integration'
-import { integrationSummary } from '../model/integration'
+import { useEffect, useLayoutEffect, useRef } from 'react'
+import { formatDistance } from '../geometry/geo'
+import type { BoardPartner, IntegrationConfidence, PartnerInstance } from '../model/integration'
+import { integrationBoardStatus, linkDirection } from '../model/integration'
 import { useStore } from '../state/store'
 import { ProvMark, State } from '../ui/kit'
 import type { ProvKind } from '../ui/kit'
@@ -18,12 +19,26 @@ const CONFIDENCE_MARK: Record<IntegrationConfidence, ProvKind> = {
   inferred: 'inferred',
 }
 
-/** Connect offers after placing or dragging a blue-force entity. Rendered as DOM over the Konva stage. */
+const nearestUnlinked = (p: BoardPartner): PartnerInstance | undefined =>
+  p.instances.find((i) => !i.linked)
+
+/** Draw one link in kill-chain order through the regular connect path (one undo step). */
+function connect(entityId: string, otherId: string) {
+  const st = useStore.getState()
+  const a = st.scenario.entities.find((e) => e.id === entityId)
+  const b = st.scenario.entities.find((e) => e.id === otherId)
+  if (!a || !b) return
+  const { fromId, toId } = linkDirection(a, b)
+  st.beginConnect(fromId)
+  useStore.getState().completeConnect(toId)
+}
+
+/** Known integrations for a blue-force entity against the board. Rendered as DOM over the Konva stage. */
 export function ConnectSuggestPopup() {
   const suggestion = useStore((s) => s.ui.connectSuggestion)
   const scenario = useStore((s) => s.scenario)
+  const units = useStore((s) => s.ui.units)
   const dismissConnectSuggestion = useStore((s) => s.dismissConnectSuggestion)
-  const applyConnectSuggestion = useStore((s) => s.applyConnectSuggestion)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -35,11 +50,27 @@ export function ConnectSuggestPopup() {
     return () => window.removeEventListener('mousedown', onDown)
   }, [suggestion, dismissConnectSuggestion])
 
+  // The list can be long: keep the whole popup inside the canvas host, 8 px from its
+  // right and bottom edges, by moving the placement, never a transform (the surface's
+  // entry animation owns that).
+  useLayoutEffect(() => {
+    const el = ref.current
+    const host = el?.offsetParent
+    if (!suggestion || !el || !(host instanceof HTMLElement)) return
+    const left = Math.min(suggestion.screen.x, host.clientWidth - el.offsetWidth - 8)
+    const top = Math.min(suggestion.screen.y, host.clientHeight - el.offsetHeight - 8)
+    el.style.left = `${Math.max(8, left)}px`
+    el.style.top = `${Math.max(8, top)}px`
+  })
+
   if (!suggestion) return null
   const name = (id: string) => scenario.entities.find((e) => e.id === id)?.name ?? '?'
-  const entity = scenario.entities.find((e) => e.id === suggestion.entityId)
-  const summary = integrationSummary(entity?.specId ?? null, scenario.library)
-  const empty = suggestion.candidates.length === 0 && suggestion.autoConnected.length === 0
+  const entityId = suggestion.entityId
+  const status = integrationBoardStatus(scenario, entityId)
+  const partners = status?.partners ?? []
+  // Names in a requirement group with no member placed; only those carry the alert.
+  const missingNames = new Set(status?.missing.flatMap((m) => m.names) ?? [])
+  const reachable = partners.filter((p) => nearestUnlinked(p)?.inRange)
 
   return (
     <div
@@ -48,7 +79,7 @@ export function ConnectSuggestPopup() {
       style={{ left: suggestion.screen.x, top: suggestion.screen.y }}
     >
       <div className="ctx-head suggest-head">
-        <span>Connect {name(suggestion.entityId)}</span>
+        <span>Connect {name(entityId)}</span>
         <button
           className="suggest-x"
           onClick={dismissConnectSuggestion}
@@ -58,60 +89,34 @@ export function ConnectSuggestPopup() {
           ×
         </button>
       </div>
-      {suggestion.autoConnected.map((c) => {
-        const partnerId = c.fromId === suggestion.entityId ? c.toId : c.fromId
-        return (
-          <div key={`${c.fromId}:${c.toId}`} className="suggest-row" title={c.verdict.note}>
-            <div className="suggest-info">
-              <div>{name(partnerId)}</div>
-              <div className="suggest-meta">
-                <State tone="nominal">LINKED</State>
-                {c.verdict.label}
-                {c.verdict.medium ? ` · ${c.verdict.medium}` : ''}
-              </div>
-            </div>
-          </div>
-        )
-      })}
-      {suggestion.candidates.map((c, i) => {
-        const partnerId = c.fromId === suggestion.entityId ? c.toId : c.fromId
-        const confidence = c.verdict.confidence ?? 'inferred'
-        return (
-          <div key={`${c.fromId}:${c.toId}`} className="suggest-row" title={c.verdict.note}>
-            <div className="suggest-info">
-              <div>{name(partnerId)}</div>
-              <div className="suggest-meta">
-                <ProvMark
-                  kind={CONFIDENCE_MARK[confidence]}
-                  title={`${CONFIDENCE_BADGE[confidence]} · ${c.verdict.note}`}
-                />
-                {c.verdict.label}
-                {c.verdict.medium ? ` · ${c.verdict.medium}` : ''}
-              </div>
-            </div>
-            <button className="mini" onClick={() => applyConnectSuggestion([i])}>
-              Connect
-            </button>
-          </div>
-        )
-      })}
-      {suggestion.candidates.length > 1 && (
-        <button
-          className="ctx-item"
-          onClick={() => applyConnectSuggestion(suggestion.candidates.map((_, i) => i))}
-        >
-          Connect all
-        </button>
-      )}
-      {empty && summary && (
-        <>
-          <div className="suggest-empty">
-            {summary.partners.length > 0
-              ? 'No compatible system in range. Known integrations:'
-              : 'No known network integrations for this system.'}
-          </div>
-          {summary.partners.slice(0, 5).map((p) => (
-            <div key={p.specId} className="suggest-row" title={p.note}>
+      {status?.missing.map((m) => (
+        <div key={m.kind} className="suggest-missing">
+          <State tone="critical">
+            {m.kind === 'required-c2'
+              ? `Not on board: ${m.names.join(' or ')}`
+              : `No fire-control source on board: ${m.names.join(' or ')}`}
+          </State>
+        </div>
+      ))}
+      <div className="suggest-list">
+        {partners.length > 0 && (
+          <div className="suggest-group">Known integrations · {partners.length}</div>
+        )}
+        {partners.map((p) => {
+          const open = nearestUnlinked(p)
+          // A link wired by this popup's auto-connect is marked so it reads as automatic.
+          const auto = suggestion.autoConnected.find((c) =>
+            p.instances.some((i) => i.entityId === c.fromId || i.entityId === c.toId),
+          )
+          const alert = p.required && p.instances.length === 0 && missingNames.has(p.name)
+          let title = p.note
+          if (open) {
+            title = `Nearest unlinked: ${open.name}, ${formatDistance(open.distM, units)}`
+            if (!open.inRange) title += ' (beyond the suggest radius for its medium)'
+            title += `. ${p.note}`
+          }
+          return (
+            <div key={p.specId} className="suggest-row" title={title}>
               <div className="suggest-info">
                 <div>{p.name}</div>
                 <div className="suggest-meta">
@@ -121,17 +126,59 @@ export function ConnectSuggestPopup() {
                   />
                   {p.role.replace('-', ' ')}
                 </div>
+                <div className="suggest-meta">
+                  {open ? (
+                    <>
+                      <State tone="nominal" hollow>
+                        ON BOARD
+                      </State>
+                      {formatDistance(open.distM, units)}
+                    </>
+                  ) : p.instances.length > 0 ? (
+                    auto ? (
+                      <State tone="nominal" title={auto.verdict.note}>
+                        LINKED · auto
+                      </State>
+                    ) : (
+                      <State tone="nominal">LINKED</State>
+                    )
+                  ) : (
+                    <State tone={alert ? 'critical' : 'inactive'}>
+                      {alert ? 'REQUIRED · NOT ON BOARD' : 'NOT ON BOARD'}
+                    </State>
+                  )}
+                </div>
               </div>
+              {open ? (
+                <button className="mini" onClick={() => connect(entityId, open.entityId)}>
+                  Connect
+                </button>
+              ) : p.instances.length === 0 ? (
+                <button
+                  className="mini"
+                  onClick={() => useStore.getState().requestPlacement(p.specId)}
+                >
+                  Place
+                </button>
+              ) : null}
             </div>
-          ))}
-          {summary.partners.length > 5 && (
-            <div className="suggest-empty">
-              +{summary.partners.length - 5} more in the Inspector
-            </div>
-          )}
-        </>
+          )
+        })}
+      </div>
+      {reachable.length > 1 && (
+        <button
+          className="ctx-item"
+          onClick={() => {
+            for (const p of reachable) connect(entityId, nearestUnlinked(p)!.entityId)
+          }}
+        >
+          Connect all
+        </button>
       )}
-      {summary?.guidance && <div className="suggest-empty">{summary.guidance}</div>}
+      {status && partners.length === 0 && (
+        <div className="suggest-empty">No known network integrations for this system.</div>
+      )}
+      {status?.guidance && <div className="suggest-empty">{status.guidance}</div>}
     </div>
   )
 }

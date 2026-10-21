@@ -3,7 +3,9 @@ import { emptyScenario, SEED_LIBRARY } from './seed'
 import type { Entity, Scenario, SpecModel } from './types'
 import {
   evaluateIntegration,
+  integrationBoardStatus,
   integrationSummary,
+  linkDirection,
   MEDIUM_SUGGEST_RADIUS_M,
   profileFor,
   suggestLinksFor,
@@ -270,5 +272,112 @@ describe('suggestLinksFor', () => {
     expect(out).toHaveLength(6)
     expect(out.slice(0, 5).every((l) => l.verdict.confidence === 'documented')).toBe(true)
     expect(out[5].verdict.confidence).toBe('probable')
+  })
+})
+
+describe('integrationBoardStatus', () => {
+  it('returns null for a missing entity or an unprofiled spec', () => {
+    const s = emptyScenario()
+    expect(integrationBoardStatus(s, 'nope')).toBeNull()
+    const threat = place(s, 'lib-shahed136', 0, 0)
+    expect(integrationBoardStatus(s, threat.id)).toBeNull()
+  })
+
+  it('splits partners into linked, out of range and not on board', () => {
+    const s = emptyScenario()
+    const coyote = place(s, 'lib-coyote', 0, 0)
+    const kurfs = place(s, 'lib-kurfs', 1000, 0)
+    // Beyond every medium's suggest radius.
+    place(s, 'lib-faadc2', 50000, 0)
+    s.connections.push({ id: 'c1', fromId: kurfs.id, toId: coyote.id, label: 'fc uplink' })
+    const st = integrationBoardStatus(s, coyote.id)!
+    const by = new Map(st.partners.map((p) => [p.specId, p]))
+
+    const k = by.get('lib-kurfs')!
+    expect(k.required).toBe(true)
+    expect(k.instances).toEqual([
+      { entityId: kurfs.id, name: kurfs.name, distM: 1000, linked: true, inRange: true },
+    ])
+    const f = by.get('lib-faadc2')!
+    expect(f.required).toBe(true)
+    expect(f.instances).toHaveLength(1)
+    expect(f.instances[0].linked).toBe(false)
+    expect(f.instances[0].inRange).toBe(false)
+    expect(by.get('lib-tpq53')!.instances).toHaveLength(0)
+    expect(by.get('lib-lstar')!.required).toBe(false)
+    expect(st.missing).toEqual([])
+  })
+
+  it('reads a link stored in either direction', () => {
+    const s = emptyScenario()
+    const coyote = place(s, 'lib-coyote', 0, 0)
+    const kurfs = place(s, 'lib-kurfs', 100, 0)
+    s.connections.push({ id: 'c1', fromId: coyote.id, toId: kurfs.id, label: '' })
+    const st = integrationBoardStatus(s, coyote.id)!
+    expect(st.partners.find((p) => p.specId === 'lib-kurfs')!.instances[0].linked).toBe(true)
+  })
+
+  it('reports a requirement group missing until any one member is placed', () => {
+    const s = emptyScenario()
+    const coyote = place(s, 'lib-coyote', 0, 0)
+    expect(integrationBoardStatus(s, coyote.id)!.missing).toEqual([
+      { kind: 'required-c2', names: [spec('lib-faadc2').name, spec('lib-lattice').name] },
+      { kind: 'fc-source', names: [spec('lib-kurfs').name, spec('lib-tpq53').name] },
+    ])
+    // A disabled member does not satisfy the group.
+    const off = place(s, 'lib-tpq53', 500, 0)
+    off.enabled = false
+    expect(integrationBoardStatus(s, coyote.id)!.missing.map((m) => m.kind)).toEqual([
+      'required-c2',
+      'fc-source',
+    ])
+    place(s, 'lib-lattice', 500, 0)
+    expect(integrationBoardStatus(s, coyote.id)!.missing.map((m) => m.kind)).toEqual(['fc-source'])
+    place(s, 'lib-kurfs', 500, 0)
+    expect(integrationBoardStatus(s, coyote.id)!.missing).toEqual([])
+  })
+
+  it('sorts unsatisfied required, unlinked on board, not on board, then linked', () => {
+    const s = emptyScenario()
+    const coyote = place(s, 'lib-coyote', 0, 0)
+    // fc-source group satisfied by KuRFS (linked); required-c2 group unsatisfied.
+    const kurfs = place(s, 'lib-kurfs', 1000, 0)
+    s.connections.push({ id: 'c1', fromId: kurfs.id, toId: coyote.id, label: '' })
+    place(s, 'lib-lstar', 2000, 0)
+    const ids = integrationBoardStatus(s, coyote.id)!.partners.map((p) => p.specId)
+    // Bucket 0: FAAD C2 (documented) before Lattice (probable).
+    expect(ids.slice(0, 2)).toEqual(['lib-faadc2', 'lib-lattice'])
+    expect(ids[2]).toBe('lib-lstar')
+    // TPQ-53 is in a satisfied group, so it sorts with the other unplaced partners.
+    expect(ids.indexOf('lib-tpq53')).toBeGreaterThan(2)
+    expect(ids[ids.length - 1]).toBe('lib-kurfs')
+  })
+
+  it('folds in an in-range shared-protocol partner and keeps it once linked', () => {
+    const s = emptyScenario()
+    const lattice = place(s, 'lib-lattice', 0, 0)
+    const rf = place(s, 'lib-rfone', 200, 0)
+    const find = () =>
+      integrationBoardStatus(s, rf.id)!.partners.find((p) => p.specId === 'lib-lattice')
+    const p = find()!
+    expect(p.confidence).toBe('probable')
+    expect(p.required).toBe(false)
+    expect(p.source).toBeUndefined()
+    expect(p.instances).toEqual([
+      { entityId: lattice.id, name: lattice.name, distM: 200, linked: false, inRange: true },
+    ])
+    s.connections.push({ id: 'c1', fromId: rf.id, toId: lattice.id, label: 'track data' })
+    expect(find()!.instances[0].linked).toBe(true)
+  })
+
+  it('linkDirection follows the kill chain and keeps c2-c2 order', () => {
+    const s = emptyScenario()
+    const radar = place(s, 'lib-kurfs', 0, 0)
+    const c2 = place(s, 'lib-faadc2', 0, 0)
+    const eff = place(s, 'lib-coyote', 0, 0)
+    const c2b = place(s, 'lib-lattice', 0, 0)
+    expect(linkDirection(c2, radar)).toEqual({ fromId: radar.id, toId: c2.id })
+    expect(linkDirection(eff, c2)).toEqual({ fromId: c2.id, toId: eff.id })
+    expect(linkDirection(c2b, c2)).toEqual({ fromId: c2b.id, toId: c2.id })
   })
 })

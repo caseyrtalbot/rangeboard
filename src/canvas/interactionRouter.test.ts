@@ -3,7 +3,7 @@ import type { Tool } from '../state/store'
 import { IDLE_INTERACTION, routeInteraction } from './interactionRouter'
 import type { Action, InteractionState } from './interactionRouter'
 
-const TOOLS: Tool[] = ['select', 'boundary', 'connect', 'path', 'calibrate']
+const TOOLS: Tool[] = ['select', 'boundary', 'connect', 'path', 'cap', 'calibrate']
 const state = (patch: Partial<InteractionState>): InteractionState => ({
   ...IDLE_INTERACTION,
   ...patch,
@@ -72,9 +72,15 @@ describe('escape precedence', () => {
 
   it('clears the board for every drawing tool and draft', () => {
     for (const tool of TOOLS) {
-      expect(escape({ tool, raidDraft: true, connectFrom: true, pathStarted: true })).toBe(
-        'clear-board',
-      )
+      expect(
+        escape({
+          tool,
+          raidDraft: true,
+          connectFrom: true,
+          pathStarted: true,
+          capCenterPlaced: true,
+        }),
+      ).toBe('clear-board')
     }
   })
 })
@@ -118,6 +124,17 @@ describe('stage click precedence', () => {
     )
   })
 
+  it.each<[boolean, boolean, Action]>([
+    [false, false, { type: 'add-draft-point' }],
+    [false, true, { type: 'add-draft-point' }],
+    [true, false, { type: 'finish-cap' }],
+    // The second click of a double click on the center finishes with the default radius.
+    [true, true, { type: 'finish-cap' }],
+  ])('cap tool, center placed %s, in-place pair %s', (capCenterPlaced, inPlacePair, expected) => {
+    expect(stage({ tool: 'cap', capCenterPlaced }, true, inPlacePair)).toEqual(expected)
+    expect(stage({ tool: 'cap', capCenterPlaced }, false, inPlacePair)).toEqual(expected)
+  })
+
   it('a click on a ring edge keeps the selection so the readout keeps its threat', () => {
     const onRing = (tool: Tool) =>
       routeInteraction(
@@ -153,6 +170,13 @@ describe('entity click precedence', () => {
       { type: 'continue' },
     ],
     ['boundary bubbles', { tool: 'boundary' }, 'uas', { type: 'continue' }],
+    ['cap bubbles a UAS', { tool: 'cap', pathStarted: true }, 'uas', { type: 'continue' }],
+    [
+      'cap bubbles once centered',
+      { tool: 'cap', pathStarted: true, capCenterPlaced: true },
+      'sensor',
+      { type: 'continue' },
+    ],
     ['calibrate bubbles', { tool: 'calibrate' }, 'uas', { type: 'continue' }],
     ['raid draft bubbles under select', { raidDraft: true }, 'uas', { type: 'continue' }],
     ['select picks the entity', {}, 'sensor', { type: 'select-entity', additive: false }],

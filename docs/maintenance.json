@@ -25,9 +25,9 @@
         "src/model/types.ts",
         "src/playback/trackTypes.ts"
       ],
-      "sha256": "2eda9e33bc78cb8e975e4159f0de6a7b2976862d1fb2713a4118659ece71cb47",
-      "reviewedAt": "2026-09-30",
-      "note": "MIR/MRIR rings follow-up: types.ts gains mrirBasisOf and mrirBasisText. The MIR and MRIR glossary entries stay accurate."
+      "sha256": "0ecdc38b58a93e6867cf9f9ac4444bf787b824b5ee5727697027ae8b69f8ea78",
+      "reviewedAt": "2026-10-21",
+      "note": "ISR CAP: types.ts adds CapOrbit and FlightPath.cap; the Threat glossary entry names the orbit as a path source."
     },
     {
       "document": "README.md",
@@ -37,9 +37,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "7193ccae255391e6d86b5560a6ecfebd7350be7f7f0e0fd4ab397cc4d25eccd8",
-      "reviewedAt": "2026-10-02",
-      "note": "R3 placement preview: App.tsx gains one setPlacementPreview(null) call in the clear-board case. README names no Placement control or board Escape behavior; no change."
+      "sha256": "c9a37d3218f9fb0470b6b1c7531b1dfb33afe4d608b854e424768820a5cbda12",
+      "reviewedAt": "2026-10-21",
+      "note": "App.tsx gains the placementRequest subscription that arms placement from the connect popup; the README feature list stays accurate."
     },
     {
       "document": "docs/README.md",
@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "bcab19d63bbd8b64bf4ec07e6b6cbe76d07a123271babc1f7af26364fe33317c",
-      "reviewedAt": "2026-10-02",
-      "note": "Stale docs cleanup: the run timeline paragraph drops the link to the deleted timeline/SPEC.md; source changes are comments only (runTimeline.ts, timeViewport.ts, RunTimeline.tsx, fold.ts, store.ts, index.css) that now point to the current docs."
+      "sha256": "3f8a417e70de86ff83e79684798d7e676502c8ec15b7f12fd7a11a833e2e166d",
+      "reviewedAt": "2026-10-21",
+      "note": "ISR CAP (cap tool, FlightPath.cap, cap.ts, Inspector fields) and the board-aware connect popup (ON BOARD / LINKED / NOT ON BOARD, required groups, Place) described in Board features; threat row points at cap.ts."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "434ec23024e8f94fd49cb6892ebef2c3d6690879127ff8b51b9a82945aa62141",
-      "reviewedAt": "2026-10-02",
-      "note": "Stale docs cleanup: source changes are comments only; runTimeline.ts and timeViewport.ts now name this file's Run timeline model entry as the contract, which still matches the code."
+      "sha256": "3c67b261a9c3f06b41bc4c50285c63a5cc66e2ac453eb3c0fa5df7620187ef30",
+      "reviewedAt": "2026-10-21",
+      "note": "Added integrationBoardStatus and the popup's connect and place paths to the fire-control uplink note; the cap tool to the draw-tool and click-precedence notes."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "992e43bae26b7d4b814bfdcd08130702c9d5cd7cc01b4e9e02145af0c4d2ddf6",
-      "reviewedAt": "2026-10-01",
-      "note": "R2 right panel: Compare and record test list adds the saved-run table, Save current rule and defaultPicks; screen browser-check table adds Inputs (BoardPreparation, RequirementTable), renames Now to Monitor with SystemStatus and threatReadout tests, rewrites Fragility, Outcome, Compare, Save and Compare and Export checks; e2e paragraph names the Outcome provenance line and Export menu test."
+      "sha256": "1251c9c26977be2c07ae7e12d5aee94a025ecf46a3d2b12ed9171d8a2022707a",
+      "reviewedAt": "2026-10-21",
+      "note": "runtimeValidation gains the CapOrbit owner checks (radiusM > 0, integer laps >= 1) with a test; schema regenerated; the command table and the save-shape guidance stay accurate."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "1f607b0f9beb0aa27d5ee85cf85fe49f297ef22b27f97a1e528d9305c05d086a",
-      "reviewedAt": "2026-10-02",
-      "note": "Reset to open work only: Tasking selects nothing and states the code-quality queue (Q2 held, Q3 waits); Follow-ups regrouped by area, checked against 3b51e7e, fixed or stale items removed; Landmines lose lane notes, plan links and duplicates, line references updated; Position and Evidence removed."
+      "sha256": "87ef6be825ababd5fa30be00d2724661495d98e9888aafed26b16c1c01e04d71",
+      "reviewedAt": "2026-10-21",
+      "note": "Follow-ups from the ISR CAP and connect popup work added as a dated subsection; Tasking unchanged."
     },
     {
       "document": "docs/code-quality/Plan.md",
@@ -124,9 +124,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "49baa8fc76cfb6ce30f959aa055feadbe9b39bc406216b6a2dfc43e3fe5f3a46",
-      "reviewedAt": "2026-10-02",
-      "note": "Stale docs cleanup: the right panel layout rules no longer cite the deleted right-panel/Plan.md decisions; the index.css right panel header comment points here. The rules themselves are unchanged."
+      "sha256": "cae2b3f28ce336bb69670f57758b92f8c7e322aa0e8b067932ab37ac8ea9d928",
+      "reviewedAt": "2026-10-21",
+      "note": "index.css: connect popup list scroll, wrapping missing line and head; PathLayer: ISR CAP shapes in the entity and selection inks, noted under board ink."
     }
   ],
   "historical": [

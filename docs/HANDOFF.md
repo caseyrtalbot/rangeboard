@@ -116,6 +116,22 @@ capture and not checked again.
   per-subtype shapes need new `Glyph.tsx` shapes.
 - `.chip.det` has one user (`SystemsTab.tsx:202`).
 
+### ISR CAP and connect popup (added 2026-10-21, not checked against a commit)
+
+- Connect all in the connect popup draws one `completeConnect` per link, so it costs one
+  undo step per link; the removed candidate list made one (`ConnectSuggestPopup.tsx`).
+- `applyConnectSuggestion` and `ui.connectSuggestion.candidates` have no UI consumer; the
+  popup renders from `integrationBoardStatus`. Removing them is a store change.
+- The popup clamps itself inside the canvas host; the Inspector Network trigger still
+  pre-clamps with its own 280 and 260 px constants (`Inspector.tsx`, `suggest()`).
+- A required spec id absent from the library prints as the raw id in the missing line,
+  while `integrationSummary` guidance drops it.
+- Moving a UAS after drawing does not regenerate its path points; a hand-drawn path and
+  an ISR CAP behave the same, and only `updateCap` rebuilds from the current position.
+- Enter does nothing under the cap tool; the second click or a double click finishes it.
+  `HudLayer` says so. A CAP ends after its laps, so laps bound the scenario duration.
+- The cap caption takes one fixed slot at the east point, with no `captionClear` search.
+
 ### Board, rail and header
 
 - With a pinned ring readout, Esc clears the pin and also the selection. The HUD pin is

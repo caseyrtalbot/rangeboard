@@ -28,6 +28,8 @@ export interface InteractionState {
   connectFrom: boolean
   /** A path draft has its UAS (`ui.pathEntityId`). */
   pathStarted: boolean
+  /** An ISR CAP draft has its orbit center (`ui.draftPoints[0]` under tool 'cap'). */
+  capCenterPlaced: boolean
   /** The key event target is an input, textarea, select or contenteditable. */
   typing: boolean
   /** A marquee just committed on this mouseup; the paired click is stale. */
@@ -67,6 +69,7 @@ export type Action =
   | { type: 'place' }
   | { type: 'commit-raid' }
   | { type: 'add-draft-point' }
+  | { type: 'finish-cap' }
   | { type: 'set-calibrate-point' }
   | { type: 'clear-selection' }
   | { type: 'add-entity-from-model'; modelId: string }
@@ -116,7 +119,7 @@ function routeEscape(state: InteractionState): Action {
 
 /**
  * An entity click either ends at the entity or bubbles to the stage. Boundary,
- * calibrate and an armed raid draft let it fall through as a stage point, so the
+ * calibrate, cap and an armed raid draft let it fall through as a stage point, so the
  * aim gesture may land on an asset.
  */
 function routeEntityClick(
@@ -145,6 +148,9 @@ function routeStageClick(
   if (state.raidDraft) return { type: 'commit-raid' }
   if (state.tool === 'boundary' || state.tool === 'path')
     return intent.inPlacePair ? CONSUME : { type: 'add-draft-point' }
+  // The second CAP click sets the radius; a double click on the center is that click.
+  if (state.tool === 'cap')
+    return state.capCenterPlaced ? { type: 'finish-cap' } : { type: 'add-draft-point' }
   if (state.tool === 'calibrate') return { type: 'set-calibrate-point' }
   if (intent.onEmpty && state.tool === 'select')
     return intent.onRing ? CONSUME : { type: 'clear-selection' }
@@ -164,6 +170,7 @@ export const IDLE_INTERACTION: InteractionState = {
   raidDraft: false,
   connectFrom: false,
   pathStarted: false,
+  capCenterPlaced: false,
   typing: false,
   clickSuppressed: false,
 }

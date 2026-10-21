@@ -210,6 +210,22 @@ describe('Board runtime acceptance', () => {
     s.paths[0].points = [{ x: 0, y: 0 }]
     expect(() => parseScenarioData(s)).toThrow('paths[0].points: expected at least two points')
   })
+  it('checks an ISR CAP orbit radius and laps and loads a valid one', () => {
+    const s = laydown()
+    s.paths[0].cap = { center: { x: 0, y: -2000 }, radiusM: 0, laps: 3 }
+    expect(() => parseScenarioData(s)).toThrow('paths[0].cap.radiusM')
+    s.paths[0].cap.radiusM = 500
+    s.paths[0].cap.laps = 0
+    expect(() => parseScenarioData(s)).toThrow('paths[0].cap.laps')
+    s.paths[0].cap.laps = 1.5
+    expect(() => parseScenarioData(s)).toThrow('paths[0].cap.laps')
+    s.paths[0].cap.laps = 2
+    expect(parseScenarioData(s).paths[0].cap).toEqual({
+      center: { x: 0, y: -2000 },
+      radiusM: 500,
+      laps: 2,
+    })
+  })
   it('rejects a boundary with fewer than two points and still loads two', () => {
     const s = laydown()
     s.boundaries = [

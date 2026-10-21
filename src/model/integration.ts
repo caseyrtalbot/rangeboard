@@ -1,4 +1,4 @@
-import type { EntityKind, Scenario, SpecModel } from './types'
+import type { Entity, EntityKind, Scenario, SpecModel } from './types'
 import { entityActive } from './types'
 import { dist } from '../geometry/geo'
 import { INTEGRATION_PROFILES } from './integrationData'
@@ -213,6 +213,12 @@ export interface SuggestedLink {
 
 const LINKABLE_KINDS = new Set<EntityKind>(['sensor', 'effector', 'c2'])
 
+/** Kill-chain direction from kinds; c2<->c2 keeps `a` as from. */
+export function linkDirection(a: Entity, b: Entity): { fromId: string; toId: string } {
+  const aIsFrom = a.kind === 'sensor' || (a.kind === 'c2' && b.kind !== 'sensor')
+  return aIsFrom ? { fromId: a.id, toId: b.id } : { fromId: b.id, toId: a.id }
+}
+
 /**
  * Connect suggestions for one placed entity: nearby compatible systems in the
  * kill-chain direction implied by kinds, best evidence first, capped at 6.
@@ -228,9 +234,8 @@ export function suggestLinksFor(scenario: Scenario, entityId: string): Suggested
     if (other.id === entity.id || !LINKABLE_KINDS.has(other.kind) || !entityActive(other)) continue
     const otherSpec = scenario.library.find((m) => m.id === other.specId)
     if (!otherSpec) continue
-    // Kill-chain direction from kinds; c2<->c2 keeps the passed entity as from.
-    const entityIsFrom =
-      entity.kind === 'sensor' || (entity.kind === 'c2' && other.kind !== 'sensor')
+    const { fromId } = linkDirection(entity, other)
+    const entityIsFrom = fromId === entity.id
     const fromEnt = entityIsFrom ? entity : other
     const toEnt = entityIsFrom ? other : entity
     const verdict = evaluateIntegration(
@@ -261,7 +266,7 @@ export function suggestLinksFor(scenario: Scenario, entityId: string): Suggested
   return found.slice(0, 6).map(({ fromId, toId, verdict }) => ({ fromId, toId, verdict }))
 }
 
-interface IntegrationPartner {
+export interface IntegrationPartner {
   specId: string
   name: string
   role: LinkRole
@@ -352,5 +357,171 @@ export function integrationSummary(
     ),
     denied: [...denied.values()],
     guidance: parts.length > 0 ? parts.join(' ') : null,
+  }
+}
+
+export interface PartnerInstance {
+  entityId: string
+  name: string
+  distM: number
+  /** A connection exists between the entity and this instance, either direction. */
+  linked: boolean
+  /** Within MEDIUM_SUGGEST_RADIUS_M of the verdict medium (operator-manual when none). */
+  inRange: boolean
+}
+
+export interface BoardPartner extends IntegrationPartner {
+  /** A member of requiredC2 or, under fc-uplink guidance, of fcSources. */
+  required: boolean
+  /** Active board instances of this spec, nearest first. */
+  instances: PartnerInstance[]
+}
+
+export interface MissingRequirement {
+  kind: 'required-c2' | 'fc-source'
+  /** Library names of the group members, documented order. */
+  names: string[]
+}
+
+export interface IntegrationBoardStatus {
+  program: string | null
+  standalone: boolean
+  guidance: string | null
+  partners: BoardPartner[]
+  /** Requirement groups with no member on the board. */
+  missing: MissingRequirement[]
+}
+
+/**
+ * The library-level integration summary joined to the board: which known
+ * partners are placed, linked and in suggest range, and which requirement
+ * groups (requiredC2, fc-uplink fcSources) have no member placed.
+ */
+export function integrationBoardStatus(
+  scenario: Scenario,
+  entityId: string,
+): IntegrationBoardStatus | null {
+  const entity = scenario.entities.find((e) => e.id === entityId)
+  if (!entity) return null
+  const profile = profileFor(entity.specId)
+  const summary = integrationSummary(entity.specId, scenario.library)
+  if (!profile || !summary) return null
+  const spec = scenario.library.find((m) => m.id === entity.specId)
+
+  const fcSources = profile.guidance === 'fc-uplink' ? (profile.fcSources ?? []) : []
+  const requiredC2 = profile.requiredC2 ?? []
+  const required = new Set([...requiredC2, ...fcSources])
+  const active = scenario.entities.filter((e) => e.id !== entity.id && entityActive(e))
+
+  const instancesOf = (specId: string): PartnerInstance[] => {
+    const otherSpec = scenario.library.find((m) => m.id === specId)
+    return active
+      .filter((e) => e.specId === specId)
+      .map((other) => {
+        const { fromId } = linkDirection(entity, other)
+        const entityIsFrom = fromId === entity.id
+        const verdict =
+          spec && otherSpec
+            ? evaluateIntegration(entityIsFrom ? spec : otherSpec, entityIsFrom ? otherSpec : spec)
+            : null
+        const distM = dist(entity.pos, other.pos)
+        return {
+          entityId: other.id,
+          name: other.name,
+          distM,
+          linked: scenario.connections.some(
+            (c) =>
+              (c.fromId === entity.id && c.toId === other.id) ||
+              (c.fromId === other.id && c.toId === entity.id),
+          ),
+          inRange:
+            verdict != null &&
+            verdict.ok &&
+            distM <= MEDIUM_SUGGEST_RADIUS_M[verdict.medium ?? 'operator-manual'],
+        }
+      })
+      .sort((a, b) => a.distM - b.distM)
+  }
+
+  // A group is satisfied when any one member has an active instance.
+  const names = new Map(scenario.library.map((m) => [m.id, m.name]))
+  const placed = new Set(active.map((e) => e.specId))
+  const missing: MissingRequirement[] = []
+  const unsatisfied = new Set<string>()
+  const group = (kind: MissingRequirement['kind'], ids: string[]) => {
+    if (ids.length === 0 || ids.some((id) => placed.has(id))) return
+    for (const id of ids) unsatisfied.add(id)
+    missing.push({ kind, names: ids.map((id) => names.get(id) ?? id) })
+  }
+  group('required-c2', requiredC2)
+  group('fc-source', fcSources)
+
+  const partners: BoardPartner[] = summary.partners.map((p) => ({
+    ...p,
+    required: required.has(p.specId),
+    instances: instancesOf(p.specId),
+  }))
+  // Shared-protocol partners have no researched pair, so the summary omits them;
+  // fold in those in suggest range, and those already linked so a row survives
+  // its own Connect.
+  const known = new Set(partners.map((p) => p.specId))
+  const linkedIds = new Set(
+    scenario.connections.flatMap((c) =>
+      c.fromId === entity.id ? [c.toId] : c.toId === entity.id ? [c.fromId] : [],
+    ),
+  )
+  const extra: SuggestedLink[] = [...suggestLinksFor(scenario, entity.id)]
+  for (const other of active) {
+    if (!linkedIds.has(other.id) || !spec) continue
+    const otherSpec = scenario.library.find((m) => m.id === other.specId)
+    if (!otherSpec) continue
+    const { fromId, toId } = linkDirection(entity, other)
+    const entityIsFrom = fromId === entity.id
+    const verdict = evaluateIntegration(
+      entityIsFrom ? spec : otherSpec,
+      entityIsFrom ? otherSpec : spec,
+    )
+    if (verdict?.ok) extra.push({ fromId, toId, verdict })
+  }
+  for (const link of extra) {
+    const otherId = link.fromId === entity.id ? link.toId : link.fromId
+    const otherSpecId = scenario.entities.find((e) => e.id === otherId)?.specId
+    const otherSpec = scenario.library.find((m) => m.id === otherSpecId)
+    if (!otherSpec || known.has(otherSpec.id)) continue
+    known.add(otherSpec.id)
+    partners.push({
+      specId: otherSpec.id,
+      name: otherSpec.name,
+      role: link.verdict.role,
+      confidence: link.verdict.confidence ?? 'inferred',
+      note: link.verdict.note,
+      source: undefined,
+      required: false,
+      instances: instancesOf(otherSpec.id),
+    })
+  }
+  // Members of an unsatisfied requirement group, then placed with an unlinked
+  // instance, then not placed, then fully linked.
+  const bucket = (p: BoardPartner) =>
+    unsatisfied.has(p.specId)
+      ? 0
+      : p.instances.some((i) => !i.linked)
+        ? 1
+        : p.instances.length === 0
+          ? 2
+          : 3
+  partners.sort(
+    (a, b) =>
+      bucket(a) - bucket(b) ||
+      CONFIDENCE_RANK[a.confidence] - CONFIDENCE_RANK[b.confidence] ||
+      a.name.localeCompare(b.name),
+  )
+
+  return {
+    program: summary.program,
+    standalone: summary.standalone,
+    guidance: summary.guidance,
+    partners,
+    missing,
   }
 }

@@ -698,6 +698,15 @@ export interface Boundary {
   altBandFt: [number, number] | null
 }
 
+/** A circular loiter that the path points are generated from. Absent or null: a hand-drawn path. */
+export interface CapOrbit {
+  center: Vec2
+  /** Orbit radius, meters. */
+  radiusM: number
+  /** Whole orbits flown after the ingress leg, at least 1. */
+  laps: number
+}
+
 export interface FlightPath {
   id: string
   entityId: string
@@ -705,6 +714,8 @@ export interface FlightPath {
   /** Overrides the UAS spec cruise speed when set. */
   speedMps: number | null
   startDelayS: number
+  /** ISR CAP orbit the points were generated from; the engine reads only `points`. */
+  cap?: CapOrbit | null
 }
 
 export type RunValidity = 'valid' | 'valid-limited' | 'invalid' | 'pending'

@@ -44,7 +44,8 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    cursor and a 1 px ring in the entity ink at 60 %. A link caption draws only on a link
    of 80 screen px or more whose caption box clears every glyph and anchored label;
    otherwise it draws on hover. A path caption takes the first clear slot back along its
-   last leg. `BoardInk` also holds the selection, board-tone, tool and control inks, so the
+   last leg; an ISR CAP draws a dashed ingress leg and circle in the entity ink with one
+   caption at the east point, and its draft circle and radius readout take the selection ink. `BoardInk` also holds the selection, board-tone, tool and control inks, so the
    selection ring, a selected link, the path draft, the calibrate marks, the connect ring,
    the range button and the marquee read the theme. It also holds the dim link ink
    (`#6a7178` night, `#767d84` paper) for a probable or inferred link, and the knob rim

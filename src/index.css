@@ -2947,7 +2947,34 @@ select.nu-unit {
 /* Connect-suggestion popup (ConnectSuggestPopup.tsx) shares the ctx-menu shell. */
 
 .connect-suggest {
-  min-width: 240px;
+  min-width: 280px;
+}
+
+/* Every known integration is listed, so the body scrolls under the head. */
+.suggest-list {
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+}
+
+.suggest-missing {
+  padding: var(--space-1) 10px;
+  font-size: var(--type-meta-size);
+}
+
+/* The sentence names every member of the group; a pill is one line by default. */
+.suggest-missing .state {
+  white-space: normal;
+  align-items: flex-start;
+}
+
+.suggest-missing .state .state-square {
+  margin-top: 4px;
+}
+
+.suggest-group {
+  padding: var(--space-2) 10px var(--space-1);
+  color: var(--text-dim);
+  font-size: var(--type-meta-size);
 }
 
 .suggest-head {
@@ -2955,9 +2982,16 @@ select.nu-unit {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  white-space: normal;
   color: var(--text);
   font-size: var(--type-title-size);
   font-weight: var(--type-title-weight);
+}
+
+/* A long system name wraps; the dismiss button keeps its place. */
+.suggest-head > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .suggest-x {

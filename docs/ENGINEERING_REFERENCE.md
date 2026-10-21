@@ -944,6 +944,12 @@ legacyBeamPk`, empty on an old save. The Settings Physics section
   window is geometry only and the threat status is `no-fc-uplink`. Hand-written test
   connections are untyped and the gate does not bind; UI-drawn connections are typed by
   `completeConnect` when `evaluateIntegration` finds a researched pairing.
+  `integrationBoardStatus(scenario, entityId)` joins `integrationSummary` to the board for
+  the connect popup: per partner spec the active instances (distance, linked, in suggest
+  range in `linkDirection` order), the `requiredC2` and fc-uplink `fcSources` groups with
+  no member placed, and in-range shared-protocol partners folded in from `suggestLinksFor`.
+  The popup connects through `beginConnect` and `completeConnect` and places through
+  `requestPlacement`, which App turns into the same arming as the Library drawer.
 - **Draw policy** (`src/playback/policy.ts`): `DrawPolicy` is the one draw point. The
   engine draws in exactly ten places (`sensorHit` detect, `applyEffect` kill,
   `applyEffect` continue-jam, `phase`, drawn once per scan state, `param`, drawn once
@@ -1512,7 +1518,10 @@ Konva conventions:
   `camera.scale`).
 - Drawing tools do not use Konva drag: the stage is `draggable` only when `ui.tool ===
 'select'`; other tools consume plain clicks and keep the rubber-band draft in
-  `ui.draftPoints`.
+  `ui.draftPoints`. The cap tool keeps the orbit center there; its second click calls
+  `finishCap`, which stores `FlightPath.cap` and generates the points with `capPathPoints`
+  (`src/model/cap.ts`), so the engine never reads the orbit. `updateCap` regenerates the
+  points from the entity position.
 - Each layer reads its flag through `selectEffectiveLayers` and returns `null`;
   `CanvasStage` does no gating.
 - Everything a layer draws at time t is derived at render from the scenario and
@@ -1619,7 +1628,9 @@ state)` is the one owner of that Escape order and of click precedence. `App.tsx`
   then the raid draft, then the draw tools (an in-place double-click's second click is
   no vertex), then a plain select click on empty canvas clears the selection. An entity
   click is owned by connect and select; path owns only the UAS that starts a draft;
-  boundary, calibrate and a raid draft bubble it to the stage. The matrix is
+  boundary, calibrate, cap and a raid draft bubble it to the stage. Under cap a stage
+  click is the center while no draft point exists, else `finish-cap`, an in-place pair
+  included. The matrix is
   table-tested in `interactionRouter.test.ts`. The screen tabs in `AnalysisNavigation.tsx`
   are `role="tab"` buttons in `.insp-tab-group` inside the panel tablist, one per screen
   of the phase; the calibrate tool shows a `role="status"` strip until Escape or Cancel.

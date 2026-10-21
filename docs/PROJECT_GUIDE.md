@@ -46,6 +46,22 @@ scenario actions govern changes and undo; automatic documented connections remai
 own undo step. Pending placement is cancelled by a competing tool or a change to the entity
 or system-preset count. Escape closes an open dialog before it
 cancels a placement. The calibrate tool shows a strip until Escape or Cancel ends it.
+A UAS takes either a hand-drawn flight path or an ISR CAP. Draw ISR CAP in the context
+menu or the Inspector arms the cap tool: the first click sets the orbit center and the
+second sets the radius; a double click on the center takes 1 km. The orbit is stored as
+`FlightPath.cap` (center, radius, laps, default 3) and its points are generated from it
+(`src/model/cap.ts`), so the engine flies a plain path. The board draws the ingress leg,
+the dashed circle and one caption (radius, laps, flight time); the Inspector Flight path
+section edits Radius and Laps on blur or Enter, one undo step each.
+The connect popup opens after a blue-force drop or from the Inspector Network section.
+It lists every known integration of the system against the board: a partner with an
+unlinked instance on the board reads ON BOARD with the distance to the nearest one and a
+Connect button (also beyond the suggest radius); a fully linked partner reads LINKED, or
+`LINKED · auto` when the drop wired it; a partner with no instance reads NOT ON BOARD with
+a Place button that arms placement of that model. A requirement group with no member on
+the board (`requiredC2`, or `fcSources` under fc-uplink guidance) prints one alert line
+and marks its members REQUIRED · NOT ON BOARD. In-range shared-protocol partners join the
+list from `suggestLinksFor`. Connect all links every in-range partner.
 
 Effector rings show MIR (max intercept range), MRIR (max recommended intercept range, the
 doctrinal range) and Min range, ground projected at the selected threat altitude. MRIR is
@@ -227,7 +243,7 @@ Requirements; screen changes preserve the result basis.
 | Build a laydown | Model palette, system presets, placement, duplication, rotation, inspection, selection and undo/redo | [store](../src/state/store.ts), [Palette](../src/panels/Palette.tsx), [Inspector](../src/panels/Inspector.tsx) |
 | Describe the range | Meter-scaled pan/zoom, boundaries, calibrated image underlay, geo reference, satellite basemap, layers, per-entity rings (MIR, MRIR and Min range on effectors), layer presets in the View menu, a ring readout on hover or click and one Settings dialog for scenario, run, systems and view inputs | [CanvasStage](../src/canvas/CanvasStage.tsx), [layers](../src/canvas/layers/), [SettingsPanel](../src/panels/SettingsPanel.tsx), [view state](../src/io/viewState.ts) |
 | Represent an architecture | Sensor/C2/effector links, integration profiles, suggested pairings, typed routes and fire-control eligibility | [integration](../src/model/integration.ts), [killChain](../src/playback/killChain.ts) |
-| Represent a threat | Paths, speed/delay/altitude, formations, raid waves and tactic-driven raid construction | [tracks](../src/playback/tracks.ts), [tactics](../src/playback/tactics.ts), [raidBuilder](../src/state/raidBuilder.ts) |
+| Represent a threat | Paths, ISR CAP orbits, speed/delay/altitude, formations, raid waves and tactic-driven raid construction | [tracks](../src/playback/tracks.ts), [cap](../src/model/cap.ts), [tactics](../src/playback/tactics.ts), [raidBuilder](../src/state/raidBuilder.ts) |
 | Inspect assumptions | Editable library, field provenance, sourced/PF labels, parameter spreads, seed reset and library JSON; the Systems tab lists every field of every system in use with grade, layer, source and spread, and an edit there is an override with a reason, reset per field, per system or all | [LibraryEditor](../src/panels/LibraryEditor.tsx), [SystemsTab](../src/panels/settings/SystemsTab.tsx), [overrides](../src/state/overrides.ts), [types](../src/model/types.ts), [parameterBasis](../src/analysis/parameterBasis.ts) |
 | Calibrate from counts | Calibrate per field on the Systems tab: a beta posterior with the Jeffreys prior for a proportion, a normal-gamma posterior for a time; Accept writes an override with the prior, observation and posterior in its reason | [calibrate](../src/analysis/calibrate.ts), [CalibrateDialog](../src/panels/settings/CalibrateDialog.tsx), [SystemsTab](../src/panels/settings/SystemsTab.tsx) |
 | Trace a value | The library is a JSON data package, one file per model, with grade, layer, range type, condition, source and spread on every numeric field; every sensor carries range, azimuth and elevation accuracy and a radar false-alarm rate, every C2 model carries decision latency, its sigma and an operator track capacity; class priors are derived from the sourced entries | [data package](../data/library/), [libraryField](../src/model/libraryField.ts), [classPriors](../src/analysis/classPriors.ts) |
