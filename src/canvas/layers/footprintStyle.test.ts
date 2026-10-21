@@ -241,7 +241,7 @@ describe('RING_STYLE', () => {
       const s = RING_STYLE[key]
       expect(s).toBeDefined()
       expect(s.width).toBeGreaterThanOrEqual(0)
-      expect(['entity', 'danger']).toContain(s.ink)
+      expect(['entity', 'white']).toContain(s.ink)
     }
     expect(Object.keys(RING_STYLE).sort()).toEqual([...RING_KEYS].sort())
   })
@@ -254,7 +254,7 @@ describe('RING_STYLE', () => {
       dash: null,
       width: 1,
       fillAlpha: 0.05,
-      ink: 'danger',
+      ink: 'white',
     })
     expect(RING_STYLE.effectorMaxRange.dash).toBeNull()
     expect(RING_STYLE.sensorEnvelope.width).toBe(0)

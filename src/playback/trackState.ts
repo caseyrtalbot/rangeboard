@@ -3,7 +3,7 @@ import type { ThreatAssessment, ThreatClassification } from './sim'
 import type { AttritionReport, EngagementEvent } from './attritionReport'
 import { intervalIndexAt } from './intercept'
 import { deadTimeOf } from './deadTimes'
-import { DANGER_INK } from '../ui/ink'
+import { DANGER_INK, EW_INK } from '../ui/ink'
 import { memberPositions, sampleFlightPath } from './tracks'
 import { profileFor } from '../model/integration'
 import { engineKeyOf } from '../model/scenario'
@@ -25,9 +25,6 @@ import { engagementIsKinetic, engagementReleaseS } from './engagementTiming'
 /** Display-only hold for a beam or dwell with no modeled duration. */
 export const BEAM_DISPLAY_S = 0.6
 
-/** Pulse period, seconds. */
-export const BLINK_PERIOD_S = 0.5
-
 /**
  * Hold tolerance, seconds. The sweep samples every 0.5 s, so a query between
  * two samples still counts as held (same rule as heldAt in
@@ -39,10 +36,10 @@ const HOLD_TOLERANCE_S = 0.25
 const JAMMED_AT = 0.5
 
 /**
- * The one EW color for the jam beam, the jammed diamond and the J badge. No
- * PHASE_STYLE rung uses this hue. Contrast 7.9:1 on the board background.
+ * The one EW color for the jam beam, the jammed diamond and the J badge: an alias of
+ * the board's EW_INK. No PHASE_STYLE rung uses this hue. Contrast 10.3:1 on the board.
  */
-export const EW_JAM_COLOR = '#5ad1e0'
+export const EW_JAM_COLOR = EW_INK
 
 /**
  * Track lifecycle, highest precedence first:
@@ -59,7 +56,7 @@ export type TrackPhase =
  * value over the 3:1 graphic floor there and on the two darker basemaps:
  *   searching  #82887e  dim grey,   4.89:1
  *   tracked    #d9a441  amber,      7.91:1
- *   identified #c4564a  brick red,  4.05:1 (DANGER_INK)
+ *   identified #e46f62  hostile red, 5.72:1 (DANGER_INK)
  *   targeted   #bb6499  plum,       4.57:1
  *   engaged    #f2795e  hot coral,  6.50:1
  *   ghost      #6a7178  dim steel,  3.60:1
@@ -790,10 +787,4 @@ export function effectorStatesAt(tl: TrackTimeline, tS: number): Map<string, Eff
     if (countAtMost(e.assignTS, tS) >= e.magazineSize) out.set(e.effectorId, 'depleted')
   }
   return out
-}
-
-/** True on the lit half of the pulse. Derived from sim time, never a timer. */
-export function blinkOn(tS: number): boolean {
-  const phase = ((tS % BLINK_PERIOD_S) + BLINK_PERIOD_S) % BLINK_PERIOD_S
-  return phase < BLINK_PERIOD_S / 2
 }

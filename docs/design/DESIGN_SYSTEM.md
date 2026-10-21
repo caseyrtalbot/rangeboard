@@ -35,30 +35,63 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    `b`, `strong`, `th` and the headings are folded onto the title weight.
 8. **Mono for machine data only.** Ids, times, coordinates, units, keys and numeric
    readouts use `--font-mono`. Prose, labels and titles use `--font-ui`.
-9. **Canvas ink follows the theme.** A Konva layer cannot read a CSS variable. The grid,
-   label, link caption and callout leader inks come from `useBoardInk()`
-   (`src/canvas/useBoardInk.ts`), which resolves `ui.theme` and `prefers-color-scheme` the
-   way the sheet does and returns `BOARD_INK_DARK` or `BOARD_INK_PAPER` from
-   `src/ui/ink.ts`. A layer never hard-codes a theme-dependent ink. Board selection is a
-   solid 1.5 px ring in text 1 over a 2 px board-tone halo. Hover shows the pointer
-   cursor and a 1 px ring in the entity ink at 60 %. A link caption draws only on a link
-   of 80 screen px or more whose caption box clears every glyph and anchored label;
-   otherwise it draws on hover. A path caption takes the first clear slot back along its
-   last leg; an ISR CAP draws a dashed ingress leg and circle in the entity ink with one
-   caption at the east point, and its draft circle and radius readout take the selection ink. `BoardInk` also holds the selection, board-tone, tool and control inks, so the
-   selection ring, a selected link, the path draft, the calibrate marks, the connect ring,
-   the range button and the marquee read the theme. It also holds the dim link ink
-   (`#6a7178` night, `#767d84` paper) for a probable or inferred link, and the knob rim
-   (`#121415` night, text 1 on paper) for the heading and system rotation handles, and the
-   at-rest ring ink `ringIdle` (`#f4f3ee` night, text 1 on paper). The
-   system rotation handle, the move-underlay outline and the placement preview (an
-   outline friend frame at 0.7 opacity and a `[4, 4]` dashed leader) take the tool ink
-   (8.8:1 night, 5.3:1 paper). An anchored name and a spoke callout draw over a board-tone glyph halo
-   (`LABEL_HALO_PX`, a 2.5 px stroke under the fill, 1.25 px outside each letter), so a
-   flight path, a leader or a coverage tint does not run through the text and no filled
-   patch shows over a tint. A heading handle that points down into the label moves the
-   label below its knob (`anchoredLabelTop`); the handle keeps its 34 px reach.
-10. **Gray text has four jobs.** Status, rule, method note and first-run instruction.
+9. **Canvas ink follows the theme.** A Konva layer cannot read a CSS variable. Every
+   board ink comes from `useBoardInk()` (`src/canvas/useBoardInk.ts`), which resolves
+   `ui.theme` and `prefers-color-scheme` the way the sheet does and returns
+   `BOARD_INK_DARK` or `BOARD_INK_PAPER` from `src/ui/ink.ts`. A layer never hard-codes a
+   theme-dependent ink. `BoardInk` holds the grid, label, link caption and callout leader
+   inks; the selection, board-tone, tool and control inks (the selection ring, a selected
+   link, the path draft, the calibrate marks, the connect ring, the range button and the
+   marquee); the dim link ink (`#6a7178` night, `#767d84` paper) for a probable or
+   inferred link; the knob rim (`#121415` night, text 1 on paper); the at-rest ring ink
+   `ringIdle` (`#f4f3ee` night, text 1 on paper); and the identity and amplifier inks:
+   `hostile` (`#e46f62`, `--status-critical`; paper `#d43725`), `unknown` and `neutral`
+   (`#e6cf5a`; paper `#98691b`), `friend` (`#7fbfe6`; paper `#2862b0`), `ew` (`#5ad1e0`,
+   `--ew`; paper `#227f8c`), `ghost` (`#6a7178`; paper `#666c74`), `destroyed`
+   (`#cfd4cc`; paper `#4e504b`), `noTrack` (`#82887e`; paper `#7b7d73`) and `warn`
+   (`#e6cf5a`; paper `#98691b`). Every one clears 3:1 on its board (`src/ui/ink.test.ts`).
+   `boardInk(entity, ink)` gives an entity one hue per affiliation: friend for a sensor,
+   effector, C2 node or asset, hostile for a threat, neutral for a marker. An explicit
+   entity colour wins; a model colour stays on the palette, the library and the run
+   timeline and never reaches the board. Board selection is a solid 1.5 px ring in text 1
+   over a 2 px board-tone halo. Hover shows the pointer cursor and a 1 px ring in the
+   entity ink at 60 %. A link caption draws only on a link of 80 screen px or more whose
+   caption box clears every glyph and data block; otherwise it draws on hover. A path
+   caption takes the first clear slot back along its last leg; an ISR CAP draws a dashed
+   ingress leg and circle in the entity ink with one caption at the east point, and its
+   draft circle and radius readout take the selection ink. The system rotation handle,
+   the move-underlay outline and the placement preview (an outline ground frame with its
+   function icon at 0.7 opacity, a `[4, 4]` dashed leader and a one-line block) take the
+   tool ink (8.8:1 night, 5.3:1 paper). The data block and a spoke callout draw over a
+   board-tone glyph halo (`LABEL_HALO_PX`, a 2.5 px stroke under the fill, 1.25 px outside
+   each letter), so a flight path, a leader or a coverage tint does not run through the
+   text and no filled patch shows over a tint. The block sits right of the frame at
+   `DATA_BLOCK_X[kind]` with its first baseline 4 px under the centre; a heading knob that
+   would cover it flips it to the left of the frame, right-aligned (`anchoredBlockPos`),
+   and the handle keeps its 34 px reach. A spoke callout draws line one of the block.
+10. **Board symbology follows the primer.** The frame carries identity and the icon
+    carries function (`src/panels/Glyph.tsx` is the one symbol library; `symbols.tsx`
+    draws its Konva twins, so the palette and the board agree). Every frame is a closed
+    line frame with a board-tone knockout; no symbol on the board is filled. Air track: a
+    circle for pending, unknown and friend, a diamond for suspect and hostile, a square
+    for neutral; pending and suspect are dashed; until a sensor holds the track the truth
+    draws a grey `noTrack` diamond at 0.7. Ground system: a circle for equipment, a
+    rectangle for a unit (C2) and a rectangle with a top bar for an installation (the
+    defended asset), with the 2525 radar, sensor, launcher and laser icons or the text
+    EW, C2 and DA inside; under 16 px (`ICON_MIN_PX`) the letter S, E, EW, C2 or DA
+    stands in. A radar's boresight tick starts at the frame edge. A switched-off system is
+    a dashed frame at 0.55. Amplifiers: white corner brackets (17 px) while a track is
+    targeted or engaged; the 2525D engagement bar above the frame in the object's hue
+    with board-tone text, `ASN` assigned, `ENG` engaging, `MIF` missile in flight, with the
+    suffix `M`, `GN`, `EA` or `DE` (`ENG-DE` and `ASN ?` are house codes); a cyan `J`
+    beside a jammed track; one slash for a mission kill; a solid ghost frame under a
+    destroyed X for a hard kill; a yellow condition bar under a sensor that cannot hold
+    the selected threat; `EMPTY` in white under a spent effector. The velocity leader is
+    the distance the track flies in 10 s, held between 10 and 48 px. The data block reads
+    the designator, `×N` for a raid and one word (`HK`, `MK`, `LOST`, `CST`) on line one,
+    and altitude in hundreds of feet with speed in knots on line two while the track is
+    held. Nothing on the board blinks.
+11. **Gray text has four jobs.** Status, rule, method note and first-run instruction.
     Each job has its own home. Status becomes control state. A rule becomes a placeholder
     and an error line that shows only when the field is invalid. A method note goes behind
     a 24 px (i) button. A first-run instruction becomes an empty-state row that the first
@@ -93,7 +126,7 @@ map onto them.
 | `--status-critical` | `#e46f62` | state ink |
 | `--status-limit` | `#e0894b` | the LIMITS tag on a validity count; 6.52:1 |
 | `--status-inactive` | text 3 | state ink |
-| `--ew`, `--de`, `--ghost` | `#7da7c4`, `#9aa8b0`, `#6a7178` | jam channel, directed-energy channel, defeated track |
+| `--ew`, `--de`, `--ghost` | `#5ad1e0`, `#9aa8b0`, `#6a7178` | the one friendly EW ink (jam channel, beam, footprint, the J), directed-energy channel, defeated track |
 | `--chart-1` to `--chart-5` | `#3987e5`, `#d95926`, `#199e70`, `#c98500`, `#d55181` | chart series slots, assigned by first detection |
 | `--radius-control` | 4 px | buttons, inputs, segmented groups, checkboxes |
 | `--radius-surface` | 6 px | floating surfaces |
@@ -115,7 +148,7 @@ to 1 ms. A pressed control inverts to text 1 on ink. Focus is a 2 px outline in
 text 1 `#212220` (14.4:1), text 2 `#4e504b` (7.5:1), text 3 `#7b7d73` (3.8:1), disabled
 `#8c877d` (3.28:1), ink is the paper board, nominal `#378154`, warning `#98691b`, critical
 `#d43725` (4.4:1 each), accent `#2862b0` with accent ink the paper board (5.09:1 under the ink, 5.56:1 on the
-paper panel), limit
+paper panel), EW `#227f8c` (3.9:1 on the paper board), limit
 `#a85a1c` (4.65:1 on the paper panel), elevation `0 8px 24px rgba(33,34,32,.12)`, scrim
 `rgba(33,34,32,.2)`. Two blocks map the
 palette onto the semantic tokens: `:root[data-theme='light']` for the manual switch and
@@ -311,21 +344,33 @@ Right panel layout rules:
   is a dashed edge in `ringIdle` with no fill and no text: MIR a long dash (`MIR_REST`),
   MRIR a shorter, lighter dash (`MRIR_REST`), Min range round dots (`MIN_REST`) and every
   sensor ring one even dash (`SENSOR_REST`). An active ring takes the solid, filled
-  `RING_STYLE` look. A system is active while it is selected, or at the run time cursor
-  while an effector engages or a sensor holds a track. A disabled system stays grey.
+  `RING_STYLE` look. Red stays with hostile objects: a sensor ring takes the friend hue
+  (`RingInk` `friend`, or the entity's own colour) with an 8 percent tint, an effector ring
+  the selection white (`white`: MIR 1.5 px over a 4 percent tint, MRIR 1 px over 5
+  percent, Min range dotted) and a disabled system the grey. An active effector labels
+  MIR `MAX RG` and Min range `MIN RG` (`RING_LABEL_TEXT`) in the label ink over the board
+  halo. A jammer draws a flat wedge in the EW ink (9 percent fill, 70 percent edge) toward
+  its sector; at rest it is the dashed outline. A system is active while it is selected,
+  or at the run time cursor while an effector engages or a sensor holds a track.
 - **Ring readout** (`HudLayer.tsx`, `.ring-readout` in `.surface-float`). Hovering a ring
   edge shows the system name, a mono ring chip, the distance in nm at two decimals, the
   threat height and an MRIR basis line. A click pins it; Esc or a click on empty board
   clears it. The board shows no ring hint sentence.
-- **Track picture** (`TrackLayer.tsx`, constants in `footprintStyle.ts`). During a sampled
-  trial each sensor track draws its estimated position as a 3 px screen cross
-  (`TRACK_MARKER_PX`) and, when the track carries error, its 1 sigma covariance ellipse
-  in world meters with a 1 px screen stroke. Ink is the sage asset ink
-  (`TRACK_ESTIMATE_INK`, `KIND_INK.asset`); a false track takes the muted grey of an
-  inert ring (`TRACK_FALSE_INK`). An updated track draws solid; a coasting track takes
-  the even `[4, 4]` dash (`TRACK_ELLIPSE_DASH`), distinct from every ring dash. A
-  truth-path track draws the cross alone. The layer is censored at the observed horizon
-  like every other trial surface.
+- **Track picture** (`TrackLayer.tsx`, `PairingLineLayer.tsx`, `OutcomeMarkLayer.tsx`,
+  constants in `footprintStyle.ts`). During a sampled trial each sensor track draws its
+  estimated position as a 3 px screen cross (`TRACK_MARKER_PX`) and, when the track
+  carries error, its 1 sigma covariance ellipse in world meters with a 1 px screen
+  stroke. Ink is the theme friend hue (`BoardInk.friend`): a sensor's picture of a track
+  is a blue-force product. A false track takes the muted grey of an inert ring
+  (`TRACK_FALSE_INK`). An updated track draws solid; a coasting track takes the even
+  `[4, 4]` dash (`TRACK_ELLIPSE_DASH`), distinct from every ring dash. A truth-path track
+  draws the cross alone. A pairing line joins each holding sensor to its track in the
+  friend hue, 1 px at 0.55, trimmed 13 px at the sensor and 14 px at the track; a coast
+  dashes it `[4, 4]` and a sensor that holds nothing draws no line. An intercept leaves a
+  mark where it landed: a small white cross and `K m:ss` for a hard kill, an open white
+  circle and `M m:ss` for a miss, the time in the label ink over the board halo. A mark
+  stays after its effect; a jam dwell and a soft kill leave none. Every layer is censored
+  at the observed horizon like every other trial surface.
 - **KPI tiles** (`.tiles.c2`, `.tile`; the saved-run record). Two columns, no borders.
   Label in text 3 (`.tl`), value in mono at the lead size (15 px) with a small
   denominator (`.tv`).

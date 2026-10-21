@@ -1,7 +1,10 @@
+import type { EntityKind } from '../model/types'
+
 /**
- * Screen-space placement for entity name labels. When anchored labels would
+ * Screen-space placement for entity data blocks. A block is one or two mono lines to
+ * the right of the frame (the primer's data block). When anchored blocks would
  * overlap at the current zoom, the colliding group fans out into spoke
- * callouts: thin elbow leaders to labels stacked left and right of the
+ * callouts: thin elbow leaders to line-one labels stacked left and right of the
  * cluster. Pure and unit-tested; all coordinates are screen pixels.
  *
  * Clustering runs in three passes so fans never land on other labels:
@@ -15,25 +18,31 @@ export interface LabelInput {
   name: string
   sx: number
   sy: number
+  /** The entity kind: it sets the block x (`DATA_BLOCK_X`). Absent reads as an air frame. */
+  kind?: EntityKind
   /**
-   * The string the canvas draws, when the caller already holds it. Absent, the
-   * layout derives it with `boardDesignator`.
+   * The lines the canvas draws, when the caller already holds them. Absent, the
+   * layout draws one line, `boardDesignator(name)`.
    */
-  drawn?: string
+  lines?: readonly string[]
   /**
    * Heading of the handle knob the entity shows, degrees. Absent when it shows none.
-   * The box then starts where `anchoredLabelTop` puts the drawn label.
+   * The box then sits where `anchoredBlockPos` puts the drawn block.
    */
   handleDeg?: number
 }
 
 /** A label input with its box measured once, so the O(n^2) pass does no string work. */
 interface Measured extends LabelInput {
-  /** Anchored box width, px. */
+  /** Line one, the text a spoke callout draws. */
+  name: string
+  /** Block width, px. */
   w: number
-  /** Anchored box height, px. */
+  /** Block height, px. */
   h: number
-  /** Anchored box top, px below the glyph centre: `anchoredLabelTop`. */
+  /** Block left edge, px from the glyph centre: `anchoredBlockPos`. */
+  bx: number
+  /** Block top, px from the glyph centre: `anchoredBlockPos`. */
   top: number
 }
 
@@ -45,6 +54,20 @@ export interface SpokePlacement {
   tx: number
   ty: number
   width: number
+  align: 'left' | 'right'
+  /** Line one of the block: the text the callout draws. */
+  text: string
+}
+
+/** Where an anchored data block draws, px from the glyph centre. */
+export interface BlockPos {
+  /** Left edge of the text box. */
+  x: number
+  /** Top edge of the text box. */
+  y: number
+  /** Text box width: the longest line, capped at `BLOCK_W`. */
+  width: number
+  /** Right-aligned when the block flipped left of the frame. */
   align: 'left' | 'right'
 }
 
@@ -65,15 +88,30 @@ export const LABEL_FONT_PX = 11
  */
 export const LABEL_HALO_PX = 2.5
 const CHAR_W = LABEL_FONT_PX * 0.6
-const ANCHOR_W = 120
+/** Widest data block, px: line one is a designator and up to three short words. */
+export const BLOCK_W = 140
+/** First baseline of the data block, px below the glyph centre (the primer's `by`). */
+export const BLOCK_BASELINE = 4
 /**
- * Top of the anchored label box, px below the glyph centre, with no handle in the
- * way. EntityLayer draws the label at this offset, so the two must move together. It
- * clears the selection ring (r 28) and its halo, which reach y 30.75.
+ * Top of the data block text box, px from the glyph centre. EntityLayer draws the block
+ * at this offset, so the two must move together.
  */
-export const LABEL_ANCHOR_TOP = 32
-/** Line box height of a wrapped anchored label, px. */
+export const BLOCK_TOP = BLOCK_BASELINE - LABEL_FONT_PX
+/** Line pitch of the data block, px. */
 export const LABEL_LINE_H = 12
+/**
+ * Left edge of the data block, px from the glyph centre, per frame: an air frame's
+ * 21 clears the 17 px target brackets; a ground circle (r 12) takes 19; the unit and
+ * installation rectangles (half width 14) take 21; the marker (half 7) takes 12.
+ */
+export const DATA_BLOCK_X: Record<EntityKind, number> = {
+  uas: 21,
+  sensor: 19,
+  effector: 19,
+  c2: 21,
+  asset: 21,
+  marker: 12,
+}
 /** Heading-handle knob: its centre sits this far from the glyph centre, px. */
 export const HANDLE_REACH = 34
 /** Heading-handle knob radius, px. */
@@ -89,8 +127,8 @@ const STICKY_PAD = 6
 const EDGE_MARGIN = 10
 const MIN_RADIUS = 80
 const RADIUS_PAD = 70
-/** Half side of a glyph box: the target brackets reach 19 px. */
-const GLYPH_HALF = 20
+/** Half side of a glyph box: the target brackets reach 17 px. */
+const GLYPH_HALF = 18
 
 interface Rect {
   x: number
@@ -108,7 +146,7 @@ interface Cluster {
 
 /**
  * Character budget for a board designator, chosen so the result plus its
- * instance number still fits the 120px anchored box on one line.
+ * instance number and a status word still fit the `BLOCK_W` block on one line.
  */
 const DESIGNATOR_CHARS = 16
 
@@ -156,79 +194,72 @@ export function boardDesignator(name: string): string {
   return (kept.join(' ') + index).toUpperCase()
 }
 
-/**
- * Lines an anchored name wraps to at the 120px box. Greedy word wrap over the
- * monospace metric, matching how Konva wraps the drawn Text. Pass the string
- * actually drawn, which is boardDesignator(entity.name).
- */
-export function labelLineCount(name: string): number {
-  const words = name
-    .trim()
-    .split(/\s+/)
-    .filter((w) => w.length > 0)
-  if (words.length === 0) return 1
-  let lines = 1
-  let width = 0
-  for (const word of words) {
-    const w = word.length * CHAR_W
-    if (width > 0 && width + CHAR_W + w > ANCHOR_W) {
-      lines++
-      width = 0
-    }
-    if (w > ANCHOR_W) {
-      // A word wider than the box breaks inside itself and fills its last line.
-      lines += Math.ceil(w / ANCHOR_W) - 1
-      width = ANCHOR_W
-    } else {
-      width = width > 0 ? width + CHAR_W + w : w
-    }
-  }
-  return lines
+/** Block text width, px: the longest line in the mono metric, capped at `BLOCK_W`. */
+function blockWidth(lines: readonly string[]): number {
+  const longest = lines.reduce((n, line) => Math.max(n, line.length), 0)
+  return Math.min(BLOCK_W, longest * CHAR_W)
+}
+
+/** True when a disc meets a rect. */
+function discMeetsRect(cx: number, cy: number, r: number, rect: Rect): boolean {
+  const nx = Math.min(Math.max(cx, rect.x), rect.x + rect.w)
+  const ny = Math.min(Math.max(cy, rect.y), rect.y + rect.h)
+  return Math.hypot(cx - nx, cy - ny) < r
 }
 
 /**
- * Top of the anchored label box, px below the glyph centre. A heading handle whose knob
- * meets the box (it points within 45 degrees of straight down) moves the label
- * below the knob; otherwise the label stays at LABEL_ANCHOR_TOP. Pass the drawn string.
+ * Where the data block draws, px from the glyph centre. The block sits right of the
+ * frame at `DATA_BLOCK_X[kind]`, first baseline at `BLOCK_BASELINE`. A heading knob
+ * that would meet the right block flips it left of the frame, right-aligned, unless
+ * the knob meets the left block too. Pass the lines actually drawn.
  */
-export function anchoredLabelTop(drawn: string, handleDeg?: number): number {
-  if (handleDeg == null) return LABEL_ANCHOR_TOP
+export function anchoredBlockPos(
+  lines: readonly string[],
+  kind: EntityKind = 'uas',
+  handleDeg?: number,
+): BlockPos {
+  const width = blockWidth(lines)
+  const h = Math.max(1, lines.length) * LABEL_LINE_H
+  const bx = DATA_BLOCK_X[kind]
+  const right: BlockPos = { x: bx, y: BLOCK_TOP, width, align: 'left' }
+  if (handleDeg == null) return right
   const r = (handleDeg * Math.PI) / 180
   const hx = Math.sin(r) * HANDLE_REACH
   const hy = -Math.cos(r) * HANDLE_REACH
-  const half = Math.min(ANCHOR_W, drawn.length * CHAR_W) / 2
-  if (Math.abs(hx) >= half + KNOB_CLEAR || hy + KNOB_CLEAR <= LABEL_ANCHOR_TOP) {
-    return LABEL_ANCHOR_TOP
-  }
-  return Math.ceil(hy + KNOB_CLEAR)
+  if (!discMeetsRect(hx, hy, KNOB_CLEAR, { x: right.x, y: right.y, w: width, h })) return right
+  const left: BlockPos = { x: -bx - width, y: BLOCK_TOP, width, align: 'right' }
+  if (discMeetsRect(hx, hy, KNOB_CLEAR, { x: left.x, y: left.y, w: width, h })) return right
+  return left
 }
 
-/** One label measured: the drawn designator and its anchored box. */
+/** One label measured: the drawn lines and the block box. */
 function measure(m: LabelInput): Measured {
-  const name = m.drawn ?? boardDesignator(m.name)
+  const lines = m.lines ?? [boardDesignator(m.name)]
+  const pos = anchoredBlockPos(lines, m.kind, m.handleDeg)
   return {
     ...m,
-    name,
-    w: Math.min(ANCHOR_W, name.length * CHAR_W),
-    h: labelLineCount(name) * LABEL_LINE_H,
-    top: anchoredLabelTop(name, m.handleDeg),
+    name: lines[0] ?? '',
+    lines,
+    w: pos.width,
+    h: Math.max(1, lines.length) * LABEL_LINE_H,
+    bx: pos.x,
+    top: pos.y,
   }
 }
 
-/** Footprint of the anchored label (centered, 120px wrap) where EntityLayer draws it. */
+/** Footprint of the data block where EntityLayer draws it. */
 function anchoredRect(m: Measured): Rect {
-  return { x: m.sx - m.w / 2, y: m.sy + m.top, w: m.w, h: m.h }
+  return { x: m.sx + m.bx, y: m.sy + m.top, w: m.w, h: m.h }
 }
 
-/** One box over a glyph, its target brackets (19 px) and its anchored label. */
+/** One box over a glyph, its target brackets (17 px) and its data block. */
 function markRect(m: Measured): Rect {
-  const half = Math.max(GLYPH_HALF, m.w / 2)
-  return {
-    x: m.sx - half,
-    y: m.sy - GLYPH_HALF,
-    w: half * 2,
-    h: GLYPH_HALF + m.top + m.h,
-  }
+  const block = anchoredRect(m)
+  const x0 = Math.min(m.sx - GLYPH_HALF, block.x)
+  const y0 = Math.min(m.sy - GLYPH_HALF, block.y)
+  const x1 = Math.max(m.sx + GLYPH_HALF, block.x + block.w)
+  const y1 = Math.max(m.sy + GLYPH_HALF, block.y + block.h)
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }
 }
 
 function overlaps(a: Rect, b: Rect): boolean {
@@ -239,7 +270,7 @@ function inflate(r: Rect, pad: number): Rect {
   return { x: r.x - pad, y: r.y - pad, w: r.w + pad * 2, h: r.h + pad * 2 }
 }
 
-/** Two entities tangle when their glyphs converge or their anchored labels overlap. */
+/** Two entities tangle when their glyphs converge or their data blocks overlap. */
 function near(a: Measured, b: Measured, sticky?: Set<string>): boolean {
   const pad = sticky && (sticky.has(a.id) || sticky.has(b.id)) ? STICKY_PAD : 0
   if (Math.hypot(a.sx - b.sx, a.sy - b.sy) < GLYPH_NEAR + pad) return true
@@ -359,6 +390,7 @@ function spokeSide(
       ty: Math.round(ly - LABEL_FONT_PX / 2),
       width,
       align: dir === 1 ? 'left' : 'right',
+      text: m.name,
     })
   })
 }
@@ -387,19 +419,22 @@ function fanCluster(
 }
 
 /**
- * True when a caption box whose top-left corner is (x, y) meets no glyph and no anchored
- * label. Coordinates are the scale-only screen frame: world meters times the zoom `k`.
+ * True when a caption box whose top-left corner is (x, y) meets no glyph and no data
+ * block. Coordinates are the scale-only screen frame: world meters times the zoom `k`.
  */
 export function captionClear(
   x: number,
   y: number,
   text: string,
-  entities: { id: string; name: string; pos: { x: number; y: number } }[],
+  entities: { id: string; name: string; kind?: EntityKind; pos: { x: number; y: number } }[],
   k: number,
 ): boolean {
   const box = { x, y, w: text.length * CHAR_W, h: LABEL_FONT_PX }
   return !entities.some((e) =>
-    overlaps(box, markRect(measure({ id: e.id, name: e.name, sx: e.pos.x * k, sy: e.pos.y * k }))),
+    overlaps(
+      box,
+      markRect(measure({ id: e.id, name: e.name, kind: e.kind, sx: e.pos.x * k, sy: e.pos.y * k })),
+    ),
   )
 }
 
@@ -408,7 +443,7 @@ export function layoutLabels(
   opts: LayoutOptions = {},
 ): Map<string, LabelPlacement> {
   const out = new Map<string, LabelPlacement>()
-  // Measure what the canvas draws: both layers render boardDesignator(name).
+  // Measure what the canvas draws: the block lines, or boardDesignator(name) alone.
   const drawn = inputs.map(measure)
   const cs = consolidate(clusters(drawn, opts.sticky).map(geometry))
   for (const c of cs) {

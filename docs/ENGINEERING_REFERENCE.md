@@ -28,8 +28,8 @@ Breaking one of these breaks the app.
   publication advances by the measured wall time at playback speed. The canvas frame clock
   (`useFrameClock`, mounted once in `LiveScene` on the live Konva Layer) derives its display time
   from the last published `simTimeS` plus the wall time since that publication at
-  `speedMult`, clamped to one period. Any pulse, blink or playhead derives from `simTimeS`
-  or that display time; never a timer. Panels subscribe through `src/state/selectors.ts`.
+  `speedMult`, clamped to one period. The playhead and the beam display hold derive from
+  `simTimeS` or that display time; never a timer. Nothing on the board blinks. Panels subscribe through `src/state/selectors.ts`.
   Playback commands own observation and replay: `src/state/playbackCommands.ts` is
   store-free and resolves one intent (`play`, `pause`, `toggle`, `scrub`, `frame`,
   `publish`, `advance`, `complete`, `newRun`) into a transition that the store action
@@ -574,9 +574,11 @@ src/analysis/  classPriors.ts (classOfModel, classPriorFor over the generated CL
 src/ui/        kit.tsx: the shared primitives Field, FieldHelpProvider, Seg, State and
                ProvMark that the Board panels render; reads index.css classes only, no
                store (a store import there splits the store into its own chunk).
-               ink.ts: the Konva ink table (danger red, entity kind fallback colors) that
-               the layers, the palette glyphs, the detail panels and trackState share,
-               and the BOARD_INK_DARK and BOARD_INK_PAPER tables that useBoardInk picks.
+               ink.ts: the Konva ink table (the hostile red DANGER_INK, the one EW ink,
+               the entity kind inks the panels and the run timeline use, AFFILIATION and
+               boardInk, which gives the board one hue per affiliation) and the
+               BOARD_INK_DARK and BOARD_INK_PAPER tables that useBoardInk picks, with the
+               identity and amplifier inks.
                icons.tsx: the 16 px stroke icon set for chrome controls.
                usePopover.ts: the one dismissal rule for the toolbar dropdowns (outside
                pointer, capture-phase Escape, focus in on open and back on close).
@@ -606,8 +608,11 @@ src/canvas/    CanvasStage.tsx (stage, pan/zoom, drop target, the two scene Laye
                (the board ink table for ui.theme and prefers-color-scheme), hoverCursor.ts
                (the hovered entity's pointer cursor, released when that entity unmounts),
                layers/ (one component per drawn concern; footprintStyle.ts is the ring
-               style source; PlacementPreviewLayer draws ui.placementPreview on the live
-               Layer after CalloutLayer while currentOptimize returns its source result)
+               style source; symbols.tsx the Konva twins of the Glyph.tsx symbol library;
+               PairingLineLayer joins each holding sensor to its track; OutcomeMarkLayer
+               leaves a kill or miss mark; PlacementPreviewLayer draws ui.placementPreview
+               on the live Layer after CalloutLayer while currentOptimize returns its
+               source result)
 src/panels/    Toolbar (the 36 px header: brand, scenario name, the lifecycle tabs, the
                phase RunControl, settings, the ⋯ menu with Storage, drawer toggle;
                BoardTools, the 28 px tool row), StatusBar (the 24 px status bar: run
@@ -631,7 +636,9 @@ src/panels/    Toolbar (the 36 px header: brand, scenario name, the lifecycle ta
                with Gutter, Plot, LaneMarks, Axis and Overview; layout.ts places the
                lines and maps time to pixels, fold.ts folds same-named threats past 14
                rows, useShownT0.ts pans the plot with Follow), CommandPalette,
-               Glyph.tsx (symbology), ringLabels.ts (ring names)
+               Glyph.tsx (the symbol library: the air and ground frame tables, the 2525
+               icon paths, the amplifier geometry and the SVG Glyph), ringLabels.ts
+               (ring names)
 src/io/        autosave.ts (the one autosave lifecycle: createAutosave returns read,
                restore, observe, flush and stop, and owns the read, the recovery, the
                write gate, the 500 ms debounce, the pagehide and visibilitychange flush;
@@ -1148,11 +1155,31 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   paired OAT parameter perturbations, not mean CIs or outcome quantiles; leaker display
   remains undefined without a defended asset. A sensor-only MC case at neutral covariates
   with environment application and doctrine disabled can be `valid`.
-- **Symbology** (`src/panels/Glyph.tsx`, `src/playback/trackState.ts`): MIL-STD-2525
-  split, the frame carries affiliation and the icon carries function; `FRAME_FOR`,
-  `FUNCTION_LETTER` and `FRIEND_FRAME_D` are shared by the palette, the library lists and
-  `EntityLayer`. `PHASE_STYLE` is the one track-phase color and label table. Canvas labels
-  draw `boardDesignator(entity.name)`.
+- **Symbology** (`src/panels/Glyph.tsx`, `src/canvas/layers/symbols.tsx`,
+  `src/canvas/layers/EntityLayer.tsx`): MIL-STD-2525 split, the frame carries identity
+  and the icon carries function. `Glyph.tsx` is the one symbol library: `AIR_FRAME` and
+  `airFrameFor` (circle, diamond or square, dashed for pending and suspect, the `noTrack`
+  grey until a sensor holds the track), `groundFrameFor` (circle, rectangle, installation
+  or marker, with the 2525 `ICON_PATH` icon or the EW, C2, DA text per sensor type and
+  effector type), `bracketPoints`, `barBox`, the slash and X, and the SVG `Glyph` the
+  palette, the library rows and the detail header render. `symbols.tsx` draws the same
+  tables in Konva (`AirFrame`, `GroundFrame`, `EngagementBar`, `Brackets`, `KillStrike`,
+  `DataBlock`), so the palette and the board draw one symbol per object. Every frame is a
+  line frame with a board-tone knockout in `boardInk(entity, ink)`. `EntityLayer` maps the
+  sampled telemetry: `airIdentityOf` reads the classification (unknown, suspected,
+  hostile; `none` while undetected or searching; a hard kill is the ghost frame with the
+  destroyed X), white brackets while targeted or engaged, the engagement bar from the
+  salvo counts (`MIF-M` while a round is incoming, `ENG-M`, `ENG-DE`, `ENG-EA`) and on the
+  effector from `EffectorLiveState` (`ASN-M`, `ASN ?`, `MIF-M`, `MIF-GN`, `ENG-EA`,
+  `ENG-DE`), a cyan `J` for a jammed member, one slash for a mission kill, a dashed frame
+  at 0.55 for a switched-off system, a `warn` condition bar on a sensor whose
+  `sensorHoldGate` against the selected threat is rf-silent, rf-band or no-range, and
+  `EMPTY` in white on a spent effector. The velocity leader is 10 s of travel at the zoom,
+  clamped 10 to 48 px. The data block (`blockLinesAtRest` at rest) draws
+  `boardDesignator(entity.name)`, `×N` and one word (`HK`, `MK`, `LOST`, `CST`) on line
+  one and altitude in hundreds of feet with speed in knots on line two while held.
+  `PHASE_STYLE` is the one track-phase label and colour table for the telemetry pill, the
+  detail pane and the run timeline; the board reads no phase colour and nothing pulses.
 - **Rings** (`src/canvas/layers/footprintStyle.ts`, `src/panels/ringLabels.ts`): seven
   ring keys resolved through `selectEffectiveLayers`, per-entity overrides under `ui.ringOverrides`.
   `ui.layers` persists the Prepare/Analyze view. Execute uses `ui.executeLayers` or the
@@ -1167,13 +1194,18 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   recommended intercept range, the doctrinal range) and `effectorMinRange` is Min range.
   MRIR is the library `mrirM` where recorded, else `MRIR_DEFAULT_FRACTION` (2/3, a planning
   factor) of MIR, through `mrirFractionOf`. It is a board ring only; the engine does not
-  read it. MIR and MRIR are on in `DEFAULT_LAYERS` and the Planning preset. Effector rings
-  draw in the danger red from `src/ui/ink.ts`, the one Konva ink table. A jammer keeps its
-  entity-color cone: its MIR is the effective jam range against the selected threat,
-  ground projected like every effector ring, and a sector below 360 draws a beam with
-  MRIR as an arc inside it. `ringState` sets each system's look. At rest a ring is a
-  dashed edge in `BoardInk.ringIdle` (`MIR_REST`, `MRIR_REST`, `MIN_REST`, `SENSOR_REST`)
-  with no fill and no ring text. Active rings take the solid, filled `RING_STYLE` look.
+  read it. MIR and MRIR are on in `DEFAULT_LAYERS` and the Planning preset. A ring record
+  carries a `RingInk` token (`friend`, `white`, `grey` or the entity's own hex), because
+  the ring model is cached across themes; `FootprintLayer` resolves it through
+  `resolveRingInk` and the theme's `BoardInk`. Sensor and asset rings take `friend`,
+  effector rings `white` (the selection ink) and a disabled system `grey`. An active
+  effector labels MIR `MAX RG` and Min range `MIN RG` (`RING_LABEL_TEXT`). A jammer draws
+  a flat wedge in the EW ink: its MIR is the effective jam range against the selected
+  threat, ground projected like every effector ring, and a sector below 360 draws the
+  wedge with MRIR as an arc inside it. `ringState` sets each system's look. At rest a ring
+  is a dashed edge in `BoardInk.ringIdle` (`MIR_REST`, `MRIR_REST`, `MIN_REST`,
+  `SENSOR_REST`) with no fill and no ring text. Active rings take the solid, filled
+  `RING_STYLE` look.
   A system is active while it is selected, or at the run time cursor while an effector
   engages or a sensor holds a track: `StaticScene` passes `trialActiveIds` as
   `runActiveIds`, and `FootprintLayer` adds the selection. A disabled system stays grey.
@@ -1187,8 +1219,8 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   `RING_HIT_TOLERANCE_PX`). Esc or a click on empty board clears it. The Inspector
   effector Rings section edits MRIR as a fraction of MIR; the slider writes on release as
   one undo step, and Reset to 2/3 clears `mrirM`. `footprintStyle.ts` also holds the
-  track style: `TRACK_ESTIMATE_INK`, `TRACK_FALSE_INK`, `TRACK_ELLIPSE_DASH` and
-  `TRACK_MARKER_PX`, which `TrackLayer` reads.
+  track style: `TRACK_FALSE_INK`, `TRACK_ELLIPSE_DASH` and `TRACK_MARKER_PX`, which
+  `TrackLayer` reads; the estimate ink is the theme's `BoardInk.friend`.
 - **Track picture** (`src/playback/trackEstimateView.ts`,
   `src/canvas/layers/TrackLayer.tsx`): `latestEstimatesAt` is the one reader of a trial's
   track history, the latest entry per track id at or before the horizon and nothing past
@@ -1203,7 +1235,13 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   live Layer: a coasting track dashes, an updated track draws solid, a truth track has no
   error so it draws the marker alone, and a false track takes the muted ink. The ellipse
   radii are distances and ride the world transform; the stroke and the marker hold their
-  pixel size.
+  pixel size. `PairingLineLayer` reads the same picture and draws one line per sensor id
+  from the sensor's position to the estimate, solid on a hold and dashed on a coast,
+  trimmed in screen px; a false track still pairs with the sensor that holds it.
+  `OutcomeMarkLayer` reads the attrition events once per trial: every kinetic or
+  directed-energy effect that is not a soft shot leaves a mark at the position
+  `trialMemberStatesAt` gives the member at `tEffectS`, a kill cross when `killDelta` is
+  1 and a miss circle otherwise, filtered at the horizon.
 - **Analysis screens** (`src/panels/AnalysisPanel.tsx`, `src/panels/analysis/screens/`):
   `PHASE_SCREENS` (`screens/navigation.ts`) is the one phase-to-screen map: Prepare
   `fragility`, `inputs` and `placement` (Placement), Execute `now`, Analyze
@@ -1469,10 +1507,10 @@ value)` holds the rule of every edited spec field. It owns the value that clears
   or a legacy event's delay from the captured effector spec. Missing entity/spec or invalid
   timing stays unavailable; a present spec's omitted delay uses the engine zero default.
   `trackState.ts` precomputes nullable release times and fixed effect endpoints. A launcher
-  reads PREP before release or LAUNCH ? when release is unavailable. Kinetic rounds move
+  carries the `ASN-M` bar before release, or `ASN ?` when release is unavailable. Kinetic rounds move
   only over a positive release-to-effect interval; zero-flight kinetic events draw no
   traveling round. Beam/EW channels draw at release without kinetic interpolation; a
-  zero-duration channel gets the existing 0.6 s display pulse. Committed rounds remain
+  zero-duration channel gets the 0.6 s display hold (`BEAM_DISPLAY_S`). Committed rounds remain
   through effect, independent of the target's expected-defeat state. Assignment counters,
   effect calculations and outcomes are unchanged.
   `trialSeries.ts` counts salvos in flight only over a resolved kinetic release-to-effect
@@ -1532,12 +1570,14 @@ Konva conventions:
   a derivation. Rings are one prepared model (`ringModel.ts`): `FootprintLayer` draws its
   records and `HudLayer` hit-tests it; neither derives ring geometry, and the HUD never
   imports a drawing file. Spoke callout geometry snaps to whole pixels in `labelLayout.ts`, so a
-  sub-pixel centroid drift does not change a placement's identity. `LabelInput.handleDeg`
-  carries a shown heading knob, so the collision box starts at `anchoredLabelTop`, where
-  `EntityLayer` draws the label; `LiveScene` derives it with `shownHandleDeg`.
+  sub-pixel centroid drift does not change a placement's identity. `LabelInput` carries
+  the entity kind, the block lines (`blockLinesAtRest`) and a shown heading knob
+  (`handleDeg`), so the collision box is the frame box united with the data block where
+  `EntityLayer` draws it (`anchoredBlockPos`); `LiveScene` derives the knob with
+  `shownHandleDeg`.
 - Two scene Layers, in this order: `StaticScene` (boundaries, footprints, range rings,
-  connections) and `LiveScene` (WEZ, paths, track estimates, engagements, entities,
-  system handles, callouts, the marquee). A Konva Layer is one canvas, so a moving glyph repaints the
+  connections) and `LiveScene` (WEZ, paths, pairing lines, track estimates, engagements,
+  outcome marks, entities, system handles, callouts, the marquee). A Konva Layer is one canvas, so a moving glyph repaints the
   live canvas alone and the dashed rings stay untouched between publications. The frame
   clock is mounted once, in `LiveScene`; the static scene reads the published `simTimeS`
   and re-renders only when the run-active set (`trialActiveIds`) changes.
@@ -1547,8 +1587,9 @@ Konva conventions:
   A forward preview never exposes later outcomes. Forecast `sweepAt` and `trackTimelineOf`
   remain separate adapters keyed on `engineKeyOf(scenario)`.
 - A frame creates React elements for what moved. `EntityNode` is memoized on per-entity
-  primitives, the pulse phase is one boolean computed per frame (never `displayTimeS`
-  itself), and the flying entities render in their own group above the at-rest ones.
+  primitives (the leader length is one number computed from the zoom and the path
+  speed), nothing reads `displayTimeS` for a pulse, and the flying entities render in
+  their own group above the at-rest ones.
 - Fixed `dash` and `points` arrays are module constants. Konva compares array props by
   identity, so an inline literal re-sets the attribute and dirties the layer on every
   render. Per-render geometry (shot endpoints, grid lines, a trimmed link) stays inline.
@@ -1557,7 +1598,8 @@ Konva conventions:
   through the stage transform alone and re-renders no layer.
 - The heading handle and the system handle preview a rotation on the Konva nodes during
   the drag and commit one store action on `dragend`. The heading handle also moves the
-  anchored name on its Konva node on each pointer move. The coverage wedge and the label
+  data block on its Konva nodes on each pointer move, flipping it to the other side of the
+  frame when the knob would cover it. The coverage wedge and the label
   collision box follow the committed heading, because a live heading would need a store
   write per move. Drag events bubble from a child to
   the entity group; the group acts only on a drag whose target is itself.

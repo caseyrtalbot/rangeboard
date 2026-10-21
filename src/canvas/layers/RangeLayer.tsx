@@ -4,11 +4,14 @@ import { useStore } from '../../state/store'
 import { modelFor, pathSpeed } from '../../model/scenario'
 import { pathExhaustionPoint, rangeBasis, rangeCurvePoints } from '../../analysis/range'
 import { formatDistance } from '../../geometry/geo'
-import { DANGER_INK, entityInk } from '../../ui/ink'
+import { boardInk, DANGER_INK } from '../../ui/ink'
+import { useBoardInk } from '../useBoardInk'
 
 /**
  * Wind-adjusted range rings for drones with showRange on, plus an endurance
- * exhaustion marker on the flight path. Never intercepts pointer events.
+ * exhaustion marker on the flight path. Both belong to the hostile object, so the
+ * curve takes the board's hostile ink and the mark the danger ink. Never intercepts
+ * pointer events.
  */
 /** Fixed dash and point arrays: an inline literal is re-set on every render. */
 const RANGE_DASH = [10, 5]
@@ -21,6 +24,7 @@ export function RangeLayer() {
   const scale = useStore((s) => s.camera.scale)
   const units = useStore((s) => s.ui.units)
   const show = useStore((s) => selectEffectiveLayers(s).rangeRings)
+  const ink = useBoardInk()
   if (!show) return null
   const env = scenario.environment
 
@@ -30,7 +34,8 @@ export function RangeLayer() {
         if (e.kind !== 'uas' || !e.showRange) return null
         const uas = modelFor(scenario, e)?.uas
         if (!uas) return null
-        const color = entityInk(e, modelFor(scenario, e))
+        // The board ink, not the model colour: a library colour never leaks onto the board.
+        const color = boardInk(e, ink)
         const path = scenario.paths.find((p) => p.entityId === e.id)
         const launch = path?.points[0] ?? e.pos
         const basis = rangeBasis(uas)

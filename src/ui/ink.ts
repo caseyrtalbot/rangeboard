@@ -5,25 +5,46 @@ import type { Entity, EntityKind, SpecModel } from '../model/types'
  * are written once here. The palette glyphs and the detail panels read the same values.
  */
 
-/** Kill, depletion, restricted airspace, endurance limit, the hostile ring. */
-export const DANGER_INK = '#c4564a'
+/** The hostile red: the hostile frame, its weapon zone, the endurance limit. Matches `--status-critical`. */
+export const DANGER_INK = '#e46f62'
 
-/** Jam ring on a target and the EW beam. Matches `--ew` in index.css. */
-export const EW_INK = '#7da7c4'
+/** The one friendly EW ink: jam beam, footprint, the J on a jammed track. Matches `--ew` in index.css. */
+export const EW_INK = '#5ad1e0'
+
+/** Who a frame belongs to. The frame shape and the board hue follow it. */
+export type Affiliation = 'friend' | 'hostile' | 'neutral'
+
+/** Affiliation per entity kind. Glyph.tsx re-exports it as FRAME_FOR. */
+export const AFFILIATION: Record<EntityKind, Affiliation> = {
+  sensor: 'friend',
+  effector: 'friend',
+  c2: 'friend',
+  asset: 'friend',
+  uas: 'hostile',
+  marker: 'neutral',
+}
 
 /** Fallback color per entity kind when neither the entity nor its model sets one. */
 export const KIND_INK: Record<EntityKind, string> = {
   sensor: '#7da7c4',
   effector: '#c9975a',
   c2: '#d6d9d2',
-  uas: '#c46a5a',
+  uas: DANGER_INK,
   asset: '#8fae7a',
   marker: '#b7bdb2',
 }
 
-/** The entity's own color, then its model's, then the kind fallback. */
+/** The entity's own color, then its model's, then the kind default. The panels' ink. */
 export function entityInk(entity: Entity, model: SpecModel | undefined): string {
   return entity.color ?? model?.color ?? KIND_INK[entity.kind]
+}
+
+/**
+ * The board's ink for an entity: one hue per affiliation. A model colour stays on the
+ * palette, the library and the run timeline; an explicit entity colour still wins.
+ */
+export function boardInk(entity: Entity, ink: BoardInk): string {
+  return entity.color ?? ink[AFFILIATION[entity.kind]]
 }
 
 /** '#rrggbb' to 'rgba(...)' for a Konva fill or gradient stop. */
@@ -60,6 +81,20 @@ export interface BoardInk {
   knobRim: string
   /** An at-rest range ring: white on the night board, text 1 on paper. */
   ringIdle: string
+  /** Identity inks: the frame, its leader, its rings and its zone. */
+  hostile: string
+  unknown: string
+  friend: string
+  neutral: string
+  /** Friendly EW: the jam beam, the footprint, the J on a jammed track. */
+  ew: string
+  /** A hard-killed frame, and the X struck through it. */
+  ghost: string
+  destroyed: string
+  /** A truth object no sensor has held. */
+  noTrack: string
+  /** The condition bar under a degraded or jammed system. */
+  warn: string
 }
 
 /** Night board ink: the values the layers drew before the paper table existed. */
@@ -78,13 +113,26 @@ export const BOARD_INK_DARK: BoardInk = {
   linkDim: '#6a7178',
   knobRim: '#121415',
   ringIdle: '#f4f3ee',
+  hostile: DANGER_INK,
+  unknown: '#e6cf5a',
+  friend: '#7fbfe6',
+  neutral: '#e6cf5a',
+  ew: EW_INK,
+  ghost: '#6a7178',
+  destroyed: '#cfd4cc',
+  noTrack: '#82887e',
+  warn: '#e6cf5a',
 }
 
 /**
  * Paper board ink, measured on the paper board `#eeebe4`: label 6.9:1, link caption
  * 5.5:1, callout leader 3.5:1, tool 5.3:1, dim link 3.5:1. The knob rim is text 1, so a
  * pale kind ink on a knob still holds 4.2:1 or more against its rim. The airspace grid
- * has no separate paper tone.
+ * has no separate paper tone. The identity inks are the sheet's paper tokens: hostile
+ * is the paper critical (4.0:1), unknown, neutral and warn the paper warning (4.0:1),
+ * friend the paper accent (5.1:1). EW darkens the night cyan in its own hue (3.9:1).
+ * Ghost is the strip's paper ghost (4.5:1), destroyed text 2 (6.9:1) so the X reads
+ * over the frame, and no-track text 3 (3.5:1).
  */
 export const BOARD_INK_PAPER: BoardInk = {
   gridMinor: '#dcd7cd',
@@ -101,4 +149,13 @@ export const BOARD_INK_PAPER: BoardInk = {
   linkDim: '#767d84',
   knobRim: '#212220',
   ringIdle: '#212220',
+  hostile: '#d43725',
+  unknown: '#98691b',
+  friend: '#2862b0',
+  neutral: '#98691b',
+  ew: '#227f8c',
+  ghost: '#666c74',
+  destroyed: '#4e504b',
+  noTrack: '#7b7d73',
+  warn: '#98691b',
 }

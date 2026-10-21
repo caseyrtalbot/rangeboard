@@ -3,8 +3,8 @@ import { Arc, Circle, Group, Line, Ring as KonvaRing, Text } from 'react-konva'
 import type { Entity, Vec2 } from '../../model/types'
 import { useStore } from '../../state/store'
 import { destination, wedgePoints } from '../../geometry/geo'
-import { withAlpha } from '../../ui/ink'
-import { LABEL_FONT_PX } from '../labelLayout'
+import type { BoardInk } from '../../ui/ink'
+import { LABEL_FONT_PX, LABEL_HALO_PX } from '../labelLayout'
 import type { AssetRings, EffectorRings, JammerRings, SensorRings } from '../ringModel'
 import { useBoardInk } from '../useBoardInk'
 import { useRingModel } from '../useRingModel'
@@ -14,6 +14,8 @@ import {
   MIR_REST,
   MRIR_REST,
   PD_HIGH_DASH,
+  resolveRingInk,
+  RING_LABEL_TEXT,
   RING_STYLE,
   ringState,
   SENSOR_REST,
@@ -43,6 +45,10 @@ const ACTIVE_STROKE_PX = 2
 const BEHIND_OPACITY = 0.5
 /** Label anchor bearings: sensor rings north-east, effector rings north-west. */
 const SENSOR_LABEL_BRG = 45
+const EFFECTOR_LABEL_BRG = 315
+/** Jammer footprint wedge: a flat tint and edge in the EW ink, like a flashlight beam. */
+const FOOTPRINT_FILL = 0.09
+const FOOTPRINT_EDGE = 0.7
 /** Label text box and its gap from the ring, screen px. */
 const LABEL_BOX_PX = 150
 const LABEL_GAP_PX = 4
@@ -179,15 +185,15 @@ interface RingLabelProps {
   /** Bearing of the anchor point on the ring, degrees. */
   bearing: number
   text: string
-  color: string
+  ink: BoardInk
 }
 
 /**
- * Ring caption in the entity label font, at a fixed bearing on the ring. The group
- * counter-scales the stage transform, so the inner units are screen px. The label
- * is the only footprint node that reads the zoom.
+ * Ring caption in the label ink over a board-tone glyph halo, at a fixed bearing on
+ * the ring. The group counter-scales the stage transform, so the inner units are
+ * screen px. The label is the only footprint node that reads the zoom.
  */
-function RingLabel({ pos, radiusM, bearing, text, color }: RingLabelProps) {
+function RingLabel({ pos, radiusM, bearing, text, ink }: RingLabelProps) {
   const scale = useStore((s) => s.camera.scale)
   if (!(radiusM > 0) || !(scale > 0)) return null
   const p = destination(pos, bearing, radiusM)
@@ -202,7 +208,11 @@ function RingLabel({ pos, radiusM, bearing, text, color }: RingLabelProps) {
         align={right ? 'right' : 'left'}
         text={text}
         fontSize={LABEL_FONT_PX}
-        fill={color}
+        fill={ink.label}
+        stroke={ink.board}
+        strokeWidth={LABEL_HALO_PX}
+        lineJoin="round"
+        fillAfterStrokeEnabled
         listening={false}
       />
     </Group>
@@ -214,8 +224,8 @@ interface NodeProps<R> {
   dim: boolean
   /** Selected, or active in the run: the solid, filled style. */
   active: boolean
-  /** BoardInk.ringIdle. */
-  idleInk: string
+  /** The theme's board ink: `ringIdle` for a resting edge, the resolved ring token when active. */
+  ink: BoardInk
 }
 
 const SensorNode = memo(function SensorNode({
@@ -223,12 +233,14 @@ const SensorNode = memo(function SensorNode({
   dim,
   active,
   hot,
-  idleInk,
+  ink,
 }: NodeProps<SensorRings> & {
   /** The sensor holds a track at the run time cursor. */
   hot: boolean
 }) {
   const e = r.entity
+  const idleInk = ink.ringIdle
+  const color = resolveRingInk(r.ink, ink)
   if (ringState(active, r.grey) === 'rest') {
     // Every sensor ring rests in one idle dash. The band has no edge, so it rests unseen.
     return (
@@ -261,7 +273,7 @@ const SensorNode = memo(function SensorNode({
             y={e.pos.y}
             innerRadius={r.band.innerM}
             outerRadius={r.band.outerM}
-            fill={r.color}
+            fill={color}
             opacity={bandOpacity}
           />
         ) : (
@@ -272,7 +284,7 @@ const SensorNode = memo(function SensorNode({
             outerRadius={r.band.outerM}
             angle={r.sectorDeg}
             rotation={e.headingDeg - 90 - r.sectorDeg / 2}
-            fill={r.color}
+            fill={color}
             opacity={bandOpacity}
           />
         ))}
@@ -281,9 +293,9 @@ const SensorNode = memo(function SensorNode({
           entity={e}
           sectorDeg={r.sectorDeg}
           radiusM={r.placardM}
-          fill={r.placardFill ? r.color : undefined}
+          fill={r.placardFill ? color : undefined}
           fillOpacity={fillFor(PLACARD_FILL, dim, hot)}
-          stroke={r.color}
+          stroke={color}
           strokeWidth={hot && !hotContour ? ACTIVE_STROKE_PX : RING_STYLE.sensorPlacard.width}
           dash={r.placardDash}
           strokeOpacity={r.behind ? strokeOpacity * BEHIND_OPACITY : strokeOpacity}
@@ -294,9 +306,9 @@ const SensorNode = memo(function SensorNode({
           entity={e}
           sectorDeg={r.sectorDeg}
           radiusM={r.contourLowM}
-          fill={r.contourFill ? r.color : undefined}
+          fill={r.contourFill ? color : undefined}
           fillOpacity={fillFor(CONTOUR_FILL, dim, hot)}
-          stroke={r.color}
+          stroke={color}
           strokeWidth={hotContour ? ACTIVE_STROKE_PX : RING_STYLE.sensorPdContours.width}
           dash={RING_STYLE.sensorPdContours.dash}
           strokeOpacity={strokeOpacity}
@@ -307,7 +319,7 @@ const SensorNode = memo(function SensorNode({
           entity={e}
           sectorDeg={r.sectorDeg}
           radiusM={r.contourHighM}
-          stroke={r.color}
+          stroke={color}
           strokeWidth={RING_STYLE.sensorPdContours.width}
           dash={PD_HIGH_DASH}
           strokeOpacity={strokeOpacity}
@@ -318,7 +330,7 @@ const SensorNode = memo(function SensorNode({
           entity={e}
           sectorDeg={r.sectorDeg}
           radiusM={r.classifyM}
-          stroke={r.color}
+          stroke={color}
           strokeWidth={RING_STYLE.classifyRings.width}
           dash={RING_STYLE.classifyRings.dash}
           strokeOpacity={dim ? 0.25 : 0.5}
@@ -330,7 +342,7 @@ const SensorNode = memo(function SensorNode({
           radiusM={r.contourLowM}
           bearing={SENSOR_LABEL_BRG}
           text={r.lowLabel}
-          color={r.color}
+          ink={ink}
         />
       )}
       {r.highLabel != null && r.contourHighM != null && (
@@ -339,20 +351,17 @@ const SensorNode = memo(function SensorNode({
           radiusM={r.contourHighM}
           bearing={SENSOR_LABEL_BRG}
           text={r.highLabel}
-          color={r.color}
+          ink={ink}
         />
       )}
     </Group>
   )
 })
 
-const EffectorNode = memo(function EffectorNode({
-  r,
-  dim,
-  active,
-  idleInk,
-}: NodeProps<EffectorRings>) {
+const EffectorNode = memo(function EffectorNode({ r, dim, active, ink }: NodeProps<EffectorRings>) {
   const e = r.entity
+  const idleInk = ink.ringIdle
+  const color = resolveRingInk(r.ink, ink)
   if (ringState(active, r.off) === 'rest') {
     return (
       <Group listening={false} opacity={dim ? DIM_REST : 1}>
@@ -388,9 +397,9 @@ const EffectorNode = memo(function EffectorNode({
           entity={e}
           sectorDeg={r.sectorDeg}
           radiusM={r.maxM}
-          fill={r.color}
+          fill={color}
           fillOpacity={MAX_RANGE_FILL}
-          stroke={r.color}
+          stroke={color}
           strokeWidth={RING_STYLE.effectorMaxRange.width}
           dash={RING_STYLE.effectorMaxRange.dash}
         />
@@ -401,9 +410,9 @@ const EffectorNode = memo(function EffectorNode({
           entity={e}
           sectorDeg={r.sectorDeg}
           radiusM={r.mrirM}
-          fill={r.off ? undefined : r.color}
+          fill={r.off ? undefined : color}
           fillOpacity={MRIR_FILL}
-          stroke={r.color}
+          stroke={color}
           strokeWidth={RING_STYLE.effectorDoctrinal.width}
           dash={RING_STYLE.effectorDoctrinal.dash}
           arc
@@ -414,10 +423,29 @@ const EffectorNode = memo(function EffectorNode({
           entity={e}
           sectorDeg={360}
           radiusM={r.minM}
-          stroke={r.color}
+          stroke={color}
           strokeWidth={RING_STYLE.effectorMinRange.width}
           dash={RING_STYLE.effectorMinRange.dash}
           strokeOpacity={0.6}
+        />
+      )}
+      {/* 2525D range fan words. Only an active, enabled effector carries them. */}
+      {!r.off && r.maxM != null && (
+        <RingLabel
+          pos={e.pos}
+          radiusM={r.maxM}
+          bearing={EFFECTOR_LABEL_BRG}
+          text={RING_LABEL_TEXT.effectorMaxRange}
+          ink={ink}
+        />
+      )}
+      {!r.off && r.minM != null && (
+        <RingLabel
+          pos={e.pos}
+          radiusM={r.minM}
+          bearing={EFFECTOR_LABEL_BRG}
+          text={RING_LABEL_TEXT.effectorMinRange}
+          ink={ink}
         />
       )}
     </Group>
@@ -425,37 +453,27 @@ const EffectorNode = memo(function EffectorNode({
 })
 
 /**
- * A jammer footprint: a solid-edged cone whose fill fades with range the way the
- * jam power density does. The cone length is the effective jam range against the
- * selected threat, the same figure assessJam and the sim window use. The MRIR
- * draws as an arc inside the beam. At rest the cone is a dashed outline.
+ * A jammer footprint: a wedge in the EW ink from the jammer toward its sector, a flat
+ * faint tint with a thin edge. Its angle is the beamwidth and its far arc the effective
+ * jam range against the selected threat, the same figure assessJam and the sim window
+ * use. The MRIR draws as an arc inside the beam. At rest the cone is a dashed outline;
+ * a disabled jammer keeps the grey token.
  */
-const JammerNode = memo(function JammerNode({ r, dim, active, idleInk }: NodeProps<JammerRings>) {
+const JammerNode = memo(function JammerNode({ r, dim, active, ink }: NodeProps<JammerRings>) {
   const e = r.entity
+  const idleInk = ink.ringIdle
+  // The friendly EW effect owns the footprint, so the EW ink replaces the system ink.
+  const color = r.ink === 'grey' ? resolveRingInk(r.ink, ink) : ink.ew
   const rangeM = r.rangeM ?? 0
   const full = r.sectorDeg >= 360
   const { x, y } = e.pos
   const headingDeg = e.headingDeg
   const sectorDeg = r.sectorDeg
-  // One cone outline for both the gradient fill and the edge stroke.
+  // One cone outline for both the fill and the edge stroke.
   const wedge = useMemo(
     () => (sectorDeg >= 360 ? null : wedgePoints({ x, y }, headingDeg, sectorDeg, rangeM)),
     [x, y, headingDeg, sectorDeg, rangeM],
   )
-  const gradient = {
-    fillRadialGradientStartPoint: { x: e.pos.x, y: e.pos.y },
-    fillRadialGradientEndPoint: { x: e.pos.x, y: e.pos.y },
-    fillRadialGradientStartRadius: 0,
-    fillRadialGradientEndRadius: rangeM,
-    fillRadialGradientColorStops: [
-      0,
-      withAlpha(r.color, 0.38),
-      0.55,
-      withAlpha(r.color, 0.14),
-      1,
-      withAlpha(r.color, 0.02),
-    ],
-  }
   if (ringState(active, r.off) === 'rest') {
     return (
       <Group listening={false} opacity={dim ? DIM_REST : 1}>
@@ -489,27 +507,28 @@ const JammerNode = memo(function JammerNode({ r, dim, active, idleInk }: NodePro
       {r.rangeM != null &&
         (full ? (
           <>
-            <Circle x={e.pos.x} y={e.pos.y} radius={rangeM} {...gradient} />
+            <Circle x={e.pos.x} y={e.pos.y} radius={rangeM} fill={color} opacity={FOOTPRINT_FILL} />
             <Circle
               x={e.pos.x}
               y={e.pos.y}
               radius={rangeM}
-              stroke={r.color}
+              stroke={color}
               strokeWidth={1}
               strokeScaleEnabled={false}
-              opacity={0.8}
+              opacity={FOOTPRINT_EDGE}
             />
           </>
         ) : (
           <>
-            <Line points={wedge!} closed {...gradient} />
+            <Line points={wedge!} closed fill={color} opacity={FOOTPRINT_FILL} />
             <Line
               points={wedge!}
               closed
-              stroke={r.color}
+              stroke={color}
               strokeWidth={1}
+              lineJoin="round"
               strokeScaleEnabled={false}
-              opacity={0.8}
+              opacity={FOOTPRINT_EDGE}
             />
           </>
         ))}
@@ -518,7 +537,7 @@ const JammerNode = memo(function JammerNode({ r, dim, active, idleInk }: NodePro
           entity={e}
           sectorDeg={sectorDeg}
           radiusM={r.mrirM}
-          stroke={r.color}
+          stroke={color}
           strokeWidth={RING_STYLE.effectorDoctrinal.width}
           strokeOpacity={0.8}
           arc
@@ -529,7 +548,7 @@ const JammerNode = memo(function JammerNode({ r, dim, active, idleInk }: NodePro
           x={e.pos.x}
           y={e.pos.y}
           radius={r.minM}
-          stroke={r.color}
+          stroke={color}
           strokeWidth={RING_STYLE.effectorMinRange.width}
           dash={RING_STYLE.effectorMinRange.dash ?? undefined}
           strokeScaleEnabled={false}
@@ -540,22 +559,25 @@ const JammerNode = memo(function JammerNode({ r, dim, active, idleInk }: NodePro
   )
 })
 
-const AssetNode = memo(function AssetNode({ r, dim }: { r: AssetRings; dim: boolean }) {
+const AssetNode = memo(function AssetNode({
+  r,
+  dim,
+  ink,
+}: {
+  r: AssetRings
+  dim: boolean
+  ink: BoardInk
+}) {
   const e = r.entity
+  const color = resolveRingInk(r.ink, ink)
   return (
     <Group listening={false}>
+      <Circle x={e.pos.x} y={e.pos.y} radius={r.radiusM} fill={color} opacity={dim ? 0.02 : 0.05} />
       <Circle
         x={e.pos.x}
         y={e.pos.y}
         radius={r.radiusM}
-        fill={r.color}
-        opacity={dim ? 0.02 : 0.05}
-      />
-      <Circle
-        x={e.pos.x}
-        y={e.pos.y}
-        radius={r.radiusM}
-        stroke={r.color}
+        stroke={color}
         strokeWidth={1}
         strokeScaleEnabled={false}
         opacity={dim ? 0.35 : 0.7}
@@ -574,7 +596,7 @@ export const FootprintLayer = memo(function FootprintLayer({ runActiveIds }: Pro
   const { rings } = useRingModel()
   const dim = useStore((s) => s.ui.basemap === 'airspace')
   const selectedIds = useStore((s) => s.selection.entityIds)
-  const idleInk = useBoardInk().ringIdle
+  const ink = useBoardInk()
   // A system's rings are active while it is selected or active in the run; every
   // other ring rests. Each node takes a boolean, so an unchanged node keeps its draw.
   const isActive = (id: string) => runActiveIds.has(id) || selectedIds.includes(id)
@@ -591,17 +613,17 @@ export const FootprintLayer = memo(function FootprintLayer({ runActiveIds }: Pro
               dim={dim}
               active={isActive(id)}
               hot={runActiveIds.has(id)}
-              idleInk={idleInk}
+              ink={ink}
             />
           )
         }
         if (r.kind === 'effector') {
-          return <EffectorNode key={id} r={r} dim={dim} active={isActive(id)} idleInk={idleInk} />
+          return <EffectorNode key={id} r={r} dim={dim} active={isActive(id)} ink={ink} />
         }
         if (r.kind === 'jammer') {
-          return <JammerNode key={id} r={r} dim={dim} active={isActive(id)} idleInk={idleInk} />
+          return <JammerNode key={id} r={r} dim={dim} active={isActive(id)} ink={ink} />
         }
-        return <AssetNode key={id} r={r} dim={dim} />
+        return <AssetNode key={id} r={r} dim={dim} ink={ink} />
       })}
     </>
   )

@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  anchoredLabelTop,
+  anchoredBlockPos,
+  BLOCK_TOP,
+  BLOCK_W,
   boardDesignator,
-  HANDLE_KNOB_R,
-  HANDLE_REACH,
-  LABEL_ANCHOR_TOP,
-  LABEL_FONT_PX,
-  labelLineCount,
+  DATA_BLOCK_X,
   captionClear,
+  LABEL_FONT_PX,
   layoutLabels,
 } from './labelLayout'
 import type { LabelInput, SpokePlacement } from './labelLayout'
@@ -140,15 +139,31 @@ describe('layoutLabels', () => {
     }
   })
 
-  it('boxes a label where a downward heading knob moves it', () => {
-    // b's label starts 4 px under a's default box; a's knob points down, so a's label
-    // steps 10 px lower and the two boxes overlap.
-    const a: LabelInput = { id: 'a', name: 'RPS-42 1', sx: 300, sy: 200 }
-    const b: LabelInput = { id: 'b', name: 'FS-LIDS 1', sx: 350, sy: 216 }
+  it('boxes a block where an eastward heading knob flips it', () => {
+    // b's block sits left of a, clear of a's right block. a's knob points east, so
+    // a's block flips left and the two boxes overlap.
+    const a: LabelInput = { id: 'a', name: 'RPS-42 1', sx: 300, sy: 200, kind: 'sensor' }
+    const b: LabelInput = { id: 'b', name: 'FS-LIDS 1', sx: 190, sy: 204, kind: 'c2' }
     expect(layoutLabels([a, b]).get('a')).toEqual({ mode: 'anchored' })
-    const out = layoutLabels([{ ...a, handleDeg: 180 }, b])
+    const out = layoutLabels([{ ...a, handleDeg: 90 }, b])
     expect(out.get('a')?.mode).toBe('spoke')
     expect(out.get('b')?.mode).toBe('spoke')
+  })
+
+  it('draws line one of the block on a spoke callout', () => {
+    const out = layoutLabels([
+      {
+        id: 'a',
+        name: 'Shahed 1',
+        sx: 396,
+        sy: 200,
+        kind: 'uas',
+        lines: ['SHAHED 1 ×4', '004 038'],
+      },
+      { id: 'b', name: 'FS-LIDS C2', sx: 404, sy: 202 },
+    ])
+    expect((out.get('a') as SpokePlacement).text).toBe('SHAHED 1 ×4')
+    expect((out.get('b') as SpokePlacement).text).toBe('FS-LIDS C2')
   })
 
   it('keeps a barely separated pair spoked when sticky', () => {
@@ -160,29 +175,6 @@ describe('layoutLabels', () => {
     const sticky = layoutLabels(inputs, { sticky: new Set(['a', 'b']) })
     expect(sticky.get('a')!.mode).toBe('spoke')
     expect(sticky.get('b')!.mode).toBe('spoke')
-  })
-})
-
-describe('labelLineCount', () => {
-  it('keeps a name that fits the box on one line', () => {
-    expect(labelLineCount('Shahed-136')).toBe(1)
-    // 18 chars at 6.6px is 118.8px, still inside the 120px box.
-    expect(labelLineCount('Shahed-136 / Geran')).toBe(1)
-  })
-
-  it('wraps on a word boundary when the name passes the box', () => {
-    expect(labelLineCount('RPS-42 radar panel (RADA MHR) 1')).toBe(2)
-    expect(labelLineCount('Ranger HDC MR EO/IR (FLIR) 1')).toBe(2)
-    expect(labelLineCount('AAAAAAAAA BBBBBBBBB CCCCCCCCC')).toBe(3)
-  })
-
-  it('breaks inside a word wider than the box', () => {
-    expect(labelLineCount('A'.repeat(40))).toBe(3)
-  })
-
-  it('never reports fewer than one line', () => {
-    expect(labelLineCount('')).toBe(1)
-    expect(labelLineCount('   ')).toBe(1)
   })
 })
 
@@ -209,8 +201,10 @@ describe('captionClear', () => {
     expect(captionClear(-50, -14, 'track data', entities, 1)).toBe(false)
   })
 
-  it('refuses a caption on an anchored label', () => {
-    expect(captionClear(-620, 22, 'track data', entities, 1)).toBe(false)
+  it('refuses a caption on a data block', () => {
+    // The c2 block starts 21 px right of its glyph at x -600 and spans y -7 to 5.
+    expect(captionClear(-575, -2, 'track data', entities, 1)).toBe(false)
+    expect(captionClear(-620, 22, 'track data', entities, 1)).toBe(true)
   })
 
   it('reads positions in meters times the zoom', () => {
@@ -220,19 +214,35 @@ describe('captionClear', () => {
   })
 })
 
-describe('anchoredLabelTop', () => {
-  it('keeps the anchor with no handle or a handle clear of the label', () => {
-    expect(anchoredLabelTop('RPS-42 1')).toBe(LABEL_ANCHOR_TOP)
-    expect(anchoredLabelTop('RPS-42 1', 0)).toBe(LABEL_ANCHOR_TOP)
-    expect(anchoredLabelTop('RPS-42 1', 90)).toBe(LABEL_ANCHOR_TOP)
-    // At 140 degrees the knob sits 22 px right, past a short label's half width.
-    expect(anchoredLabelTop('S 1', 140)).toBe(LABEL_ANCHOR_TOP)
+describe('anchoredBlockPos', () => {
+  it('sits right of the frame at the kind block x with no handle', () => {
+    const pos = anchoredBlockPos(['RPS-42 1'], 'sensor')
+    expect(pos).toEqual({
+      x: DATA_BLOCK_X.sensor,
+      y: BLOCK_TOP,
+      width: 8 * LABEL_FONT_PX * 0.6,
+      align: 'left',
+    })
+    expect(anchoredBlockPos(['T07 GRP1', '004 038'], 'uas').x).toBe(DATA_BLOCK_X.uas)
+    expect(anchoredBlockPos(['M'], 'marker').x).toBe(DATA_BLOCK_X.marker)
   })
 
-  it('puts the label below a knob that points down into it', () => {
-    const top = anchoredLabelTop('RPS-42 1', 180)
-    expect(top).toBeGreaterThan(HANDLE_REACH + HANDLE_KNOB_R + 0.75)
-    expect(anchoredLabelTop('RPS-42 1', 200)).toBeGreaterThan(LABEL_ANCHOR_TOP)
-    expect(anchoredLabelTop('RPS-42 1', 160)).toBe(anchoredLabelTop('RPS-42 1', 200))
+  it('caps the width at the block width', () => {
+    expect(anchoredBlockPos(['A'.repeat(40)]).width).toBe(BLOCK_W)
+  })
+
+  it('keeps the block right of a knob that clears it', () => {
+    expect(anchoredBlockPos(['RPS-42 1'], 'sensor', 0).align).toBe('left')
+    expect(anchoredBlockPos(['RPS-42 1'], 'sensor', 180).align).toBe('left')
+    expect(anchoredBlockPos(['RPS-42 1'], 'sensor', 270).align).toBe('left')
+  })
+
+  it('flips the block left of a knob that would cover it', () => {
+    const pos = anchoredBlockPos(['RPS-42 1'], 'sensor', 90)
+    expect(pos.align).toBe('right')
+    expect(pos.x).toBe(-DATA_BLOCK_X.sensor - pos.width)
+    expect(pos.y).toBe(BLOCK_TOP)
+    // A two-line block reaches lower, so a knob pointing down and right still meets it.
+    expect(anchoredBlockPos(['T07', '004 038'], 'uas', 120).align).toBe('right')
   })
 })

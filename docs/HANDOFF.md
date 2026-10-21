@@ -11,8 +11,17 @@ and the docs index. This file does not authorize a commit, push or merge.
 
 ## Tasking
 
-None selected. `main` and `origin/main` hold all completed work, and no other branch or
-worktree exists.
+None selected. `main` and `origin/main` hold all completed work.
+
+Branch `symbology/primer` holds the board symbology refactor as an uncommitted working
+tree on top of `cc695df`: the seven rows of the symbology primer in one tree (identity
+inks in `src/ui/ink.ts`, the `Glyph.tsx` symbol library and its Konva twins
+`symbols.tsx`, white lines and effector rings, the `EntityLayer` frames and amplifiers,
+the time-based leader and the data block in `labelLayout.ts`, and the new
+`PairingLineLayer` and `OutcomeMarkLayer`). Verified on 2026-10-21: `npm test` (233
+files, 2583 tests), `typecheck`, `lint`, `format:check` and `check:silent` clean. The
+browser evidence is at `field-te/evidence/symbology-primer-2026-10-21/`. The primer is a
+suggested symbol set, not an approved one.
 
 The only open plan is [code-quality/Plan.md](code-quality/Plan.md), a frozen queue. Q1 is
 merged. Q2 (delete the orphaned test-card actions) is held: decide it with the T&E Ops
@@ -112,8 +121,6 @@ capture and not checked again.
   the list without dismissing the request. Escape closes the whole drawer from the
   editor. Opening the editor clears the entity selection, so the right panel falls back
   to the analysis screens while the model edits on the left.
-- Library rows draw the friend-frame dome for sensor, effector, C2 and asset kinds;
-  per-subtype shapes need new `Glyph.tsx` shapes.
 - `.chip.det` has one user (`SystemsTab.tsx:202`).
 
 ### ISR CAP and connect popup (added 2026-10-21, not checked against a commit)
@@ -146,6 +153,25 @@ capture and not checked again.
   have no static-render test (not checked).
 - `F2` focuses the scenario name only while focus is inside the header
   (`Toolbar.tsx:192-198`); the drawer toggle's icon no longer shows the open state.
+
+### Board symbology
+
+- No rounds-remaining line. The primer's `4 RDS` on a launcher needs a magazine count per
+  effector at the cursor; `TrialSweep` carries only `effectorStates`, and the magazine
+  history lives in `TrackTimeline.effectors` (`trackState.ts`), which `LiveScene` builds
+  for shots but does not pass to `EntityLayer`. One `Map<string, number>` prop away.
+- The label layout measures a track's block without its status word
+  (`blockLinesAtRest`), so `×N HK` can run up to 5 characters past the measured box.
+- HOSTILE against ENGAGED on the telemetry pill is 1.14:1 by value (`PHASE_STYLE`
+  identified `#e46f62`, engaged `#f2795e`); the board no longer draws the engaged
+  colour, so only the pill shows both.
+- The primer's jamming-threat semicircle and the J it carries wait on threat-side EW in
+  the model; there is none.
+- Konva hinting of the stroked 2525 icons (radar, launcher, laser) at the 24 px board
+  frame needs the browser pass verdict; the letter fallback is the DOM `Glyph` only.
+- `labelLayout` `GLYPH_HALF` is 18 (the brackets reach 17); `captionClear` and the spoke
+  clustering read it.
+- The primer is suggested, not approved. Nothing here fixes the symbol set.
 
 ### Run timeline
 

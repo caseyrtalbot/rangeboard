@@ -178,7 +178,7 @@
   --good: var(--status-nominal);
   --warn: var(--status-warning);
   /* EW/jam channel: the sensor-blue family, distinct from good/warn/danger. */
-  --ew: #7da7c4;
+  --ew: #5ad1e0;
   /* Chart series slots, assigned by first detection (charts/tokens.ts). */
   --chart-1: #3987e5;
   --chart-2: #d95926;
@@ -269,6 +269,8 @@
   --status-limit: var(--paper-limit);
   --accent: var(--paper-accent);
   --accent-ink: var(--paper-board);
+  /* The night cyan darkened in its own hue: 3.9:1 on the paper board, 4.3:1 on the panel. */
+  --ew: #227f8c;
   color-scheme: light;
 }
 
@@ -294,6 +296,7 @@
     --status-limit: var(--paper-limit);
     --accent: var(--paper-accent);
     --accent-ink: var(--paper-board);
+    --ew: #227f8c;
     color-scheme: light;
   }
 }

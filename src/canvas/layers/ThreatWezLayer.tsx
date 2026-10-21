@@ -24,6 +24,8 @@ const MONO = 'JetBrains Mono'
 const WEZ_DASH = [3, 3]
 const IMPACT_X_DOWN = [-5, -5, 5, 5]
 const IMPACT_X_UP = [-5, 5, 5, -5]
+/** Steady ring around a SEVERE badge, screen px. */
+const SEVERE_RING_R = 17
 
 export interface TrialArrival {
   uasId: string
@@ -125,8 +127,9 @@ function wezLabel(
 }
 
 /**
- * Constant-px red warning triangle with '!', optional leaker count and label. Only a
- * SEVERE badge takes a pulse, so the others re-render on no frame once faded in.
+ * Constant-px red warning triangle with '!', optional leaker count and label. A SEVERE
+ * badge adds a steady ring; nothing on the board blinks, so a badge re-renders on no
+ * frame once faded in.
  */
 const Badge = memo(function Badge({
   k,
@@ -137,7 +140,6 @@ const Badge = memo(function Badge({
   severity,
   count,
   label,
-  pulse,
 }: {
   k: number
   x: number
@@ -147,18 +149,12 @@ const Badge = memo(function Badge({
   severity: ImpactSeverity
   count: number
   label: string
-  pulse: number | null
 }) {
   return (
     <Group x={x} y={y} scaleX={1 / k} scaleY={1 / k} opacity={opacity}>
       <Group x={xOffPx} y={-26}>
-        {severity === 'severe' && pulse != null && (
-          <Circle
-            radius={15 + 4 * pulse}
-            stroke={DANGER_INK}
-            strokeWidth={2}
-            opacity={0.8 - 0.5 * pulse}
-          />
+        {severity === 'severe' && (
+          <Circle radius={SEVERE_RING_R} stroke={DANGER_INK} strokeWidth={2} opacity={0.6} />
         )}
         <RegularPolygon sides={3} radius={11} fill={DANGER_INK} />
         <Text
@@ -260,7 +256,7 @@ export function ThreatWezLayer({
   tracks: Map<string, LiveTrack>
   trial: TrialResultView | null
   horizonS: number | null
-  /** The canvas frame clock's display time. Drives the badge gate, fade and pulse. */
+  /** The canvas frame clock's display time. Drives the badge gate and fade. */
   displayTimeS: number
 }) {
   const scenario = useStore((s) => s.scenario)
@@ -308,8 +304,6 @@ export function ThreatWezLayer({
     })
   }, [trial, displayTimeS, horizonS])
 
-  const pulse = 0.5 + 0.5 * Math.sin(displayTimeS * Math.PI)
-
   return (
     <Group listening={false}>
       {show &&
@@ -345,8 +339,6 @@ export function ThreatWezLayer({
             severity={i.severity!}
             count={i.ships}
             label={badgeText(i.severity, i.ships, i.warheadKg ?? 0, i.warheadKg == null)}
-            // Only a SEVERE badge draws the pulse ring, so only it takes the phase.
-            pulse={i.severity === 'severe' ? pulse : null}
           />
         )
       })}

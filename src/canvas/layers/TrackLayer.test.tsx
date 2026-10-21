@@ -5,7 +5,11 @@ import { emptyScenario } from '../../model/seed'
 import { trackEstimateFixture } from '../../playback/__fixtures__/trackEstimateFixture'
 import { useStore } from '../../state/store'
 import { TrackLayer } from './TrackLayer'
-import { TRACK_ESTIMATE_INK, TRACK_FALSE_INK } from './footprintStyle'
+import { BOARD_INK_DARK } from '../../ui/ink'
+import { TRACK_FALSE_INK } from './footprintStyle'
+
+/** The estimate ink: the night friend hue, since a test without matchMedia reads dark. */
+const TRACK_ESTIMATE_INK = BOARD_INK_DARK.friend
 
 // The Konva attrs the assertions read come back as data attributes, so the
 // static markup carries the drawn radii, rotation, dash and ink.

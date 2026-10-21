@@ -1,41 +1,39 @@
 import { selectEffectiveLayers } from '../../state/selectors'
 import { memo, useEffect, useMemo, useRef } from 'react'
-import { Circle, Group, Line, Path, Rect, RegularPolygon, Text } from 'react-konva'
+import { Circle, Group, Line, Rect, Text } from 'react-konva'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
-import type { Entity, SpecModel } from '../../model/types'
+import type { Entity, Scenario, SpecModel, UasSpec } from '../../model/types'
 import { entityActive } from '../../model/types'
 import { screenToWorld } from '../../state/camera'
 import { useStore } from '../../state/store'
-import { modelFor } from '../../model/scenario'
+import type { Store } from '../../state/store'
+import { modelFor, pathSpeed } from '../../model/scenario'
 import { bearingDeg } from '../../geometry/geo'
-import { memberPositions } from '../../playback/tracks'
+import { memberPositions, threatAltitudeFt } from '../../playback/tracks'
 import type { LiveTrack } from '../../playback/tracks'
 import type { TrialSweep } from '../../playback/trialSweepAt'
 import type { TrialMemberState } from '../../playback/trialTrackState'
 import type { TrialTelemetryState } from '../../panels/analysis/threatReadout'
-import { EW_JAM_COLOR, PHASE_STYLE } from '../../playback/trackState'
-import { DANGER_INK, entityInk, EW_INK } from '../../ui/ink'
-import { useBoardInk } from '../useBoardInk'
 import type { EffectorLiveState, TrackPhase } from '../../playback/trackState'
+import { sensorHoldGate } from '../../analysis/sensorEnv'
+import { boardInk, EW_INK } from '../../ui/ink'
+import type { BoardInk } from '../../ui/ink'
+import { useBoardInk } from '../useBoardInk'
+import type { AirIdentity } from '../../panels/Glyph'
 import {
-  FRAME_EDGE,
-  FRAME_FOR,
-  FRAME_INK,
-  FRIEND_FRAME_CX,
-  FRIEND_FRAME_CY,
-  FRIEND_FRAME_D,
-  FUNCTION_LETTER,
+  AIR_DIAMOND_R,
+  AIR_FRAME,
+  AIR_FRAME_TOP,
+  airFrameFor,
+  BORESIGHT_TICK_LEN,
+  CONDITION_BAR,
+  GND_CIRCLE_R,
+  GND_FRAME_TOP,
+  groundFrameFor,
 } from '../../panels/Glyph'
-import {
-  anchoredLabelTop,
-  boardDesignator,
-  HANDLE_KNOB_R,
-  HANDLE_REACH,
-  LABEL_HALO_PX,
-  LABEL_LINE_H,
-  labelLineCount,
-} from '../labelLayout'
+import { AirFrame, Brackets, DataBlock, EngagementBar, GroundFrame, KillStrike } from './symbols'
+import { anchoredBlockPos, boardDesignator, HANDLE_KNOB_R, HANDLE_REACH } from '../labelLayout'
 import { IDLE_INTERACTION, routeInteraction } from '../interactionRouter'
 import { hoverCursor, releaseHover } from '../hoverCursor'
 
@@ -47,221 +45,153 @@ interface Props {
   members: Map<string, TrialMemberState[]>
   /** Entities whose labels render as spoke callouts in CalloutLayer instead. */
   spokeIds: Set<string>
-  /** The lit half of the pulse, computed once per frame from the display time. */
-  blink: boolean
 }
 
-/** Subtle darker edge that reads over any fill color. Shared with the palette. */
-const EDGE = FRAME_EDGE
+const MONO = 'JetBrains Mono'
 
-const GHOST = PHASE_STYLE.ghost.color
-const JAM_CYAN = EW_JAM_COLOR
-/** Out of rounds. Matches the 'bad' treatment the system panel gives EMPTY. */
-const DEPLETED = DANGER_INK
-/** Destroyed-overlay ink. Not a phase color, so it never reads as a kill-chain rung. */
-const DESTROYED = '#cfd4cc'
-
+/** A defeated track keeps its place on the board at this intensity. */
 const GHOST_OPACITY = 0.7
+/** Truth no sensor has held yet: the primer's No track row. */
+const NO_TRACK_OPACITY = 0.7
+/** Every sensor extrapolates: half intensity, the frame stays solid. */
+const COASTING_OPACITY = 0.5
+/** A placed system that is switched off: dashed frame at reduced intensity. */
+const OFF_OPACITY = 0.55
+
+/** Selection ring radius. It stays outside the target brackets (17). */
+const SELECT_R = 28
+/** The range button of a selected track sits this far under the frame, px. */
+const RANGE_BUTTON_Y = 20
+/** Member frames draw at this fraction of the lead frame: an r7 diamond. */
+const MEMBER_SCALE = 7 / AIR_DIAMOND_R
 
 /**
- * Box units to px for FRIEND_FRAME_D: a 19.4 x 13.2 px symbol whose half
- * diagonal is 11.7 px, so RING_R (14), the hit disc (13) and BRACKET_HALF (19)
- * all still clear it.
+ * Velocity leader of an air track: as long as the distance the track flies in
+ * LEADER_S seconds, held between the two bounds, screen px. 2525D steps the leader by
+ * speed band, and every small UAS sits in its lowest band; the time rule keeps the
+ * leader readable across the board's speeds. The frame knockout covers its root.
  */
-const FRIEND_SCALE = 2.2
-
-/** Track ring radius. The glyph is r11, so the ring clears it. */
-const RING_R = 14
-/** Selection ring radius. It must stay outside the target brackets; LABEL_ANCHOR_TOP clears it. */
-const SELECT_R = 28
-const BRACKET_HALF = 19
-const BRACKET_ARM = 6
-/** Jammed-diamond radius: clears the r14 ring, stays inside SELECT_R. */
-const JAM_DIAMOND_R = 21
-/** Gap under the wrapped name before the DEFEATED tag, px. */
-const TAG_GAP = 6
-
+const LEADER_S = 10
+const LEADER_MIN_PX = 10
+const LEADER_MAX_PX = 48
+const KT_PER_MPS = 1.943844
 /** Konva compares array props by identity, so every fixed dash and point list is a constant. */
-/** Heading tick: straight up from the glyph centre, screen px. */
-const HEADING_TICK = [0, 0, 0, -16]
 const MEMBER_HEADING_TICK = [0, 0, 0, -11]
-/** Inactive-entity slash, the opposite diagonal to the destroyed strike. */
-const OFF_SLASH = [-11, 11, 11, -11]
-/** Destroyed strike at the main glyph and at a formation member. */
-const STRIKE_MAIN = [-10, -10, 10, 10]
-const STRIKE_MEMBER = [-6.5, -6.5, 6.5, 6.5]
-const GHOST_DIAMOND_DASH = [3.5, 3]
-const MEMBER_GHOST_DASH = [3, 2.5]
+/** Boresight tick of a sensor: from the frame edge outward, screen px. */
+const BORESIGHT_TICK = [0, -GND_CIRCLE_R, 0, -GND_CIRCLE_R - BORESIGHT_TICK_LEN]
 const CARD_LINK_DASH = [2, 3]
 const HEADING_LEADER_DASH = [2, 3]
 
-/** Four corner brackets of a target reticle, each an L of two segments. */
-const BRACKETS: number[][] = [-1, 1].flatMap((sx) =>
-  [-1, 1].map((sy) => {
-    const cx = sx * BRACKET_HALF
-    const cy = sy * BRACKET_HALF
-    return [cx - sx * BRACKET_ARM, cy, cx, cy, cx, cy - sy * BRACKET_ARM]
-  }),
-)
+/** The engagement bar top on an air frame: 7 px above the frame top (the primer's -20 on a diamond). */
+const AIR_BAR_LIFT = 7
+/** The engagement bar top on a ground frame: 5 px above the frame top (the primer's -17 on a circle). */
+const GND_BAR_LIFT = 5
 
-interface GlyphProps {
-  entity: Entity
-  /** Live heading; the entity's own while it is at rest. */
-  headingDeg: number
-  color: string
-  /** Defeated track: hollow dashed frame under a bold destroyed strike. */
-  ghost?: boolean
-  /** Effector only: false draws the friend frame as an outline. */
-  filled?: boolean
-  /** The sensor heading tick, so a heading drag can preview on the node itself. */
-  tickRef?: React.Ref<Konva.Line>
+/**
+ * Identity an air track draws, from the sampled telemetry. Null is a hard kill. Until
+ * a sensor holds the track (no telemetry, undetected, searching) the truth draws as
+ * `none`: a grey frame keeps it on the board and red waits for the call.
+ */
+// oxlint-disable-next-line react/only-export-components
+export function airIdentityOf(
+  state: TrialTelemetryState | undefined,
+  outcome: TrialMemberState['outcome'] | undefined,
+): AirIdentity | null {
+  if (outcome === 'hard-kill') return null
+  if (!state || state.phase === 'undetected' || state.phase === 'searching') return 'none'
+  if (state.classification === 'hostile') return 'hostile'
+  if (state.classification === 'suspected') return 'suspect'
+  return 'unknown'
 }
 
 /**
- * MIL-STD-2525 destroyed overlay: one bold strike across the frame. It runs the
- * opposite diagonal to the inactive-entity slash.
+ * The hue of an air track. An explicit entity colour wins over an identity hue, as on
+ * every other board object; a no-track frame and a hard kill keep their greys.
  */
-function DestroyedStrike({ points, width }: { points: number[]; width: number }) {
-  return (
-    <Line
-      points={points}
-      stroke={DESTROYED}
-      strokeWidth={width}
-      strokeScaleEnabled={false}
-      lineCap="round"
-      listening={false}
-    />
-  )
+function airHue(entity: Entity, identity: AirIdentity | null, ink: BoardInk): string {
+  if (identity == null) return ink.ghost
+  if (identity === 'none') return ink.noTrack
+  return entity.color ?? ink[airFrameFor(identity).inkKey]
+}
+
+/** Three digits, as the primer's altitude and speed read. */
+function digits3(n: number): string {
+  return String(Math.max(0, Math.min(999, Math.round(n)))).padStart(3, '0')
+}
+
+/** Line two of an air track block: altitude in hundreds of feet and speed in knots. */
+function altSpeedLine(altFt: number, speedMps: number): string {
+  return `${digits3(altFt / 100)} ${digits3(speedMps * KT_PER_MPS)}`
 }
 
 /**
- * The friend affiliation frame plus its function letter, both from panels/Glyph.tsx.
- * An outline frame carries its letter in the entity color, because the dark board
- * shows through the unfilled frame.
+ * Line one of a data block: the board designator, the raid count when the file holds
+ * more than one member, then one status word.
  */
-export function FriendFrame({
-  kind,
-  color,
-  filled,
-}: {
-  kind: Entity['kind']
-  color: string
-  filled: boolean
-}) {
-  return (
-    <>
-      <Path
-        data={FRIEND_FRAME_D}
-        x={-FRIEND_FRAME_CX * FRIEND_SCALE}
-        y={-FRIEND_FRAME_CY * FRIEND_SCALE}
-        scaleX={FRIEND_SCALE}
-        scaleY={FRIEND_SCALE}
-        fill={filled ? color : undefined}
-        stroke={filled ? EDGE : color}
-        strokeWidth={filled ? 1 : 1.5}
-        strokeScaleEnabled={false}
-        // A 1 px edge over an opaque fill does not need Konva's buffer-canvas pass.
-        perfectDrawEnabled={false}
-        listening={false}
-      />
-      <Text
-        fontFamily="JetBrains Mono"
-        x={-9}
-        y={-4.5}
-        width={18}
-        text={FUNCTION_LETTER[kind]}
-        fontSize={9}
-        fill={filled ? FRAME_INK : color}
-        align="center"
-        listening={false}
-      />
-    </>
-  )
+function designatorLine(name: string, count: number, word: string | null): string {
+  const parts = [boardDesignator(name)]
+  if (count > 1) parts.push(`×${count}`)
+  if (word) parts.push(word)
+  return parts.join(' ')
 }
 
 /**
- * MIL-STD-2525 symbology, matching panels/Glyph.tsx: the FRAME carries
- * affiliation and an inner LETTER carries function.
- *   friend frame  - rounded-top rectangle: sensor S, c2 C2, effector E, asset A.
- *   hostile frame - diamond: uas.
- *   neutral frame - hollow square with a centre dot: marker.
- * Heading ticks draw under the frame so only the protruding tip shows.
+ * The block lines an entity draws at rest, for the label layout: line one, and on an
+ * air track line two as well, so the box measured holds the block a run draws. A run
+ * adds a status word to line one; the box is measured without it.
  */
-function Glyph({ entity, headingDeg, color, ghost, filled = true, tickRef }: GlyphProps) {
-  switch (FRAME_FOR[entity.kind]) {
-    case 'friend':
-      // An idle or empty weapon is an outline; every other blue-force kind is filled.
-      return (
-        <>
-          {entity.kind === 'sensor' && (
-            <Line
-              ref={tickRef}
-              points={HEADING_TICK}
-              stroke={color}
-              strokeWidth={2}
-              rotation={headingDeg}
-              listening={false}
-            />
-          )}
-          <FriendFrame
-            kind={entity.kind}
-            color={color}
-            filled={entity.kind === 'effector' ? filled : true}
-          />
-        </>
-      )
-    case 'hostile':
-      return (
-        <>
-          <Line
-            points={HEADING_TICK}
-            stroke={ghost ? GHOST : color}
-            strokeWidth={ghost ? 1.6 : 2}
-            rotation={headingDeg}
-            listening={false}
-          />
-          {ghost ? (
-            <>
-              <RegularPolygon
-                sides={4}
-                radius={11}
-                stroke={GHOST}
-                strokeWidth={1.7}
-                dash={GHOST_DIAMOND_DASH}
-                listening={false}
-              />
-              <DestroyedStrike points={STRIKE_MAIN} width={2.6} />
-            </>
-          ) : (
-            <RegularPolygon
-              sides={4}
-              radius={11}
-              fill={color}
-              stroke={EDGE}
-              strokeWidth={1}
-              perfectDrawEnabled={false}
-              listening={false}
-            />
-          )}
-        </>
-      )
-    case 'neutral':
-      return (
-        <>
-          <Rect
-            x={-7}
-            y={-7}
-            width={14}
-            height={14}
-            stroke={color}
-            strokeWidth={1.5}
-            strokeScaleEnabled={false}
-            listening={false}
-          />
-          <Circle radius={2} fill={color} listening={false} />
-        </>
-      )
+// oxlint-disable-next-line react/only-export-components
+export function blockLinesAtRest(scenario: Scenario, entity: Entity): string[] {
+  const line1 = designatorLine(entity.name, entity.formation?.count ?? 1, null)
+  if (entity.kind !== 'uas') return [line1]
+  const path = scenario.paths.find((p) => p.entityId === entity.id)
+  const speed = path
+    ? pathSpeed(scenario, path)
+    : (modelFor(scenario, entity)?.uas?.cruiseSpeedMps ?? 0)
+  return [line1, altSpeedLine(threatAltitudeFt(scenario, entity), speed)]
+}
+
+/**
+ * The 2525D engagement bar on a track. ASN is assigned, ENG engaging, MIF missile in
+ * flight; the suffix names the channel: M missile, EA electronic attack. ENG-DE for a
+ * directed-energy dwell is a house code; 2525D has no DE suffix.
+ */
+function trackBarText(state: TrialTelemetryState | undefined): string | null {
+  if (!state) return null
+  const { kineticSalvos, deSalvos, jamSalvos, incomingSalvos } = state
+  if (kineticSalvos > 0) return incomingSalvos > 0 ? 'MIF-M' : 'ENG-M'
+  if (deSalvos > 0) return 'ENG-DE'
+  if (jamSalvos > 0) return 'ENG-EA'
+  return null
+}
+
+/**
+ * The engagement bar on an effector, the mirror of the target's bar (2525D 5.3.6.14 puts
+ * it on both). ASN ? for a shot whose timing the library cannot give is a house code.
+ */
+function effectorBarText(state: EffectorLiveState, model: SpecModel | undefined): string | null {
+  const type = model?.effector?.effectorType
+  switch (state) {
+    case 'preparing':
+      return 'ASN-M'
+    case 'timing-unavailable':
+      return 'ASN ?'
+    case 'semi-active':
+    case 'active':
+      return type === 'gun' ? 'MIF-GN' : 'MIF-M'
+    case 'beam':
+      return type === 'jammer' ? 'ENG-EA' : 'ENG-DE'
+    default:
+      return null
   }
+}
+
+/** The uas spec every ring and gate is computed against: the first selected threat. */
+function selectedThreatSpec(s: Store): UasSpec | undefined {
+  const hit = s.scenario.entities.find(
+    (e) => e.kind === 'uas' && s.selection.entityIds.includes(e.id),
+  )
+  return hit ? modelFor(s.scenario, hit)?.uas : undefined
 }
 
 function handlePoint(headingDeg: number): { x: number; y: number } {
@@ -298,17 +228,18 @@ function HeadingHandle({
   color,
   rim,
   tickRef,
-  labelRef,
-  boardName,
+  blockRef,
+  lines,
 }: {
   entity: Entity
   color: string
   /** The knob rim: `BoardInk.knobRim`. */
   rim: string
   tickRef: React.RefObject<Konva.Line | null>
-  /** The anchored name, so it steps below the knob while the knob sweeps over it. */
-  labelRef: React.RefObject<Konva.Text | null>
-  boardName: string
+  /** The data block, so it flips sides while the knob sweeps over it. */
+  blockRef: React.RefObject<Konva.Group | null>
+  /** The block lines drawn, which set the box the knob is tested against. */
+  lines: readonly string[]
 }) {
   const leaderRef = useRef<Konva.Line>(null)
   /** Heading under the pointer, held until the gesture commits it. */
@@ -325,6 +256,18 @@ function HeadingHandle({
     // Only a sensor or an effector carries a handle, and neither flies a path,
     // so the rest position is the glyph position.
     return Math.round(bearingDeg(entity.pos, world))
+  }
+
+  /** Preview the block position for a heading on the Konva nodes alone. */
+  function placeBlock(deg: number) {
+    const g = blockRef.current
+    if (!g) return
+    const pos = anchoredBlockPos(lines, entity.kind, deg)
+    g.position({ x: pos.x, y: pos.y })
+    for (const line of g.find<Konva.Text>('.block-line')) {
+      line.align(pos.align)
+      line.width(pos.width)
+    }
   }
 
   return (
@@ -355,14 +298,14 @@ function HeadingHandle({
           const p = handlePoint(deg)
           tickRef.current?.rotation(deg)
           leaderRef.current?.points([0, 0, p.x, p.y])
-          labelRef.current?.y(anchoredLabelTop(boardName, deg))
+          placeBlock(deg)
           e.target.position(p)
         }}
         onDragEnd={(e) => {
           const deg = draft.current
           draft.current = null
           e.target.position(handlePoint(deg ?? entity.headingDeg))
-          labelRef.current?.y(anchoredLabelTop(boardName, deg ?? entity.headingDeg))
+          placeBlock(deg ?? entity.headingDeg)
           // One mutation, so the gesture is one undo entry.
           if (deg != null && deg !== entity.headingDeg) {
             useStore.getState().updateEntity(entity.id, { headingDeg: deg })
@@ -383,11 +326,7 @@ interface NodeProps {
   /** Sampled group telemetry; absent before observation. */
   state: TrialTelemetryState | undefined
   trialMembers?: TrialMemberState[]
-  memberOutcome?: TrialMemberState['outcome']
-  memberJammed?: boolean
   effectorState: EffectorLiveState
-  /** The pulse phase, true only while this node pulses. */
-  blink: boolean
   /** The label renders as a spoke callout in CalloutLayer instead. */
   spoked: boolean
 }
@@ -404,21 +343,49 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
   const k = useStore((s) => s.camera.scale)
   const tool = useStore((s) => s.ui.tool)
   const model = useStore((s) => modelFor(s.scenario, entity))
-  const color = useMemo(() => entityInk(entity, model), [entity, model])
+  const ink = useBoardInk()
   const off = !entityActive(entity)
-  const ghost = state?.phase === 'ghost'
-  const members = entity.kind === 'uas' ? memberPositions(entity, { x, y }, headingDeg) : null
+  const air = entity.kind === 'uas'
+  // Primitives from the scenario: a store write that leaves them alone re-renders nothing.
+  const speedMps = useStore((s) => {
+    if (!air) return null
+    const path = s.scenario.paths.find((p) => p.entityId === entity.id)
+    return path ? pathSpeed(s.scenario, path) : null
+  })
+  const altFt = useStore((s) => (air ? threatAltitudeFt(s.scenario, entity) : 0))
+  const leadOutcome = props.trialMembers?.[0]?.outcome
+  const identity = air ? airIdentityOf(state, leadOutcome) : 'hostile'
+  // One hue per affiliation on the board: the air identity hue, else the friend or
+  // neutral hue. A model colour stays on the palette and the run timeline.
+  const color = air ? airHue(entity, identity, ink) : boardInk(entity, ink)
+  const ghost = identity == null || state?.phase === 'ghost'
+  const members = air ? memberPositions(entity, { x, y }, headingDeg) : null
+  // The leader is the distance flown in LEADER_S at this zoom, clamped. No path, no leader.
+  const leaderPx =
+    speedMps == null || ghost
+      ? 0
+      : Math.min(LEADER_MAX_PX, Math.max(LEADER_MIN_PX, speedMps * LEADER_S * k))
   // A deleted entity under the pointer gets no mouseleave.
   useEffect(() => () => releaseHover(entity.id), [entity.id])
 
+  const opacity = off
+    ? OFF_OPACITY
+    : ghost
+      ? GHOST_OPACITY
+      : identity === 'none'
+        ? NO_TRACK_OPACITY
+        : state?.coasting
+          ? COASTING_OPACITY
+          : 1
+
   const main = (
     <Group
-      name={entity.kind === 'uas' ? `member:${entity.id}:0` : entity.id}
+      name={air ? `member:${entity.id}:0` : entity.id}
       x={x}
       y={y}
       scaleX={1 / k}
       scaleY={1 / k}
-      opacity={off ? 0.45 : ghost ? GHOST_OPACITY : 1}
+      opacity={opacity}
       draggable={tool === 'select'}
       onClick={(e) => handleClick(e, entity)}
       onContextMenu={(e) => handleContextMenu(e, entity)}
@@ -442,21 +409,26 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
       <EntityBody
         entity={entity}
         headingDeg={headingDeg}
-        memberOutcome={props.trialMembers?.[0]?.outcome}
+        identity={identity}
         memberJammed={props.trialMembers?.[0]?.jamState?.jammed ?? false}
+        missionKill={leadOutcome === 'mission-kill'}
         state={state}
         effectorState={props.effectorState}
-        blink={props.blink}
         spoked={props.spoked}
         model={model}
         color={color}
         tool={tool}
+        leaderPx={leaderPx}
+        speedMps={speedMps}
+        altFt={altFt}
       />
     </Group>
   )
   // A single ship needs no fragment: one element fewer per node on a zoom.
   if (!members || members.length < 2) return main
 
+  // Members share the lead's identity frame; a hard-killed member takes the ghost diamond.
+  const memberFrame = identity == null ? AIR_FRAME.hostile : airFrameFor(identity)
   return (
     <>
       {(
@@ -470,55 +442,56 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
         }))
       )
         .slice(1)
-        .map((m) => (
-          <Group
-            key={`${entity.id}:${m.memberIdx}`}
-            name={`member:${entity.id}:${m.memberIdx}`}
-            x={m.position.x}
-            y={m.position.y}
-            scaleX={1 / k}
-            scaleY={1 / k}
-            onClick={(e) => handleClick(e, entity)}
-            onContextMenu={(e) => handleContextMenu(e, entity)}
-            opacity={off ? 0.3 : 0.85}
-          >
-            <Line
-              points={MEMBER_HEADING_TICK}
-              rotation={m.heading}
-              stroke={m.outcome === 'hard-kill' ? GHOST : color}
-              strokeWidth={1}
-              listening={false}
-            />
-            {m.outcome === 'hard-kill' ? (
-              <>
-                <RegularPolygon
-                  sides={4}
-                  radius={7}
-                  stroke={GHOST}
-                  strokeWidth={1.4}
-                  dash={MEMBER_GHOST_DASH}
+        .map((m) => {
+          const dead = m.outcome === 'hard-kill'
+          return (
+            <Group
+              key={`${entity.id}:${m.memberIdx}`}
+              name={`member:${entity.id}:${m.memberIdx}`}
+              x={m.position.x}
+              y={m.position.y}
+              scaleX={1 / k}
+              scaleY={1 / k}
+              onClick={(e) => handleClick(e, entity)}
+              onContextMenu={(e) => handleContextMenu(e, entity)}
+              opacity={off ? 0.3 : 0.85}
+            >
+              {!dead && (
+                <Line
+                  points={MEMBER_HEADING_TICK}
+                  rotation={m.heading}
+                  stroke={color}
+                  strokeWidth={1}
+                  listening={false}
                 />
-                <DestroyedStrike points={STRIKE_MEMBER} width={1.8} />
-              </>
-            ) : (
-              <RegularPolygon
-                sides={4}
-                radius={7}
-                fill={m.outcome === 'mission-kill' ? undefined : color}
-                stroke={m.outcome === 'mission-kill' ? JAM_CYAN : EDGE}
-                strokeWidth={1}
-                // The group carries an opacity; skip Konva's buffer-canvas pass.
-                perfectDrawEnabled={false}
+              )}
+              <AirFrame
+                frame={dead ? AIR_FRAME.hostile : memberFrame}
+                color={dead ? ink.ghost : color}
+                board={ink.board}
+                dashed={dead ? false : undefined}
+                scale={MEMBER_SCALE}
               />
-            )}
-            {m.jamState?.jammed && m.outcome !== 'hard-kill' && (
-              <Text text="J" x={-13} y={-5} fontSize={11} fill={JAM_CYAN} listening={false} />
-            )}
-            {m.outcome === 'mission-kill' && (
-              <Text text="MK" x={8} y={-5} fontSize={9} fill={JAM_CYAN} />
-            )}
-          </Group>
-        ))}
+              {dead && <KillStrike color={ink.destroyed} x scale={MEMBER_SCALE} />}
+              {m.outcome === 'mission-kill' && <KillStrike color={color} scale={MEMBER_SCALE} />}
+              {m.jamState?.jammed && !dead && (
+                <Text
+                  text="J"
+                  fontFamily={MONO}
+                  fontStyle="500"
+                  x={-13}
+                  y={-5}
+                  fontSize={11}
+                  fill={ink.ew}
+                  listening={false}
+                />
+              )}
+              {m.outcome === 'mission-kill' && (
+                <Text text="MK" fontFamily={MONO} x={8} y={-5} fontSize={9} fill={ink.label} />
+              )}
+            </Group>
+          )
+        })}
       {main}
     </>
   )
@@ -582,23 +555,54 @@ function handleContextMenu(e: KonvaEventObject<MouseEvent>, entity: Entity) {
   store.openContextMenu(pointer, world, entity.id)
 }
 
+interface BodyProps {
+  entity: Entity
+  headingDeg: number
+  /** The air identity, or null for a hard kill. 'hostile' on a ground object, unused. */
+  identity: AirIdentity | null
+  memberJammed: boolean
+  missionKill: boolean
+  state: TrialTelemetryState | undefined
+  effectorState: EffectorLiveState
+  spoked: boolean
+  model: SpecModel | undefined
+  /** The board hue of the object. */
+  color: string
+  tool: string
+  /** Velocity leader length, screen px; 0 draws none. */
+  leaderPx: number
+  /** Path speed, m/s; null with no path. */
+  speedMps: number | null
+  /** Threat altitude, ft AGL (0 on a ground object). */
+  altFt: number
+}
+
 /**
  * Everything drawn inside the counter-scaled group, in screen px. Memoized on
  * per-entity primitives, so a zoom re-renders no body.
+ *
+ * The symbol follows the primer: the frame carries identity (an air frame from the
+ * classification, a ground frame from the kind), an icon carries function, and the
+ * amplifiers carry state: brackets for a locked track, the 2525D bar for the
+ * engagement stage, a slash for a mission kill, an X for a hard kill, a dashed frame
+ * for a switched-off system and a condition bar for a gated sensor. Nothing pulses.
  */
 const EntityBody = memo(function EntityBody({
   entity,
   headingDeg,
-  memberOutcome,
+  identity,
   memberJammed,
+  missionKill,
   state,
   effectorState,
-  blink,
   spoked,
   model,
   color,
   tool,
-}: Omit<NodeProps, 'x' | 'y'> & { model: SpecModel | undefined; color: string; tool: string }) {
+  leaderPx,
+  speedMps,
+  altFt,
+}: BodyProps) {
   const connectFrom = useStore((s) => s.ui.connectFromId === entity.id)
   const showLabels = useStore((s) => selectEffectiveLayers(s).labels)
   const selected = useStore((s) => s.selection.entityIds.includes(entity.id))
@@ -608,42 +612,75 @@ const EntityBody = memo(function EntityBody({
     const card = s.scenario.testCards.find((c) => c.id === cardId)
     return card?.linkedEntityIds.includes(entity.id) ?? false
   })
+  // The hold gate is a pure read of two specs (sensorEnv.ts), so a sensor body takes it
+  // here rather than through useRingModel, whose per-hook memo would rebuild the Pd
+  // bisection once per body. The selector returns the library spec object, so a store
+  // write that leaves the selected threat alone re-renders nothing.
+  const targetSpec = useStore((s) => (entity.kind === 'sensor' ? selectedThreatSpec(s) : undefined))
 
   const tickRef = useRef<Konva.Line>(null)
-  const labelRef = useRef<Konva.Text>(null)
+  const blockRef = useRef<Konva.Group>(null)
   const ink = useBoardInk()
   const off = !entityActive(entity)
-  const phase: TrackPhase = entity.kind === 'uas' ? (state?.phase ?? 'undetected') : 'undetected'
-  const ghost = memberOutcome === 'hard-kill'
-  const missionKill = memberOutcome === 'mission-kill'
-  // A defeated track carries the destroyed strike, so it draws no ring.
-  const ringColor = ghost ? null : PHASE_STYLE[phase].color
+  const air = entity.kind === 'uas'
+  const phase: TrackPhase = air ? (state?.phase ?? 'undetected') : 'undetected'
+  const ghost = air && identity == null
+  const airFrame = air ? (identity == null ? AIR_FRAME.hostile : airFrameFor(identity)) : null
+  const groundFrame = air ? null : groundFrameFor(entity.kind, model)
   // A retained successful jam decision, independent of channel activity.
-  const jammed = !ghost && (memberJammed ?? false)
-  // An EW-only engagement swaps the target brackets for the jammed diamond;
-  // a track also under kinetic or DE fire keeps its brackets as well.
-  const ewOnly = state != null && state.kineticSalvos + state.deSalvos === 0
-  const bracketed = (phase === 'targeted' || phase === 'engaged') && !(jammed && ewOnly)
-  // Pulse floor is 0.5: a dimmed engaged track must stay legible.
-  const pulse = phase === 'engaged' && !blink ? 0.5 : 1
+  const jammed = air && !ghost && memberJammed
+  // Locked: inside a usable weapon window, or under fire. White brackets; red stays identity.
+  const bracketed = air && !ghost && (phase === 'targeted' || phase === 'engaged')
+  const trackBar = air && !ghost ? trackBarText(state) : null
+  const effectorBar = entity.kind === 'effector' ? effectorBarText(effectorState, model) : null
   const depleted = effectorState === 'depleted'
-  const effectorFilled =
-    effectorState === 'semi-active' ||
-    effectorState === 'beam' ||
-    (effectorState === 'active' && blink)
+  // A sensor that can never hold the selected threat: RF silent, out of band or no range.
+  const gate =
+    entity.kind === 'sensor' && model?.sensor ? sensorHoldGate(model.sensor, targetSpec) : 'ok'
+  const degraded = !off && gate !== 'ok' && gate !== 'needs-cue'
+  const frameTop = airFrame ? AIR_FRAME_TOP[airFrame.shape] : GND_FRAME_TOP[groundFrame!.shape]
 
   // Konva hit-tests a stroke-only Circle over its whole disc. The selection
   // (r16) and card-link (r19) rings are cues, so the hit disc carries their radii.
   const hitR = cardLinked ? 19 : selected ? 16 : 13
-  const labelDrawn = showLabels && !spoked
-  // Board labels carry the short designator; Entity.name keeps the full string.
-  const boardName = useMemo(() => boardDesignator(entity.name), [entity])
-  const nameLines = useMemo(() => labelLineCount(boardName), [boardName])
-  const labelLines = labelDrawn ? nameLines : 0
+  const blockDrawn = showLabels && !spoked
   const handleDeg = shownHandleDeg(entity, model, selected, tool)
   const handleShown = handleDeg != null
-  // The label steps below a knob that points down into it; the handle stays put.
-  const labelTop = anchoredLabelTop(boardName, handleDeg)
+
+  // The data block. Line one carries the designator, the raid count and one status
+  // word; line two the altitude and speed while a sensor holds the track, or EMPTY on
+  // a spent effector. Entity.name keeps the full string.
+  const held = air && !ghost && state != null && phase !== 'undetected' && phase !== 'searching'
+  const count = air ? (state ? state.activeCount : (entity.formation?.count ?? 1)) : 1
+  const word = ghost
+    ? 'HK'
+    : missionKill
+      ? 'MK'
+      : phase === 'searching'
+        ? 'LOST'
+        : state?.coasting
+          ? 'CST'
+          : null
+  const altSpeed = useMemo(
+    () => (air && speedMps != null ? altSpeedLine(altFt, speedMps) : null),
+    [air, altFt, speedMps],
+  )
+  const lines = useMemo(() => {
+    const out = [designatorLine(entity.name, count, word)]
+    if (held && altSpeed) out.push(altSpeed)
+    if (depleted) out.push('EMPTY')
+    return out
+  }, [entity.name, count, word, held, altSpeed, depleted])
+  const lineColors = useMemo(
+    () => (depleted ? [undefined, ink.selection] : undefined),
+    [depleted, ink.selection],
+  )
+  // The block flips to the other side of a knob that would cover it; the handle stays put.
+  const blockPos = useMemo(
+    () => anchoredBlockPos(lines, entity.kind, handleDeg),
+    [lines, entity.kind, handleDeg],
+  )
+  const leaderPoints = useMemo(() => [0, 0, 0, -leaderPx], [leaderPx])
 
   return (
     <>
@@ -676,126 +713,87 @@ const EntityBody = memo(function EntityBody({
         />
       )}
       {connectFrom && <Circle radius={16} stroke={ink.tool} strokeWidth={2} listening={false} />}
-      {bracketed &&
-        BRACKETS.map((points, i) => (
-          <Line
-            key={i}
-            points={points}
-            stroke={ringColor ?? DANGER_INK}
-            strokeWidth={1.6}
-            opacity={pulse}
-            listening={false}
-          />
-        ))}
-      {ringColor && (
-        <Circle
-          radius={RING_R}
-          stroke={ringColor}
-          strokeWidth={1.6}
-          opacity={pulse}
+      {bracketed && <Brackets color={ink.selection} />}
+      {/* Ticks draw under the frame, so the knockout hides the root and the tip shows. */}
+      {air && leaderPx > 0 && (
+        <Line
+          points={leaderPoints}
+          stroke={color}
+          strokeWidth={1.2}
+          rotation={headingDeg}
           listening={false}
         />
       )}
-      <Glyph
-        entity={entity}
-        headingDeg={headingDeg}
-        color={missionKill ? JAM_CYAN : color}
-        ghost={ghost}
-        filled={effectorFilled}
-        tickRef={tickRef}
-      />
-      {missionKill && (
-        <Text text="MISSION KILL" x={18} y={-3} fontSize={9} fill={JAM_CYAN} listening={false} />
-      )}
-      {off && <Line points={OFF_SLASH} stroke={DANGER_INK} strokeWidth={2} listening={false} />}
-      {entity.kind === 'uas' && (entity.formation?.count ?? 1) > 1 && (
-        <Text
-          fontFamily="JetBrains Mono"
-          x={BRACKET_HALF + 2}
-          y={state ? -28 : -16}
-          width={140}
-          text={
-            state
-              ? `${state.activeCount} active\n${state.hardKillCount} hard kill\n${state.missionKillCount} mission kill`
-              : `x${entity.formation!.count}`
-          }
-          fontSize={11}
-          fill={ghost ? GHOST : color}
+      {entity.kind === 'sensor' && (
+        <Line
+          ref={tickRef}
+          points={BORESIGHT_TICK}
+          stroke={color}
+          strokeWidth={1.6}
+          rotation={headingDeg}
           listening={false}
+        />
+      )}
+      {airFrame && (
+        <AirFrame
+          frame={airFrame}
+          color={color}
+          board={ink.board}
+          // A hard kill keeps a solid frame in the ghost ink; the X carries the state.
+          dashed={ghost ? false : undefined}
+        />
+      )}
+      {groundFrame && (
+        <GroundFrame frame={groundFrame} color={color} board={ink.board} dashed={off} />
+      )}
+      {ghost && <KillStrike color={ink.destroyed} x />}
+      {missionKill && !ghost && <KillStrike color={color} />}
+      {trackBar && (
+        <EngagementBar
+          text={trackBar}
+          color={color}
+          board={ink.board}
+          top={-frameTop - AIR_BAR_LIFT}
+        />
+      )}
+      {effectorBar && (
+        <EngagementBar
+          text={effectorBar}
+          color={color}
+          board={ink.board}
+          top={-frameTop - GND_BAR_LIFT}
         />
       )}
       {jammed && (
-        <>
-          <RegularPolygon
-            sides={4}
-            radius={JAM_DIAMOND_R}
-            stroke={JAM_CYAN}
-            strokeWidth={1.6}
-            listening={false}
-          />
-          <Text
-            fontFamily="JetBrains Mono"
-            x={JAM_DIAMOND_R * 0.62 + 3}
-            y={-JAM_DIAMOND_R * 0.62 - 11}
-            text="J"
-            fontSize={10}
-            fill={JAM_CYAN}
-            listening={false}
-          />
-        </>
-      )}
-      {(effectorState === 'preparing' || effectorState === 'timing-unavailable') && (
         <Text
-          fontFamily="JetBrains Mono"
-          x={13}
-          y={-4}
-          text={effectorState === 'preparing' ? 'PREP' : 'LAUNCH ?'}
-          fontSize={11}
-          fill={PHASE_STYLE.targeted.color}
+          fontFamily={MONO}
+          fontStyle="500"
+          x={frameTop + 4}
+          y={-8}
+          text="J"
+          fontSize={10}
+          fill={ink.ew}
           listening={false}
         />
       )}
-      {depleted && (
-        <Text
-          fontFamily="JetBrains Mono"
-          x={13}
-          y={-4}
-          text="EMPTY"
-          fontSize={9}
-          fill={DEPLETED}
+      {degraded && (
+        <Rect
+          x={-CONDITION_BAR.w / 2}
+          y={frameTop + CONDITION_BAR.gap}
+          width={CONDITION_BAR.w}
+          height={CONDITION_BAR.h}
+          fill={ink.warn}
           listening={false}
         />
       )}
-      {labelDrawn && (
-        <Text
-          ref={labelRef}
-          fontFamily="JetBrains Mono"
-          x={-60}
-          y={labelTop}
-          width={120}
-          text={boardName}
-          fontSize={11}
-          fill={ink.label}
-          // A board-tone glyph halo knocks out a flight path or a leader under the name.
-          stroke={ink.board}
-          strokeWidth={LABEL_HALO_PX}
-          lineJoin="round"
-          fillAfterStrokeEnabled
-          align="center"
-          listening={false}
-        />
-      )}
-      {ghost && (
-        <Text
-          fontFamily="JetBrains Mono"
-          x={-60}
-          y={labelTop + labelLines * LABEL_LINE_H + TAG_GAP}
-          width={120}
-          align="center"
-          text="HARD KILL"
-          fontSize={9}
-          fill={GHOST}
-          listening={false}
+      {blockDrawn && (
+        <DataBlock
+          groupRef={blockRef}
+          lines={lines}
+          pos={blockPos}
+          color={ghost ? ink.ghost : ink.label}
+          board={ink.board}
+          lineColors={lineColors}
         />
       )}
       {handleShown && (
@@ -804,13 +802,13 @@ const EntityBody = memo(function EntityBody({
           color={color}
           rim={ink.knobRim}
           tickRef={tickRef}
-          labelRef={labelRef}
-          boardName={boardName}
+          blockRef={blockRef}
+          lines={lines}
         />
       )}
-      {selected && entity.kind === 'uas' && tool === 'select' && (
+      {selected && air && tool === 'select' && (
         <Group
-          y={labelTop + labelLines * LABEL_LINE_H + TAG_GAP}
+          y={RANGE_BUTTON_Y}
           onClick={(e) => {
             e.cancelBubble = true
             useStore.getState().updateEntity(entity.id, { showRange: !entity.showRange })
@@ -826,7 +824,7 @@ const EntityBody = memo(function EntityBody({
             strokeWidth={1}
           />
           <Text
-            fontFamily="JetBrains Mono"
+            fontFamily={MONO}
             x={-34}
             y={4}
             width={68}
@@ -850,7 +848,6 @@ interface GroupProps {
   members: Map<string, TrialMemberState[]>
   effectorStates: Map<string, EffectorLiveState>
   spokeIds: Set<string>
-  blink: boolean
 }
 
 /**
@@ -858,15 +855,13 @@ interface GroupProps {
  * and shared identities, so per-frame React work is proportional to what moved.
  */
 const EntityGroup = memo(function EntityGroup(group: GroupProps) {
-  const { entities, tracks, states, effectorStates, spokeIds, blink } = group
+  const { entities, tracks, states, effectorStates, spokeIds } = group
   return (
     <>
       {entities.map((e) => {
         const track = tracks?.get(e.id)
         const state = states.get(e.id)
         const effectorState = effectorStates.get(e.id) ?? 'idle'
-        // The pulse reaches only the nodes that draw it.
-        const pulses = state?.phase === 'engaged' || effectorState === 'active'
         return (
           <EntityNode
             key={`${e.id}:0`}
@@ -877,7 +872,6 @@ const EntityGroup = memo(function EntityGroup(group: GroupProps) {
             trialMembers={group.members.get(e.id)}
             state={state}
             effectorState={effectorState}
-            blink={pulses && blink}
             spoked={spokeIds.has(e.id)}
           />
         )
@@ -892,7 +886,7 @@ const EntityGroup = memo(function EntityGroup(group: GroupProps) {
  */
 const EMPTY_EFFECTORS = new Map<string, EffectorLiveState>()
 
-export function EntityLayer({ tracks, members, states, sweep, spokeIds, blink }: Props) {
+export function EntityLayer({ tracks, members, states, sweep, spokeIds }: Props) {
   const entities = useStore((s) => s.scenario.entities)
   const paths = useStore((s) => s.scenario.paths)
   const groups = useMemo(() => {
@@ -911,7 +905,6 @@ export function EntityLayer({ tracks, members, states, sweep, spokeIds, blink }:
         states={states}
         effectorStates={sweep?.effectorStates ?? EMPTY_EFFECTORS}
         spokeIds={spokeIds}
-        blink={blink}
       />
       <EntityGroup
         entities={groups.flying}
@@ -920,7 +913,6 @@ export function EntityLayer({ tracks, members, states, sweep, spokeIds, blink }:
         states={states}
         effectorStates={sweep?.effectorStates ?? EMPTY_EFFECTORS}
         spokeIds={spokeIds}
-        blink={blink}
       />
     </>
   )

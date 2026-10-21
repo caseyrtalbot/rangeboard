@@ -44,27 +44,27 @@
     {
       "document": "docs/README.md",
       "inputs": [],
-      "sha256": "f82846fc0773c5e8a7247e800638a9666ad717a5aff064d16710619c4a46cd6d",
-      "reviewedAt": "2026-10-02",
-      "note": "Stale docs cleanup: the index drops the deleted Plan.md, timeline/SPEC.md and right-panel/Plan.md rows; HANDOFF row reads open work, follow-ups and landmines."
+      "sha256": "790123ec688048592cd661fa3e4148088e9e3def8bc29204d7fecdc24b9df983",
+      "reviewedAt": "2026-10-21",
+      "note": "Symbology primer refactor: the evidence list gains the 2026-10-21 symbology browser check README; no other index entry changed."
     },
     {
       "document": "docs/PROJECT_GUIDE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "3f8a417e70de86ff83e79684798d7e676502c8ec15b7f12fd7a11a833e2e166d",
+      "sha256": "654052ed3885239db05c9dfbd084c4f94157f38f80f13c663ed6ebe029138c97",
       "reviewedAt": "2026-10-21",
-      "note": "ISR CAP (cap tool, FlightPath.cap, cap.ts, Inspector fields) and the board-aware connect popup (ON BOARD / LINKED / NOT ON BOARD, required groups, Place) described in Board features; threat row points at cap.ts."
+      "note": "Symbology primer refactor rebased onto the ISR CAP and connect popup commit: both sets of edits kept (the CAP sentence sits inside the rewritten canvas ink rule; the CAP follow-up group and the Board symbology group both stand); inputs re-read after the rebase."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "3c67b261a9c3f06b41bc4c50285c63a5cc66e2ac453eb3c0fa5df7620187ef30",
+      "sha256": "73489194cd61d596dbc808a36eaf1a2aeef936b6645b76d2f053305eac27aed9",
       "reviewedAt": "2026-10-21",
-      "note": "Added integrationBoardStatus and the popup's connect and place paths to the fire-control uplink note; the cap tool to the draw-tool and click-precedence notes."
+      "note": "Symbology primer refactor rebased onto the ISR CAP and connect popup commit: both sets of edits kept (the CAP sentence sits inside the rewritten canvas ink rule; the CAP follow-up group and the Board symbology group both stand); inputs re-read after the rebase."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -105,9 +105,9 @@
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "87ef6be825ababd5fa30be00d2724661495d98e9888aafed26b16c1c01e04d71",
+      "sha256": "d5058a016664ddca4966401cae0a6bbf2841cff77c7834dd9b0e7de53851af49",
       "reviewedAt": "2026-10-21",
-      "note": "Follow-ups from the ISR CAP and connect popup work added as a dated subsection; Tasking unchanged."
+      "note": "Symbology primer refactor rebased onto the ISR CAP and connect popup commit: both sets of edits kept (the CAP sentence sits inside the rewritten canvas ink rule; the CAP follow-up group and the Board symbology group both stand); inputs re-read after the rebase."
     },
     {
       "document": "docs/code-quality/Plan.md",
@@ -124,9 +124,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "cae2b3f28ce336bb69670f57758b92f8c7e322aa0e8b067932ab37ac8ea9d928",
+      "sha256": "5e827304e87d88fc9addd973b6c908b1245ab6c630efe06a8f9117770397a558",
       "reviewedAt": "2026-10-21",
-      "note": "index.css: connect popup list scroll, wrapping missing line and head; PathLayer: ISR CAP shapes in the entity and selection inks, noted under board ink."
+      "note": "Symbology primer refactor rebased onto the ISR CAP and connect popup commit: both sets of edits kept (the CAP sentence sits inside the rewritten canvas ink rule; the CAP follow-up group and the Board symbology group both stand); inputs re-read after the rebase."
     }
   ],
   "historical": [

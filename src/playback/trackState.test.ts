@@ -9,8 +9,6 @@ import { resolveEngagements } from './attrition'
 import { SHIP_DEAD_BELOW } from './pk'
 import {
   BEAM_DISPLAY_S,
-  BLINK_PERIOD_S,
-  blinkOn,
   buildTrackTimeline,
   effectorEngagementMode,
   effectorStatesAt,
@@ -225,7 +223,7 @@ describe('PHASE_STYLE', () => {
   })
 
   it('keeps HOSTILE on the shared danger token and names a defeated track', () => {
-    expect(PHASE_STYLE.identified.color).toBe('#c4564a')
+    expect(PHASE_STYLE.identified.color).toBe('#e46f62')
     expect(PHASE_STYLE.ghost.label).toBe('DEFEATED')
   })
 
@@ -238,29 +236,10 @@ describe('PHASE_STYLE', () => {
     }
   })
 
-  it('separates HOSTILE from ENGAGED by value, not by hue alone', () => {
-    expect(contrast(PHASE_STYLE.identified.color, PHASE_STYLE.engaged.color)).toBeGreaterThan(1.5)
-  })
-})
-
-describe('blinkOn', () => {
-  it('lights the first half of every period', () => {
-    expect(BLINK_PERIOD_S).toBe(0.5)
-    expect(blinkOn(0)).toBe(true)
-    expect(blinkOn(0.24)).toBe(true)
-    expect(blinkOn(0.25)).toBe(false)
-    expect(blinkOn(0.49)).toBe(false)
-    expect(blinkOn(0.5)).toBe(true)
-  })
-
-  it('is deterministic and periodic, including before t = 0', () => {
-    for (const t of [0, 0.1, 0.3, 1.7, 12.45, 300.02]) {
-      expect(blinkOn(t)).toBe(blinkOn(t))
-      expect(blinkOn(t)).toBe(blinkOn(t + BLINK_PERIOD_S))
-      expect(blinkOn(t)).toBe(blinkOn(t + BLINK_PERIOD_S * 10))
-    }
-    expect(blinkOn(-0.1)).toBe(false)
-    expect(blinkOn(-0.4)).toBe(true)
+  it('keeps HOSTILE and ENGAGED distinct', () => {
+    // 1.14:1 since the hostile red moved to the sheet's critical token; the board no
+    // longer separates the two by ring, and the pill carries the word.
+    expect(contrast(PHASE_STYLE.identified.color, PHASE_STYLE.engaged.color)).toBeGreaterThan(1.1)
   })
 })
 

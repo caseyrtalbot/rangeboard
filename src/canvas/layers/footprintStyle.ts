@@ -1,20 +1,44 @@
 import type { SensorHoldGate } from '../../analysis/sensorEnv'
+import type { Entity } from '../../model/types'
 import type { RingKey } from '../../state/rings'
-import { DANGER_INK, KIND_INK } from '../../ui/ink'
+import type { BoardInk } from '../../ui/ink'
 
 /**
  * Dash, width, fill and ink for every ring the board draws, plus the radii the
  * sensor and effector rings take. Radii are meters; dashes and widths are screen
- * px. Sensor rings take the entity color, effector rings the danger color, and a
- * disabled or inert entity takes DISABLED_RING_COLOR.
+ * px. Red stays with hostile objects: a sensor ring takes the one friend hue, an
+ * effector ring takes white, and a disabled or inert entity takes DISABLED_RING_COLOR.
  */
 
 type SensorRingKind = 'held' | 'cued' | 'inert' | 'off'
 
-/** Danger ink for the effector rings. */
-export const EFFECTOR_RING_COLOR = DANGER_INK
+/**
+ * Ring ink token. The ring model is cached per scenario and knows no theme, so it
+ * records a token and FootprintLayer resolves it through BoardInk. An explicit
+ * entity colour travels as its hex.
+ */
+export type RingInk = 'friend' | 'white' | 'grey' | `#${string}`
+
+/** The token a friendly system's rings take: its own colour, else the friend hue. */
+export function ringInkFor(entity: Pick<Entity, 'color'>): RingInk {
+  return entity.color && entity.color.startsWith('#') ? (entity.color as RingInk) : 'friend'
+}
+
+/**
+ * The hex a ring token draws in. White is the active selection ink (text 1 on paper),
+ * the one white the board has; the at-rest edge keeps `ringIdle`.
+ */
+export function resolveRingInk(token: RingInk, ink: BoardInk): string {
+  if (token === 'friend') return ink.friend
+  if (token === 'white') return ink.selection
+  if (token === 'grey') return DISABLED_RING_COLOR
+  return token
+}
+
 /** Ink for a disabled or inert entity's rings. */
 export const DISABLED_RING_COLOR = '#565b58'
+/** 2525D range fan words on the active effector rings (Table H-XVIII). */
+export const RING_LABEL_TEXT = { effectorMaxRange: 'MAX RG', effectorMinRange: 'MIN RG' } as const
 
 /** Placard ring behind the Pd contours: dotted. */
 export const PLACARD_DASH = [2, 5]
@@ -32,8 +56,6 @@ export const PD_HIGH_DASH = [4, 6]
 export const EFFECTOR_MIN_DASH = [2, 5]
 /** Track covariance ellipse on a coasting track: even dash. */
 export const TRACK_ELLIPSE_DASH = [4, 4]
-/** Ink for an estimated or truth track. */
-export const TRACK_ESTIMATE_INK = KIND_INK.asset
 /** Ink for a false track: the same muted grey the inert rings take. */
 export const TRACK_FALSE_INK = DISABLED_RING_COLOR
 /** Track position marker arm, screen px, held constant under the camera. */
@@ -80,19 +102,19 @@ interface RingStyle {
   width: number
   /** Fill alpha, or null when the ring never fills. */
   fillAlpha: number | null
-  /** Ink: the entity color or the effector danger color. */
-  ink: 'entity' | 'danger'
+  /** Ink: the system's ring token (friend hue or its own colour) or white. */
+  ink: 'entity' | 'white'
 }
 
 /** Dash, width, fill and ink per ring key. Secondary rings read the named dashes above. */
 export const RING_STYLE: Record<RingKey, RingStyle> = {
-  sensorPlacard: { dash: null, width: 1, fillAlpha: 0.1, ink: 'entity' },
+  sensorPlacard: { dash: null, width: 1, fillAlpha: 0.08, ink: 'entity' },
   sensorEnvelope: { dash: null, width: 0, fillAlpha: 0.08, ink: 'entity' },
   sensorPdContours: { dash: null, width: 1, fillAlpha: 0.06, ink: 'entity' },
   classifyRings: { dash: CLASSIFY_DASH, width: 1, fillAlpha: null, ink: 'entity' },
-  effectorMaxRange: { dash: null, width: 1.5, fillAlpha: 0.03, ink: 'danger' },
-  effectorMinRange: { dash: EFFECTOR_MIN_DASH, width: 1, fillAlpha: null, ink: 'danger' },
-  effectorDoctrinal: { dash: null, width: 1, fillAlpha: 0.05, ink: 'danger' },
+  effectorMaxRange: { dash: null, width: 1.5, fillAlpha: 0.04, ink: 'white' },
+  effectorMinRange: { dash: EFFECTOR_MIN_DASH, width: 1, fillAlpha: null, ink: 'white' },
+  effectorDoctrinal: { dash: null, width: 1, fillAlpha: 0.05, ink: 'white' },
 }
 
 /** Inspector word for each gate that is not 'ok'. */

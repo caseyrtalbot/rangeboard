@@ -26,7 +26,9 @@ vi.mock('react-konva', () => ({
   ),
   Text: ({ text }: { text: string }) => <span>{text}</span>,
   Circle: ({ stroke }: { stroke?: string }) => (stroke ? <span>ring:{stroke}</span> : null),
-  Line: ({ closed }: { closed?: boolean }) => (closed ? <span>round</span> : null),
+  // The round is the one closed Line with a fill and no stroke; a diamond frame is stroked.
+  Line: ({ closed, stroke }: { closed?: boolean; stroke?: string }) =>
+    closed && !stroke ? <span>round</span> : null,
   RegularPolygon: () => null,
   Path: () => null,
   Rect: () => null,
@@ -86,9 +88,10 @@ describe('sampled canvas scene', () => {
       expect(html).toContain('known-path')
       expect(html).toContain('member:swarm:3')
       for (const outcome of [
-        'HARD KILL',
-        'MISSION KILL',
-        'PREP',
+        'HK',
+        'MK',
+        'ASN',
+        'MIF',
         'EMPTY',
         'round',
         'I&amp;W',
@@ -118,8 +121,8 @@ describe('sampled canvas scene', () => {
     // The swarm round releases at 1.8, while moving's round is already in flight.
     expect(render(1.3).match(/>round</g)).toHaveLength(1)
     expect(render(1.8).match(/>round</g)).toHaveLength(2)
-    expect(render(1.8)).not.toContain('HARD KILL')
-    expect(render(1.8)).not.toContain('MISSION KILL')
+    expect(render(1.8)).not.toContain('HK')
+    expect(render(1.8)).not.toContain('MK')
   })
 
   it('keeps measured and held sensors active, with coast and pre-scan states distinct', () => {

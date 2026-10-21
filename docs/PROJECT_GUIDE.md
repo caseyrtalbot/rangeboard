@@ -214,8 +214,9 @@ enclose under 1 m² or under 4e-3 of their bounding box, is refused at launch wi
 reason, and no worker starts. Apply copies the scenario through the existing replace
 action, so the candidate is a new scenario and the optimize result is cleared with the
 other analyses on install. Preview on a candidate row draws that laydown on the board: a
-hollow friend frame in the tool ink at each candidate position, a dashed leader from the
-current position (none under 0.5 m) and the short name. It writes nothing to an entity
+outline ground frame with its function icon in the tool ink at each candidate position, a
+dashed leader from the current position (none under 0.5 m) and the short name as a
+one-line block. It writes nothing to an entity
 and never enters the undo history. One candidate shows at a time; Preview on the shown
 row hides it. The preview draws only while the result still matches the board (the same
 run, the same analysis basis, the same result), and it clears on Escape, on a phase

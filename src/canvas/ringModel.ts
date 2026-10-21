@@ -15,7 +15,6 @@ import { ringVisible } from '../state/layers'
 import type { RingKey, RingOverrides } from '../state/rings'
 import type { DisplayUnits } from '../geometry/geo'
 import { angleDiffDeg, bearingDeg, dist, formatDistance, formatNm } from '../geometry/geo'
-import { entityInk } from '../ui/ink'
 import { groundRangeM } from '../geometry/slant'
 import {
   effectiveClassifyRangeM,
@@ -30,13 +29,12 @@ import { defendedRadiusOf } from '../playback/sim'
 import { threatAltitudeFt } from '../playback/tracks'
 import type { ExtraRingKey } from '../panels/ringLabels'
 import { EXTRA_RING_LABELS, RING_LABELS } from '../panels/ringLabels'
-import type { EnvelopeBand } from './layers/footprintStyle'
+import type { EnvelopeBand, RingInk } from './layers/footprintStyle'
 import {
-  DISABLED_RING_COLOR,
-  EFFECTOR_RING_COLOR,
   effectorRingStyle,
   envelopeBandM,
   PD_CONTOUR_HIGH,
+  ringInkFor,
   sensorRingStyle,
 } from './layers/footprintStyle'
 
@@ -44,7 +42,8 @@ import {
  * Every ring the board draws, prepared once from the scenario, the ring view and
  * the selected threat. The footprint layer draws the records; the HUD asks `hitAt`
  * which ring edge lies under the pointer. Ranges are meters. Dash, width and ink
- * come from footprintStyle.ts; this module resolves the ranges they apply to.
+ * come from footprintStyle.ts; this module resolves the ranges they apply to. The
+ * ink is a theme-neutral token, because the records are cached across themes.
  */
 
 /** The ring visibility and unit state the model reads. A narrow slice of `ui`. */
@@ -65,7 +64,7 @@ export interface SensorRings {
   kind: 'sensor'
   entity: Entity
   sectorDeg: number
-  color: string
+  ink: RingInk
   /** The sensor holds this threat: only a held sensor takes the active highlight. */
   held: boolean
   grey: boolean
@@ -90,7 +89,7 @@ export interface EffectorRings {
   kind: 'effector'
   entity: Entity
   sectorDeg: number
-  color: string
+  ink: RingInk
   off: boolean
   /** MIR ring radius, ground projected for the selected threat, or null when the key is off. */
   maxM: number | null
@@ -108,7 +107,7 @@ export interface JammerRings {
   kind: 'jammer'
   entity: Entity
   sectorDeg: number
-  color: string
+  ink: RingInk
   off: boolean
   /** MIR: the effective jam range against the selected threat, ground projected, or null when the key is off. */
   rangeM: number | null
@@ -123,7 +122,7 @@ export interface JammerRings {
 export interface AssetRings {
   kind: 'asset'
   entity: Entity
-  color: string
+  ink: RingInk
   radiusM: number
 }
 
@@ -198,12 +197,12 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
         contoursOn: contoursOn && target != null,
         envelopeOn,
       })
-      const color = style.grey ? DISABLED_RING_COLOR : entityInk(e, model)
+      const ink: RingInk = style.grey ? 'grey' : ringInkFor(e)
       out.push({
         kind: 'sensor',
         entity: e,
         sectorDeg: spec.sectorDeg,
-        color,
+        ink,
         held: style.kind === 'held',
         grey: style.grey,
         band: envelopeOn && !style.grey ? envelopeFor(spec) : null,
@@ -243,15 +242,15 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
       const mrirFraction = mrirFractionOf(spec)
       const mrirBasis = mrirBasisOf(model, spec.mrirM)
 
-      // A jammer draws an illumination cone in its entity ink. Its MIR is the
-      // effective jam range against the selected threat.
+      // A jammer draws its footprint wedge in the EW ink (FootprintLayer). Its MIR is
+      // the effective jam range against the selected threat.
       if (spec.effectorType === 'jammer') {
         const jamM = effectiveJamRangeM(spec, target)
         out.push({
           kind: 'jammer',
           entity: e,
           sectorDeg,
-          color: off ? DISABLED_RING_COLOR : entityInk(e, model),
+          ink: off ? 'grey' : ringInkFor(e),
           off,
           rangeM: maxOn ? project(jamM) : null,
           // An MRIR equal to MIR draws once, as MIR; with MIR hidden it draws as MRIR.
@@ -277,7 +276,7 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
         kind: 'effector',
         entity: e,
         sectorDeg,
-        color: style.grey ? DISABLED_RING_COLOR : EFFECTOR_RING_COLOR,
+        ink: style.grey ? 'grey' : 'white',
         off,
         maxM: maxOn ? style.maxM : null,
         mrirM: mrirOn ? mrirM : null,
@@ -295,7 +294,7 @@ function buildRings(scenario: Scenario, ui: RingView, selectedUasId: string | nu
       out.push({
         kind: 'asset',
         entity: e,
-        color: entityInk(e, model),
+        ink: ringInkFor(e),
         radiusM: defendedRadiusOf(e),
       })
     }

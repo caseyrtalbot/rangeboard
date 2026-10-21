@@ -1,0 +1,144 @@
+// Symbology primer browser check: 1265 x 900, the 54-entity performance board
+// (docs/field-te/evidence/perf-2026-09-06/scenario.json) loaded through parseAutosave and
+// loadScenario. Shots of Prepare and Execute in both themes, a 2x zoom on the first
+// kinetic engagement in flight and after its effect, and the page error count.
+// Usage: node symbology-capture.mjs <base-url> <out-dir> <repo-root>
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { chromium } from 'playwright'
+
+const [BASE, OUT, ROOT] = process.argv.slice(2)
+const SCEN = 'docs/field-te/evidence/perf-2026-09-06/scenario.json'
+const RAW = readFileSync(join(ROOT, SCEN), 'utf8')
+mkdirSync(OUT, { recursive: true })
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const waitFor = (page, fn, arg, timeout = 60000) => page.waitForFunction(fn, arg, { timeout })
+
+const browser = await chromium.launch({ channel: 'chrome', headless: true })
+const ctx = await browser.newContext({ viewport: { width: 1265, height: 900 }, colorScheme: 'dark' })
+const page = await ctx.newPage()
+const errors = []
+page.on('pageerror', (e) => errors.push(e.message))
+page.on('console', (m) => {
+  if (m.type() === 'error') errors.push(m.text().slice(0, 200))
+})
+const findings = { capturedAt: new Date().toISOString(), viewport: '1265x900', fixture: SCEN, shots: [], errors }
+
+async function shot(name, state) {
+  await sleep(350)
+  await page.screenshot({ path: join(OUT, `${name}.png`) })
+  findings.shots.push({ file: `${name}.png`, state })
+  console.log('shot', name)
+}
+const theme = (t) => page.evaluate((t) => window.__store.getState().setTheme(t), t)
+const scrub = (t) => page.evaluate((t) => window.__store.getState().scrubTo(t), t)
+
+await page.goto(BASE, { waitUntil: 'load' })
+await waitFor(page, () => document.querySelector('.konvajs-content canvas') && window.__store)
+await page.evaluate(async (raw) => {
+  const { parseAutosave } = await import('/src/io/persist.ts')
+  const s = window.__store.getState()
+  s.loadScenario(parseAutosave(raw), { fit: 'always' })
+  s.setTheme('dark')
+  s.setRunTimelineOpen(false)
+}, RAW)
+await sleep(600)
+findings.board = await page.evaluate(() => {
+  const s = window.__store.getState()
+  return { name: s.scenario.name, entities: s.scenario.entities.length, phase: s.ui.boardPhase, camera: s.camera }
+})
+
+// 1. Prepare: ground frames with icons, rings at rest, grey threats, data blocks.
+await shot('prepare-dark', 'Prepare, whole board fitted, dark theme')
+await theme('light')
+await shot('prepare-light', 'Prepare, whole board fitted, paper theme')
+await theme('dark')
+
+// 2. Execute: a ready trial.
+await page.click('#board-phase-execute')
+await waitFor(page, () => document.querySelector('.board-app[data-board-phase="execute"]'))
+await page.evaluate(() => window.__store.getState().startRun())
+await waitFor(page, () => ['ready', 'error'].includes(window.__store.getState().trial.status), null, 180000)
+findings.trialStatus = await page.evaluate(() => window.__store.getState().trial.status)
+
+// The first kinetic shot with a flight time, from the attrition report.
+const pick = await page.evaluate(() => {
+  const r = window.__store.getState().trial.result
+  const ev = (r?.report?.events ?? []).filter((e) => e.channelClass === 'kinetic' && e.tEffectS > e.tS)
+  ev.sort((a, b) => a.tS - b.tS)
+  const e = ev[0]
+  const keys = e ? Object.keys(e) : []
+  return e ? { tS: e.tS, tEffectS: e.tEffectS, uasId: e.uasId, effectorId: e.effectorId, keys, count: ev.length } : null
+})
+findings.pick = pick
+console.log('pick', JSON.stringify(pick))
+
+// Play at 30x until the observed horizon passes the effect, then pause.
+const target = pick ? pick.tEffectS + 4 : 60
+await page.evaluate(() => window.__store.getState().setSpeedMult(30))
+await page.evaluate(() => window.__store.getState().setPlaying(true))
+await waitFor(page, (t) => window.__store.getState().playback.observedThroughS >= t, target, 180000)
+await page.evaluate(() => window.__store.getState().setPlaying(false))
+await sleep(300)
+findings.observedThroughS = await page.evaluate(() => window.__store.getState().playback.observedThroughS)
+
+// Whole board at the paused time.
+await scrub(target)
+await shot('execute-overview-dark', `Execute, paused at T+${target.toFixed(1)} s after 30x play, whole board, dark theme`)
+await theme('light')
+await shot('execute-overview-light', 'The same state in the paper theme')
+await theme('dark')
+
+// 2x zoom centred on the engaged threat, mid flight and after the effect.
+async function centreOn(uasId, t, scale) {
+  await page.evaluate(
+    async ({ uasId, t, scale }) => {
+      const { liveTracks } = await import('/src/playback/tracks.ts')
+      const s = window.__store.getState()
+      const trk = liveTracks(s.scenario, t).get(uasId)
+      const ent = s.scenario.entities.find((e) => e.id === uasId)
+      const p = trk?.pos ?? ent.pos
+      const el = document.querySelector('.konvajs-content canvas')
+      const rect = el.getBoundingClientRect()
+      s.setCamera({ x: rect.width / 2 - p.x * scale, y: rect.height / 2 - p.y * scale, scale })
+    },
+    { uasId, t, scale },
+  )
+}
+if (pick) {
+  const mid = pick.tS + (pick.tEffectS - pick.tS) * 0.5
+  const k = findings.board.camera.scale * 2
+  await scrub(mid)
+  await centreOn(pick.uasId, mid, k)
+  await page.evaluate((id) => window.__store.getState().select({ entityIds: [id] }), pick.uasId)
+  await shot('execute-flight-2x-dark', `Execute at T+${mid.toFixed(1)} s, 2x zoom on the engaged threat (selected): brackets, bar, lock line, round, data block`)
+  await theme('light')
+  await shot('execute-flight-2x-light', 'The same state in the paper theme')
+  await theme('dark')
+  await page.evaluate(() => window.__store.getState().select({ entityIds: [] }))
+  const after = pick.tEffectS + 3
+  await scrub(after)
+  await centreOn(pick.uasId, after, k)
+  await shot('execute-after-2x-dark', `Execute at T+${after.toFixed(1)} s, same camera: the outcome mark and the frame after the effect`)
+  // A ground system up close: the effector that fired.
+  await page.evaluate(
+    ({ id, scale }) => {
+      const s = window.__store.getState()
+      const ent = s.scenario.entities.find((e) => e.id === id)
+      const el = document.querySelector('.konvajs-content canvas')
+      const rect = el.getBoundingClientRect()
+      s.setCamera({ x: rect.width / 2 - ent.pos.x * scale, y: rect.height / 2 - ent.pos.y * scale, scale })
+      s.select({ entityIds: [id] })
+    },
+    { id: pick.effectorId, scale: k * 1.5 },
+  )
+  await shot('execute-effector-3x-dark', 'The firing effector at 3x, selected: ground frame, icon, bar, rings and labels')
+  await theme('light')
+  await shot('execute-effector-3x-light', 'The same state in the paper theme')
+  await theme('dark')
+}
+
+findings.errorCount = errors.length
+writeFileSync(join(OUT, 'findings.json'), JSON.stringify(findings, null, 2) + '\n')
+console.log('errors', errors.length, JSON.stringify(errors.slice(0, 5)))
+await browser.close()

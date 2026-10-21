@@ -2,6 +2,7 @@ import { useContext, type CSSProperties } from 'react'
 import type { ModelTag } from '../../../analysis/fidelity'
 import type { Entity } from '../../../model/types'
 import { Glyph } from '../../Glyph'
+import { modelFor } from '../../../model/scenario'
 import { useStore } from '../../../state/store'
 import { IconInfo } from '../../../ui/icons'
 import { State } from '../../../ui/kit'
@@ -43,6 +44,8 @@ export function DetailHeader({
   tags?: ModelTag[]
 }) {
   const clearSelection = useStore((s) => s.clearSelection)
+  // The model names the sub-kind, so the glyph can pick its function icon.
+  const model = useStore((s) => modelFor(s.scenario, entity))
   const onOverview = useContext(DetailOverviewContext)
   const basis = [...new Set((tags ?? []).flatMap((tag) => [tag.tier, tag.validation]))].join(' · ')
   return (
@@ -55,7 +58,7 @@ export function DetailHeader({
         >
           ‹ Back
         </button>
-        <Glyph kind={entity.kind} color={color} size={16} />
+        <Glyph kind={entity.kind} color={color} size={16} model={model} />
         <span className="det-n">{entity.name}</span>
         <State tone={pill.tone ?? 'inactive'} style={pill.style}>
           {pill.word}

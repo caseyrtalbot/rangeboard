@@ -1,0 +1,80 @@
+{
+  "capturedAt": "2026-10-21T20:27:34.299Z",
+  "viewport": "1265x900",
+  "fixture": "docs/field-te/evidence/perf-2026-09-06/scenario.json",
+  "shots": [
+    {
+      "file": "prepare-dark.png",
+      "state": "Prepare, whole board fitted, dark theme"
+    },
+    {
+      "file": "prepare-light.png",
+      "state": "Prepare, whole board fitted, paper theme"
+    },
+    {
+      "file": "execute-overview-dark.png",
+      "state": "Execute, paused at T+104.5 s after 30x play, whole board, dark theme"
+    },
+    {
+      "file": "execute-overview-light.png",
+      "state": "The same state in the paper theme"
+    },
+    {
+      "file": "execute-flight-2x-dark.png",
+      "state": "Execute at T+60.0 s, 2x zoom on the engaged threat (selected): brackets, bar, lock line, round, data block"
+    },
+    {
+      "file": "execute-flight-2x-light.png",
+      "state": "The same state in the paper theme"
+    },
+    {
+      "file": "execute-after-2x-dark.png",
+      "state": "Execute at T+103.5 s, same camera: the outcome mark and the frame after the effect"
+    },
+    {
+      "file": "execute-effector-3x-dark.png",
+      "state": "The firing effector at 3x, selected: ground frame, icon, bar, rings and labels"
+    },
+    {
+      "file": "execute-effector-3x-light.png",
+      "state": "The same state in the paper theme"
+    }
+  ],
+  "errors": [],
+  "board": {
+    "name": "Layered (Acoustic + MEROPS)",
+    "entities": 54,
+    "phase": "prepare",
+    "camera": {
+      "scale": 0.016652783422983635,
+      "x": 122.88148206612243,
+      "y": 284.94804704385217
+    }
+  },
+  "trialStatus": "ready",
+  "pick": {
+    "tS": 19.5,
+    "tEffectS": 100.4566400855204,
+    "uasId": "ent-mt5bqnfg-33",
+    "effectorId": "ent-mt5brxu5-3z",
+    "keys": [
+      "tS",
+      "tReleaseS",
+      "tEffectS",
+      "effectorId",
+      "uasId",
+      "shipIdx",
+      "channel",
+      "softShot",
+      "effectorType",
+      "channelClass",
+      "lateEffect",
+      "pk",
+      "killDelta",
+      "c2Id"
+    ],
+    "count": 10
+  },
+  "observedThroughS": 104.51370000000001,
+  "errorCount": 0
+}

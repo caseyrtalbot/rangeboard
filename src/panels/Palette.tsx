@@ -493,7 +493,7 @@ export const Palette = memo(function Palette({
                           onArmPlacement?.({ kind: 'system', id: p.id, name: p.name })
                         }}
                       >
-                        <Glyph kind="sensor" color="#7da7c4" size={12} />
+                        <Glyph kind="sensor" color={KIND_INK.sensor} size={12} />
                         <RowText name={p.name} meta="Integrated system" full={p.name} />
                       </button>
                       {!p.builtin ? (
@@ -573,7 +573,7 @@ export const Palette = memo(function Palette({
                                   onArmPlacement?.({ kind: 'model', id: m.id, name: m.name })
                                 }}
                               >
-                                <Glyph kind={m.kind} color={m.color} size={12} />
+                                <Glyph kind={m.kind} color={m.color} size={12} model={m} />
                                 <RowText {...rowLines(m)} full={m.name} />
                               </button>
                               <div className="palette-item-actions">

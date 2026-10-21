@@ -3,12 +3,9 @@ import { Ellipse, Group, Line } from 'react-konva'
 import { useStore } from '../../state/store'
 import { latestEstimatesAt, positionEllipse } from '../../playback/trackEstimateView'
 import type { TrackEstimate } from '../../playback/trackTypes'
-import {
-  TRACK_ELLIPSE_DASH,
-  TRACK_ESTIMATE_INK,
-  TRACK_FALSE_INK,
-  TRACK_MARKER_PX,
-} from './footprintStyle'
+import type { BoardInk } from '../../ui/ink'
+import { useBoardInk } from '../useBoardInk'
+import { TRACK_ELLIPSE_DASH, TRACK_FALSE_INK, TRACK_MARKER_PX } from './footprintStyle'
 
 interface Props {
   /** Estimates the trial captured, oldest first. Undefined on a run that captured none. */
@@ -30,8 +27,9 @@ const MARKER_V = [0, -TRACK_MARKER_PX, 0, TRACK_MARKER_PX]
 /** The ellipse is a 1 sigma position error. */
 const SIGMAS = 1
 
-function inkFor(source: TrackEstimate['source']): string {
-  return source === 'false' ? TRACK_FALSE_INK : TRACK_ESTIMATE_INK
+/** A sensor's picture of a track is a blue-force product, so it takes the friend hue. */
+function inkFor(source: TrackEstimate['source'], ink: BoardInk): string {
+  return source === 'false' ? TRACK_FALSE_INK : ink.friend
 }
 
 /**
@@ -43,6 +41,7 @@ function inkFor(source: TrackEstimate['source']): string {
 export function TrackLayer({ tracks, horizonS, stepS }: Props) {
   // Only the scale is read; the stage transform carries the pan.
   const k = useStore((s) => s.camera.scale)
+  const boardInk = useBoardInk()
   // A zoom re-renders the layer; the picture only changes with the horizon.
   const latest = useMemo(() => {
     if (horizonS == null) return []
@@ -57,7 +56,7 @@ export function TrackLayer({ tracks, horizonS, stepS }: Props) {
   return (
     <Group listening={false}>
       {latest.map((track) => {
-        const ink = inkFor(track.source)
+        const ink = inkFor(track.source, boardInk)
         const ellipse = track.source === 'truth' ? null : positionEllipse(track.covariance, SIGMAS)
         return (
           <Group key={track.id} listening={false}>

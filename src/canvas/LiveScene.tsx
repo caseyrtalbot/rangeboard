@@ -10,15 +10,17 @@ import { trialTrackStatesAt } from '../playback/trialTrackState'
 import type { TrialMemberState } from '../playback/trialTrackState'
 import { trialSweepAt } from '../playback/trialSweepAt'
 import { trialTelemetryAt } from '../panels/analysis/threatReadout'
-import { blinkOn, shotsInFlightAt, trialShotTimelineOf } from '../playback/trackState'
+import { shotsInFlightAt, trialShotTimelineOf } from '../playback/trackState'
 import { useFrameClock } from './frameClock'
-import { boardDesignator, layoutLabels } from './labelLayout'
+import { layoutLabels } from './labelLayout'
 import type { LabelPlacement } from './labelLayout'
 import { ThreatWezLayer } from './layers/ThreatWezLayer'
 import { PathLayer } from './layers/PathLayer'
 import { EngagementLayer } from './layers/EngagementLayer'
 import { TrackLayer } from './layers/TrackLayer'
-import { EntityLayer, shownHandleDeg } from './layers/EntityLayer'
+import { PairingLineLayer } from './layers/PairingLineLayer'
+import { OutcomeMarkLayer } from './layers/OutcomeMarkLayer'
+import { blockLinesAtRest, EntityLayer, shownHandleDeg } from './layers/EntityLayer'
 import { CalloutLayer } from './layers/CalloutLayer'
 import { PlacementPreviewLayer } from './layers/PlacementPreviewLayer'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
@@ -46,6 +48,7 @@ function samePlacement(a: LabelPlacement, b: LabelPlacement): boolean {
   if (a.mode !== b.mode) return false
   if (a.mode !== 'spoke' || b.mode !== 'spoke') return true
   if (a.tx !== b.tx || a.ty !== b.ty || a.width !== b.width || a.align !== b.align) return false
+  if (a.text !== b.text) return false
   for (let i = 0; i < 6; i++) if (a.points[i] !== b.points[i]) return false
   return true
 }
@@ -182,24 +185,25 @@ export function LiveScene(props: Props) {
       ),
     [trial, outcomeTimeS, sweep],
   )
-  const blink = blinkOn(displayTimeS)
 
   const prevSpokeIds = useRef<Set<string>>(new Set())
   const prevPlacements = useRef<Map<string, LabelPlacement> | null>(null)
-  // The drawn designator is scenario work; only a label's screen position moves per frame.
+  // The block lines are scenario work; only a block's screen position moves per frame.
+  // A run adds a status word to line one; the box is measured without it.
   const labelText = useMemo(
     () =>
       scenario.entities.map((e) => ({
         id: e.id,
         name: e.name,
-        drawn: boardDesignator(e.name),
+        kind: e.kind,
+        lines: blockLinesAtRest(scenario, e),
         pos: e.pos,
       })),
-    [scenario.entities],
+    [scenario],
   )
   const selectedIds = useStore((s) => s.selection.entityIds)
   const tool = useStore((s) => s.ui.tool)
-  // A shown heading knob moves the label below itself, so its box moves with it.
+  // A shown heading knob can flip the block to the other side, so its box moves with it.
   const handleDegs = useMemo(
     () =>
       new Map(
@@ -217,7 +221,8 @@ export function LiveScene(props: Props) {
         return {
           id: e.id,
           name: e.name,
-          drawn: e.drawn,
+          kind: e.kind,
+          lines: e.lines,
           sx: pos.x * camera.scale + camera.x,
           sy: pos.y * camera.scale + camera.y,
           handleDeg: handleDegs.get(e.id),
@@ -255,19 +260,24 @@ export function LiveScene(props: Props) {
         displayTimeS={displayTimeS}
       />
       <StaticPathLayer mouseWorld={mouseWorld} />
+      <PairingLineLayer
+        tracks={trial?.result.tracks}
+        horizonS={outcomeTimeS}
+        stepS={trial?.manifest.sweepStepS}
+      />
       <TrackLayer
         tracks={trial?.result.tracks}
         horizonS={outcomeTimeS}
         stepS={trial?.manifest.sweepStepS}
       />
       <EngagementLayer shots={shots} displayTimeS={outcomeTimeS ?? 0} />
+      <OutcomeMarkLayer trial={trial} horizonS={outcomeTimeS} />
       <EntityLayer
         tracks={tracks}
         members={geometry.members}
         states={states}
         sweep={sweep}
         spokeIds={spokeIds}
-        blink={blink}
       />
       <StaticSystemHandleLayer />
       <CalloutLayer placements={labelPlacements} />

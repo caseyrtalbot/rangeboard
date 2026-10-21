@@ -106,6 +106,7 @@ Earlier plans, earlier handoffs and the wave completion write-ups were removed o
 - [R4 trial engine and lifecycle, 2026-09-07](field-te/evidence/r4-trial-lifecycle-2026-09-07/README.md)
 - [R5 sampled experience evidence, 2026-09-08](field-te/evidence/r5-sampled-experience-2026-09-08/README.md)
 - [finishSummary time at the retained cap, 2026-09-23](field-te/evidence/finish-summary-cap-2026-09-23/README.md)
+- [Symbology primer browser check, 2026-10-21](field-te/evidence/symbology-primer-2026-10-21/README.md)
 
 Other evidence formats, including fixtures, screenshots, raw sources and numerical JSON,
 live under [field-te/evidence](field-te/evidence/).

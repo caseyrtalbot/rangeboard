@@ -43,13 +43,7 @@ describe('EntityLayer member rendering', () => {
     )
     const geometry = renderedTrialGeometry(scenario, view, 1.5, 1.5)
     const html = renderToStaticMarkup(
-      <EntityLayer
-        {...geometry}
-        states={states}
-        sweep={sweep}
-        spokeIds={new Set()}
-        blink={false}
-      />,
+      <EntityLayer {...geometry} states={states} sweep={sweep} spokeIds={new Set()} />,
     )
     const member = geometry.members.get('swarm')![2]
     expect(html).toContain(
@@ -58,7 +52,7 @@ describe('EntityLayer member rendering', () => {
     expect(html.match(/>J<\/span>/g)).toHaveLength(1)
   })
 
-  it('draws each actual member once at its rendered position with one group label', () => {
+  it('draws each actual member once at its rendered position with one data block', () => {
     const { scenario, view } = mixedTrial()
     useStore.getState().replaceScenario(scenario)
     useStore.getState().setBoardPhase('prepare')
@@ -72,13 +66,7 @@ describe('EntityLayer member rendering', () => {
       return {
         geometry,
         html: renderToStaticMarkup(
-          <EntityLayer
-            {...geometry}
-            states={states}
-            sweep={sweep}
-            spokeIds={new Set()}
-            blink={false}
-          />,
+          <EntityLayer {...geometry} states={states} sweep={sweep} spokeIds={new Set()} />,
         ),
       }
     }
@@ -99,10 +87,12 @@ describe('EntityLayer member rendering', () => {
     expect(later.geometry.members.get('swarm')![0].position).not.toEqual(
       early.geometry.members.get('swarm')![0].position,
     )
-    expect(later.html.match(/>SWARM</g)).toHaveLength(1)
-    expect(later.html).toContain('3 active')
-    expect(later.html).toContain('1 hard kill')
-    expect(later.html).toContain('1 mission kill')
+    // One data block for the file: line one carries the designator and the live
+    // member count, line two the altitude in hundreds of feet and the speed in knots.
+    expect(later.html.match(/>SWARM ×3</g)).toHaveLength(1)
+    expect(later.html.match(/>SWARM/g)).toHaveLength(1)
+    expect(later.html).toContain('<span>SWARM ×3</span><span>000 019</span>')
+    expect(later.html).not.toContain('active')
     expect(later.html).toContain('>MK</span>')
   })
 })
