@@ -11,17 +11,15 @@ and the docs index. This file does not authorize a commit, push or merge.
 
 ## Tasking
 
-None selected. `main` and `origin/main` hold all completed work.
-
-Branch `symbology/primer` holds the board symbology refactor as an uncommitted working
-tree on top of `cc695df`: the seven rows of the symbology primer in one tree (identity
-inks in `src/ui/ink.ts`, the `Glyph.tsx` symbol library and its Konva twins
-`symbols.tsx`, white lines and effector rings, the `EntityLayer` frames and amplifiers,
-the time-based leader and the data block in `labelLayout.ts`, and the new
-`PairingLineLayer` and `OutcomeMarkLayer`). Verified on 2026-10-21: `npm test` (233
-files, 2583 tests), `typecheck`, `lint`, `format:check` and `check:silent` clean. The
-browser evidence is at `field-te/evidence/symbology-primer-2026-10-21/`. The primer is a
-suggested symbol set, not an approved one.
+None selected. `main` and `origin/main` hold all completed work, including the board
+symbology refactor merged from `symbology/primer` on 2026-10-21 (the seven rows of the
+symbology primer in one commit: identity inks in `src/ui/ink.ts`, the `Glyph.tsx` symbol
+library and its Konva twins `symbols.tsx`, white lines and effector rings, the
+`EntityLayer` frames and amplifiers, the time-based leader and the data block in
+`labelLayout.ts`, and the new `PairingLineLayer` and `OutcomeMarkLayer`). Its gate was
+`npm run check` end to end (233 files, 2583 tests) and the browser evidence at
+`field-te/evidence/symbology-primer-2026-10-21/`. The branch is deleted. The primer is a
+suggested symbol set, not an approved one; its open items are under Board symbology below.
 
 The only open plan is [code-quality/Plan.md](code-quality/Plan.md), a frozen queue. Q1 is
 merged. Q2 (delete the orphaned test-card actions) is held: decide it with the T&E Ops

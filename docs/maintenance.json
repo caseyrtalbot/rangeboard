@@ -6,9 +6,9 @@
         "package.json",
         "package-lock.json"
       ],
-      "sha256": "6fae5f6b6680437d631fecac497450565e91bdd8675f4d3eaee0a3a46d40ea22",
-      "reviewedAt": "2026-10-02",
-      "note": "Stale docs cleanup: the workspace fact names docs/code-quality/Plan.md as the only open plan (Q1 merged, Q2 held, Q3 waits) and says completed plans are removed; HANDOFF holds the open work."
+      "sha256": "f01afdc9e8416df005bce1cc39d308e1cfa36e0f856b2662d99d07dee3e0fe36",
+      "reviewedAt": "2026-10-21",
+      "note": "Dependabot bump of four npm packages in package.json and the lock (origin a5017ce); the guide names no package versions and its text stands."
     },
     {
       "document": "CLAUDE.md",
@@ -37,9 +37,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "c9a37d3218f9fb0470b6b1c7531b1dfb33afe4d608b854e424768820a5cbda12",
+      "sha256": "dad8d7e1a46d4543f92c813fbaffb28930717d5c770f2df3dfbf70315cdec4a8",
       "reviewedAt": "2026-10-21",
-      "note": "App.tsx gains the placementRequest subscription that arms placement from the connect popup; the README feature list stays accurate."
+      "note": "Dependabot bump of four npm packages in package.json and the lock (origin a5017ce); the guide names no package versions and its text stands."
     },
     {
       "document": "docs/README.md",
@@ -79,9 +79,9 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "1251c9c26977be2c07ae7e12d5aee94a025ecf46a3d2b12ed9171d8a2022707a",
+      "sha256": "3563dabea6ab51ce1cb991a34ee58c86c87ebec2d8ef906e2124b107ac4e8473",
       "reviewedAt": "2026-10-21",
-      "note": "runtimeValidation gains the CapOrbit owner checks (radiusM > 0, integer laps >= 1) with a test; schema regenerated; the command table and the save-shape guidance stay accurate."
+      "note": "Dependabot bump of four npm packages in package.json and the lock (origin a5017ce) after the ISR CAP review; the verification guide names no package versions, so its text stands."
     },
     {
       "document": "docs/WORKFLOW.md",
@@ -98,16 +98,16 @@
         ".nvmrc",
         "package-lock.json"
       ],
-      "sha256": "bd3c933d75d2d148cea5af6e8b1169ab2b2acaa61649c49b42411d0f44d3b165",
-      "reviewedAt": "2026-10-02",
-      "note": "Stale docs cleanup: the handoff holds only open work in three sections (Tasking, Follow-ups, Landmines); a completed plan is deleted."
+      "sha256": "ac7af11e4342ad028d56749ecc540017d0bd9bb38811ed3327401b214837684c",
+      "reviewedAt": "2026-10-21",
+      "note": "Dependabot bump of four npm packages in package.json and the lock (origin a5017ce); the workflow guide names no package versions, so its text stands."
     },
     {
       "document": "docs/HANDOFF.md",
       "inputs": [],
-      "sha256": "d5058a016664ddca4966401cae0a6bbf2841cff77c7834dd9b0e7de53851af49",
+      "sha256": "a09b4193daecd362c77b86e587ebe3ae4fced673675ec00fd2869b7fd4238f92",
       "reviewedAt": "2026-10-21",
-      "note": "Symbology primer refactor rebased onto the ISR CAP and connect popup commit: both sets of edits kept (the CAP sentence sits inside the rewritten canvas ink rule; the CAP follow-up group and the Board symbology group both stand); inputs re-read after the rebase."
+      "note": "Symbology merge handoff after the rebase onto the ISR CAP commit: the Tasking records the fast-forward of symbology/primer into main, its gate and evidence, and the deleted branch; the ISR CAP and Board symbology follow-up groups both stand."
     },
     {
       "document": "docs/code-quality/Plan.md",
