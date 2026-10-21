@@ -976,6 +976,13 @@ input[type='color']::-webkit-color-swatch {
   cursor: crosshair;
 }
 
+/* The board takes focus for its shortcuts, but it is not a control: no browser focus ring
+   frames the map. Selection and the hooked object carry the board's focus cues. */
+.canvas-host:focus,
+.canvas-host:focus-visible {
+  outline: none;
+}
+
 .hud {
   position: absolute;
   inset: 0;

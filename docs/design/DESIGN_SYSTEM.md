@@ -141,7 +141,8 @@ Spacing is `--space-1` (4 px) to `--space-6` (24 px) plus `--panel-pad` (14 px).
 `--dur-fast` 120 ms, `--dur` 140 ms and `--dur-enter` 120 ms for the floating-surface entry
 (`@keyframes surface-enter`); `prefers-reduced-motion` cuts every transition and animation
 to 1 ms. A pressed control inverts to text 1 on ink. Focus is a 2 px outline in
-`--border-focus`, which is text 1.
+`--border-focus`, which is text 1. The board (`.canvas-host`) takes focus for its shortcuts
+but shows no focus ring; selection and the hooked object are its focus cues.
 
 **Daylight theme.** The `--paper-*` palette holds the values once: board `#eeebe4`, panel
 `#f7f5f0`, sunken `#e4e0d8`, raised `#fbfaf7`, rule `#d8d3c9`, rule strong `#b0aa9e`,

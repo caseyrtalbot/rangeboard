@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "654052ed3885239db05c9dfbd084c4f94157f38f80f13c663ed6ebe029138c97",
+      "sha256": "3c208e0a3d4fffee994039b0226028cb1d3a9f8849ae04eb37d33e88a319fbce",
       "reviewedAt": "2026-10-21",
-      "note": "Symbology primer refactor rebased onto the ISR CAP and connect popup commit: both sets of edits kept (the CAP sentence sits inside the rewritten canvas ink rule; the CAP follow-up group and the Board symbology group both stand); inputs re-read after the rebase."
+      "note": "index.css gains the canvas-host focus-ring suppression; the guide's feature text is unchanged."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "73489194cd61d596dbc808a36eaf1a2aeef936b6645b76d2f053305eac27aed9",
+      "sha256": "d1105aaee487f26817647e90fd743e65276f0457bdb24ea05012675413920f4c",
       "reviewedAt": "2026-10-21",
-      "note": "Symbology primer refactor rebased onto the ISR CAP and connect popup commit: both sets of edits kept (the CAP sentence sits inside the rewritten canvas ink rule; the CAP follow-up group and the Board symbology group both stand); inputs re-read after the rebase."
+      "note": "index.css gains the canvas-host focus-ring suppression; no rendering contract in this reference changes (board focus for shortcuts is unchanged)."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -124,9 +124,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "5e827304e87d88fc9addd973b6c908b1245ab6c630efe06a8f9117770397a558",
+      "sha256": "9e42c9c486b34f40756411391b1d21c9cb5eb53d21e8ba84f07a10fb38c6c4ad",
       "reviewedAt": "2026-10-21",
-      "note": "Symbology primer refactor rebased onto the ISR CAP and connect popup commit: both sets of edits kept (the CAP sentence sits inside the rewritten canvas ink rule; the CAP follow-up group and the Board symbology group both stand); inputs re-read after the rebase."
+      "note": "index.css: the canvas host suppresses the browser focus ring (.canvas-host:focus, :focus-visible outline none); the focus sentence names the exception."
     }
   ],
   "historical": [
