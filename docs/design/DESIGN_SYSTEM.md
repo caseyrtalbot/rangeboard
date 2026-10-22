@@ -60,8 +60,10 @@ it follows. Konva ink colors for the canvas live in `src/ui/ink.ts`.
    caption takes the first clear slot back along its last leg; an ISR CAP draws a dashed
    ingress leg and circle in the entity ink with one caption at the east point, and its
    draft circle and radius readout take the selection ink. The system rotation handle,
-   the move-underlay outline and the placement preview (an outline ground frame with its
-   function icon at 0.7 opacity, a `[4, 4]` dashed leader and a one-line block) take the
+   the move-underlay outline, the placement preview (an outline ground frame with its
+   function icon at 0.7 opacity, a `[4, 4]` dashed leader and a one-line block) and a
+   measurement (a 1.5 px line, `[6, 4]` dashed while it follows the cursor, a dot on a
+   point end, and a mono readout over the glyph halo above its midpoint) take the
    tool ink (8.8:1 night, 5.3:1 paper). The data block and a spoke callout draw over a
    board-tone glyph halo (`LABEL_HALO_PX`, a 2.5 px stroke under the fill, 1.25 px outside
    each letter), so a flight path, a leader or a coverage tint does not run through the

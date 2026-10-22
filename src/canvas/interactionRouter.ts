@@ -71,6 +71,8 @@ export type Action =
   | { type: 'add-draft-point' }
   | { type: 'finish-cap' }
   | { type: 'set-calibrate-point' }
+  | { type: 'measure-entity' }
+  | { type: 'measure-point' }
   | { type: 'clear-selection' }
   | { type: 'add-entity-from-model'; modelId: string }
   | { type: 'add-system-from-preset'; systemId: string }
@@ -130,6 +132,8 @@ function routeEntityClick(
     return state.connectFrom ? { type: 'complete-connect' } : { type: 'begin-connect' }
   if (state.tool === 'path')
     return intent.entityKind === 'uas' && !state.pathStarted ? { type: 'begin-path' } : CONTINUE
+  // A measurement end on an asset follows that asset; on empty board it stays put.
+  if (state.tool === 'measure') return { type: 'measure-entity' }
   if (state.tool !== 'select') return CONTINUE
   if (state.raidDraft) return CONTINUE
   return { type: 'select-entity', additive: intent.shiftKey }
@@ -152,6 +156,7 @@ function routeStageClick(
   if (state.tool === 'cap')
     return state.capCenterPlaced ? { type: 'finish-cap' } : { type: 'add-draft-point' }
   if (state.tool === 'calibrate') return { type: 'set-calibrate-point' }
+  if (state.tool === 'measure') return { type: 'measure-point' }
   if (intent.onEmpty && state.tool === 'select')
     return intent.onRing ? CONSUME : { type: 'clear-selection' }
   return CONSUME

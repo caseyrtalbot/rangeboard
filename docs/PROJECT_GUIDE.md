@@ -72,6 +72,19 @@ selected, or at the run time cursor while the effector engages or the sensor hol
 Hovering a ring shows its readout: system, ring, distance in nm, threat height and the
 MRIR basis. A click on the ring pins the readout; Escape or a click on empty board clears it.
 
+The Measure tool (the Measure button on the canvas tool row, or `M`) shows in every phase.
+A click on an asset or on empty board sets the first end, and a dashed rubber band runs
+to the cursor with its bearing and range; the second click pins a solid line. An asset end
+follows the asset, so a line on a flying UAS tracks it through playback. The readout gives
+the bearing from the first end (three digits, board north) and the range at two decimals
+of a nautical mile or a kilometer. When the second end is a UAS it adds the BRAA altitude
+(feet AGL) and, while the track flies, the aspect from the first end: HOT, FLANK, BEAM or
+DRAG with the eight-point direction of travel. Geometry is plan view
+([measure.ts](../src/geometry/measure.ts)). A second click on the first asset drops the
+gesture, a click on a pinned readout removes it, and Clear removes them all. The board
+still pans under the tool. Measurements are session only: they stay across tool and phase
+changes, never enter the scenario or undo, and a new or imported scenario drops them.
+
 A single selected entity opens [EntityWorkspace](../src/panels/EntityWorkspace.tsx):
 Telemetry, Configure and Model basis share one content scroller. Overview preserves the
 selection. Model basis names all linked instances and reuses the model editor; duplication

@@ -1554,9 +1554,13 @@ Konva conventions:
 - Footprints and other large fills are `listening={false}` or they swallow stage clicks.
 - Thin-line hit tolerance: `hitStrokeWidth={n}` in screen px (do not divide by
   `camera.scale`).
-- Drawing tools do not use Konva drag: the stage is `draggable` only when `ui.tool ===
-'select'`; other tools consume plain clicks and keep the rubber-band draft in
-  `ui.draftPoints`. The cap tool keeps the orbit center there; its second click calls
+- Drawing tools do not use Konva drag: the stage is `draggable` only when `ui.tool` is
+  `'select'` or `'measure'`; other tools consume plain clicks and keep the rubber-band
+  draft in `ui.draftPoints`. Measure keeps its first end in `ui.measureFrom` and its
+  pinned lines in `ui.measures` (session only, outside the scenario and undo; a replace
+  clears them). An end is an entity id, resolved each frame to its rendered track, or a
+  fixed point; `layers/MeasureLayer.tsx` draws the lines under the glyphs and the
+  readouts over the callouts, from `src/geometry/measure.ts`. The cap tool keeps the orbit center there; its second click calls
   `finishCap`, which stores `FlightPath.cap` and generates the points with `capPathPoints`
   (`src/model/cap.ts`), so the engine never reads the orbit. `updateCap` regenerates the
   points from the entity position.
@@ -1604,7 +1608,7 @@ Konva conventions:
   write per move. Drag events bubble from a child to
   the entity group; the group acts only on a drag whose target is itself.
 - The cursor: `CanvasStage` keeps the pointer's world position in a ref and sets state
-  only while a boundary, path or calibrate tool or a marquee is active. `HudLayer` reads
+  only while a boundary, path, cap, calibrate or measure tool or a marquee is active. `HudLayer` reads
   its own cursor from a stage `mousemove` listener. A plain hover re-renders neither the
   stage nor a Konva layer.
 - `App` subscribes to primitives (the one selected entity id, an object-selection flag,
@@ -1652,7 +1656,8 @@ Design system (`src/index.css`):
   `Row`. The tab bar in `App.tsx` follows the ARIA tabs pattern; `.right-resizer` is a
   keyboard-operable separator.
 - Keyboard map (`App.tsx`): Cmd+Z / Shift+Cmd+Z, Delete, Esc (cancel draft, tool to
-  select), Enter (finish boundary or path), Space (play/pause), `]` (open or close the
+  select), Enter (finish boundary or path), Space (play/pause), `M` (Measure on or
+  off; the one tool that stays armed across a phase change), `]` (open or close the
   right drawer; the layout effect shifts the camera by half the canvas width change so
   the board center holds). Shortcuts are suppressed
   while typing in inputs. Escape order: the command palette,
@@ -1669,10 +1674,11 @@ state)` is the one owner of that Escape order and of click precedence. `App.tsx`
   Stage click precedence: a marquee-paired click is dropped, then an armed placement,
   then the raid draft, then the draw tools (an in-place double-click's second click is
   no vertex), then a plain select click on empty canvas clears the selection. An entity
-  click is owned by connect and select; path owns only the UAS that starts a draft;
+  click is owned by connect, measure and select; path owns only the UAS that starts a draft;
   boundary, calibrate, cap and a raid draft bubble it to the stage. Under cap a stage
   click is the center while no draft point exists, else `finish-cap`, an in-place pair
-  included. The matrix is
+  included. Under measure an entity click is an entity end and a stage click a point
+  end. The matrix is
   table-tested in `interactionRouter.test.ts`. The screen tabs in `AnalysisNavigation.tsx`
   are `role="tab"` buttons in `.insp-tab-group` inside the panel tablist, one per screen
   of the phase; the calibrate tool shows a `role="status"` strip until Escape or Cancel.

@@ -24,6 +24,7 @@ import { blockLinesAtRest, EntityLayer, shownHandleDeg } from './layers/EntityLa
 import { CalloutLayer } from './layers/CalloutLayer'
 import { PlacementPreviewLayer } from './layers/PlacementPreviewLayer'
 import { SystemHandleLayer } from './layers/SystemHandleLayer'
+import { MeasureLineLayer, MeasureReadoutLayer, useMeasureGeometry } from './layers/MeasureLayer'
 
 // These two read the store themselves, so a per-frame render must not reach them.
 const StaticPathLayer = memo(PathLayer)
@@ -34,7 +35,7 @@ interface Props {
   camera: Camera
   /** Canvas host size, screen px. Bounds the label layout viewport. */
   size: { w: number; h: number }
-  /** Cursor in world meters. Feeds the draft path rubber band. */
+  /** Cursor in world meters. Feeds the draft path and measurement rubber bands. */
   mouseWorld: Vec2 | null
   trial: TrialResultView | null
   /** Null before a trial observation; distinct from a reached T0. */
@@ -245,6 +246,7 @@ export function LiveScene(props: Props) {
       ),
     [labelPlacements],
   )
+  const measures = useMeasureGeometry(tracks, mouseWorld)
   useEffect(() => {
     prevTracks.current = tracks
     prevSpokeIds.current = spokeIds
@@ -272,6 +274,7 @@ export function LiveScene(props: Props) {
       />
       <EngagementLayer shots={shots} displayTimeS={outcomeTimeS ?? 0} />
       <OutcomeMarkLayer trial={trial} horizonS={outcomeTimeS} />
+      <MeasureLineLayer geometry={measures} />
       <EntityLayer
         tracks={tracks}
         members={geometry.members}
@@ -281,6 +284,7 @@ export function LiveScene(props: Props) {
       />
       <StaticSystemHandleLayer />
       <CalloutLayer placements={labelPlacements} />
+      <MeasureReadoutLayer geometry={measures} />
       <PlacementPreviewLayer />
     </>
   )

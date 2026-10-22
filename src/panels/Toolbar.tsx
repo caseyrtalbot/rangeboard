@@ -269,7 +269,8 @@ export const BoardTools = memo(function BoardTools({
   const canUndo = useStore((s) => s.past.length > 0)
   const canRedo = useStore((s) => s.future.length > 0)
   const editing = useStore(selectBoardPhase) === 'prepare'
-  const { setTool, setBoundaryType, undo, redo } = useStore.getState()
+  const measureCount = useStore((s) => s.ui.measures.length)
+  const { setTool, setBoundaryType, clearMeasures, undo, redo } = useStore.getState()
 
   return (
     <div className="board-tools" role="toolbar" aria-label="Board tools">
@@ -307,6 +308,31 @@ export const BoardTools = memo(function BoardTools({
           )}
         </div>
       )}
+      {/* Measure reads the board, so it shows in every phase. */}
+      <div className="seg" role="group" aria-label="Measure">
+        <button
+          type="button"
+          title="Measure (M): click two assets or points for bearing, range and BRAA; click a readout to remove it"
+          aria-pressed={tool === 'measure'}
+          className={tool === 'measure' ? 'active' : ''}
+          onClick={() => {
+            onSelectTool?.()
+            setTool(tool === 'measure' ? 'select' : 'measure')
+          }}
+        >
+          Measure
+        </button>
+        {measureCount > 0 && (
+          <button
+            type="button"
+            title="Remove every measurement"
+            aria-label={`Clear ${measureCount} measurements`}
+            onClick={clearMeasures}
+          >
+            Clear
+          </button>
+        )}
+      </div>
       {editing && <RangeSetupMenu onSelectTool={onSelectTool} />}
       <ViewMenu />
       <div className="seg" role="group" aria-label="History">

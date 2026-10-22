@@ -105,6 +105,7 @@ export const CanvasStage = memo(function CanvasStage({
   const finishPath = useStore((s) => s.finishPath)
   const finishCap = useStore((s) => s.finishCap)
   const setCalibratePoint = useStore((s) => s.setCalibratePoint)
+  const addMeasureEnd = useStore((s) => s.addMeasureEnd)
   const addSystemFromPreset = useStore((s) => s.addSystemFromPreset)
   const openContextMenu = useStore((s) => s.openContextMenu)
   const closeContextMenu = useStore((s) => s.closeContextMenu)
@@ -271,6 +272,9 @@ export const CanvasStage = memo(function CanvasStage({
       case 'set-calibrate-point':
         setCalibratePoint(world)
         return
+      case 'measure-point':
+        addMeasureEnd({ point: world })
+        return
       case 'clear-selection':
         clearSelection()
         return
@@ -344,7 +348,11 @@ export const CanvasStage = memo(function CanvasStage({
   const drawing = tool !== 'select'
   // Tools whose draft geometry follows the cursor.
   const cursorDrawn =
-    tool === 'boundary' || tool === 'path' || tool === 'cap' || tool === 'calibrate'
+    tool === 'boundary' ||
+    tool === 'path' ||
+    tool === 'cap' ||
+    tool === 'calibrate' ||
+    tool === 'measure'
   // Picking one of those tools starts from the cursor's current place.
   useEffect(() => {
     if (cursorDrawn) setMouseWorld(mouseWorldRef.current)
@@ -398,7 +406,8 @@ export const CanvasStage = memo(function CanvasStage({
         y={camera.y}
         scaleX={camera.scale}
         scaleY={camera.scale}
-        draggable={tool === 'select' && !modKey && !onPlace}
+        // Measure only reads the board, so a drag still pans under it.
+        draggable={(tool === 'select' || tool === 'measure') && !modKey && !onPlace}
         onWheel={handleWheel}
         onClick={handleClick}
         onDblClick={handleDblClick}

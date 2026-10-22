@@ -93,7 +93,7 @@ import {
 /** Lens id stamped on every run; `Scenario.observedPresetId` keeps saved scenarios loadable. */
 const OBSERVED_PRESET_ID = 'run-summary'
 
-export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'cap' | 'calibrate'
+export type Tool = 'select' | 'boundary' | 'connect' | 'path' | 'cap' | 'calibrate' | 'measure'
 export type RightTab = 'inspect' | 'analysis'
 /** Theme choice. `system` follows the OS colour-scheme query; the other two pin it. */
 export type Theme = 'system' | 'dark' | 'light'
@@ -103,6 +103,16 @@ export interface Camera {
   y: number
   /** Pixels per meter. */
   scale: number
+}
+
+/** One end of a board measurement: an entity, followed as it moves, or a fixed point. */
+export type MeasureEnd = { entityId: string } | { point: Vec2 }
+
+/** A measurement pinned between two ends. Session only; never in the scenario or undo. */
+export interface Measure {
+  id: string
+  a: MeasureEnd
+  b: MeasureEnd
 }
 
 /** Armed tactic-builder state. UI only; commitRaid turns it into scenario changes. */
@@ -128,6 +138,10 @@ export interface UiState {
   connectFromId: string | null
   calibrateA: Vec2 | null
   calibrateB: Vec2 | null
+  /** The first end of a measurement in progress; the rubber band runs from it to the cursor. */
+  measureFrom: MeasureEnd | null
+  /** Pinned measurements, drawn in every phase. Session only. */
+  measures: Measure[]
   rightTab: RightTab
   /** Theme choice. Not undoable; kept in the saved view record. */
   theme: Theme
@@ -331,6 +345,10 @@ export interface Store {
   /** Merges a CAP patch and regenerates the points from the entity's current position. */
   updateCap: (pathId: string, patch: Partial<CapOrbit>) => void
   cancelDraft: () => void
+  /** The first call sets the measurement's first end; the second pins it. */
+  addMeasureEnd: (end: MeasureEnd) => void
+  removeMeasure: (id: string) => void
+  clearMeasures: () => void
   updateBoundary: (id: string, patch: Partial<Boundary>) => void
   updatePath: (id: string, patch: Partial<FlightPath>) => void
   deletePathForEntity: (entityId: string) => void
@@ -592,6 +610,7 @@ const CLEARED_DRAFT: Pick<
   | 'connectFromId'
   | 'calibrateA'
   | 'calibrateB'
+  | 'measureFrom'
   | 'moveUnderlay'
   | 'contextMenu'
   | 'locationDialogOpen'
@@ -604,6 +623,7 @@ const CLEARED_DRAFT: Pick<
   connectFromId: null,
   calibrateA: null,
   calibrateB: null,
+  measureFrom: null,
   moveUnderlay: false,
   contextMenu: null,
   locationDialogOpen: false,
@@ -648,7 +668,7 @@ export const useStore = create<Store>()((set, get) => {
     if (ringOverrides !== ui.ringOverrides) writeRingOverrides(ringOverrides)
     const nextUi =
       op.op === 'replace'
-        ? { ...ui, ...CLEARED_DRAFT, tool: 'select' as const, ringOverrides }
+        ? { ...ui, ...CLEARED_DRAFT, measures: [], tool: 'select' as const, ringOverrides }
         : op.op === 'edit'
           ? ringOverrides === ui.ringOverrides
             ? ui
@@ -687,6 +707,8 @@ export const useStore = create<Store>()((set, get) => {
       connectFromId: null,
       calibrateA: null,
       calibrateB: null,
+      measureFrom: null,
+      measures: [],
       rightTab: view.rightTab ?? 'inspect',
       theme: view.theme ?? 'system',
       showFieldHelp: view.showFieldHelp ?? false,
@@ -1140,10 +1162,32 @@ export const useStore = create<Store>()((set, get) => {
           connectFromId: null,
           calibrateA: null,
           calibrateB: null,
+          measureFrom: null,
           raidDraft: null,
           connectSuggestion: null,
         },
       })),
+
+    addMeasureEnd: (end) =>
+      set((st) => {
+        const from = st.ui.measureFrom
+        if (!from) return { ui: { ...st.ui, measureFrom: end } }
+        // A second click on the first entity drops the gesture instead of a zero line.
+        if ('entityId' in from && 'entityId' in end && from.entityId === end.entityId)
+          return { ui: { ...st.ui, measureFrom: null } }
+        const measure: Measure = { id: newId('msr'), a: from, b: end }
+        return { ui: { ...st.ui, measureFrom: null, measures: [...st.ui.measures, measure] } }
+      }),
+
+    removeMeasure: (id) =>
+      set((st) => ({ ui: { ...st.ui, measures: st.ui.measures.filter((m) => m.id !== id) } })),
+
+    clearMeasures: () =>
+      set((st) =>
+        st.ui.measures.length === 0 && !st.ui.measureFrom
+          ? st
+          : { ui: { ...st.ui, measures: [], measureFrom: null } },
+      ),
 
     updateBoundary: (id, patch) =>
       mutate((s) => ({
@@ -1205,6 +1249,7 @@ export const useStore = create<Store>()((set, get) => {
           connectFromId: null,
           calibrateA: null,
           calibrateB: null,
+          measureFrom: null,
           raidDraft,
         },
       }))
@@ -1552,6 +1597,7 @@ export const useStore = create<Store>()((set, get) => {
           connectFromId: null,
           calibrateA: null,
           calibrateB: null,
+          measureFrom: null,
           raidDraft: null,
         },
       })),
@@ -1663,6 +1709,7 @@ export const useStore = create<Store>()((set, get) => {
       get().scrubTo(tS)
     },
     // Editing tools belong to Prepare: leaving it drops any drawing tool back to Select.
+    // Measure only reads the board, so it stays armed in every phase.
     // A phase change closes the Validity line, so Execute shows it only from the status bar (D1).
     // A placement preview belongs to Prepare, so a phase change drops it too.
     setBoardPhase: (boardPhase) =>
@@ -1673,7 +1720,7 @@ export const useStore = create<Store>()((set, get) => {
               ui: {
                 ...st.ui,
                 boardPhase,
-                tool: boardPhase === 'prepare' ? st.ui.tool : 'select',
+                tool: boardPhase === 'prepare' || st.ui.tool === 'measure' ? st.ui.tool : 'select',
                 validityOpen: false,
                 placementPreview: null,
               },

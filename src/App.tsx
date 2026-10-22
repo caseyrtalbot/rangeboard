@@ -1055,6 +1055,11 @@ export default function App() {
         })
         return
       }
+      if (!mod && e.key.toLowerCase() === 'm') {
+        e.preventDefault()
+        st.setTool(st.ui.tool === 'measure' ? 'select' : 'measure')
+        return
+      }
       if (!mod && e.key === ']') {
         e.preventDefault()
         toggleRight()

@@ -37,9 +37,9 @@
         "src/main.tsx",
         "package-lock.json"
       ],
-      "sha256": "dad8d7e1a46d4543f92c813fbaffb28930717d5c770f2df3dfbf70315cdec4a8",
-      "reviewedAt": "2026-10-21",
-      "note": "Dependabot bump of four npm packages in package.json and the lock (origin a5017ce); the guide names no package versions and its text stands."
+      "sha256": "2beba8bc58aebcd85a84594e4ca0ac71307684e34244f1a9db32ca8d3d01a1a6",
+      "reviewedAt": "2026-10-22",
+      "note": "Added the Measure tool (M key in src/App.tsx); the README names no shortcuts or tools and its text stands."
     },
     {
       "document": "docs/README.md",
@@ -53,18 +53,18 @@
       "inputs": [
         "src/"
       ],
-      "sha256": "3c208e0a3d4fffee994039b0226028cb1d3a9f8849ae04eb37d33e88a319fbce",
-      "reviewedAt": "2026-10-21",
-      "note": "index.css gains the canvas-host focus-ring suppression; the guide's feature text is unchanged."
+      "sha256": "55cf1a53994b4fc7d9d9fcc568ffdd441d33e3136fa60c2e04cbe6c6427f1066",
+      "reviewedAt": "2026-10-22",
+      "note": "Added the Measure tool paragraph after the ring readout: rubber band, entity-following ends, bearing/range/BRAA readout, removal, session-only state."
     },
     {
       "document": "docs/ENGINEERING_REFERENCE.md",
       "inputs": [
         "src/"
       ],
-      "sha256": "d1105aaee487f26817647e90fd743e65276f0457bdb24ea05012675413920f4c",
-      "reviewedAt": "2026-10-21",
-      "note": "index.css gains the canvas-host focus-ring suppression; no rendering contract in this reference changes (board focus for shortcuts is unchanged)."
+      "sha256": "73eeb14bf9fb34c1b32011b05be05986c0c42558c4bd04a780ec7902de147c22",
+      "reviewedAt": "2026-10-22",
+      "note": "Measure tool: stage draggable under measure, ui.measureFrom/ui.measures, MeasureLayer and geometry/measure.ts, cursor state, M key, router entity and stage clicks."
     },
     {
       "document": "docs/VERIFICATION.md",
@@ -124,9 +124,9 @@
         "src/charts/",
         "src/canvas/layers/footprintStyle.ts"
       ],
-      "sha256": "9e42c9c486b34f40756411391b1d21c9cb5eb53d21e8ba84f07a10fb38c6c4ad",
-      "reviewedAt": "2026-10-21",
-      "note": "index.css: the canvas host suppresses the browser focus ring (.canvas-host:focus, :focus-visible outline none); the focus sentence names the exception."
+      "sha256": "d5dff6773b8d2a15771ea9e4b2ab786308bb649e463994882516f1acf3a1ad4f",
+      "reviewedAt": "2026-10-22",
+      "note": "Measurement line and readout take the tool ink with the board glyph halo; added to the tool-ink list."
     }
   ],
   "historical": [

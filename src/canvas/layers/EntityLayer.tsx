@@ -503,7 +503,8 @@ const EntityNode = memo(function EntityNode(props: NodeProps) {
  */
 function hover(e: KonvaEventObject<MouseEvent>, id: string) {
   const tool = useStore.getState().ui.tool
-  const on = e.type === 'mouseenter' && (tool === 'select' || tool === 'connect')
+  const on =
+    e.type === 'mouseenter' && (tool === 'select' || tool === 'connect' || tool === 'measure')
   hoverCursor(id, e.target.getStage()!.container(), on)
   ;(e.currentTarget as Konva.Group).findOne('.hover')?.visible(on)
 }
@@ -532,6 +533,9 @@ function handleClick(e: KonvaEventObject<MouseEvent>, entity: Entity) {
       return
     case 'begin-path':
       store.beginPath(entity.id)
+      return
+    case 'measure-entity':
+      store.addMeasureEnd({ entityId: entity.id })
       return
     case 'select-entity':
       store.select({ entityIds: [entity.id] }, action.additive)

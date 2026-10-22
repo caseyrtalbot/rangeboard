@@ -3,7 +3,7 @@ import type { Tool } from '../state/store'
 import { IDLE_INTERACTION, routeInteraction } from './interactionRouter'
 import type { Action, InteractionState } from './interactionRouter'
 
-const TOOLS: Tool[] = ['select', 'boundary', 'connect', 'path', 'cap', 'calibrate']
+const TOOLS: Tool[] = ['select', 'boundary', 'connect', 'path', 'cap', 'calibrate', 'measure']
 const state = (patch: Partial<InteractionState>): InteractionState => ({
   ...IDLE_INTERACTION,
   ...patch,
@@ -114,6 +114,8 @@ describe('stage click precedence', () => {
     ['calibrate', false, { type: 'set-calibrate-point' }],
     ['calibrate', true, { type: 'set-calibrate-point' }],
     ['connect', false, { type: 'consume' }],
+    ['measure', false, { type: 'measure-point' }],
+    ['measure', true, { type: 'measure-point' }],
     ['select', false, { type: 'clear-selection' }],
     ['select', true, { type: 'clear-selection' }],
   ])('%s tool, in-place pair %s', (tool, inPlacePair, expected) => {
@@ -178,6 +180,8 @@ describe('entity click precedence', () => {
       { type: 'continue' },
     ],
     ['calibrate bubbles', { tool: 'calibrate' }, 'uas', { type: 'continue' }],
+    ['measure takes a UAS end', { tool: 'measure' }, 'uas', { type: 'measure-entity' }],
+    ['measure takes a sensor end', { tool: 'measure' }, 'sensor', { type: 'measure-entity' }],
     ['raid draft bubbles under select', { raidDraft: true }, 'uas', { type: 'continue' }],
     ['select picks the entity', {}, 'sensor', { type: 'select-entity', additive: false }],
   ])('%s', (_name, patch, kind, expected) => {

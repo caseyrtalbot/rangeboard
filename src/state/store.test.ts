@@ -2121,3 +2121,63 @@ describe('run timeline state', () => {
     expect(useStore.getState().playback.observedThroughS).toBe(12.5)
   })
 })
+
+describe('board measurements', () => {
+  beforeEach(reset)
+
+  it('pins a measurement on the second end and keeps the tool armed', () => {
+    const st = useStore.getState()
+    st.setTool('measure')
+    st.addMeasureEnd({ entityId: 'ent-a' })
+    expect(useStore.getState().ui.measureFrom).toEqual({ entityId: 'ent-a' })
+    st.addMeasureEnd({ point: { x: 10, y: 20 } })
+    const { ui } = useStore.getState()
+    expect(ui.measureFrom).toBeNull()
+    expect(ui.tool).toBe('measure')
+    expect(ui.measures).toHaveLength(1)
+    expect(ui.measures[0]).toMatchObject({
+      a: { entityId: 'ent-a' },
+      b: { point: { x: 10, y: 20 } },
+    })
+  })
+
+  it('drops the gesture on a second click of the same entity', () => {
+    const st = useStore.getState()
+    st.setTool('measure')
+    st.addMeasureEnd({ entityId: 'ent-a' })
+    st.addMeasureEnd({ entityId: 'ent-a' })
+    expect(useStore.getState().ui.measureFrom).toBeNull()
+    expect(useStore.getState().ui.measures).toHaveLength(0)
+  })
+
+  it('keeps pinned measurements across a tool change and a phase change, outside undo', () => {
+    const st = useStore.getState()
+    st.setTool('measure')
+    st.addMeasureEnd({ point: { x: 0, y: 0 } })
+    st.addMeasureEnd({ point: { x: 100, y: 0 } })
+    const past = useStore.getState().past.length
+    st.setBoardPhase('execute')
+    expect(useStore.getState().ui.tool).toBe('measure')
+    st.setTool('select')
+    expect(useStore.getState().ui.measures).toHaveLength(1)
+    expect(useStore.getState().past.length).toBe(past)
+  })
+
+  it('removes one, clears all, and a scenario replace drops them', () => {
+    const st = useStore.getState()
+    st.setTool('measure')
+    for (const x of [100, 200, 300]) {
+      st.addMeasureEnd({ point: { x: 0, y: 0 } })
+      st.addMeasureEnd({ point: { x, y: 0 } })
+    }
+    const first = useStore.getState().ui.measures[0].id
+    st.removeMeasure(first)
+    expect(useStore.getState().ui.measures.map((m) => m.id)).not.toContain(first)
+    st.clearMeasures()
+    expect(useStore.getState().ui.measures).toHaveLength(0)
+    st.addMeasureEnd({ point: { x: 0, y: 0 } })
+    st.addMeasureEnd({ point: { x: 50, y: 0 } })
+    st.replaceScenario(emptyScenario())
+    expect(useStore.getState().ui.measures).toHaveLength(0)
+  })
+})
