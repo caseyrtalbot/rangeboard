@@ -55,7 +55,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
-    "markdownlint-cli2": "0.24.0",
+    "markdownlint-cli2": "0.24.2",
     "markdownlint-rule-relative-links": "5.1.4",
     "oxlint": "^1.75.0",
     "playwright": "^1.62.1",
